@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 07-03-2025-08h-47m
@@ -11,15 +12,11 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
 use App\Actions\Comms\Email\SendNewCustomerToSubcriberEmail;
-use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\WebUser\StoreWebUser;
-use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -51,7 +48,7 @@ class RegisterCustomer extends OrgAction
 
         SendCustomerWelcomeEmail::run($customer);
 
-        // SendNewCustomerToSubcriberEmail::run($fulfilmentCustomer->customer);
+        SendNewCustomerToSubcriberEmail::run($customer);
 
         ShopHydrateCrmStats::run($shop);
 

@@ -16,10 +16,13 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\Comms\Email;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Models\Comms\Outbox;
+use App\Models\Comms\Email;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Arr;
 
 class SendNewCustomerToSubcriberEmail extends OrgAction
 {
@@ -33,11 +36,10 @@ class SendNewCustomerToSubcriberEmail extends OrgAction
     {
         // /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::NEW_CUSTOMER->value)->first();
+        $outboxDispatch = $customer->shop->outboxes()->where('type', OutboxTypeEnum::USER_NOTIFICATION)->first();
 
         $subcribeUsers = $outbox->subscribedUsers;
-        /** @var OutBoxHasSubscribers $subcribeUser */
         foreach ($subcribeUsers as $subcribeUser) {
-            // $recipient       = $subcribeUser->user->email ?? $subcribeUser->external_email;
             if ($subcribeUser->user) {
                 $recipient = $subcribeUser->user;
             } else {
@@ -45,13 +47,17 @@ class SendNewCustomerToSubcriberEmail extends OrgAction
             }
             $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
                 'is_test'       => false,
-                'outbox_id'     => $outbox->id,
+                'outbox_id'     => $outboxDispatch->id,
                 'email_address' => $recipient->email ?? $recipient->external_email,
                 'provider'      => DispatchedEmailProviderEnum::SES
             ]);
             $dispatchedEmail->refresh();
 
-            $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
+            if ($outbox->builder == OutboxBuilderEnum::BLADE) {
+                $emailHtmlBody = Arr::get($outbox->emailOngoingRun?->email?->liveSnapshot?->layout, 'blade_template');
+            } else {
+                $emailHtmlBody = $outbox->emailOngoingRun?->email?->liveSnapshot?->compiled_layout;
+            }
 
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
@@ -60,10 +66,26 @@ class SendNewCustomerToSubcriberEmail extends OrgAction
                 $emailHtmlBody,
                 '',
                 additionalData: [
-                    'customer_name' => $customer->name
+                    'customer_name' => $customer->name,
+                    'customer_email' => $customer->email,
+                    'customer_shop' => $customer->shop->name,
+                    'customer_organisation' => $customer->organisation->name,
+                    'customer_url' => $customer->shop->fulfilment ? route('grp.org.fulfilments.show.crm.customers.show', [
+                        $customer->organisation->slug,
+                        $customer->shop->fulfilment->slug,
+                        $customer->fulfilmentCustomer->slug
+                    ]) : route('grp.org.shops.show.crm.customers.show', [
+                        $customer->organisation->slug,
+                        $customer->shop->slug,
+                        $customer->slug
+                    ]),
+                    'customer_register_date' => $customer->created_at->format('F jS, Y')
                 ]
             );
         }
 
     }
+
+
+
 }

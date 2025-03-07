@@ -108,7 +108,7 @@ const sendToServer = async (data : {}, replaceData?: boolean) => {
 
 </script>
 
-<template>
+<template>xxx
     <div class="flex">
         <slot :openModal="setFormOnCreate">
             <div class="flex gap-x-1.5 gap-y-1.5 flex-wrap">

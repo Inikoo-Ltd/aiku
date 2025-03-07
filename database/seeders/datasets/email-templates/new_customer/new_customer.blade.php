@@ -11,7 +11,7 @@
 <head>
   <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <title>New customer registration {{$customer->shop->name}}</title>
+  <title>New customer registration [Customer Shop]</title>
 
 
   <style type="text/css">
@@ -120,8 +120,8 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <a href="{{$customer->getUrl()}}" class="btn-primary"
-                       style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px;  background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;">{{$customer->name}}</a>
+                    <a href="[Customer Url]" class="btn-primary"
+                       style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px;  background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;">Show Customer</a>
                   </td>
                 </tr>
               </table>
@@ -134,7 +134,7 @@
               <td class="aligncenter content-block"
                   style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
                   align="center" valign="top">
-                  [Customer Name]<br/>{{now()}}
+                  [Customer Name]<br/>[Customer Register Date]
               </td>
             </tr>
 
