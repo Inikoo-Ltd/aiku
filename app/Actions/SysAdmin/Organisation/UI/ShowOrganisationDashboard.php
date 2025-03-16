@@ -21,12 +21,10 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowOrganisationDashboard extends OrgAction
 {
-    use AsAction;
-    use WithDashboard;
+    use WithDashboard; // <-- to delete
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
 
@@ -38,7 +36,6 @@ class ShowOrganisationDashboard extends OrgAction
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings; // <-- to delete
-
         $settings = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []); // <-- to delete
 
 
@@ -58,7 +55,8 @@ class ShowOrganisationDashboard extends OrgAction
                             'type' => 'table',
                             'current_tab' => Arr::get($settings, 'sales_table_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values())),
                             'tabs' => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables' => OrganisationDashboardSalesTableTabsEnum::tables(),
+                            'tables' => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
+                            'charts' => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
 
                         ]
                     ]
@@ -68,20 +66,21 @@ class ShowOrganisationDashboard extends OrgAction
             ]
         ];
 
-        //  dd($dashboard);
+
 
 
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
             [
                 'breadcrumbs'     => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard_stats' => $this->getDashboardInterval($organisation, $userSettings),
-                'dashboard'       => $dashboard
+                'dashboard_stats' => $this->getDashboardInterval($organisation, $userSettings), // <-- to delete
+                'dashboard'       => $dashboard // <-- new dashboard
 
             ]
         );
     }
 
+    // to delete
     public function getDashboardInterval(Organisation $organisation, array $userSettings): array
     {
         $selectedInterval  = Arr::get($userSettings, 'selected_interval', 'all');
@@ -304,6 +303,7 @@ class ShowOrganisationDashboard extends OrgAction
         return $dashboard;
     }
 
+    // to delete
     public function getInvoices(Organisation $organisation, $shops, $selectedInterval, &$dashboard, $selectedCurrency): array
     {
         $visualData = [];
@@ -383,6 +383,7 @@ class ShowOrganisationDashboard extends OrgAction
         return $data;
     }
 
+    // to delete
     public function getInvoiceCategories(Organisation $organisation, $invoiceCategories, $selectedInterval, &$dashboard, $selectedCurrency): array
     {
         $visualData = [];

@@ -8,8 +8,11 @@
 
 namespace App\Enums\UI\Organisation;
 
+use App\Actions\Accounting\InvoiceCategory\IndexInvoiceCategoriesSalesTable;
+use App\Actions\Catalogue\Shop\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Models\SysAdmin\Organisation;
 
 enum OrganisationDashboardSalesTableTabsEnum: string
 {
@@ -34,22 +37,18 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(): array
+    public function table(Organisation $organisation): array
     {
         return match ($this) {
-            OrganisationDashboardSalesTableTabsEnum::SHOPS => [
-
-            ],
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
-
-            ],
+            OrganisationDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($organisation),
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($organisation),
         };
     }
 
-    public static function tables(): array
+    public static function tables(Organisation $organisation): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) {
-            return  [$case->value => $case->table()];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation) {
+            return [$case->value => $case->table($organisation)];
         })->all();
     }
 
