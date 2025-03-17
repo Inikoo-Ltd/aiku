@@ -25,7 +25,18 @@ const locale = useLocaleStore();
 console.log(route().current())
 
 function refundRoute(invoice: Invoice) {
+  console.log(route().current())
+
     switch (route().current()) {
+      case 'grp.org.fulfilments.show.operations.invoices.show.refunds.index':
+        return route(
+          'grp.org.fulfilments.show.operations.invoices.show.refunds.show',
+          [
+            route().params["organisation"],
+            route().params["fulfilment"],
+            route().params["invoice"],
+            invoice.slug
+          ])
         case 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index':
             return route(
                 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show',
