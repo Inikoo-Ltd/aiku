@@ -35,7 +35,7 @@ class RefundInProcessTransactionsResource extends JsonResource
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
             'unit_price'                => $this->price,
-            'refund_net_amount'             => InvoiceTransaction::where('invoice_id', $this->refund_id)->where('invoice_transaction_id', $this->id)->sum('net_amount'),
+            'refund_net_amount'             => abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('invoice_transaction_id', $this->id)->sum('net_amount')),
             'refund_route'              => [
                 'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [
