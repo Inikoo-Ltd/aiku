@@ -47,6 +47,7 @@ class ForceDeleteRefund extends OrgAction
             $refund->organisation->slug,
             $refund->customer->fulfilmentCustomer->fulfilment->slug,
             $refund->customer->fulfilmentCustomer->slug,
+            'tab' => 'refunds'
         ]);
     }
 
