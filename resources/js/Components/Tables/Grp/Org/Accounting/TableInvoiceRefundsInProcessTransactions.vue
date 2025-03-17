@@ -113,7 +113,7 @@ const localeCode = navigator.language
                 <div class="flex items-center gap-x-1 mt-2">
                     <div>
                         <InputNumber
-                            :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_amount'], 0))"
+                            :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
                             @input="(e) => (console.log(e.value), set(proxyItem, ['new_refund_amount'], e.value))"
                             @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
                             :class="get(proxyItem, ['new_refund_amount'], null) > item.net_amount ? 'errorShake' : ''"

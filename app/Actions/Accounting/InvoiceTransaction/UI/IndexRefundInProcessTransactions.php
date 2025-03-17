@@ -36,6 +36,9 @@ class IndexRefundInProcessTransactions extends OrgAction
         $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
+        // $queryBuilder->leftJoin('invoice_transactions as invoice_transaction_refund', 'invoice_transactions.id', 'invoice_transaction_refund.invoice_transaction_id');
+
+
 
         $queryBuilder->select(
             [
@@ -48,6 +51,7 @@ class IndexRefundInProcessTransactions extends OrgAction
                 DB::raw('SUM(invoice_transactions.quantity) as quantity'),
                 DB::raw('SUM(invoice_transactions.net_amount) as net_amount'),
                 DB::raw($refund->id.'  as refund_id'),
+
             ]
         );
 
@@ -61,7 +65,7 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'historic_assets.code',
                 'historic_assets.name',
                 'assets.price',
-                'assets.slug'
+                'assets.slug',
             );
 
 
