@@ -8,15 +8,21 @@
 
 namespace App\Actions\Inventory\WarehouseArea;
 
-use App\Actions\HydrateModel;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateStocks;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\WarehouseArea;
-use Illuminate\Support\Collection;
 
-class HydrateWarehouseArea extends HydrateModel
+class HydrateWarehouseArea
 {
-    public string $commandSignature = 'hydrate:warehouse-areas {organisations?*} {--i|slugs=}';
+    use WithHydrateCommand;
+
+    public string $commandSignature = 'hydrate:warehouse_areas {organisations?*} {--i|slugs=}';
+
+    public function __construct()
+    {
+        $this->model = WarehouseArea::class;
+    }
 
     public function handle(WarehouseArea $warehouseArea): void
     {
@@ -24,14 +30,4 @@ class HydrateWarehouseArea extends HydrateModel
         WarehouseAreaHydrateStocks::run($warehouseArea);
     }
 
-
-    protected function getModel(string $slug): WarehouseArea
-    {
-        return WarehouseArea::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return WarehouseArea::all();
-    }
 }

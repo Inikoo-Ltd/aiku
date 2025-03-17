@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraEmailTrackingEvents extends FetchAuroraAction
 {
+    public string $jobQueue = 'low-priority';
+
     public string $commandSignature = 'fetch:email_tracking_events {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
 

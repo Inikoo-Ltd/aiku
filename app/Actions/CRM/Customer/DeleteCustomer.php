@@ -55,10 +55,9 @@ class DeleteCustomer
             ]
         ];
         foreach ($customer->clients as $client) {
-            DeleteCustomerClient::run(
+            DeleteCustomerClient::make()->action(
                 customerClient: $client,
-                skipHydrate: true,
-                deletedData: $dependantDeletedData
+                modelData: $dependantDeletedData
             );
         }
 

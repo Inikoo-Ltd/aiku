@@ -8,30 +8,31 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateDeployments;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateSnapshots;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Collection;
 
-class HydrateWebpage extends HydrateModel
+class HydrateWebpage
 {
-    public string $commandSignature = 'hydrate:webpages {organisations?*} {--s|slugs=} ';
+    use WithHydrateCommand;
 
+    public string $commandSignature = 'hydrate:webpages {organisations?*} {--s|slugs=}';
+
+    public function __construct()
+    {
+        $this->model = Webpage::class;
+    }
 
     public function handle(Webpage $webpage): void
     {
         WebpageHydrateChildWebpages::run($webpage);
         WebpageHydrateRedirects::run($webpage);
+        WebpageHydrateSnapshots::run($webpage);
+        WebpageHydrateDeployments::run($webpage);
     }
 
-    protected function getModel(string $slug): Webpage
-    {
-        return Webpage::where('slug', $slug)->first();
-    }
 
-    protected function getAllModels(): Collection
-    {
-        return Webpage::withTrashed()->get();
-    }
 }

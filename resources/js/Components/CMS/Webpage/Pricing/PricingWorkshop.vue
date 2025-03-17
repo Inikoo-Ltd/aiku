@@ -22,7 +22,6 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<pre>{{ modelValue }}</pre>
 	<div
 		class="container flex flex-wrap justify-between"
 		:style="getStyles(modelValue?.container?.properties)">

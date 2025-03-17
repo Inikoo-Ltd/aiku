@@ -199,6 +199,8 @@ use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
+use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -585,14 +587,17 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
-
-
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('publish', PublishWebpage::class)->name('publish');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
+    Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
+});
+
+Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
+    Route::patch('', UpdateRedirect::class)->name('update');
 });
 
 Route::name('model_has_web_block.')->prefix('model-has-web-block/{modelHasWebBlocks:id}')->group(function () {

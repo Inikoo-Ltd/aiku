@@ -8,14 +8,8 @@
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from "vue"
-// import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@/Components/Image.vue"
-// import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"
 import { getStyles } from "@/Composables/styles"
-// import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-// import { faImage, faEdit } from "@far"
-// import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
-// import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faCube, faLink)
 
@@ -28,17 +22,15 @@ const isModalGallery = ref(false)
 </script>
 
 <template>
-	<div
-		class="container flex flex-wrap justify-between"
-		:style="getStyles(fieldValue.container.properties)">
+	<div class="container flex flex-wrap justify-between" :style="getStyles(fieldValue.container.properties)">
 		<!-- Image Section -->
-		<div
-			class="imgBx relative w-1/2 transition-all duration-300"
-			>
+		<div class="imgBx relative w-1/2 transition-all duration-300">
 			<div class="absolute inset-0">
-				<a :href="fieldValue?.image?.url || '#'" target="_blank" rel="noopener noreferrer">
-					<Image :src="fieldValue?.image?.source" :alt="fieldValue?.image?.source?.alt || 'image'" class="h-full w-full object-cover" />
-				</a>
+				<img v-if="!fieldValue?.image?.source"
+					src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" :alt="fieldValue?.image?.alt"
+					class="h-full w-full object-cover" />
+				<Image :src="fieldValue?.image?.source" :imageCover=true :alt="fieldValue?.image?.alt"
+					:imgAttributes="fieldValue?.image?.attributes" :style="getStyles(fieldValue?.image?.properties)" />
 			</div>
 		</div>
 

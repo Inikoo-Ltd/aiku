@@ -52,7 +52,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
- * @property-read \App\Models\HumanResources\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \App\Models\HumanResources\ClockingMachineStats|null $stats

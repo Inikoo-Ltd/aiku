@@ -9,7 +9,10 @@
 namespace App\Actions\SysAdmin\Organisation\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -61,15 +64,25 @@ class EditOrganisation extends GrpAction
             "formData" => [
                 "blueprint" => [
                     [
-                        "label"   => __("Organisation Information"),
+                        "label"   => __("details"),
                         "title"   => __("id"),
-                        "icon"    => "fa-light fa-user",
+                        "icon"    => "fal fa-fingerprint",
                         "current" => true,
                         "fields"  => [
                             "name" => [
                                 "type"        => "input",
                                 "label"       => __("name"),
                                 "value"       => $organisation->name ?? '',
+                            ],
+                            "ui_name" => [
+                                "type"  => "input",
+                                "label" => __("UI display name"),
+                                "value" => Arr::get($organisation->settings, 'ui.name', $organisation->name)
+                            ],
+                            "contact_name" => [
+                                "type"  => "input",
+                                "label" => __("Contact name"),
+                                "value" => $organisation->contact_name
                             ],
                             "email" => [
                                 "type"        => "input",
@@ -80,6 +93,14 @@ class EditOrganisation extends GrpAction
                                 "type"        => "input",
                                 "label"       => __("phone"),
                                 "value"       => $organisation->phone ?? '',
+                            ],
+                            'address' => [
+                                'type'    => 'address',
+                                'label'   => __('Address'),
+                                'value'   => AddressFormFieldsResource::make($organisation->address)->getArray(),
+                                'options' => [
+                                    'countriesAddressData' => GetAddressData::run()
+                                ]
                             ],
                             "image" => [
                                 "type"  => "avatar",

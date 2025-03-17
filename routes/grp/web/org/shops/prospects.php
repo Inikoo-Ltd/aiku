@@ -18,4 +18,3 @@ Route::get('/tags', [IndexProspectTags::class, 'inShop'])->name('tags.index');
 Route::get('/mailshots', [IndexProspectMailshots::class, 'inShop'])->name('mailshots.index');
 
 Route::get('/{prospect}', ShowProspect::class)->name('show');
-

@@ -23,16 +23,12 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faLongArrowRight } from '@far'
 import { faPencil, faWallet } from '@fal'
 import { faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard } from '@fal'
-// import Modal from '@/Components/Utils/Modal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-// import ModalAddress from '@/Components/Utils/ModalAddress.vue'
 import CountUp from 'vue-countup-v3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import CustomerDataForm from '@/Components/CustomerDataForm.vue'
-import { RuleType } from 'v-calendar/dist/types/src/utils/date/rules.js'
-import { faCheck, faTimes } from '@fas'
+import { faCheck, faCheckCircle } from '@fas'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-library.add(faWallet, faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faLongArrowRight, faCheck)
+library.add(faWallet, faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faLongArrowRight, faCheck, faCheckCircle)
 
 const props = defineProps<{
     data: {
@@ -43,7 +39,6 @@ const props = defineProps<{
             credit_transactions: number
         }
         currency_code: string
-        // customer: PalletCustomer
         fulfilment_customer: {
             radioTabs: {
                 [key: string]: boolean
@@ -151,8 +146,8 @@ const isLoadingButtonRentalAgreement = ref(false)
     Welcome, {{ customer?.contact_name }}!
   </div>
      <!-- Section: Radiobox, Recurring bills balance, Rental agreement-->
-     <div class="px-8 grid max-w-2xl grid-cols-1 gap-x-2 gap-y-8 lg:max-w-7xl lg:grid-cols-3 pt-4">
-     <div v-if="data?.status == 'approved'" class="w-full max-w-lg space-y-4 justify-self-end">
+     <div v-if="layout.user.fulfilment_active" class="px-8 grid max-w-2xl grid-cols-1 gap-x-2 gap-y-8 lg:max-w-7xl lg:grid-cols-3 pt-4">
+     <div class="w-full max-w-lg space-y-4 justify-self-end">
         <div v-if="data?.balance?.current > 0"
             class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
             <div class="w-full flex justify-between items-center">
@@ -184,7 +179,15 @@ const isLoadingButtonRentalAgreement = ref(false)
             </div>
         </div>
 
-        <TabSelector :optionRadio="optionRadio" :radioValue="radioValue" :updateRoute="data.updateRoute" />
+        <!-- <TabSelector :optionRadio="optionRadio" :radioValue="radioValue" :updateRoute="data.updateRoute" /> -->
+        <div class="grid md:grid-cols-2 gap-y-2 gap-x-1 sm:gap-x-2">
+            <div v-for="radio in optionRadio" class="text-xs w-full sm:text-sm flex flex-auto items-center text-left gap-x-1.5 sm:gap-x-2 rounded-lg px-2 sm:px-3 py-2 select-none border disabled:bg-gray-300 disabled:cursor-default">
+                <FontAwesomeIcon v-if="radioValue.includes(radio.value)" icon='fas fa-check-circle'
+                    class='text-green-500' fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-else icon='fal fa-circle' class='text-green-600' fixed-width aria-hidden='true' />
+                <span class="whitespace-nowrap">{{ radio.label }}</span>
+            </div>
+        </div>
 
         <div class="border-t border-gray-200 pt-4 w-full max-w-full">
             <!-- Section: Recurring Bills -->
@@ -269,18 +272,11 @@ const isLoadingButtonRentalAgreement = ref(false)
 
                 <div v-else class="text-center py-16">
                     <div class="text-gray-500 text-xs mb-1">The rental agreement is not created yet.</div>
-                    <!-- <Link
-                        :href="route(data.rental_agreement.createRoute.name, data.rental_agreement.createRoute.parameters)"
-                        @start="() => isLoadingButtonRentalAgreement = true"
-                        @cancel="() => isLoadingButtonRentalAgreement = false">
-                    <Button type="secondary" label="Create Rental Agreement"
-                        :loading="isLoadingButtonRentalAgreement" />
-                    </Link> -->
                 </div>
             </div>
         </div>
       </div>
-        <div v-if="data.route_action && customer?.status != 'pending_approval'" class=" flex">
+        <div v-if="data.route_action" class=" flex">
           <div class="w-64 border-gray-300 ">
               <div class="p-1" v-for="(btn, index) in data.route_action" :key="index">
               <ButtonWithLink
@@ -295,8 +291,9 @@ const isLoadingButtonRentalAgreement = ref(false)
           </div>
       </div>
     </div>
+
   <!-- Container untuk card -->
-  <div v-if="customer?.status == 'pending_approval'" class="grid grid-cols-3 gap-6 p-6">
+  <div v-else class="grid grid-cols-3 gap-6 p-6">
     <!-- Card Informasi Perusahaan -->
     <div class="col-span-3 bg-green-50 rounded-lg shadow-xl overflow-hidden border border-green-300 p-6">
       <h4 class="text-lg font-semibold text-green-800">{{ trans('Thank you for applying!')}}</h4>

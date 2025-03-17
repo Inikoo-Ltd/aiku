@@ -76,6 +76,7 @@ const emits = defineEmits<{
 						</ul>
 					</div>
 					<a
+						v-if="tier.link"
 						:href="tier.link.href"
 						:aria-describedby="tier.id"
 						:target="tier.link.target"

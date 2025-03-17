@@ -40,7 +40,7 @@ export const getComponent = (componentName: string) => {
         'socialMedia': socialMedia,
         "VisibleLoggedIn": ButtonVisibleLoggedIn,
        /*  "properties": PanelProperties, */
-       "overview-property" : Overview,
+        "overview-property" : Overview,
         "textHeader": TextHeader,
         "background": Background,
         "border": Border,

@@ -162,7 +162,7 @@ class StoreRecurringBillTransaction extends OrgAction
             'pallet_return_id'          => ['sometimes', 'exists:pallet_returns,id'],
             'fulfilment_transaction_id' => ['sometimes', 'exists:fulfilment_transactions,id'],
             'pallet_id'                 => ['sometimes'],
-            'handle_date'               => ['sometimes', 'date'],
+            'handle_date'               => ['sometimes'],
             'data'                      => ['sometimes', 'array'],
         ];
     }

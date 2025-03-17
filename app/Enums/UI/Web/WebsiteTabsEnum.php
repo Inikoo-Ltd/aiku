@@ -20,6 +20,7 @@ enum WebsiteTabsEnum: string
     case EXTERNAL_LINKS  = 'external_links';
     case ANALYTICS = 'analytics';
     case WEB_USERS = 'web_users';
+    case REDIRECTS = 'redirects';
     case CHANGELOG = 'changelog';
 
     public function blueprint(): array
@@ -39,6 +40,10 @@ enum WebsiteTabsEnum: string
             ],
             WebsiteTabsEnum::WEB_USERS => [
                 'title' => __('website users'),
+                'icon'  => 'fal fa-terminal',
+            ],
+            WebsiteTabsEnum::REDIRECTS => [
+                'title' => __('redirects'),
                 'icon'  => 'fal fa-terminal',
             ],
 

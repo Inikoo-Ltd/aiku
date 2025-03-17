@@ -8,13 +8,12 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\HydrateModel;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateAudits;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateModels;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\SysAdmin\User;
 
-class HydrateUsers extends HydrateModel
+class HydrateUser
 {
     use WithHydrateCommand;
 

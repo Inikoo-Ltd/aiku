@@ -8,42 +8,37 @@
 
 namespace App\Actions\Dropshipping\CustomerClient;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerClients;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
+use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomerClients;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerClients;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Traits\WithOrganisationArgument;
 use App\Models\Dropshipping\CustomerClient;
-use Exception;
-use Illuminate\Console\Command;
 
-class DeleteCustomerClient
+class DeleteCustomerClient extends OrgAction
 {
     use WithActionUpdate;
-    use WithOrganisationArgument;
 
-    public string $commandSignature = 'delete:customer-client {slug}';
 
-    public function handle(CustomerClient $customerClient, array $deletedData = [], bool $skipHydrate = false): CustomerClient
+    public function handle(CustomerClient $customerClient, array $deletedData): CustomerClient
     {
-        $customerClient->delete();
         $customerClient = $this->update($customerClient, $deletedData, ['data']);
-        if (!$skipHydrate) {
-            CustomerHydrateClients::dispatch($customerClient->customer);
-        }
+        $customerClient->delete();
+
+        CustomerHydrateClients::dispatch($customerClient->customer);
+        ShopHydrateCustomerClients::dispatch($customerClient->customer);
+        OrganisationHydrateCustomerClients::dispatch($customerClient->customer);
+        GroupHydrateCustomerClients::dispatch($customerClient->customer);
+
         return $customerClient;
     }
 
-
-    public function asCommand(Command $command): int
+    public function action(CustomerClient $customerClient, array $modelData): CustomerClient
     {
-        try {
-            $customerClient = CustomerClient::where('slug'.$command->argument('slug'))->firstOrFail();
-        } catch (Exception) {
-            $command->error('Customer Client not found');
-            return 1;
-        }
+        $this->initialisationFromShop($customerClient->shop, $modelData);
 
-        $this->handle($customerClient);
-
-        return 0;
+        return $this->handle($customerClient, $this->validatedData);
     }
+
 }

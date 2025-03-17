@@ -461,7 +461,7 @@ test('hydrate customers', function (Customer $customer) {
 test('hydrate web user', function (Customer $customer) {
     $webUser = $customer->webUsers->first();
     HydrateWebUser::run($webUser);
-    $this->artisan('hydrate:web_user')->assertExitCode(0);
+    $this->artisan('hydrate:web_users')->assertExitCode(0);
 })->depends('create web user');
 
 test('store poll', function () {
@@ -1098,4 +1098,8 @@ test('UI Index polls', function () {
             )
             ->has('data');
     });
+});
+
+test('inventory  hydrator', function () {
+    $this->artisan('hydrate -s crm')->assertExitCode(0);
 });

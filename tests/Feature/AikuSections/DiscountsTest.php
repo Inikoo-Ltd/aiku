@@ -11,9 +11,11 @@
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\OfferComponent\StoreOfferComponent;
@@ -185,8 +187,21 @@ test('offers search', function () {
 
 test('offer campaigns search', function () {
     $this->artisan('search:offer_campaigns')->assertExitCode(0);
-
     $offerCampaign = OfferCampaign::first();
     ReindexOfferCampaignSearch::run($offerCampaign);
     expect($offerCampaign->universalSearch()->count())->toBe(1);
+});
+
+test('offer campaigns hydrator', function () {
+    $this->artisan('hydrate:offer_campaigns')->assertExitCode(0);
+    HydrateOfferCampaigns::run(OfferCampaign::first());
+});
+
+test('offer hydrator', function () {
+    $this->artisan('hydrate:offers')->assertExitCode(0);
+    HydrateOffers::run(Offer::first());
+});
+
+test('Discounts hydrator', function () {
+    $this->artisan('hydrate -s disc')->assertExitCode(0);
 });

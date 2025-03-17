@@ -72,7 +72,7 @@ class UpdateCustomerClient extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'customer_id',
-                            'value'  => $this->customerClient->customer->id
+                            'value'  => $this->customerClient->customer_id
                         ],
                         ['column' => 'id', 'value' => $this->customerClient->id, 'operator' => '!=']
                     ]
@@ -89,9 +89,10 @@ class UpdateCustomerClient extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['email']           = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules['phone']     = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['email']     = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['reference'] = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules              = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
@@ -107,6 +108,8 @@ class UpdateCustomerClient extends OrgAction
 
     public function action(CustomerClient $customerClient, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): CustomerClient
     {
+
+
         $this->strict = $strict;
         if (!$audit) {
             CustomerClient::disableAuditing();
@@ -114,6 +117,10 @@ class UpdateCustomerClient extends OrgAction
         $this->customerClient = $customerClient;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
+
+
+
+
         $this->initialisationFromShop($customerClient->shop, $modelData);
 
         return $this->handle($customerClient, $this->validatedData);

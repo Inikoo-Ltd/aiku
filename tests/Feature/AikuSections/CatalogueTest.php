@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Billables\Charge\HydrateCharge;
 use App\Actions\Billables\Charge\Search\ReindexChargeSearch;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
@@ -819,3 +820,16 @@ test('update shop setting', function ($shop) {
         ->and($shop->email)->toBe('test@gmail.com')
         ->and($shop->phone)->toBe('08912312313');
 })->depends('create shop');
+
+test('Billables: charges hydrator', function () {
+    $this->artisan('hydrate:charges')->assertExitCode(0);
+    HydrateCharge::run(Charge::first());
+});
+
+test('catalogue hydrator', function () {
+    $this->artisan('hydrate -s cat')->assertExitCode(0);
+});
+
+test('billables hydrator', function () {
+    $this->artisan('hydrate -s bil')->assertExitCode(0);
+});

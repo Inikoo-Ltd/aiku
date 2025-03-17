@@ -62,7 +62,7 @@ onMounted(() => {
 })
 
 const isLoadingSubmit = ref(false)
-const onSubmitUpload = async (files: File[], clear: Function) => {
+const onSubmitUpload = async (files: File[], clear?: Function) => {
     const formData = new FormData()
     Array.from(files).forEach((file, index) => {
         formData.append(`images[${index}]`, file)
@@ -95,7 +95,9 @@ const onSubmitUpload = async (files: File[], clear: Function) => {
         });
 
         // Clear the input or perform any other success actions
-        clear();
+        if (clear) {
+            clear();
+        }
 
     } catch (error) {
         console.error('Upload error:', error);

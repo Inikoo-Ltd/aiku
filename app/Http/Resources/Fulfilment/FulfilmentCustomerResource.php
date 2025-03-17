@@ -51,6 +51,8 @@ class FulfilmentCustomerResource extends JsonResource
                 'email'        => $fulfilmentCustomer->customer->email,
                 'phone'        => $fulfilmentCustomer->customer->phone,
                 'created_at'   => $fulfilmentCustomer->customer->created_at,
+                'status'       => $fulfilmentCustomer->customer->status,
+                'approved_at'       => $fulfilmentCustomer->customer->approved_at ?? null,
             ]
 
         ];

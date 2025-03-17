@@ -17,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Http\Resources\Sales\OrderResource;
@@ -108,8 +109,24 @@ class IndexOrders extends OrgAction
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
 
-        if ($this->bucket == 'creating') {
+        if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
+            $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
+            ->whereColumn('orders.payment_amount', '>=', 'orders.total_amount');
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
+            $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
+                ->where('orders.payment_amount', 0);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::PICKING->value) {
+            $query->where('orders.state', OrderStateEnum::HANDLING);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::BLOCKED->value) {
+            $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED->value) {
+            $query->where('orders.state', OrderStateEnum::PACKED);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED_DONE->value) {
+            $query->where('orders.state', OrderStateEnum::FINALISED);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
+            $query->whereDate('dispatched_at', Carbon::today());
         } elseif ($this->bucket == 'submitted') {
             $query->where('orders.state', OrderStateEnum::SUBMITTED);
         } elseif ($this->bucket == 'in_warehouse') {
@@ -158,32 +175,21 @@ class IndexOrders extends OrgAction
             });
         }
 
-        return $query->defaultSort('orders.reference')
+        return $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
             ->select([
-                'orders.reference',
-                'orders.date',
-                'orders.state',
-                'orders.created_at',
-                'orders.updated_at',
-                'orders.slug',
-                'orders.net_amount',
-                'orders.total_amount',
-                'orders.state',
-                'customers.name as customer_name',
-                'customers.slug as customer_slug',
-                'customer_clients.name as client_name',
-                'customer_clients.ulid as client_ulid',
-                'payments.state as payment_state',
-                'payments.status as payment_status',
-                'currencies.code as currency_code',
-                'currencies.id as currency_id',
-                'shops.name as shop_name',
-                'shops.slug as shop_slug',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
+                'orders.id', 'orders.reference', 'orders.date', 'orders.state',
+                'orders.created_at', 'orders.updated_at', 'orders.slug',
+                'orders.net_amount', 'orders.total_amount',
+                'customers.name as customer_name', 'customers.slug as customer_slug',
+                'customer_clients.name as client_name', 'customer_clients.ulid as client_ulid',
+                'payments.state as payment_state', 'payments.status as payment_status',
+                'currencies.code as currency_code', 'currencies.id as currency_id',
+                'shops.name as shop_name', 'shops.slug as shop_slug',
+                'organisations.name as organisation_name', 'organisations.slug as organisation_slug',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['reference', 'date'])
+            ->distinct('orders.id')
+            ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -249,7 +255,6 @@ class IndexOrders extends OrgAction
             }
             $table->column(key: 'payment_status', label: __('payment'), canBeHidden: false, searchable: true);
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, type: 'currency');
-            $table->defaultSort('reference');
         };
     }
 
@@ -282,7 +287,7 @@ class IndexOrders extends OrgAction
         }
         $subNavigation = null;
         if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $request);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -501,9 +506,7 @@ class IndexOrders extends OrgAction
             ),
             'grp.overview.ordering.orders.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

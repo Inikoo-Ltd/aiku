@@ -253,7 +253,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals query()

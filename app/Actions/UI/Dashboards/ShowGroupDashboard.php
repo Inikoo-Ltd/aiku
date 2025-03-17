@@ -126,6 +126,187 @@ class ShowGroupDashboard extends OrgAction
             $dashboard['table'][1]['data'] = $this->getInvoiceShops($group, $shops, $selectedInterval, $dashboard, $selectedCurrency);
         }
 
+        $orderingHandling = $group->orderHandlingStats;
+        $currencyCode = $group->currency->code;
+        $crmStats = $group->crmStats;
+        $dashboard['widgets']['components'] = array_merge(
+            $dashboard['widgets']['components'],
+            [
+                $this->getWidget(
+                    data: [
+                        'value'       => $crmStats->number_customers,
+                        'description' => __('Total Customer'),
+                        'type'        => 'number',
+                        /*  'route'       => [
+                             'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
+                             'parameters' => [
+                                 'organisation' => $fulfilment->organisation->slug,
+                                 'fulfilment'   => $fulfilment->slug,
+                                 'deliveries_elements[state]' => 'submitted'
+                             ]
+                         ] */
+                    ],
+                ),
+                $this->getWidget(
+                    data: [
+                        'value'       => $crmStats->number_customers_state_active,
+                        'description' => __('Active Customer'),
+                        'type'        => 'number',
+                        /*  'route'       => [
+                             'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
+                             'parameters' => [
+                                 'organisation' => $fulfilment->organisation->slug,
+                                 'fulfilment'   => $fulfilment->slug,
+                                 'deliveries_elements[state]' => 'submitted'
+                             ]
+                         ] */
+                    ],
+                ),
+                $this->getWidget(
+                    data: [
+                        'value'       => $crmStats->number_customers_trade_state_many,
+                        'description' => __('Customers With Orders'),
+                        'type'        => 'number',
+                         /* 'route'       => [
+                             'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
+                             'parameters' => [
+                                 'organisation' => $fulfilment->organisation->slug,
+                                 'fulfilment'   => $fulfilment->slug,
+                                 'deliveries_elements[state]' => 'submitted'
+                             ]
+                         ] */
+                    ],
+                ),
+                !app()->environment('production') ?
+                $this->getWidget(
+                    data: [
+                        'label' => __('In Basket'),
+                        'currency_code' => $currencyCode,
+                        'type' => 'double_number',
+                        'tabs' => [
+                            [
+                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'type' => 'number',
+                                'icon' => 'fal fa-tachometer-alt',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ],
+                            [
+                                'tab_slug' => 'submitted_unpaid',
+                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'type' => 'number',
+                                'icon' => 'fal fa-tachometer-alt',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ]
+                        ]
+                    ]
+                ) : [],
+                $this->getWidget(
+                    data: [
+                        'label' => __('Submitted'),
+                        'currency_code' => $currencyCode,
+                        'type' => 'double_number',
+                        'tabs' => [
+                            [
+                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'type' => 'number',
+                                'icon' => 'fal fa-tachometer-alt',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ],
+                            [
+                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'type' => 'number',
+                                'icon' => 'fal fa-tachometer-alt',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ]
+                        ]
+                    ]
+                ),
+                $this->getWidget(
+                    data: [
+                        'label' => __('Picking'),
+                        'currency_code' => $currencyCode,
+                        'type' => 'double_number',
+                        'tabs' => [
+                            [
+                                'label' => $orderingHandling->number_orders_state_handling,
+                                'type' => 'number',
+                                'icon' => 'fal fa-tachometer-alt',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_handling_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ],
+                            [
+                                'label' => $orderingHandling->number_orders_state_handling_blocked,
+                                'type' => 'number',
+                                'icon' => 'fal fa-tachometer-alt',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_handling_blocked_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ]
+                        ]
+                    ]
+                ),
+                $this->getWidget(
+                    data: [
+                        'label' => __('Invoicing'),
+                        'currency_code' => $currencyCode,
+                        'type' => 'double_number',
+                        'tabs' => [
+                            [
+                                'label' => $orderingHandling->number_orders_state_packed,
+                                'icon' => 'fal fa-box',
+                                'iconClass' => 'text-teal-500',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_packed_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ],
+                            [
+                                'label' => $orderingHandling->number_orders_state_finalised,
+                                'icon' => 'fal fa-box-check',
+                                'iconClass' => 'text-orange-500',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_state_finalised_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ]
+                        ]
+                    ]
+                ),
+                $this->getWidget(
+                    data: [
+                        'label' => __('Today'),
+                        'currency_code' => $currencyCode,
+                        'type' => 'double_number',
+                        'tabs' => [
+                            [
+                                'label' => $orderingHandling->number_orders_dispatched_today,
+                                'type' => 'number',
+                                'information' => [
+                                    'label' => $orderingHandling->{"orders_dispatched_today_amount_grp_currency"},
+                                    'type' => 'currency'
+                                ]
+                            ]
+                        ]
+                    ]
+                )
+            ]
+        );
+
         return $dashboard;
     }
 
@@ -215,7 +396,7 @@ class ShowGroupDashboard extends OrgAction
                         ]
                     ],
                     'route_refund'  => [
-                        'name'       => 'grp.org.shops.show.ordering.refunds.index',
+                        'name'       => 'grp.org.shops.show.dashboard.invoices.refunds.index',
                         'parameters' => [
                             'organisation'  => $child->organisation->slug,
                             'shop'          => $child->slug,

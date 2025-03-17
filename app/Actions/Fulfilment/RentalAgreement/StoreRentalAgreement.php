@@ -8,12 +8,14 @@
 
 namespace App\Actions\Fulfilment\RentalAgreement;
 
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStatus;
 use App\Actions\Fulfilment\RentalAgreementClause\StoreRentalAgreementClause;
 use App\Actions\Fulfilment\RentalAgreementSnapshot\StoreRentalAgreementSnapshot;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
+use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\RentalAgreementClause\RentalAgreementCauseStateEnum;
@@ -60,6 +62,15 @@ class StoreRentalAgreement extends OrgAction
         $rentalAgreement = $fulfilmentCustomer->rentalAgreement()->create(Arr::except($modelData, ['username', 'is_root', 'email']));
         $rentalAgreement->stats()->create();
         $rentalAgreement->refresh();
+
+        UpdateCustomer::make()->action(
+            $fulfilmentCustomer->customer,
+            [
+                'state' => CustomerStateEnum::ACTIVE
+            ]
+        );
+
+
 
         foreach ($clauses as $clauseData) {
             foreach ($clauseData as $data) {

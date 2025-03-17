@@ -9,9 +9,9 @@
 
 namespace App\Http\Resources\Accounting;
 
-use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Billables\Service;
 use App\Models\Fulfilment\Pallet;
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -22,11 +22,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $currency_code
  * @property mixed $id
  * @property mixed $in_process
+ * @property mixed $palletRoute
  */
 class StandaloneFulfilmentInvoiceTransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
+
         $editType = null;
         if ($this->model_type == 'Service') {
             $service = Service::find($this->model_id);
@@ -40,11 +42,29 @@ class StandaloneFulfilmentInvoiceTransactionsResource extends JsonResource
         if ($originalPrice > 0) {
             $discountPercentage = (($originalPrice - $discountedPrice) / $originalPrice) * 100;
         }
+        if ($this->model_type == 'Service') {
+            if (!empty($this->data['pallet_id'])) {
+                $pallet = Pallet::find($this->data['pallet_id']);
+                $palletRef = $pallet->reference;
+                $palletRoute = [
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                    'parameters'    => [
+                        'organisation'          => $pallet->organisation->slug,
+                        'fulfilment'            => $pallet->fulfilment->slug,
+                        'fulfilmentCustomer'    => $pallet->fulfilmentCustomer->slug,
+                        'pallet'                 => $pallet->slug
+                    ]
+                ];
+            } else {
+                $palletRef = null;
+                $palletRoute = null;
+            }
 
-        if (!empty($this->data['pallet_id'])) {
-            $pallet = PalletResource::make(Pallet::find($this->data['pallet_id']));
-        } else {
-            $pallet = null;
+            if (!empty($this->data['date'])) {
+                $handlingDate = Carbon::parse($this->data['date'])->format('d M Y');
+            } else {
+                $handlingDate = null;
+            }
         }
 
         return [
@@ -68,7 +88,9 @@ class StandaloneFulfilmentInvoiceTransactionsResource extends JsonResource
             'currency_code'             => $this->currency_code,
             'edit_type'                 => $editType,
             'discount'                  => $discountPercentage,
-            'pallet'                    => $pallet,
+            'pallet'                    => $palletRef,
+            'handling_date'             => $handlingDate,
+            'palletRoute'               => $palletRoute,
             'updateRoute'               => [
                 'name' => 'grp.models.standalone-invoice-transaction.update',
                 'parameters' => [

@@ -156,7 +156,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\ShopDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read Fulfilment|null $fulfilment
- * @property-read \App\Models\Catalogue\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images

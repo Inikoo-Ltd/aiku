@@ -122,13 +122,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Address|null $billingAddress
  * @property-read Address|null $collectionAddress
  * @property-read Currency $currency
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read \App\Models\Ordering\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Collection<int, Invoice> $invoices
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media

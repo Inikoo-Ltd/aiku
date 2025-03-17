@@ -245,6 +245,14 @@
             <td style="text-align:left" colspan="2">
                 @if($transaction->historicAsset)
                     {{ $transaction->historicAsset?->name }}
+                    @if(isset($transaction->data['pallet_id']))
+                    <br>
+                        {{ __('Pallet') }}: {{ $transaction->pallet }}
+                    @endif
+                    @if(isset($transaction->data['date']))
+                    <br>
+                        {{ __('Date') }}: {{ $transaction->handling_date }}
+                    @endif
                 @endif
             </td>
 

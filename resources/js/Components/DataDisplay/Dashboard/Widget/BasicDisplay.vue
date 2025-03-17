@@ -11,7 +11,8 @@ import ChartDashboardDynamic from "../../ChartDashboardDynamic.vue"
 import Chart from "primevue/chart"
 import ProgressDashboardCard from "../../ProgressDashboardCard.vue"
 import { Link } from "@inertiajs/vue3"
-import { layoutStructure } from "@/Composables/useLayoutStructure";
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { useLocaleStore } from "@/Stores/locale"
 library.add(faCheck, faExclamation, faInfo, faPlay)
 
 // Props for dynamic behavior
@@ -22,7 +23,7 @@ const props = withDefaults(
 			value: string
 			description: string
 			status: "success" | "warning" | "danger" | "information" | "neutral"
-			type?: "number" | "currency"
+			type?: any
 			currency_code?: string
 			route?: {}
 		}
@@ -122,7 +123,7 @@ const widgets = {
 // }
 
 const locale = inject("locale", aikuLocaleStructure)
-const layoutStore = inject("layout", layoutStructure);
+const layoutStore = inject("layout", layoutStructure)
 
 const getStatusColor = (status: string) => {
 	switch (status) {
@@ -228,8 +229,7 @@ const setChartOptions = () => ({
 
 <template>
 	<div :class="['rounded-lg p-6 shadow-md relative h-full', getStatusColor(widget.status)]">
-		<p
-			class="text-4xl font-bold leading-tight truncate">
+		<p class="text-4xl font-bold leading-tight truncate">
 			<!-- v-tooltip="printLabelByType(widget?.value)" -->
 			<!-- Render CountUp if widget.type is 'number' -->
 			<template v-if="widget?.type === 'number'">
@@ -321,20 +321,19 @@ const setChartOptions = () => ({
 				</template>
 				<template v-else>
 					<CountUp
-							class="primaryLink inline-block"
-							v-if="visual.type === 'number'"
-							:endVal="visual.value"
-							:duration="1.5"
-							:scrollSpyOnce="true"
-							:options="{
+						class="primaryLink inline-block"
+						v-if="visual.type === 'number'"
+						:endVal="visual.value"
+						:duration="1.5"
+						:scrollSpyOnce="true"
+						:options="{
 						formattingFn: (value: number) => locale.number(value)
 					}" />
 				</template>
 			</span>
 		</div>
 		<div v-if="visual?.type === 'number_with_label'" class="mt-2">
-			<span class="text-4xl font-bold leading-tight truncate ">
-				
+			<span class="text-4xl font-bold leading-tight truncate">
 				<template v-if="visual.route">
 					<Link :href="NumberDashboard(visual.route)">
 						<CountUp
@@ -358,12 +357,14 @@ const setChartOptions = () => ({
 					}" />
 				</template>
 			</span>
-				<p class="text-base text-gray-500">{{ visual.label }}</p>
+			<p class="text-base text-gray-500">{{ visual.label }}</p>
 		</div>
 		<div class="flex-grow"></div>
-		
+
 		<div>
-			<div v-if="visual && ['line', 'bar', 'pie', 'doughnut'].includes(visual.type)" class="mt-4 h-full flex items-end">
+			<div
+				v-if="visual && ['line', 'bar', 'pie', 'doughnut'].includes(visual.type)"
+				class="mt-4 h-full flex items-end">
 				<div class="w-full h-full">
 					<Chart
 						:type="visual.type"
@@ -374,42 +375,25 @@ const setChartOptions = () => ({
 				</div>
 			</div>
 		</div>
-		<!-- <div v-else-if="visual?.type == 'pie'" class="flex-grow relative w-full h-full">
-			<Chart type="pie" :labels="'visual?.label'" :data="visual.value" class="w-full h-64" />
+		<div v-if="widget?.type === 'double_number'" class="max-w-sm mx-auto font-mono text-[#7C7C7C]">
+			<!-- Card Title -->
+			<div class="text-center text-gray-500 font-medium mb-2">{{widget.label}}</div>
+			<div class="grid grid-cols-2 gap-4">
+				<div 
+				v-for="(column, index) in widget.tabs" 
+				:key="index" 
+				class="text-center"
+				>
+				<div class=" text-2xl font-bold">
+					{{ locale.number(column.label) }}
+				</div>
+				<div class=" text-sm">
+				
+					{{ useLocaleStore().currencyFormat( widget.currency_code, column.information.label) }}
+				</div>
+				</div>
+			</div>
 		</div>
-
-		<div v-else-if="visual?.type == 'line'" class="flex-grow relative w-full h-full">
-			<Chart
-				type="line"
-				:labels="'visual?.label'"
-				:data="visual.value"
-				class="w-full h-full"
-				:options="setChartOptions" />
-		</div>
-
-		<div v-else-if="visual?.type == 'bar'" class="bottom-content">
-			<Chart
-				type="bar"
-				:labels="'visual?.label'"
-				:data="visual.value"
-				class="w-full h-full"
-				:options="setChartOptions" />
-		</div>
-
-		<div
-			v-else-if="visual?.type == 'doughnut'"
-			class="flex items-center justify-center w-full h-full">
-			<Chart
-				type="doughnut"
-				:labels="'visual?.label'"
-				:data="visual.value"
-				class="w-full h-64 justify-center"
-				:options="setChartOptions" />
-		</div> -->
-
-		<!-- <div v-if="visual?.type === 'chart'">
-			<ChartDashboardDynamic :labels="visual?.label" :dataset="visual.value" lineColor="#00D8FF" />
-		</div> -->
 
 		<!-- Conditional Red Exclamation Icon -->
 		<div

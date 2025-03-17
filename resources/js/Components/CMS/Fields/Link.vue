@@ -131,12 +131,16 @@ onMounted(() => {
 			</div>
 		</div>
 
-		<div>
+		<div v-if="localModel?.type">
 			<div class="my-2 text-gray-500 text-xs tracking-wide mb-2">{{ trans("Destination") }}</div>
 		<!-- 	{{ defaultValue }}
 			{{ localModel }} -->
-			<PureInput v-if="localModel?.type == 'external'" v-model="localModel.href"
-				placeholder="www.anotherwebsite.com/page" v-bind="props_input"/>
+			<PureInput
+				v-if="localModel?.type == 'external'"
+				v-model="localModel.href"
+				placeholder="www.anotherwebsite.com/page"
+				v-bind="props_input"
+			/>
 
 			<SelectQuery v-if="localModel?.type == 'internal'" :object="true" fieldName="data" :value="localModel"
 				:closeOnSelect="true" label="href" :onChange="(e) => { localModel.url = e?.url, localModel.href = e?.href, localModel.id = e?.id, localModel.workshop = e?.workshop  }"

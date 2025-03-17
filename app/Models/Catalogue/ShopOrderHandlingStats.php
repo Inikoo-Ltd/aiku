@@ -148,7 +148,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_packings_done_today
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats query()

@@ -127,7 +127,7 @@ class StoreInvoiceTransaction extends OrgAction
             'grp_exchange'    => ['sometimes', 'numeric'],
             'in_process'      => ['sometimes', 'boolean'],
             'pallet_id'       => ['sometimes'],
-            'handle_date'     => ['sometimes', 'date'],
+            'handle_date'     => ['sometimes'],
             'data'            => ['sometimes', 'array'],
         ];
 

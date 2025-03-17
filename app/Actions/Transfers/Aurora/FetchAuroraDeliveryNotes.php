@@ -31,6 +31,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?DeliveryNote
     {
         $deliveryNoteData = $organisationSource->fetchDeliveryNote($organisationSourceId);
+
         if (!$deliveryNoteData or empty($deliveryNoteData['delivery_note']['source_id'])) {
             return null;
         }

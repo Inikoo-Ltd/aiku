@@ -9,52 +9,25 @@
 namespace App\Actions\Inventory\OrgStockFamily;
 
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\OrgStockFamily;
-use Exception;
-use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class HydrateOrgStockFamily
 {
-    use AsAction;
-    public string $commandSignature = 'hydrate:org_stock_families {--s|slug=}';
+    use WithHydrateCommand;
+    public string $commandSignature = 'hydrate:org_stock_families {organisations?*} {--s|slugs=} ';
+
+    public function __construct()
+    {
+        $this->model = OrgStockFamily::class;
+    }
 
     public function handle(OrgStockFamily $orgStockFamily): void
     {
         OrgStockFamilyHydrateOrgStocks::run($orgStockFamily);
     }
 
-    public function asCommand(Command $command): int
-    {
-        if ($command->option('slug')) {
-            try {
-                $orgStockFamily = OrgStockFamily::where('slug', $command->option('slug'))->firstorFail();
-                $this->handle($orgStockFamily);
-                return 0;
-            } catch (Exception $e) {
-                $command->error($e->getMessage());
-                return 1;
-            }
-        } else {
 
-
-            $count = OrgStockFamily::withTrashed()->count();
-            $bar   = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
-            $bar->start();
-            OrgStockFamily::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-                foreach ($models as $model) {
-                    $this->handle($model);
-                    $bar->advance();
-                }
-            });
-            $bar->finish();
-
-        }
-
-        return 0;
-    }
 
 
 }

@@ -15,15 +15,24 @@ const props = withDefaults(defineProps<{
 const isOpen = ref<number | null>(null)
 
 const timeout = ref(null)
-const onMouseEnterMenu = () => {
+const onMouseEnterMenu = (idxNavigation: number) => {
     if(timeout.value) {
         clearTimeout(timeout.value)
     }
+
+    timeout.value = setTimeout(() => {
+        isOpen.value = idxNavigation
+    }, 300)
 }
 const onMouseLeaveMenu = () => {
-    timeout.value = setTimeout(() => {
+    if(timeout.value) {
+        clearTimeout(timeout.value)
         isOpen.value = null
-    }, 400)
+    } else {
+        timeout.value = setTimeout(() => {
+            isOpen.value = null
+        }, 400)
+    }
 }
 </script>
 
@@ -35,7 +44,7 @@ const onMouseLeaveMenu = () => {
             <!-- Navigation List -->
             <nav class="relative flex text-sm text-gray-600 w-full">
                 <div v-for="(navigation, idxNavigation) in navigations" :key="idxNavigation"
-                    @mouseenter="() => (onMouseEnterMenu(), isOpen = idxNavigation)"
+                    @mouseenter="() => (onMouseEnterMenu(idxNavigation))"
                     @mouseleave="() => onMouseLeaveMenu()"
                     class="group w-full hover:bg-gray-100 hover:text-orange-500 p-4 flex items-center justify-center cursor-pointer transition duration-200">
                     <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />

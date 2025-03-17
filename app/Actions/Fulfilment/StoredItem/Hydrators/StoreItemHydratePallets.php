@@ -11,7 +11,6 @@ namespace App\Actions\Fulfilment\StoredItem\Hydrators;
 use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Queue\Middleware\WithoutOverlapping;

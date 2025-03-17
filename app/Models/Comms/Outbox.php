@@ -59,7 +59,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Comms\EmailTemplate|null $emailTemplate
  * @property-read Collection<int, \App\Models\Comms\Email> $emails
  * @property-read Fulfilment|null $fulfilment
- * @property-read \App\Models\Comms\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Comms\OutboxIntervals|null $intervals
  * @property-read Collection<int, \App\Models\Comms\Mailshot> $mailshots

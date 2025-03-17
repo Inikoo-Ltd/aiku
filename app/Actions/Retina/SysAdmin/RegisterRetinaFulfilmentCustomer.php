@@ -15,7 +15,6 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Inertia;

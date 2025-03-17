@@ -60,12 +60,12 @@ const setFirstVisitToFalse = () => {
 };
 
 
-const iframeStyle = ref({
+/* const iframeStyle = ref({
     width: "80px",
     height: "80px",
 }); 
-
-onMounted(() => {
+ */
+/* onMounted(() => {
     irisStyleVariables(theme?.color)
     const handleMessage = (event: MessageEvent) => {
         // Validate the message origin
@@ -80,12 +80,16 @@ onMounted(() => {
     };
 
     // Listen to messages from the iframe
-    window.addEventListener('message', handleMessage);
+    if (window) {
+        window.addEventListener('message', handleMessage);
+    }
 
     onBeforeUnmount(() => {
-        window.removeEventListener('message', handleMessage);
+        if (window) {
+            window.removeEventListener('message', handleMessage);
+        }
     });
-});
+}); */
 
 </script>
 
@@ -136,11 +140,11 @@ onMounted(() => {
     </notifications>
 
 
-    <iframe title="superchat" id="superchat-widget"
+  <!--   <iframe title="superchat" id="superchat-widget"
         class="rounded-lg shadow-lg fixed bottom-0 right-0 transition-all duration-300"
         :style="{ ...iframeStyle, border: 'none' }"
         src="https://widget.superchat.de/v2?applicationKey=WCNK7nqXPQlrVGq895A2obLRVa">
-    </iframe>
+    </iframe> -->
 
 </template>
 

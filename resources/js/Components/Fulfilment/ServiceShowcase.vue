@@ -4,11 +4,12 @@ import { inject, ref } from 'vue'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 import { faTrash as falTrash, faEdit } from '@fal'
-import { faCircle, faTrash } from '@fas'
+import { faCircle, faTrash, faDiamond } from '@fas'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
 import { Currency } from '@/types/LayoutRules'
-library.add(faCircle, faTrash, falTrash, faEdit)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+library.add(faCircle, faTrash, faDiamond, falTrash, faEdit)
 
 const props = defineProps<{
     data: {
@@ -45,7 +46,15 @@ const stats = [
             <!-- Order summary -->
             <section aria-labelledby="summary-heading"
                 class="border border-gray-200 rounded-lg lg:mt-0">
-                <h2 id="summary-heading" class="bg-gray-100 px-6 py-4 text-lg font-medium border-b border-gray-200">{{ data?.name }}</h2>
+                <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                    <h2 id="summary-heading" class="text-lg font-medium ">
+                        {{ data?.name }}
+                        <FontAwesomeIcon v-if="data?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                    </h2>
+                    <div v-tooltip="trans('Date created')" class="text-sm text-gray-400 w-fit italic">
+                        {{ useFormatTime(data.created_at) }}
+                    </div>
+                </div>
 
                 <dl class="space-y-4 px-6 py-4">
                     <div class="flex items-center justify-between">

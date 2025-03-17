@@ -34,13 +34,14 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWaveSine } from '@far'
+import { faDiamond } from '@fas'
 import { faCalendarAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import TablePalletDeliveries from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveries.vue"
 import TablePalletReturns from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletReturns.vue"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-library.add(faWaveSine, faCalendarAlt)
+library.add(faDiamond, faWaveSine, faCalendarAlt)
 
 
 const props = defineProps<{
@@ -210,7 +211,11 @@ const isLoading = ref(false)
                                             <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(value.currency_code, value.price) }}/{{ value.unit }})</span></div>
                                         </template>
                                         <template #option="{ option, isSelected, isPointed }">
-                                            <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span></div>
+                                            <div class="">
+                                                <FontAwesomeIcon v-if="option?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                                                {{ option.name }}
+                                                <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span>
+                                            </div>
                                         </template>
                                     </PureMultiselectInfiniteScroll>
                                     <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
@@ -235,7 +240,10 @@ const isLoading = ref(false)
                                     </template>
 
                                     <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.reference }} <span class="text-sm text-gray-400 capitalize">({{ option.type }})</span></div>
+                                        <div class="">
+                                            {{ option.reference }}
+                                            <span class="text-sm text-gray-400 capitalize">({{ option.type }})</span>
+                                        </div>
                                     </template>
                                 </PureMultiselectInfiniteScroll>
 

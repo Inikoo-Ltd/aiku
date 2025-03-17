@@ -42,7 +42,7 @@ class FetchAuroraInvoiceCategories extends FetchAuroraAction
 
 
         return StoreInvoiceCategory::make()->action(
-            group: $organisationSource->getOrganisation()->group,
+            parent: $organisationSource->getOrganisation()->group,
             modelData: $invoiceCategoryData['invoice_category'],
             hydratorsDelay: 60,
             strict: false,

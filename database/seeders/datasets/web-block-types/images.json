@@ -7,8 +7,13 @@
 	"data": {
 		"fieldValue": {
 			"value": {
-				"images":[],
-				"layout_type": null
+				"images": [
+					{
+						"link_data": null,
+						"source" : null
+					}
+				],
+				"layout_type": 1
 			},
 			"container": {
 				"properties": {

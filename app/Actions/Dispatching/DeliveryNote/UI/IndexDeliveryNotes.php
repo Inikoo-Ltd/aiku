@@ -9,10 +9,9 @@
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\DeliveryNotes\DeliveryNotesTabsEnum;
@@ -38,8 +37,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNotes extends OrgAction
 {
-    use WithCustomerSubNavigation;
     use WithDeliveryNotesSubNavigation;
+    use WithDispatchingAuthorisation;
 
     private Group|Warehouse|Shop|Order|Customer|CustomerClient $parent;
     private string $bucket;
@@ -58,23 +57,23 @@ class IndexDeliveryNotes extends OrgAction
 
         $query = QueryBuilder::for(DeliveryNote::class);
 
-        if ($this->bucket == 'unassigned') {
+        if ($bucket == 'unassigned') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::UNASSIGNED);
-        } elseif ($this->bucket == 'queued') {
+        } elseif ($bucket == 'queued') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::QUEUED);
-        } elseif ($this->bucket == 'handling') {
+        } elseif ($bucket == 'handling') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING);
-        } elseif ($this->bucket == 'handling_blocked') {
+        } elseif ($bucket == 'handling_blocked') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED);
-        } elseif ($this->bucket == 'packed') {
+        } elseif ($bucket == 'packed') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::PACKED);
-        } elseif ($this->bucket == 'finalised') {
+        } elseif ($bucket == 'finalised') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::FINALISED);
-        } elseif ($this->bucket == 'dispatched') {
+        } elseif ($bucket == 'dispatched') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED);
-        } elseif ($this->bucket == 'cancelled') {
+        } elseif ($bucket == 'cancelled') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::CANCELLED);
-        } elseif ($this->bucket == 'dispatched_today') {
+        } elseif ($bucket == 'dispatched_today') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED)
                     ->where('dispatched_at', Carbon::today());
         }
@@ -130,7 +129,6 @@ class IndexDeliveryNotes extends OrgAction
             ->withQueryString();
     }
 
-
     public function tableStructure($parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
@@ -180,23 +178,10 @@ class IndexDeliveryNotes extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Customer || $this->parent instanceof Shop) {
-            return $request->user()->authTo("orders.{$this->shop->id}.view");
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } else {
-            return $request->user()->authTo("dispatching.{$this->warehouse->id}.view");
-        }
-    }
-
-
     public function jsonResponse(LengthAwarePaginator $deliveryNotes): AnonymousResourceCollection
     {
         return DeliveryNotesResource::collection($deliveryNotes);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $deliveryNotes, ActionRequest $request): Response
     {
@@ -206,14 +191,8 @@ class IndexDeliveryNotes extends OrgAction
         }
 
         $subNavigation = null;
-        if ($this->parent instanceof Customer) {
-            if ($this->parent->is_dropshipping) {
-                $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
-            } else {
-                $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
-            }
-        } elseif ($this->parent instanceof Warehouse) {
-            $subNavigation = $this->getDeliveryNotesSubNavigation($request);
+        if ($this->parent instanceof Warehouse) {
+            $subNavigation = $this->getDeliveryNotesSubNavigation();
         }
 
         $title      = __('Delivery notes');
@@ -227,17 +206,7 @@ class IndexDeliveryNotes extends OrgAction
         $actions    = null;
 
 
-        if ($this->parent instanceof Customer) {
-            $iconRight  = $icon;
-            $afterTitle = [
-                'label' => $title
-            ];
-            $title      = $this->parent->name;
-            $icon       = [
-                'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
-            ];
-        } elseif ($this->parent instanceof Warehouse) {
+        if ($this->parent instanceof Warehouse) {
             $icon      = ['fal', 'fa-arrow-from-left'];
             $iconRight = [
                 'icon' => 'fal fa-truck',
@@ -268,124 +237,98 @@ class IndexDeliveryNotes extends OrgAction
         )->table($this->tableStructure(parent: $this->parent));
     }
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'all';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function unassigned(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'unassigned';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function queued(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'queued';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function handling(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'handling';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function handlingBlocked(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'handling_blocked';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function packed(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'packed';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function finalised(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'finalised';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function dispatched(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'dispatched';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function cancelled(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
         $this->bucket = 'cancelled';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, $this->bucket);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $shop;
-        $this->bucket = 'all';
-        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNotesTabsEnum::values());
-        return $this->handle($shop);
-    }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $customer;
-        $this->bucket = 'all';
-        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNotesTabsEnum::values());
 
-        return $this->handle($customer);
-    }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inOrder(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNotesTabsEnum::values());
-
-        return $this->handle($shop);
-    }
-
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = group();
-        $this->bucket = 'all';
-        $this->initialisationFromGroup(group(), $request)->withTab(DeliveryNotesTabsEnum::values());
-
-        return $this->handle($this->parent, DeliveryNotesTabsEnum::DELIVERY_NOTES->value);
-    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -437,17 +380,7 @@ class IndexDeliveryNotes extends OrgAction
                     ]
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.delivery_notes.index' =>
-            array_merge(
-                ShowCustomer::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
-            'grp.overview.ordering.delivery-notes.index' =>
+            'grp.overview.ordering.delivery_notes.index' =>
             array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(

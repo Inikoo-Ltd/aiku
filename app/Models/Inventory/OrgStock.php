@@ -63,7 +63,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\Inventory\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks

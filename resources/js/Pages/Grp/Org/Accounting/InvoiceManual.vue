@@ -385,7 +385,11 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
                                     </template>
 
                                     <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span></div>
+                                        <div class="">
+                                            <FontAwesomeIcon v-if="option?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                                            {{ option.name }}
+                                            <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span>
+                                        </div>
                                     </template>
                                 </PureMultiselectInfiniteScroll>
 

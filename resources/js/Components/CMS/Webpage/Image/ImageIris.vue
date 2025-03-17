@@ -15,9 +15,13 @@ const props = defineProps<{
 				link_data: {
 					url: string
 				}
+				attributes?: {
+					fetchpriority?: string
+				}
 			}[]
 			layout_type: string
 		}
+		container: {}
 	}
 	webpageData?: any
 	web_block?: Object
@@ -80,29 +84,23 @@ const getImageSlots = (layoutType: string) => {
 </script>
 
 <template>
-	<div v-if="fieldValue?.value?.images" class="flex flex-wrap overflow-hidden"
-		:style="getStyles(fieldValue?.container?.properties)">
-		<div v-for="index in getImageSlots(fieldValue?.value?.layout_type)" :key="index"
-			class="group relative p-2 hover:bg-white/40"
+	<div :style="getStyles(fieldValue?.container?.properties)" class="flex flex-wrap overflow-hidden">
+		<div v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
+			:key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source?.avif}`"
+			class="group relative p-2 hover:bg-white/40 overflow-hidden"
 			:class="getColumnWidthClass(fieldValue?.value?.layout_type, index - 1)">
-			<a v-if="fieldValue?.value?.images?.[index - 1]?.source" :is="getHref(index - 1) ? 'a' : 'div'"
-				:href="getHref(index - 1) || '#'" target="_blank" rel="noopener noreferrer"
-				class="transition-shadow aspect-h-1 aspect-w-1 w-full">
-				<!-- <Image 
-					:src="fieldValue?.value?.images?.[index - 1]?.source"
-					:style="getStyles(fieldValue?.value?.images?.[index - 1]?.properties)"
-					imageCover
-					:xximageCover="'w-full object-cover object-center group-hover:opacity-75'"
-					:alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || 'Image aiku'" 
-				/> -->
-				<Image
-					:style="getStyles(fieldValue?.value?.images?.[index - 1]?.properties)"
-					:src="fieldValue?.value?.images?.[index - 1]?.source"
-					:class="'w-full object-cover object-center group-hover:opacity-75'" 
-					:alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || 'image alt'"
-				/>
-			</a>
+
+			<component v-if="fieldValue?.value?.images?.[index - 1]?.source" :is="getHref(index - 1) ? 'a' : 'div'"
+				target="_blank" rel="noopener noreferrer" class="block w-full h-full">
+
+					<Image :style="{ ...getStyles(fieldValue?.value.layout?.properties), ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties) ,}"
+					:src="fieldValue?.value?.images?.[index - 1]?.source" :imageCover="true"
+					class="w-full h-full aspect-square object-cover rounded-lg"
+					:imgAttributes="fieldValue?.value?.images?.[index - 1]?.attributes"
+					:alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || 'image alt'" />
+			</component>
 		</div>
 	</div>
 
 </template>
+

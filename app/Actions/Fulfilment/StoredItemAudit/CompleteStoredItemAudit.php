@@ -74,7 +74,7 @@ class CompleteStoredItemAudit extends OrgAction
                     'state' => StoredItemStateEnum::ACTIVE
                 ]
             );
-            
+
             PalletHydrateStoredItems::run($palletStoredItem->pallet);
             StoreItemHydratePallets::run($palletStoredItem->storedItem);
             StoreStoredItemMovement::run($storedItemAuditDelta);

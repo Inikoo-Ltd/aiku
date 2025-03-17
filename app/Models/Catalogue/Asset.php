@@ -61,7 +61,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property ProductUnitRelationshipType $unit_relationship_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
  * @property-read Currency $currency
- * @property-read \App\Models\Catalogue\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets

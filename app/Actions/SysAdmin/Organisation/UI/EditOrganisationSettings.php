@@ -8,9 +8,11 @@
 
 namespace App\Actions\SysAdmin\Organisation\UI;
 
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -54,14 +56,47 @@ class EditOrganisationSettings extends OrgAction
                 ],
                 "formData" => [
                     "blueprint" => [
-
+                        [
+                            "label"  => __("details"),
+                            "icon"   => "fa-light fa-fingerprint",
+                            "fields" => [
+                                "name" => [
+                                    "type"  => "input",
+                                    "label" => __("Name"),
+                                    "value" => $organisation->name,
+                                ],
+                                "contact_name" => [
+                                    "type"  => "input",
+                                    "label" => __("Contact name"),
+                                    "value" => $organisation->contact_name
+                                ],
+                                "email" => [
+                                    "type"  => "input",
+                                    "label" => __("Email"),
+                                    "value" => $organisation->email
+                                ],
+                                "phone" => [
+                                    "type"  => "input",
+                                    "label" => __("Phone"),
+                                    "value" => $organisation->phone
+                                ],
+                                'address' => [
+                                    'type'    => 'address',
+                                    'label'   => __('Address'),
+                                    'value'   => AddressFormFieldsResource::make($organisation->address)->getArray(),
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run()
+                                    ]
+                                ],
+                            ],
+                        ],
                         [
                             "label"  => __("branding"),
                             "icon"   => "fa-light fa-copyright",
                             "fields" => [
                                 "ui_name" => [
                                     "type"  => "input",
-                                    "label" => __("Name"),
+                                    "label" => __("UI display name"),
                                     "value" => Arr::get($organisation->settings, 'ui.name', $organisation->name)
                                 ],
                                 "logo" => [
@@ -87,17 +122,20 @@ class EditOrganisationSettings extends OrgAction
                                 "google_client_id" => [
                                     "type"  => "password",
                                     "label" => __("client ID"),
-                                    "value" => Arr::get($organisation->settings, 'google.id')
+                                    "value" => Arr::get($organisation->settings, 'google.id'),
+                                    "use_generate_password" => false
                                 ],
                                 "google_client_secret" => [
                                     "type"  => "password",
                                     "label" => __("client secret"),
-                                    "value" => Arr::get($organisation->settings, 'google.secret')
+                                    "value" => Arr::get($organisation->settings, 'google.secret'),
+                                    "use_generate_password" => false
                                 ],
                                 "google_drive_folder_key" => [
                                     "type"  => "password",
                                     "label" => __("google drive folder key"),
-                                    "value" => Arr::get($organisation->settings, 'google.drive.folder')
+                                    "value" => Arr::get($organisation->settings, 'google.drive.folder'),
+                                    "use_generate_password" => false
                                 ],
                                 "google_redirect_uri" => [
                                     "type"       => "input",

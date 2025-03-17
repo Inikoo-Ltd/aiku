@@ -47,14 +47,14 @@ const onLogout = inject('onLogout')
                             </DisclosureButton>
 
                             <DisclosurePanel>
-                                <div v-for="(submenu, indexSub) in item.subnavs" :key="indexSub">
-                                    <span :href="submenu?.link?.href" :target="submenu?.link?.target"
+                                <div v-for="(submenu, indexSub) in item.subnavs" :key="indexSub" class="first:mt-2">
+                                    <span v-if="submenu.title" :href="submenu?.link?.href" :target="submenu?.link?.target"
                                         class="p-4 text-sm font-semibold text-gray-500 block">{{ submenu.title }}</span>
 
                                     <div v-for="(menu, indexMenu) in submenu.links" :key="indexSub">
 
                                         <a :href="menu?.link?.href" :target="menu?.link?.target"
-                                            class="p-4 text-sm font-semibold text-gray-600 block">- {{ menu.label }}</a>
+                                            class="p-2 text-sm font-semibold text-gray-600 block">- {{ menu.label }}</a>
                                     </div>
                                 </div>
                             </DisclosurePanel>

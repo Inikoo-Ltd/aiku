@@ -19,6 +19,9 @@ use Throwable;
 
 class FetchAuroraDispatchedEmails extends FetchAuroraAction
 {
+    public string $jobQueue = 'low-priority';
+
+
     public string $commandSignature = 'fetch:dispatched_emails {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new} {--d|db_suffix=} {--w|with=* : Accepted values: events copies full}  {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
 

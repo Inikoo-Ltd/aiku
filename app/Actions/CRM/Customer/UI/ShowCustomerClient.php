@@ -43,36 +43,30 @@ class ShowCustomerClient extends OrgAction
         return $customerClient;
     }
 
-    public function asController(
-        Organisation $organisation,
-        Shop $shop,
-        Customer $customer,
-        CustomerClient $customerClient,
-        ActionRequest $request
-    ): CustomerClient {
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    {
         $this->parent = $customer;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
         $this->parent = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
-        ;
 
         return $this->handle($customerClient);
     }
 
     public function htmlResponse(CustomerClient $customerClient, ActionRequest $request): Response
     {
-
         $shopMeta = [];
 
         if ($request->route()->getName() == 'customers.show') {
             $shopMeta = [
-                'route'     => ['shops.show', $customerClient->customer->shop->slug],
+                'route'    => ['shops.show', $customerClient->customer->shop->slug],
                 'name'     => $customerClient->customer->shop->code,
                 'leftIcon' => [
                     'icon'    => 'fal fa-store-alt',
@@ -82,7 +76,7 @@ class ShowCustomerClient extends OrgAction
         }
         $subNavigation = null;
         if ($this->parent instanceof Customer) {
-            $subNavigation = $this->getCustomerClientSubNavigation($customerClient, $request);
+            $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         }
@@ -95,29 +89,29 @@ class ShowCustomerClient extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation' => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($customerClient, $request),
                     'next'     => $this->getNext($customerClient, $request),
                 ],
-                'pageHead' => [
-                    'title'     => $customerClient->name,
-                    'model'     => __($customerClient->customer->name),
-                    'icon'      => [
+                'pageHead'    => [
+                    'title'         => $customerClient->name,
+                    'model'         => __($customerClient->customer->name),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('customer client')
                     ],
-                    'meta' => array_filter([
+                    'meta'          => array_filter([
                         $shopMeta,
                     ]),
-                    'actions' => [
+                    'actions'       => [
                         $this->canDelete ? $this->getDeleteActionIcon($request) : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                         [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'label'   => 'Add order',
-                            'key'     => 'add_order',
-                            'route'   => [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => 'Add order',
+                            'key'   => 'add_order',
+                            'route' => [
                                 'name'       => 'grp.models.pallet-delivery.multiple-pallets.store',
                                 'parameters' => [
                                     'palletDelivery' => 3
@@ -125,11 +119,11 @@ class ShowCustomerClient extends OrgAction
                             ]
                         ],
                         [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'label'   => 'Edit Customer Client',
-                            'key'     => 'edit_customer_client',
-                            'route'   => [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => 'Edit Customer Client',
+                            'key'   => 'edit_customer_client',
+                            'route' => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.edit',
                                 'parameters' => $request->route()->originalParameters()
                             ]
@@ -137,15 +131,15 @@ class ShowCustomerClient extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
-                'tabs'          => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => CustomerClientTabsEnum::navigation()
 
                 ],
 
-                 CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
-                     fn () => GetCustomerClientShowcase::run($customerClient)
-                     : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
+                CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
+                    fn () => GetCustomerClientShowcase::run($customerClient)
+                    : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
 
                 // CustomerTabsEnum::ORDERS->value => $this->tab == CustomerTabsEnum::ORDERS->value ?
                 //     fn () => OrderResource::collection(IndexOrders::run($customer))
@@ -223,7 +217,7 @@ class ShowCustomerClient extends OrgAction
                         ],
 
                     ],
-                    'suffix' => $suffix
+                    'suffix'         => $suffix
 
                 ],
             ];
@@ -272,25 +266,25 @@ class ShowCustomerClient extends OrgAction
             ),
 
             'grp.org.shops.show.crm.customers.show.customer-clients.show'
-             => array_merge(
-                 (new ShowCustomer())->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
-                 $headCrumb(
-                     $customerClient,
-                     [
-                         'index' => [
-                             'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.index',
-                             'parameters' => $routeParameters
-                         ],
-                         'model' => [
-                             'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.show',
-                             'parameters' => $routeParameters
+            => array_merge(
+                (new ShowCustomer())->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
+                $headCrumb(
+                    $customerClient,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.show',
+                            'parameters' => $routeParameters
 
 
-                         ]
-                     ],
-                     $suffix
-                 )
-             ),
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }

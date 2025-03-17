@@ -31,17 +31,6 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
         $this->parsedData['type'] = $this->auroraModelData->{'Inventory Transaction Type'};
 
 
-        //        $state = match ($deliveryNote->state) {
-        //            DeliveryNoteStateEnum::UNASSIGNED => DeliveryNoteItemStateEnum::UNASSIGNED,
-        //            DeliveryNoteStateEnum::QUEUED => DeliveryNoteItemStateEnum::QUEUED,
-        //            DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED => DeliveryNoteItemStateEnum::HANDLING,
-        //            DeliveryNoteStateEnum::PACKED => DeliveryNoteItemStateEnum::PACKED,
-        //            DeliveryNoteStateEnum::FINALISED => DeliveryNoteItemStateEnum::FINALISED,
-        //            DeliveryNoteStateEnum::DISPATCHED => DeliveryNoteItemStateEnum::DISPATCHED,
-        //            DeliveryNoteStateEnum::CANCELLED => DeliveryNoteItemStateEnum::CANCELLED,
-        //        };
-
-
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
             $state = DeliveryNoteItemStateEnum::DISPATCHED;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'No Dispatched') {
@@ -64,7 +53,7 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             } elseif (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
                 $state = DeliveryNoteItemStateEnum::CANCELLED;
             } elseif (is_null($state)) {
-                dd($this->auroraModelData, 'XXXXXXXXX', $deliveryNote->state);
+                dd($this->auroraModelData, 'XX', $deliveryNote->state);
             }
         } else {
             dd($this->auroraModelData);
@@ -84,6 +73,14 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
         }
 
 
+        $createdAt = $this->parseDatetime($this->auroraModelData->{'Date Created'});
+        if (!$createdAt) {
+            $createdAt = $this->parseDatetime($this->auroraModelData->{'Date'});
+        }
+        if (!$createdAt) {
+            $createdAt = $deliveryNote->created_at;
+        }
+
         $this->parsedData['delivery_note_item'] = [
             'transaction_id'      => $transactionID,
             'state'               => $state,
@@ -92,7 +89,7 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'quantity_packed'     => $this->auroraModelData->{'Packed'},
             'quantity_dispatched' => $quantity_dispatched,
             'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
-            'created_at'          => $this->auroraModelData->{'Date Created'},
+            'created_at'          => $createdAt,
             'fetched_at'          => now(),
             'last_fetched_at'     => now(),
             'org_stock_id'        => $orgStock?->id,

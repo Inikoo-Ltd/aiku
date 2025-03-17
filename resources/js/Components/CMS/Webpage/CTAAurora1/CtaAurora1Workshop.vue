@@ -9,6 +9,8 @@ import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles";
+import { sendMessageToParent } from "@/Composables/Workshop"
+import Blueprint from "@/Components/CMS/Webpage/CTAAurora1/Blueprint"
 
 library.add(faCube, faLink)
 
@@ -25,10 +27,9 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <pre>{{ modelValue }}</pre>
     <div :style="getStyles(modelValue.container.properties)">
         <div class="w-full">
-            <div class="relative isolate overflow-hidden px-6 py-24 text-center shadow-2xl sm:px-16">
+            <div class="relative isolate overflow-hidden px-6 py-16 md:py-24 text-center shadow-2xl sm:px-16">
                 <Editor  
                     v-model="modelValue.title"
                     @update:modelValue="() => emits('autoSave')" 
@@ -39,14 +40,10 @@ const emits = defineEmits<{
                 />
 
                 <div class="flex justify-center">
-                    <a 
-                    :href="modelValue.button.link.type === 'internal' ? modelValue.button.link.workshop : modelValue.button.link.href" 
-                        :target="modelValue.button.link.target"
-                        :style="getStyles(modelValue.button.container.properties)"
-                        class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6"
-                    >
+                    <div @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[1]?.key?.join('-'))" typeof="button" :style="getStyles(modelValue.button.container.properties)"
+                        class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
                         {{ modelValue.button.text }}
-                    </a>
+                     </div>
                 </div>
             </div>
         </div>
