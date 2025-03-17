@@ -10,9 +10,8 @@ namespace App\Actions\Dropshipping\Tiktok\Product;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Fulfilment\StoredItem;
+use App\Models\Helpers\Media;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -22,10 +21,10 @@ class UploadProductImageToTiktok extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(TiktokUser $tiktokUser, Product|StoredItem $product, $useCase = 'MAIN_IMAGE')
+    public function handle(TiktokUser $tiktokUser, Media $media, $useCase = 'MAIN_IMAGE')
     {
         $productData = [
-            'data' => $product->image?->getBase64Image(),
+            'data' => $media->getBase64Image(),
             'use_case' => $useCase
         ];
 

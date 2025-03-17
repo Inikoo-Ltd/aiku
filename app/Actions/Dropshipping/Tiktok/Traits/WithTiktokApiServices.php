@@ -28,7 +28,7 @@ trait WithTiktokApiServices
 
         $jsonBody = json_encode($body);
 
-        if (blank($jsonBody)) {
+        if (blank($body)) {
             $baseString .= $appSecret;
         } else {
             $baseString .=  $jsonBody . $appSecret;
@@ -47,7 +47,7 @@ trait WithTiktokApiServices
         $shopCipher = [];
         if ($requireShopCipher) {
             $shopCipher = [
-                'shop_cipher' => "GCP_PyXLKAAAAAAeMx5cq6rC6rxt1v6fM0La"
+                'shop_cipher' => Arr::get($this->data, 'authorized_shop.cipher')
             ];
         }
 

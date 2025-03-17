@@ -32,7 +32,8 @@ class UpdateTiktokUser extends RetinaAction
             'access_token' => ['sometimes', 'string'],
             'access_token_expire_in' => ['sometimes'],
             'refresh_token' => ['sometimes', 'string'],
-            'refresh_token_expire_in' => ['sometimes']
+            'refresh_token_expire_in' => ['sometimes'],
+            'data' => ['sometimes']
         ];
     }
 
