@@ -34,23 +34,18 @@ const localModel = {
 onMounted(() => {
     if (!model.value?.unit && model.value?.unit !== localModel.unit ) {
         set(model, 'value.unit', localModel.unit)
-        onSaveWorkshopFromId(side_editor_block_id, 'padding value.unit')
     }
     if (!model.value?.top?.value && model.value?.top?.value !== localModel.top?.value ) {
         set(model, 'value.top.value', localModel.top.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'padding value.top.value')
     }
     if (!model.value?.left?.value && model.value?.left?.value !== localModel.left?.value ) {
         set(model, 'value.left.value', localModel.left.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'padding value.left.value')
     }
     if (!model.value?.right?.value && model.value?.right?.value !== localModel.right?.value ) {
         set(model, 'value.right.value', localModel.right.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'padding value.right.value')
     }
     if (!model.value?.bottom?.value && model.value?.bottom?.value !== localModel.bottom?.value ) {
         set(model, 'value.bottom.value', localModel.bottom.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'padding value.bottom.value')
     }
 
 })
@@ -60,7 +55,7 @@ onMounted(() => {
 <template>
     <div class="pb-3">
        <!--  <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Padding') }}</div> -->
-        <PaddingMarginProperty :modelValue="model || localModel" @update:modelValue="(e) => (console.log('bbb', e), model = e)" :scope="trans('Padding')" />
+        <PaddingMarginProperty :modelValue="model || localModel" :scope="trans('Padding')" />
     </div>
 </template>
 

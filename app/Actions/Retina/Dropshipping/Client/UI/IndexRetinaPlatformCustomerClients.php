@@ -10,11 +10,13 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
 use App\Models\PlatformHasClient;
 use App\Services\QueryBuilder;
 use Closure;
@@ -27,7 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPlatformCustomerClients extends RetinaAction
 {
-    private Customer|ShopifyUser $parent;
+    private Customer|ShopifyUser|TiktokUser $parent;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -37,7 +39,12 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
     public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
-        $this->parent = $this->customer->shopifyUser;
+
+        $this->parent = match ($platform->type) {
+            PlatformTypeEnum::TIKTOK => $this->customer->tiktokUser,
+            PlatformTypeEnum::SHOPIFY => $this->customer->shopifyUser,
+            PlatformTypeEnum::WOOCOMMERCE => throw new \Exception('To be implemented')
+        };
 
         return $this->handle($this->customer);
     }
