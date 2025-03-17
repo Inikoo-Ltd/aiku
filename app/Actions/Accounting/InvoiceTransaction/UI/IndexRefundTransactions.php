@@ -49,6 +49,7 @@ class IndexRefundTransactions extends OrgAction
                 'assets.slug',
                 'invoice_transactions.quantity',
                 'invoice_transactions.net_amount',
+                'invoice_transactions.gross_amount',
 
             ]
         );

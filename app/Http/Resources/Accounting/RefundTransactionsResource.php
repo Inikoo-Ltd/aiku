@@ -27,7 +27,7 @@ class RefundTransactionsResource extends JsonResource
         return [
             'code'                      => $this->code,
             'name'                      => $this->name,
-            'quantity'                  => $this->quantity,
+            'quantity'                  => -$this->quantity,
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
