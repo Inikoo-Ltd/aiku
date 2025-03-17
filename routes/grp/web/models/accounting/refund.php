@@ -13,11 +13,11 @@ use App\Actions\Accounting\InvoiceTransaction\RefundAllInvoiceTransactions;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/', CreateRefund::class)->name('refund.create');
+Route::post('{invoice:id}/', CreateRefund::class)->name('refund.create');
 
 Route::name('refund.')->prefix('refund/{refund:id}')->group(function () {
-    Route::delete('/delete', DeleteRefund::class)->name('delete');
-    Route::delete('/refund-all', RefundAllInvoiceTransactions::class)->name('refund_all');
+    Route::delete('/delete', DeleteRefund::class)->name('delete')->withoutScopedBindings();
+    Route::post('/refund-all', RefundAllInvoiceTransactions::class)->name('refund_all')->withoutScopedBindings();
     Route::name('refund_transaction.')->prefix('/refund-transaction/{invoiceTransaction:id}')->group(function () {
         Route::post('/', StoreRefundInvoiceTransaction::class)->name('store')->withoutScopedBindings();
         Route::post('/full-refund', CreateFullRefundInvoiceTransaction::class)->name('full_refund')->withoutScopedBindings();
