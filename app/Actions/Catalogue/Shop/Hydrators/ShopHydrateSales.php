@@ -9,8 +9,10 @@
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithIntervalsAggregators;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\Ordering\Order;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -66,9 +68,39 @@ class ShopHydrateSales
             doPreviousPeriods: $doPreviousIntervals
         );
 
+        // basket
+        $queryBase = Order::where('shop_id', $shop->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(net_amount) as  sum_aggregate');
+
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBase,
+            statField: 'baskets_created_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousIntervals
+        );
+
+        $queryBase = Order::where('shop_id', $shop->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
+
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBase,
+            statField: 'baskets_created_grp_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousIntervals
+        );
+
+        $queryBase = Order::where('shop_id', $shop->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(org_net_amount) as  sum_aggregate');
+
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBase,
+            statField: 'baskets_created_org_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousIntervals
+        );
+
         $shop->salesIntervals()->update($stats);
     }
-
 
 
 
