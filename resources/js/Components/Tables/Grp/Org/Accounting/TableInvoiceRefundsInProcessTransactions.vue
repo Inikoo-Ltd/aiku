@@ -80,7 +80,7 @@ const localeCode = navigator.language
                 /> -->
                 <div class="space-x-2 w-[350px]">
                     <ButtonWithLink
-                        v-if="get(proxyItem, ['refund_net_amount'], 0) != item.net_amount"
+                        v-if="!get(proxyItem, ['refund_net_amount'], 0) && get(proxyItem, ['refund_net_amount'], 0) != item.net_amount"
                         @xclick="() => get(proxyItem, 'refund_type', null) == 'full' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'full')"
                         :key="item.code"
                         :routeTarget="item.refund_transaction_full_refund"
@@ -93,6 +93,7 @@ const localeCode = navigator.language
                     />
                     
                     <Button
+                        v-if="!get(proxyItem, ['refund_net_amount'], 0)"
                         @click="() => get(proxyItem, 'refund_type', null) == 'partial' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'partial')"
                         :key="get(proxyItem, 'refund_type', null) + '-' + item.code"
                         :label="trans('Partial refund')"
@@ -104,7 +105,7 @@ const localeCode = navigator.language
                 </div>
 
                 <Transition name="slide-to-left">
-                    <div v-show="get(proxyItem, 'refund_type', null) == 'partial'" class="w-fit flex items-center gap-x-1 mt-2">
+                    <div v-show="get(proxyItem, 'refund_type', null) == 'partial' || get(proxyItem, ['refund_net_amount'], 0)" class="w-fit flex items-center gap-x-1 mt-2">
                         <div>
                             <InputNumber
                                 :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
