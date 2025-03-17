@@ -8,23 +8,37 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
-use App\Actions\Accounting\Invoice\DestroyRefund;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteRefund extends OrgAction
+class ForceDeleteRefund extends OrgAction
 {
-    public function handle(Invoice $invoice): Invoice
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Invoice $refund): Invoice
     {
 
-        if (!$invoice->in_process) {
-            return $invoice;
+        if (!$refund->in_process) {
+            return $refund;
         }
-        DestroyRefund::make()->action($invoice, []);
-        return $invoice;
+
+        DB::transaction(function () use ($refund) {
+            $refund->invoiceTransactions()->forceDelete();
+            $refund->forceDelete();
+
+
+        });
+        if ($refund->customer_id) {
+            CustomerHydrateInvoices::dispatch($refund->customer);
+        }
+
+        return $refund;
     }
 
     public function htmlResponse(Invoice $refund, ActionRequest $request): RedirectResponse
@@ -36,6 +50,9 @@ class DeleteRefund extends OrgAction
         ]);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Invoice $refund, ActionRequest $request): Invoice
     {
         $this->initialisationFromShop($refund->shop, $request);
