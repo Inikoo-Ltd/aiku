@@ -24,7 +24,9 @@ class BulkUpdateModelHasWebBlocks extends OrgAction
     public function handle(array $modelData): void
     {
         foreach (Arr::get($modelData, 'web_blocks') as $modelHasWebBlock) {
-            UpdateModelHasWebBlocks::make()->action(ModelHasWebBlocks::find(Arr::get($modelHasWebBlock, 'id')), Arr::except($modelHasWebBlock, 'id'));
+            $modelHasWebBlock = UpdateModelHasWebBlocks::make()->action(ModelHasWebBlocks::find(Arr::get($modelHasWebBlock, 'id')), Arr::except($modelHasWebBlock, 'id'));
+
+            $modelHasWebBlock->webBlock->refresh();
         }
     }
 

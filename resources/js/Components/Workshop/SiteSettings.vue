@@ -129,7 +129,7 @@ const debounceSaveWorkshop = () => {
  console.log(data)
     for (const weblock of data) {
         finalData.push({
-            id:weblock.web_block.id,
+            id:weblock.id,
             layout: cleanObject(weblock.web_block.layout),
             show_logged_in: weblock.visibility.in,
             show_logged_out: weblock.visibility.out,
