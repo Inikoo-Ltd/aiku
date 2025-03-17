@@ -81,7 +81,7 @@ class ShowRefund extends OrgAction
     public function inFulfilmentInvoice(Organisation $organisation, Fulfilment $fulfilment, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoiceRefundTabsEnum::values());
 
         return $this->handle($refund);
     }
@@ -119,6 +119,19 @@ class ShowRefund extends OrgAction
         if ($refund->in_process && (!app()->environment('production'))) {
             $actions[] = [
                 'type'  => 'button',
+                'style' => 'secondary',
+                'label' => __('Refund All'),
+                'key'   => 'refund_all',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.refund.refund_all',
+                    'parameters' => [
+                        'refund' => $refund->id,
+                    ]
+                ]
+            ];
+            $actions[] = [
+                'type'  => 'button',
                 'style' => 'delete',
                 'label' => __('Delete'),
                 'key'   => 'delete_refund',
@@ -126,7 +139,7 @@ class ShowRefund extends OrgAction
                     'method'     => 'delete',
                     'name'       => 'grp.models.refund.delete',
                     'parameters' => [
-                        'invoice' => $refund->id,
+                        'refund' => $refund->id,
                     ]
                 ]
             ];
@@ -139,7 +152,7 @@ class ShowRefund extends OrgAction
                     'method'     => 'post',
                     'name'       => '',
                     'parameters' => [
-                        'invoice' => $refund->id,
+                        'refund' => $refund->id,
                     ]
                 ]
             ];
