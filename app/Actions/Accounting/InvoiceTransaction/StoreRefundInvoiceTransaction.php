@@ -30,8 +30,6 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
-
-        dd($refund, $invoiceTransaction, $modelData);
         $taxCategory = $invoiceTransaction->taxCategory;
         if ($taxCategory) {
             $taxRate = $taxCategory->rate;
@@ -39,7 +37,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
             $taxRate = 0;
         }
 
-        $grossAmount = - Arr::get($modelData, 'gross_amount', 0);
+        $grossAmount = -Arr::get($modelData, 'gross_amount', 0);
         data_set($modelData, 'gross_amount', $grossAmount);
         $netAmount = $grossAmount / (1 + $taxRate);
         data_set($modelData, 'net_amount', $netAmount);
@@ -55,16 +53,13 @@ class StoreRefundInvoiceTransaction extends OrgAction
         if ($invoiceTransaction->quantity == 0) {
             $quantity = 0;
         } else {
-
             $unitGrossPrice = $invoiceTransaction->gross_amount / $invoiceTransaction->quantity;
 
-            $quantity  = $grossAmount / $unitGrossPrice;
+            $quantity = $grossAmount / $unitGrossPrice;
         }
 
 
-
         data_set($modelData, 'quantity', $quantity);
-
 
 
         data_set($modelData, 'invoice_id', $refund->id);
@@ -73,7 +68,6 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'shop_id', $invoiceTransaction->shop_id);
         data_set($modelData, 'customer_id', $invoiceTransaction->customer_id);
         data_set($modelData, 'date', now());
-
 
 
         data_set($modelData, 'model_type', $invoiceTransaction->model_type);
@@ -87,7 +81,6 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'historic_asset_id', $invoiceTransaction->historic_asset_id);
 
         data_set($modelData, 'in_process', true);
-
 
 
         $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
