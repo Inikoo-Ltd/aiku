@@ -49,11 +49,19 @@ const locale = inject('locale', aikuLocaleStructure)
 //     )
 // }
 
+const slugInvoiceRefund = route().params?.refund
+
 // Section: update refund amount
 const isLoadingQuantity = ref<number[]>([])
 const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: number) => {
     router[routeRefund.method || 'post'](
-        route(routeRefund.name, routeRefund.parameters),
+        route(
+            routeRefund.name, 
+            {
+                ...routeRefund.parameters,
+                refund: slugInvoiceRefund
+            }
+        ),
         {
             gross_amount: amount
         },
