@@ -63,6 +63,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: num
             gross_amount: amount
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 isLoadingQuantity.value?.push(slugRefund)
             },
@@ -147,19 +148,6 @@ const localeCode = navigator.language
                     <FontAwesomeIcon v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false" @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))" icon="fad fa-save" class="h-8 cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
                     <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                 </div>
-
-                <div v-if="item.delete_route" class="mt-2">
-                    <ButtonWithLink
-                        :key="item.code"
-                        :routeTarget="item.delete_route"
-                        :label="trans('Delete')"
-                        type="delete"
-                        size="s"
-                    />
-                </div>
-
-                
-
             </template>
         </Table>
     </div>
