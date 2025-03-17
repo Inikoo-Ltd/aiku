@@ -27,30 +27,6 @@ defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 
-// Section: add refund
-// const isLoading = ref<number[]>([])
-// const onClickRefund = (routeRefund: routeType, slugRefund: number) => {
-//     router[routeRefund.method || 'post'](
-//         route(routeRefund.name, routeRefund.parameters),
-//         {
-
-//         },
-//         {
-//             onStart: () => {
-//                 isLoading.value?.push(slugRefund)
-//             },
-//             onFinish: () => {
-//                 const index = isLoading.value.indexOf(slugRefund)
-//                 if (index > -1) {
-//                     isLoading.value.splice(index, 1)
-//                 }
-//             }
-//         }
-//     )
-// }
-
-const slugInvoiceRefund = route().params?.refund
-
 // Section: update refund amount
 const isLoadingQuantity = ref<number[]>([])
 const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: number) => {
@@ -109,6 +85,7 @@ const localeCode = navigator.language
                     icon="fal fa-plus"
                     type="tertiary"
                     size="s"
+                    :bindToLink="{ preserveScroll: true }"
                 />
 
                 <div class="flex items-center gap-x-1 mt-2">

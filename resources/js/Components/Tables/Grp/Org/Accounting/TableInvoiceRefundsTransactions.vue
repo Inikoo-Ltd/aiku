@@ -91,6 +91,7 @@ const locale = inject('locale', aikuLocaleStructure)
                         :label="trans('Delete')"
                         type="delete"
                         size="s"
+                        :bindToLink="{ preserveScroll: true }"
                     />
                 </div>
             </template>
