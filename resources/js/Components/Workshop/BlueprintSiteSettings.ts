@@ -6,26 +6,26 @@ export  const blueprint = [
             key: ["button"],
             replaceForm: [
                 {
-                    key: ["container",'properties',"background"],
+                    key: ["background"],
                     label : "Background",
                     type: "background",
                 },
                 {
-                    key: ["container",'properties',"text"],
+                    key: ["text"],
                     type: "textProperty",
                 },
                 {
-                    key: ["container",'properties',"margin"],
+                    key: ["margin"],
                     label : "Margin",
                     type: "margin",
                 },
                 {
-                    key: ["container",'properties',"padding"],
+                    key: ["padding"],
                     label : "Padding",
                     type: "padding",
                 },
                 {
-                    key: ["container",'properties',"border"],
+                    key: ["border"],
                     label : "Border",
                     type: "border",
                 },
