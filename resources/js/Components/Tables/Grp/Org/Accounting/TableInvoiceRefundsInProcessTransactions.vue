@@ -57,10 +57,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: num
     router[routeRefund.method || 'post'](
         route(
             routeRefund.name, 
-            {
-                ...routeRefund.parameters,
-                refund: slugInvoiceRefund
-            }
+            routeRefund.parameters
         ),
         {
             gross_amount: amount
@@ -103,10 +100,11 @@ const localeCode = navigator.language
                     type="secondary"
                     :loading="isLoading.includes(item.code)"
                 /> -->
+                
                 <ButtonWithLink
                     :key="item.code"
-                    :routeTarget="item.delete_route"
-                    :label="trans('Add to refund')"
+                    :routeTarget="item.full_refund_route"
+                    :label="trans('Full refund')"
                     icon="fal fa-plus"
                     type="tertiary"
                     size="s"
@@ -159,6 +157,8 @@ const localeCode = navigator.language
                         size="s"
                     />
                 </div>
+
+                
 
             </template>
         </Table>
