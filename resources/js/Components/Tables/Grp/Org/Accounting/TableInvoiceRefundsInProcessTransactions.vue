@@ -27,30 +27,6 @@ defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 
-// Section: add refund
-// const isLoading = ref<number[]>([])
-// const onClickRefund = (routeRefund: routeType, slugRefund: number) => {
-//     router[routeRefund.method || 'post'](
-//         route(routeRefund.name, routeRefund.parameters),
-//         {
-
-//         },
-//         {
-//             onStart: () => {
-//                 isLoading.value?.push(slugRefund)
-//             },
-//             onFinish: () => {
-//                 const index = isLoading.value.indexOf(slugRefund)
-//                 if (index > -1) {
-//                     isLoading.value.splice(index, 1)
-//                 }
-//             }
-//         }
-//     )
-// }
-
-const slugInvoiceRefund = route().params?.refund
-
 // Section: update refund amount
 const isLoadingQuantity = ref<number[]>([])
 const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: number) => {
@@ -60,9 +36,10 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: num
             routeRefund.parameters
         ),
         {
-            gross_amount: amount
+            net_amount: amount
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 isLoadingQuantity.value?.push(slugRefund)
             },
@@ -108,6 +85,7 @@ const localeCode = navigator.language
                     icon="fal fa-plus"
                     type="tertiary"
                     size="s"
+                    :bindToLink="{ preserveScroll: true }"
                 />
 
                 <div class="flex items-center gap-x-1 mt-2">
@@ -144,22 +122,16 @@ const localeCode = navigator.language
 
                     <!-- {{ get(proxyItem, ['new_refund_amount'], null) > item.net_amount }} -->
                     <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
-                    <FontAwesomeIcon v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false" @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))" icon="fad fa-save" class="h-8 cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                    <FontAwesomeIcon
+                        v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false"
+                        @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))"
+                        icon="fad fa-save"
+                        class="h-8 cursor-pointer"
+                        :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                        aria-hidden="true"
+                    />
                     <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                 </div>
-
-                <div v-if="item.delete_route" class="mt-2">
-                    <ButtonWithLink
-                        :key="item.code"
-                        :routeTarget="item.delete_route"
-                        :label="trans('Delete')"
-                        type="delete"
-                        size="s"
-                    />
-                </div>
-
-                
-
             </template>
         </Table>
     </div>

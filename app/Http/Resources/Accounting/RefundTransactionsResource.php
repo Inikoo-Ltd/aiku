@@ -27,7 +27,7 @@ class RefundTransactionsResource extends JsonResource
         return [
             'code'                      => $this->code,
             'name'                      => $this->name,
-            'quantity'                  => (int) $this->quantity,
+            'quantity'                  => -$this->quantity,
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
@@ -42,6 +42,13 @@ class RefundTransactionsResource extends JsonResource
                 'parameters' => [
                     'invoiceTransaction' => $this->id,
                 ]
+            ],
+            'delete_route'              => [
+                'name'       => 'grp.models.refund_transaction.delete',
+                'parameters' => [
+                    'invoiceTransaction' => $this->id,
+                ],
+                'method'     => 'delete',
             ]
         ];
     }
