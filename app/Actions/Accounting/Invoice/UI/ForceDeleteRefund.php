@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
+use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ class ForceDeleteRefund extends OrgAction
             $refund->organisation->slug,
             $refund->customer->fulfilmentCustomer->fulfilment->slug,
             $refund->customer->fulfilmentCustomer->slug,
-            'tab' => 'refunds'
+            'tab' => InvoicesTabsEnum::REFUNDS->value
         ]);
     }
 
