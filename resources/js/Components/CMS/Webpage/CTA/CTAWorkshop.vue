@@ -24,7 +24,7 @@ const emits = defineEmits<{
 
 <template>
   <div class="relative" :style="getStyles(modelValue.container.properties)">
-    <div class="relative h-80 overflow-hidden md:absolute md:left-0 md:h-full md:w-1/3 lg:w-1/2">
+    <div @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"  class="relative h-80 overflow-hidden md:absolute md:left-0 md:h-full md:w-1/3 lg:w-1/2">
       <template v-if="modelValue?.image?.source">
         <Image
           :src="modelValue?.image?.source"
