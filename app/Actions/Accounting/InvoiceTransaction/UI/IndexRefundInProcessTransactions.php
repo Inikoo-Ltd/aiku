@@ -48,24 +48,18 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'historic_assets.name',
                 'assets.slug',
                 'assets.price',
-                DB::raw('SUM(invoice_transactions.quantity) as quantity'),
-                DB::raw('SUM(invoice_transactions.net_amount) as net_amount'),
+                'quantity',
+                'net_amount',
                 DB::raw($refund->id.'  as refund_id'),
 
             ]
         );
 
 
+
         $queryBuilder->where('invoice_transactions.invoice_id', $invoice->id)
             ->addSelect(
                 DB::raw("'{$invoice->currency->code}' AS currency_code")
-            )
-            ->groupBy(
-                'invoice_transactions.id',
-                'historic_assets.code',
-                'historic_assets.name',
-                'assets.price',
-                'assets.slug',
             );
 
 
