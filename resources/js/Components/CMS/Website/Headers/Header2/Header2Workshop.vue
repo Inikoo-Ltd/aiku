@@ -108,49 +108,23 @@ function onDragText(e) {
 
 	if (_parentComponent.value) {
 		const parentRect = _parentComponent.value.getBoundingClientRect()
-		// Calculate the element's position relative to the parent
+
 		const relativeLeft = e.clientX - parentRect.left - dragOffset.x;
    		const relativeTop = e.clientY - parentRect.top - dragOffset.y;
 
-		// Convert to percentages relative to the parent's dimensions
 		const leftPercent = (relativeLeft / parentRect.width) * 100
 		const topPercent = (relativeTop / parentRect.height) * 100
-
+		
 		e.target.style.left = `${leftPercent}%`
 		e.target.style.top = `${topPercent}%`
-		e.target.style.transform = "" // Reset transform
+		e.target.style.transform = ""
 
-		// Update the model values in percentage.
 		props.modelValue.text.container.properties.position.left = `${leftPercent}%`
 		props.modelValue.text.container.properties.position.top = `${topPercent}%`
 
 		onSave()
 	}
-	/* const { target, beforeTranslate } = e
-	const parent = target.parentElement
-	if (!parent) return
 
-	const parentWidth = parent.clientWidth
-	const parentHeight = parent.clientHeight
-
-	if (beforeTranslate) {
-		const newLeft = beforeTranslate[0]
-		const newTop = beforeTranslate[1]
-
-		// Convert px to %
-		const leftPercent = (newLeft / parentWidth) * 100
-		const topPercent = (newTop / parentHeight) * 100
-
-		target.style.left = `${leftPercent}%`
-		target.style.top = `${topPercent}%`
-		target.style.transform = "" // Reset transform
-
-		// Update modelValue with percentages
-		props.modelValue.text.container.properties.position.left = `${leftPercent}%`
-		props.modelValue.text.container.properties.position.top = `${topPercent}%`
-
-		onSave()
-	} */
 }
 
 
@@ -199,7 +173,7 @@ const editable = ref(true)
                         :imgAttributes="modelValue?.logo.image?.attributes"
                         class="hover-dashed"
 						@click="() => emits('setPanelActive', 'logo')"
-						>
+						
                     </Image>
 		
 
