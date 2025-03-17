@@ -81,11 +81,16 @@ onMounted(() => {
 					<TransitionGroup tag="div" name="list" class="relative">
 						<template v-for="(activityItem, activityItemIdx) in webpage.layout.web_blocks"
 							:key="activityItem.id">
-							<section class="w-full border border-transparent min-h-[50px] relative"
-								:data-block-id="activityItemIdx" v-show="showWebpage(activityItem)" :class="{
-									'border-4 border-[#4F46E5] active-block': activeBlock === activityItemIdx,
-								}" @click="() => sendMessageToParent('activeBlock', activityItemIdx)">
-								<div v-if="activeBlock === activityItemIdx" class="trapezoid-button" @click.stop="">
+							<section 
+								class="w-full  min-h-[50px] relative"
+								:data-block-id="activityItemIdx" 
+								v-show="showWebpage(activityItem)" 
+								:class="{
+									'border-4 border-indigo-500': activeBlock == activityItemIdx,
+								}" 
+								@click="() => sendMessageToParent('activeBlock', activityItemIdx)"
+							>
+								<div v-if="activeBlock == activityItemIdx" class="trapezoid-button" @click.stop="">
 									<div class="flex">
 										<div class="py-1 px-2 cursor-pointer hover:bg-gray-200  transition hover:text-indigo-500"
 											v-tooltip="trans('Add Block Before')" 
