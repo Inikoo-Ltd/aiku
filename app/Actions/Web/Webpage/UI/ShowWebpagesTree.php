@@ -38,8 +38,43 @@ class ShowWebpagesTree extends OrgAction
                 'pageHead' => [
                     'title' => $request->route()->getName()
                 ],
+                'data'     => $this->getData($website)
             ]
         );
+    }
+
+    public function getData(Website $website)
+    {
+        $dataTree = [];
+
+        $webpages = $website->webpages()->where('parent_id', null)->orderBy('id')->get();
+
+        foreach ($webpages as $webpage) {
+            $dataTree[] = [
+                'id' => $webpage->id,
+                'name' => $webpage->url ?: 'home',
+                'children' => $this->getChildren($webpage)
+            ];
+        }
+
+        return $dataTree;
+    }
+
+    public function getChildren($webpage)
+    {
+        $children = [];
+
+        $webpages = $webpage->webpages()->orderBy('id')->get();
+
+        foreach ($webpages as $webpage) {
+            $children[] = [
+                'id' => $webpage->id,
+                'name' => $webpage->url,
+                'children' => $this->getChildren($webpage)
+            ];
+        }
+
+        return $children;
     }
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
