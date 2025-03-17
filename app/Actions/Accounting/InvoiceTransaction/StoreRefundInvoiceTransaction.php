@@ -30,18 +30,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
-        $taxCategory = $invoiceTransaction->taxCategory;
-        if ($taxCategory) {
-            $taxRate = $taxCategory->rate;
-        } else {
-            $taxRate = 0;
-        }
 
-        $grossAmount = -Arr::get($modelData, 'gross_amount', 0);
-        data_set($modelData, 'gross_amount', $grossAmount);
-        $netAmount = $grossAmount / (1 + $taxRate);
+        $netAmount = -Arr::get($modelData, 'net_amount', 0);
         data_set($modelData, 'net_amount', $netAmount);
-
 
         $orgExchange = GetCurrencyExchange::run($refund->currency, $refund->organisation->currency);
         $grpExchange = GetCurrencyExchange::run($refund->currency, $refund->group->currency);
@@ -53,9 +44,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
         if ($invoiceTransaction->quantity == 0) {
             $quantity = 0;
         } else {
-            $unitGrossPrice = $invoiceTransaction->gross_amount / $invoiceTransaction->quantity;
+            $unitNetPrice = $invoiceTransaction->net_amount / $invoiceTransaction->quantity;
 
-            $quantity = $grossAmount / $unitGrossPrice;
+            $quantity = $netAmount / $unitNetPrice;
         }
 
 
@@ -93,7 +84,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function rules(): array
     {
         return [
-            'gross_amount' => ['required', 'numeric', 'gt:0'],
+            'net_amount' => ['required', 'numeric', 'gt:0'],
         ];
     }
 
