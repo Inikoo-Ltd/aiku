@@ -47,6 +47,7 @@ class IndexRefundInProcessTransactions extends OrgAction
 
         $queryBuilder->select(
             [
+                'invoice_transactions.invoice_id as refund_id',
                 'invoice_transactions.id',
                 'invoice_transactions.in_process',
                 'historic_assets.code',
