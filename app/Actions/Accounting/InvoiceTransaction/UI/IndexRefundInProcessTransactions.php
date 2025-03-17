@@ -52,6 +52,7 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'historic_assets.code',
                 'historic_assets.name',
                 'assets.slug',
+                'assets.price',
                 DB::raw('SUM(invoice_transactions.quantity) as quantity'),
                 DB::raw('SUM(invoice_transactions.net_amount) as net_amount'),
             ]
@@ -67,6 +68,7 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'historic_assets.code',
                 'historic_assets.name',
                 'assets.slug',
+                'assets.price',
                 'currencies.code'
             );
         } else {
@@ -78,6 +80,7 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'invoice_transactions.id',
                 'historic_assets.code',
                 'historic_assets.name',
+                'assets.price',
                 'assets.slug'
             );
         }
