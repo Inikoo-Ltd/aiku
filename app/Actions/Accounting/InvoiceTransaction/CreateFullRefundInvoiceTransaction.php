@@ -24,7 +24,7 @@ class CreateFullRefundInvoiceTransaction extends OrgAction
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction): InvoiceTransaction
     {
         $invoiceTransaction = StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
-            'gross_amount' => $invoiceTransaction->gross_amount
+            'net_amount' => $invoiceTransaction->net_amount
         ]);
 
         return $invoiceTransaction;
