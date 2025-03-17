@@ -148,10 +148,20 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('customer client')
         ];
-        $afterTitle = [
 
-            'label' => __('Clients')
-        ];
+        if($this->parent instanceof TiktokUser) {
+            $afterTitle = [
+                'label' => __('Tiktok Clients')
+            ];
+        } elseif ($this->parent instanceof ShopifyUser) {
+            $afterTitle = [
+                'label' => __('Shopify Clients')
+            ];
+        } else {
+            $afterTitle = [
+                'label' => __('Clients')
+            ];
+        }
 
 
         return Inertia::render(
