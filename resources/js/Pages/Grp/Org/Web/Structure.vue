@@ -85,5 +85,5 @@ const treeData = ref<TreeNode[]>([
 <template>
       <Head :title="capitalize(title)" />
       <PageHeading :data="pageHead" />
-      <TableStructure :nodes="treeData" />
+      <TableStructure :nodes="data" />
 </template>
