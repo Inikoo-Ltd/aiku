@@ -33,13 +33,15 @@ class DeleteModelHasWebBlocks extends OrgAction
         $webpage->refresh();
 
         $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
-        $positions = [];
-        foreach ($webBlocks as $index => $block) {
-            $positions[$block->webBlock->id] = ['position' => $index];
+        
+        if(!$webBlocks->isEmpty()) {
+            $positions = [];
+            foreach ($webBlocks as $index => $block) {
+                $positions[$block->webBlock->id] = ['position' => $index];
+            }
+
+            ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
         }
-
-        ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
-
         UpdateWebpageContent::run($modelHasWebBlocks->webpage);
 
         return $modelHasWebBlocks;
