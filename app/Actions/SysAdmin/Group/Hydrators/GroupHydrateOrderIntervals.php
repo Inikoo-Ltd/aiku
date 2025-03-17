@@ -44,8 +44,15 @@ class GroupHydrateOrderIntervals
         $queryBase = Order::where('group_id', $group->id)->where('state', OrderStateEnum::CREATING)->selectRaw(' count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
+            dateField: 'created_at',
             queryBase: $queryBase,
             statField: 'baskets_created_'
+        );
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            dateField: 'updated_at',
+            queryBase: $queryBase,
+            statField: 'baskets_updated_'
         );
 
 

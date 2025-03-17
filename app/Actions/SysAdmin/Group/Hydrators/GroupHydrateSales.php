@@ -53,8 +53,18 @@ class GroupHydrateSales
 
         $stats     = $this->getIntervalsData(
             stats: $stats,
+            dateField: 'created_at',
             queryBase: $queryBase,
             statField: 'baskets_created_grp_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousIntervals
+        );
+
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            dateField: 'updated_at',
+            queryBase: $queryBase,
+            statField: 'baskets_updated_grp_currency_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousIntervals
         );
