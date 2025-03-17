@@ -151,7 +151,7 @@ class ShowRefund extends OrgAction
                 'key'   => 'finalise_refund',
                 'route' => [
                     'method'     => 'post',
-                    'name'       => '',
+                    'name'       => 'grp.models.refund.finalise',
                     'parameters' => [
                         'refund' => $refund->id,
                     ]
