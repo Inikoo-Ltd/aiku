@@ -16,7 +16,7 @@ import { ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import InputNumber from 'primevue/inputnumber'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 library.add(faTag,faTrashAlt)
@@ -120,6 +120,18 @@ const locale = inject('locale', aikuLocaleStructure)
 			<div>
                 {{ item.historic_asset_code }} <br>
                 <span class="text-gray-400">({{ item.historic_asset_name }})</span>
+                <span v-if="item.pallet && item.handling_date">
+                    <br>
+                    <span class="text-gray-400 text-xs">Pallet:
+                        <Link :href="route(item.palletRoute?.name, item.palletRoute?.parameters)" class="primaryLink">
+                                {{ item.pallet }}
+                        </Link>
+                    </span>
+                    <br>
+                    <span class="text-gray-400 text-xs">Date: {{ item.handling_date }}</span>
+                </span>
+                <span v-else>
+                </span>
             </div>
 		</template>
 

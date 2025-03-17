@@ -129,7 +129,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
- * @property-read \App\Models\CRM\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images

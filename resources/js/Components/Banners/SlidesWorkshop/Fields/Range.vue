@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import { ref, watch } from 'vue'
 
 const props = defineProps<{

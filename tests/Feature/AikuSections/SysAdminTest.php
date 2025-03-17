@@ -26,11 +26,13 @@ use App\Actions\SysAdmin\Group\HydrateGroup;
 use App\Actions\SysAdmin\Group\StoreGroup;
 use App\Actions\SysAdmin\Group\UpdateGroup;
 use App\Actions\SysAdmin\Guest\DeleteGuest;
+use App\Actions\SysAdmin\Guest\HydrateGuest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Actions\SysAdmin\User\HydrateUser;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
@@ -96,7 +98,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(5)
+        ->and($group->roles()->count())->toBe(6)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -104,14 +106,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(4)
+    expect($group->jobPositions()->count())->toBe(5)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(4)
+    expect($group->jobPositions()->count())->toBe(5)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -164,7 +166,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(7)
-        ->and($group->roles()->count())->toBe(12)
+        ->and($group->roles()->count())->toBe(13)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -1018,8 +1020,8 @@ test('UI show organisation setting', function () {
             ->component('EditModel')
             ->has('title')
             ->has('breadcrumbs', 2)
-            ->has('formData.blueprint.0.fields', 2)
-            ->has('formData.blueprint.1.fields', 4)
+            ->has('formData.blueprint.0.fields', 5)
+            ->has('formData.blueprint.1.fields', 2)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
@@ -1360,6 +1362,18 @@ test('UI show dashboard group (tab invoice_shops)', function () {
 test('test repair admins command', function () {
     $this->artisan('users:repair_admins_auth')->assertSuccessful();
     RepairUsersAdminsAuth::run(User::first());
+});
 
+test('Hydrate users', function () {
+    HydrateUser::run(User::first());
+    $this->artisan('hydrate:users')->assertSuccessful();
+});
 
+test('Hydrate guests', function () {
+    HydrateGuest::run(Guest::first());
+    $this->artisan('hydrate:guests')->assertSuccessful();
+});
+
+test('sysadmin hydrator', function () {
+    $this->artisan('hydrate -s sys')->assertExitCode(0);
 });

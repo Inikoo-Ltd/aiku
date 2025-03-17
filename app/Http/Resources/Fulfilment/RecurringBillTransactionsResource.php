@@ -130,8 +130,7 @@ class RecurringBillTransactionsResource extends JsonResource
         if ($this->item_type == 'Service') {
             $service = Service::find($this->item_id);
             $editType = $service->edit_type ?? null;
-            if($service->is_pallet_handling == true)
-            {
+            if ($service->is_pallet_handling == true) {
                 $pallet = PalletResource::make(Pallet::find($this->data['pallet_id']));
                 $desc_title = $pallet->reference;
                 $desc_after_title = Carbon::parse($this->data['date'])->format('d M Y');

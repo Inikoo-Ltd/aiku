@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird, faSearch } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
-import debounce from 'lodash/debounce'
+import { debounce } from 'lodash-es'
 import Tag from '@/Components/Tag.vue'
 import { trans } from 'laravel-vue-i18n'
 import TagPallet from '@/Components/TagPallet.vue'

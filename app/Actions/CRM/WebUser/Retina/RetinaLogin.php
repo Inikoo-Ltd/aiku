@@ -8,15 +8,17 @@
 
 namespace App\Actions\CRM\WebUser\Retina;
 
-use App\Actions\CRM\WebUser\LogWebUserFailLogin;
+use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
+use App\Actions\SysAdmin\User\LogUserFailLogin;
+use App\Actions\Traits\WithLogin;
+use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Models\CRM\WebUser;
-use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -24,6 +26,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class RetinaLogin
 {
     use AsController;
+    use WithLogin;
 
     private string $gate = 'retina';
 
@@ -32,32 +35,83 @@ class RetinaLogin
      */
     public function handle(ActionRequest $request): RedirectResponse
     {
-
         $this->ensureIsNotRateLimited($request);
 
-        if (!Auth::guard('retina')->attempt(
-            array_merge($request->validated(), ['status' => true]),
-            $request->boolean('remember')
-        )) {
+        $websiteId  = $request->get('website')->id;
+        $rememberMe = $request->boolean('remember');
+
+        $authorised = false;
+        $processed  = false;
+        if (config('app.with_user_legacy_passwords')) {
+            $handle = Arr::get($request->validated(), 'username');
+
+
+            $webUser = WebUser::where('website_id', $websiteId)
+                ->where('status', true)
+                ->where('username', $handle)->first();
+            if (!$webUser) {
+                $webUser = WebUser::where('website_id', $websiteId)
+                    ->where('status', true)
+                    ->where('email', $handle)->first();
+            }
+
+            if ($webUser and $webUser->auth_type == WebUserAuthTypeEnum::AURORA) {
+                $processed  = true;
+                $authorised = AuthoriseWebUserWithLegacyPassword::run($webUser, $request->validated());
+                if ($authorised) {
+                    Auth::guard('retina')->login($webUser, $rememberMe);
+                }
+            }
+        }
+
+        if (!$processed) {
+            $credentials = array_merge(
+                $request->validated(),
+                [
+                    'website_id' => $websiteId,
+                    'status'     => true
+                ]
+            );
+
+            $authorised = Auth::guard('retina')->attempt($credentials, $rememberMe);
+
+
+            if (!$authorised) {
+                // try now with email
+                data_set($credentials, 'email', $credentials['username']);
+                data_forget($credentials, 'username');
+
+                $authorised = Auth::guard('retina')->attempt($credentials, $rememberMe);
+            }
+        }
+
+        if (!$authorised) {
             RateLimiter::hit($this->throttleKey($request));
 
-
-            LogWebUserFailLogin::run(
-                $request->get('website'),
+            LogUserFailLogin::dispatch(
                 credentials: $request->validated(),
                 ip: request()->ip(),
                 userAgent: $request->header('User-Agent'),
                 datetime: now()
             );
 
-
-
             throw ValidationException::withMessages([
                 'username' => trans('auth.failed'),
             ]);
         }
 
+        RateLimiter::clear($this->throttleKey($request));
 
+        $retinaHome = 'app/dashboard';
+        if ($ref = $request->get('ref')) {
+            $retinaHome = $ref;
+        }
+
+        return $this->postProcessRetinaLogin($request, $retinaHome);
+    }
+
+    public function postProcessRetinaLogin($request, $retinaHome): RedirectResponse
+    {
         RateLimiter::clear($this->throttleKey($request));
 
         /** @var WebUser $webUser */
@@ -80,58 +134,7 @@ class RetinaLogin
             app()->setLocale($language->code);
         }
 
-        $retinaHome = 'app/dashboard';
-        if ($ref = $request->get('ref')) {
-            $retinaHome = $ref;
-        }
-
         return redirect()->intended($retinaHome);
-    }
-
-    public function rules(): array
-    {
-        return [
-            'username' => ['required', 'string'],
-            'password' => ['required', 'string'],
-        ];
-    }
-
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function asController(ActionRequest $request): RedirectResponse
-    {
-        return  $this->handle($request);
-    }
-
-
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function ensureIsNotRateLimited(ActionRequest $request): void
-    {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
-            return;
-        }
-
-        event(new Lockout($request));
-
-        $seconds = RateLimiter::availableIn($this->throttleKey($request));
-
-        throw ValidationException::withMessages([
-            'username' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
-    }
-
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
-    public function throttleKey(ActionRequest $request): string
-    {
-        return Str::transliterate(Str::lower($request->input('username')).'|'.$request->ip());
     }
 
 }

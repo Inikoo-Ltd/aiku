@@ -15,7 +15,7 @@ import { ImageData } from '@/types/Image'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import RadioButton from 'primevue/radiobutton'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 library.add(faImage, faPalette)
 
 interface BackgroundProperty {
@@ -37,11 +37,11 @@ const model = defineModel<BackgroundProperty>({
 })
 
 const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })
 
 const isOpenGallery = ref(false)
 
-const route_list = inject('route_list', null)  // Provided by HeaderWorkshop
+const route_list = inject('route_list', null)
 
 const onSubmitSelectedImage = (images: ImageData[]) => {
     model.value.image = images[0]
@@ -50,7 +50,7 @@ const onSubmitSelectedImage = (images: ImageData[]) => {
     onSaveWorkshopFromId(side_editor_block_id, 'background property')
 }
 
-onMounted(() => {
+/* onMounted(() => {
     if (!model.value?.type) {
         set(model.value, 'type', 'color')
         onSaveWorkshopFromId(side_editor_block_id, 'background type')
@@ -59,10 +59,10 @@ onMounted(() => {
         set(model.value, 'color', 'var(--iris-color-primary)')
         onSaveWorkshopFromId(side_editor_block_id, 'background color')
     }
-})
+}) */
 
 const isLoadingSubmit = ref(false)
-const onSubmitUpload = async (files: File[], clear: Function) => {
+const onSubmitUpload = async (files: File[], clear?: Function) => {
     const formData = new FormData()
     Array.from(files).forEach((file, index) => {
         formData.append(`images[${index}]`, file)
@@ -95,7 +95,9 @@ const onSubmitUpload = async (files: File[], clear: Function) => {
         });
 
         // Clear the input or perform any other success actions
-        clear();
+        if (clear) {
+            clear();
+        }
 
     } catch (error) {
         console.error('Upload error:', error);

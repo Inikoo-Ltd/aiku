@@ -144,7 +144,7 @@ test('create delivery note item', function (DeliveryNote $deliveryNote) {
 
 
 test('remove delivery note', function ($deliveryNote) {
-    $success = DeleteDeliveryNote::make()->handle($deliveryNote);
+    $success = DeleteDeliveryNote::make()->handle($deliveryNote, []);
 
     $this->assertModelExists($deliveryNote);
 

@@ -13,7 +13,7 @@ import {capitalize} from "@/Composables/capitalize"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import BannerWorkshopComponent from '@/Components/Banners/BannerWorkshopComponent.vue'
 import {useLayoutStore} from "@/Stores/layout"
-import { cloneDeep , debounce } from "lodash"
+import { cloneDeep , debounce } from "lodash-es"
 
 import {useBannerHash} from "@/Composables/useBannerHash"
 import Publish from "@/Components/Utils/Publish.vue"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 
 const props = defineProps(['form', 'fieldName', 'fieldData'])
 

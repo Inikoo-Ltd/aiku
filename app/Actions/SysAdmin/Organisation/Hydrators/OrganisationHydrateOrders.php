@@ -79,6 +79,7 @@ class OrganisationHydrateOrders
                 }
             )
         );
+
         $organisation->orderingStats()->update($stats);
     }
 

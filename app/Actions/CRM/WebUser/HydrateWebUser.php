@@ -10,14 +10,14 @@ namespace App\Actions\CRM\WebUser;
 
 use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateApiTokens;
 use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateAudits;
-use App\Actions\HydrateModel;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\CRM\WebUser;
 
-class HydrateWebUser extends HydrateModel
+class HydrateWebUser
 {
     use WithHydrateCommand;
-    public string $commandSignature = 'hydrate:web_user {organisations?*} {--s|slug=}';
+
+    public string $commandSignature = 'hydrate:web_users {organisations?*} {--S|shop= shop slug} {--s|slug=}';
 
     public function __construct()
     {
@@ -29,7 +29,5 @@ class HydrateWebUser extends HydrateModel
         WebUserHydrateApiTokens::run($webUser);
         WebUserHydrateAudits::run($webUser);
     }
-
-
 
 }

@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import Multiselect from "@vueform/multiselect"
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'

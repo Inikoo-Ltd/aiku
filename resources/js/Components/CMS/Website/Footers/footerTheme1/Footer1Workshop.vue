@@ -7,8 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import ContextMenu from 'primevue/contextmenu';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { getStyles } from '@/Composables/styles';
-import { iframeToParent } from "@/Composables/Workshop"
-import { isObject } from 'lodash';
+import Image from '@/Components/Image.vue';
 import { sendMessageToParent } from '@/Composables/Workshop';
 
 import { FieldValue } from '@/types/Website/Website/footer1'
@@ -145,24 +144,26 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
 
 
 <template>
-    <div id="app" class="-mx-2 md:mx-0 pb-24 pt-4 md:pt-8 md:px-16 text-white" :style="getStyles(modelValue?.container?.properties)">
+    <div id="app" class="-mx-2 md:mx-0 pb-24 pt-4 md:pt-8 md:px-16 text-white"
+        :style="getStyles(modelValue?.container?.properties)">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-gray-700">
-            <div class="flex-1 flex items-center justify-center md:justify-start border-solid "  @click="()=>sendMessageToParent('panelOpen','logo')">
-                <img v-if="modelValue?.logo?.source && !isObject(modelValue.logo?.source)" :src="modelValue.logo.source"
+            <div class="flex-1 flex items-center justify-center md:justify-start border-solid "
+                @click="() => sendMessageToParent('panelOpen', 'logo')">
+                <!--  <img v-if="modelValue?.logo?.source && !isObject(modelValue.logo?.source)" :src="modelValue.logo.source"
                     :alt="modelValue.logo.alt" class="h-auto max-h-20 w-auto min-w-16" />
                 <img v-if="modelValue?.logo?.source?.original"  :src="modelValue?.logo?.source?.original" :alt="modelValue.logo.alt"
-                    class="h-auto max-h-20 w-auto min-w-16">
+                    class="h-auto max-h-20 w-auto min-w-16"> -->
+                <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true" :alt="modelValue?.logo?.alt"
+                    :imgAttributes="modelValue?.logo?.attributes" :style="getStyles(modelValue?.logo?.properties)" />
             </div>
 
-            <div v-if="modelValue?.email"
-                @click="()=>sendMessageToParent('panelOpen','email')"
+            <div v-if="modelValue?.email" @click="() => sendMessageToParent('panelOpen', 'email')"
                 class="relative group flex-1 flex justify-center md:justify-start items-center hover-dashed">
                 <a style="font-size: 17px">{{ modelValue?.email }}</a>
             </div>
 
-            <div v-if="modelValue?.whatsapp?.number"
-                @click="()=>sendMessageToParent('panelOpen','whatsapp')"
+            <div v-if="modelValue?.whatsapp?.number" @click="() => sendMessageToParent('panelOpen', 'whatsapp')"
                 class="relative group flex-1 flex gap-x-1.5 justify-center md:justify-start items-center hover-dashed">
                 <a class="flex gap-x-2 items-center">
                     <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
@@ -171,8 +172,9 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
 
             </div>
 
-            <div class="group relative flex-1 flex flex-col items-center md:items-end justify-center hover-dashed" @click="()=>sendMessageToParent('panelOpen','phone')">
-                <a v-for="phone of modelValue.phone.numbers" style="font-size: 17px" >
+            <div class="group relative flex-1 flex flex-col items-center md:items-end justify-center hover-dashed"
+                @click="() => sendMessageToParent('panelOpen', 'phone')">
+                <a v-for="phone of modelValue.phone.numbers" style="font-size: 17px">
                     {{ phone }}
                 </a>
 
@@ -201,7 +203,6 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                             <Editor
                                                 :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                                 :key="editorKey" v-model="item.name" :editable="editable"
-                                                
                                                 @update:model-value="(e) => { item.name = e, emits('update:modelValue', modelValue) }" />
 
                                         </div>
@@ -219,14 +220,13 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                             <div class="flex w-full items-center gap- mt-2">
                                                 <div class="flex items-center w-full"
                                                     @contextmenu="onRightClickSubMenu($event, item, modelValue.columns['column_1']['data'], subIndex)">
-                                                    <FontAwesomeIcon icon="fal fa-bars" 
+                                                    <FontAwesomeIcon icon="fal fa-bars"
                                                         class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" />
                                                     <div class="w-full">
                                                         <Editor
                                                             :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                                             :key="editorKey" v-model="sub.name" :editable="editable"
-                                                            @update:model-value="(e) => { sub.name = e, emits('update:modelValue', modelValue) }"
-                                                        />
+                                                            @update:model-value="(e) => { sub.name = e, emits('update:modelValue', modelValue) }" />
                                                     </div>
                                                     <ContextMenu ref="subMenu" :model="subMenuitems">
                                                         <template #itemicon="item">
@@ -291,13 +291,12 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                     class="hidden md:block grid grid-cols-1 md:cursor-default space-y-1 border-b pb-2 md:border-none">
                                     <div class="flex text-xl font-semibold  leading-6"
                                         @contextmenu="onRightClickMenu($event, item, modelValue.columns['column_2']['data'], index)">
-                                        <FontAwesomeIcon icon="fal fa-bars" 
+                                        <FontAwesomeIcon icon="fal fa-bars"
                                             class="handle text-white cursor-grab pr-3 mr-2" />
                                         <div class="w-full">
                                             <Editor :key="editorKey"
                                                 :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                                 v-model="item.name" :editable="editable" class=""
-                                                
                                                 @update:model-value="(e) => { item.name = e, emits('update:modelValue', modelValue) }" />
 
                                         </div>
@@ -315,14 +314,13 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                             <div class="flex w-full items-center gap- mt-2">
                                                 <div class="flex items-center w-full"
                                                     @contextmenu="onRightClickSubMenu($event, item, modelValue.columns['column_2']['data'], subIndex)">
-                                                    <FontAwesomeIcon icon="fal fa-bars" 
+                                                    <FontAwesomeIcon icon="fal fa-bars"
                                                         class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" />
                                                     <div class="w-full">
                                                         <Editor
                                                             :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                                             :key="editorKey" v-model="sub.name" :editable="editable"
-                                                            @update:model-value="(e) => { sub.name = e, emits('update:modelValue', modelValue) }"
-                                                             />
+                                                            @update:model-value="(e) => { sub.name = e, emits('update:modelValue', modelValue) }" />
                                                     </div>
                                                     <ContextMenu ref="subMenu" :model="subMenuitems">
                                                         <template #itemicon="item">
@@ -340,10 +338,10 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                     <Disclosure v-slot="{ open }" class="m-2">
                                         <div :class="open ? 'bg-[rgba(240,240,240,0.15)] rounded' : ''">
                                             <DisclosureButton
-                                                class="p-2 md:p-0 transition-all flex justify-between cursor-default  w-full">
+                                                class="p-3 pb-0  transition-all flex justify-between cursor-default  w-full">
                                                 <div class="flex justify-between w-full">
                                                     <span
-                                                        class="mb-2 md:mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
+                                                        class="mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
                                                         <div v-html="item.name"></div>
                                                     </span>
                                                     <div>
@@ -353,8 +351,8 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                                 </div>
                                             </DisclosureButton>
 
-                                            <DisclosurePanel class="p-2 md:p-0 transition-all cursor-default w-full">
-                                                <ul class="block space-y-4 pl-0 md:pl-[2.2rem]">
+                                            <DisclosurePanel class="p-3 pb-0  transition-all cursor-default w-full">
+                                                <ul class="mt-0 block space-y-4 pl-0 md:pl-[2.2rem]">
                                                     <li v-for="menu of item.data" :key="menu.name"
                                                         class="flex items-center text-sm">
                                                         <div v-html="menu.name"></div>
@@ -393,7 +391,6 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                             <Editor
                                                 :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                                 :key="editorKey" v-model="item.name" :editable="editable"
-                                                
                                                 @update:model-value="(e) => { item.name = e, emits('update:modelValue', modelValue) }" />
 
                                         </div>
@@ -411,14 +408,13 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                                             <div class="flex w-full items-center gap- mt-2">
                                                 <div class="flex items-center w-full"
                                                     @contextmenu="onRightClickSubMenu($event, item, modelValue.columns['column_3']['data'], subIndex)">
-                                                    <FontAwesomeIcon icon="fal fa-bars" 
+                                                    <FontAwesomeIcon icon="fal fa-bars"
                                                         class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" />
                                                     <div class="w-full">
                                                         <Editor
                                                             :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                                             :key="editorKey" v-model="sub.name" :editable="editable"
-                                                            @update:model-value="(e) => { sub.name = e, emits('update:modelValue', modelValue) }"
-                                                             />
+                                                            @update:model-value="(e) => { sub.name = e, emits('update:modelValue', modelValue) }" />
                                                     </div>
                                                     <ContextMenu ref="subMenu" :model="subMenuitems">
                                                         <template #itemicon="item">
@@ -475,29 +471,27 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                 <div class="flex flex-col flex-col-reverse gap-y-6 md:block">
                     <div>
                         <address class="mt-10 md:mt-0 mb-4">
-                            <Editor
-                                :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
+                            <Editor :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                 :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1"
                                 :editable="editable"
                                 @update:model-value="(e) => { modelValue.columns.column_4.data.textBox1 = e, emits('update:modelValue', modelValue) }" />
                         </address>
 
                         <div class="mt-10 md:mt-0 mb-4 w-full">
-                            <Editor
-                                :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
+                            <Editor :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                 :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2"
                                 :editable="editable"
                                 @update:model-value="(e) => { modelValue.columns.column_4.data.textBox2 = e, emits('update:modelValue', modelValue) }" />
                         </div>
 
                         <div class="w-full">
-                            <Editor
-                                :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
+                            <Editor :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                                 :key="editorKey" v-model="modelValue.paymentData.label" :editable="editable"
                                 @update:model-value="(e) => { modelValue.paymentData.label = e, emits('update:modelValue', modelValue) }" />
                         </div>
 
-                        <div class="group relative flex flex-col items-center gap-y-6 mt-8 hover-dashed"  @click="()=>sendMessageToParent('panelOpen','payments')">
+                        <div class="group relative flex flex-col items-center gap-y-6 mt-8 hover-dashed"
+                            @click="() => sendMessageToParent('panelOpen', 'payments')">
                             <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
                                 <img :src="payment.image" :alt="payment.alt"
                                     class="h-auto max-h-7 md:max-h-8 max-w-full w-fit">
@@ -521,14 +515,14 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
             class="mt-8 border-0 border-t border-solid border-gray-700 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8 ">
             <div class="grid gap-y-2 text-center md:text-left ">
                 <div class="group relative flex gap-x-6 justify-center hover-dashed">
-                    <a v-for="item of modelValue.socialMedia" target="_blank" :key="item.icon"
-                        ><font-awesome-icon :icon="item.icon" class="text-2xl" @click="()=>sendMessageToParent('panelOpen','social-media')"/></a>
+                    <a v-for="item of modelValue.socialMedia" target="_blank" :key="item.icon"><font-awesome-icon
+                            :icon="item.icon" class="text-2xl"
+                            @click="() => sendMessageToParent('panelOpen', 'social-media')" /></a>
                 </div>
             </div>
 
             <div id="footer_copyright" class="text-[14px] md:text-[12px] text-center">
-                <Editor
-                    :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
+                <Editor :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
                     :key="editorKey" v-model="modelValue.copyright" :editable="editable"
                     @update:model-value="(e) => { modelValue.copyright = e, emits('update:modelValue', props.modelValue) }" />
             </div>

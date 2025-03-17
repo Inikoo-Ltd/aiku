@@ -252,7 +252,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $cold_emails_unsubscribed_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOutboxColdEmailsIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOutboxColdEmailsIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOutboxColdEmailsIntervals query()

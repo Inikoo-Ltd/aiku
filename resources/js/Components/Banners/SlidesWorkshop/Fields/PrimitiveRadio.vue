@@ -2,7 +2,7 @@
 
 // import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
 import { ref, watch } from 'vue'
-import { set , isEqual, get } from 'lodash'
+import { set , isEqual, get } from 'lodash-es'
 
 const props = defineProps<{
     fieldName?: string | [];

@@ -12,7 +12,7 @@ import LinkButton from "@/Components/Banners/Slider/Corners/LinkButton.vue";
 import CornerText from "@/Components/Banners/Slider/Corners/CornerText.vue";
 import CornerFooter from "@/Components/Banners/Slider/Corners/CornerFooter.vue";
 import Ribbon from "@/Components/Banners/Slider/Corners/Ribbon.vue";
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import { CornerData } from '@/types/BannerWorkshop'
 
 const props = defineProps<{

@@ -16,7 +16,7 @@
   import { faThLarge, faTreeChristmas, faGlassCheers, faBat, faPlus } from '@fas/'
   import { library } from '@fortawesome/fontawesome-svg-core'
   import Image from '@/Components/Image.vue'
-  import { get } from 'lodash'
+  import { get } from 'lodash-es'
   import { faSpinnerThird } from '@fad'
   
   library.add(faThLarge, faTreeChristmas, faGlassCheers, faBat, faPlus, faSpinnerThird)

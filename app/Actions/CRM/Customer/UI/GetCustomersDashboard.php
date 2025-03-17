@@ -10,6 +10,7 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\UI\CRM\CustomersTabsEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -31,7 +32,16 @@ class GetCustomersDashboard
                 'value' => $case->value,
                 'icon'  => CustomerStateEnum::stateIcon()[$case->value],
                 'count' => CustomerStateEnum::count($parent)[$case->value],
-                'label' => CustomerStateEnum::labels()[$case->value]
+                'label' => CustomerStateEnum::labels()[$case->value],
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.customers.index',
+                    'parameters' => [
+                        'organisation' => $parent->organisation->slug,
+                        'shop'         => $parent->slug,
+                        'customers_elements[state]' => $case->value,
+                        'tab'          => CustomersTabsEnum::CUSTOMERS->value
+                    ]
+                ]
             ];
         }
 

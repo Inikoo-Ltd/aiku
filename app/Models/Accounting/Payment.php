@@ -63,8 +63,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
- * @property-read Customer $customer
- * @property-read \App\Models\Accounting\TFactory|null $use_factory
+ * @property-read Customer|null $customer
  * @property-read Group $group
  * @property-read \App\Models\Accounting\OrgPaymentServiceProvider $orgPaymentServiceProvider
  * @property-read Organisation $organisation

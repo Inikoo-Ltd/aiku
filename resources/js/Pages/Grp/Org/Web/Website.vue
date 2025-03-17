@@ -28,6 +28,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import WebsiteShowcase from "@/Components/Showcases/Org/WebsiteShowcase.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import WebsiteAnalytics from "@/Components/DataDisplay/WebsiteAnalytics.vue"
+import TableRedirects from "@/Components/Tables/Grp/Org/Web/TableRedirects.vue"
 
 library.add(
     faChartLine,
@@ -57,6 +58,7 @@ const props = defineProps<{
     changelog?: object
     showcase?: object
     web_users?: object
+    redirects?: {}
     external_links?: {},
     analytics: object
 }>()
@@ -74,6 +76,7 @@ const component = computed(() => {
         changelog: TableHistories,
         showcase: WebsiteShowcase,
         web_users: TableWebUsers,
+        redirects: TableRedirects,
         external_links: TableExternalLinks
     }
     return components[currentTab.value]

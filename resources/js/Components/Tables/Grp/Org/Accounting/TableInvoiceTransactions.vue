@@ -28,6 +28,18 @@ const locale = inject('locale', aikuLocaleStructure)
                     {{ invoice.name }}
                 </Link>
                 <span v-else>{{ invoice.name }}</span>
+                <span v-if="invoice.pallet && invoice.handling_date">
+                    <br>
+                    <span class="text-gray-400 text-xs">Pallet:
+                        <Link :href="route(invoice.palletRoute?.name, invoice.palletRoute?.parameters)" class="primaryLink">
+                                {{ invoice.pallet }}
+                        </Link>
+                    </span>
+                    <br>
+                    <span class="text-gray-400 text-xs">Date: {{ invoice.handling_date }}</span>
+                </span>
+                <span v-else>
+                </span>
 		    </template>
         </Table>
     </div>

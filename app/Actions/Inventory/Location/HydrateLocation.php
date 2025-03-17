@@ -8,17 +8,22 @@
 
 namespace App\Actions\Inventory\Location;
 
-use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\Location;
-use Illuminate\Support\Collection;
 
-class HydrateLocation extends HydrateModel
+class HydrateLocation
 {
+    use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:locations {organisations?*} {--s|slugs=}';
 
+    public function __construct()
+    {
+        $this->model = Location::class;
+    }
 
     public function handle(Location $location): void
     {
@@ -27,13 +32,5 @@ class HydrateLocation extends HydrateModel
         LocationHydratePallets::run($location);
     }
 
-    protected function getModel(string $slug): Location
-    {
-        return Location::where('slug', $slug)->first();
-    }
 
-    protected function getAllModels(): Collection
-    {
-        return Location::withTrashed()->get();
-    }
 }

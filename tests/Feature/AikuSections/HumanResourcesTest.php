@@ -61,7 +61,7 @@ beforeEach(function () {
 
 test('check seeded job positions', function () {
 
-    expect($this->organisation->group->humanResourcesStats->number_job_positions)->toBe(27);
+    expect($this->organisation->group->humanResourcesStats->number_job_positions)->toBe(28);
     /** @var JobPosition $jobPosition */
     $jobPosition = $this->organisation->jobPositions()->first();
     expect($jobPosition->stats)->toBeInstanceOf(JobPositionStats::class)

@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import InputText from 'primevue/inputtext';
-import { isArray } from 'lodash';
+// import { isArray } from 'lodash-es';
 
 const props = defineProps<{
     modelValue: any[],

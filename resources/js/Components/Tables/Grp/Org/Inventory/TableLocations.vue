@@ -19,7 +19,7 @@ import { faBox, faHandHoldingBox, faPallet, faPencil } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import { Table as TableTS } from '@/types/Table'
 library.add(faBox, faHandHoldingBox, faPallet, faPencil)
 

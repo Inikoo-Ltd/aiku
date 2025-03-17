@@ -7,7 +7,9 @@ import { faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave } from "
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useLocaleStore } from "@/Stores/locale";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { Link } from "@inertiajs/vue3"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave);
 
@@ -50,6 +52,7 @@ const customerStats = computed(() => {
             value: caseItem.value,
             count: caseItem.count,
             label: caseItem.label,
+            route: caseItem.route,
             icon: {
                 icon: caseItem.icon.icon,
                 tooltip: caseItem.icon.tooltip,
@@ -92,6 +95,8 @@ onMounted(() => {
 onUnmounted(() => {
     window.Echo.private("customer.general").stopListening(".customers.dashboard");
 });
+
+const isLoadingVisit = ref<number | null>(null)
 </script>
 
 <template>
@@ -116,19 +121,27 @@ onUnmounted(() => {
                         <!-- Case Breakdown -->
                         <div
                             class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
-                            <div
-                                v-for="dCase in customerStats.cases"
-                                :key="dCase.value"
-                                class="flex gap-x-0.5 items-center font-normal"
-                                v-tooltip="capitalize(dCase.icon.tooltip)">
-                                <FontAwesomeIcon
-                                    :icon="dCase.icon.icon"
-                                    :class="dCase.icon.class"
-                                    fixed-width
-                                    :title="dCase.icon.tooltip"
-                                    aria-hidden="true" />
-                                <span class="font-semibold">{{ locale.number(dCase.count) }}</span>
-                            </div>
+                            <template v-for="(dCase, idxCase) in customerStats.cases" :key="dCase.value">
+                                <component
+                                    :is="dCase.route?.name ? Link : 'div'"
+                                    :href="dCase.route?.name ? route(dCase.route.name, dCase.route.parameters) : null"
+                                    :class="dCase.route?.name ? 'hover:bg-gray-200 px-1 py-0.5 rounded' : ''"
+                                    class="flex gap-x-0.5 items-center font-normal"
+                                    v-tooltip="capitalize(dCase.icon.tooltip)"
+                                    @start="() => isLoadingVisit = idxCase"
+                                    @finish="() => isLoadingVisit = null"
+                                >
+                                    <LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
+                                    <FontAwesomeIcon
+                                        v-else
+                                        :icon="dCase.icon.icon"
+                                        :class="dCase.icon.class"
+                                        fixed-width
+                                        :title="dCase.icon.tooltip"
+                                        aria-hidden="true" />
+                                    <span class="font-semibold">{{ locale.number(dCase.count) }}</span>
+                                </component>
+                            </template>
                         </div>
                     </div>
 

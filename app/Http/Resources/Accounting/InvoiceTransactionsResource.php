@@ -8,11 +8,11 @@
 
 namespace App\Http\Resources\Accounting;
 
-use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Pallet;
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -101,16 +101,28 @@ class InvoiceTransactionsResource extends JsonResource
             };
         };
 
-        if (!empty($this->data['pallet_id'])) {
-            $pallet = PalletResource::make(Pallet::find($this->data['pallet_id']));
-        } else {
-            $pallet = null;
-        }
-        
-        if (!empty($this->data['date'])) {
-            $handlingDate = $this->data['date'];
-        } else {
-            $handlingDate = null;
+        $palletRef = null;
+        $handlingDate = null;
+        $palletRoute = null;
+
+        if ($this->model_type == 'Service') {
+            if (!empty($this->data['pallet_id'])) {
+                $pallet = Pallet::find($this->data['pallet_id']);
+                $palletRef = $pallet->reference;
+                $palletRoute = [
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                    'parameters'    => [
+                        'organisation'          => $pallet->organisation->slug,
+                        'fulfilment'            => $pallet->fulfilment->slug,
+                        'fulfilmentCustomer'    => $pallet->fulfilmentCustomer->slug,
+                        'pallet'                 => $pallet->slug
+                    ]
+                ];
+            }
+
+            if (!empty($this->data['date'])) {
+                $handlingDate = Carbon::parse($this->data['date'])->format('d M Y');
+            }
         }
 
         return [
@@ -120,8 +132,9 @@ class InvoiceTransactionsResource extends JsonResource
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
-            'pallet'                    => $pallet,
+            'pallet'                    => $palletRef,
             'handling_date'             => $handlingDate,
+            'palletRoute'               => $palletRoute,
             'route_desc'                => $getRoute($this->model_type, $this->id),
             'refund_route'              => [
                 'name'       => 'grp.models.invoice_transaction.refund_transaction.store',

@@ -14,7 +14,6 @@ use App\Actions\Traits\WithImportModel;
 use App\Imports\Warehouse\WarehouseAreaImport;
 use App\Models\Helpers\Upload;
 use App\Models\Inventory\Warehouse;
-use App\Models\Inventory\WarehouseArea;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +24,15 @@ class ImportWarehouseArea
 
     public function handle(Warehouse $warehouse, $file): Upload
     {
-        $upload = StoreUpload::run($file, WarehouseArea::class);
+        $upload = StoreUpload::make()->fromFile(
+            $warehouse->group,
+            $file,
+            [
+                'model' => 'WarehouseArea',
+                'parent_type' => $warehouse->getMorphClass(),
+                'parent_id' => $warehouse->id,
+            ]
+        );
 
         if ($this->isSync) {
             ImportUpload::run(

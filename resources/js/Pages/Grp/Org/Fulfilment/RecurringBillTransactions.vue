@@ -16,7 +16,7 @@ import { ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import InputNumber from 'primevue/inputnumber'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 library.add(faTag,faTrashAlt)
 

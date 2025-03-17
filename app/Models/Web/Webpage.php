@@ -78,13 +78,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
- * @property-read \App\Models\Web\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Collection<int, Webpage> $linkedWebpages
  * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, ModelHasWebBlocks> $modelHasWebBlocks
  * @property-read Organisation $organisation
  * @property-read Webpage|null $parent
+ * @property-read Collection<int, \App\Models\Web\Redirect> $redirects
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\WebpageStats|null $stats
@@ -241,6 +241,20 @@ class Webpage extends Model implements Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(WebpageTimeSeries::class);
+    }
+
+    /**
+     * Get the redirects associated with the webpage.
+     *
+     * This relationship retrieves all redirect rules that point to this webpage.
+     * Each redirect maps an external URL or path to this webpage, allowing
+     * multiple entry points to reach the same content.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function redirects(): HasMany
+    {
+        return $this->hasMany(Redirect::class);
     }
 
 

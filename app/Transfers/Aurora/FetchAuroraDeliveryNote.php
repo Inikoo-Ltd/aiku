@@ -25,6 +25,7 @@ class FetchAuroraDeliveryNote extends FetchAurora
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Delivery Note Store Key'});
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
+            print "Ignore fulfilment delivery without order ".$this->auroraModelData->{'Delivery Note Key'}."  \n";
             return;
         }
 
@@ -67,12 +68,6 @@ class FetchAuroraDeliveryNote extends FetchAurora
         }
 
 
-        /*
-        $date = match ($state) {
-            'packed' => $this->auroraModelData->{'Delivery Note Date Finish Packing'},
-            default => $this->auroraModelData->{'Delivery Note Date Created'}
-        };
-        */
 
         $shipment  = null;
         $shipperID = null;

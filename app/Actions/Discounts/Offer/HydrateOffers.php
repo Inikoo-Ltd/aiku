@@ -10,14 +10,18 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\Offer\Hydrators\OfferHydrateInvoices;
 use App\Actions\Discounts\Offer\Hydrators\OfferHydrateOrders;
-use App\Actions\HydrateModel;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferCampaign;
 
-class HydrateOffers extends HydrateModel
+class HydrateOffers
 {
+    use WithHydrateCommand;
     public string $commandSignature = 'hydrate:offers {organisations?*} {--s|slugs=}';
 
+    public function __construct()
+    {
+        $this->model = Offer::class;
+    }
 
     public function handle(Offer $offer): void
     {
@@ -25,13 +29,4 @@ class HydrateOffers extends HydrateModel
         OfferHydrateOrders::run($offer);
     }
 
-    protected function getModel(string $slug): OfferCampaign
-    {
-        return Offer::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): \Illuminate\Support\Collection
-    {
-        return Offer::withTrashed()->get();
-    }
 }

@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/Editor.vue"
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@/Components/Image.vue"
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"
 import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
@@ -13,20 +8,20 @@ const props = defineProps<{
 	blockData?: Object
 }>()
 
-const emits = defineEmits<{
-	// (e: "update:fieldValue", value: string): void
-	(e: "autoSave"): void
-}>()
-
-const openGallery = ref(false)
-
 
 </script>
 
 <template> 
 	<div class="relative overflow-hidden rounded-lg lg:h-96" :style="getStyles(fieldValue.container.properties)">
 		<div class="absolute inset-0">
-			<img :src="fieldValue.container.properties.background.image.source ? fieldValue.container.properties.background.image.source.original : fieldValue.image" alt="" class="h-full w-full object-cover object-center" />
+			<template v-if="fieldValue?.image?.source">
+				<Image :src="fieldValue.image.source" :imageCover="true" :alt="fieldValue.image.alt"
+					:imgAttributes="fieldValue.image.attributes" :style="getStyles(fieldValue.image.properties)" />
+			</template>
+			<template v-else>
+				<img src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
+					:alt="fieldValue?.image?.alt" class="h-full w-full object-cover" />
+			</template>
 		</div>
 
 		<div aria-hidden="true" class="relative h-96 w-full lg:hidden" />
@@ -34,7 +29,7 @@ const openGallery = ref(false)
 
 		<div
 			class="absolute inset-x-0 bottom-0 rounded-bl-lg rounded-br-lg bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:items-center sm:justify-between lg:inset-x-auto lg:inset-y-0 lg:w-96 lg:flex-col lg:items-start lg:rounded-br-none lg:rounded-tl-lg">
-			<div class="text-gray-600 pr-3 overflow-y-auto mb-4">
+			<div class="text-center lg:text-left text-gray-600 pr-3 overflow-y-auto mb-4">
 					<div v-html="fieldValue.text" />
 			</div>
 			<a

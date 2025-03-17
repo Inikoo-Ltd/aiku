@@ -2,54 +2,46 @@
 import { getStyles } from '@/Composables/styles'
 import { FieldValue } from '@/types/Website/Website/footer1'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import { isObject } from 'lodash';
+import { isObject } from 'lodash-es';
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShieldAlt, faPlus, faTrash, faAngleUp, faAngleDown, faTriangle } from "@fas"
-import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp} from "@fortawesome/free-brands-svg-icons"
+import { faShieldAlt, faPlus, faTrash, faArrowSquareLeft, faTriangle } from "@fas"
+import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from '@fal'
+import Image from '@/Components/Image.vue'
 
-library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faFacebook,faWhatsapp)
+library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faArrowSquareLeft, faFacebook, faWhatsapp)
 
 const props = defineProps<{
     fieldValue?: FieldValue,
-    modelValue:FieldValue
+    modelValue: FieldValue
 }>();
 
 </script>
 
 <template>
-    <div id="app" class="-mx-2 md:mx-0 pb-24 pt-4 md:pt-8 md:px-16 text-white" :style="getStyles(modelValue?.container?.properties)">
+    <div id="app" class="md:mx-0 pb-12 lg:pb-24 pt-4 md:pt-8 md:px-16 text-white"
+        :style="getStyles(modelValue?.container?.properties)">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-solid border-gray-700">
-            <div class="flex-1 flex items-center justify-center md:justify-start ">
-                <img v-if="modelValue?.logo?.source && !isObject(modelValue.logo?.source)" width="260px" height="70px" :src="modelValue.logo.source"
-                    :alt="modelValue.logo.alt" class="h-auto max-h-20 w-auto min-w-16" />
-                <img v-if="modelValue?.logo?.source?.original"  width="260px" height="70px" :src="modelValue?.logo?.source?.original" :alt="modelValue.logo.alt"
-                    class="h-auto max-h-20 w-auto min-w-16">
+            <div class="overflow-hidden flex-1 flex items-center justify-center md:justify-start ">
+                <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true" :alt="modelValue?.logo?.alt"
+                    :imgAttributes="modelValue?.logo?.attributes" :style="getStyles(modelValue?.logo?.properties)" />
             </div>
 
             <div v-if="modelValue?.email"
                 class="relative group flex-1 flex justify-center md:justify-start items-center">
                 <div style="font-size: 17px">{{ modelValue?.email }}</div>
-                <div
-                    class="p-1 absolute -left-2 -top-2 text-yellow-500 cursor-pointer group-hover:top-1 opacity-0 group-hover:opacity-100 transition-all">
-                    <FontAwesomeIcon icon='fas fa-arrow-square-left' class='' fixed-width aria-hidden='true' />
-                </div>
             </div>
 
             <div v-if="modelValue?.whatsapp?.number"
                 class="relative group flex-1 flex gap-x-1.5 justify-center md:justify-start items-center">
-                <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`" class="flex gap-x-2 items-center">
+                <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`"
+                    class="flex gap-x-2 items-center">
                     <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
                     <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
-
-                <div
-                    class="p-1 absolute -left-2 -top-2 text-yellow-500 cursor-pointer group-hover:top-0 opacity-0 group-hover:opacity-100 transition-all">
-                    <FontAwesomeIcon icon='fas fa-arrow-square-left' class='' fixed-width aria-hidden='true' />
-                </div>
             </div>
 
             <div class="group relative flex-1 flex flex-col items-center md:items-end justify-center">
@@ -58,11 +50,6 @@ const props = defineProps<{
                 </a>
 
                 <span class="" style="font-size: 15px">{{ modelValue?.phone?.caption }}</span>
-
-                <div
-                    class="p-1 absolute -left-0 -top-2 text-yellow-500 cursor-pointer group-hover:-top-4 opacity-0 group-hover:opacity-100 transition-all">
-                    <FontAwesomeIcon icon='fas fa-arrow-square-left' class='' fixed-width aria-hidden='true' />
-                </div>
             </div>
         </div>
 
@@ -90,15 +77,15 @@ const props = defineProps<{
                                     </ul>
                                 </div>
                             </div>
+
                             <!-- Mobile  -->
                             <div class="block md:hidden">
                                 <Disclosure v-slot="{ open }" class="m-2">
                                     <div :class="open ? 'bg-[rgba(240,240,240,0.15)] rounded' : ''">
                                         <DisclosureButton
-                                            class="p-2 md:p-0 transition-all flex justify-between cursor-default  w-full">
+                                            class="p-3 pb-0 md:p-0 transition-all flex justify-between cursor-default  w-full">
                                             <div class="flex justify-between w-full">
-                                                <span
-                                                    class="mb-2 md:mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
+                                                <span class="mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
                                                     <div v-html="item.name"></div>
                                                 </span>
                                                 <div>
@@ -108,8 +95,9 @@ const props = defineProps<{
                                             </div>
                                         </DisclosureButton>
 
-                                        <DisclosurePanel class="p-2 md:p-0 transition-all cursor-default w-full">
-                                            <ul class="block space-y-4 pl-0 md:pl-[2.2rem]">
+                                        <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
+                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
+                                                style="margin-top: 0px">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -147,15 +135,15 @@ const props = defineProps<{
                                     </ul>
                                 </div>
                             </div>
+
                             <!-- Mobile  -->
                             <div class="block md:hidden">
                                 <Disclosure v-slot="{ open }" class="m-2">
                                     <div :class="open ? 'bg-[rgba(240,240,240,0.15)] rounded' : ''">
                                         <DisclosureButton
-                                            class="p-2 md:p-0 transition-all flex justify-between cursor-default  w-full">
+                                            class="p-3 pb-0 md:p-0 transition-all flex justify-between cursor-default  w-full">
                                             <div class="flex justify-between w-full">
-                                                <span
-                                                    class="mb-2 md:mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
+                                                <span class="mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
                                                     <div v-html="item.name"></div>
                                                 </span>
                                                 <div>
@@ -165,8 +153,9 @@ const props = defineProps<{
                                             </div>
                                         </DisclosureButton>
 
-                                        <DisclosurePanel class="p-2 md:p-0 transition-all cursor-default w-full">
-                                            <ul class="block space-y-4 pl-0 md:pl-[2.2rem]">
+                                        <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
+                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
+                                                style="margin-top: 0px">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -209,10 +198,9 @@ const props = defineProps<{
                                 <Disclosure v-slot="{ open }" class="m-2">
                                     <div :class="open ? 'bg-[rgba(240,240,240,0.15)] rounded' : ''">
                                         <DisclosureButton
-                                            class="p-2 md:p-0 transition-all flex justify-between cursor-default  w-full">
+                                            class="p-3 pb-0 md:p-0 transition-all flex justify-between cursor-default  w-full">
                                             <div class="flex justify-between w-full">
-                                                <span
-                                                    class="mb-2 md:mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
+                                                <span class="mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
                                                     <div v-html="item.name"></div>
                                                 </span>
                                                 <div>
@@ -222,8 +210,9 @@ const props = defineProps<{
                                             </div>
                                         </DisclosureButton>
 
-                                        <DisclosurePanel class="p-2 md:p-0 transition-all cursor-default w-full">
-                                            <ul class="block space-y-4 pl-0 md:pl-[2.2rem]">
+                                        <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
+                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
+                                                style="margin-top: 0px">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -271,15 +260,16 @@ const props = defineProps<{
                     <div v-html="modelValue?.columns.column_4.data.textBox4"></div>
                 </h2>
 
-                <div class="flex gap-x-6 justify-center">
+                <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
                     <a v-for="socmed of modelValue?.socialMedia" target="_blank" :href="socmed.link">
+                        {{ socmed.icon }} =====
                         <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl"></FontAwesomeIcon>
                     </a>
                 </div>
             </div>
 
             <div id="footer_copyright"
-                class="text-[13px] leading-5 md:text-[12px] text-center w-[60%] md:w-fit mx-auto md:mx-0">
+                class="text-[13px] leading-5 md:text-[12px] text-center md:w-fit mx-auto md:mx-0">
                 <div v-html="modelValue?.copyright"></div>
             </div>
         </div>
@@ -292,5 +282,4 @@ const props = defineProps<{
     margin-top: 0.5rem;
     list-style-position: outside;
 }
-
 </style>

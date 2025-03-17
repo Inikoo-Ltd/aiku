@@ -52,6 +52,6 @@ class WebpageHydrateRedirects
             )
         );
 
-        $webpage->webStats()->update($stats);
+        $webpage->stats()->update($stats);
     }
 }

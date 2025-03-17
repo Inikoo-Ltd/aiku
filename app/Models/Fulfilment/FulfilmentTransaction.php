@@ -48,7 +48,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\Fulfilment\RentalAgreementClause|null $clause
  * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
  * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
- * @property-read \App\Models\Fulfilment\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset $historicAsset
  * @property-read \App\Models\SysAdmin\Organisation $organisation

@@ -49,7 +49,7 @@ library.add(faCube, faConciergeBell, faPaperclip, faNarwhal, faSpinnerThird, faS
 // import '@/Composables/Icon/PalletDeliveryStateEnum.ts'
 // import '@/Composables/Icon/PalletReturnStateEnum.ts'
 import { trans } from 'laravel-vue-i18n'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"

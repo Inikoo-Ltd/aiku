@@ -6,9 +6,11 @@
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {
-
 			"text": "<h3>Ut dolorem reprehenderit</h3><p>In natus quas aut dolores vero et voluptatum esse et culpa voluptas aut fugit ipsa.</>",
-			"image": "https://aiku.io/art/HomeHeroPlantImage.jpeg",
+			"image": {
+				"source": null,
+				"alt": "CTA Image"
+			},
 			"button": {
 				"link": {
 					"type": "internal",

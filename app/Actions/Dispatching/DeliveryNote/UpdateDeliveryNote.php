@@ -16,6 +16,7 @@ use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -30,7 +31,7 @@ class UpdateDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use WithFixedAddressActions;
-
+    use WithNoStrictRules;
 
     private DeliveryNote $deliveryNote;
 
@@ -62,8 +63,6 @@ class UpdateDeliveryNote extends OrgAction
                 );
             }
         }
-
-        DeliveryNoteRecordSearch::dispatch($deliveryNote);
 
         if (Arr::hasAny($changes, ['type', 'state', 'status'])) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
@@ -101,7 +100,8 @@ class UpdateDeliveryNote extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules = $this->noStrictUpdateRules($rules);
+            $rules['reference'] = ['sometimes', 'string', 'max:255'];
         }
 
         return $rules;
@@ -109,6 +109,7 @@ class UpdateDeliveryNote extends OrgAction
 
     public function action(DeliveryNote $deliveryNote, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): DeliveryNote
     {
+
         $this->strict = $strict;
         if (!$audit) {
             DeliveryNote::disableAuditing();

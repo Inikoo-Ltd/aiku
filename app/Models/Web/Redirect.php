@@ -10,6 +10,7 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InWebsite;
 use Illuminate\Database\Eloquent\Model;
@@ -24,15 +25,17 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $organisation_id
  * @property int $shop_id
  * @property int $website_id
- * @property string $type
- * @property string $redirection full url including https
+ * @property RedirectTypeEnum $type
+ * @property string $url Full URL including https scheme from url that will be redirected
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $path path (no domain) that will be redirected
+ * @property int $webpage_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
- * @property-read \App\Models\Web\Webpage|null $webpage
+ * @property-read \App\Models\Web\Webpage $webpage
  * @property-read \App\Models\Web\Website $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect newQuery()
@@ -43,6 +46,10 @@ class Redirect extends Model implements Auditable
 {
     use InWebsite;
     use HasHistory;
+
+    protected $casts = [
+        'type' => RedirectTypeEnum::class
+    ];
 
     protected $guarded = [];
 
@@ -60,9 +67,8 @@ class Redirect extends Model implements Auditable
 
     protected array $auditInclude = [
         'type',
-        'redirection',
+        'url',
     ];
-
 
 
 }

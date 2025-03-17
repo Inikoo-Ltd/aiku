@@ -22,15 +22,19 @@ class PostProcessingEmailTrackingEvent extends OrgAction
 
     public function handle(EmailTrackingEvent $emailTrackingEvent): EmailTrackingEvent
     {
-        $parsedUserAgent = (new Browser())->parse(Arr::get($emailTrackingEvent->data, 'userAgent'));
+        $ip        = Arr::get($emailTrackingEvent->data, 'ipAddress');
+        $userAgent = Arr::get($emailTrackingEvent->data, 'userAgent');
 
-        $ip = Arr::get($emailTrackingEvent->data, 'ipAddress');
-        $device = $parsedUserAgent->deviceType();
+        $device = null;
+        if ($userAgent) {
+            $parsedUserAgent = (new Browser())->parse($userAgent);
+            $device          = $parsedUserAgent->deviceType();
+        }
 
         return $this->update($emailTrackingEvent, [
-            'ip' => $ip,
+            'ip'     => $ip,
             'device' => $device,
-            'data' => (object) []
-       ]);
+            'data'   => (object)[]
+        ]);
     }
 }

@@ -8,7 +8,7 @@ import { faSyncAlt, faHistory } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { routeType } from '@/types/route'
 import axios from "axios"
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 library.add(faSyncAlt);
 

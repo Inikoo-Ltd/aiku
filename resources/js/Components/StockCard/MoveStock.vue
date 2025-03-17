@@ -9,7 +9,7 @@ import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { ref, watch } from 'vue'
 import { routeType } from "@/types/route"
 import {Datum, stockLocation} from "@/types/StockLocation"
-import { cloneDeep } from "lodash"
+import { cloneDeep } from "lodash-es"
 import Select from '@/Components/Forms/Fields/Select.vue'
 import Popover from '@/Components/Popover.vue'
 import { useForm, router } from '@inertiajs/vue3'

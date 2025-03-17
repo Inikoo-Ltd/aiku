@@ -137,6 +137,7 @@ console.log(route().current())
                             v-if="showWebpage(activityItem)" 
                             :is="getIrisComponent(activityItem.type)"
                             :key="activityItemIdx"
+                            :theme="layout"
                             :fieldValue="activityItem.web_block?.layout?.data?.fieldValue" />
                     </div>
                 </template>
@@ -165,6 +166,11 @@ console.log(route().current())
 
 
 .hover-dashed {
-    @apply hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+    @apply relative;
+
+    &::after {
+        content: "";
+        @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+    }
 }
 </style>

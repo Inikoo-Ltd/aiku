@@ -31,43 +31,45 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?DeliveryNote
     {
         $deliveryNoteData = $organisationSource->fetchDeliveryNote($organisationSourceId);
+
         if (!$deliveryNoteData or empty($deliveryNoteData['delivery_note']['source_id'])) {
             return null;
         }
 
+
         if ($deliveryNote = DeliveryNote::withTrashed()->where('source_id', $deliveryNoteData['delivery_note']['source_id'])->first()) {
-            try {
-                /** @var Address $deliveryAddress */
-                $deliveryAddress = Arr::pull($deliveryNoteData, 'delivery_note.delivery_address');
-                if ($deliveryNote->delivery_locked) {
-                    UpdateDeliveryNoteFixedAddress::make()->action(
-                        deliveryNote: $deliveryNote,
-                        modelData: [
-                            'address' => $deliveryAddress,
-                        ],
-                        hydratorsDelay: 900,
-                        audit: false
-                    );
-                } else {
-                    UpdateAddress::run($deliveryNote->address, $deliveryAddress->toArray());
-                }
-
-
-                $deliveryNote = UpdateDeliveryNote::make()->action(
-                    $deliveryNote,
-                    $deliveryNoteData['delivery_note'],
+            //  try {
+            /** @var Address $deliveryAddress */
+            $deliveryAddress = Arr::pull($deliveryNoteData, 'delivery_note.delivery_address');
+            if ($deliveryNote->delivery_locked) {
+                UpdateDeliveryNoteFixedAddress::make()->action(
+                    deliveryNote: $deliveryNote,
+                    modelData: [
+                        'address' => $deliveryAddress,
+                    ],
                     hydratorsDelay: 900,
-                    strict: false,
                     audit: false
                 );
-                $this->recordChange($organisationSource, $deliveryNote->wasChanged());
-            } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $deliveryNoteData['delivery_note'], 'DeliveryNote', 'update');
-
-                return null;
+            } else {
+                UpdateAddress::run($deliveryNote->address, $deliveryAddress->toArray());
             }
 
-            if (in_array('transactions', $this->with) or $forceWithTransactions) {
+
+            $deliveryNote = UpdateDeliveryNote::make()->action(
+                $deliveryNote,
+                $deliveryNoteData['delivery_note'],
+                hydratorsDelay: 900,
+                strict: false,
+                audit: false
+            );
+            $this->recordChange($organisationSource, $deliveryNote->wasChanged());
+            //            } catch (Exception $e) {
+            //                $this->recordError($organisationSource, $e, $deliveryNoteData['delivery_note'], 'DeliveryNote', 'update');
+            //
+            //                return null;
+            //            }
+
+            if (in_array('transactions', $this->with) or in_array('full', $this->with) or  $forceWithTransactions) {
                 $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
             }
 
@@ -75,34 +77,35 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             return $deliveryNote;
         } else {
             if ($deliveryNoteData['order']) {
-                try {
-                    $deliveryNote = StoreDeliveryNote::make()->action(
-                        $deliveryNoteData['order'],
-                        $deliveryNoteData['delivery_note'],
-                        hydratorsDelay: 60,
-                        strict: false,
-                        audit: false
-                    );
+                //z        try {
+                $deliveryNote = StoreDeliveryNote::make()->action(
+                    $deliveryNoteData['order'],
+                    $deliveryNoteData['delivery_note'],
+                    hydratorsDelay: 60,
+                    strict: false,
+                    audit: false
+                );
 
-                    DeliveryNote::enableAuditing();
-                    $this->saveMigrationHistory(
-                        $deliveryNote,
-                        Arr::except($deliveryNoteData['delivery_note'], ['fetched_at', 'last_fetched_at', 'source_id'])
-                    );
+                DeliveryNote::enableAuditing();
+                $this->saveMigrationHistory(
+                    $deliveryNote,
+                    Arr::except($deliveryNoteData['delivery_note'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                );
 
-                    $this->recordNew($organisationSource);
+                $this->recordNew($organisationSource);
 
-                    $sourceData = explode(':', $deliveryNote->source_id);
-                    DB::connection('aurora')->table('Delivery Note Dimension')
-                        ->where('Delivery Note Key', $sourceData[1])
-                        ->update(['aiku_id' => $deliveryNote->id]);
-                } catch (Exception|Throwable $e) {
-                    $this->recordError($organisationSource, $e, $deliveryNoteData['delivery_note'], 'DeliveryNote', 'store');
+                $sourceData = explode(':', $deliveryNote->source_id);
+                DB::connection('aurora')->table('Delivery Note Dimension')
+                    ->where('Delivery Note Key', $sourceData[1])
+                    ->update(['aiku_id' => $deliveryNote->id]);
+                //                } catch (Exception|Throwable $e) {
+                //                    $this->recordError($organisationSource, $e, $deliveryNoteData['delivery_note'], 'DeliveryNote', 'store');
+                //
+                //                    return null;
+                //                }
 
-                    return null;
-                }
 
-                if (in_array('transactions', $this->with) or $forceWithTransactions) {
+                if (in_array('transactions', $this->with) or in_array('full', $this->with) or  $forceWithTransactions) {
                     $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
                 }
 

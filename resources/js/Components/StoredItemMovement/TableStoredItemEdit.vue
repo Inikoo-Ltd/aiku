@@ -4,7 +4,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { computed, ref, watch, onMounted } from "vue"
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
-import { cloneDeep, get } from 'lodash'
+import { cloneDeep, get } from 'lodash-es'
 import Popover from '@/Components/Popover.vue'
 import SelectQuery from '@/Components/SelectQuery.vue'
 import { useForm } from "@inertiajs/vue3"

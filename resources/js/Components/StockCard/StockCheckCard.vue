@@ -9,7 +9,7 @@ import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'  // Import router from inertia
 import { routeType } from "@/types/route"
-import { cloneDeep } from "lodash"
+import { cloneDeep } from "lodash-es"
 import { notify } from "@kyvg/vue3-notification"
 import InfoCard from '@/Components/StockCard/InfoCard.vue'
 import { stockLocation, Datum } from "@/types/StockLocation"

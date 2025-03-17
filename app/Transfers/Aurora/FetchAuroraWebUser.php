@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FetchAuroraWebUser extends FetchAurora
 {
@@ -50,7 +51,7 @@ class FetchAuroraWebUser extends FetchAurora
             $password                = null;
         } else {
             $authType = WebUserAuthTypeEnum::DEFAULT->value;
-            $password = (app()->isLocal() || app()->environment('testing') ? 'hello' : wordwrap(\Illuminate\Support\Str::random(), 4, '-', true));
+            $password = (app()->isLocal() || app()->environment('testing') ? 'hello' : wordwrap(Str::random(), 4, '-', true));
         }
 
 

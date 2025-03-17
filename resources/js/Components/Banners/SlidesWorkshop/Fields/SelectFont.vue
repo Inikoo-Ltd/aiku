@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Multiselect from "@vueform/multiselect"
-import { set, lowerCase, snakeCase } from 'lodash'
+import { set, lowerCase, snakeCase } from 'lodash-es'
 import { ref, watch, computed } from 'vue'
 
 const props = defineProps<{

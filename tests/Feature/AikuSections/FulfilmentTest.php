@@ -218,7 +218,7 @@ test('create fulfilment shop', function () {
     $user = $this->adminGuest->getUser();
     $user->refresh();
 
-    expect($user->getAllPermissions()->count())->toBe(25)
+    expect($user->getAllPermissions()->count())->toBe(26)
         ->and($user->hasAllRoles(["fulfilment-shop-supervisor-{$shop->fulfilment->id}"]))->toBeTrue()
         ->and($user->hasAllRoles(["shop-admin-$shop->id"]))->toBeFalse()
         ->and($shop->fulfilment->number_warehouses)->toBe(1);
@@ -228,41 +228,7 @@ test('create fulfilment shop', function () {
 });
 
 
-// case approve customer
-test('create fulfilment customer (pending approval)', function (Fulfilment $fulfilment) {
-    $fulfilment->fulfilmentCustomers()->delete();
-    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
-        $fulfilment,
-        [
-            'state'           => CustomerStateEnum::IN_PROCESS,
-            'status'          => CustomerStatusEnum::PENDING_APPROVAL,
-            'contact_name'    => 'Contact A',
-            'company_name'    => 'Company A',
-            'interest'        => ['pallets_storage', 'items_storage', 'dropshipping'],
-            'contact_address' => Address::factory()->definition(),
-        ]
-    );
 
-    expect($fulfilmentCustomer)->toBeInstanceOf(FulfilmentCustomer::class)
-        ->and($fulfilmentCustomer->customer)->toBeInstanceOf(Customer::class)
-        ->and($fulfilmentCustomer->customer->status)->toBe(CustomerStatusEnum::PENDING_APPROVAL)
-        ->and($fulfilmentCustomer->customer->state)->toBe(CustomerStateEnum::IN_PROCESS)
-        ->and($fulfilmentCustomer->customer->is_fulfilment)->toBeTrue()
-        ->and($fulfilment->shop->crmStats->number_customers_status_pending_approval)->toBe(1);
-
-    return $fulfilmentCustomer;
-})->depends('create fulfilment shop');
-
-test('approve fulfilment customer', function (FulfilmentCustomer $fulfilmentCustomer) {
-    $customer = ApproveCustomer::make()->action($fulfilmentCustomer->customer, []);
-
-    expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->status)->toBe(CustomerStatusEnum::APPROVED)
-        ->and($customer->is_fulfilment)->toBeTrue()
-        ->and($customer->shop->crmStats->number_customers_status_approved)->toBe(1);
-
-    $fulfilmentCustomer->forceDelete();
-})->depends('create fulfilment customer (pending approval)');
 
 // case reject customer
 test('create fulfilment second customer (pending approval)', function (Fulfilment $fulfilment) {
@@ -582,9 +548,6 @@ test('create fulfilment website', function (Fulfilment $fulfilment) {
 
 
 test('create fulfilment customer from customer', function (Fulfilment $fulfilment) {
-
-
-
     $customerData = Customer::factory()->definition();
 
     $customer = StoreCustomer::make()->action(
@@ -653,7 +616,7 @@ test('create 4th fulfilment customer', function (Fulfilment $fulfilment) {
         ->and($fulfilmentCustomer->dropshipping)->toBeTrue()
         ->and($fulfilmentCustomer->number_pallets)->toBe(0)
         ->and($fulfilmentCustomer->number_stored_items)->toBe(0)
-        ->and($fulfilment->shop->crmStats->number_customers)->toBe(4)
+        ->and($fulfilment->shop->crmStats->number_customers)->toBe(3)
         ->and($fulfilment->stats->number_customers_interest_items_storage)->toBe(2)
         ->and($fulfilment->stats->number_customers_interest_pallets_storage)->toBe(2)
         ->and($fulfilment->stats->number_customers_interest_dropshipping)->toBe(1);
@@ -695,7 +658,7 @@ test('create 5th fulfilment customer', function (Fulfilment $fulfilment) {
         ->and($fulfilmentCustomer->dropshipping)->toBeTrue()
         ->and($fulfilmentCustomer->number_pallets)->toBe(0)
         ->and($fulfilmentCustomer->number_stored_items)->toBe(0)
-        ->and($fulfilment->shop->crmStats->number_customers)->toBe(5)
+        ->and($fulfilment->shop->crmStats->number_customers)->toBe(4)
         ->and($fulfilment->stats->number_customers_interest_items_storage)->toBe(3)
         ->and($fulfilment->stats->number_customers_interest_pallets_storage)->toBe(3)
         ->and($fulfilment->stats->number_customers_interest_dropshipping)->toBe(2);
@@ -823,6 +786,7 @@ test('create second rental agreement for 5th customer', function (FulfilmentCust
         ->and($rentalAgreement->clauses->first()->asset)->toBeInstanceOf(Asset::class)
         ->and($rentalAgreement->clauses->last()->asset)->toBeInstanceOf(Asset::class)
         ->and($rentalAgreement->stats->number_rental_agreement_snapshots)->toBe(1);
+
     return $rentalAgreement;
 })->depends('create 5th fulfilment customer');
 
@@ -1355,7 +1319,6 @@ test('set second pallet in the pallet delivery as not delivered 4th customer', f
 })->depends('set location of first pallet in the pallet delivery');
 
 test('create pallet delivery that was not delivered by marking items 4th customer', function (PalletDelivery $palletDelivery) {
-
     SendPalletDeliveryNotification::shouldRun()->andReturn();
 
     $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
@@ -1418,7 +1381,6 @@ test('set location of third pallet in the pallet delivery 4th customer', functio
 
     $palletDelivery->refresh();
     $recurringBill->refresh();
-
 
 
     expect($recurringBill->stats->number_transactions)->toBe(4)
@@ -1640,7 +1602,10 @@ test('store pallet to return', function (PalletReturn $palletReturn) {
 
 test('Update pallet reference', function (PalletReturn $palletReturn) {
     /** @var Pallet $pallet */
-    $pallet = $palletReturn->fulfilmentCustomer->pallets()->first();
+    $pallet = $palletReturn->fulfilmentCustomer
+            ->pallets()
+            ->whereNotIn('pallets.id', $palletReturn->pallets()->pluck('pallets.id'))
+            ->first();
 
     $newReference = 'GHO-p0006';
 
@@ -1656,11 +1621,11 @@ test('Update pallet reference', function (PalletReturn $palletReturn) {
         ->and($pallet->reference)->toBe($newReference);
 })->depends('store pallet to return');
 
-test('import pallets in return (xlsx)', function (PalletReturn $palletReturn) {
+test('import pallets in return (xlsx)  whole pallets ', function (PalletReturn $palletReturn) {
     Storage::fake('local');
 
     $tmpPath = 'tmp/uploads/';
-    //
+
     $filePath = base_path('tests/fixtures/returnPalletItems.xlsx');
     $file     = new UploadedFile($filePath, 'returnPalletItems.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -1668,9 +1633,11 @@ test('import pallets in return (xlsx)', function (PalletReturn $palletReturn) {
     $palletReturn->refresh();
     expect($palletReturn->pallets()->count())->toBe(1)
         ->and($palletReturn->stats->number_pallets)->toBe(1);
-    // dd($palletReturn->fulfilmentCustomer->pallets);
+
+
     $upload = ImportPalletReturnItem::run($palletReturn, $file);
     $palletReturn->refresh();
+
 
     expect($palletReturn)->toBeInstanceOf(PalletReturn::class)
         ->and($palletReturn->pallets()->count())->toBe(2)
@@ -1682,7 +1649,7 @@ test('import pallets in return (xlsx)', function (PalletReturn $palletReturn) {
         ->and($upload->number_fails)->toBe(0);
 
     return $palletReturn;
-})->depends('store pallet to return');
+})->depends('store pallet to return'); // Kirin Redo this test
 
 test('import pallets in return (xlsx) again', function (PalletReturn $palletReturn) {
     Storage::fake('local');
@@ -1710,7 +1677,7 @@ test('import pallets in return (xlsx) again', function (PalletReturn $palletRetu
         ->and($upload->number_fails)->toBe(1);
 
     return $palletReturn;
-})->depends('import pallets in return (xlsx)');
+})->depends('import pallets in return (xlsx)  whole pallets ');
 
 test('import pallets in return (xlsx) invalid pallet reference', function (PalletReturn $palletReturn) {
     Storage::fake('local');
@@ -1738,7 +1705,7 @@ test('import pallets in return (xlsx) invalid pallet reference', function (Palle
         ->and($upload->number_fails)->toBe(1);
 
     return $palletReturn;
-})->depends('import pallets in return (xlsx)');
+})->depends('import pallets in return (xlsx)  whole pallets ');
 
 test('update rental agreement clause again', function (PalletReturn $palletReturn) {
     $rentalAgreement        = $palletReturn->fulfilmentCustomer->rentalAgreement;
@@ -1775,7 +1742,7 @@ test('update rental agreement clause again', function (PalletReturn $palletRetur
         ->and($palletReturn->gross_amount)->not->tobe($palletReturn->net_amount);
 
     return $rentalAgreement;
-})->depends('import pallets in return (xlsx)');
+})->depends('import pallets in return (xlsx)  whole pallets ');
 
 test('submit pallet return', function (PalletReturn $palletReturn) {
     SendPalletReturnNotification::shouldRun()
@@ -3319,8 +3286,10 @@ test('complete standalone invoice', function (Invoice $invoice) {
     return $invoice;
 })->depends('delete standalone invoice transaction');
 
-test('store audit for pallet', function () {
-    $fulfilmentCustomer = FulfilmentCustomer::skip(1)->first();
+test('store audit for pallet 6th customer', function () {
+
+
+    $fulfilmentCustomer = FulfilmentCustomer::find(6);
     $pallet             = Pallet::where('state', PalletStateEnum::STORING)->where('fulfilment_customer_id', $fulfilmentCustomer->id)->first();
     $palletAudit        = StoreStoredItemAuditFromPallet::make()->action($pallet, []);
 
@@ -3328,3 +3297,44 @@ test('store audit for pallet', function () {
         ->and($palletAudit->fulfilment_customer_id)->toBe($fulfilmentCustomer->id)
         ->and($palletAudit->state)->toBe(StoredItemAuditStateEnum::IN_PROCESS);
 });
+
+test('inventory  hydrator', function () {
+    $this->artisan('hydrate -s ful')->assertExitCode(0);
+});
+
+
+// case approve customer
+test('create fulfilment customer (pending approval)', function (Fulfilment $fulfilment) {
+    $fulfilment->fulfilmentCustomers()->delete();
+    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'state'           => CustomerStateEnum::IN_PROCESS,
+            'status'          => CustomerStatusEnum::PENDING_APPROVAL,
+            'contact_name'    => 'Contact A',
+            'company_name'    => 'Company A',
+            'interest'        => ['pallets_storage', 'items_storage', 'dropshipping'],
+            'contact_address' => Address::factory()->definition(),
+        ]
+    );
+
+    expect($fulfilmentCustomer)->toBeInstanceOf(FulfilmentCustomer::class)
+        ->and($fulfilmentCustomer->customer)->toBeInstanceOf(Customer::class)
+        ->and($fulfilmentCustomer->customer->status)->toBe(CustomerStatusEnum::PENDING_APPROVAL)
+        ->and($fulfilmentCustomer->customer->state)->toBe(CustomerStateEnum::IN_PROCESS)
+        ->and($fulfilmentCustomer->customer->is_fulfilment)->toBeTrue()
+        ->and($fulfilment->shop->crmStats->number_customers_status_pending_approval)->toBe(3);
+
+    return $fulfilmentCustomer;
+})->depends('create fulfilment shop');
+
+test('approve fulfilment customer', function (FulfilmentCustomer $fulfilmentCustomer) {
+    $customer = ApproveCustomer::make()->action($fulfilmentCustomer->customer, []);
+
+    expect($customer)->toBeInstanceOf(Customer::class)
+        ->and($customer->status)->toBe(CustomerStatusEnum::APPROVED)
+        ->and($customer->is_fulfilment)->toBeTrue()
+        ->and($customer->shop->crmStats->number_customers_status_approved)->toBe(4);
+
+    //  $fulfilmentCustomer->forceDelete();
+})->depends('create fulfilment customer (pending approval)');

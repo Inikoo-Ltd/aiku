@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
-import { cloneDeep } from 'lodash'
+import { cloneDeep } from 'lodash-es'
 import axios from 'axios'
 import Popover from 'primevue/popover';
 

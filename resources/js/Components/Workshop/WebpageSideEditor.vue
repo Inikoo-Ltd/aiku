@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { inject, ref } from 'vue'
+import { inject, ref, defineExpose } from 'vue'
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash } from '@fal'
 import draggable from "vuedraggable"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -19,16 +19,17 @@ import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
-
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
+import SiteSettings from '@/Components/Workshop/SiteSettings.vue'
 
 import { Root, Daum } from '@/types/webBlockTypes'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
-import { faExclamation, faExclamationTriangle } from '@fas'
+import { faCogs, faExclamation, faExclamationTriangle, faLayerGroup } from '@fas'
 
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash )
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
 const modelModalBlocklist = defineModel()
 
 const props = defineProps<{
@@ -39,21 +40,25 @@ const props = defineProps<{
     isLoadingDeleteBlock: number | null
 }>()
 
+const selectedTab = ref(0)
+
+function changeTab(index : Number) {
+  selectedTab.value = index
+}
 
 const emits = defineEmits<{
     (e: 'add', value: Daum): void
     (e: 'delete', value: Daum): void
     (e: 'update', value: Daum): void
     (e: 'order', value: Object): void
-    (e: 'openBlockList', value: Boolean): void
     (e: 'setVisible', value: Object): void
 }>()
 
 const confirm = useConfirm();
-
+const addType = ref('current')
 
 const sendNewBlock = async (block: Daum) => {
-    emits('add', block)
+    emits('add', { block, type: addType.value })
 }
 
 const sendBlockUpdate = async (block: Daum) => {
@@ -89,11 +94,12 @@ const onPickBlock = async (block: Daum) => {
 }
 
 const openModalBlockList = () => {
+    addType.value = 'current'
     modelModalBlocklist.value = !modelModalBlocklist.value
     emits('openBlockList', !modelModalBlocklist.value)
 }
 
-const setShowBlock = (e : Event, value : Object) => {
+const setShowBlock = (e: Event, value: Object) => {
     e.stopPropagation()
     e.preventDefault()
     emits('setVisible', value)
@@ -103,137 +109,149 @@ const setShowBlock = (e : Event, value : Object) => {
 
 const confirmDelete = (event: Event, data: Daum) => {
     confirm.require({
-        target: event.currentTarget, 
-        message: 'Are you sure you want to delete?',
+        target: event.currentTarget,
+        message: trans("Remove this block? This action can't be undone."),
         rejectProps: {
-            label: 'No',
+            label: trans('Cancel'),
             severity: 'secondary',
             outlined: true,
         },
         acceptProps: {
-            label: 'Yes',
+            label: trans('Yes, delete'),
+            severity: 'danger',
         },
         accept: () => {
             sendDeleteBlock(data);
         },
     });
- /*    event.stopPropagation()
-    event.preventDefault() */
+    /*    event.stopPropagation()
+       event.preventDefault() */
 };
 
+const tabs = [
+    { label: 'Settings', icon: faCogs, tooltip : 'Page Setting' }, 
+    { label: 'Block', icon: faLayerGroup, tooltip : 'Blocks'}
+]
+
 defineExpose({
-    modelModalBlocklist
+    addType
 })
 
 
 const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
+const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
 </script>
 
 <template>
-    <!--  <div class="flex justify-between">
-        <h2 class="text-sm font-semibold leading-6">{{trans('Blocks')}} </h2>
-        <Button icon="fas fa-plus" type="dashed" size="xs" @click="openModalBlockList" />
-    </div> -->
-    <div class="max-h-[calc(100vh-220px)] h-fit min-w-[350px] max-w-[400px] transition-all overflow-y-auto flex flex-col pr-3">
-        <div class="full pr-3">
-        <Button class="mt-3" full type="dashed" @click="openModalBlockList">
-            <div class="text-gray-500">
-                <FontAwesomeIcon icon='fal fa-plus' class='' fixed-width aria-hidden='true' />
-                {{ trans('Add block') }}
-            </div>
-        </Button>
-    </div>
-    
-        <template v-if="webpage?.layout?.web_blocks.length > 0 || isAddBlockLoading">
-            <draggable
-                :list="webpage.layout.web_blocks"
-                handle=".handle"
-                @change="onChangeOrderBlock"
-                ghost-class="ghost"
-                group="column"
-                itemKey="id"
-                class="mt-2 space-y-1 shadow"
-            >
-                <template #item="{ element, index }">
-                    <div class="bg-slate-50 border border-gray-300 ">
-                        <div 
-                            class="group flex justify-between items-center gap-x-2 relative w-full cursor-pointer"
-                            :class="openedBlockSideEditor === index ? 'bg-indigo-500 text-white' : 'hover:bg-gray-100'">
-                            <div 
-                                class="h-10 flex items-center gap-x-2 py-2 px-3 w-full" 
-                                @click="() => openedBlockSideEditor === index ? openedBlockSideEditor = null : openedBlockSideEditor = index"
-                            >
-                                <div class="flex items-center justify-center">
-                                    <FontAwesomeIcon icon="fal fa-bars" class="handle text-sm cursor-grab pr-3 mr-2" />
-                                </div>
-                                <h3 class="lg:text-sm text-xs capitalize font-medium select-none">
-                                    {{ element.name || element.type }}
-                                </h3>
-                                <LoadingIcon v-if="isLoadingblock === element.id" class="" />
+    <TabGroup :selectedIndex="selectedTab" @change="changeTab">
+        <TabList class="flex border-b border-gray-300">
+            <Tab v-for="(tab, index) in tabs" :key="index"
+                class="flex items-center gap-2 px-4 py-2 font-medium text-gray-600 rounded-t-lg hover:bg-gray-100 focus:outline-none"
+                :class="{ 'bg-white text-indigo-600 border-b-2 border-indigo-600': selectedTab === index }">
+                <FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
+            </Tab>
+        </TabList>
+        <TabPanels>
+            <TabPanel class="w-[400px] p-1">
+                <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
+                    <SiteSettings 
+                    :webpage="webpage"
+                    :webBlockTypes="webBlockTypes" 
+                />
+                </div>
+               
+            </TabPanel>
+            <TabPanel class="w-[400px] p-1">
+                <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
+                    <div class="full">
+                        <Button class="mt-3" full type="dashed" @click="openModalBlockList">
+                            <div class="text-gray-500">
+                                <FontAwesomeIcon icon='fal fa-plus' class='' fixed-width aria-hidden='true' />
+                                {{ trans('Add block') }}
                             </div>
-
-                            <div class="h-full text-base cursor-pointer">
-                                <div class="flex h-full items-center">
-                                    <div @click="(e) => setShowBlock(e, element)" class="py-1 px-2"
-                                        :class="openedBlockSideEditor === index ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'"    
-                                    >
-                                        <FontAwesomeIcon v-if="!element.show" v-tooltip="trans('Show this block')" icon="fal fa-eye-slash" class="text-base" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else v-tooltip="trans('Hide this block')" icon="fal fa-eye" class="text-base" fixed-width aria-hidden="true" />
-                                    </div>
-                                 
-                                    <div
-                                        @click="(e) => {
-                                            isLoadingDeleteBlock === element.id
-                                            ? false
-                                            : confirmDelete(e,element)
-                                        }"
-                                        v-tooltip="trans('Delete this block')" class="h-10 border-l border-gray-300 text-red-400 bg-gray-50 hover:bg-red-100 hover:text-red-600 py-2.5 flex items-center justify-center px-2">
-                                        <LoadingIcon v-if="isLoadingDeleteBlock === element.id" class="text-gray-400" />
-                                        <FontAwesomeIcon v-else
-                                            icon="fal fa-trash-alt"
-                                            class=""
-                                            fixed-width
-                                            aria-hidden="true"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section: Properties panel -->
-                        <Collapse v-if="element?.web_block?.layout" as="section"
-                            :when="openedBlockSideEditor === index">
-                            <div class="p-2">
-                                <div class="px-2">
-                                    <VisibleCheckmark
-                                        v-model="element.visibility"
-                                        @update:modelValue="onSaveWorkshop(element)"
-                                    />
-                                </div>
-                                <SideEditor
-                                    v-model="element.web_block.layout.data.fieldValue"
-                                    :blueprint="getBlueprint(element.type)"
-                                    :block="element"
-                                    @update:modelValue="(e) => (onSaveWorkshop(element))"
-                                    :uploadImageRoute="{...webpage.images_upload_route, parameters : { modelHasWebBlocks: element.id }}"
-                                />
-                            </div>
-                        </Collapse>
+                        </Button>
                     </div>
-                </template>
-            </draggable>
 
-            <div v-if="isAddBlockLoading" class="mt-2 skeleton min-h-10 w-full rounded" />
-        </template>
+                    <template v-if="webpage?.layout?.web_blocks.length > 0 || isAddBlockLoading">
+                        <draggable :list="webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
+                            ghost-class="ghost" group="column" itemKey="id" class="mt-2 space-y-1 shadow">
+                            <template #item="{ element, index }">
+                                <div class="bg-slate-50 border border-gray-300 ">
+                                    <div class="group flex justify-between items-center gap-x-2 relative w-full cursor-pointer"
+                                        :class="openedBlockSideEditor === index ? 'bg-indigo-500 text-white' : 'hover:bg-gray-100'">
+                                        <div class="h-10 flex items-center gap-x-2 py-2 px-3 w-full"
+                                            @click="() => openedBlockSideEditor === index ? openedBlockSideEditor = null : openedBlockSideEditor = index">
+                                            <div class="flex items-center justify-center">
+                                                <FontAwesomeIcon icon="fal fa-bars"
+                                                    class="handle text-sm cursor-grab pr-3 mr-2" />
+                                            </div>
+                                            <h3 class="lg:text-sm text-xs capitalize font-medium select-none">
+                                                {{ element.name || element.type }}
+                                            </h3>
+                                            <LoadingIcon v-if="isLoadingblock === element.id" class="" />
+                                        </div>
 
-        <div v-else class="flex flex-col justify-center items-center mt-4 rounded-lg p-4 text-center h-fit">
-            <font-awesome-icon :icon="['fal', 'browser']" class="mx-auto h-12 w-12 text-gray-400" />
-            <span class="mt-2 block text-sm font-semibold text-gray-600">You don't have any blocks</span>
-        </div>
+                                        <div class="h-full text-base cursor-pointer">
+                                            <div class="flex h-full items-center">
+                                                <div @click="(e) => setShowBlock(e, element)" class="py-1 px-2"
+                                                    :class="openedBlockSideEditor === index ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'">
+                                                    <FontAwesomeIcon v-if="!element.show"
+                                                        v-tooltip="trans('Show this block')" icon="fal fa-eye-slash"
+                                                        class="text-base" fixed-width aria-hidden="true" />
+                                                    <FontAwesomeIcon v-else v-tooltip="trans('Hide this block')"
+                                                        icon="fal fa-eye" class="text-base" fixed-width
+                                                        aria-hidden="true" />
+                                                </div>
 
-        
-    </div>
- 
+                                                <div @click="(e) => {
+                                                    isLoadingDeleteBlock === element.id
+                                                        ? false
+                                                        : confirmDelete(e, element)
+                                                }" v-tooltip="trans('Delete this block')"
+                                                    class="h-10 border-l border-gray-300 text-red-400 bg-gray-50 hover:bg-red-100 hover:text-red-600 py-2.5 flex items-center justify-center px-2">
+                                                    <LoadingIcon v-if="isLoadingDeleteBlock === element.id"
+                                                        class="text-gray-400" />
+                                                    <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="" fixed-width
+                                                        aria-hidden="true" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section: Properties panel -->
+                                    <Collapse v-if="element?.web_block?.layout" as="section"
+                                        :when="openedBlockSideEditor === index">
+                                        <div class="p-2">
+                                            <div class="px-2">
+                                                <VisibleCheckmark v-model="element.visibility"
+                                                    @update:modelValue="onSaveWorkshop(element)" />
+                                            </div>
+
+                                            <SideEditor v-model="element.web_block.layout.data.fieldValue"
+                                                :panelOpen="openedChildSideEditor"
+                                                :blueprint="getBlueprint(element.type)" :block="element"
+                                                @update:modelValue="(e) => (onSaveWorkshop(element))"
+                                                :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: element.id } }" />
+                                        </div>
+                                    </Collapse>
+                                </div>
+                            </template>
+                        </draggable>
+
+                        <div v-if="isAddBlockLoading" class="mt-2 skeleton min-h-10 w-full rounded" />
+                    </template>
+
+                    <div v-else class="flex flex-col justify-center items-center mt-4 rounded-lg p-4 text-center h-fit">
+                        <font-awesome-icon :icon="['fal', 'browser']" class="mx-auto h-12 w-12 text-gray-400" />
+                        <span class="mt-2 block text-sm font-semibold text-gray-600">You don't have any blocks</span>
+                    </div>
+                </div>
+
+            </TabPanel>
+        </TabPanels>
+    </TabGroup>
+
+
 
     <Modal :isOpen="modelModalBlocklist" @onClose="openModalBlockList">
         <BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="webpage" />
@@ -248,4 +266,10 @@ const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
 
 
 <style scss scoped>
+.ghost {
+    opacity: 0.5;
+    background-color: #e2e8f0;
+    /* Warna abu-abu muda */
+    border: 2px dashed #4F46E5;
+}
 </style>

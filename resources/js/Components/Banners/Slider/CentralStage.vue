@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import { useRemoveHttps } from '@/Composables/useRemoveHttps'
 import { CentralStageData } from '@/types/BannerWorkshop'
 

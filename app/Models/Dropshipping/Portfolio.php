@@ -44,7 +44,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $source_id
  * @property string|null $item_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation

@@ -11,8 +11,10 @@ namespace App\Actions\Fulfilment\StoredItemAudit;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStoredItemAudits;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStoredItems;
+use App\Actions\Fulfilment\Pallet\Hydrators\PalletHydrateStoredItems;
 use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToPallet;
+use App\Actions\Fulfilment\StoredItem\Hydrators\StoreItemHydratePallets;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -73,6 +75,8 @@ class CompleteStoredItemAudit extends OrgAction
                 ]
             );
 
+            PalletHydrateStoredItems::run($palletStoredItem->pallet);
+            StoreItemHydratePallets::run($palletStoredItem->storedItem);
             StoreStoredItemMovement::run($storedItemAuditDelta);
             RunPalletStoredItemQuantity::run($palletStoredItem);
         }

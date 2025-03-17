@@ -17,14 +17,14 @@ enum OrdersBacklogTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case CREATING                       = 'creating';
-    case SUBMITTED                       = 'submitted';
-    case IN_WAREHOUSE                       = 'in_warehouse';
-    case HANDLING                       = 'handling';
-    case HANDLING_BLOCKED                       = 'handling_blocked';
-    case PACKED                       = 'packed';
-    case FINALISED                       = 'finalised';
-    case DISPATCHED_TODAY                       = 'dispatched_today';
+    case IN_BASKET = 'in_basket';
+    case SUBMITTED_PAID = 'submitted_paid';
+    case SUBMITTED_UNPAID = 'submitted_unpaid';
+    case PICKING = 'picking';
+    case BLOCKED = 'blocked';
+    case PACKED = 'packed';
+    case PACKED_DONE = 'packed_done';
+    case DISPATCHED_TODAY = 'dispatched_today';
 
 
 

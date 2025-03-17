@@ -25,11 +25,11 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?CustomerClient
     {
-        if ($customerClientData = $organisationSource->fetchCustomerClient($organisationSourceId)) {
+        $customerClientData = $organisationSource->fetchCustomerClient($organisationSourceId);
+        if ($customerClientData) {
             if ($customerClient = CustomerClient::withTrashed()->where('source_id', $customerClientData['customer_client']['source_id'])
                 ->first()) {
                 try {
-
                     $customerClient = UpdateCustomerClient::make()->action(
                         customerClient: $customerClient,
                         modelData: $customerClientData['customer_client'],
@@ -61,7 +61,7 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
 
                     $this->recordNew($organisationSource);
 
-                    $sourceData     = explode(':', $customerClient->source_id);
+                    $sourceData = explode(':', $customerClient->source_id);
                     DB::connection('aurora')->table('Customer Client Dimension')
                         ->where('Customer Client Key', $sourceData[1])
                         ->update(['aiku_id' => $customerClient->id]);

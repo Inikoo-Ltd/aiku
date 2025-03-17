@@ -91,7 +91,7 @@ class IndexWarehouseAreas extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('warehouse_areas.code', $value)
-                    ->whereWith('warehouse_areas.name', $value);
+                    ->orWhereWith('warehouse_areas.name', $value);
             });
         });
 
@@ -243,20 +243,20 @@ class IndexWarehouseAreas extends OrgAction
                     'actions'   => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.warehouses.show.infrastructure.warehouse_areas.index' ? [
                             'type'   => 'buttonGroup',
-                            // 'key'    => 'upload-add',
+                            'key'    => 'upload-add',
                             'button' => [
-                                // [
-                                //     'type'  => 'button',
-                                //     'style' => 'primary',
-                                //     'icon'  => ['fal', 'fa-upload'],
-                                //     'label' => 'upload',
-                                //     'route' => [
-                                //         'name'       => 'grp.models.warehouse.warehouse-areas.upload',
-                                //         'parameters' => [
-                                //             $this->parent->id
-                                //         ]
-                                //     ]
-                                // ],
+                                [
+                                    'type'  => 'button',
+                                    'style' => 'primary',
+                                    'icon'  => ['fal', 'fa-upload'],
+                                    'label' => 'upload',
+                                    'route' => [
+                                        'name'       => 'grp.models.warehouse.warehouse-areas.upload',
+                                        'parameters' => [
+                                            $this->parent->id
+                                        ]
+                                    ]
+                                ],
                                 [
 
                                     'type'  => 'button',
@@ -272,7 +272,44 @@ class IndexWarehouseAreas extends OrgAction
                         ] : null,
                     ]
                 ],
-                'data'        => WarehouseAreaResource::collection($warehouseAreas)
+                'data'        => WarehouseAreaResource::collection($warehouseAreas),
+                'upload_warehouse_areas' => [
+                    'title' => [
+                        'label' => __('Upload locations'),
+                        'information' => __('The list of column file:')
+                    ],
+                    'progressDescription'   => __('Importing locations'),
+                    'preview_template'    => [
+                        // 'unique_column' => [
+                        //     'type'  => [
+                        //         'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
+                        //     ]
+                        // ],
+                        'header' => ['code', 'name'],
+                        'rows' => [
+                            [
+                                'code' => '01-CODE',
+                                'name' => '01 code',
+                            ],
+                        ]
+                    ],
+                    'upload_spreadsheet'    => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['code', 'name'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)',
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'grp.models.warehouse.warehouse-areas.upload',
+                                'parameters' => [
+                                    $this->parent->id
+                                ]
+                            ]
+                        ],
+                    ]
+                ],
             ]
         )->table($this->tableStructure($this->parent));
     }

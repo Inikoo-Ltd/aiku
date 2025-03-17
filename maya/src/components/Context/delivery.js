@@ -5,7 +5,6 @@ const DeliveryContext = createContext();
 const deliveryReducer = (state, action) => {
   switch (action.type) {
     case 'SET_DATA':
-      console.log('SET_DATA', action.payload);
         return {
             ...state,
             data: state.data

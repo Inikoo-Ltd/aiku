@@ -14,7 +14,10 @@ import {ZiggyVue} from '../../vendor/tightenco/ziggy/dist/vue.m';
 import {i18nVue} from 'laravel-vue-i18n';
 import Notifications from '@kyvg/vue3-notification';
 import {createPinia} from 'pinia';
-import * as Sentry from '@sentry/vue';
+import {
+  init as sentry_init,
+  Replay as sentry_Replay
+} from '@sentry/vue';
 import FloatingVue from 'floating-vue'
 import 'floating-vue/dist/style.css'
 import IrisLayout from '@/Layouts/Iris.vue'
@@ -79,14 +82,14 @@ createInertiaApp(
       setup({el, App, props, plugin}) {
         const app = createApp({render: () => h(App, props)});
         if (import.meta.env.VITE_SENTRY_DSN) {
-          Sentry.init({
+          sentry_init({
                         app,
                         dsn                     : import.meta.env.VITE_SENTRY_DSN,
                         environment             : import.meta.env.VITE_APP_ENV,
                           release: import.meta.env.VITE_RELEASE,
                         replaysSessionSampleRate: 0.1,
                         replaysOnErrorSampleRate: 1.0,
-                        integrations: [new Sentry.Replay()]
+                        integrations: [new sentry_Replay()]
                       });
         }
 

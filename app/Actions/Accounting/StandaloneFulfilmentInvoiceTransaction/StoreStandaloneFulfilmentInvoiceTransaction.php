@@ -37,7 +37,6 @@ class StoreStandaloneFulfilmentInvoiceTransaction extends OrgAction
         $invoiceTransaction = StoreInvoiceTransaction::make()->action($invoice, $historicAsset, $modelData);
 
         CalculateStandaloneFulfilmentInvoiceTotals::run($invoice);
-
         return $invoiceTransaction;
     }
 
@@ -63,10 +62,11 @@ class StoreStandaloneFulfilmentInvoiceTransaction extends OrgAction
     public function rules(): array
     {
         return [
+            'pallet_id'       => ['sometimes'],
+            'handle_date'     => ['sometimes'],
             'quantity' => ['required', 'numeric'],
         ];
     }
-
 
     public function asController(Invoice $invoice, HistoricAsset $historicAsset, ActionRequest $request): InvoiceTransaction
     {

@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, onBeforeMount } from 'vue'
 import BorderProperty from '@/Components/Workshop/Properties/BorderProperty.vue'
 import { trans } from 'laravel-vue-i18n'
-import { set, get } from 'lodash'
+import { set, get } from 'lodash-es'
 
 
 const model = defineModel<typeof localModel>({

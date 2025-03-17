@@ -33,6 +33,14 @@ class SetUserAuthorisedModels
         $authorisedProductions   = [];
 
 
+        if ($user->authTo(['group-webmaster.view', 'group-webmaster.edit', 'group-webmaster.view'])) {
+            foreach ($user->group->websites as $website) {
+                $authorisedOrganisations[$website->organisation_id] = ['org_id' => $website->organisation_id];
+                $authorisedShops[$website->shop->id]                = ['org_id' => $website->organisation_id];
+            }
+        }
+
+
         foreach ($user->getAllPermissions() as $permission) {
             if ($permission->scope_type === 'Organisation') {
                 $authorisedOrganisations[$permission->scope_id] = ['org_id' => $permission->scope_id];
@@ -48,12 +56,11 @@ class SetUserAuthorisedModels
                 $authorisedOrganisations[$fulfilment->organisation_id] = ['org_id' => $fulfilment->organisation_id];
             } elseif ($permission->scope_type === 'Warehouse') {
                 /** @var Warehouse $warehouse */
-                $warehouse                                            = Warehouse::find($permission->scope_id);
+                $warehouse = Warehouse::find($permission->scope_id);
                 if ($warehouse) {
                     $authorisedWarehouses[$permission->scope_id]          = ['org_id' => $warehouse->organisation_id];
                     $authorisedOrganisations[$warehouse->organisation_id] = ['org_id' => $warehouse->organisation_id];
                 }
-
             } elseif ($permission->scope_type === 'Production') {
                 /** @var Production $production */
                 $production                                            = Production::find($permission->scope_id);
@@ -70,7 +77,6 @@ class SetUserAuthorisedModels
                     } else {
                         $authorisedShops[$shop->id] = ['org_id' => $organisation->id];
                     }
-
                 }
             }
         }

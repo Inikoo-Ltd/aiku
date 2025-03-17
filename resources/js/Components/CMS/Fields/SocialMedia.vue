@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { cloneDeep } from 'lodash'
+import { cloneDeep } from 'lodash-es'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Popover from 'primevue/popover';
 import draggable from "vuedraggable";

@@ -17,7 +17,6 @@ import { trans } from 'laravel-vue-i18n'
 import AccountProvidersForm from '@/Components/PaymentProviders/accountProvidersForm.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
-import PaypalSVG from '@/../art/payment_service_providers/paypal.svg'
 import btree from '@/../art/payment_service_providers/btree.svg'
 import cash from '@/../art/payment_service_providers/cash.svg'
 import checkout from '@/../art/payment_service_providers/checkout.svg'
@@ -126,8 +125,6 @@ const selectImage = (code: string) => {
     if (!code) return null
 
     switch (code) {
-        case 'paypal':
-            return PaypalSVG
         case 'btree':
             return btree
         case 'cash':

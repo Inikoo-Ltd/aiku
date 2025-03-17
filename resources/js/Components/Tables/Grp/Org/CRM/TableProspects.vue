@@ -92,10 +92,10 @@ const maxId = ref(Math.max(...tagsListTemp.value.map(item => item.id)))
 
 function prospectRoute(prospect: Prospect) {
     switch (route().current()) {
-        case 'shops.show.prospects.index':
+        case 'grp.org.shops.show.crm.prospects.index':
             return route(
-                'shops.show.prospects.show',
-                [prospect.slug, prospect.slug]);
+                'grp.org.shops.show.crm.prospects.show',
+                [route().params["organisation"], route().params['shop'], prospect.slug]);
         default:
             return route(
                 'prospects.show',
@@ -111,9 +111,9 @@ function prospectRoute(prospect: Prospect) {
             <Icon :data="prospect.state_icon"></Icon>
         </template>
         <template #cell(name)="{ item: prospect }">
-            <!-- <Link :href="prospectRoute(prospect)"> -->
+            <Link :href="prospectRoute(prospect)" class="primaryLink">
                 {{ prospect['name'] }}
-            <!-- </Link> -->
+            </Link>
         </template>
         <template #cell(tags)="{ item: prospect }">
             <div class="min-w-[200px]">

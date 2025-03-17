@@ -32,7 +32,7 @@ use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
-use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
+use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInGroup;
 use App\Actions\Fulfilment\Pallet\UI\IndexPallets;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
@@ -80,7 +80,6 @@ Route::name('comms-marketing.')->prefix('comms-marketing')->group(function () {
     Route::get('/email-addresses', IndexEmailAddress::class)->name('email-addresses.index');
     Route::get('/email-address/{emailAddress}', ShowEmailAddress::class)->name('email-addresses.show');
     Route::get('/dispatched-emails', [IndexDispatchedEmails::class, 'inGroup'])->name('dispatched-emails.index');
-
 });
 
 Route::name('catalogue.')->prefix('catalogue')->group(function () {
@@ -118,7 +117,7 @@ Route::name('ordering.')->prefix('ordering')->group(function () {
     Route::get('/orders', [IndexOrders::class, 'inGroup'])->name('orders.index');
     Route::get('/purges', [IndexPurges::class, 'inGroup'])->name('purges.index');
     Route::get('/invoices', [IndexInvoices::class, 'inGroup'])->name('invoices.index');
-    Route::get('/delivery-notes', [IndexDeliveryNotes::class, 'inGroup'])->name('delivery-notes.index');
+    Route::get('/delivery-notes', IndexDeliveryNotesInGroup::class)->name('delivery_notes.index');
     Route::get('/transactions', [IndexInvoiceTransactions::class, 'inGroup'])->name('transactions.index');
 });
 
@@ -129,7 +128,6 @@ Route::name('inventory.')->prefix('inventory')->group(function () {
     Route::get('/warehouses', [IndexWarehouses::class, 'inGroup'])->name('warehouses.index');
     Route::get('/warehouses-areas', [IndexWarehouseAreas::class, 'inGroup'])->name('warehouses-areas.index');
     Route::get('/locations', [IndexLocations::class, 'inGroup'])->name('locations.index');
-
 });
 
 Route::name('fulfilment.')->prefix('fulfilment')->group(function () {

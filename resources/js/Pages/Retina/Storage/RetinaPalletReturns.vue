@@ -14,7 +14,7 @@ import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Multiselect from "@vueform/multiselect"
 import { Link } from "@inertiajs/vue3"
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import axios from 'axios'
 import { PalletDelivery } from "@/types/pallet-delivery"
 import { faNarwhal, faSeedling, faShare, faSpellCheck, faTruck, faCheck, faCheckDouble, faCross, faTruckRamp } from '@fal'

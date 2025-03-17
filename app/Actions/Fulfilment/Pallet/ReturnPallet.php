@@ -48,7 +48,7 @@ class ReturnPallet extends OrgAction
             ->first();
         if ($recurringBillTransactionData) {
 
-            $recurringBillTransaction=RecurringBillTransaction::find($recurringBillTransactionData->id);
+            $recurringBillTransaction = RecurringBillTransaction::find($recurringBillTransactionData->id);
             UpdateRecurringBillTransaction::make()->action($recurringBillTransaction, [
                 'end_date' => now()
             ]);

@@ -10,6 +10,7 @@ namespace App\Actions\Web\Banner;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Banner;
 use App\Models\Web\Website;
@@ -27,8 +28,7 @@ class DeleteBanner extends OrgAction
     public function handle(Banner $banner): Banner
     {
         $banner->delete();
-
-
+        BannerRecordSearch::run($banner);
         return $banner;
     }
 
