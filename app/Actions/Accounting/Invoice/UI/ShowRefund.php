@@ -118,48 +118,49 @@ class ShowRefund extends OrgAction
 
         $actions = [];
 
-
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'delete',
-            'label' => __('Delete'),
-            'key'   => 'delete_refund',
-            'route' => [
-                'method'     => 'delete',
-                'name'       => 'grp.models.refund.force_delete',
-                'parameters' => [
-                    'refund' => $refund->id,
+        if ($refund->in_process) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'delete',
+                'label' => __('Delete'),
+                'key'   => 'delete_refund',
+                'route' => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.refund.force_delete',
+                    'parameters' => [
+                        'refund' => $refund->id,
+                    ]
                 ]
-            ]
-        ];
+            ];
 
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'secondary',
-            'label' => __('Refund All'),
-            'key'   => 'refund_all',
-            'route' => [
-                'method'     => 'post',
-                'name'       => 'grp.models.refund.refund_all',
-                'parameters' => [
-                    'refund' => $refund->id,
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'secondary',
+                'label' => __('Refund All'),
+                'key'   => 'refund_all',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.refund.refund_all',
+                    'parameters' => [
+                        'refund' => $refund->id,
+                    ]
                 ]
-            ]
-        ];
+            ];
 
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'create',
-            'label' => __('Finalise refund'),
-            'key'   => 'finalise_refund',
-            'route' => [
-                'method'     => 'post',
-                'name'       => 'grp.models.refund.finalise',
-                'parameters' => [
-                    'refund' => $refund->id,
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Finalise refund'),
+                'key'   => 'finalise_refund',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.refund.finalise',
+                    'parameters' => [
+                        'refund' => $refund->id,
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
 
         $props = [
@@ -217,8 +218,14 @@ class ShowRefund extends OrgAction
                 ],
             ],
 
+            'exportPdfRoute' => [
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
+                    'organisation' => $refund->organisation->slug,
+                    'invoice'      => $refund->slug
+                ]
+            ],
 
-            'box_stats' => $this->getBoxStats($refund),
 
             'invoice_refund' => RefundResource::make($refund),
 

@@ -89,43 +89,43 @@ class ShowInvoice extends OrgAction
         }
 
         $actions = [];
-        if (!app()->environment('production')) {
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('create refund'),
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.refund.create',
-                        'parameters' => [
-                            'invoice' => $invoice->id,
 
-                        ],
-                        'body'       => [
-                            'referral_route' => [
-                                'name'       => $request->route()->getName(),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('create refund'),
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.refund.create',
+                    'parameters' => [
+                        'invoice' => $invoice->id,
+
                     ],
-                ];
-
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'tertiary',
-                    'label' => __('send invoice'),
-                    'key'   => 'send-invoice',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.invoice.send_invoice',
-                        'parameters' => [
-                            'invoice' => $invoice->id
+                    'body'       => [
+                        'referral_route' => [
+                            'name'       => $request->route()->getName(),
+                            'parameters' => $request->route()->originalParameters()
                         ]
                     ]
-                ];
-        }
+                ],
+            ];
+
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'tertiary',
+                'label' => __('send invoice'),
+                'key'   => 'send-invoice',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.invoice.send_invoice',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+
 
         if ($this->parent instanceof Organisation) {
             $actions[] = [
@@ -147,7 +147,6 @@ class ShowInvoice extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
-
         }
 
         // dd($invoice->id);
