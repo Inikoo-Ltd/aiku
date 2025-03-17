@@ -12,7 +12,7 @@ use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use Illuminate\Support\Facades\Route;
 
 Route::post(
-    '/invoice-transaction/{refund:id}/refund-transaction/{invoiceTransaction:id}',
+    '/invoice-transaction/{refund}/refund-transaction/{invoiceTransaction:id}',
     StoreRefundInvoiceTransaction::class
 )->name('invoice_transaction.refund_transaction.store');
 
