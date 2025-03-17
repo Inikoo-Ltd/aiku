@@ -17,6 +17,7 @@ import { faSave as falSave, faExclamationCircle } from '@fal'
 import { faSave } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 library.add(faSave, falSave, faExclamationCircle)
 
 defineProps<{
@@ -79,6 +80,18 @@ const locale = inject('locale', aikuLocaleStructure)
             <template #cell(net_amount)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+                </div>
+            </template>
+
+            <template #cell(action)="{ item }">
+                <div v-if="item.delete_route" class="mt-2">
+                    <ButtonWithLink
+                        :key="item.code"
+                        :routeTarget="item.delete_route"
+                        :label="trans('Delete')"
+                        type="delete"
+                        size="s"
+                    />
                 </div>
             </template>
 

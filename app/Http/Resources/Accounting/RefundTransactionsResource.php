@@ -42,6 +42,13 @@ class RefundTransactionsResource extends JsonResource
                 'parameters' => [
                     'invoiceTransaction' => $this->id,
                 ]
+            ],
+            'delete_route'              => [
+                'name'       => 'grp.models.refund_transaction.delete',
+                'parameters' => [
+                    'invoiceTransaction' => $this->id,
+                ],
+                'method'     => 'delete',
             ]
         ];
     }
