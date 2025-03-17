@@ -12,6 +12,8 @@ use App\Actions\Accounting\InvoiceCategory\IndexInvoiceCategoriesSalesTable;
 use App\Actions\Catalogue\Shop\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Http\Resources\Accounting\DashboardTotalInvoiceCategoriesSalesResource;
+use App\Http\Resources\Catalogue\DashboardTotalShopSalesResource;
 use App\Models\SysAdmin\Organisation;
 
 enum OrganisationDashboardSalesTableTabsEnum: string
@@ -39,10 +41,22 @@ enum OrganisationDashboardSalesTableTabsEnum: string
 
     public function table(Organisation $organisation): array
     {
-        return match ($this) {
+        $body = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($organisation),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($organisation),
         };
+
+        $totals = match ($this) {
+            OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopSalesResource::make($organisation)->toJson(), true),
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->toJson(), true)
+        };
+
+
+        return [
+            'header' => [],
+            'body'   => $body,
+            'totals' => $totals
+        ];
     }
 
     public static function tables(Organisation $organisation): array

@@ -8,10 +8,13 @@
 
 namespace App\Models\SysAdmin;
 
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 /**
  * App\Models\SysAdmin\OrganisationOrderingStats
@@ -114,4 +117,32 @@ class OrganisationSalesIntervals extends Model
     {
         return $this->belongsTo(Organisation::class);
     }
+
+    public function group(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Group::class,        // Final model
+            Organisation::class,         // Intermediate model
+            'id',                // Foreign key on Shop
+            'id',                // Foreign key on Group
+            'organisation_id',           // Local key on this table
+            'group_id'           // Local key on Shop
+        );
+    }
+
+
+    public function currency(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Currency::class,    // Final model we want to reach
+            Organisation::class,        // Intermediate model
+            'id',               // Foreign key on Shop table
+            'id',               // Foreign key on Currency table
+            'organisation_id',          // Local key on this table
+            'currency_id'       // Local key on Shop table
+        );
+    }
+
+
+
 }

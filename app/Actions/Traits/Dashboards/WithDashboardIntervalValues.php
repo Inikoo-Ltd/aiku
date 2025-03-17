@@ -14,16 +14,22 @@ use App\Models\Accounting\InvoiceCategoryOrderingIntervals;
 use App\Models\Accounting\InvoiceCategorySalesIntervals;
 use App\Models\Catalogue\ShopOrderingIntervals;
 use App\Models\Catalogue\ShopSalesIntervals;
+use App\Models\SysAdmin\OrganisationOrderingIntervals;
+use App\Models\SysAdmin\OrganisationSalesIntervals;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Number;
 
 trait WithDashboardIntervalValues
 {
-    private function getIntervalValues(ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals $intervalsModel, string $field, DashboardDataType $dataType, array $options = []): array
+    private function getIntervalValues(ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals|OrganisationOrderingIntervals|OrganisationSalesIntervals $intervalsModel, string $field, DashboardDataType $dataType, array $options = []): array
     {
         return collect(DateIntervalEnum::cases())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options) {
             $rawValue = $intervalsModel->{$field.'_'.$interval->value};
 
+
+            if (is_null($rawValue)) {
+                dd($intervalsModel, $field, $interval->value);
+            }
 
             $data = [
                 'formatted_value' => $rawValue,
@@ -63,7 +69,7 @@ trait WithDashboardIntervalValues
     }
 
     public function getDashboardTableColumn(
-        ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals $intervalsModel,
+        ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals|OrganisationOrderingIntervals|OrganisationSalesIntervals $intervalsModel,
         string $columnFingerprint
     ): array {
         $originalColumnFingerprint = $columnFingerprint;
