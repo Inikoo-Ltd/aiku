@@ -103,10 +103,18 @@ const localeCode = navigator.language
                     type="secondary"
                     :loading="isLoading.includes(item.code)"
                 /> -->
+                
                 <ButtonWithLink
                     :key="item.code"
-                    :routeTarget="item.delete_route"
-                    :label="trans('Add to refund')"
+                    :routeTarget="{
+                        name: item.full_refund_route.name,
+                        parameters: {
+                            ...item.full_refund_route.parameters,
+                            refund: slugInvoiceRefund
+                        },
+                        method: item.full_refund_route.method ?? 'post'
+                    }"
+                    :label="trans('Full refund')"
                     icon="fal fa-plus"
                     type="tertiary"
                     size="s"
@@ -159,6 +167,8 @@ const localeCode = navigator.language
                         size="s"
                     />
                 </div>
+
+                
 
             </template>
         </Table>
