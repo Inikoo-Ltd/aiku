@@ -37,7 +37,6 @@ const side_editor_block_id = inject('side_editor_block_id', () => { console.log(
 const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     setFormValue(modelValue.value, fieldKeys, newVal)
     onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor')
-
 }
 
 </script>
@@ -114,7 +113,6 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                 v-bind="blueprint?.props_data" 
                 :modelValue="getFormValue(modelValue, blueprint.key)"
                 @update:modelValue="newValue => {
-                    // console.log(index, 'getfomvalue', getFormValue(modelValue, blueprint.key))
                     onPropertyUpdate(blueprint.key, newValue)
                 }"
             />
