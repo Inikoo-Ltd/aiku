@@ -27,19 +27,19 @@ class DeleteRefund extends OrgAction
         return $invoice;
     }
 
-    public function htmlResponse(Invoice $invoice, ActionRequest $request): RedirectResponse
+    public function htmlResponse(Invoice $refund, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
-            $invoice->organisation->slug,
-            $invoice->customer->fulfilmentCustomer->fulfilment->slug,
-            $invoice->customer->fulfilmentCustomer->slug,
+            $refund->organisation->slug,
+            $refund->customer->fulfilmentCustomer->fulfilment->slug,
+            $refund->customer->fulfilmentCustomer->slug,
         ]);
     }
 
-    public function asController(Invoice $invoice, ActionRequest $request): Invoice
+    public function asController(Invoice $refund, ActionRequest $request): Invoice
     {
-        $this->initialisationFromShop($invoice->shop, $request);
+        $this->initialisationFromShop($refund->shop, $request);
 
-        return $this->handle($invoice);
+        return $this->handle($refund);
     }
 }

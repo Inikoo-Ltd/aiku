@@ -33,7 +33,13 @@ class RefundInProcessTransactionsResource extends JsonResource
             'in_process'                => $this->in_process,
             'unit_price'                => $this->price,  // fix this
             'refund_route'              => [
-                'name'       => 'grp.models.invoice_transaction.refund_transaction.store',
+                'name'       => 'grp.models.refund.refund_transaction.store',
+                'parameters' => [
+                    'invoiceTransaction' => $this->id,
+                ]
+            ],
+            'full_refund_route'              => [
+                'name'       => 'grp.models.refund.refund_transaction.full_refund',
                 'parameters' => [
                     'invoiceTransaction' => $this->id,
                 ]
