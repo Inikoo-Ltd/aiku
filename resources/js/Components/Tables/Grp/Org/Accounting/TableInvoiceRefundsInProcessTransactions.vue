@@ -60,7 +60,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: num
             routeRefund.parameters
         ),
         {
-            gross_amount: amount
+            net_amount: amount
         },
         {
             preserveScroll: true,
@@ -145,7 +145,14 @@ const localeCode = navigator.language
 
                     <!-- {{ get(proxyItem, ['new_refund_amount'], null) > item.net_amount }} -->
                     <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
-                    <FontAwesomeIcon v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false" @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))" icon="fad fa-save" class="h-8 cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                    <FontAwesomeIcon
+                        v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false"
+                        @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))"
+                        icon="fad fa-save"
+                        class="h-8 cursor-pointer"
+                        :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                        aria-hidden="true"
+                    />
                     <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                 </div>
             </template>
