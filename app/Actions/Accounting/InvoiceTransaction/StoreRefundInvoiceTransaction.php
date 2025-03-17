@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -26,9 +27,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
+    public function handle(Invoice $refund,InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
-
         $invoice = $invoiceTransaction->invoice;
 
         $netAmount = Arr::get($modelData, 'gross_amount', 0);
@@ -63,52 +63,38 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'in_process', true);
 
 
+        $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
 
-        return DB::transaction(function () use ($invoice, $invoiceTransaction, $modelData) {
-            $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
-            $newDataInvoice = [
-                'total_amount' => $invoice->total_amount + $invoiceTransaction->net_amount,
-                'tax_amount' => $invoice->tax_amount + $invoiceTransaction->tax_amount,
-                'grp_net_amount' => $invoice->grp_net_amount + $invoiceTransaction->grp_net_amount,
-                'org_net_amount' => $invoice->org_net_amount + $invoiceTransaction->org_net_amount,
-            ];
 
-            if ($invoiceTransaction->model_type == 'Rental') {
-                $newDataInvoice['rental_amount'] = $invoice->rental_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'Charge') {
-                $newDataInvoice['charges_amount'] = $invoice->charges_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'Service') {
-                $newDataInvoice['services_amount'] = $invoice->services_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'Product') {
-                $newDataInvoice['goods_amount'] = $invoice->goods_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'ShippingZone') {
-                $newDataInvoice['shipping_amount'] = $invoice->shipping_amount + $invoiceTransaction->net_amount;
-            }
+        dd($invoiceTransaction);
 
-            $invoice->update($newDataInvoice);
-            return $invoiceTransaction;
-        });
+        return $invoiceTransaction;
     }
 
     public function rules(): array
     {
-        return[
+        return [
             'gross_amount' => ['required', 'numeric'],
         ];
     }
+
     /**
      * @throws \Throwable
      */
-    public function asController(InvoiceTransaction $invoiceTransaction, ActionRequest $request): void
+    public function asController(Invoice $refund,InvoiceTransaction $invoiceTransaction, ActionRequest $request): void
     {
         $this->initialisationFromShop($invoiceTransaction->shop, $request);
-        $this->handle($invoiceTransaction, $this->validatedData);
+        $this->handle($refund,$invoiceTransaction, $this->validatedData);
     }
 
-    public function action(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
+    /**
+     * @throws \Throwable
+     */
+    public function action(Invoice $refund,InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
         $this->initialisationFromShop($invoiceTransaction->shop, $modelData);
-        return $this->handle($invoiceTransaction, $this->validatedData);
+
+        return $this->handle($refund,$invoiceTransaction, $this->validatedData);
     }
 
 }
