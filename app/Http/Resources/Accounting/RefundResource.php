@@ -14,7 +14,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class InvoiceRefundResource extends JsonResource
+class RefundResource extends JsonResource
 {
     public static $wrap = null;
 

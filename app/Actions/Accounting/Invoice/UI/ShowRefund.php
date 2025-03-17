@@ -16,8 +16,9 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
-use App\Enums\UI\Accounting\InvoiceRefundTabsEnum;
-use App\Http\Resources\Accounting\InvoiceRefundResource;
+use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
+use App\Enums\UI\Accounting\RefundTabsEnum;
+use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundInProcessTransactionsResource;
 use App\Http\Resources\Accounting\RefundTransactionsResource;
@@ -47,33 +48,33 @@ class ShowRefund extends OrgAction
     public function inInvoiceInOrganisation(Organisation $organisation, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $invoice;
-        $this->initialisation($organisation, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
         return $this->handle($refund);
     }
 
-    public function inOrganisation(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
+    public function inOrganisation(Organisation $organisation, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
-        return $this->handle($invoice);
+        return $this->handle($refund);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, Invoice $invoice, ActionRequest $request): Invoice
+    public function inShop(Organisation $organisation, Shop $shop, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
-        return $this->handle($invoice);
+        return $this->handle($refund);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Invoice $refund, $request): Invoice
     {
         $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
         return $this->handle($refund);
     }
@@ -82,7 +83,7 @@ class ShowRefund extends OrgAction
     public function inFulfilmentInvoice(Organisation $organisation, Fulfilment $fulfilment, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
         return $this->handle($refund);
     }
@@ -92,7 +93,7 @@ class ShowRefund extends OrgAction
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $fulfilmentCustomer;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
         return $this->handle($refund);
     }
@@ -101,7 +102,7 @@ class ShowRefund extends OrgAction
     public function inInvoiceInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $fulfilmentCustomer;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoiceRefundTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
 
         return $this->handle($refund);
     }
@@ -117,135 +118,167 @@ class ShowRefund extends OrgAction
 
         $actions = [];
 
-        if ($refund->in_process && (!app()->environment('production'))) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'secondary',
-                'label' => __('Refund All'),
-                'key'   => 'refund_all',
-                'route' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.refund.refund_all',
-                    'parameters' => [
-                        'refund' => $refund->id,
-                    ]
+
+        $actions[] = [
+            'type'  => 'button',
+            'style' => 'delete',
+            'label' => __('Delete'),
+            'key'   => 'delete_refund',
+            'route' => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.refund.force_delete',
+                'parameters' => [
+                    'refund' => $refund->id,
                 ]
-            ];
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'delete',
-                'label' => __('Delete'),
-                'key'   => 'delete_refund',
-                'route' => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.refund.force_delete',
-                    'parameters' => [
-                        'refund' => $refund->id,
-                    ]
+            ]
+        ];
+
+        $actions[] = [
+            'type'  => 'button',
+            'style' => 'secondary',
+            'label' => __('Refund All'),
+            'key'   => 'refund_all',
+            'route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.refund.refund_all',
+                'parameters' => [
+                    'refund' => $refund->id,
                 ]
-            ];
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('Finalise refund'),
-                'key'   => 'finalise_refund',
-                'route' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.refund.finalise',
-                    'parameters' => [
-                        'refund' => $refund->id,
-                    ]
+            ]
+        ];
+
+        $actions[] = [
+            'type'  => 'button',
+            'style' => 'create',
+            'label' => __('Finalise refund'),
+            'key'   => 'finalise_refund',
+            'route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.refund.finalise',
+                'parameters' => [
+                    'refund' => $refund->id,
                 ]
-            ];
+            ]
+        ];
+
+
+        $props = [
+            'title'       => __('refund'),
+            'breadcrumbs' => $this->getBreadcrumbs(
+                $refund,
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            ),
+            'navigation'  => [
+                'previous' => $this->getPrevious($refund, $request),
+                'next'     => $this->getNext($refund, $request),
+            ],
+            'pageHead'    => [
+                'subNavigation' => $subNavigation,
+                'model'         => __('refund'),
+                'title'         => $refund->reference,
+                'icon'          => [
+                    'icon'  => ['fas', 'fa-hand-holding-usd'],
+                    'title' => $refund->reference
+                ],
+                'actions'       => $actions
+            ],
+            'tabs'        => [
+                'current'    => $this->tab,
+                'navigation' => $refund->in_process ? RefundInProcessTabsEnum::navigation() : RefundTabsEnum::navigation()
+            ],
+
+            'order_summary' => [
+                [
+                    [
+                        'label'       => __('Services'),
+                        'price_total' => $refund->services_amount
+                    ],
+                    [
+                        'label'       => __('Physical Goods'),
+                        'price_total' => $refund->goods_amount
+                    ],
+                    [
+                        'label'       => __('Rental'),
+                        'price_total' => $refund->rental_amount
+                    ],
+                ],
+                [
+                    [
+                        'label'       => __('Tax'),
+                        'price_total' => $refund->tax_amount
+                    ]
+                ],
+                [
+                    [
+                        'label'       => __('Total'),
+                        'price_total' => $refund->total_amount
+                    ],
+                ],
+            ],
+
+
+            'box_stats' => $this->getBoxStats($refund),
+
+            'invoice_refund' => RefundResource::make($refund),
+
+
+        ];
+
+        if ($refund->in_process) {
+            $props = array_merge(
+                $props,
+                [
+                    RefundInProcessTabsEnum::ITEMS->value => $this->tab == RefundInProcessTabsEnum::ITEMS->value ?
+                        fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
+
+
+                    RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
+                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
+                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
+
+
+                ]
+            );
+        } else {
+            $props = array_merge(
+                $props,
+                [
+                    RefundTabsEnum::ITEMS->value => $this->tab == RefundTabsEnum::ITEMS->value ?
+                        fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
+
+
+                    RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
+                        fn () => PaymentsResource::collection(IndexPayments::run($refund))
+                        : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
+                ]
+            );
         }
 
 
-        return Inertia::render(
-            'Org/Accounting/InvoiceRefund',
-            [
-                'title'       => __('refund'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $refund,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'navigation'  => [
-                    'previous' => $this->getPrevious($refund, $request),
-                    'next'     => $this->getNext($refund, $request),
-                ],
-                'pageHead'    => [
-                    'subNavigation' => $subNavigation,
-                    'model'         => __('refund'),
-                    'title'         => $refund->reference,
-                    'icon'          => [
-                        'icon'  => ['fas', 'fa-hand-holding-usd'],
-                        'title' => $refund->reference
-                    ],
-                    'actions'       => $actions
-                ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => InvoiceRefundTabsEnum::navigation()
-                ],
+        $inertia = Inertia::render(
+            'Org/Accounting/Refund',
+            $props
+        );
 
-                'order_summary' => [
-                    [
-                        [
-                            'label'       => __('Services'),
-                            'price_total' => $refund->services_amount
-                        ],
-                        [
-                            'label'       => __('Physical Goods'),
-                            'price_total' => $refund->goods_amount
-                        ],
-                        [
-                            'label'       => __('Rental'),
-                            'price_total' => $refund->rental_amount
-                        ],
-                    ],
-                    [
-                        [
-                            'label'       => __('Tax'),
-                            'price_total' => $refund->tax_amount
-                        ]
-                    ],
-                    [
-                        [
-                            'label'       => __('Total'),
-                            'price_total' => $refund->total_amount
-                        ],
-                    ],
-                ],
+        if ($refund->in_process) {
+            $inertia->table(IndexRefundTransactions::make()->tableStructure($refund, RefundInProcessTabsEnum::ITEMS->value))
+                ->table(IndexRefundInProcessTransactions::make()->tableStructure($refund, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value));
+        } else {
+            $inertia->table(IndexPayments::make()->tableStructure($refund, [], RefundTabsEnum::PAYMENTS->value))
+                ->table(IndexRefundTransactions::make()->tableStructure($refund, RefundTabsEnum::ITEMS->value));
+        }
 
 
-                'box_stats' => $this->getBoxStats($refund),
-
-                'invoice_refund' => InvoiceRefundResource::make($refund),
-
-
-                InvoiceRefundTabsEnum::ITEMS->value => $this->tab == InvoiceRefundTabsEnum::ITEMS->value ?
-                    fn() => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, InvoiceRefundTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn() => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, InvoiceRefundTabsEnum::ITEMS->value))),
-
-                InvoiceRefundTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == InvoiceRefundTabsEnum::ITEMS_IN_PROCESS->value ?
-                    fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, InvoiceRefundTabsEnum::ITEMS_IN_PROCESS->value))
-                    : Inertia::lazy(fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, InvoiceRefundTabsEnum::ITEMS_IN_PROCESS->value))),
-
-                InvoiceRefundTabsEnum::PAYMENTS->value => $this->tab == InvoiceRefundTabsEnum::PAYMENTS->value ?
-                    fn() => PaymentsResource::collection(IndexPayments::run($refund))
-                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($refund))),
-
-
-            ]
-        )->table(IndexPayments::make()->tableStructure($refund, [], InvoiceRefundTabsEnum::PAYMENTS->value))
-            ->table(IndexRefundTransactions::make()->tableStructure($refund, InvoiceRefundTabsEnum::ITEMS->value))
-            ->table(IndexRefundInProcessTransactions::make()->tableStructure($refund, InvoiceRefundTabsEnum::ITEMS_IN_PROCESS->value));
+        return $inertia;
     }
 
 
-    public function jsonResponse(Invoice $invoice): InvoiceRefundResource
+    public function jsonResponse(Invoice $invoice): RefundResource
     {
-        return new InvoiceRefundResource($invoice);
+        return new RefundResource($invoice);
     }
 
 

@@ -34,6 +34,9 @@ class IndexRefundTransactions extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+
+
+
         $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
         $queryBuilder->where('invoice_id', $refund->id);
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
