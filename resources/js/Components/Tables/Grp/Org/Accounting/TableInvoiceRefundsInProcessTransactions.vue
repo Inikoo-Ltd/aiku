@@ -103,7 +103,7 @@ const localeCode = navigator.language
                 
                 <ButtonWithLink
                     :key="item.code"
-                    :routeTarget="item.full_refund_route"
+                    :routeTarget="item.refund_transaction_full_refund"
                     :label="trans('Full refund')"
                     icon="fal fa-plus"
                     type="tertiary"
