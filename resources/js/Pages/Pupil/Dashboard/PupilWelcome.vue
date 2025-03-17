@@ -119,8 +119,6 @@ const openWebsite = (url) => {
         </div>
         <div class="mt-10 flex flex-col items-center justify-center gap-x-6">
             <Button @click="openWebsite(props.shopUrl)" type="black" size="l" :label="`Open ${props.shop}`" />
-            <p>Your username: <code>{{ user.email }}</code></p>
-            <p>Your current password (you can change later by yourself): <Password :modelValue="user.name" toggleMask readonly /></p>
         </div>
     </div>
 </template>

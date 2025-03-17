@@ -49,7 +49,7 @@ class RegisterCustomerFromShopify extends OrgAction
         $customerExists = Customer::where('email', $shopifyUser->email)->first();
         $fulfilmentCustomer = $customerExists?->fulfilmentCustomer;
 
-        if (!$customerExists) {
+        if (!$fulfilmentCustomer) {
             $fulfilmentCustomer = RegisterFulfilmentCustomer::make()->action($fulfilment, $modelData);
             ApproveCustomer::run($fulfilmentCustomer->customer);
             StoreRentalAgreement::make()->action($fulfilmentCustomer, [
