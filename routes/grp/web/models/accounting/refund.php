@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/', CreateRefund::class)->name('refund.create');
 
-Route::name('refund.')->prefix('refund/{refund:id}')->group(function () {
+Route::name('refund.')->prefix('refund/{refund}')->group(function () {
     Route::delete('/delete', DeleteRefund::class)->name('delete');
     Route::delete('/refund-all', RefundAllInvoiceTransactions::class)->name('refund_all');
     Route::name('refund_transaction.')->prefix('/refund-transaction/{invoiceTransaction:id}')->group(function () {

@@ -48,7 +48,7 @@ class ShowRefund extends OrgAction
         $this->parent = $invoice;
         $this->initialisation($organisation, $request)->withTab(InvoiceRefundTabsEnum::values());
 
-        return $this->handle($refund);
+        return $this->handle($refund, InvoiceRefundTabsEnum::ITEMS_IN_PROCESS->value);
     }
 
     public function inOrganisation(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
