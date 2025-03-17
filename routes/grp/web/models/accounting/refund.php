@@ -19,7 +19,7 @@ Route::name('refund.')->prefix('refund/{refund:id}')->group(function () {
     Route::delete('/delete', DeleteRefund::class)->name('delete');
     Route::delete('/refund-all', RefundAllInvoiceTransactions::class)->name('refund_all');
     Route::name('refund_transaction.')->prefix('/refund-transaction/{invoiceTransaction:id}')->group(function () {
-        Route::post('/', StoreRefundInvoiceTransaction::class)->name('store');
-        Route::post('/full-refund', CreateFullRefundInvoiceTransaction::class)->name('full_refund');
+        Route::post('/', StoreRefundInvoiceTransaction::class)->name('store')->withoutScopedBindings();
+        Route::post('/full-refund', CreateFullRefundInvoiceTransaction::class)->name('full_refund')->withoutScopedBindings();
     });
 });

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -29,6 +30,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+
+        dd($refund, $invoiceTransaction, $modelData);
         $taxCategory = $invoiceTransaction->taxCategory;
         if ($taxCategory) {
             $taxRate = $taxCategory->rate;
@@ -36,7 +39,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
             $taxRate = 0;
         }
 
-        $netAmount = Arr::get($modelData, 'gross_amount', 0) / (1 + $taxRate);
+        $grossAmount = - Arr::get($modelData, 'gross_amount', 0);
+        $netAmount = $grossAmount / (1 + $taxRate);
         data_set($modelData, 'net_amount', $netAmount);
 
 
@@ -82,7 +86,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
 
         $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
 
-        //SetInvoiceTotals::run($refund);
+        CalculateInvoiceTotals::run($refund);
 
         return $invoiceTransaction;
     }
