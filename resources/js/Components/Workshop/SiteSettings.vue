@@ -6,74 +6,54 @@
 
 <script setup lang="ts">
 import { ref, provide } from 'vue'
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { blueprint as cta_aurora_1 } from "@/Components/CMS/Webpage/CTAAurora1/Blueprint";
+import { set as setLodash, get, cloneDeep } from 'lodash-es'
 
+import { getFormValue } from '@/Composables/SideEditorHelper'
 import { blueprint } from '@/Components/Workshop/BlueprintSiteSettings'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
-import { Root, Daum } from '@/types/webBlockTypes'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 
 
 const props = defineProps<{
     webpage: RootWebpage
-    webBlockTypes: Root
 }>()
 
 const value = ref({
-    button: {
-        container: {
-            properties: {
-                text: {
-                    color: "rgba(0, 0, 0, 1)",
-                    fontFamily: null
-                },
-                background: {
-                    type: "color",
-                    color: "#ffffff",
-                    image: {
-                        original: null
-                    }
-                },
-                padding: {
-                    unit: "px",
-                    top: { value: 10 },
-                    left: { value: 10 },
-                    right: { value: 10 },
-                    bottom: { value: 10 }
-                },
-                margin: {
-                    unit: "px",
-                    top: { value: 30 },
-                    left: { value: 0 },
-                    right: { value: 0 },
-                    bottom: { value: 0 }
-                },
-                border: {
-                    color: "#000000",
-                    unit: "px",
-                    rounded: {
-                        unit: "px",
-                        topright: { value: 10 },
-                        topleft: { value: 10 },
-                        bottomright: { value: 10 },
-                        bottomleft: { value: 10 }
-                    },
-                    top: { value: 0 },
-                    left: { value: 0 },
-                    right: { value: 0 },
-                    bottom: { value: 0 }
-                }
+    button : null
+})
+
+const setChild = (blueprint = [], data = {}) => {
+    const result = { ...data }
+    for (const form of blueprint) {
+        getFormValues(form, result)
+    }
+    return result
+}
+
+const getFormValues = (form: any, data: any = {}) => {
+    const keyPath = Array.isArray(form.key) ? form.key : [form.key]
+    if (form.editGlobalStyle) {
+        setLodash(data, ['container', 'properties'], { ...value.value[form.editGlobalStyle] });
+    } else if (form.replaceForm) {
+        const set = getFormValue(data, keyPath) || {}
+        setLodash(data, keyPath, setChild(form.replaceForm, set))
+    }
+}
+
+const onSaveWorkshopFromId = (blueprint = []) => {
+    for (const form of cta_aurora_1) {
+        for (const web_block of props.webpage.layout.web_blocks) {
+            for (const web_block of props.webpage.layout.web_blocks) {
+                getFormValues(form, web_block.web_block.layout.data.fieldValue)
             }
         }
     }
-})
-
-console.log(props.webpage)
-
-const onSaveWorkshopFromId = (blockId: number, from?: string) => {
-    console.log(blockId, from, value.value)
+    console.log('Final Data Web Block', props.webpage.layout.web_blocks)
 };
+
 provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
+
 </script>
 
 <template>
