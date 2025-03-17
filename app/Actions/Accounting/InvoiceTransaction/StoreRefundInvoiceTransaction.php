@@ -31,7 +31,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
 
-        dd($refund, $invoiceTransaction, $modelData);
+
         $taxCategory = $invoiceTransaction->taxCategory;
         if ($taxCategory) {
             $taxRate = $taxCategory->rate;
@@ -40,6 +40,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
         }
 
         $grossAmount = - Arr::get($modelData, 'gross_amount', 0);
+        data_set($modelData, 'gross_amount', $grossAmount);
         $netAmount = $grossAmount / (1 + $taxRate);
         data_set($modelData, 'net_amount', $netAmount);
 
@@ -54,9 +55,14 @@ class StoreRefundInvoiceTransaction extends OrgAction
         if ($invoiceTransaction->quantity == 0) {
             $quantity = 0;
         } else {
-            $unitPrice = $invoiceTransaction->net_amount / $invoiceTransaction->quantity;
-            $quantity  = $netAmount / $unitPrice;
+
+            $unitGrossPrice = $invoiceTransaction->gross_amount / $invoiceTransaction->quantity;
+
+            $quantity  = $grossAmount / $unitGrossPrice;
         }
+
+
+
         data_set($modelData, 'quantity', $quantity);
 
 
