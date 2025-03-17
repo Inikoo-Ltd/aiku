@@ -34,15 +34,15 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 
 <template>
 	<div
-		ref="_parentComponent"
 		class="relative"
 		:style="getStyles(fieldValue.container.properties)">
 		<div class="flex flex-col justify-between items-center py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
 				<component
-					:is="fieldValue?.logo?.url ? 'a' : 'div'"
-					:href="fieldValue?.logo?.url || '#'"
+					v-if="fieldValue?.logo?.image?.source"
+					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
+					target="_blank" rel="noopener noreferrer"
 				>
 				    <Image 
                         :style="getStyles(fieldValue.logo.properties)"
@@ -60,6 +60,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 				</div>
 
 				<div
+					class="absolute"
 					:style="{
 						width: fieldValue.text?.container?.properties?.width
 							? `${fieldValue.text?.container?.properties?.width}`
