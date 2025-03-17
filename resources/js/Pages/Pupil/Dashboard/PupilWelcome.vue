@@ -1,30 +1,15 @@
 <script setup lang='ts'>
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
-import SelectButton from 'primevue/selectbutton'
-import DataView from 'primevue/dataview'
-import IconField from 'primevue/iconfield'
-import Rating from 'primevue/rating'
+import Password from 'primevue/password';
 import { FilterMatchMode } from '@primevue/core/api'
 import { onMounted, ref } from 'vue'
 import { useLocaleStore } from '@/Stores/locale'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
-import axios from 'axios'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
 import { faStar } from '@fas'
-import Select from 'primevue/select'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue'
-import { notify } from '@kyvg/vue3-notification'
-import Modal from '@/Components/Utils/Modal.vue'
 library.add(faSearch, faThLarge, faListUl, faStar, falStar)
 
 declare global {
@@ -84,11 +69,11 @@ const isSelected = (id: number) => {
     return selectedProducts.value.some(item => item.id === id);
 }
 
-const onClickGetStarted = () => {
+const onClickGetStarted = (id: number) => {
     isModalGetStarted.value = false
 
     router[props.routes.get_started.method || 'post'](route(props.routes.get_started.name, props.routes.get_started.parameters), {
-
+        shop: id
     }, {
         headers: {
             Authorization: `Bearer ${window.sessionToken}`
@@ -112,9 +97,15 @@ const openWebsite = (url) => {
         <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
             It's looks like this is the first time you integrate Shopify, let's have a look what you can do.
         </p>
-        <div class="mt-10 flex items-center justify-center gap-x-6">
-            <Button @click="() => onClickGetStarted()" type="black" size="l" label="Configure" />
-        </div>
+            <div class="mt-10 flex items-center justify-center gap-x-6">
+                <div v-for="shop in props.shops">
+                    <div class="flex flex-col p-4 border-gray-300 border rounded">
+                        <img class="w-72 h-48 object-cover text-center" v-if="shop.name === 'AW Fulfilment'" src="https://i.ibb.co.com/CxTbCRf/undraw-factory-4d61.png" :alt="`${shop.name}`">
+                        <img class="w-72 h-48 object-cover text-center" v-else src="https://i.ibb.co.com/9k4B20qk/undraw-financial-data-r0vs.png" :alt="`${shop.name}`">
+                        <Button @click="() => onClickGetStarted(shop.id)" type="tertiary" size="l" :label="`Setup ${shop.name}`" />
+                    </div>
+                </div>
+            </div>
     </div>
     <div v-else-if="props.shop" class="relative isolate overflow-hidden px-6 py-8 text-center sm:rounded-3xl sm:px-12">
         <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
@@ -123,21 +114,13 @@ const openWebsite = (url) => {
         <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
             You can manage your orders and products in our fulfilment website.
         </p>
-        <div class="mt-10 flex items-center justify-center gap-x-6">
-            <Button @click="openWebsite(props.shopUrl)" type="black" size="l" :label="`Open ${props.shop}`" />
+        <div class="flex justify-center">
+            <img class="w-1/2 h-1/2 object-cover" src="https://i.ibb.co.com/CxTbCRf/undraw-factory-4d61.png" :alt="`${props.shop}`">
         </div>
-    </div>
-    <div v-else class="relative isolate overflow-hidden px-6 py-8 text-center sm:rounded-3xl sm:px-12">
-        <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
-            {{ trans(`Welcome to Ancient Wisdom Connect!`) }}
-        </h2>
-        <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
-            You need to create an account in one of these store.
-        </p>
-        <div v-for="shop in props.shops">
-            <div class="mt-10 flex items-center justify-center gap-x-6">
-                <Button @click="openWebsite(shop.domain)" type="black" size="l" :label="`Open ${shop.name}`" />
-            </div>
+        <div class="mt-10 flex flex-col items-center justify-center gap-x-6">
+            <Button @click="openWebsite(props.shopUrl)" type="black" size="l" :label="`Open ${props.shop}`" />
+            <p>Your username: <code>{{ user.email }}</code></p>
+            <p>Your current password (you can change later by yourself): <Password :modelValue="user.name" toggleMask readonly /></p>
         </div>
     </div>
 </template>

@@ -55,12 +55,18 @@ class ShowPupilDashboard
             ];
         }
 
+        $query = Shop::where('type', ShopTypeEnum::FULFILMENT->value)->get();
+
+        if ($shopifyUser->customer) {
+            $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();
+        }
+
         return Inertia::render('Dashboard/PupilWelcome', [
              'shop'                  => $shopifyUser?->customer?->shop?->name,
              'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop),
             'user'                  => $shopifyUser,
             'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
-            'shops' => Shop::where('type', ShopTypeEnum::FULFILMENT->value)->get()->map(function ($shop) {
+            'shops' => $query->map(function ($shop) {
                 return [
                     'id' => $shop->id,
                     'name' => $shop->name,

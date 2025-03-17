@@ -2,7 +2,6 @@
 
 namespace App\Listeners;
 
-use App\Actions\Dropshipping\ShopifyUser\RegisterCustomerFromShopify;
 use App\Models\Dropshipping\ShopifyUser;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
 
@@ -22,7 +21,5 @@ class ShopifyAppInstalledListener
     public function handle(AppInstalledEvent $event): void
     {
         $shopifyUser = ShopifyUser::find($event->shopId->toNative());
-
-        RegisterCustomerFromShopify::run($shopifyUser, []);
     }
 }
