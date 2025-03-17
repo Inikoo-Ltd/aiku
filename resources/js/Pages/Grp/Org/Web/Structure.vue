@@ -80,10 +80,14 @@ const treeData = ref<TreeNode[]>([
 //     fetchData();
 //   }
 // );
+
+if (props.data) {
+    treeData.value = props.data
+}
 </script>
 
 <template>
       <Head :title="capitalize(title)" />
       <PageHeading :data="pageHead" />
-      <TableStructure :nodes="data" />
+      <TableStructure :nodes="treeData" />
 </template>

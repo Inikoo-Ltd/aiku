@@ -30,6 +30,10 @@ class ShowWebpagesTree extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
+        $data = null;
+        if (!app()->environment('production')) {
+            $data = $this->getData($website);
+        }
         return Inertia::render(
             'Org/Web/Structure',
             [
@@ -38,7 +42,7 @@ class ShowWebpagesTree extends OrgAction
                 'pageHead' => [
                     'title' => $request->route()->getName()
                 ],
-                'data'     => $this->getData($website)
+                'data'     => $data
             ]
         );
     }
