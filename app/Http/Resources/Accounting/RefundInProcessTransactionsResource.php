@@ -48,7 +48,8 @@ class RefundInProcessTransactionsResource extends JsonResource
                 'parameters' => [
                     'refund' => $this->refund_id,
                     'invoiceTransaction' => $this->id,
-                ]
+                ],
+                'method'    => 'post'
             ],
         ];
     }
