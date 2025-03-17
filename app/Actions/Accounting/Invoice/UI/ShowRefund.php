@@ -150,7 +150,7 @@ class ShowRefund extends OrgAction
         return Inertia::render(
             'Org/Accounting/InvoiceRefund',
             [
-                'title'       => __('invoice refund'),
+                'title'       => __('refund'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $refund,
                     $request->route()->getName(),
@@ -162,7 +162,7 @@ class ShowRefund extends OrgAction
                 ],
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
-                    'model'   => __('invoice refund'),
+                    'model'   => __('refund'),
                     'title'   => $refund->reference,
                     'icon'    => [
                         'icon'  => ['fas', 'fa-hand-holding-usd'],
@@ -204,13 +204,13 @@ class ShowRefund extends OrgAction
                     ],
                 ],
 
-                'exportPdfRoute' => [
-                    'name'       => 'grp.org.accounting.invoices.download',
-                    'parameters' => [
-                        'organisation' => $refund->organisation->slug,
-                        'invoice'      => $refund->slug
-                    ]
-                ],
+                // 'exportPdfRoute' => [
+                //     'name'       => 'grp.org.accounting.invoices.download',
+                //     'parameters' => [
+                //         'organisation' => $refund->organisation->slug,
+                //         'invoice'      => $refund->slug
+                //     ]
+                // ],
                 'box_stats'      => $this->getBoxStats($refund),
 
                 'invoice_refund' => InvoiceRefundResource::make($refund),
