@@ -21,8 +21,8 @@ class RefundAllInvoiceTransactions extends OrgAction
     public function handle(Invoice $refund): Invoice
     {
         $invoice = $refund->originalInvoice;
-
-        foreach ($invoice->transactions as $transaction) {
+        
+        foreach ($invoice->invoiceTransactions as $transaction) {
             CreateFullRefundInvoiceTransaction::make()->action($refund, $transaction);
         }
 

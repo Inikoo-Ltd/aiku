@@ -31,7 +31,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
 
-
+        dd($refund, $invoiceTransaction, $modelData);
         $taxCategory = $invoiceTransaction->taxCategory;
         if ($taxCategory) {
             $taxRate = $taxCategory->rate;
