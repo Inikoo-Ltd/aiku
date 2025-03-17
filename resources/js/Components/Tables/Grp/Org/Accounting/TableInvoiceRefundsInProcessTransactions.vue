@@ -84,7 +84,7 @@ const localeCode = navigator.language
             </template>
 
             <template #cell(action)="{ item, proxyItem }">
-                <pre>{{ item.data }}</pre>
+                <!-- <pre>{{ item.data }}</pre> -->
                 <!-- <pre>new: {{ item.new_refund_amount }}</pre>
                 ------<br> -->
                 <!-- <Button
@@ -95,7 +95,16 @@ const localeCode = navigator.language
                     type="secondary"
                     :loading="isLoading.includes(item.code)"
                 /> -->
-                <div class="flex items-center gap-x-1">
+                <ButtonWithLink
+                    :key="item.code"
+                    :routeTarget="item.delete_route"
+                    :label="trans('Add to refund')"
+                    icon="fal fa-plus"
+                    type="tertiary"
+                    size="s"
+                />
+
+                <div class="flex items-center gap-x-1 mt-2">
                     <div>
                         <InputNumber
                             :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_amount'], 0))"
@@ -110,7 +119,8 @@ const localeCode = navigator.language
                             :currency="item.currency_code"
                             :locale="localeCode"
                             showButtons buttonLayout="horizontal" 
-                            :step="0.25"
+                            :step="item.unit_price"
+                            size="small"
                         >
                             <template #decrementicon>
                                 <FontAwesomeIcon icon="fal fa-minus" aria-hidden="true" />
@@ -138,6 +148,7 @@ const localeCode = navigator.language
                         :routeTarget="item.delete_route"
                         :label="trans('Delete')"
                         type="delete"
+                        size="s"
                     />
                 </div>
 
