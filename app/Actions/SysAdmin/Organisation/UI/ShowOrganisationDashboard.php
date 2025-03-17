@@ -141,6 +141,7 @@ class ShowOrganisationDashboard extends OrgAction
         $dashboard['widgets']['components'] = array_merge(
             $dashboard['widgets']['components'],
             [
+                !app()->environment('production') ?
                 $this->getWidget(
                     data: [
                         'label' => __('In Basket'),
@@ -168,7 +169,7 @@ class ShowOrganisationDashboard extends OrgAction
                             ]
                         ]
                     ]
-                ),
+                ) : [],
                 $this->getWidget(
                     data: [
                         'label' => __('Submitted'),

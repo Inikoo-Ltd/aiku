@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 13 Mar 2025 23:45:39 Malaysia Time, Kuala Lumpur, Malaysia
@@ -9,7 +10,6 @@
 /** @noinspection DuplicatedCode */
 
 namespace App\Actions\Maintenance\Aurora;
-
 
 use App\Actions\Dropshipping\CustomerClient\ForceDeleteCustomerClient;
 use App\Actions\Traits\WithOrganisationSource;
@@ -51,7 +51,7 @@ class RepairCustomerClientFetch
     {
         $counter = 0;
 
-     //   $sevenDays = now()->subDays(120)->startOfDay();
+        //   $sevenDays = now()->subDays(120)->startOfDay();
         CustomerClient::where(
             'organisation_id',
             $this->organisationSource->organisation->id
@@ -68,7 +68,7 @@ class RepairCustomerClientFetch
                             print "$counter Customer Client ($customerClient->id)  $customerClient->source_id  ".$customerClient->creatd_at."  will be deleted\n";
                             try {
                                 ForceDeleteCustomerClient::make()->action($customerClient);
-                            }catch (Throwable $e) {
+                            } catch (Throwable $e) {
                                 print_r($e);
                                 print "Error deleting customer client $customerClient->id\n";
                             }

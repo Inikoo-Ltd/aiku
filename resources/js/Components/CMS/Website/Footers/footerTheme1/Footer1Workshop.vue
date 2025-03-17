@@ -154,7 +154,7 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                     :alt="modelValue.logo.alt" class="h-auto max-h-20 w-auto min-w-16" />
                 <img v-if="modelValue?.logo?.source?.original"  :src="modelValue?.logo?.source?.original" :alt="modelValue.logo.alt"
                     class="h-auto max-h-20 w-auto min-w-16"> -->
-                <Image :src="modelValue?.logo?.source" :imageCover="true" :alt="modelValue?.logo?.alt"
+                <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true" :alt="modelValue?.logo?.alt"
                     :imgAttributes="modelValue?.logo?.attributes" :style="getStyles(modelValue?.logo?.properties)" />
             </div>
 

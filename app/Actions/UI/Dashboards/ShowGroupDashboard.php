@@ -177,6 +177,7 @@ class ShowGroupDashboard extends OrgAction
                          ] */
                     ],
                 ),
+                !app()->environment('production') ?
                 $this->getWidget(
                     data: [
                         'label' => __('In Basket'),
@@ -204,7 +205,7 @@ class ShowGroupDashboard extends OrgAction
                             ]
                         ]
                     ]
-                ),
+                ) : [],
                 $this->getWidget(
                     data: [
                         'label' => __('Submitted'),

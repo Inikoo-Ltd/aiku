@@ -147,6 +147,7 @@ test('create model has web block', function (Webpage $webpage) {
         $webpage,
         [
             'web_block_type_id' => $webBlockType->id,
+            'position'          => 0
         ]
     );
 

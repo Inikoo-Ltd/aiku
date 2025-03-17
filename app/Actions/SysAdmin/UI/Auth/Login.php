@@ -37,7 +37,7 @@ class Login
     public function handle(ActionRequest $request): RedirectResponse
     {
         $this->ensureIsNotRateLimited($request);
-
+        $rememberMe = $request->boolean('remember');
 
         $authorised = false;
         $processed  = false;
@@ -47,14 +47,14 @@ class Login
                 $processed  = true;
                 $authorised = AuthoriseUserWithLegacyPassword::run($user, $request->validated());
                 if ($authorised) {
-                    Auth::login($user, $request->boolean('remember'));
+                    Auth::login($user, $rememberMe);
                 }
             }
         }
 
 
         if (!$processed) {
-            $authorised = Auth::guard($this->gate)->attempt(array_merge($request->validated(), ['status' => true]), $request->boolean('remember'));
+            $authorised = Auth::guard($this->gate)->attempt(array_merge($request->validated(), ['status' => true]), $rememberMe);
         }
 
 

@@ -129,7 +129,7 @@ const confirmDelete = (event: Event, data: Daum) => {
 };
 
 const tabs = [
-    { label: 'Settings', icon: faCogs, tooltip : 'Page Setting' }, 
+   /*  { label: 'Settings', icon: faCogs, tooltip : 'Page Setting' },  */
     { label: 'Block', icon: faLayerGroup, tooltip : 'Blocks'}
 ]
 
@@ -152,7 +152,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
             </Tab>
         </TabList>
         <TabPanels>
-            <TabPanel class="w-[400px] p-1">
+           <!--  <TabPanel class="w-[400px] p-1">
                 <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
                     <SiteSettings 
                     :webpage="webpage"
@@ -160,7 +160,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                 />
                 </div>
                
-            </TabPanel>
+            </TabPanel> -->
             <TabPanel class="w-[400px] p-1">
                 <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
                     <div class="full">
