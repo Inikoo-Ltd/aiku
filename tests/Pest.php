@@ -53,7 +53,7 @@ function loadDB(): void
 
     shell_exec(
         './devops/devel/reset_test_database.sh '.
-        'aiku_testing '.
+        env('DB_DATABASE_TEST', 'aiku_testing').' '.
         env('DB_PORT').' '.
         env('DB_USERNAME').' '.
         env('DB_PASSWORD').' '.
