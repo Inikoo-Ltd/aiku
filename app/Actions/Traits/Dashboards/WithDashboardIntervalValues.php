@@ -27,9 +27,9 @@ trait WithDashboardIntervalValues
             $rawValue = $intervalsModel->{$field.'_'.$interval->value};
 
 
-            if (is_null($rawValue)) {
-                dd($intervalsModel, $field, $interval->value);
-            }
+            //            if (is_null($rawValue)) {
+            //               dd($intervalsModel, $field, $interval->value);
+            //            }
 
             $data = [
                 'formatted_value' => $rawValue,
@@ -59,8 +59,7 @@ trait WithDashboardIntervalValues
                     $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
-                    $rawValueLastYear        = $intervalsModel->{$field.'_'.$interval->value.'_ly'};
-                    $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
+                    $data['formatted_value'] = Number::delta($rawValue, $intervalsModel->{$field.'_'.$interval->value}.'_ly');
                     break;
             }
 
@@ -75,15 +74,30 @@ trait WithDashboardIntervalValues
         $originalColumnFingerprint = $columnFingerprint;
 
 
-        $minified = false;
+        $dataType = DashboardDataType::NUMBER;
+
+
         if (str_ends_with($columnFingerprint, '_minified')) {
             $minified          = true;
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_minified'));
+            $dataType = DashboardDataType::NUMBER_MINIFIED;
+
         }
 
 
+        if (str_ends_with($columnFingerprint, '_delta')) {
+
+            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_delta'));
+            $dataType = DashboardDataType::DELTA_LAST_YEAR;
+        } elseif (str_ends_with($columnFingerprint, '_currency')) {
+            $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED ? DashboardDataType::CURRENCY_MINIFIED : DashboardDataType::CURRENCY;
+        }
+
+
+
+
         $options  = [];
-        $dataType = $minified ? DashboardDataType::CURRENCY_MINIFIED : DashboardDataType::CURRENCY;
+
 
 
         if (str_ends_with($columnFingerprint, '_shop_currency')) {
@@ -96,8 +110,6 @@ trait WithDashboardIntervalValues
             $options['currency'] = $intervalsModel->organisation->currency->code;
         } elseif (str_ends_with($columnFingerprint, '_group_currency')) {
             $options['currency'] = $intervalsModel->group->currency->code;
-        } else {
-            return [];
         }
 
 

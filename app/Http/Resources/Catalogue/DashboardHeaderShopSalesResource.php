@@ -23,7 +23,10 @@ class DashboardHeaderShopSalesResource extends JsonResource
         $organisation = $this;
 
 
-
+        $deltaLabel = [
+            'formatted_value' => 'Δ 1Y',
+            'tooltip'         => __('Change versus 1 Year ago')
+        ];
 
         $columns = array_merge(
             [
@@ -42,12 +45,15 @@ class DashboardHeaderShopSalesResource extends JsonResource
                 ]
             ],
             [
-                'baskets_created_org_currency' => [
+                'baskets_created_shop_currency_minified' => [
                     'formatted_value' => __('In basket')
                 ]
             ],
             [
-                'baskets_created_shop_currency_minified' => [
+                'baskets_created_shop_currency_delta' => $deltaLabel
+            ],
+            [
+                'baskets_created_org_currency' => [
                     'formatted_value' => __('In basket')
                 ]
             ],
@@ -55,6 +61,9 @@ class DashboardHeaderShopSalesResource extends JsonResource
                 'baskets_created_org_currency_minified' => [
                     'formatted_value' => __('In basket')
                 ]
+            ],
+            [
+                'baskets_created_org_currency_delta' => $deltaLabel
             ],
             [
                 'invoices' => [
@@ -67,12 +76,10 @@ class DashboardHeaderShopSalesResource extends JsonResource
                 ]
             ],
             [
-                'sales_shop_currency' => [
-                    'formatted_value' => __('Sales')
-                ]
+                'invoices_delta' => $deltaLabel
             ],
             [
-                'sales_org_currency' => [
+                'sales_shop_currency' => [
                     'formatted_value' => __('Sales')
                 ]
             ],
@@ -82,9 +89,20 @@ class DashboardHeaderShopSalesResource extends JsonResource
                 ]
             ],
             [
+                'sales_shop_currency_delta' => $deltaLabel,
+            ],
+            [
+                'sales_org_currency' => [
+                    'formatted_value' => __('Sales')
+                ]
+            ],
+            [
                 'sales_org_currency_minified' => [
                     'formatted_value' => __('Sales')
                 ]
+            ],
+            [
+                'sales_org_currency_delta' => $deltaLabel,
             ],
         );
 

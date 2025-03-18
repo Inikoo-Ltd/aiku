@@ -24,8 +24,13 @@ class DashboardTotalShopSalesResource extends JsonResource
 
 
         $baskets_created_org_currency = $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency');
+        $baskets_created_org_currency_delta = $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency_delta');
+
         $baskets_created_shop_currency = [
             'baskets_created_shop_currency' => $baskets_created_org_currency['baskets_created_org_currency']
+        ];
+        $baskets_created_shop_currency_delta = [
+            'baskets_created_shop_currency_delta' => $baskets_created_org_currency_delta['baskets_created_org_currency_delta']
         ];
 
         $baskets_created_org_currency_minified = $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency_minified');
@@ -34,9 +39,17 @@ class DashboardTotalShopSalesResource extends JsonResource
         ];
 
         $sales_org_currency = $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency');
+        $sales_org_currency_delta = $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_delta');
+
         $sales_shop_currency = [
             'sales_shop_currency' => $sales_org_currency['sales_org_currency']
         ];
+
+        $sales_shop_currency_delta = [
+            'sales_shop_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta']
+        ];
+
+
 
         $sales_org_currency_minified = $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_minified');
         $sales_shop_currency_minified = [
@@ -56,15 +69,20 @@ class DashboardTotalShopSalesResource extends JsonResource
                 ]
             ],
             $baskets_created_shop_currency,
-            $baskets_created_org_currency,
             $baskets_created_shop_currency_minified,
+            $baskets_created_shop_currency_delta,
+            $baskets_created_org_currency,
             $baskets_created_org_currency_minified,
+            $baskets_created_org_currency_delta,
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
             $sales_shop_currency,
-            $sales_org_currency,
             $sales_shop_currency_minified,
-            $sales_org_currency_minified
+            $sales_shop_currency_delta,
+            $sales_org_currency,
+            $sales_org_currency_minified,
+            $sales_org_currency_delta
         );
 
 

@@ -23,7 +23,10 @@ class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
         $organisation = $this;
 
 
-
+        $deltaLabel = [
+            'formatted_value' => 'Δ 1Y',
+            'tooltip'         => __('Change versus 1 Year ago')
+        ];
 
         $columns = array_merge(
             [
@@ -47,9 +50,15 @@ class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
                 ]
             ],
             [
+                'refunds_delta' => $deltaLabel
+            ],
+            [
                 'invoices' => [
                     'formatted_value' => __('Invoices')
                 ]
+            ],
+            [
+                'invoices_delta' => $deltaLabel
             ],
             [
                 'invoices_minified' => [
@@ -57,9 +66,17 @@ class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
                 ]
             ],
             [
-                'sales_shop_currency' => [
+                'sales_invoice_category_currency' => [
                     'formatted_value' => __('Sales')
                 ]
+            ],
+            [
+                'sales_invoice_category_currency_minified' => [
+                    'formatted_value' => __('Sales')
+                ]
+            ],
+            [
+                'sales_invoice_category_currency_delta' => $deltaLabel,
             ],
             [
                 'sales_org_currency' => [
@@ -67,14 +84,12 @@ class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
                 ]
             ],
             [
-                'sales_shop_currency_minified' => [
+                'sales_org_currency_minified' => [
                     'formatted_value' => __('Sales')
                 ]
             ],
             [
-                'sales_org_currency_minified' => [
-                    'formatted_value' => __('Sales')
-                ]
+                'sales_org_currency_delta' => $deltaLabel,
             ],
         );
 

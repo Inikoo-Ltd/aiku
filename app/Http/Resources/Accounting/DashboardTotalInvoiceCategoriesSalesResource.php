@@ -23,8 +23,14 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         $organisation = $this;
 
         $sales_org_currency              = $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency');
+        $sales_org_currency_delta              = $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_delta');
+
         $sales_invoice_category_currency = [
             'sales_invoice_category_currency' => $sales_org_currency['sales_org_currency']
+        ];
+
+        $sales_invoice_category_currency_delta = [
+            'sales_invoice_category_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta']
         ];
 
         $sales_org_currency_minified              = $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_minified');
@@ -46,12 +52,16 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
             ],
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_minified'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_delta'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
             $sales_invoice_category_currency,
-            $sales_org_currency,
             $sales_invoice_category_currency_minified,
-            $sales_org_currency_minified
+            $sales_invoice_category_currency_delta,
+            $sales_org_currency,
+            $sales_org_currency_minified,
+            $sales_org_currency_delta
         );
 
 

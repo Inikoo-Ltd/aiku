@@ -35,5 +35,24 @@ class NumberMacroServiceProvider extends ServiceProvider
 
             return Number::currency($abbreviated, $currency) . $suffix;
         });
+
+        Number::macro('delta', function ($current, $previous) {
+
+            if (!is_numeric($current)) {
+                $current = 0;
+            }
+            if (!is_numeric($previous)) {
+                $previous = 0;
+            }
+
+            if ($current == $previous) {
+                return '--';
+            }
+
+            return Number::percentage($current, $previous);
+
+
+        });
+
     }
 }
