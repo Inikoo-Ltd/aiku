@@ -32,7 +32,7 @@ const props = defineProps<{
 const modelValue = defineModel()
 
 const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })
 
 const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     setFormValue(modelValue.value, fieldKeys, newVal)

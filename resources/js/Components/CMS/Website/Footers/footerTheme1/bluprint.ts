@@ -48,16 +48,6 @@ export default {
 					type: "dimension",
 				},
 				{
-					key: ["properties", "margin"],
-					label: "Margin",
-					type: "margin",
-				},
-				{
-					key: ["properties", "padding"],
-					label: "Padding",
-					type: "padding",
-				},
-				{
 					key: ["attributes", "fetchpriority"],
 					label: trans("Fetch Priority"),
 					information: trans(
