@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, provide} from 'vue'
 
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import draggable from "vuedraggable";
@@ -113,7 +113,7 @@ const onRightClickMenu = (event, data, column, index) => {
 const onRightClickSubMenu = (event, data, column, index) => {
     selectedData.value = data;
     selectedIndex.value = index,
-        selectedColumn.value = column
+    selectedColumn.value = column
     subMenu.value.show(event);
 };
 
@@ -138,6 +138,17 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
     editable.value = !newStatus
 });
 
+
+const onSaveWorkshop = (c) => {
+	console.log(c)
+}
+
+const onSaveWorkshopFromId = (blockId: number, from?: string) => {
+	console.log(blockId,from)
+}
+
+provide('onSaveWorkshopFromId', onSaveWorkshopFromId)
+provide('onSaveWorkshop', onSaveWorkshop)
 
 </script>
 
@@ -478,6 +489,7 @@ watch(() => props.previewMode, (newStatus, oldStatus) => {
                 </div>
             </div>
         </div>
+
         <div
             class="mt-8 border-0 border-t border-solid border-gray-700 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8 ">
             <div class="grid gap-y-2 text-center md:text-left ">
