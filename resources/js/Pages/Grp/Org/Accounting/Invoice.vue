@@ -110,6 +110,7 @@ const props = defineProps<{
         state: string
         workshop_route: routeType
     }
+    list_refund: {}[]
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -210,6 +211,16 @@ const errorInvoicePayment = ref({
     payment_amount: null,
     payment_reference: null
 })
+
+
+const generateRefundRoute = (refundSlug: string) => {
+    return route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', {
+        organisation: route().params?.organisation,
+        fulfilment: route().params?.fulfilment,
+        invoice: props.invoice.slug,
+        refund: refundSlug
+    })
+}
 </script>
 
 
@@ -367,8 +378,27 @@ const errorInvoicePayment = ref({
                         :currencyCode="invoice.currency_code"
                         :class="[Number(box_stats.information.pay_amount) ? 'hover:bg-gray-100 cursor-pointer' : '']"
                     />
+                </div>
 
+                <div v-if="list_refund.length" v-tooltip="trans('List of refunds')" class="mt-1 flex items-center w-full flex-none gap-x-2">
+                    <dt class="flex-none">
+                        <FontAwesomeIcon icon='fal fa-hand-holding-usd' fixed-width aria-hidden='true' class="text-gray-500" />
+                    </dt>
 
+                    <dd class="text-base text-gray-500">
+                        <Link v-for="(refund, index) in list_refund.slice(0, 2)"
+                            :key="index"
+                            :href="generateRefundRoute(refund.refund_slug)"
+                            class="secondaryLink"
+                        >
+                            {{ refund.refund_reference }}
+                        </Link>
+
+                        <div v-if="list_refund.length > 2" @click="() => handleTabUpdate('refunds')" class="text-xs cursor-pointer text-gray-500 hover:text-gray-700">
+                            {{ trans("see more..") }}
+                        </div>
+
+                    </dd>
                 </div>
             </div>
         </BoxStatPallet>
