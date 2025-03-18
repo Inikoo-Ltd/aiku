@@ -86,6 +86,7 @@ const props = defineProps<{
       paid_amount: number | null
       pay_amount: number | null
     }
+    refund_id: number
   }
   exportPdfRoute: routeType
   order_summary: FieldOrderSummary[][]
@@ -128,69 +129,78 @@ const listPaymentRefund = ref([
         value: 'invoice_payment_method',
     }
 ])
-// const isLoadingFetch = ref(false)
-// const fetchPaymentMethod = async () => {
-//     try {
-//         isLoadingFetch.value = true
-//         const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters))
-//         listPaymentMethod.value = data.data
-//     } catch (error) {
-//         notify({
-//             title: trans('Something went wrong'),
-//             text: trans('Failed to fetch payment method list'),
-//             type: 'error',
-//         })
-//     }
-//     finally {
-//         isLoadingFetch.value = false
-//     }
-// }
+const listPaymentMethod = ref([])
+const isLoadingFetch = ref(false)
+const fetchPaymentMethod = async () => {
+    try {
+        isLoadingFetch.value = true
+        const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters))
+        listPaymentMethod.value = data.data
+    } catch (error) {
+        notify({
+            title: trans('Something went wrong'),
+            text: trans('Failed to fetch payment method list'),
+            type: 'error',
+        })
+    }
+    finally {
+        isLoadingFetch.value = false
+    }
+}
 
 const paymentData = ref({
-  payment_method: null as number | null,
-  payment_amount: 0 as number | null,
-  payment_reference: ""
+    payment_method: null as string | null,
+    payment_account: null as number | null,
+    payment_amount: 0 as number | null,
+//   payment_reference: ""
 });
 const isOpenModalPayment = ref(false);
 const isLoadingPayment = ref(false);
 const errorPaymentMethod = ref<null | unknown>(null);
 const onSubmitPayment = () => {
-  try {
-    router[props.box_stats.information.routes.submit_payment.method || "post"](
-      route(props.box_stats.information.routes.submit_payment.name, {
-        ...props.box_stats.information.routes.submit_payment.parameters,
-        paymentAccount: paymentData.value.payment_method
-      }),
-      {
-        amount: paymentData.value.payment_amount,
-        reference: paymentData.value.payment_reference,
-        status: "success",
-        state: "completed"
-      },
-      {
-        onStart: () => isLoadingPayment.value = true,
-        onFinish: () => {
-          isLoadingPayment.value = false,
-            isOpenModalPayment.value = false,
-            notify({
-              title: trans("Success"),
-              text: "Successfully add payment invoice",
-              type: "success"
-            });
-        },
-        onSuccess: () => {
-          paymentData.value.payment_method = null,
-            paymentData.value.payment_amount = 0,
-            paymentData.value.payment_reference = "";
-        },
-        preserveScroll: true,
-      }
-    );
 
-  } catch (error: unknown) {
-    errorPaymentMethod.value = error;
-  }
-};
+    let url
+    if (paymentData.value.payment_method === 'credit_balance') {
+        url = route('grp.models.refund.refund_to_credit', {
+            refund: props.box_stats.refund_id,
+        })
+    } else {
+        url = route('grp.models.refund.refund_to_payment_account', {
+            refund: props.box_stats.refund_id,
+            paymentAccount: paymentData.value.payment_account
+        })
+    }
+
+    try {
+        router.post(
+            url,
+            {
+                amount: paymentData.value.payment_amount,
+            },
+            {
+                onStart: () => isLoadingPayment.value = true,
+                onFinish: () => {
+                    isLoadingPayment.value = false,
+                        isOpenModalPayment.value = false,
+                        notify({
+                            title: trans("Success"),
+                            text: "Successfully add payment invoice",
+                            type: "success"
+                        })
+                },
+                onSuccess: () => {
+                    paymentData.value.payment_account = null,
+                    paymentData.value.payment_amount = 0
+                        // paymentData.value.payment_reference = ""
+                },
+                preserveScroll: true,
+            }
+        )
+
+    } catch (error: unknown) {
+        errorPaymentMethod.value = error
+    }
+}
 
 watch(paymentData, () => {
   if (errorPaymentMethod.value) {
@@ -359,7 +369,7 @@ watch(paymentData, () => {
                 <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
             </dt>
 
-            <dd @click="() => isOpenModalPayment = true"
+            <dd @click="() => (isOpenModalPayment = true, fetchPaymentMethod())"
                 class="cursor-pointer relative w-full flex flex-col border px-2.5 py-1 rounded-md  overflow-hidden"
                 :class="Number(box_stats.information.pay_amount) === 0 ? 'border-gray-300' : 'border-orange-400 bg-orange-50 hover:bg-orange-100'"
                 v-tooltip="trans('Need to refund')"
@@ -432,17 +442,36 @@ watch(paymentData, () => {
                     <label for="first-name" class="block text-sm font-medium leading-6">
                         <span class="text-red-500">*</span> {{ trans('Select payment method') }}
                     </label>
-                    <div class="mt-1">
-                        <PureMultiselect
-                            v-model="paymentData.payment_method"
-                            :options="listPaymentRefund"
-                            label="label"
-                            valueProp="value"
-                            required
-                            caret
-                        />
+                    <div class="mt-1 grid grid-cols-2 gap-x-3">
+                        <div
+                            @click="() => paymentData.payment_method = item.value"
+                            v-for="item in listPaymentRefund"
+                            :key="item.value"
+                            class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
+                            :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'"
+                        >
+                            {{ item.label }}
+                        </div>
                     </div>
                 </div>
+
+                <Transition name="slide-to-left">
+                    <div v-if="paymentData.payment_method === 'invoice_payment_method'" class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Select payment account') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureMultiselect
+                                v-model="paymentData.payment_account"
+                                :options="listPaymentMethod"
+                                label="name"
+                                valueProp="id"
+                                required
+                                caret
+                            />
+                        </div>
+                    </div>
+                </Transition>
 
                 <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Payment amount') }}</label>
@@ -455,12 +484,12 @@ watch(paymentData, () => {
                     </div>
                 </div>
 
-                <div class="col-span-2">
+                <!-- <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Reference') }}</label>
                     <div class="mt-1">
                         <PureInput v-model="paymentData.payment_reference" placeholder="#000000"/>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- <div class="col-span-2">
                     <label for="message" class="block text-sm font-medium leading-6">Note</label>
@@ -475,7 +504,7 @@ watch(paymentData, () => {
             </div>
 
             <div class="mt-6 mb-4 relative">
-                <Button @click="() => onSubmitPayment()" label="Submit" :disabled="!(!!paymentData.payment_method)" :loading="isLoadingPayment" full />
+                <Button @click="() => onSubmitPayment()" label="Submit" :disabled="paymentData.payment_method === 'credit_balance' ? false : !(!!paymentData.payment_account)" :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
                 </Transition>
