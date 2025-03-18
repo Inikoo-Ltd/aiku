@@ -62,11 +62,21 @@ class ShowPupilDashboard
             $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();
         }
 
-        return Inertia::render('Dashboard/PupilWelcome', [
-             'shop'                  => $shopifyUser?->customer?->shop?->name,
-             'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
+        $render_page = null;
+
+        if (!Arr::get($shopifyUser?->settings, 'webhooks')) {
+            $render_page = 'Intro';
+        } else if ($shopifyUser?->customer?->shop?->name) {
+            $render_page = 'WelcomeShop';
+        } else {
+            $render_page = 'Dashboard/PupilWelcome';
+        }
+
+        return Inertia::render($render_page, [
+            'shop'                  => $shopifyUser?->customer?->shop?->name,
+            'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
             'user'                  => $shopifyUser,
-            'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
+            // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
             'shops' => $query->map(function ($shop) {
                 return [
                     'id' => $shop->id,

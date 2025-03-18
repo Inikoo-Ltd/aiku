@@ -34,15 +34,26 @@ class GetPupilFirstLoadProps
 
         return
             [
-            'localeData' =>
-                [
+                'localeData' => [
                     'language'        => LanguageResource::make($language)->getArray(),
                     'languageOptions' => GetLanguagesOptions::make()->translated(),
                 ],
-
-            //todo @artha is layout needed here?
-            //'layout'      => GetLayout::run($request, $webUser),
-            'environment' => app()->environment(),
-        ];
+                'layout'   => [
+                    'navigation'    => [
+                        'spaces' => [
+                            'label'   => __('Spaces'),
+                            'icon'    => ['fal', 'fa-parking'],
+                            'root'    => 'pupil.home.',
+                            'route'   => [
+                                'name' => 'pupil.home'
+                            ],
+                            'topMenu' => []
+                        ]
+                    ]
+                ],
+                //todo @artha is layout needed here?
+                //'layout'      => GetLayout::run($request, $webUser),
+                'environment' => app()->environment(),
+            ];
     }
 }
