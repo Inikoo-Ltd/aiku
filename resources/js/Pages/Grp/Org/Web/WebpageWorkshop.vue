@@ -21,7 +21,7 @@ import ButtonPreviewLogin from "@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-
+import { debounce } from 'lodash';
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -160,6 +160,39 @@ const debounceSaveWorkshop = (block) => {
 	}, 1500) // Debounce time of 1500ms for each block
 }
 
+const debouncedSaveSiteSettings = debounce((block) => {
+	router.patch(
+		route('grp.models.model_has_web_block.bulk.update'),
+		{ web_blocks: block },
+		{
+			onStart: () => {
+				console.log('========== start save ')
+				isSavingBlock.value = true
+			},
+			onFinish: () => {
+				isSavingBlock.value = false
+			},
+			onSuccess: () => {
+				sendToIframe({ key: 'reload', value: {} })
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message,
+					type: "error",
+				});
+				isSavingBlock.value = false
+			},
+			preserveScroll: true,
+		}
+	);
+}, 1500); 
+
+
+const onSaveSiteSettings = (block) => {
+    debouncedSaveSiteSettings(block);
+};
+ 
 const onSaveWorkshop = (block) => {
 	// Cancel the ongoing save for the specific block if it's in progress
 	if (cancelTokens.value[block.id]) {
@@ -390,7 +423,7 @@ watch(openedBlockSideEditor, (newValue) => {
 		<div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
 			<WebpageSideEditor v-model="isModalBlockList" :isLoadingblock :isLoadingDeleteBlock :isAddBlockLoading
 				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"
-				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor"/>
+				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings"/>
 		</div>
 
 		<!-- Section: Preview -->

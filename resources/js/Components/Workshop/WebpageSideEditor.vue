@@ -52,6 +52,7 @@ const emits = defineEmits<{
     (e: 'update', value: Daum): void
     (e: 'order', value: Object): void
     (e: 'setVisible', value: Object): void
+    (e: 'onSaveSiteSettings', value: Object): void
 }>()
 
 const confirm = useConfirm();
@@ -157,6 +158,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                     <SiteSettings 
                     :webpage="webpage"
                     :webBlockTypes="webBlockTypes" 
+                    @onSaveSiteSettings="(value)=>emits('onSaveSiteSettings',value)"
                 />
                 </div>
                

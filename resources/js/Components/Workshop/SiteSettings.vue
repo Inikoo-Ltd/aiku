@@ -52,6 +52,11 @@ const value = ref({
     }
 });
 
+const emits = defineEmits<{
+    (e: 'onSaveSiteSettings', value: Object): void
+}>()
+
+
 // **1️⃣ Remove null/undefined values from an object**
 const cleanObject = (obj: any) => {
     if (!isObject(obj)) return obj;
@@ -117,16 +122,8 @@ const onSaveWorkshopFromId = () => {
 provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
 
 const debounceSaveWorkshop = () => {
-   /*  const finalBlock = {
-        layout: cleanObject(block.web_block.layout),
-        show_logged_in: block.visibility.in,
-        show_logged_out: block.visibility.out,
-        show: block.show,
-    }; */
-
     const data = cloneDeep(props.webpage.layout.web_blocks)
     const finalData = []
- console.log(data)
     for (const weblock of data) {
         finalData.push({
             id:weblock.id,
@@ -136,8 +133,8 @@ const debounceSaveWorkshop = () => {
             show: weblock.show,
         })
     }
-
-    router.patch(
+    emits('onSaveSiteSettings', finalData)
+    /* router.patch(
         route('grp.models.model_has_web_block.bulk.update'),
         { web_blocks : finalData},
         {
@@ -151,7 +148,7 @@ const debounceSaveWorkshop = () => {
             },
             preserveScroll: true,
         }
-    );
+    ); */
 }
 
 </script>
