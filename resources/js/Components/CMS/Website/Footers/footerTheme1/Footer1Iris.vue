@@ -262,7 +262,6 @@ const props = defineProps<{
 
                 <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
                     <a v-for="socmed of modelValue?.socialMedia" target="_blank" :href="socmed.link">
-                        {{ socmed.icon }} =====
                         <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl"></FontAwesomeIcon>
                     </a>
                 </div>
