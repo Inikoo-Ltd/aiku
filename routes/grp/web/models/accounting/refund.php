@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\RefundToCredit;
+use App\Actions\Accounting\Invoice\RefundToPaymentAccount;
 use App\Actions\Accounting\Invoice\UI\CreateRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
@@ -19,6 +21,8 @@ Route::post('/{invoice:id}', CreateRefund::class)->name('refund.create');
 Route::name('refund.')->prefix('refund/{refund:id}')->group(function () {
     Route::post('/finalise', FinaliseRefund::class)->name('finalise')->withoutScopedBindings();
     Route::delete('/force-delete', ForceDeleteRefund::class)->name('force_delete')->withoutScopedBindings();
+    Route::post('/refund-to-credit', RefundToCredit::class)->name('refund_to_credit')->withoutScopedBindings();
+    Route::post('/refund-to-payment-acccount/{paymentAccount}', RefundToPaymentAccount::class)->name('refund_to_payment_account')->withoutScopedBindings();
     Route::post('/refund-all', RefundAllInvoiceTransactions::class)->name('refund_all')->withoutScopedBindings();
     Route::name('refund_transaction.')->prefix('/refund-transaction/{invoiceTransaction:id}')->group(function () {
         Route::post('/', StoreRefundInvoiceTransaction::class)->name('store')->withoutScopedBindings();

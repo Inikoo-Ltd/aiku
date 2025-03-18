@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 18-03-2025-15h-02m
@@ -9,18 +10,11 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
-use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Accounting\Payment\PaymentStateEnum;
-use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\Payment;
-use App\Models\Accounting\PaymentAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundToCredit extends OrgAction
@@ -31,7 +25,7 @@ class RefundToCredit extends OrgAction
     public function handle(Invoice $refund, array $modelData): Invoice
     {
         StoreCreditTransaction::make()->action($refund->customer, [
-            'amount' => Arr::get($modelData, 'amount'),
+            'amount' => -abs(Arr::get($modelData, 'amount')),
             'date'  => now(),
             'type' => CreditTransactionTypeEnum::MONEY_BACK
         ]);
