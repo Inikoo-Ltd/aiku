@@ -147,9 +147,11 @@
                 {{ __('Invoice Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
             </div>
 
+            @if($invoice->tax_liability_at)
             <div style="text-align: right">
                 {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
             </div>
+            @endif
 
         </td>
     </tr>
@@ -191,6 +193,7 @@
                 </td>-->
     </tr>
 </table>
+@if($invoice->billingAddress)
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
         <td width="45%" style="border: 0.1mm solid #888888;"><span
@@ -220,6 +223,7 @@
         </td>
     </tr>
 </table>
+@endif
 <br>
 
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">

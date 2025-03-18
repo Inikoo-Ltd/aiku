@@ -8,13 +8,15 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRefundInvoiceTransaction extends OrgAction
@@ -26,31 +28,40 @@ class StoreRefundInvoiceTransaction extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
+    public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
 
-        $invoice = $invoiceTransaction->invoice;
+        $netAmount = -Arr::get($modelData, 'net_amount', 0);
+        data_set($modelData, 'net_amount', $netAmount);
 
-        $netAmount = Arr::get($modelData, 'gross_amount', 0);
+        $orgExchange = GetCurrencyExchange::run($refund->currency, $refund->organisation->currency);
+        $grpExchange = GetCurrencyExchange::run($refund->currency, $refund->group->currency);
 
+        data_set($modelData, 'grp_net_amount', $netAmount * $grpExchange);
+        data_set($modelData, 'org_net_amount', $netAmount * $orgExchange);
+
+
+        if ($invoiceTransaction->quantity == 0) {
+            $quantity = 0;
+        } else {
+            $unitNetPrice = $invoiceTransaction->net_amount / $invoiceTransaction->quantity;
+
+            $quantity = $netAmount / $unitNetPrice;
+        }
+
+
+        data_set($modelData, 'quantity', $quantity);
+
+
+        data_set($modelData, 'invoice_id', $refund->id);
         data_set($modelData, 'group_id', $invoiceTransaction->group_id);
         data_set($modelData, 'organisation_id', $invoiceTransaction->organisation_id);
         data_set($modelData, 'shop_id', $invoiceTransaction->shop_id);
         data_set($modelData, 'customer_id', $invoiceTransaction->customer_id);
-
-        data_set($modelData, 'net_amount', $netAmount);
         data_set($modelData, 'date', now());
 
-        data_set($modelData, 'grp_net_amount', $netAmount * $invoiceTransaction->grp_exchange);
-        data_set($modelData, 'org_net_amount', $netAmount * $invoiceTransaction->org_exchange);
-
-
-        $pricePerQuantity = $invoiceTransaction->net_amount / $invoiceTransaction->quantity;
-        data_set($modelData, 'quantity', $netAmount / $pricePerQuantity);
 
         data_set($modelData, 'model_type', $invoiceTransaction->model_type);
-        data_set($modelData, 'invoice_id', $invoice->id);
-
         data_set($modelData, 'tax_category_id', $invoiceTransaction->tax_category_id);
         data_set($modelData, 'model_id', $invoiceTransaction->model_id);
         data_set($modelData, 'asset_id', $invoiceTransaction->asset_id);
@@ -59,56 +70,41 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'transaction_id', $invoiceTransaction->transaction_id);
         data_set($modelData, 'family_id', $invoiceTransaction->family_id);
         data_set($modelData, 'historic_asset_id', $invoiceTransaction->historic_asset_id);
-        data_set($modelData, 'recurring_bill_transaction_id', $invoiceTransaction->recurring_bill_transaction_id);
+
         data_set($modelData, 'in_process', true);
 
 
+        $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
 
-        return DB::transaction(function () use ($invoice, $invoiceTransaction, $modelData) {
-            $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
-            $newDataInvoice = [
-                'total_amount' => $invoice->total_amount + $invoiceTransaction->net_amount,
-                'tax_amount' => $invoice->tax_amount + $invoiceTransaction->tax_amount,
-                'grp_net_amount' => $invoice->grp_net_amount + $invoiceTransaction->grp_net_amount,
-                'org_net_amount' => $invoice->org_net_amount + $invoiceTransaction->org_net_amount,
-            ];
+        CalculateInvoiceTotals::run($refund);
 
-            if ($invoiceTransaction->model_type == 'Rental') {
-                $newDataInvoice['rental_amount'] = $invoice->rental_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'Charge') {
-                $newDataInvoice['charges_amount'] = $invoice->charges_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'Service') {
-                $newDataInvoice['services_amount'] = $invoice->services_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'Product') {
-                $newDataInvoice['goods_amount'] = $invoice->goods_amount + $invoiceTransaction->net_amount;
-            } elseif ($invoiceTransaction->model_type == 'ShippingZone') {
-                $newDataInvoice['shipping_amount'] = $invoice->shipping_amount + $invoiceTransaction->net_amount;
-            }
-
-            $invoice->update($newDataInvoice);
-            return $invoiceTransaction;
-        });
+        return $invoiceTransaction;
     }
 
     public function rules(): array
     {
-        return[
-            'gross_amount' => ['required', 'numeric'],
+        return [
+            'net_amount' => ['required', 'numeric', 'gt:0'],
         ];
     }
+
     /**
      * @throws \Throwable
      */
-    public function asController(InvoiceTransaction $invoiceTransaction, ActionRequest $request): void
+    public function asController(Invoice $refund, InvoiceTransaction $invoiceTransaction, ActionRequest $request): void
     {
         $this->initialisationFromShop($invoiceTransaction->shop, $request);
-        $this->handle($invoiceTransaction, $this->validatedData);
+        $this->handle($refund, $invoiceTransaction, $this->validatedData);
     }
 
-    public function action(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
+    /**
+     * @throws \Throwable
+     */
+    public function action(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
         $this->initialisationFromShop($invoiceTransaction->shop, $modelData);
-        return $this->handle($invoiceTransaction, $this->validatedData);
+
+        return $this->handle($refund, $invoiceTransaction, $this->validatedData);
     }
 
 }

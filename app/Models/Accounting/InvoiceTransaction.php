@@ -15,6 +15,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferComponent;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\InCustomer;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
+ * 
  *
  * @property int $id
  * @property int $group_id
@@ -79,6 +80,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read TaxCategory $taxCategory
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds
  * @method static Builder<static>|InvoiceTransaction newModelQuery()
@@ -172,5 +174,11 @@ class InvoiceTransaction extends Model
     public function transactionRefunds(): HasMany
     {
         return $this->hasMany(InvoiceTransaction::class, 'invoice_transaction_id');
+    }
+
+    public function taxCategory():BelongsTo
+    {
+        return $this->belongsTo(TaxCategory::class);
+
     }
 }

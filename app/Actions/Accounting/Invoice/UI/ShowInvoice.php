@@ -19,6 +19,7 @@ use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
+use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
@@ -88,43 +89,43 @@ class ShowInvoice extends OrgAction
         }
 
         $actions = [];
-        if (!app()->environment('production')) {
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('create refund'),
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.refund.create',
-                        'parameters' => [
-                            'invoice' => $invoice->id,
 
-                        ],
-                        'body'       => [
-                            'referral_route' => [
-                                'name'       => $request->route()->getName(),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('create refund'),
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.refund.create',
+                    'parameters' => [
+                        'invoice' => $invoice->id,
+
                     ],
-                ];
-
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'tertiary',
-                    'label' => __('send invoice'),
-                    'key'   => 'send-invoice',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.invoice.send_invoice',
-                        'parameters' => [
-                            'invoice' => $invoice->id
+                    'body'       => [
+                        'referral_route' => [
+                            'name'       => $request->route()->getName(),
+                            'parameters' => $request->route()->originalParameters()
                         ]
                     ]
-                ];
-        }
+                ],
+            ];
+
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'tertiary',
+                'label' => __('send invoice'),
+                'key'   => 'send-invoice',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.invoice.send_invoice',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+
 
         if ($this->parent instanceof Organisation) {
             $actions[] = [
@@ -146,7 +147,6 @@ class ShowInvoice extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
-
         }
 
         // dd($invoice->id);
@@ -237,6 +237,10 @@ class ShowInvoice extends OrgAction
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
 
+                InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
+                    ? fn () => InvoicesResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
+
                 InvoiceTabsEnum::ITEMS->value => $this->tab == InvoiceTabsEnum::ITEMS->value ?
                     fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))
                     : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))),
@@ -253,6 +257,7 @@ class ShowInvoice extends OrgAction
 
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
+            ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: InvoiceTabsEnum::REFUNDS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: InvoiceTabsEnum::EMAIL->value))
             ->table(IndexInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMS->value));
     }

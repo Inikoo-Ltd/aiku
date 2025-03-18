@@ -9,8 +9,8 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
-use App\Actions\Accounting\StandaloneFulfilmentInvoice\CalculateStandaloneFulfilmentInvoiceTotals;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\RentalAgreementClause\RentalAgreementCauseStateEnum;
 use App\Models\Accounting\Invoice;
@@ -36,7 +36,7 @@ class StoreStandaloneFulfilmentInvoiceTransaction extends OrgAction
 
         $invoiceTransaction = StoreInvoiceTransaction::make()->action($invoice, $historicAsset, $modelData);
 
-        CalculateStandaloneFulfilmentInvoiceTotals::run($invoice);
+        CalculateInvoiceTotals::run($invoice);
         return $invoiceTransaction;
     }
 

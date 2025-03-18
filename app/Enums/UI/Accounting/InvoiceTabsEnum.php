@@ -20,11 +20,18 @@ enum InvoiceTabsEnum: string
     case HISTORY                = 'history';
     case PAYMENTS               = 'payments';
     case EMAIL = 'email';
+    case REFUNDS                = 'refunds';
 
     public function blueprint(): array
     {
         return match ($this) {
 
+            InvoiceTabsEnum::REFUNDS     => [
+                'title' => __('Refunds'),
+                'icon'  => 'fal fa-hand-holding-usd',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             InvoiceTabsEnum::PAYMENTS     => [
                 'title' => __('Payments'),
                 'type'  => 'icon',

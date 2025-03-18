@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -19,6 +20,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $currency_code
  * @property mixed $id
  * @property mixed $in_process
+ * @property mixed $refund_id
+ * @property mixed $price
  */
 class RefundInProcessTransactionsResource extends JsonResource
 {
@@ -31,19 +34,23 @@ class RefundInProcessTransactionsResource extends JsonResource
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
+            'unit_price'                => $this->price,
+            'refund_net_amount'             => abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('invoice_transaction_id', $this->id)->sum('net_amount')),
             'refund_route'              => [
-                'name'       => 'grp.models.invoice_transaction.refund_transaction.store',
+                'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [
+                    'refund' => $this->refund_id,
                     'invoiceTransaction' => $this->id,
                 ]
             ],
-            'delete_route'              => [
-                'name'       => 'grp.models.refund_transaction.delete',
+            'refund_transaction_full_refund'              => [
+                'name'       => 'grp.models.refund.refund_transaction.full_refund',
                 'parameters' => [
+                    'refund' => $this->refund_id,
                     'invoiceTransaction' => $this->id,
                 ],
-                'method'     => 'delete',
-            ]
+                'method'    => 'post'
+            ],
         ];
     }
 }

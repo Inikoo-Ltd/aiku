@@ -9,16 +9,18 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
 
-class DeleteRefundInProcessInvoiceTransaction extends OrgAction
+class ForceDeleteRefundInProcessInvoiceTransaction extends OrgAction
 {
     use WithDeleteRefundInProcessTransaction;
 
     public function handle(InvoiceTransaction $invoiceTransaction): void
     {
-        $invoiceTransaction->delete();
+        $invoiceTransaction->forceDelete();
+        CalculateInvoiceTotals::run($invoiceTransaction->invoice);
     }
 
 

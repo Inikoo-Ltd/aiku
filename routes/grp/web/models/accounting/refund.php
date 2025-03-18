@@ -7,17 +7,21 @@
  */
 
 use App\Actions\Accounting\Invoice\UI\CreateRefund;
-use App\Actions\Accounting\Invoice\UI\DeleteRefund;
+use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
+use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
+use App\Actions\Accounting\InvoiceTransaction\CreateFullRefundInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\RefundAllInvoiceTransactions;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use Illuminate\Support\Facades\Route;
 
-Route::post(
-    '/invoice-transaction/{invoiceTransaction:id}/refund-transaction',
-    StoreRefundInvoiceTransaction::class
-)->name('invoice_transaction.refund_transaction.store');
+Route::post('/{invoice:id}', CreateRefund::class)->name('refund.create');
 
-
-Route::name('refund.')->prefix('refund/invoice/{invoice:id}')->group(function () {
-    Route::post('/', CreateRefund::class)->name('create');
-    Route::delete('/delete', DeleteRefund::class)->name('delete');
+Route::name('refund.')->prefix('refund/{refund:id}')->group(function () {
+    Route::post('/finalise', FinaliseRefund::class)->name('finalise')->withoutScopedBindings();
+    Route::delete('/force-delete', ForceDeleteRefund::class)->name('force_delete')->withoutScopedBindings();
+    Route::post('/refund-all', RefundAllInvoiceTransactions::class)->name('refund_all')->withoutScopedBindings();
+    Route::name('refund_transaction.')->prefix('/refund-transaction/{invoiceTransaction:id}')->group(function () {
+        Route::post('/', StoreRefundInvoiceTransaction::class)->name('store')->withoutScopedBindings();
+        Route::post('/full-refund', CreateFullRefundInvoiceTransaction::class)->name('full_refund')->withoutScopedBindings();
+    });
 });

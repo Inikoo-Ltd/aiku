@@ -27,15 +27,28 @@ class RefundTransactionsResource extends JsonResource
         return [
             'code'                      => $this->code,
             'name'                      => $this->name,
-            'quantity'                  => (int) $this->quantity,
+            'quantity'                  => -$this->quantity,
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
             'refund_route'              => [
-                'name'       => 'grp.models.invoice_transaction.refund_transaction.store',
+                'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [
                     'invoiceTransaction' => $this->id,
                 ]
+            ],
+            'full_refund_route'              => [
+                'name'       => 'grp.models.refund.refund_transaction.full_refund',
+                'parameters' => [
+                    'invoiceTransaction' => $this->id,
+                ]
+            ],
+            'delete_route'              => [
+                'name'       => 'grp.models.refund_transaction.force_delete',
+                'parameters' => [
+                    'invoiceTransaction' => $this->id,
+                ],
+                'method'     => 'delete',
             ]
         ];
     }
