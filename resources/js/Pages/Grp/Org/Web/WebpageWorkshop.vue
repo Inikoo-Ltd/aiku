@@ -26,6 +26,7 @@ import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExter
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop"
+import { useConfirm } from "primevue/useconfirm";
 
 
 import { routeType } from "@/types/route"
@@ -42,7 +43,7 @@ const props = defineProps<{
 
 provide('isInWorkshop', true)
 
-
+const confirm = useConfirm();
 const data = ref(props.webpage)
 const iframeClass = ref("w-full h-full")
 const isIframeLoading = ref(true)
@@ -406,6 +407,31 @@ const setHideBlock = (block: Daum) => {
   }
  */
 
+ const beforePublish = (route, popover) => {
+	const validation = JSON.stringify(data.value.layout)
+	if(validation.includes('<h1') || validation.includes('<H1')) onPublish(route, popover)
+	else confirmPublish(route, popover)
+ }
+
+ const confirmPublish = (route, popover) => {
+    confirm.require({
+        message: 'You Dont have title/ h1 in code, are you sure to publish ?',
+        header: 'Confirmation',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'publish'
+        },
+		accept: () => {
+            onPublish(route, popover)
+        },
+    });
+};
+
 onMounted(() => {
 	// Listen emit from Iframe
 	window.addEventListener("message", (event) => {
@@ -451,7 +477,7 @@ watch(openedBlockSideEditor, (newValue) => {
 	<PageHeading :data="pageHead">
 		<template #button-publish="{ action }">
 			<Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
-				@onPublish="(popover) => onPublish(action.route, popover)" />
+				@onPublish="(popover) => beforePublish(action.route, popover)" />
 		</template>
 
 		<template #afterTitle v-if="isSavingBlock">
@@ -463,7 +489,7 @@ watch(openedBlockSideEditor, (newValue) => {
 			</div>
 		</template>
 	</PageHeading>
-
+	<ConfirmDialog></ConfirmDialog>
 	<div class="flex gap-x-2">
 		<!-- Section: Side editor -->
 		<div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
