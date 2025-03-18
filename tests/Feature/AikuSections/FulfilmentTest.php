@@ -1902,6 +1902,7 @@ test('update pallet', function (Pallet $pallet) {
 })->depends('create pallet no delivery');
 
 test('delete pallet', function (Pallet $pallet) {
+    $palletDelivery = $pallet->palletDelivery;
     DeletePallet::make()->action(
         $pallet,
         []
@@ -1909,9 +1910,10 @@ test('delete pallet', function (Pallet $pallet) {
 
 
     $palletDeleted = !Pallet::find($pallet->id);
+    $palletDelivery->refresh();
 
-    expect($palletDeleted)->toBeTrue();
-
+    expect($palletDeleted)->toBeTrue()
+    ->and($palletDelivery->stats->number_services)->toBe(0);
 
     return 'OK';
 })->depends('add pallet to pallet delivery');
