@@ -175,6 +175,31 @@ console.log('%c Table ', 'background: red; color: white', props.tableData.tables
 					</template>
 				</Column>
 
+				<!-- Total -->
+				<ColumnGroup type="footer">
+					<Row>
+						<Column
+							v-for="(column, colIndex) in tableData.tables[tableData.current_tab].totals.columns"
+							:key="colIndex"
+							:sortable="column.sortable"
+							:sortField="`${column.key}.${intervals.value}.formatted_value`"
+							:field="column.key"
+						>
+							<template #footer>
+								<div class="px-2 flex relative"
+									:class="column.align === 'right' ? 'justify-end' : ''"
+								>
+									<transition name="spin-to-right">
+										<div :key="intervals.value">
+											{{ column[intervals.value]?.formatted_value ?? column?.formatted_value }}
+										</div>
+									</transition>
+								</div>
+							</template>
+						</Column>
+
+					</Row>
+				</ColumnGroup>
 			</DataTable>
 
 			<!-- <pre>{{ tableData.tables[tableData.current_tab] }}</pre> -->
