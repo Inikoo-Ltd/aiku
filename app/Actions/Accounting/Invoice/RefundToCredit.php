@@ -12,6 +12,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -24,6 +25,10 @@ class RefundToCredit extends OrgAction
      */
     public function handle(Invoice $refund, array $modelData): Invoice
     {
+        // $refund->update([
+        //     'pay_status' => InvoicePayStatusEnum::PAID,
+
+        // ]);
         StoreCreditTransaction::make()->action($refund->customer, [
             'amount' => -abs(Arr::get($modelData, 'amount')),
             'date'  => now(),
