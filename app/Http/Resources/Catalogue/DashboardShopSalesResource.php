@@ -32,12 +32,12 @@ class DashboardShopSalesResource extends JsonResource
 
         $columns = array_merge(
             [
-                'shop' => [
+                'label' => [
                     'formatted_value' => $shop->name
                 ]
             ],
             [
-                'shop_minified' => [
+                'label_minified' => [
                     'formatted_value' => $shop->code,
                     'tooltip'         => $shop->name
                 ]

@@ -67,8 +67,6 @@ class ShowOrganisationDashboard extends OrgAction
         ];
 
 
-
-
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
             [
