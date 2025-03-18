@@ -36,7 +36,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             ],
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Sales per invoice category'),
-                'icon'  => 'fal fa-site-map',
+                'icon'  => 'fal fa-sitemap',
             ],
         };
     }

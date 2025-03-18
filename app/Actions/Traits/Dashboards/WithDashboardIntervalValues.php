@@ -74,6 +74,7 @@ trait WithDashboardIntervalValues
         $originalColumnFingerprint = $columnFingerprint;
 
 
+
         $dataType = DashboardDataType::NUMBER;
 
 
@@ -104,7 +105,7 @@ trait WithDashboardIntervalValues
             $options['currency'] = $intervalsModel->currency->code;
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_shop_currency'));
         } elseif (str_ends_with($columnFingerprint, '_invoice_category_currency')) {
-            $options['currency'] = $intervalsModel->currency->code;
+            $options['currency'] = $intervalsModel->invoiceCategory->currency->code;
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
             $options['currency'] = $intervalsModel->organisation->currency->code;
