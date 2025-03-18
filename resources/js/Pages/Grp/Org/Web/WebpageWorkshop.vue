@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, IframeHTMLAttributes, provide, watch } from "vue"
+import { ref, onMounted, IframeHTMLAttributes, provide, watch, toRaw} from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -21,10 +21,12 @@ import ButtonPreviewLogin from "@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-
-import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, } from "@fal"
+import { debounce } from 'lodash';
+import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop"
+
 
 import { routeType } from "@/types/route"
 import { faLowVision } from "@far"
@@ -47,8 +49,8 @@ const isIframeLoading = ref(true)
 const isPreviewLoggedIn = ref(false)
 const isModalBlockList = ref(false)
 const sendToIframe = (data: any) => { _iframe.value?.contentWindow.postMessage(data, '*') }
-
-/* const socketConnectionWebpage = props.webpage ? socketWeblock(props.webpage.slug) : null */
+/* const history = ref<any[]>([]);
+const future = ref<any[]>([]); */
 const _iframe = ref<IframeHTMLAttributes | null>(null)
 const addBlockCancelToken = ref<Function | null>(null)
 const orderBlockCancelToken = ref<Function | null>(null)
@@ -62,6 +64,7 @@ provide('openedChildSideEditor', openedChildSideEditor)
 
 // Method: Add block
 const isAddBlockLoading = ref<string | null>(null)
+
 	const addNewBlock = async ({block, type}) => {
 	if (addBlockCancelToken.value) addBlockCancelToken.value()
     let position = null
@@ -85,6 +88,7 @@ const isAddBlockLoading = ref<string | null>(null)
 			},
 			onSuccess: (e) => {
 				data.value = e.props.webpage
+			/* 	saveState() */
 				sendToIframe({ key: 'reload', value: {} })
 			},
 			onError: (error) => {
@@ -110,14 +114,10 @@ const openWebsite = () => {
 	window.open('https://' + props.webpage.domain + '/' + props.webpage.url, "_blank")
 }
 const debounceSaveWorkshop = (block) => {
-	console.log('debounceSaveWorkshop', block.web_block.layout);
-
-	// If the debounce timer exists, cancel it
 	if (debounceTimers.value[block.id]) {
 		clearTimeout(debounceTimers.value[block.id])
 	}
 
-	// Set a new debounce timer for this block
 	debounceTimers.value[block.id] = setTimeout(() => {
 		router.patch(
 			route(props.webpage.update_model_has_web_blocks_route.name, {
@@ -145,6 +145,7 @@ const debounceSaveWorkshop = (block) => {
 				},
 				onSuccess: (e) => {
 					data.value = e.props.webpage
+				/* 	saveState() */
 					sendToIframe({ key: 'reload', value: {} })
 				},
 				onError: (error) => {
@@ -157,16 +158,48 @@ const debounceSaveWorkshop = (block) => {
 				preserveScroll: true,
 			}
 		)
-	}, 1500) // Debounce time of 1500ms for each block
+	}, 1500)
 }
 
+const debouncedSaveSiteSettings = debounce((block) => {
+	router.patch(
+		route('grp.models.model_has_web_block.bulk.update'),
+		{ web_blocks: block },
+		{
+			onStart: () => {
+				console.log('========== start save ')
+				isSavingBlock.value = true
+			},
+			onFinish: () => {
+				isSavingBlock.value = false
+			},
+			onSuccess: () => {
+				sendToIframe({ key: 'reload', value: {} })
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message,
+					type: "error",
+				});
+				isSavingBlock.value = false
+			},
+			preserveScroll: true,
+		}
+	);
+}, 1500); 
+
+
+const onSaveSiteSettings = (block) => {
+    debouncedSaveSiteSettings(block);
+};
+ 
 const onSaveWorkshop = (block) => {
 	// Cancel the ongoing save for the specific block if it's in progress
 	if (cancelTokens.value[block.id]) {
 		cancelTokens.value[block.id]()
 	}
 
-	// Call debounceSaveWorkshop to handle save for this block
 	debounceSaveWorkshop(block)
 }
 
@@ -207,6 +240,7 @@ const sendOrderBlock = async (block: Object) => {
 			},
 			onSuccess: (e) => {
 				data.value = e.props.webpage
+			/* 	saveState() */
 				sendToIframe({ key: 'reload', value: {} })
 			},
 			onError: (error) => {
@@ -237,6 +271,7 @@ const sendDeleteBlock = async (block: Daum) => {
 			},
 			onSuccess: (e) => {
 				data.value = e.props.webpage
+		/* 		saveState() */
 				sendToIframe({ key: 'reload', value: {} })
 			},
 			onError: (error) => {
@@ -292,10 +327,6 @@ const onPublish = async (action: routeType, popover: { close: Function, open: Fu
 	}
 }
 
-// const handleIframeError = () => {
-// 	console.error("Failed to load iframe content.")
-// }
-
 const iframeSrc =
 	route("grp.websites.webpage.preview", [
 		route().params["website"],
@@ -334,6 +365,47 @@ const setHideBlock = (block: Daum) => {
 }
 
 
+/* const saveState = () => {
+    history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+    future.value = []; 
+  };
+
+  const undo = () => {
+    if (history.value.length > 1) {
+      future.value.unshift(history.value.pop()!);
+      data.value.layout = JSON.parse(JSON.stringify(history.value[history.value.length - 1]));
+      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+	  afterUndoRedo()
+    }
+  }; */
+
+/*   const redo = () => {
+    if (future.value.length > 0) {
+      const nextState = future.value.shift()!;
+      history.value.push(nextState);
+      data.value.layout = JSON.parse(JSON.stringify(nextState));
+      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+	  afterUndoRedo()
+    }
+  };
+
+  const afterUndoRedo = () =>{
+	const dataSet = toRaw(data.value.layout.web_blocks)
+    const finalData = []
+    for (const weblock of dataSet) {
+        finalData.push({
+            id:weblock.id,
+            layout: weblock.web_block.layout,
+            show_logged_in: weblock.visibility.in,
+            show_logged_out: weblock.visibility.out,
+            show: weblock.show,
+        })
+    }
+	onSaveSiteSettings(finalData)
+  }
+ */
+
 onMounted(() => {
 	// Listen emit from Iframe
 	window.addEventListener("message", (event) => {
@@ -356,6 +428,13 @@ onMounted(() => {
 			sendDeleteBlock(data.value)
 		}
 	})
+
+	/* const savedData = localStorage.getItem(data.value.code);
+    if (savedData) {
+    } else {
+      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+    }
+    history.value = [JSON.parse(JSON.stringify(data.value.layout))]; */
 })
 
 
@@ -390,11 +469,11 @@ watch(openedBlockSideEditor, (newValue) => {
 		<div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
 			<WebpageSideEditor v-model="isModalBlockList" :isLoadingblock :isLoadingDeleteBlock :isAddBlockLoading
 				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"
-				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor"/>
+				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings"/>
 		</div>
 
 		<!-- Section: Preview -->
-		<div class="h-[calc(100vh-180px)] w-full max-w-full flex flex-col bg-gray-200 overflow-x-auto">
+		<div class="h-[calc(100vh-16vh)] w-full max-w-full flex flex-col bg-gray-200 overflow-x-auto">
 			<div class="flex justify-between">
 				<!-- Section: Screenview -->
 				<div class="flex">
@@ -402,6 +481,12 @@ watch(openedBlockSideEditor, (newValue) => {
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'Preview'" @click="openFullScreenPreview">
 						<FontAwesomeIcon :icon="faLowVision" fixed-width aria-hidden="true" />
 					</div>
+					<!-- <div class="py-1 px-2 cursor-pointer" v-tooltip="'undo'" @click="undo">
+						<FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
+					</div>
+					<div class="py-1 px-2 cursor-pointer" v-tooltip="'redo'" @click="redo">
+						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
+					</div> -->
 				</div>
 
 				<!-- Tools: login-logout, edit-preview -->

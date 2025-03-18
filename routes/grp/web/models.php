@@ -195,6 +195,7 @@ use App\Actions\Web\Banner\UpdateBanner;
 use App\Actions\Web\Banner\UpdateBannerState;
 use App\Actions\Web\Banner\UpdateUnpublishedBannerSnapshot;
 use App\Actions\Web\Banner\UploadImagesToBanner;
+use App\Actions\Web\ModelHasWebBlocks\BulkUpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
@@ -600,10 +601,13 @@ Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
 });
 
-Route::name('model_has_web_block.')->prefix('model-has-web-block/{modelHasWebBlocks:id}')->group(function () {
-    Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
-    Route::delete('', DeleteModelHasWebBlocks::class)->name('delete');
-    Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
+Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
+    Route::patch('bulk', BulkUpdateModelHasWebBlocks::class)->name('bulk.update');
+    Route::prefix('{modelHasWebBlocks:id}')->group(function () {
+        Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
+        Route::delete('', DeleteModelHasWebBlocks::class)->name('delete');
+        Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
+    });
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');

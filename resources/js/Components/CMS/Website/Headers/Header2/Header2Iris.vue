@@ -49,7 +49,6 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
                         :alt="fieldValue?.logo?.alt" 
                          :imageCover="true"
                         :src="fieldValue?.logo?.image?.source" 
-                        :imgAttributes="fieldValue?.logo.image?.attributes"
                        >
                     </Image>
 				</component>

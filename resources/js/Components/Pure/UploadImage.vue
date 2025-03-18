@@ -86,13 +86,6 @@ const deleteImage = () => {
 </script>
 
 <template>
-    <!-- <div>
-        <button @click="() => fileInput?.click()"
-            class="w-full bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-500">
-            Upload Image
-        </button>
-    </div> -->
-
     <div @dragover="dragOver" @dragleave="dragLeave" @drop="drop"
         class="group hover:bg-gray-100 relative border border-gray-400 border-dashed overflow-hidden rounded-md text-center cursor-pointer"
         @click="() => fileInput?.click()">
