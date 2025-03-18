@@ -37,12 +37,16 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
             ],
             $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'refunds'),
             $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'refunds_minified'),
+            $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'refunds_delta'),
             $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'invoices'),
             $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'invoices_delta'),
             $this->getDashboardTableColumn($invoiceCategory->salesIntervals, 'sales_invoice_category_currency'),
-            $this->getDashboardTableColumn($invoiceCategory->salesIntervals, 'sales_org_currency'),
             $this->getDashboardTableColumn($invoiceCategory->salesIntervals, 'sales_invoice_category_currency_minified'),
+            $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'sales_invoice_category_currency_delta'),
+            $this->getDashboardTableColumn($invoiceCategory->salesIntervals, 'sales_org_currency'),
             $this->getDashboardTableColumn($invoiceCategory->salesIntervals, 'sales_org_currency_minified'),
+            $this->getDashboardTableColumn($invoiceCategory->orderingIntervals, 'sales_org_currency_delta'),
         );
 
 
