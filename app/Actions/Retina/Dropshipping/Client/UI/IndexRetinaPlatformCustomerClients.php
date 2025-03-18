@@ -30,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaPlatformCustomerClients extends RetinaAction
 {
     private Customer|ShopifyUser|TiktokUser $parent;
+    private Platform $platform;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -44,6 +45,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
     {
         $this->initialisation($request);
 
+        $this->platform = $platform;
         if ($platform->type === PlatformTypeEnum::SHOPIFY) {
             $this->parent = $this->customer->shopifyUser;
         } else {
@@ -58,6 +60,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         $this->asAction = true;
         $this->initialisationFromPupil($request);
 
+        $this->platform = $platform;
         if ($platform->type === PlatformTypeEnum::SHOPIFY) {
             $this->parent = $this->customer->shopifyUser;
         } else {
@@ -109,7 +112,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'customer_clients.ulid',
                 'customer_clients.created_at'
             ])
-            ->allowedSorts(['customer_clients.reference', 'customer_clients.name', 'customer_clients.created_at'])
+            ->allowedSorts(['reference', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -196,15 +199,20 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New Client'),
-                            'label'   => __('New Client'),
-                            'route'   => [
-                                'name'       => 'retina.dropshipping.client.create',
+                        match (class_basename($this->parent)) {
+                            'ShopifyUser' => [
+                                'type'    => 'button',
+                                'style'   => 'create',
+                                'tooltip' => __('Fetch Client'),
+                                'label'   => __('Fetch Client'),
+                                'route'   => [
+                                    'name'       => 'pupil.dropshipping.platforms.client.fetch',
+                                    'parameters' => [
+                                        'platform' => $this->platform->slug
+                                    ]
+                                ]
                             ]
-                        ],
+                        },
                     ],
 
                 ],
