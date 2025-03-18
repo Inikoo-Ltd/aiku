@@ -116,7 +116,6 @@ class ShowRefund extends OrgAction
         }
 
 
-        $actions = [];
 
         if ($refund->in_process) {
             $actions[] = [
@@ -182,7 +181,22 @@ class ShowRefund extends OrgAction
                     'icon'  => ['fas', 'fa-hand-holding-usd'],
                     'title' => $refund->reference
                 ],
-                'actions'       => $actions
+                'actions'       => $actions,
+                'meta' => [
+                    [
+                        'key'   => __('invoice'),
+                        'label' => __('invoice'),
+                        'icon' => 'fal fa-external-link',
+                        'route' => [
+                            'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+                            'parameters' => [
+                                'organisation' => $refund->organisation->slug,
+                                'fulfilment' => $refund->shop->fulfilment,
+                                'invoice'      => $refund->originalInvoice->slug
+                            ]
+                        ]
+                    ]
+                ]
             ],
             'tabs'        => [
                 'current'    => $this->tab,
