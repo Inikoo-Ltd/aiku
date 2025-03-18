@@ -43,7 +43,10 @@ class ShowOrganisationDashboard extends OrgAction
             'super_blocks' => [
                 [
                     'id'        => 'main_sales',
-                    'intervals' => $this->dashboardIntervalOption(),
+                    'intervals' => [
+                        'options' => $this->dashboardIntervalOption(),
+                        'value'   => Arr::get($userSettings, 'selected_interval', 'all')  // fix this
+                    ],
                     'settings'  => [
 
                         $this->dashboardModelStateSettings($settings, 'left'),

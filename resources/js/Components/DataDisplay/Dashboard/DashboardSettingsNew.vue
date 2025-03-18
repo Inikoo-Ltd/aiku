@@ -8,11 +8,14 @@ import { get } from "lodash"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
-	intervalOptions: {
-		label: string
+	intervals: {
+		options: {
+			label: string
+			value: string
+			labelShort: string
+		}[]
 		value: string
-		labelShort: string
-	}[]
+	}
 	// settings: {
 	// 	db_settings: {
 	// 		selected_interval?: string
@@ -356,14 +359,14 @@ const updateToggle = (key: string, value: string, valLoading: string) => {
 				</div> -->
 			</div>
 			
-			<nav class="isolate flex rounded-full border p-1 hidden sm:flex" aria-label="Tabs">
+			<nav class="isolate rounded-full border p-1 hidden sm:flex" aria-label="Tabs">
 				<div class="flex flex-1">
 					<div
-						v-for="(interval, idxInterval) in intervalOptions"
+						v-for="(interval, idxInterval) in intervals.options"
 						:key="idxInterval"
 						@click="updateInterval(interval.value)"
 						:class="[
-							interval.value === settings.db_settings?.selected_interval
+							interval.value === intervals.value
 								? 'bg-indigo-500 text-white font-medium'
 								: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
 						]"

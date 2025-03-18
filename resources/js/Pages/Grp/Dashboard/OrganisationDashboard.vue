@@ -49,6 +49,12 @@ const props = defineProps<{
 						}
 					}[]
 				}
+				tabs: {
+					[tab: string]: {
+						icon: string
+						title: string
+					}
+				}
 			}[]
 			intervals: {
 				label: string
@@ -83,13 +89,17 @@ console.log('22 ewewqq', props.dashboard_stats)
 	<Head :title="trans('Dashboard')" />
 	
 	<DashboardSettingsNew
-		:intervalOptions="props.dashboard?.super_blocks?.[0]?.intervals"
+		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		:settings="props.dashboard?.super_blocks?.[0].settings"
 	/>
+	<DashboardTableNewwww
+		:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
+		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+	/>
 
-	{{ props.dashboard?.super_blocks?.[0].settings }}
+	<!-- {{ props.dashboard?.super_blocks?.[0].blocks[0] }} -->
 
-	<div class="grid grid-cols-12 m-3 gap-4 border-t border-red-500">
+	<div class="grid grid-cols-12 m-3 gap-4 border-t-4 border-red-500 mt-12 pt-12">
 
     <!-- <pre>{{ dashboard }}</pre> -->
 
