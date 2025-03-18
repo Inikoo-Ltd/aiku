@@ -6,16 +6,16 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Enums\UI\Organisation;
+namespace App\Enums\Dashboards;
 
 use App\Actions\Accounting\InvoiceCategory\IndexInvoiceCategoriesSalesTable;
 use App\Actions\Catalogue\Shop\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
-use App\Http\Resources\Accounting\DashboardHeaderInvoiceCategoriesSalesResource;
-use App\Http\Resources\Accounting\DashboardTotalInvoiceCategoriesSalesResource;
-use App\Http\Resources\Catalogue\DashboardHeaderShopSalesResource;
-use App\Http\Resources\Catalogue\DashboardTotalShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalShopSalesResource;
 use App\Models\SysAdmin\Organisation;
 
 enum OrganisationDashboardSalesTableTabsEnum: string
@@ -45,7 +45,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
     {
 
         $header = match ($this) {
-            OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopSalesResource::make($organisation)->toJson(), true),
+            OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesSalesResource::make($organisation)->toJson(), true)
         };
 
