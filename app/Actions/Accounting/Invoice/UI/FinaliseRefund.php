@@ -12,7 +12,10 @@ namespace App\Actions\Accounting\Invoice\UI;
 use App\Actions\Accounting\Invoice\WithRunInvoiceHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Models\Accounting\Invoice;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseRefund extends OrgAction
@@ -38,6 +41,16 @@ class FinaliseRefund extends OrgAction
 
 
         return $refund;
+    }
+
+    public function htmlResponse(Invoice $refund, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
+            $refund->organisation->slug,
+            $refund->customer->fulfilmentCustomer->fulfilment->slug,
+            $refund->customer->fulfilmentCustomer->slug,
+            'tab' => InvoicesTabsEnum::REFUNDS->value
+        ]);
     }
 
     public function asController(Invoice $refund, ActionRequest $request): Invoice
