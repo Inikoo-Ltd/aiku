@@ -49,6 +49,13 @@ class ShowRetinaDashboard extends RetinaAction
         return $this->handle($request);
     }
 
+    public function inPupil(ActionRequest $request): Response
+    {
+        $this->initialisationFromPupil($request);
+
+        return $this->handle($request);
+    }
+
     public function getBreadcrumbs($label = null): array
     {
         return [

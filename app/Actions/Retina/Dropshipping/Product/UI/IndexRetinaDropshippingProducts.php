@@ -31,6 +31,10 @@ class IndexRetinaDropshippingProducts extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
@@ -54,6 +58,14 @@ class IndexRetinaDropshippingProducts extends RetinaAction
         }
 
         return $this->handle($scope);
+    }
+
+    public function inPupil(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+
+        return $this->handle($this->shopifyUser);
     }
 
     public function htmlResponse(ShopifyUser|Customer|TiktokUser $scope): Response

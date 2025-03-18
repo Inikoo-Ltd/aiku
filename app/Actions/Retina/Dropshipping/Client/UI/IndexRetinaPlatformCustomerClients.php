@@ -33,12 +33,30 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
     public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
+        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
+            $this->parent = $this->customer->shopifyUser;
+        } else {
+            $this->parent = $this->customer->tiktokUser;
+        }
+
+        return $this->handle($this->customer);
+    }
+
+    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
 
         if ($platform->type === PlatformTypeEnum::SHOPIFY) {
             $this->parent = $this->customer->shopifyUser;
@@ -149,7 +167,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
             'title' => __('customer client')
         ];
 
-        if($this->parent instanceof TiktokUser) {
+        if ($this->parent instanceof TiktokUser) {
             $afterTitle = [
                 'label' => __('Tiktok Clients')
             ];

@@ -10,7 +10,6 @@ namespace App\Http\Middleware;
 
 use App\Actions\Pupil\GetPupilFirstLoadProps;
 use App\Http\Resources\UI\LoggedShopifyUserResource;
-use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
@@ -23,14 +22,14 @@ class HandlePupilInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        /** @var WebUser $webUser */
-        $webUser = $request->user();
+        /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
+        $shopifyUser = $request->user('pupil');
 
         $firstLoadOnlyProps = [];
 
         if (!$request->inertia() or Session::get('reloadLayout')) {
 
-            $firstLoadOnlyProps          = GetPupilFirstLoadProps::run($request, $webUser);
+            $firstLoadOnlyProps          = GetPupilFirstLoadProps::run($request, $shopifyUser);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('pupil'))->toArray(), [
                     'location' => $request->url(),

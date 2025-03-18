@@ -81,4 +81,12 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
 
         $this->handle();
     }
+
+    public function inPupil(Platform $platform, ActionRequest $request): void
+    {
+        $this->initialisationFromPupil($request);
+        $this->parent = $this->customer;
+
+        $this->handle();
+    }
 }

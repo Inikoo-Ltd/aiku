@@ -14,6 +14,7 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -33,6 +34,7 @@ class RetinaAction
     protected Website $website;
     protected Customer $customer;
     protected WebUser $webUser;
+    protected ShopifyUser $shopifyUser;
     protected ?Fulfilment $fulfilment;
     protected ?FulfilmentCustomer $fulfilmentCustomer;
     protected Organisation $organisation;
@@ -117,6 +119,22 @@ class RetinaAction
         $this->fulfilment = $this->shop->fulfilment;
         $this->organisation = $this->shop->organisation;
 
+        $this->fillFromRequest($request);
+
+        $this->validatedData = $this->validateAttributes();
+
+        return $this;
+    }
+
+    public function initialisationFromPupil(ActionRequest $request): static
+    {
+        $this->shopifyUser = $request->user('pupil');
+        $this->customer = $this->shopifyUser->customer;
+        $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;
+        $this->shop = $this->customer->shop;
+        $this->fulfilment = $this->shop->fulfilment;
+        $this->organisation = $this->shop->organisation;
+        $this->website = $this->shop->website;
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();

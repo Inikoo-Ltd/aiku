@@ -9,8 +9,9 @@
 namespace App\Actions\Pupil;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Retina\UI\Layout\GetPupilDropshippingNavigation;
 use App\Http\Resources\Helpers\LanguageResource;
-use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -20,17 +21,16 @@ class GetPupilFirstLoadProps
 {
     use AsObject;
 
-    public function handle(Request $request, ?WebUser $webUser): array
+    public function handle(Request $request, ?ShopifyUser $shopifyUser): array
     {
-        if ($webUser) {
-            $language = $webUser->language;
+        if ($shopifyUser) {
+            $language = $shopifyUser->language;
         } else {
             $language = Language::where('code', App::currentLocale())->first();
         }
         if (!$language) {
             $language = Language::where('code', 'en')->first();
         }
-
 
         return
             [
@@ -39,17 +39,7 @@ class GetPupilFirstLoadProps
                     'languageOptions' => GetLanguagesOptions::make()->translated(),
                 ],
                 'layout'   => [
-                    'navigation'    => [
-                        'spaces' => [
-                            'label'   => __('Spaces'),
-                            'icon'    => ['fal', 'fa-parking'],
-                            'root'    => 'pupil.home.',
-                            'route'   => [
-                                'name' => 'pupil.home'
-                            ],
-                            'topMenu' => []
-                        ]
-                    ]
+                    'navigation'    => GetPupilDropshippingNavigation::run($shopifyUser),
                 ],
                 //todo @artha is layout needed here?
                 //'layout'      => GetLayout::run($request, $webUser),

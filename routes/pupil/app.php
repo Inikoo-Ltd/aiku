@@ -31,3 +31,11 @@ Route::get(
     '/authenticate/token',
     [AuthController::class, 'token']
 )->name('authenticate.token');
+
+Route::prefix("dashboard")
+    ->name("dashboard.")
+    ->group(__DIR__."/dashboard.php");
+
+Route::prefix("dropshipping")
+    ->name("dropshipping.")
+    ->group(__DIR__."/dropshipping.php");

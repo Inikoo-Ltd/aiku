@@ -58,6 +58,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
@@ -91,6 +95,14 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($shopifyUser);
+    }
+
+    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+
+        return $this->handle($this->shopifyUser);
     }
 
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
