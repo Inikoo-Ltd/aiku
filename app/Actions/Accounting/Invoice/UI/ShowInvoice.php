@@ -28,6 +28,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
 use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -149,7 +150,20 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        // dd($invoice->id);
+        $queryBuilderRefund = QueryBuilder::for(Invoice::class);
+        $queryBuilderRefund->where('invoice_id', $invoice->id);
+        $queryBuilderRefund->leftJoin('fulfilment_customers', 'fulfilment_customers.customer_id', '=', 'invoices.customer_id');
+        $queryBuilderRefund->leftJoin('organisations', 'organisations.id', '=', 'invoices.organisation_id');
+        $queryBuilderRefund->leftJoin('fulfilments', 'fulfilments.id', '=', 'fulfilment_customers.fulfilment_id');
+        $queryBuilderRefund->select([
+            'invoices.slug as refund_slug',
+            'invoices.reference',
+            'fulfilment_customers.slug as fulfilment_customer_slug',
+            'organisations.slug as organisation_slug',
+            'fulfilments.slug as fulfilment_slug',
+        ]);
+
+        $listRefund = $queryBuilderRefund->take(3)->get()->toArray();
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -230,6 +244,7 @@ class ShowInvoice extends OrgAction
                     ]
                 ],
                 'box_stats'      => $this->getBoxStats($invoice),
+                'list_refund' =>  $listRefund,
 
                 'invoice' => InvoiceResource::make($invoice),
                 'outbox'  => [
