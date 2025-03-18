@@ -15,7 +15,7 @@ import { routeType } from '@/types/route'
 import Icon from '@/Components/Icon.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle } from "@fal"
+import { faInfoCircle, fa } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faInfoCircle)
 
