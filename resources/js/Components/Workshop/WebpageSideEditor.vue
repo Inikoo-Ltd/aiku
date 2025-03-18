@@ -40,7 +40,7 @@ const props = defineProps<{
     isLoadingDeleteBlock: number | null
 }>()
 
-const selectedTab = ref(0)
+const selectedTab = ref(1)
 
 function changeTab(index : Number) {
   selectedTab.value = index

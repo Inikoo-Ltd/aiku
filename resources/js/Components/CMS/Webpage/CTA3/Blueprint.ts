@@ -114,6 +114,7 @@ export default {
 		{
 			name: "Button",
 			key: ["button"],
+			editGlobalStyle : "button",
 			replaceForm: [
 				{
 					key: ["container", "properties", "background"],

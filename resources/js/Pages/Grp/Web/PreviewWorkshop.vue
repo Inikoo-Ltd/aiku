@@ -89,8 +89,8 @@ console.log(route().current())
                     :loginMode="isPreviewLoggedIn" @update:model-value="updateData(header.data)" />
             </div>
 
-            <div v-if="webpage?.layout?.web_blocks?.length" class="bg-white">
-                <template>
+            <div  class="bg-white">
+                <template v-if="webpage?.layout?.web_blocks?.length">
                     <div v-for="(activityItem, activityItemIdx) in webpage?.layout?.web_blocks"
                         :key="'block' + activityItem.id" class="w-full">
                         <component v-if="showWebpage(activityItem)" :is="getIrisComponent(activityItem.type)"
