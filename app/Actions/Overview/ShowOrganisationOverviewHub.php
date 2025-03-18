@@ -8,8 +8,8 @@
 
 namespace App\Actions\Overview;
 
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;

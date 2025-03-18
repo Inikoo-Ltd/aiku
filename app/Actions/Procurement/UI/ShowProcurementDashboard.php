@@ -8,8 +8,8 @@
 
 namespace App\Actions\Procurement\UI;
 
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;

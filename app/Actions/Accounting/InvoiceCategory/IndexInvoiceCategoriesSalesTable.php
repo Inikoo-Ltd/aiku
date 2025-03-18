@@ -9,7 +9,7 @@
 namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Accounting\DashboardInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesSalesResource;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;

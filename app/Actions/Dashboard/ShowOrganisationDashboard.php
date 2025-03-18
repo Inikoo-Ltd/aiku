@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\Organisation\UI;
+namespace App\Actions\Dashboard;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
@@ -14,7 +14,7 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\UI\Organisation\OrganisationDashboardSalesTableTabsEnum;
+use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Enums\UI\Organisation\OrgDashboardIntervalTabsEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;

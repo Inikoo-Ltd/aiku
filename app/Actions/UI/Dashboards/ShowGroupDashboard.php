@@ -9,13 +9,15 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
+use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dashboards\GroupDashboardIntervalTabsEnum;
+use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Enums\UI\Group\GroupDashboardIntervalTabsEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,11 +25,42 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowGroupDashboard extends OrgAction
 {
-    use WithDashboard;
+    use WithDashboard; // <-- to delete
+    use WithDashboardSettings;
+    use WithDashboardIntervalOption;
 
-    public function handle(Group $group, User $user): Response
+    public function handle(Group $group, ActionRequest $request): Response
     {
-        $userSettings = $user->settings;
+        $userSettings = $request->user()->settings; // <-- to delete
+        $settings = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []); // <-- to delete
+
+
+        $dashboard = [
+            'super_blocks' => [
+                [
+                    'id'        => 'main_sales',
+                    'intervals' => $this->dashboardIntervalOption(),
+                    'settings'  => [
+
+                        $this->dashboardModelStateSettings($settings, 'left'),
+                        $this->dashboardDataDisplayTypeSettings($settings),
+                    ],
+                    'blocks'    => [
+                        [
+                            'id'   => 'sales_table',
+                            'type' => 'table',
+                            'current_tab' => Arr::get($settings, 'sales_table_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values())),
+                            'tabs' => GroupDashboardSalesTableTabsEnum::navigation(),
+                            'tables' => GroupDashboardSalesTableTabsEnum::tables($group),
+                            'charts' => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
+
+                        ]
+                    ]
+
+                ]
+
+            ]
+        ];
 
         return Inertia::render(
             'Dashboard/GrpDashboard',
@@ -35,6 +68,7 @@ class ShowGroupDashboard extends OrgAction
                 'title'       => __('Dashboard Group'),
                 'breadcrumbs'     => $this->getBreadcrumbs(__('Dashboard')),
                 'dashboard_stats' => $this->getDashboardInterval($group, $userSettings),
+                'dashboard'       => $dashboard
             ]
         );
     }
@@ -454,7 +488,7 @@ class ShowGroupDashboard extends OrgAction
         $group = group();
         $this->initialisationFromGroup($group, $request)->withTabDashboardInterval(GroupDashboardIntervalTabsEnum::values());
 
-        return $this->handle($group, $request->user());
+        return $this->handle($group, $request);
     }
 
     public function getBreadcrumbs($label = null): array

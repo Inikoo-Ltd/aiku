@@ -2,17 +2,17 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 18 Mar 2025 10:32:15 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 18 Mar 2025 14:51:56 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\Dashboards;
+namespace App\Http\Resources\SysAdmin;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
+class DashboardHeaderOrganisationsSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
@@ -31,26 +31,39 @@ class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => __('Category')
+                    'formatted_value' => __('Organisation')
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => __('Category')
+                    'formatted_value' => __('Organisation')
                 ]
             ],
             [
-                'refunds' => [
-                    'formatted_value' => __('Refunds')
+                'baskets_created_shop_currency' => [
+                    'formatted_value' => __('In basket')
                 ]
             ],
             [
-                'refunds_minified' => [
-                    'formatted_value' => __('Refunds')
+                'baskets_created_shop_currency_minified' => [
+                    'formatted_value' => __('In basket')
                 ]
             ],
             [
-                'refunds_delta' => $deltaLabel
+                'baskets_created_shop_currency_delta' => $deltaLabel
+            ],
+            [
+                'baskets_created_org_currency' => [
+                    'formatted_value' => __('In basket')
+                ]
+            ],
+            [
+                'baskets_created_org_currency_minified' => [
+                    'formatted_value' => __('In basket')
+                ]
+            ],
+            [
+                'baskets_created_org_currency_delta' => $deltaLabel
             ],
             [
                 'invoices' => [
@@ -58,25 +71,25 @@ class DashboardHeaderInvoiceCategoriesSalesResource extends JsonResource
                 ]
             ],
             [
-                'invoices_delta' => $deltaLabel
-            ],
-            [
                 'invoices_minified' => [
                     'formatted_value' => __('Invoices')
                 ]
             ],
             [
-                'sales_invoice_category_currency' => [
+                'invoices_delta' => $deltaLabel
+            ],
+            [
+                'sales_shop_currency' => [
                     'formatted_value' => __('Sales')
                 ]
             ],
             [
-                'sales_invoice_category_currency_minified' => [
+                'sales_shop_currency_minified' => [
                     'formatted_value' => __('Sales')
                 ]
             ],
             [
-                'sales_invoice_category_currency_delta' => $deltaLabel,
+                'sales_shop_currency_delta' => $deltaLabel,
             ],
             [
                 'sales_org_currency' => [

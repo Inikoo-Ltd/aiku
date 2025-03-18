@@ -8,9 +8,9 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -19,7 +19,6 @@ use App\Enums\UI\Catalogue\ShopTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;

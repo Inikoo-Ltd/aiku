@@ -8,9 +8,9 @@
 
 namespace App\Actions\Production\Production\UI;
 
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Enums\UI\Production\ProductionsTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ProductionsResource;

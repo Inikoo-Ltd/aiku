@@ -12,7 +12,7 @@ use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DashboardTotalShopSalesResource extends JsonResource
+class DashboardTotalShopsSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 

@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\HumanResources;
 
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;

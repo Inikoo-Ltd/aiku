@@ -6,10 +6,10 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Shop;
+namespace App\Actions\Dashboard;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Catalogue\DashboardShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardShopSalesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;

@@ -12,14 +12,6 @@ use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $code
- * @property int $id
- * @property string $slug
- * @property string $name
- * @property string $warehouse_area_slug
- * @property mixed $type
- */
 class DashboardShopSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
