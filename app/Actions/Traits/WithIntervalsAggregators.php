@@ -14,16 +14,18 @@ use App\Enums\DateIntervals\PreviousYearsEnum;
 
 trait WithIntervalsAggregators
 {
-    public function getIntervalsData(array $stats, $queryBase, $statField, $dateField = 'date', $sumField = 'sum_aggregate', ?array $intervals = null, $doPreviousPeriods = null): array
+    public function getIntervalsData(array $stats, $queryBase, $statField, $dateField = 'date', $sumField = 'sum_aggregate', ?array $intervals = null, ?array $doPreviousPeriods = null): array
     {
         $stats = array_merge($stats, $this->getIntervalStats($queryBase, $statField, $dateField, $sumField, $intervals));
         $stats = array_merge($stats, $this->getLastYearIntervalStats($queryBase, $statField, $dateField, $sumField, $intervals));
 
-        if ($doPreviousPeriods == null or in_array('previous_years', $doPreviousPeriods)) {
+
+
+        if (is_null($doPreviousPeriods) or in_array('previous_years', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousYearsIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
 
-        if ($doPreviousPeriods == null or in_array('previous_quarters', $doPreviousPeriods)) {
+        if (is_null($doPreviousPeriods) or in_array('previous_quarters', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousQuartersIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
 
@@ -38,8 +40,10 @@ trait WithIntervalsAggregators
         ?array $intervals = null
     ): array {
         $stats = [];
+
+
         foreach (DateIntervalEnum::cases() as $interval) {
-            if ($intervals && !in_array($interval->value, $intervals)) {
+            if (!is_null($intervals) && !in_array($interval, $intervals)) {
                 continue;
             }
 
@@ -66,7 +70,7 @@ trait WithIntervalsAggregators
                 continue;
             }
 
-            if ($intervals && !in_array($interval->value, $intervals)) {
+            if (!is_null($intervals) && !in_array($interval, $intervals)) {
                 continue;
             }
 
