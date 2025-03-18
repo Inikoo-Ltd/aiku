@@ -30,6 +30,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -157,10 +158,10 @@ class ShowInvoice extends OrgAction
         $queryBuilderRefund->leftJoin('fulfilments', 'fulfilments.id', '=', 'fulfilment_customers.fulfilment_id');
         $queryBuilderRefund->select([
             'invoices.slug as refund_slug',
-            'invoices.reference',
-            'fulfilment_customers.slug as fulfilment_customer_slug',
+            'invoices.reference as refund_reference',
             'organisations.slug as organisation_slug',
             'fulfilments.slug as fulfilment_slug',
+            DB::raw("'{$invoice->slug}' as invoice_slug"),
         ]);
 
         $listRefund = $queryBuilderRefund->take(3)->get()->toArray();
