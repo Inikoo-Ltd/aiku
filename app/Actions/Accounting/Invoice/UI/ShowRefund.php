@@ -242,8 +242,9 @@ class ShowRefund extends OrgAction
                 ]
             ],
 
-            'box_stats' => $this->getBoxStats($refund),
-
+            'box_stats' => array_merge($this->getBoxStats($refund), [
+                'refund_id' => $refund->id
+            ]),
 
             'invoice_refund' => RefundResource::make($refund),
 
