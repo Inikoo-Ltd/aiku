@@ -88,7 +88,7 @@ const isAddBlockLoading = ref<string | null>(null)
 			},
 			onSuccess: (e) => {
 				data.value = e.props.webpage
-				saveState()
+			/* 	saveState() */
 				sendToIframe({ key: 'reload', value: {} })
 			},
 			onError: (error) => {
@@ -145,7 +145,7 @@ const debounceSaveWorkshop = (block) => {
 				},
 				onSuccess: (e) => {
 					data.value = e.props.webpage
-					saveState()
+				/* 	saveState() */
 					sendToIframe({ key: 'reload', value: {} })
 				},
 				onError: (error) => {
@@ -240,7 +240,7 @@ const sendOrderBlock = async (block: Object) => {
 			},
 			onSuccess: (e) => {
 				data.value = e.props.webpage
-				saveState()
+			/* 	saveState() */
 				sendToIframe({ key: 'reload', value: {} })
 			},
 			onError: (error) => {
@@ -271,7 +271,7 @@ const sendDeleteBlock = async (block: Daum) => {
 			},
 			onSuccess: (e) => {
 				data.value = e.props.webpage
-				saveState()
+		/* 		saveState() */
 				sendToIframe({ key: 'reload', value: {} })
 			},
 			onError: (error) => {
