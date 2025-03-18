@@ -117,6 +117,8 @@ class ShowRefund extends OrgAction
 
 
 
+        $actions = [];
+
         if ($refund->in_process) {
             $actions[] = [
                 'type'  => 'button',
