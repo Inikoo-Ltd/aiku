@@ -27,6 +27,10 @@ class ShowRetinaDashboard extends RetinaAction
             $inertiaPage = 'Dashboard/RetinaDropshippingDashboard';
         }
 
+        if ($this->asPupil) {
+            $inertiaPage = 'Dashboard/PupilFulfilmentDashboard';
+        }
+
         return Inertia::render(
             $inertiaPage,
             [

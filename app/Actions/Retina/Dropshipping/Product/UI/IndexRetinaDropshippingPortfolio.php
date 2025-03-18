@@ -121,7 +121,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
-                                'name' => 'retina.models.dropshipping.shopify_user.product.sync',
+                                'name' => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
                                     'shopifyUser' => $this->shopifyUser->id
                                 ]

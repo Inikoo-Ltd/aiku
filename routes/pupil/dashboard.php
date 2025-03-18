@@ -10,4 +10,4 @@
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [ShowRetinaDashboard::class, 'inPupil'])->name('show');
+Route::get('dashboard', [ShowRetinaDashboard::class, 'inPupil'])->name('show');

@@ -276,20 +276,6 @@ const isLoadingButtonRentalAgreement = ref(false)
             </div>
         </div>
       </div>
-        <div v-if="data.route_action && customer?.status != 'pending_approval'" class=" flex">
-          <div class="w-64 border-gray-300 ">
-              <div class="p-1" v-for="(btn, index) in data.route_action" :key="index">
-              <ButtonWithLink
-                  :label="btn.label"
-                  :bindToLink="{ preserveScroll: true, preserveState: true }"
-                  :type="btn.style"
-                  full
-                  :routeTarget="btn.route"
-
-              />
-              </div>
-          </div>
-      </div>
     </div>
   <!-- Container untuk card -->
   <div v-if="customer?.status == 'pending_approval'" class="grid grid-cols-3 gap-6 p-6">

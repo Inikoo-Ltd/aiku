@@ -18,7 +18,7 @@ class GetPupilDropshippingNavigation
 {
     use AsAction;
 
-    public function handle(ShopifyUser $shopifyUser): array
+    public function handle(?ShopifyUser $shopifyUser): array
     {
         $groupNavigation = [];
 
@@ -35,7 +35,31 @@ class GetPupilDropshippingNavigation
                 ]
             ];
         } else {
+            $groupNavigation['dashboard'] = [
+                'label' => __('Dashboard'),
+                'icon' => ['fal', 'fa-tachometer-alt'],
+                'root' => 'pupil.dashboard.show',
+                'route' => [
+                    'name' => 'pupil.dashboard.show'
+                ],
+                'topMenu' => [
+
+                ]
+            ];
+
             $groupNavigation = array_merge($groupNavigation, GetPupilDropshippingPlatformNavigation::run($shopifyUser, Platform::where('slug', PlatformTypeEnum::SHOPIFY->value)->first()));
+
+            $groupNavigation['go_to_retina'] = [
+                'label' => __($shopifyUser->customer?->shop?->name),
+                'icon' => ['fal', 'fa-tachometer-alt'],
+                'root' => 'pupil.home',
+                'route' => [
+                    'name' => 'pupil.home'
+                ],
+                'topMenu' => [
+
+                ]
+            ];
         }
 
         return $groupNavigation;

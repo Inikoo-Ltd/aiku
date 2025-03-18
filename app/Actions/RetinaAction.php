@@ -35,6 +35,7 @@ class RetinaAction
     protected Customer $customer;
     protected WebUser $webUser;
     protected ShopifyUser $shopifyUser;
+    protected bool $asPupil = false;
     protected ?Fulfilment $fulfilment;
     protected ?FulfilmentCustomer $fulfilmentCustomer;
     protected Organisation $organisation;
@@ -128,6 +129,7 @@ class RetinaAction
 
     public function initialisationFromPupil(ActionRequest $request): static
     {
+        $this->asPupil = true;
         $this->shopifyUser = $request->user('pupil');
         $this->customer = $this->shopifyUser->customer;
         $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;

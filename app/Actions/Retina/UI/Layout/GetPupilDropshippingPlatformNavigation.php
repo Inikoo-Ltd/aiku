@@ -17,7 +17,7 @@ class GetPupilDropshippingPlatformNavigation
 {
     use AsAction;
 
-    public function handle(ShopifyUser $shopifyUser, Platform $platform): array
+    public function handle(?ShopifyUser $shopifyUser, Platform $platform): array
     {
         $platformNavigation = [];
 
