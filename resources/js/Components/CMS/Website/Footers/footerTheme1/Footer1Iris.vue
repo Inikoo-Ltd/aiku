@@ -245,9 +245,10 @@ const props = defineProps<{
                     </div>
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
-                        <img v-for="item of modelValue?.paymentData.data" :src="item.value" :alt="item.name"
-                            class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
-                    </div>
+                            <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
+                                <img :src="payment.image" :alt="payment.alt" class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
+                            </div>
+                        </div>
                 </div>
             </div>
 

@@ -133,5 +133,14 @@ export default {
 			name: "Social Media",
 			type: "socialMedia",
 		},
+		{
+			icon: {
+				icon: faEnvelope,
+				tooltip: "Email",
+			},
+			key: ["paymentData","data"],
+			name: "Payment",
+			type: "payment_templates",
+		},	
 	],
 }
