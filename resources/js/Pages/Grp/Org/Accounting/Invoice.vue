@@ -309,10 +309,7 @@ const generateRefundRoute = (refundSlug: string) => {
                     </dd>
                 </div>
 
-                <div class="relative flex items-start w-full flex-none gap-x-2">
-                    <dt class="flex-none pt-1">
-                        <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
-                    </dt>
+                <div class="relative flex items-start w-full flex-none gap-x-2 mt-2">
                     <!-- <NeedToPay
                         @click="() => Number(box_stats.information.pay_amount) > 0 ? (isOpenModalPayment = true, fetchPaymentMethod()) : false"
                         :totalAmount="Number(props.invoice.total_amount)"
