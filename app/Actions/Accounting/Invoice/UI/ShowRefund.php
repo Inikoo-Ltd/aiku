@@ -234,13 +234,6 @@ class ShowRefund extends OrgAction
                 ],
             ],
 
-            'exportPdfRoute' => [
-                'name'       => 'grp.org.accounting.invoices.download',
-                'parameters' => [
-                    'organisation' => $refund->organisation->slug,
-                    'invoice'      => $refund->slug
-                ]
-            ],
 
             'box_stats' => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
@@ -279,6 +272,13 @@ class ShowRefund extends OrgAction
                     RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
                         fn () => PaymentsResource::collection(IndexPayments::run($refund))
                         : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
+                    'exportPdfRoute' => [
+                        'name'       => 'grp.org.accounting.invoices.download',
+                        'parameters' => [
+                            'organisation' => $refund->organisation->slug,
+                            'invoice'      => $refund->slug
+                        ]
+                    ]
                 ]
             );
         }

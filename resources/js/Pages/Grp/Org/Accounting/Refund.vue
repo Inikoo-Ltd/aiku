@@ -317,42 +317,11 @@ watch(paymentData, () => {
         <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
       </div>
 
-      <!-- Field: Address -->
-      <div class="pl-1 flex items-start w-full gap-x-2">
-        <dt v-tooltip="'Phone'" class="flex-none">
-          <span class="sr-only">Phone</span>
-          <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
-        </dt>
-
-        <dd class="text-base text-gray-500 w-full">
-          <div v-if="invoice_refund.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
-            <div v-html="invoice_refund.address.formatted_address" />
-          </div>
-
-          <div v-else class="text-gray-400 italic">
-            No address
-          </div>
-        </dd>
-      </div>
     </BoxStatPallet>
 
     <!-- Section: Detail -->
     <BoxStatPallet class="py-2 px-3">
       <div class="mt-1">
-        <div v-tooltip="'Recurring bill'"
-             class="w-fit flex items-center flex-none gap-x-2">
-          <dt class="flex-none">
-            <FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" class="text-gray-500" />
-          </dt>
-          <component :is="box_stats.information.recurring_bill?.route?.name ? Link : 'div'"
-                     as="dd"
-                     :href="box_stats.information.recurring_bill?.route?.name ? route(box_stats.information.recurring_bill?.route?.name, box_stats.information.recurring_bill.route.parameters) : ''"
-                     class="text-base text-gray-500"
-                     :class="box_stats.information.recurring_bill?.route?.name ? 'cursor-pointer primaryLink' : ''">
-            {{ box_stats.information.recurring_bill?.reference || "-" }}
-          </component>
-        </div>
 
         <div v-tooltip="'Invoice created'"
              class="flex items-center w-full flex-none gap-x-2">
