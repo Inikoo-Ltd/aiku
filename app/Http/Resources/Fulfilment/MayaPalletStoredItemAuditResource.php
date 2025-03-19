@@ -9,6 +9,7 @@ namespace App\Http\Resources\Fulfilment;
 
 use App\Actions\Fulfilment\StoredItemAuditDelta\UI\IndexStoredItemAuditDeltas;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
+use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -27,8 +28,8 @@ class MayaPalletStoredItemAuditResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $pallet = $this->scope;
-        $storedItemAudit = $this;
+        $storedItemAudit = StoredItemAudit::find($this->id);
+        $pallet = $storedItemAudit->scope;
         $editDeltas = [
             'stored_items' => $pallet->getEditStoredItemDeltasQuery($pallet->id, $this->id)
             ->where('pallet_stored_items.pallet_id', $pallet->id)
