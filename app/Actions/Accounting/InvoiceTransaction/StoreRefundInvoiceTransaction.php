@@ -76,6 +76,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
 
         $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
 
+        $refund->refresh();
+
         CalculateInvoiceTotals::run($refund);
 
         return $invoiceTransaction;
