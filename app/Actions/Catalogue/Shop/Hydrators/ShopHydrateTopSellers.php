@@ -37,17 +37,19 @@ class ShopHydrateTopSellers
         $timesUpdate = ['1d', '1w', '1m', '1y', 'all'];
         foreach ($timesUpdate as $timeUpdate) {
             $topFamily = $shop->getFamilies()->sortByDesc(function ($family) use ($timeUpdate) {
-                return $family->stats->{'shop_amount_'.$timeUpdate};
+                return $family->salesIntervals->{'sales_'.$timeUpdate};
             })->first();
 
             $topDepartment = $shop->departments()->sortByDesc(function ($department) use ($timeUpdate) {
-                return $department->stats->{'shop_amount_'.$timeUpdate};
+                return $department->salesIntervals->{'sales_'.$timeUpdate};
             })->first();
 
-            // TODO: Change to raw or leftjoin #1446
-            $topProduct = $shop->products()->with(['asset.salesIntervals'])->get()->sortByDesc(function ($product) use ($timeUpdate) {
-                return $product->asset->salesIntervals->{'sales_'.$timeUpdate} ?? 0;
-            })->first();
+            $topProduct = $shop->products()
+                ->select('products.asset_id', 'products.id')
+                ->leftJoin('assets', 'products.asset_id', '=', 'assets.id')
+                ->leftJoin('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id')
+                ->orderByDesc("asset_sales_intervals.sales_{$timeUpdate}")
+                ->first();
 
             $dataToUpdate = [];
             if ($topFamily && $topFamily->stats->{'shop_amount_'.$timeUpdate} > 0) {
