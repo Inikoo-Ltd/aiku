@@ -151,20 +151,22 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        $queryBuilderRefund = QueryBuilder::for(Invoice::class);
-        $queryBuilderRefund->where('invoice_id', $invoice->id);
-        $queryBuilderRefund->leftJoin('fulfilment_customers', 'fulfilment_customers.customer_id', '=', 'invoices.customer_id');
-        $queryBuilderRefund->leftJoin('organisations', 'organisations.id', '=', 'invoices.organisation_id');
-        $queryBuilderRefund->leftJoin('fulfilments', 'fulfilments.id', '=', 'fulfilment_customers.fulfilment_id');
-        $queryBuilderRefund->select([
-            'invoices.slug as refund_slug',
-            'invoices.reference as refund_reference',
-            'organisations.slug as organisation_slug',
-            'fulfilments.slug as fulfilment_slug',
-            DB::raw("'{$invoice->slug}' as invoice_slug"),
-        ]);
+        // $queryBuilderRefund = QueryBuilder::for(Invoice::class);
+        // $queryBuilderRefund->where('invoice_id', $invoice->id);
+        // $queryBuilderRefund->leftJoin('fulfilment_customers', 'fulfilment_customers.customer_id', '=', 'invoices.customer_id');
+        // $queryBuilderRefund->leftJoin('organisations', 'organisations.id', '=', 'invoices.organisation_id');
+        // $queryBuilderRefund->leftJoin('fulfilments', 'fulfilments.id', '=', 'fulfilment_customers.fulfilment_id');
+        // $queryBuilderRefund->select([
+        //     'invoices.slug as refund_slug',
+        //     'invoices.reference as refund_reference',
+        //     'organisations.slug as organisation_slug',
+        //     'fulfilments.slug as fulfilment_slug',
+        //     DB::raw("'{$invoice->slug}' as invoice_slug"),
+        // ]);
 
-        $listRefund = $queryBuilderRefund->take(3)->get()->toArray();
+
+
+        // $listRefund = $queryBuilderRefund->take(3)->get()->toArray();
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -245,8 +247,7 @@ class ShowInvoice extends OrgAction
                     ]
                 ],
                 'box_stats'      => $this->getBoxStats($invoice),
-                'list_refund' =>  $listRefund,
-
+                'refunds' => InvoiceResource::collection($invoice->refunds),
                 'invoice' => InvoiceResource::make($invoice),
                 'outbox'  => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,

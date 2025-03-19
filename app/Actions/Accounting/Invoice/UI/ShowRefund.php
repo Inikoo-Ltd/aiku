@@ -184,21 +184,6 @@ class ShowRefund extends OrgAction
                     'title' => $refund->reference
                 ],
                 'actions'       => $actions,
-                'meta' => [
-                    [
-                        'key'   => __('invoice'),
-                        'label' => __('invoice'),
-                        'icon' => 'fal fa-external-link',
-                        'route' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
-                            'parameters' => [
-                                'organisation' => $refund->organisation->slug,
-                                'fulfilment' => $refund->shop->fulfilment,
-                                'invoice'      => $refund->originalInvoice->slug
-                            ]
-                        ]
-                    ]
-                ]
             ],
             'tabs'        => [
                 'current'    => $this->tab,
