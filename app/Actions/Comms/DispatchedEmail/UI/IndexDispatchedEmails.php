@@ -25,7 +25,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -77,16 +76,16 @@ class IndexDispatchedEmails extends OrgAction
         }
 
 
-//        if (is_array($this->elementGroups) || is_object($this->elementGroups) && !($parent instanceof Group)) {
-//            foreach ($this->elementGroups as $key => $elementGroup) {
-//                $queryBuilder->whereElementGroup(
-//                    key: $key,
-//                    allowedElements: array_keys($elementGroup['elements']),
-//                    engine: $elementGroup['engine'],
-//                    prefix: $prefix
-//                );
-//            }
-//        }
+        //        if (is_array($this->elementGroups) || is_object($this->elementGroups) && !($parent instanceof Group)) {
+        //            foreach ($this->elementGroups as $key => $elementGroup) {
+        //                $queryBuilder->whereElementGroup(
+        //                    key: $key,
+        //                    allowedElements: array_keys($elementGroup['elements']),
+        //                    engine: $elementGroup['engine'],
+        //                    prefix: $prefix
+        //                );
+        //            }
+        //        }
 
         return $queryBuilder
             ->defaultSort('-sent_at')
@@ -117,7 +116,7 @@ class IndexDispatchedEmails extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'state', label: '', type: 'icon', canBeHidden: false);
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);
 
             $table->column(key: 'sent_at', label: __('Sent Date'), canBeHidden: false, sortable: true);
@@ -131,7 +130,6 @@ class IndexDispatchedEmails extends OrgAction
             $table->defaultSort('-sent_at');
         };
     }
-
 
 
     public function htmlResponse(LengthAwarePaginator $dispatched_emails, ActionRequest $request): Response
@@ -183,23 +181,6 @@ class IndexDispatchedEmails extends OrgAction
         return $this->handle($shop);
     }
 
-    /** @noinspection PhpUnused */
-    public function inPostRoomInShop(Outbox $outbox, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($request);
-
-        return $this->handle($outbox);
-    }
-
-
-    public function inPostRoomInOutboxInShop(PostRoom $postRoom, Outbox $outbox, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($request);
-
-        return $this->handle($outbox);
-    }
-
-
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) use ($routeName) {
@@ -226,7 +207,10 @@ class IndexDispatchedEmails extends OrgAction
             ),
             'mail.post_rooms.show.dispatched-emails.index' =>
             array_merge(
-                (new ShowPostRoom())->getBreadcrumbs(),
+                (new ShowPostRoom())->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb([])
             ),
             'grp.overview.comms-marketing.dispatched-emails.index' =>
