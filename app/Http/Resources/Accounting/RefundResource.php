@@ -28,6 +28,7 @@ class RefundResource extends JsonResource
             'reference'           => $invoice->reference,
             'total_amount'        => $invoice->total_amount,
             'net_amount'          => $invoice->net_amount,
+            'payment_amount'          => $invoice->payment_amount,
             'date'                => $invoice->date,
             'type'                => [
                 'label' => $invoice->type->labels()[$invoice->type->value],

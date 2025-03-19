@@ -60,6 +60,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
 import InputNumber from 'primevue/inputnumber'
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
+import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefundPay.vue'
 // const locale = useLocaleStore()
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -110,7 +111,18 @@ const props = defineProps<{
         state: string
         workshop_route: routeType
     }
-    list_refund: {}[]
+    list_refunds: {}[]
+    invoice_pay: {
+        currency_code: string
+        total_invoice: number
+        total_refunds: number
+        total_balance: number
+        total_paid_in: number
+        total_paid_out: {
+            data: {}[]
+        }
+        total_need_to_pay: number
+    }
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -339,7 +351,7 @@ const generateRefundRoute = (refundSlug: string) => {
             </div>
         </BoxStatPallet>
 
-        <!-- Section: Detail -->
+        <!-- Section: Detail (2nd box) -->
         <BoxStatPallet class="py-2 px-3">
             <div class="mt-1">
                 <div v-tooltip="'Recurring bill'"
@@ -370,35 +382,19 @@ const generateRefundRoute = (refundSlug: string) => {
                     <dt class="flex-none pt-1">
                         <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
                     </dt>
-                    <NeedToPay
+                    <!-- <NeedToPay
                         @click="() => Number(box_stats.information.pay_amount) > 0 ? (isOpenModalPayment = true, fetchPaymentMethod()) : false"
                         :totalAmount="Number(props.invoice.total_amount)"
                         :paidAmount="Number(box_stats.information.paid_amount)"
                         :payAmount="Number(box_stats.information.pay_amount)"
                         :currencyCode="invoice.currency_code"
                         :class="[Number(box_stats.information.pay_amount) ? 'hover:bg-gray-100 cursor-pointer' : '']"
+                    /> -->
+                    
+                    <InvoiceRefundPay
+                        :invoice_pay
                     />
-                </div>
 
-                <div v-if="list_refund.length" v-tooltip="trans('List of refunds')" class="mt-1 flex items-center w-full flex-none gap-x-2">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-hand-holding-usd' fixed-width aria-hidden='true' class="text-gray-500" />
-                    </dt>
-
-                    <dd class="text-base text-gray-500">
-                        <Link v-for="(refund, index) in list_refund.slice(0, 2)"
-                            :key="index"
-                            :href="generateRefundRoute(refund.refund_slug)"
-                            class="secondaryLink"
-                        >
-                            {{ refund.refund_reference }}
-                        </Link>
-
-                        <div v-if="list_refund.length > 2" @click="() => handleTabUpdate('refunds')" class="text-xs cursor-pointer text-gray-500 hover:text-gray-700">
-                            {{ trans("see more..") }}
-                        </div>
-
-                    </dd>
                 </div>
             </div>
         </BoxStatPallet>

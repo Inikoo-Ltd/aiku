@@ -22,15 +22,14 @@ use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
-use App\Services\QueryBuilder;
 use Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -151,20 +150,19 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        $queryBuilderRefund = QueryBuilder::for(Invoice::class);
-        $queryBuilderRefund->where('invoice_id', $invoice->id);
-        $queryBuilderRefund->leftJoin('fulfilment_customers', 'fulfilment_customers.customer_id', '=', 'invoices.customer_id');
-        $queryBuilderRefund->leftJoin('organisations', 'organisations.id', '=', 'invoices.organisation_id');
-        $queryBuilderRefund->leftJoin('fulfilments', 'fulfilments.id', '=', 'fulfilment_customers.fulfilment_id');
-        $queryBuilderRefund->select([
-            'invoices.slug as refund_slug',
-            'invoices.reference as refund_reference',
-            'organisations.slug as organisation_slug',
-            'fulfilments.slug as fulfilment_slug',
-            DB::raw("'{$invoice->slug}' as invoice_slug"),
-        ]);
-
-        $listRefund = $queryBuilderRefund->take(3)->get()->toArray();
+        $totalRefund = $invoice->refunds->where('in_progress', false)->sum('total_amount');
+        $invoicePayBox = [
+            'invoice_pay' => [
+                'currency_code'     => $invoice->currency->code,
+                'total_invoice'     => $invoice->total_amount,
+                'total_refunds'     => $totalRefund,
+                'total_balance'     => $invoice->total_amount - $totalRefund,
+                'total_paid_in'     => $invoice->payment_amount,
+                'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_progress', false)),
+                'total_need_to_refund' => $totalRefund - $invoice->refunds->sum('payment_amount'),
+                'total_need_to_pay' => $invoice->total_amount - $invoice->payment_amount,
+            ],
+        ];
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -236,6 +234,7 @@ class ShowInvoice extends OrgAction
                         ],
                     ],
                 ],
+                ...$invoicePayBox,
 
                 'exportPdfRoute' => [
                     'name'       => 'grp.org.accounting.invoices.download',
@@ -245,8 +244,7 @@ class ShowInvoice extends OrgAction
                     ]
                 ],
                 'box_stats'      => $this->getBoxStats($invoice),
-                'list_refund' =>  $listRefund,
-
+                'list_refunds' => RefundResource::collection($invoice->refunds),
                 'invoice' => InvoiceResource::make($invoice),
                 'outbox'  => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
