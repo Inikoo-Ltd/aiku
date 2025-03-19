@@ -90,7 +90,7 @@ const PalletStackScreen = ({navigation, route}) => {
                 break;
             case 'audit-sku':
                 if(data.audit){
-                    navigation.navigate('audit-sku', {id: data.audit.id});
+                    navigation.navigate('audit-sku', {id: data.audit ,pallet_id: data.id });
                 }else{
                     createAudit()
                 }
