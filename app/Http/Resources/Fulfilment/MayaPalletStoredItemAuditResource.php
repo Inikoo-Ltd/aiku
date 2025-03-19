@@ -1,10 +1,12 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-03-2025-14h-44m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
+
 namespace App\Http\Resources\Fulfilment;
 
 use App\Actions\Fulfilment\StoredItemAuditDelta\UI\IndexStoredItemAuditDeltas;

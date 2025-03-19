@@ -731,4 +731,4 @@ test('test reset intervals', function () {
     $this->artisan('intervals:reset-quarter')->assertExitCode(0);
     $this->artisan('intervals:reset-year')->assertExitCode(0);
 
-  });
+});

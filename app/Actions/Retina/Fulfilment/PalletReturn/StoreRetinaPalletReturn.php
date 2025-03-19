@@ -86,8 +86,7 @@ class StoreRetinaPalletReturn extends RetinaAction
 
     public function jsonResponse(PalletReturn $palletReturn): array
     {
-        if($this->withStoredItems)
-        {
+        if ($this->withStoredItems) {
             return [
                 'route' => [
                     'name'       => 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
@@ -109,7 +108,7 @@ class StoreRetinaPalletReturn extends RetinaAction
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
-        if($this->withStoredItems) {
+        if ($this->withStoredItems) {
             return  Redirect::route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
                 'palletReturn' => $palletReturn->slug
             ]);

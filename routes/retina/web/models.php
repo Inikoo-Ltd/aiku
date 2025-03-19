@@ -78,7 +78,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('pallet-return-item-upload', ImportRetinaPalletReturnItem::class)->name('pallet-return-item.upload');
     Route::post('stored-item', StoreRetinaStoredItemsToReturn::class)->name('stored_item.store');
-    
+
     Route::post('pallet', AttachRetinaPalletsToReturn::class)->name('pallet.store'); //No longer used (free to delete) but idk
     Route::patch('update', UpdateRetinaPalletReturn::class)->name('update');
     Route::post('submit', SubmitRetinaPalletReturn::class)->name('submit');

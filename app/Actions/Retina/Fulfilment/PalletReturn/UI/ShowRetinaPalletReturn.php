@@ -235,7 +235,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                
+
 
                 'upload_pallet' => [
                     'title' => [
