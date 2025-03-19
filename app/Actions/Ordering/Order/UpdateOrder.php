@@ -17,6 +17,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -35,13 +36,14 @@ class UpdateOrder extends OrgAction
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
 
+        $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        OrderRecordSearch::dispatch($order);
-
-        if (array_key_exists('state', $changedFields)) {
-            $this->orderHydrators($order);
+        if (count($changes) > 0) {
+            OrderRecordSearch::dispatch($order);
+            if (array_key_exists('state', $changedFields)) {
+                $this->orderHydrators($order);
+            }
         }
-
 
         return $order;
     }
@@ -78,7 +80,6 @@ class UpdateOrder extends OrgAction
 
 
         if (!$this->strict) {
-
             $rules = $this->orderNoStrictFields($rules);
             $rules = $this->noStrictUpdateRules($rules);
         }
