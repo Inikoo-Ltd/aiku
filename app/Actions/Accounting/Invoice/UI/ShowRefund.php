@@ -27,7 +27,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -234,13 +234,6 @@ class ShowRefund extends OrgAction
                 ],
             ],
 
-            'exportPdfRoute' => [
-                'name'       => 'grp.org.accounting.invoices.download',
-                'parameters' => [
-                    'organisation' => $refund->organisation->slug,
-                    'invoice'      => $refund->slug
-                ]
-            ],
 
             'box_stats' => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
@@ -279,6 +272,13 @@ class ShowRefund extends OrgAction
                     RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
                         fn () => PaymentsResource::collection(IndexPayments::run($refund))
                         : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
+                    'exportPdfRoute' => [
+                        'name'       => 'grp.org.accounting.invoices.download',
+                        'parameters' => [
+                            'organisation' => $refund->organisation->slug,
+                            'invoice'      => $refund->slug
+                        ]
+                    ]
                 ]
             );
         }
