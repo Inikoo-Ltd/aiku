@@ -173,7 +173,7 @@ class ShowRefund extends OrgAction
                 'currency_code'     => $invoice->currency->code,
                 'total_invoice'     => $invoice->total_amount,
                 'total_refunds'     => $totalRefund,
-                'total_balance'     => $invoice->total_amount - $totalRefund,
+                'total_balance'     => $invoice->total_amount + $totalRefund,
                 'total_paid_in'     => $invoice->payment_amount,
                 'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_progress', false)),
                 'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('payment_amount') : 0,
