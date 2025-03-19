@@ -166,7 +166,7 @@ class ShowRefund extends OrgAction
 
 
         $invoice = $refund->originalInvoice;
-        $totalRefund = $refund->refunds->sum('net_amount');
+        $totalRefund = $invoice->refunds->sum('net_amount');
         $refundPayBox = [
             'invoice_pay' => [
                 'currency_code'     => $invoice->currency_code,
