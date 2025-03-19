@@ -42,7 +42,7 @@ enum RefundTabsEnum: string
             ],
 
             RefundTabsEnum::ITEMS       => [
-                'title' => __('Items').' (debug: finalised)',
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
 
