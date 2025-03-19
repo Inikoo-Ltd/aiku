@@ -150,7 +150,7 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        $totalRefund = $invoice->refunds->where('in_progress', false)->sum('total_amount');
+        $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
         $invoicePayBox = [
             'invoice_pay' => [
                 'routes'         => [
@@ -172,7 +172,7 @@ class ShowInvoice extends OrgAction
                 'total_refunds'     => $totalRefund,
                 'total_balance'     => $invoice->total_amount + $totalRefund,
                 'total_paid_in'     => $invoice->payment_amount,
-                'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_progress', false)),
+                'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_process', false)),
                 'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('payment_amount') : 0,
                 'total_need_to_pay' => $invoice->total_amount - $invoice->payment_amount,
             ],
