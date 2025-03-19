@@ -86,14 +86,22 @@ class StoreRetinaPalletReturn extends RetinaAction
 
     public function jsonResponse(PalletReturn $palletReturn): array
     {
+        if($this->withStoredItems)
+        {
+            return [
+                'route' => [
+                    'name'       => 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->slug
+                    ]
+                ]
+            ];
+        }
         return [
             'route' => [
-                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+                'name'       => 'retina.fulfilment.storage.pallet_returns.show',
                 'parameters' => [
-                    'organisation'       => $palletReturn->organisation->slug,
-                    'fulfilment'         => $palletReturn->fulfilment->slug,
-                    'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                    'palletReturn'       => $palletReturn->slug
+                    'palletReturn' => $palletReturn->slug
                 ]
             ]
         ];
@@ -101,6 +109,11 @@ class StoreRetinaPalletReturn extends RetinaAction
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
+        if($this->withStoredItems) {
+            return  Redirect::route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
+                'palletReturn' => $palletReturn->slug
+            ]);
+        }
         return  Redirect::route('retina.fulfilment.storage.pallet_returns.show', [
             'palletReturn' => $palletReturn->slug
         ]);
