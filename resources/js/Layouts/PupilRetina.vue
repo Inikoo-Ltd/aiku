@@ -46,7 +46,7 @@ const isStaging = layout.app.environment === 'staging'
 
         <PupilTopbar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen" logoRoute="pupil.home" />
 
-        
+
         <!-- Sidebar: Left -->
         <div class="">
             <div @click="sidebarOpen = !sidebarOpen" class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen" />
@@ -75,10 +75,9 @@ const isStaging = layout.app.environment === 'staging'
                             layout.leftSidebar.show ? 'left-0 md:left-48' : 'left-0 md:left-12',
                         ]"
                         :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
-                        :layout="layout"    
+                        :layout="layout"
                     /> -->
                 </div>
-
                 <slot />
             </div>
         </main>
@@ -97,10 +96,10 @@ const isStaging = layout.app.environment === 'staging'
         :max="3"
         width="500"
         classes="custom-style-notification"
-        :pauseOnHover="true"    
+        :pauseOnHover="true"
     >
         <template #body="props">
-            <Notification :notification="props" />  
+            <Notification :notification="props" />
         </template>
     </notifications>
 </template>

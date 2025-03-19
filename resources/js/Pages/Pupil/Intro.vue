@@ -27,7 +27,7 @@ const onClickGetStarted = (id: number) => {
         },
         preserveState: true,
         onSuccess: () => {
-          window.location.reload()
+            router.reload()
         },
         onError: (error) => {
             console.error('error get started: ', error)

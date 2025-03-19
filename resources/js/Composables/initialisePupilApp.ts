@@ -88,8 +88,9 @@ export const initialisePupilApp = () => {
 
     watchEffect(() => {
         // Set data of Navigation
-        console.log('usepage layout', usePage().props)
+        console.log('usepage layout aaaa', usePage().props)
         if (usePage().props.layout) {
+            console.log('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz', usePage().props.layout.navigation)
             layout.navigation = usePage().props.layout.navigation || null
             // layout.secondaryNavigation = usePage().props.layout.secondaryNavigation || null
         }

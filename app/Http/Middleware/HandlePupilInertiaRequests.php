@@ -27,15 +27,14 @@ class HandlePupilInertiaRequests extends Middleware
 
         $firstLoadOnlyProps = [];
 
-        if (!$request->inertia() or Session::get('reloadLayout')) {
-
-            $firstLoadOnlyProps          = GetPupilFirstLoadProps::run($request, $shopifyUser);
-            $firstLoadOnlyProps['ziggy'] = function () use ($request) {
-                return array_merge((new Ziggy('pupil'))->toArray(), [
-                    'location' => $request->url(),
-                ]);
-            };
-        }
+        //        if (!$request->inertia() or Session::get('reloadLayout')) {
+        $firstLoadOnlyProps          = GetPupilFirstLoadProps::run($request, $shopifyUser);
+        $firstLoadOnlyProps['ziggy'] = function () use ($request) {
+            return array_merge((new Ziggy('pupil'))->toArray(), [
+                'location' => $request->url(),
+            ]);
+        };
+        //        }
 
         return array_merge(
             $firstLoadOnlyProps,

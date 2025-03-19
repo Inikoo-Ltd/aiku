@@ -3,6 +3,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import PupilRetina from '@/Layouts/PupilRetina.vue'
 import { trans } from 'laravel-vue-i18n'
 import PupilFulfilmentDashboard from "@/Pages/Pupil/Dashboard/PupilFulfilmentDashboard.vue";
+import {usePage} from "@inertiajs/vue3";
 
 const props = defineProps<{
     data: {}
