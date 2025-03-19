@@ -42,6 +42,7 @@ use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaStoredItemsToReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\SubmitRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturnDeliveryAddress;
+use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\Retina\Fulfilment\StoredItem\StoreRetinaStoredItem;
 use App\Actions\Retina\Fulfilment\StoredItem\SyncRetinaStoredItemToPallet;
 use App\Actions\Retina\Fulfilment\StoredItem\UpdateRetinaStoredItem;
@@ -76,10 +77,12 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('stored-item-upload', ImportRetinaPalletReturnItem::class)->name('stored-item.upload');
     Route::post('stored-item', StoreRetinaStoredItemsToReturn::class)->name('stored_item.store');
+    
     Route::post('pallet', AttachRetinaPalletsToReturn::class)->name('pallet.store'); //No longer used (free to delete) but idk
     Route::patch('update', UpdateRetinaPalletReturn::class)->name('update');
     Route::post('submit', SubmitRetinaPalletReturn::class)->name('submit');
     Route::post('cancel', CancelRetinaPalletReturn::class)->name('cancel');
+    Route::post('pallet-stored-item/{palletStoredItem:id}/attach', AttachRetinaStoredItemToReturn::class)->name('stored_item.attach')->withoutScopedBindings();
     Route::post('pallet/{pallet:id}/attach', AttachRetinaPalletToReturn::class)->name('pallet.attach')->withoutScopedBindings();
     Route::delete('pallet/{pallet:id}/detach', DetachRetinaPalletFromReturn::class)->name('pallet.delete')->withoutScopedBindings();
     Route::post('transaction', [StoreRetinaFulfilmentTransaction::class, 'fromRetinaInPalletReturn'])->name('transaction.store');

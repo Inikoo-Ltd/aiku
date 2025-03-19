@@ -84,14 +84,24 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         'all_items_returned' => $palletStoredItem->pallet->palletStoredItems->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED),
                         'is_pallet_returned' => $palletStoredItem->pallet->status == PalletStatusEnum::RETURNED,
 
-                        'syncRoute' => [
-                            'name'       => 'grp.models.pallet-return.stored_item.store',
-                            'parameters' => [
-                                'palletReturn'     => $this->pallet_return_id,
-                                'palletStoredItem' => $palletStoredItem->id
+                        'syncRoute' =>match (request()->routeIs('retina.*')) { 
+                            true => [
+                                'name'       => 'retina.models.pallet-return.stored_item.attach',
+                                'parameters' => [
+                                    'palletReturn'     => $this->pallet_return_id,
+                                    'palletStoredItem' => $palletStoredItem->id
+                                ],
+                                'method'    => 'post'
                             ],
-                            'method'    => 'post'
-                        ],
+                            default => [
+                                'name'       => 'grp.models.pallet-return.stored_item.store',
+                                'parameters' => [
+                                    'palletReturn'     => $this->pallet_return_id,
+                                    'palletStoredItem' => $palletStoredItem->id
+                                ],
+                                'method'    => 'post'
+                            ]
+                        },
                         'newPickRoute' => [
                             'name'       => 'grp.models.pallet-return.pallet_return_item.new_pick',
                             'parameters' => [
