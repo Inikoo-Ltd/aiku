@@ -235,32 +235,54 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                'upload_spreadsheet' => [
-                    'event'           => 'action-progress',
-                    'channel'         => 'retina.personal.'.$palletReturn->organisation_id,
-                    'required_fields' => ['reference'],
-                    'template'        => [
-                        'label' => 'Download template (.xlsx)',
+                
+
+                'upload_pallet' => [
+                    'title' => [
+                        'label' => __('Upload storing pallet'),
+                        'information' => __('The list of column file: reference')
                     ],
-                    'route'           => [
-                        'upload'   => [
-                            'name'       => 'retina.models.pallet-return.pallet-return-item.upload',
-                            'parameters' => [
-                                'palletReturn' => $palletReturn->id
+                    'progressDescription'   => __('Adding pallets to the Return'),
+                    'preview_template'    => [
+                        'unique_column' => [
+                            'reference'  => [
+                                'label' => __('The pallets should already stored in warehouse. Both system reference and your reference is valid.'),
                             ]
                         ],
-                        'history'  => [
-                            'name'       => 'retina.fulfilment.storage.pallet_returns.uploads.history',
-                            'parameters' => [
-                                'palletReturn' => $palletReturn->slug
-                            ]
-                        ],
-                        'download' => [
-                            'name'       => $downloadRoute,
-                            'parameters' => [
-                                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'type'               => 'xlsx'
-                            ]
+                        'header' => ['reference'],
+                        'rows' => [
+                            [
+                                'reference' => 'PALLET1',
+                            ],
+                        ]
+                    ],
+                    'upload_spreadsheet' => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'retina.personal.'.$palletReturn->organisation_id,
+                        'required_fields' => ['reference'],
+                        // 'template'        => [
+                        //     'label' => 'Download template (.xlsx)',
+                        // ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'retina.models.pallet-return.pallet-return-item.upload',
+                                'parameters' => [
+                                    'palletReturn' => $palletReturn->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'retina.fulfilment.storage.pallet_returns.uploads.history',
+                                'parameters' => [
+                                    'palletReturn' => $palletReturn->slug
+                                ]
+                            ],
+                            // 'download' => [
+                            //     'name'       => $downloadRoute,
+                            //     'parameters' => [
+                            //         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                            //         'type'               => 'xlsx'
+                            //     ]
+                            // ],
                         ],
                     ],
                 ],
