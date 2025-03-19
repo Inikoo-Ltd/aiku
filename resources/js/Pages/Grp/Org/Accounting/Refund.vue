@@ -443,13 +443,13 @@ watch(paymentData, () => {
                 </Transition>
 
                 <div class="col-span-2">
-                    <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Payment amount') }}</label>
+                    <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Amount to refund') }}</label>
                     <div class="mt-1">
                         <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
-                    <div class="space-x-1">
-                        <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_refund.currency_code || 'usd', Math.abs(Number(box_stats.information.pay_amount))) }}</span>
-                        <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)" :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary" :label="trans('Pay all')" size="xxs" />
+                    <div class="space-x-1 mt-1 ">
+                        <span class="text-sm  text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_refund.currency_code || 'usd', Math.abs(Number(box_stats.information.pay_amount))) }}</span>
+                        <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)" :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary" :label="trans('Refund all')" size="sm" />
                     </div>
                 </div>
 
