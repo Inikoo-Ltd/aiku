@@ -150,9 +150,9 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        $totalRefund = $invoice->refunds->where('in_progress', false)->sum('total_amount');
+        $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
         $ir_total    = $invoice->total_amount + $totalRefund;
-        $refunds_pay_out = $invoice->refunds->where('in_progress', false)->sum('payment_amount'); 
+        $refunds_pay_out = $invoice->refunds->where('in_process', false)->sum('payment_amount');
 
         $invoicePayBox = [
             'invoice_pay' => [
