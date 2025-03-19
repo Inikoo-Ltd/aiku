@@ -36,7 +36,7 @@ class InvoiceCategoryHydrateOrderingIntervals
         return [(new WithoutOverlapping($this->invoiceCategory->id))->dontRelease()];
     }
 
-    public function handle(InvoiceCategory $invoiceCategory): void
+    public function handle(InvoiceCategory $invoiceCategory, ?array $intervals = null, $doPreviousPeriods = null): void
     {
         $stats = [];
 
@@ -44,19 +44,23 @@ class InvoiceCategoryHydrateOrderingIntervals
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'invoices_'
+            statField: 'invoices_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('invoice_category_id', $invoiceCategory->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw(' count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'refunds_'
+            statField: 'refunds_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
+
 
         $invoiceCategory->orderingIntervals->update($stats);
     }
-
 
 
 }

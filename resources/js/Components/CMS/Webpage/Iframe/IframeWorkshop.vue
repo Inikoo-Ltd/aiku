@@ -68,6 +68,6 @@ const iframeStyles = computed(() => {
     </div>
 
     <div v-else class="relative">
-        <iframe :title="modelValue?.title || `iframe-${uuidv4()}`" :src="modelValue?.link" :style="iframeStyles" />
+        <iframe :title="modelValue?.title || `iframe-${uuidv4()}`" :src="modelValue?.link" :style="iframeStyles" loading="lazy" />
     </div>
 </template>

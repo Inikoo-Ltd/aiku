@@ -935,7 +935,9 @@ test('update pallet delivery notes', function (PalletDelivery $palletDelivery) {
 
     expect($palletDelivery->customer_notes)->toBe('Note A')
         ->and($palletDelivery->public_notes)->toBe('Note B')
-        ->and($palletDelivery->internal_notes)->toBe('Note C');
+        ->and($palletDelivery->internal_notes)->toBe('Note C')
+        ->and($palletDelivery->transactions()->count())->toBe(0);
+
 
     UpdatePalletDelivery::make()->action(
         $palletDelivery,
@@ -947,6 +949,42 @@ test('update pallet delivery notes', function (PalletDelivery $palletDelivery) {
     expect($palletDelivery->customer_notes)->toBe('');
 
     return $palletDelivery;
+})->depends('create pallet delivery');
+
+test('add pallet and delete it', function (PalletDelivery $palletDelivery) {
+
+    $palletDelivery->refresh();
+    $pallet = StorePalletCreatedInPalletDelivery::make()->action(
+        $palletDelivery,
+        [
+            'customer_reference' => 'C00001_will_be_deleted',
+            'type'               => PalletTypeEnum::BOX->value,
+            'notes'              => 'note A',
+        ]
+    );
+    $palletDelivery->refresh();
+    expect($pallet)->toBeInstanceOf(Pallet::class)
+        ->and($palletDelivery->stats->number_services)->toBe(1)
+        ->and($pallet->state)->toBe(PalletStateEnum::IN_PROCESS)
+        ->and($pallet->status)->toBe(PalletStatusEnum::IN_PROCESS)
+        ->and($pallet->type)->toBe(PalletTypeEnum::BOX)
+        ->and($pallet->notes)->toBe('note A')
+        ->and($pallet->source_id)->toBeNull()
+        ->and($pallet->customer_reference)->toBeString()
+        ->and($pallet->received_at)->toBeNull()
+        ->and($pallet->fulfilmentCustomer)->toBeInstanceOf(FulfilmentCustomer::class)
+        ->and($pallet->fulfilmentCustomer->number_pallets)->toBe(1)
+        ->and($pallet->fulfilmentCustomer->number_stored_items)->toBe(0)
+        ->and($palletDelivery->stats->number_pallets)->toBe(1)
+        ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1)
+        ->and($palletDelivery->transactions()->count())->toBe(1);
+    $palletDelivery->refresh();
+
+
+    DeletePallet::make()->action($pallet, []);
+    expect($palletDelivery->transactions()->count())->toBe(0);
+
+
 })->depends('create pallet delivery');
 
 test('add pallet to pallet delivery', function (PalletDelivery $palletDelivery) {
@@ -974,7 +1012,8 @@ test('add pallet to pallet delivery', function (PalletDelivery $palletDelivery) 
         ->and($pallet->fulfilmentCustomer->number_pallets)->toBe(1)
         ->and($pallet->fulfilmentCustomer->number_stored_items)->toBe(0)
         ->and($palletDelivery->stats->number_pallets)->toBe(1)
-        ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1);
+        ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1)
+        ->and($palletDelivery->transactions()->count())->toBe(1);
 
 
     return $pallet;
@@ -1009,6 +1048,10 @@ test('add pallet to second pallet delivery', function (PalletDelivery $palletDel
 
     return $palletDelivery;
 })->depends('create second pallet delivery');
+
+
+
+
 
 test('add multiple pallets to pallet delivery', function (PalletDelivery $palletDelivery) {
     StoreMultiplePalletsFromDelivery::make()->action(
@@ -1901,7 +1944,10 @@ test('update pallet', function (Pallet $pallet) {
     return $updatedPallet;
 })->depends('create pallet no delivery');
 
-test('delete pallet', function (Pallet $pallet) {
+test('can not delete delete pallet that is already received', function (Pallet $pallet) {
+
+    $pallet->refresh();
+    $palletDelivery = $pallet->palletDelivery;
     DeletePallet::make()->action(
         $pallet,
         []
@@ -1909,12 +1955,13 @@ test('delete pallet', function (Pallet $pallet) {
 
 
     $palletDeleted = !Pallet::find($pallet->id);
+    $palletDelivery->refresh();
 
-    expect($palletDeleted)->toBeTrue();
-
+    expect($palletDeleted)->toBeTrue()
+    ->and($palletDelivery->stats->number_services)->toBe(0);
 
     return 'OK';
-})->depends('add pallet to pallet delivery');
+})->depends('add pallet to pallet delivery')->throws(Exception::class);
 
 test('Return pallet to customer', function (Pallet $pallet) {
     $returnedPallet = ReturnPalletToCustomer::make()->action(

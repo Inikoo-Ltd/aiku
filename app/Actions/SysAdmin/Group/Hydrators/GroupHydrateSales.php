@@ -33,7 +33,7 @@ class GroupHydrateSales
         return [(new WithoutOverlapping($this->group->id))->dontRelease()];
     }
 
-    public function handle(Group $group, ?array $intervals = null, $doPreviousIntervals = null): void
+    public function handle(Group $group, ?array $intervals = null, $doPreviousPeriods = null): void
     {
         $stats = [];
 
@@ -43,7 +43,7 @@ class GroupHydrateSales
             queryBase: $queryBase,
             statField: 'sales_grp_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 

@@ -29,6 +29,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -50,7 +51,7 @@ class IndexProducts extends OrgAction
     private string $bucket;
     private bool $sales = true;
 
-    private Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer $parent;
+    private Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser $parent;
     private Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer $higherParent;
 
     public function authorize(ActionRequest $request): bool
@@ -81,7 +82,7 @@ class IndexProducts extends OrgAction
         }
     }
 
-    protected function getElementGroups(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer $parent, $bucket = null): array
+    protected function getElementGroups(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser $parent, $bucket = null): array
     {
         return [
 
@@ -100,7 +101,7 @@ class IndexProducts extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -187,6 +188,25 @@ class IndexProducts extends OrgAction
                 ->whereNotIn('products.id', $productIds)
                 ->where('products.state', ProductStateEnum::ACTIVE);
             }
+        } elseif ($parent instanceof TiktokUser) {
+            if ($bucket == 'current') {
+                $queryBuilder->join('tiktok_user_has_products', function ($join) use ($parent, $bucket) {
+                    $join->on('products.id', '=', 'tiktok_user_has_products.product_id')
+                        ->where('tiktok_user_has_products.tiktok_user_id', '=', $parent->id);
+                });
+
+                $addSelects = [
+                    'tiktok_user_has_products.id as portfolio_id',
+                    'tiktok_user_has_products.tiktok_product_id',
+                    'tiktok_user_has_products.tiktok_user_id'
+                ];
+            } else {
+                $productIds = $parent->customer->portfolios()->where('item_type', class_basename(Product::class))->pluck('item_id');
+
+                $queryBuilder->where('shop_id', $parent->customer->shop_id)
+                ->whereNotIn('products.id', $productIds)
+                ->where('products.state', ProductStateEnum::ACTIVE);
+            }
         } elseif ($parent instanceof Customer) {
             $productIds = $parent->portfolios()->where('item_type', class_basename(Product::class))->pluck('item_id');
 
@@ -240,7 +260,7 @@ class IndexProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, string $bucket = null, $sales = true): Closure
+    public function tableStructure(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, string $bucket = null, $sales = true): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit, $bucket, $sales) {
             if ($prefix) {
@@ -680,12 +700,12 @@ class IndexProducts extends OrgAction
         return $this->handle(parent: $shop, bucket: $this->bucket);
     }
 
-    public function inDropshipping(ShopifyUser|Customer $parent, string $bucket): LengthAwarePaginator
+    public function inDropshipping(ShopifyUser|Customer|TiktokUser $parent, string $bucket): LengthAwarePaginator
     {
         $this->asAction = true;
         $this->bucket = $bucket;
         $this->parent = $parent;
-        if ($parent instanceof ShopifyUser) {
+        if ($parent instanceof ShopifyUser or $parent instanceof TiktokUser) {
             $shop = $parent->customer->shop;
         } else {
             $shop = $parent->shop;

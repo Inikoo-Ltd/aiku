@@ -16,7 +16,6 @@ use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
@@ -29,9 +28,19 @@ class AttachPalletToReturnFromImport extends OrgAction
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         $reference  = Arr::get($modelData, 'reference');
-        $pallet     = Pallet::where('reference', $reference)
-                    ->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)
-                    ->first();
+        $pallet = Pallet::where(function ($query) use ($reference) {
+            $query->where('reference', $reference)
+                    ->orWhere('customer_reference', $reference);
+        })
+        ->where('status', PalletStatusEnum::STORING)
+        ->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)
+        ->first();
+
+        if (!$pallet) {
+            throw ValidationException::withMessages([
+                'message' => ['reference' => 'pallet does not exist'],
+            ]);
+        }
 
         $this->attach($palletReturn, $pallet);
 
@@ -66,10 +75,6 @@ class AttachPalletToReturnFromImport extends OrgAction
             'reference' => [
                 'required',
                 'string',
-                Rule::exists('pallets', 'reference')->where(function ($query) {
-                    $query->where('fulfilment_customer_id', $this->parent->fulfilment_customer_id)
-                    ->where('status', PalletStatusEnum::STORING);
-                })
             ],
         ];
     }
@@ -88,14 +93,23 @@ class AttachPalletToReturnFromImport extends OrgAction
     {
         $reference = $this->get('reference');
 
+        $pallet = Pallet::where(function ($query) use ($reference) {
+            $query->where('reference', $reference)
+                    ->orWhere('customer_reference', $reference);
+        })
+        ->where('status', PalletStatusEnum::STORING)
+        ->where('fulfilment_customer_id', $this->parent->fulfilment_customer_id)
+        ->first();
 
-        $pallet = Pallet::where('reference', $reference)
-                        ->where('fulfilment_customer_id', $this->parent->fulfilment_customer_id)
-                        ->first();
+        if (!$pallet) {
+            throw ValidationException::withMessages([
+                'message' => ['reference' => 'pallet does not exist'],
+            ]);
+        }
 
         if ($pallet && $this->parent->pallets()->where('pallet_id', $pallet->id)->exists()) {
             throw ValidationException::withMessages([
-                'reference' => ['This pallet is already attached to the pallet return.'],
+                'message' => ['reference' => 'This pallet is already attached to the pallet return.']
             ]);
         }
     }

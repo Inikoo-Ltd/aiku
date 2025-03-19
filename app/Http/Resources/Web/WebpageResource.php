@@ -72,6 +72,9 @@ class WebpageResource extends JsonResource
             'update_model_has_web_blocks_route'        => [
                 'name'       => 'grp.models.model_has_web_block.update',
             ],
+            'update_bulk_model_has_web_blocks_route'        => [
+                'name'       => 'grp.models.model_has_web_block.bulk.update',
+            ],
             'delete_model_has_web_blocks_route'        => [
                 'name'       => 'grp.models.model_has_web_block.delete',
             ],

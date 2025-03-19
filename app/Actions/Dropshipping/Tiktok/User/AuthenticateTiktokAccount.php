@@ -2,15 +2,18 @@
 
 /*
  * Author: Artha <artha@aw-advantage.com>
- * Created: Thu, 11 Jul 2024 10:16:14 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Mon, 10 Mar 2025 16:53:20 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Tiktok;
+namespace App\Actions\Dropshipping\Tiktok\User;
 
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -52,20 +55,30 @@ class AuthenticateTiktokAccount extends RetinaAction
                         'refresh_token_expire_in' => $userData['refresh_token_expire_in'],
                     ];
 
-                    $tiktokUser = TiktokUser::where('tiktok_id', $userData['tiktok_id'])->first();
+                    $tiktokUser = TiktokUser::where('tiktok_id', $userData['tiktok_id'])->withTrashed()->first();
 
                     if ($tiktokUser) {
-                        UpdateTiktokUser::make()->action($tiktokUser, $userData);
+                        if ($tiktokUser->deleted_at) {
+                            $tiktokUser->restore();
+                            $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
+                            AttachCustomerToPlatform::make()->action($customer, $platform, []);
+                        }
                     } else {
-                        StoreTiktokUser::make()->action($customer, $userData);
+                        $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
                     }
+
+                    $tiktokShop = $tiktokUser->getAuthorizedShop();
+
+                    data_set($userData, 'data.authorized_shop', Arr::get($tiktokShop, 'data.shops.0'));
+
+                    return UpdateTiktokUser::make()->action($tiktokUser, $userData);
                 }
             }
 
             throw ValidationException::withMessages(['message' => __('tiktok.access_token')]);
 
         } catch (\Exception $e) {
-            //
+            dd($e);
         }
     }
 

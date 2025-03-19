@@ -36,23 +36,26 @@ class GroupHydrateInvoiceIntervals
         return [(new WithoutOverlapping($this->group->id))->dontRelease()];
     }
 
-    public function handle(Group $group): void
+    public function handle(Group $group, ?array $intervals = null, $doPreviousPeriods = null): void
     {
-
         $stats = [];
 
         $queryBase = Invoice::where('in_process', false)->where('group_id', $group->id)->where('type', InvoiceTypeEnum::INVOICE)->selectRaw('count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'invoices_'
+            statField: 'invoices_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('group_id', $group->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw(' count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'refunds_'
+            statField: 'refunds_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 

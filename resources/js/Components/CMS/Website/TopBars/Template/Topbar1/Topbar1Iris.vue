@@ -47,6 +47,7 @@ const layout = inject('layout', {})
 </script>
 
 <template>
+    <div></div>
     <div
         id="top_bar"
         class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4"

@@ -11,24 +11,30 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 use App\Actions\Catalogue\Product\UI\IndexProducts as IndexUIProducts;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaDropshippingProducts extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $scope): ShopifyUser|Customer
+    public function handle(ShopifyUser|Customer|TiktokUser $scope): ShopifyUser|Customer|TiktokUser
     {
         return $scope;
     }
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
@@ -41,16 +47,28 @@ class IndexRetinaDropshippingProducts extends RetinaAction
         return $this->handle($customer);
     }
 
-    public function inPlatform(Platform $platform, ActionRequest $request): ShopifyUser
+    public function inPlatform(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser
     {
         $this->initialisation($request);
 
-        $shopifyUser = $request->user()->customer->shopifyUser;
+        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
+            $scope = $request->user()->customer->shopifyUser;
+        } else {
+            $scope = $request->user()->customer->tiktokUser;
+        }
 
-        return $this->handle($shopifyUser);
+        return $this->handle($scope);
     }
 
-    public function htmlResponse(ShopifyUser|Customer $scope): Response
+    public function inPupil(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+
+        return $this->handle($this->shopifyUser);
+    }
+
+    public function htmlResponse(ShopifyUser|Customer|TiktokUser $scope): Response
     {
         if ($scope instanceof ShopifyUser) {
             $shop = $scope->customer->shop;
@@ -62,7 +80,17 @@ class IndexRetinaDropshippingProducts extends RetinaAction
                     ]
                 ],
             ];
-        } elseif ($scope instanceof Customer) {
+        } elseif ($scope instanceof TiktokUser) {
+            $shop = $scope->customer->shop;
+            $routes = [
+                'store_product' => [
+                    'name'       => 'retina.models.dropshipping.tiktok.product.store',
+                    'parameters' => [
+                        'tiktokUser' => $scope->id
+                    ]
+                ],
+            ];
+        } else {
             $shop = $scope->shop;
             $routes = [
                 'store_product' => [
@@ -73,6 +101,7 @@ class IndexRetinaDropshippingProducts extends RetinaAction
                 ],
             ];
         }
+
         return Inertia::render(
             'Dropshipping/Products',
             [

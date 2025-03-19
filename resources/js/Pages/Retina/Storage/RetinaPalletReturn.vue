@@ -58,6 +58,19 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import ModalAddPalletReturn from "@/Components/Segmented/ModalAddPalletReturn.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
+interface UploadSection {
+    title: {
+        label: string
+        information: string
+    }
+    progressDescription: string
+    upload_spreadsheet: UploadPallet
+    preview_template: {
+        header: string[]
+        rows: {}[]
+    }
+}
+
 const props = defineProps<{
 	title: string
 	tabs: TSTabs
@@ -108,6 +121,7 @@ const props = defineProps<{
 		code: string
 	}[]
     pallets_route: routeType
+    upload_pallet: UploadSection
 }>()
 
 
@@ -312,7 +326,7 @@ const openModalAddPallet = ref(false)
                 :label="trans('Add pallet')"
                 type="secondary"
                 icon="fal fa-plus"
-                :tooltip="'action.tooltip'"
+                :tooltip="trans('Select pallets via modal')"
                 @click="() => openModalAddPallet = true"
                 class="border-none rounded-[4px]"
             />
@@ -554,7 +568,7 @@ const openModalAddPallet = ref(false)
         </template>
     </component>
 
-    <UploadExcel
+    <!-- <UploadExcel
         v-model="isModalUploadOpen"
         scope="Pallet delivery"
         :title="{
@@ -563,6 +577,16 @@ const openModalAddPallet = ref(false)
         }"
         progressDescription="Adding Pallet Deliveries"        
         :upload_spreadsheet
+        :additionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
+    /> -->
+    
+    <UploadExcel
+        v-if="upload_pallet"
+        v-model="isModalUploadOpen"
+        :title="upload_pallet.title"
+        :progressDescription="upload_pallet.progressDescription"
+        :upload_spreadsheet="upload_pallet.upload_spreadsheet"
+        :preview_template="upload_pallet.preview_template"
         :additionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
     />
     
@@ -578,7 +602,7 @@ const openModalAddPallet = ref(false)
         :options="props.option_attach_file"
     />
     
-    <Modal :isOpen="openModalAddPallet" @onClose="openModalAddPallet = false">
+    <Modal :isOpen="openModalAddPallet" @onClose="openModalAddPallet = false" width="w-full max-w-4xl">
         <ModalAddPalletReturn
             :fetchRoute="pallets_route"
             :palletReturn="data?.data"

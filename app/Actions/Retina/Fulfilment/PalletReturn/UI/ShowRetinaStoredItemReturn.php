@@ -252,36 +252,6 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                'upload_spreadsheet' => [
-                    'event'             => 'action-progress',
-                    'channel'           => 'retina.personal.' . $palletReturn->organisation_id,
-                    'required_fields'   => ['pallet_stored_item', 'pallet', 'stored_item', 'quantity'],
-                    'template'          => [
-                        'label' => 'Download template (.xlsx)',
-                    ],
-                    'route' => [
-                        'upload'  => [
-                            'name'       => 'retina.models.pallet-return.stored-item.upload',
-                            'parameters' => [
-                                'palletReturn' => $palletReturn->id
-                            ]
-                        ],
-                        'history' => [
-                            'name'       => 'retina.fulfilment.storage.pallet_returns.uploads.history',
-                            'parameters' => [
-                                'palletReturn'     => $palletReturn->slug
-                            ]
-                        ],
-                        'download' => [
-                            'name'       => $downloadRoute,
-                            'parameters' => [
-                                'fulfilmentCustomer'     => $palletReturn->fulfilmentCustomer->slug,
-                                'type'                   => 'xlsx'
-                            ]
-                        ],
-                    ],
-                ],
-
                 'routeStorePallet' => [
                     'name'       => 'retina.models.pallet-return.pallet.store',
                     'parameters' => [

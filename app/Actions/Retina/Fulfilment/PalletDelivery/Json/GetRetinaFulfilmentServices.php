@@ -42,6 +42,7 @@ class GetRetinaFulfilmentServices extends RetinaAction
         $queryBuilder->join('currencies', 'assets.currency_id', '=', 'currencies.id');
 
         $queryBuilder->whereNotIn('services.asset_id', $scope->services()->pluck('asset_id'));
+        $queryBuilder->where('services.is_pallet_handling', false);
 
         $queryBuilder
             ->defaultSort('services.id')
