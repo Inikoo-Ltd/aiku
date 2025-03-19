@@ -255,7 +255,7 @@ return [
     'environments' => [
         'production' => [
             'normal'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 192),
+                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 256),
             ],
             'universal-search' => [
                 'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 32),
