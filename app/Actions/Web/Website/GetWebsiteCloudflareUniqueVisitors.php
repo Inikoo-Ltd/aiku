@@ -70,7 +70,7 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
     private function getZoneTag(Website $website, array $modelData, $try = 3): string
     {
         $apiToken = Arr::get($modelData, "apiToken");
-        $urlCLoudflareRest = "https://api.cloudflare.com/client/v4"; // -> api to get zone id, account id & site tag
+        $urlCloudflareRest = "https://api.cloudflare.com/client/v4"; // -> api to get zone id, account id & site tag
         if ($try == 0) {
             return "error";
         }
@@ -78,7 +78,7 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
             $resultZone = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $apiToken",
                 'Content-Type' => 'application/json',
-            ])->get($urlCLoudflareRest . "/zones", [
+            ])->get($urlCloudflareRest . "/zones", [
                 'name' => $website->domain,
             ])->json();
         } catch (ConnectionException $e) {
@@ -102,7 +102,7 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
         $zoneTag = Arr::get($modelData, "zoneTag");
         $apiToken = Arr::get($modelData, "apiToken");
 
-        $urlCLoudflareGraphql = "https://api.cloudflare.com/client/v4/graphql";
+        $urlCloudflareGraphql = "https://api.cloudflare.com/client/v4/graphql";
         if ($try == 0) {
             return [];
         }
@@ -111,7 +111,7 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
             $response = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $apiToken",
                 'Content-Type' => 'application/json',
-            ])->post($urlCLoudflareGraphql, [
+            ])->post($urlCloudflareGraphql, [
                 'query' => $this->getQuery($zoneTag, $modelData),
             ]);
         } catch (ConnectionException $e) {

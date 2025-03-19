@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import { isArray } from 'lodash'
+import { isArray } from 'lodash-es'
 import "@/../css/iris_styling.css"
 
 import Footer from '@/Layouts/Iris/Footer.vue'
@@ -16,10 +16,11 @@ import { trans } from 'laravel-vue-i18n'
 import Modal from '@/Components/Utils/Modal.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-library.add(faExclamationTriangle)
+library.add(faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 const layout = useIrisLayoutStore()
@@ -32,10 +33,12 @@ const footer = usePage().props?.iris?.footer
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 
 const isFirstVisit = () => {
-    const irisData = localStorage.getItem('iris');
-    if (irisData) {
-        const parsedData = JSON.parse(irisData);
-        return parsedData.isFirstVisit;
+    if (typeof window !== "undefined") {
+        const irisData = localStorage.getItem('iris');
+        if (irisData) {
+            const parsedData = JSON.parse(irisData);
+            return parsedData.isFirstVisit;
+        }
     }
     return true;
 };
@@ -43,24 +46,26 @@ const isFirstVisit = () => {
 const firstVisit = ref(isFirstVisit());
 
 const setFirstVisitToFalse = () => {
-    const irisData = localStorage.getItem('iris');
-    if (irisData) {
-        const parsedData = JSON.parse(irisData);
-        parsedData.isFirstVisit = false;
-        localStorage.setItem('iris', JSON.stringify(parsedData));
-    } else {
-        localStorage.setItem('iris', JSON.stringify({ isFirstVisit: false }));
+    if (typeof window !== "undefined") {
+        const irisData = localStorage.getItem('iris');
+        if (irisData) {
+            const parsedData = JSON.parse(irisData);
+            parsedData.isFirstVisit = false;
+            localStorage.setItem('iris', JSON.stringify(parsedData));
+        } else {
+            localStorage.setItem('iris', JSON.stringify({ isFirstVisit: false }));
+        }
     }
     firstVisit.value = false
 };
 
 
-const iframeStyle = ref({
+/* const iframeStyle = ref({
     width: "80px",
     height: "80px",
 }); 
-
-onMounted(() => {
+ */
+/* onMounted(() => {
     irisStyleVariables(theme?.color)
     const handleMessage = (event: MessageEvent) => {
         // Validate the message origin
@@ -75,12 +80,16 @@ onMounted(() => {
     };
 
     // Listen to messages from the iframe
-    window.addEventListener('message', handleMessage);
+    if (window) {
+        window.addEventListener('message', handleMessage);
+    }
 
     onBeforeUnmount(() => {
-        window.removeEventListener('message', handleMessage);
+        if (window) {
+            window.removeEventListener('message', handleMessage);
+        }
     });
-});
+}); */
 
 </script>
 
@@ -131,11 +140,11 @@ onMounted(() => {
     </notifications>
 
 
-    <iframe title="superchat" id="superchat-widget"
+  <!--   <iframe title="superchat" id="superchat-widget"
         class="rounded-lg shadow-lg fixed bottom-0 right-0 transition-all duration-300"
         :style="{ ...iframeStyle, border: 'none' }"
         src="https://widget.superchat.de/v2?applicationKey=WCNK7nqXPQlrVGq895A2obLRVa">
-    </iframe>
+    </iframe> -->
 
 </template>
 

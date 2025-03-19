@@ -24,7 +24,9 @@ class FetchAuroraPortfolios extends FetchAuroraAction
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Portfolio
     {
-        if ($portfolioData = $organisationSource->fetchPortfolio($organisationSourceId)) {
+        $portfolioData = $organisationSource->fetchPortfolio($organisationSourceId);
+
+        if ($portfolioData) {
             if ($portfolio = Portfolio::where('source_id', $portfolioData['portfolio']['source_id'])->first()) {
                 try {
                     $portfolio = UpdatePortfolio::make()->action(

@@ -54,15 +54,5 @@ class WebUserHydrateAudits
         $webUser->stats->update($stats);
     }
 
-    public string $commandSignature = 'hydrate:web_user_audits';
-
-    public function asCommand($command): void
-    {
-        $webusers = WebUser::all();
-
-        foreach ($webusers as $webuser) {
-            $this->handle($webuser);
-        }
-    }
 
 }

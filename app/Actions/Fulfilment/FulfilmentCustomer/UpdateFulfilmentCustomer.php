@@ -15,6 +15,7 @@ use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Catalogue\Shop;
@@ -138,6 +139,10 @@ class UpdateFulfilmentCustomer extends OrgAction
             'product'           => ['sometimes', 'required', 'string'],
             'shipments_per_week' => ['sometimes', 'required', 'string'],
             'size_and_weight'   => ['sometimes', 'required', 'string'],
+            'status' => [
+                'sometimes',
+                Rule::enum(FulfilmentCustomerStatusEnum::class)
+            ]
         ];
     }
 

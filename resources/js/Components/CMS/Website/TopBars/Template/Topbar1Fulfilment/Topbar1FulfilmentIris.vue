@@ -5,12 +5,12 @@ import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'
+import { faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 
 import {TopbarFulfilmentTypes} from '@/types/TopbarFulfilment'
 
-library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
+library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)
 
 const model = defineModel<TopbarFulfilmentTypes>()
 const isLoggedIn = inject('isPreviewLoggedIn', false)
@@ -63,7 +63,7 @@ const layout = inject('layout', {})
                     :style="getStyles(model?.login?.container?.properties)"
 
                 >
-                    <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon :icon='faSignIn' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
                 </a>
              </span>
@@ -76,7 +76,7 @@ const layout = inject('layout', {})
                     :style="getStyles(model?.register.container?.properties)"
 
                 >
-                    <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon :icon='faUserPlus' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" />
                 </a>
             </span>
@@ -89,7 +89,7 @@ const layout = inject('layout', {})
                 :style="getStyles(model?.logout.container?.properties)"
 
             >
-                <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
+                <FontAwesomeIcon :icon='faSignOut' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
             </a>
         </div>

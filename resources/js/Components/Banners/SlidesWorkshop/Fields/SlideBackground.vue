@@ -8,7 +8,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import CropImage from '@/Components/CropImage/CropImage.vue'
 import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue";
 import Image from '@/Components/Image.vue'
-import { set, get } from 'lodash'
+import { set, get } from 'lodash-es'
 import ScreenView from "@/Components/ScreenView.vue"
 import { useBannerBackgroundColor } from "@/Composables/useStockList"
 

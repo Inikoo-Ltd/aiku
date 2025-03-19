@@ -4,7 +4,7 @@ import { ref, inject } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import Image from "@/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBars, faSignIn, faSignOut, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faSignIn, faSignOut, faTimesCircle } from '@fas';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faChevronCircleDown } from '@fal';
 // Add icons to library
@@ -47,14 +47,14 @@ const onLogout = inject('onLogout')
                             </DisclosureButton>
 
                             <DisclosurePanel>
-                                <div v-for="(submenu, indexSub) in item.subnavs" :key="indexSub">
-                                    <span :href="submenu?.link?.href" :target="submenu?.link?.target"
+                                <div v-for="(submenu, indexSub) in item.subnavs" :key="indexSub" class="first:mt-2">
+                                    <span v-if="submenu.title" :href="submenu?.link?.href" :target="submenu?.link?.target"
                                         class="p-4 text-sm font-semibold text-gray-500 block">{{ submenu.title }}</span>
 
                                     <div v-for="(menu, indexMenu) in submenu.links" :key="indexSub">
 
                                         <a :href="menu?.link?.href" :target="menu?.link?.target"
-                                            class="p-4 text-sm font-semibold text-gray-600 block">- {{ menu.label }}</a>
+                                            class="p-2 text-sm font-semibold text-gray-600 block">- {{ menu.label }}</a>
                                     </div>
                                 </div>
                             </DisclosurePanel>

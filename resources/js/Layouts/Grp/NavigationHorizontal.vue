@@ -21,7 +21,7 @@ import { capitalize } from '@/Composables/capitalize'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 library.add(faChevronLeft, faChevronRight, faParachuteBox)
 
 

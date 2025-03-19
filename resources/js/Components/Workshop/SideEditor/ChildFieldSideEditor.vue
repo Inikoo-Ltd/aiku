@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import Accordion from 'primevue/accordion'
 import { ref } from 'vue'
 

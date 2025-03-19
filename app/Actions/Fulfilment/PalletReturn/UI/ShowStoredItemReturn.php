@@ -400,49 +400,6 @@ class ShowStoredItemReturn extends OrgAction
                         'palletReturn' => $palletReturn->id
                     ]
                 ],
-
-                'upload_spreadsheet' => [
-                    'event'           => 'action-progress',
-                    'channel'         => 'grp.personal.'.$this->organisation->id,
-                    'required_fields' => ['pallet_stored_item', 'pallet', 'stored_item', 'quantity'],
-                    'template'        => [
-                        'label' => 'Download template (.xlsx)',
-                    ],
-                    'route'           => [
-                        'upload'   => [
-                            'name'       => 'grp.models.pallet-return.stored-item.upload',
-                            'parameters' => [
-                                'palletReturn' => $palletReturn->id
-                            ]
-                        ],
-                        'history'  => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.uploads.history',
-                            'parameters' => [
-                                'organisation'       => $palletReturn->organisation->slug,
-                                'fulfilment'         => $palletReturn->fulfilment->slug,
-                                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'palletReturn'       => $palletReturn->slug
-                            ]
-                        ],
-                        'download' => [
-                            'name'       => $downloadRoute,
-                            'parameters' => [
-                                'organisation'       => $palletReturn->organisation->slug,
-                                'fulfilment'         => $palletReturn->fulfilment->slug,
-                                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'type'               => 'xlsx'
-                            ]
-                        ],
-                    ],
-                    /*'templates' => [
-                        'label' => 'Download Pallets & Stored Items (.xlsx)',
-                        'route' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.stored-items.export',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ]*/
-                ],
-
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.pallet-return.attachment.attach',

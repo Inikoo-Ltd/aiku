@@ -38,7 +38,7 @@ class GetGroupOverview extends OrgAction
 
     public function getSection(Group $group): array
     {
-        $section = [
+        return [
 
             __('Sysadmin')          => [
                 [
@@ -251,7 +251,7 @@ class GetGroupOverview extends OrgAction
                 [
                     'name'  => __('Delivery Notes'),
                     'icon'  => 'fal fa-truck',
-                    'route' => route('grp.overview.ordering.delivery-notes.index'),
+                    'route' => route('grp.overview.ordering.delivery_notes.index'),
                     'count' => $group->orderingStats->number_delivery_notes ?? 0
                 ],
                 [
@@ -422,7 +422,5 @@ class GetGroupOverview extends OrgAction
                 ],
             ],
         ];
-
-        return $section;
     }
 }

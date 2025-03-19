@@ -241,7 +241,7 @@ class IndexInvoicesDeleted extends OrgAction
         $subNavigation = [];
 
         if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $request);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);

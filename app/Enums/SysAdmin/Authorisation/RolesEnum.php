@@ -29,6 +29,8 @@ enum RolesEnum: string
 
     case SYSTEM_ADMIN = 'system-admin';
 
+    case GROUP_WEBMASTER = 'group-webmaster';
+
     case SUPPLY_CHAIN = 'supply-chain';
 
     case GOODS_MANAGER = 'goods-manager';
@@ -107,6 +109,7 @@ enum RolesEnum: string
         return match ($this) {
             RolesEnum::GROUP_ADMIN                        => __('Group admin'),
             RolesEnum::SYSTEM_ADMIN                       => __('System admin'),
+            RolesEnum::GROUP_WEBMASTER                    => __('Group webmaster'),
             RolesEnum::SUPPLY_CHAIN                       => __('Supply chain'),
             RolesEnum::PROCUREMENT_CLERK                  => __('Procurement clerk'),
             RolesEnum::PROCUREMENT_SUPERVISOR             => __('Procurement supervisor'),
@@ -163,10 +166,15 @@ enum RolesEnum: string
                 GroupPermissionsEnum::SYSADMIN,
                 GroupPermissionsEnum::SUPPLY_CHAIN,
                 GroupPermissionsEnum::ORGANISATIONS,
-                GroupPermissionsEnum::GOODS
+                GroupPermissionsEnum::GOODS,
+                GroupPermissionsEnum::GROUP_WEBMASTER
+
             ],
             RolesEnum::SYSTEM_ADMIN => [
                 GroupPermissionsEnum::SYSADMIN
+            ],
+            RolesEnum::GROUP_WEBMASTER => [
+                GroupPermissionsEnum::GROUP_WEBMASTER
             ],
             RolesEnum::SUPPLY_CHAIN => [
                 GroupPermissionsEnum::SUPPLY_CHAIN
@@ -429,6 +437,7 @@ enum RolesEnum: string
         return match ($this) {
             RolesEnum::GROUP_ADMIN,
             RolesEnum::SYSTEM_ADMIN,
+            RolesEnum::GROUP_WEBMASTER,
             RolesEnum::SUPPLY_CHAIN,
             RolesEnum::GOODS_MANAGER,
             RolesEnum::ORGANISATIONS_MANAGER => 'Group',

@@ -96,6 +96,7 @@ class IndexFulfilmentServices extends OrgAction
                 'services.created_at',
                 'services.price',
                 'services.unit',
+                'services.is_pallet_handling',
                 'assets.name',
                 'assets.code',
                 'assets.current_historic_asset_id as historic_asset_id',

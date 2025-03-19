@@ -47,6 +47,7 @@ const layout = inject('layout', {})
 </script>
 
 <template>
+    <div></div>
     <div
         id="top_bar"
         class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4"
@@ -67,8 +68,8 @@ const layout = inject('layout', {})
             <!-- Section: Profile -->
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
-                 :href="model?.profile?.link.href"
-                :target="model?.profile?.link.target"
+                 :href="model?.profile?.link?.href"
+                :target="model?.profile?.link?.target"
                 class="space-x-1.5 whitespace-nowrap "
                 :style="getStyles(model?.profile.container?.properties)"
 

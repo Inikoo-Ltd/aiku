@@ -3,7 +3,7 @@ import { reactive, computed, watch, ref } from "vue"
 import Chart from "primevue/chart"
 import DateRangePicker from "@/Components/Utils/ModalDatePicker.vue"
 import { router } from "@inertiajs/vue3"
-import { debounce } from "lodash"
+import { debounce } from "lodash-es"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 

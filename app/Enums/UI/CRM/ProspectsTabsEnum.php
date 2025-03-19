@@ -18,6 +18,10 @@ enum ProspectsTabsEnum: string
 
     case DASHBOARD = 'dashboard';
     case PROSPECTS = 'prospects';
+    case CONTACTED = 'contacted';
+    case FAILED    = 'failed';
+    case SUCCESS   = 'success';
+
 
     case HISTORY   = 'history';
 
@@ -31,6 +35,21 @@ enum ProspectsTabsEnum: string
 
             ProspectsTabsEnum::PROSPECTS => [
                 'title' => __('prospects'),
+                'icon'  => 'fal fa-transporter',
+            ],
+
+            ProspectsTabsEnum::CONTACTED => [
+                'title' => __('contacted prospects'),
+                'icon'  => 'fal fa-transporter',
+            ],
+
+            ProspectsTabsEnum::FAILED => [
+                'title' => __('fail prospects'),
+                'icon'  => 'fal fa-transporter',
+            ],
+
+            ProspectsTabsEnum::SUCCESS => [
+                'title' => __('success prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
             ProspectsTabsEnum::HISTORY => [

@@ -147,7 +147,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_products_with_variants_trade_config_force_offline
  * @property int $number_products_with_variants_trade_config_force_out_of_stock
  * @property int $number_products_with_variants_trade_config_force_for_sale
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily
  * @property-read \App\Models\Catalogue\Product|null $top1dProduct

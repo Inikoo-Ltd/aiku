@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import { isArray } from 'lodash'
+import { isArray } from 'lodash-es'
 
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
@@ -39,22 +39,26 @@ onMounted(() => {
 })
 
 const isFirstVisit = () => {
-    const irisData = localStorage.getItem('iris');
-    if (irisData) {
-        const parsedData = JSON.parse(irisData);
-        return parsedData.isFirstVisit;
+    if (typeof window !== "undefined") {
+        const irisData = localStorage.getItem('iris');
+        if (irisData) {
+            const parsedData = JSON.parse(irisData);
+            return parsedData.isFirstVisit;
+        }
     }
     return true;
 };
 const firstVisit = ref(isFirstVisit());
 const setFirstVisitToFalse = () => {
-    const irisData = localStorage.getItem('iris');
-    if (irisData) {
-        const parsedData = JSON.parse(irisData);
-        parsedData.isFirstVisit = false;
-        localStorage.setItem('iris', JSON.stringify(parsedData));
-    } else {
-        localStorage.setItem('iris', JSON.stringify({ isFirstVisit: false }));
+    if (typeof window !== "undefined") {
+        const irisData = localStorage.getItem('iris');
+        if (irisData) {
+            const parsedData = JSON.parse(irisData);
+            parsedData.isFirstVisit = false;
+            localStorage.setItem('iris', JSON.stringify(parsedData));
+        } else {
+            localStorage.setItem('iris', JSON.stringify({ isFirstVisit: false }));
+        }
     }
     firstVisit.value = false
 };

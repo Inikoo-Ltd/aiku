@@ -75,7 +75,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Favourite> $departmentFavourites
  * @property-read LaravelCollection<int, BackInStockReminder> $familyBackInStockReminders
  * @property-read LaravelCollection<int, Favourite> $familyFavourites
- * @property-read \App\Models\Catalogue\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images

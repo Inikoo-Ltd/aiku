@@ -50,7 +50,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
- * @property-read \App\Models\Procurement\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read OrgStock $orgStock

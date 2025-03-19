@@ -8,12 +8,14 @@
 
 namespace App\Actions\Web\Webpage\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
+use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Webpage\GetWebpageGoogleCloud;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
@@ -22,7 +24,9 @@ use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
+use App\Http\Resources\Web\RedirectsResource;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -81,7 +85,6 @@ class ShowWebpage extends OrgAction
         }
 
         $actions = $this->workshopActions($request);
-
         if ($webpage->sub_type == WebpageSubTypeEnum::BLOG) {
             $actions = array_merge(
                 $actions,
@@ -230,6 +233,39 @@ class ShowWebpage extends OrgAction
         //        }
         //
 
+        $actions = array_merge(
+            $actions,
+            [
+                $this->scope instanceof Fulfilment ? [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('New Redirect'),
+                    'route' => [
+                        'name'       => 'grp.org.fulfilments.show.web.webpages.redirect.create',
+                        'parameters' => [
+                            'organisation' => $webpage->organisation->slug,
+                            'fulfilment'   => $this->scope->slug,
+                            'website'      => $webpage->website->slug,
+                            'webpage'      => $webpage->slug
+                        ]
+                    ]
+                ] : [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('New Redirect'),
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.web.webpages.redirect.create',
+                        'parameters' => [
+                            'organisation' => $webpage->organisation->slug,
+                            'shop'   => $this->scope->slug,
+                            'website'      => $webpage->website->slug,
+                            'webpage'      => $webpage->slug
+                        ]
+                    ]
+                ]
+            ]
+        );
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
@@ -285,13 +321,15 @@ class ShowWebpage extends OrgAction
                     )),
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
                 fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                : Inertia::lazy(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType'])))
+                : Inertia::lazy(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
 
-                /*
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
-                    fn() => HistoryResource::collection(IndexHistories::run($webpage))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistories::run($webpage)))
-                */
+                    fn () => HistoryResource::collection(IndexHistory::run($webpage))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
+
+                WebpageTabsEnum::REDIRECTS->value => $this->tab == WebpageTabsEnum::REDIRECTS->value ?
+                    fn () => RedirectsResource::collection(IndexRedirects::run($webpage))
+                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage)))
 
 
             ]
@@ -303,6 +341,16 @@ class ShowWebpage extends OrgAction
             IndexSnapshots::make()->tableStructure(
                 parent: $webpage,
                 prefix: 'snapshots'
+            )
+        )->table(
+            IndexRedirects::make()->tableStructure(
+                parent: $webpage,
+                prefix: WebpageTabsEnum::REDIRECTS->value
+            )
+        )
+        ->table(
+            IndexHistory::make()->tableStructure(
+                prefix: WebpageTabsEnum::CHANGELOG->value
             )
         );
     }
@@ -338,7 +386,8 @@ class ShowWebpage extends OrgAction
             match ($routeName) {
                 'grp.org.shops.show.web.webpages.show',
                 'grp.org.shops.show.web.webpages.edit',
-                'grp.org.shops.show.web.webpages.workshop' =>
+                'grp.org.shops.show.web.webpages.workshop',
+                'grp.org.shops.show.web.webpages.redirect.create' =>
                 array_merge(
                     ShowWebsite::make()->getBreadcrumbs(
                         'Shop',
@@ -362,7 +411,8 @@ class ShowWebpage extends OrgAction
 
                 'grp.org.fulfilments.show.web.webpages.show',
                 'grp.org.fulfilments.show.web.webpages.edit',
-                'grp.org.fulfilments.show.web.webpages.workshop' =>
+                'grp.org.fulfilments.show.web.webpages.workshop',
+                'grp.org.fulfilments.show.web.webpages.redirect.create', =>
                 array_merge(
                     ShowWebsite::make()->getBreadcrumbs(
                         'Fulfilment',

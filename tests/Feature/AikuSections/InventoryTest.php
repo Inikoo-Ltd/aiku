@@ -26,10 +26,12 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
+use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\RemoveLostAndFoundStock;
 use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Actions\Inventory\OrgStockFamily\HydrateOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
 use App\Actions\Inventory\Warehouse\HydrateWarehouse;
@@ -473,7 +475,7 @@ test('hydrate warehouses', function (Warehouse $warehouse) {
 
 test('hydrate warehouse areas', function () {
     HydrateWarehouseArea::run(WarehouseArea::first());
-    $this->artisan('hydrate:warehouse-areas')->assertExitCode(0);
+    $this->artisan('hydrate:warehouse_areas')->assertExitCode(0);
 });
 
 test('hydrate locations', function () {
@@ -1042,4 +1044,24 @@ test('org stock families search', function () {
     $orgStockFamily = OrgStockFamily::first();
     ReindexOrgStockFamilySearch::run($orgStockFamily);
     expect($orgStockFamily->universalSearch()->count())->toBe(1);
+});
+
+test('org stock hydrator', function () {
+    $this->artisan('hydrate:org_stocks')->assertExitCode(0);
+
+    $orgStock = OrgStock::first();
+    HydrateOrgStock::run($orgStock);
+
+});
+
+test('org stock families  hydrator', function () {
+    $this->artisan('hydrate:org_stock_families')->assertExitCode(0);
+
+    $orgStockFamily = OrgStockFamily::first();
+    HydrateOrgStockFamily::run($orgStockFamily);
+
+});
+
+test('inventory  hydrator', function () {
+    $this->artisan('hydrate -s inv')->assertExitCode(0);
 });

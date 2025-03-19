@@ -3,7 +3,7 @@
 import { ColorPicker } from 'vue-color-kit'
 import 'vue-color-kit/dist/vue-color-kit.css'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
-import { set, get } from 'lodash'
+import { set, get } from 'lodash-es'
 import { ref, watch } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'

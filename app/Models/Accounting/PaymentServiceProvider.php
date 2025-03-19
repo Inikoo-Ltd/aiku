@@ -44,7 +44,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Collection<int, \App\Models\Accounting\PaymentAccount> $accounts
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\Accounting\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, \App\Models\Accounting\OrgPaymentServiceProvider> $orgPaymentServiceProviders

@@ -27,7 +27,7 @@ import { faThumbsDown, faChair, faLaugh, faCopy, faUser, faSearch } from '@fal';
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { fromPairs } from 'lodash';
+import { fromPairs } from 'lodash-es';
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue';
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faThumbsDown, faChair, faLaugh, faCopy, faUser)

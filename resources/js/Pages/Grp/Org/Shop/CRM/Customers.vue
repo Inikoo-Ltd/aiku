@@ -13,6 +13,10 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
 import CustomerDashboard from '@/Pages/Grp/Dashboard/CustomerDashboard.vue';
+import { faCircleNotch } from "@fal"
+import { faExclamationCircle } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faCircleNotch, faExclamationCircle)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

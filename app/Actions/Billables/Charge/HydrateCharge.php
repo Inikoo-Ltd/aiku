@@ -12,48 +12,24 @@ namespace App\Actions\Billables\Charge;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomers;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoices;
 use App\Actions\HydrateModel;
-use App\Enums\Catalogue\Asset\AssetTypeEnum;
-use App\Models\Catalogue\Asset;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Models\Billables\Charge;
 
 class HydrateCharge extends HydrateModel
 {
+    use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:charges {organisations?*} {--slugs=}';
 
-
-    public function handle(Asset $asset): void
+    public function __construct()
     {
-        if ($asset->type == AssetTypeEnum::CHARGE) {
-            AssetHydrateInvoices::run($asset);
-            AssetHydrateInvoicedCustomers::run($asset);
-        }
-
+        $this->model = Charge::class;
     }
 
-
-    protected function getModel(string $slug): Asset
+    public function handle(Charge $charge): void
     {
-        return Asset::where('slug', $slug)->first();
-    }
+        AssetHydrateInvoices::run($charge->asset);
+        AssetHydrateInvoicedCustomers::run($charge->asset);
 
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Hydrating assets");
-        $count = Asset::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        Asset::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
     }
 }

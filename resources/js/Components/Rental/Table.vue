@@ -18,7 +18,7 @@ import Popover from "@/Components/Popover.vue"
 import { trans } from "laravel-vue-i18n"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import { Switch } from '@headlessui/vue'
 
 

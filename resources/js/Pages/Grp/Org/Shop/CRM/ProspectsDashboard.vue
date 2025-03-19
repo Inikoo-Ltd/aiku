@@ -16,6 +16,9 @@
   import {useLocaleStore} from "@/Stores/locale";
   import {capitalize} from '@/Composables/capitalize'
   import { onUnmounted, onMounted } from 'vue';
+import { Link } from '@inertiajs/vue3'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { ref } from 'vue'
   
   library.add(faSeedling, faChair, faThumbsDown, faLaugh, faUnlink, faExclamationTriangle, faExclamationCircle, faSignIn,
       faDungeon, faEye, faEyeSlash, faMousePointer, faSnooze)
@@ -111,6 +114,7 @@
   
   // console.log('qwe', props.data.prospectStats)
   
+  const isLoadingVisit = ref<number | null>(null)
   </script>
   
   
@@ -131,12 +135,23 @@
   
                           <!-- Statistic -->
                           <div class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
-                              <div v-for="dCase in prospectState.cases" class="flex gap-x-0.5 items-center font-normal" v-tooltip="capitalize(dCase.icon.tooltip)">
-                                  <FontAwesomeIcon :icon='dCase.icon.icon' :class='dCase.icon.class' fixed-width :title="dCase.icon.tooltip" aria-hidden='true'/>
-                                  <span class="font-semibold">
-                                      {{ locale.number(dCase.count) }}
-                                  </span>
-                              </div>
+                              <template v-for="(dCase, idxCase) in prospectState.cases" :key="idxCase">
+                                  <component
+                                    :is="dCase.route?.name ? Link : 'div'"
+                                    :href="dCase.route?.name ? route(dCase.route.name, dCase.route.parameters) : null"
+                                    :class="dCase.route?.name ? 'hover:bg-gray-200 px-1 py-0.5 rounded' : ''"
+                                    class="flex gap-x-0.5 items-center font-normal"
+                                    v-tooltip="capitalize(dCase.icon.tooltip)"
+                                    @start="() => isLoadingVisit = idxCase"
+                                    @finish="() => isLoadingVisit = null"
+                                >
+                                    <LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
+                                      <FontAwesomeIcon v-else :icon='dCase.icon.icon' :class='dCase.icon.class' fixed-width :title="dCase.icon.tooltip" aria-hidden='true'/>
+                                      <span class="font-semibold">
+                                          {{ locale.number(dCase.count) }}
+                                      </span>
+                                  </component>
+                              </template>
                           </div>
                       </div>
   

@@ -350,7 +350,7 @@ test('update order state to in warehouse', function (Order $order) {
 })->depends('update order state to submitted');
 
 test('update order state to Handling', function (Order $order) {
-    $order = UpdateStateToHandlingOrder::make()->action($order, []);
+    $order = UpdateStateToHandlingOrder::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::HANDLING);
@@ -359,7 +359,7 @@ test('update order state to Handling', function (Order $order) {
 })->depends('update order state to in warehouse');
 
 test('update order state to Packed ', function (Order $order) {
-    $order = UpdateStateToPackedOrder::make()->action($order, []);
+    $order = UpdateStateToPackedOrder::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::PACKED);
@@ -368,7 +368,7 @@ test('update order state to Packed ', function (Order $order) {
 })->depends('update order state to Handling');
 
 test('update order state to Finalised ', function (Order $order) {
-    $order = UpdateStateToFinalizedOrder::make()->action($order, []);
+    $order = UpdateStateToFinalizedOrder::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::FINALISED);
@@ -723,3 +723,12 @@ test('delivery notes search', function () {
     ReindexDeliveryNotesSearch::run($deliveryNote);
     expect($deliveryNote->universalSearch()->count())->toBe(1);
 });
+
+test('test reset intervals', function () {
+    $this->artisan('intervals:reset-day')->assertExitCode(0);
+    $this->artisan('intervals:reset-week')->assertExitCode(0);
+    $this->artisan('intervals:reset-month')->assertExitCode(0);
+    $this->artisan('intervals:reset-quarter')->assertExitCode(0);
+    $this->artisan('intervals:reset-year')->assertExitCode(0);
+
+  });

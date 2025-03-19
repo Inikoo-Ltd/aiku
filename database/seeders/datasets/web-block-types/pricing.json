@@ -1,0 +1,116 @@
+{
+	"scope": "webpage",
+	"slug": "pricing",
+	"code": "pricing",
+	"name": "Pricing",
+	"icon": ["fal", "text"],
+	"data": {
+		"fieldValue": {
+			"text": "<p class=\"mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty text-gray-600 sm:text-xl/8\">Choose an affordable plan that’s packed with the best features for engaging your audience, creating customer loyalty, and driving sales.</p>",
+			"container": {
+				"properties": {
+					"border": {
+						"top": { "value": 0 },
+						"left": { "value": 0 },
+						"right": { "value": 0 },
+						"bottom": { "value": 0 },
+						"unit": "px",
+						"color": "#000000",
+						"rounded": {
+							"unit": "px",
+							"topleft": { "value": 0 },
+							"topright": { "value": 0 },
+							"bottomleft": { "value": 0 },
+							"bottomright": { "value": 0 }
+						}
+					},
+					"margin": {
+						"top": { "value": 0 },
+						"left": { "value": 0 },
+						"right": { "value": 0 },
+						"bottom": { "value": 0 },
+						"unit": "px"
+					},
+					"padding": {
+						"top": { "value": 0 },
+						"left": { "value": 0 },
+						"right": { "value": 0 },
+						"bottom": { "value": 0 },
+						"unit": "px"
+					},
+					"dimension": {
+						"width": { "unit": "%", "value": "100" },
+						"height": { "unit": "%", "value": "100" }
+					}
+				}
+			},
+			"tiers": [
+				{
+					"name": "Freelancer",
+					"id": "tier-freelancer",
+					"link": {
+						"id": 9011,
+						"url": "http://aw-fulfilment.co.uk/rework",
+						"href": "http://aw-fulfilment.co.uk/rework",
+						"type": "external",
+						"target": "_blank",
+						"workshop": "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/rework-awf/workshop"
+					},
+					"priceMonthly": "$19",
+					"description": "The essentials to provide your best work for clients.",
+					"features": [
+						"5 products",
+						"Up to 1,000 subscribers",
+						"Basic analytics",
+						"48-hour support response time"
+					],
+					"mostPopular": false
+				},
+				{
+					"name": "Startup",
+					"id": "tier-startup",
+					"link": {
+						"id": 9011,
+						"url": "http://aw-fulfilment.co.uk/rework",
+						"href": "http://aw-fulfilment.co.uk/rework",
+						"type": "external",
+						"target": "_blank",
+						"workshop": "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/rework-awf/workshop"
+					},
+					"priceMonthly": "$49",
+					"description": "A plan that scales with your rapidly growing business.",
+					"features": [
+						"25 products",
+						"Up to 10,000 subscribers",
+						"Advanced analytics",
+						"24-hour support response time",
+						"Marketing automations"
+					],
+					"mostPopular": true
+				},
+				{
+					"name": "Enterprise",
+					"id": "tier-enterprise",
+					"link": {
+						"id": 9011,
+						"url": "http://aw-fulfilment.co.uk/rework",
+						"href": "http://aw-fulfilment.co.uk/rework",
+						"type": "external",
+						"target": "_blank",
+						"workshop": "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/rework-awf/workshop"
+					},
+					"priceMonthly": "$99",
+					"description": "Dedicated support and infrastructure for your company.",
+					"features": [
+						"Unlimited products",
+						"Unlimited subscribers",
+						"Advanced analytics",
+						"1-hour, dedicated support response time",
+						"Marketing automations"
+					],
+					"mostPopular": false
+				}
+			]
+		}
+	}
+}

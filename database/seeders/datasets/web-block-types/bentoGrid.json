@@ -9,27 +9,31 @@
 				"title": "<h3 style=\"text-align: center\"><span style=\"color: #a200ff\"><strong>Dep</strong></span><span style=\"color: #9900ff\"><strong>loy faster</strong></span></h3><h1 style=\"text-align: center\"><strong>Everything you need to deploy your app.</strong></h1>",
 				"column1": {
 					"text": "<p><span style=\"font-size: 20px\"><strong>Mobile friendly</strong></span></p><p><span style=\"font-size: 14px\">Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui lorem cupidatat commodo.</span></p>",
-					"source":null,
-					"url": "https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png",
-					"alt": "column1"
+					"image": {
+						"source": null,
+						"alt": "Image 1"
+					}
 				},
 				"column2": {
 					"text": "<p><span style=\"font-size: 20px\"><strong>Mobile friendly</strong></span></p><p><span style=\"font-size: 14px\">Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui lorem cupidatat commodo.</span></p>",
-					"source":null,
-					"url": "https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png",
-					"alt": "column2"
+					"image": {
+						"source": null,
+						"alt": "Image 2"
+					}
 				},
 				"column3": {
 					"text": "<p><span style=\"font-size: 20px\"><strong>Mobile friendly</strong></span></p><p><span style=\"font-size: 14px\">Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui lorem cupidatat commodo.</span></p>",
-					"source":null,
-					"url": "https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png",
-					"alt": "column3"
+					"image": {
+						"source": null,
+						"alt": "Image 2"
+					}
 				},
 				"column4": {
 					"text": "<p><span style=\"font-size: 20px\"><strong>Mobile friendly</strong></span></p><p><span style=\"font-size: 14px\">Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui lorem cupidatat commodo.</span></p>",
-					"source":null,
-					"url": "https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png",
-					"alt": "column4"
+					"image": {
+						"source": null,
+						"alt": "Image 3"
+					}
 				},
 				"container": {
 					"properties": {

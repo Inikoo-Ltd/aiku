@@ -1,6 +1,8 @@
+import { trans } from "laravel-vue-i18n"
+
 export default {
 	blueprint: [
-	/* 	{
+		/* 	{
 			name: "Texts",
 			key: ["text"],
 			type: "textHeader",
@@ -15,12 +17,16 @@ export default {
 				icon: "fal fa-image",
 				tooltip: "Logo",
 			},
-			/*     type: "upload_image", */
 			replaceForm: [
 				{
-					key: ["image"],
+					key: ["image", "source"],
 					label: "Upload image",
 					type: "upload_image",
+				},
+				{
+					key: ["image", "alt"],
+					label: "Alternate Text",
+					type: "text",
 				},
 				{
 					key: ["properties", "dimension"],
@@ -37,17 +43,28 @@ export default {
 					label: "Padding",
 					type: "padding",
 				},
+				{
+					key: ["image", "attributes", "fetchpriority"],
+					label: trans("Fetch Priority"),
+					information: trans(
+						"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
+					),
+					type: "select",
+					props_data: {
+						placeholder: trans("Priority"),
+						options: [
+							{
+								label: trans("High"),
+								value: "high",
+							},
+							{
+								label: trans("Low"),
+								value: "low",
+							},
+						],
+					},
+				},
 			],
-			/* replaceForm: [
-				{
-					key: ["visible"],
-					type: ["VisibleLoggedIn"],
-				},
-				{
-					key: "logo",
-					type: "upload_image",
-				},
-			], */
 		},
 	],
 }

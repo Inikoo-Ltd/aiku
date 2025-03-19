@@ -129,7 +129,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unpaid_invoices_amount
  * @property string $unpaid_invoices_amount_org_currency
  * @property string $unpaid_invoices_amount_grp_currency
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()
  * @method static Builder<static>|CustomerStats query()

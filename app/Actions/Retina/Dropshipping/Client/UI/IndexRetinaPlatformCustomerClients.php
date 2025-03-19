@@ -45,12 +45,11 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
     {
         $this->initialisation($request);
 
-        $this->platform = $platform;
-        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
-            $this->parent = $this->customer->shopifyUser;
-        } else {
-            $this->parent = $this->customer->tiktokUser;
-        }
+        $this->parent = match ($platform->type) {
+            PlatformTypeEnum::TIKTOK => $this->customer->tiktokUser,
+            PlatformTypeEnum::SHOPIFY => $this->customer->shopifyUser,
+            PlatformTypeEnum::WOOCOMMERCE => throw new \Exception('To be implemented')
+        };
 
         return $this->handle($this->customer);
     }

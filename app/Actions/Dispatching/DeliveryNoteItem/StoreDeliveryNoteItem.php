@@ -56,7 +56,6 @@ class StoreDeliveryNoteItem extends OrgAction
         }
 
 
-
         return $deliveryNoteItem;
     }
 
@@ -97,6 +96,7 @@ class StoreDeliveryNoteItem extends OrgAction
             $rules['stock_id']            = ['sometimes', 'nullable', 'integer'];
             $rules['stock_family_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['org_stock_family_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['weight']              = ['sometimes', 'numeric', 'min:0'];
         }
 
         return $rules;

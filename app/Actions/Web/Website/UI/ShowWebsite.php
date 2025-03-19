@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
+use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Website\GetWebsiteCloudflareAnalytics;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Enums\UI\Web\WebsiteTabsEnum;
@@ -24,6 +25,7 @@ use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\CRM\WebUsersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
+use App\Http\Resources\Web\RedirectsResource;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -116,6 +118,7 @@ class ShowWebsite extends OrgAction
                             ]
                         ),
 
+
                 ],
                 // "website_layout" =>  GetWebsiteWorkshopLayout::run($this->scope, $website),
                 'tabs'        => [
@@ -147,6 +150,10 @@ class ShowWebsite extends OrgAction
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
                     : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
+                WebsiteTabsEnum::REDIRECTS->value => $this->tab == WebsiteTabsEnum::REDIRECTS->value ?
+                    fn () => RedirectsResource::collection(IndexRedirects::run($website))
+                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website))),
+
                 WebsiteTabsEnum::ANALYTICS->value => $this->tab == WebsiteTabsEnum::ANALYTICS->value ?
                     fn () => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq)
                     : Inertia::lazy(fn () => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq))
@@ -166,6 +173,7 @@ class ShowWebsite extends OrgAction
                 prefix: 'web_users'
             )
         )->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
+        ->table(IndexRedirects::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::REDIRECTS->value))
         ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
     }
 

@@ -204,13 +204,13 @@ watch(enabled, async (newValue) => {
 				onSuccess: () => {
 					notify({
 						title: trans("Success"),
-						text: trans("Successfully create new address."),
+						text: trans("Set the address to selected address."),
 						type: "success",
 					})
 				},
 				onError: () =>
 					notify({
-						title: trans("Failed"),
+						title: trans("Something went wrong"),
 						text: trans("Failed to submit the address, try again"),
 						type: "error",
 					}),
@@ -218,7 +218,7 @@ watch(enabled, async (newValue) => {
 		)
 	} else {
 		try {
-			await router.delete(
+			router.delete(
 				route(props.addresses.routes_address.delete.name, {
 					...props.addresses.routes_address.delete.parameters,
 				}),
@@ -232,13 +232,13 @@ watch(enabled, async (newValue) => {
 			)
 			notify({
 				title: trans("Success"),
-				text: trans("Collection disabled successfully."),
+				text: trans("Set the address to follow collection."),
 				type: "success",
 			})
 		} catch (error) {
 			console.error("Error disabling collection:", error) // Debugging output
 			notify({
-				title: trans("Failed"),
+				title: trans("Something went wrong"),
 				text: trans("Failed to disable collection."),
 				type: "error",
 			})

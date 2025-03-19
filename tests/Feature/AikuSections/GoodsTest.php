@@ -13,11 +13,14 @@ use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Goods\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Goods\MasterShop\HydrateMasterShop;
 use App\Actions\Goods\MasterShop\StoreMasterShop;
 use App\Actions\Goods\MasterShop\UpdateMasterShop;
+use App\Actions\Goods\Stock\HydrateStock;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
+use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -649,3 +652,23 @@ test('update master product category', function (MasterProductCategory $masterPr
         ->and($masterShop->stats->number_master_product_categories_type_department)->toBe(1)
         ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(0);
 })->depends("create master product category");
+
+
+test('Hydrate master_shops', function () {
+    HydrateMasterShop::run(MasterShop::first());
+    $this->artisan('hydrate:master_shops')->assertSuccessful();
+});
+
+test('Hydrate stocks', function () {
+    HydrateStock::run(Stock::first());
+    $this->artisan('hydrate:stocks')->assertSuccessful();
+});
+
+test('Hydrate stock families', function () {
+    HydrateStockFamily::run(StockFamily::first());
+    $this->artisan('hydrate:stock_families')->assertSuccessful();
+});
+
+test('goods hydrator', function () {
+    $this->artisan('hydrate -s goods')->assertExitCode(0);
+});

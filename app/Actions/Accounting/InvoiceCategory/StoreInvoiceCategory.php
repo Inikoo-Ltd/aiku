@@ -25,12 +25,13 @@ class StoreInvoiceCategory extends OrgAction
 {
     use WithNoStrictRules;
 
-    /**
-     * @throws \Throwable
-     */
+
 
     private Organisation|Group $parent;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Group|Organisation $parent, array $modelData): InvoiceCategory
     {
         if ($parent instanceof Organisation) {
@@ -63,7 +64,7 @@ class StoreInvoiceCategory extends OrgAction
         }
     }
 
-    public function htmlResponse(InvoiceCategory $invoiceCategory)
+    public function htmlResponse(InvoiceCategory $invoiceCategory): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return Redirect::route('grp.org.accounting.invoice-categories.show', ['organisation' => $invoiceCategory->organisation->slug, 'invoiceCategory' => $invoiceCategory->slug]);
     }
@@ -111,6 +112,9 @@ class StoreInvoiceCategory extends OrgAction
         return $this->handle($parent, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Organisation $organisation, ActionRequest $request): InvoiceCategory
     {
         $this->parent = $organisation;

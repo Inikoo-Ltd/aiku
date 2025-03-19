@@ -5,7 +5,7 @@ import Editor from "@/Components/Forms/Fields/BubleTextEditor/Editor.vue"
 import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue";
 import Image from "@/Components/Image.vue"
 import { ref } from 'vue'
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { getStyles } from "@/Composables/styles";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faImage } from "@fas";

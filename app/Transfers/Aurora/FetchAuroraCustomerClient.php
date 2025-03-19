@@ -15,6 +15,7 @@ class FetchAuroraCustomerClient extends FetchAurora
     protected function parseModel(): void
     {
         if (!$this->auroraModelData->{'Customer Client Customer Key'}) {
+            print "No customer key";
             return;
         }
 
@@ -23,6 +24,7 @@ class FetchAuroraCustomerClient extends FetchAurora
         );
 
         if (!$customer) {
+            print "No customer not found";
             return;
         }
 

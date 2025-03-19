@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 const props = defineProps<{
     data?: {
         text?: string

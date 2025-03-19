@@ -21,7 +21,7 @@ class GetWarehouseShowcase
     {
         return [
             'xxx'       => $warehouse,
-            'address'   => AddressResource::make($warehouse->address),
+            'address'   => $warehouse->address ? AddressResource::make($warehouse->address) : null,
             'box_stats' => [
                 [
                     'name'     => trans_choice('warehouse area|warehouse areas', $warehouse->stats->number_warehouse_areas),

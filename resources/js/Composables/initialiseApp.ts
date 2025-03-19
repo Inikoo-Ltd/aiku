@@ -14,8 +14,11 @@ export const initialiseApp = () => {
     // Declaring here cuz some component failing retrieve on first load (EmployeePosition.vue)
     layout.currentParams = route().v().params
 
-    const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
-    layout.organisationsState = storageLayout  // { 'awa' : { currentShop: 'bali', currentWarehouse: 'ed' }, ... }
+    let storageLayout: any
+    if (typeof window !== "undefined") {
+        storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
+        layout.organisationsState = storageLayout  // { 'awa' : { currentShop: 'bali', currentWarehouse: 'ed' }, ... }
+    }
 
     const echoPersonal = useEchoGrpPersonal()
     const echoGeneral = useEchoGrpGeneral()
@@ -47,15 +50,17 @@ export const initialiseApp = () => {
                     }
                 }
 
-                localStorage.setItem('layout', JSON.stringify({
-                    ...layout.organisationsState,
-                    [layout.currentParams.organisation]: {
-                        currentShop: layout.organisationsState?.[layout.currentParams.organisation]?.currentShop,
-                        currentWarehouse: layout.organisationsState?.[layout.currentParams.organisation]?.currentWarehouse,
-                        currentFulfilment: layout.organisationsState?.[layout.currentParams.organisation]?.currentFulfilment,
-                        currentType: layout.organisationsState?.[layout.currentParams.organisation]?.currentType
-                    }
-                }))
+                if (typeof window !== "undefined") {
+                    localStorage.setItem('layout', JSON.stringify({
+                        ...layout.organisationsState,
+                        [layout.currentParams.organisation]: {
+                            currentShop: layout.organisationsState?.[layout.currentParams.organisation]?.currentShop,
+                            currentWarehouse: layout.organisationsState?.[layout.currentParams.organisation]?.currentWarehouse,
+                            currentFulfilment: layout.organisationsState?.[layout.currentParams.organisation]?.currentFulfilment,
+                            currentType: layout.organisationsState?.[layout.currentParams.organisation]?.currentType
+                        }
+                    }))
+                }
             }
 
             if (layout.currentParams?.agent) {
@@ -70,15 +75,17 @@ export const initialiseApp = () => {
                     }
                 }
 
-                localStorage.setItem('layout', JSON.stringify({
-                    ...storageLayout,
-                    [layout.currentParams.agent]: {
-                        currentShop: layout.agentsState?.[layout.currentParams.agent]?.currentShop,
-                        currentWarehouse: layout.agentsState?.[layout.currentParams.agent]?.currentWarehouse,
-                        currentFulfilment: layout.agentsState?.[layout.currentParams.agent]?.currentFulfilment,
-                        currentType: layout.agentsState?.[layout.currentParams.agent]?.currentType
-                    }
-                }))
+                if (typeof window !== "undefined") {
+                    localStorage.setItem('layout', JSON.stringify({
+                        ...storageLayout,
+                        [layout.currentParams.agent]: {
+                            currentShop: layout.agentsState?.[layout.currentParams.agent]?.currentShop,
+                            currentWarehouse: layout.agentsState?.[layout.currentParams.agent]?.currentWarehouse,
+                            currentFulfilment: layout.agentsState?.[layout.currentParams.agent]?.currentFulfilment,
+                            currentType: layout.agentsState?.[layout.currentParams.agent]?.currentType
+                        }
+                    }))
+                }
             }
 
 

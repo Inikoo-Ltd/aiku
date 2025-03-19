@@ -80,6 +80,10 @@ const treeData = ref<TreeNode[]>([
 //     fetchData();
 //   }
 // );
+
+if (props.data) {
+    treeData.value = props.data
+}
 </script>
 
 <template>

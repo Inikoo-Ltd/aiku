@@ -48,7 +48,7 @@ class SetPalletAsNotReceived extends OrgAction
 
         $pallet = UpdatePallet::run($pallet, $modelData, ['data']);
 
-        SetPalletDeliveryAutoServices::run($pallet->palletDelivery, $this->debug);
+        SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
 
         $recurringBillTransactionData = DB::table('recurring_bill_transactions')->select('recurring_bill_transactions.id')
             ->leftJoin('recurring_bills', 'recurring_bill_transactions.recurring_bill_id', 'recurring_bills.id')

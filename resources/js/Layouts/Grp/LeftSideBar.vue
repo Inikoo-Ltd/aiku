@@ -26,7 +26,9 @@ const layout = inject('layout', layoutStructure)
 
 // Set LeftSidebar value to local storage
 const handleToggleLeftBar = () => {
-    localStorage.setItem('leftSideBar', (!layout.leftSidebar.show).toString())
+    if (typeof window !== "undefined") {
+        localStorage.setItem('leftSideBar', (!layout.leftSidebar.show).toString())
+    }
     layout.leftSidebar.show = !layout.leftSidebar.show
 }
 

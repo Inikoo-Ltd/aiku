@@ -41,6 +41,9 @@ class HandleIrisInertiaRequests extends Middleware
         $footerLayout = Arr::get($website->published_layout, 'footer');
         $isFooterActive = Arr::get($footerLayout, 'status');
 
+        $menuLayout = Arr::get($website->published_layout, 'menu');
+        $isMenuActive = Arr::get($menuLayout, 'status');
+
         return array_merge(
             $firstLoadOnlyProps,
             [
@@ -64,7 +67,9 @@ class HandleIrisInertiaRequests extends Middleware
                     'footer' => array_merge(
                         $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
                     ),
-                    'menu'   => Arr::get($website->published_layout, 'menu'),
+                    'menu' => array_merge(
+                        $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
+                    ),
                     'theme'  => Arr::get($website->published_layout, 'theme'),
                     'is_logged_in'  => $webUser ? true : false,
                     'user_auth' => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,

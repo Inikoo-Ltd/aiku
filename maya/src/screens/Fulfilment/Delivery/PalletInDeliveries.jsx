@@ -116,7 +116,8 @@ const PalletInDeliveries = ({ navigation, route, onChangeState }) => {
         navigation={navigation}
         urlKey="get-pallets-delivery"
         args={[organisation.id, warehouse.id, id]}
-        height={80}
+        height={100}
+        showTotalResults={()=>null}
         listItem={({ item, navigation }) => (
           <GroupItem item={item} navigation={navigation}/>
         )}
@@ -264,7 +265,7 @@ const GroupItem = ({item: initialItem, navigation}) => {
       args: [item.id, formData.location],
       data: formData,
       onSuccess: response => {
-        
+        setShowModalMovePallet(false);
         if (!item.location_code) {
             setData(prevItem => ({
                 ...prevItem,
@@ -284,7 +285,7 @@ const GroupItem = ({item: initialItem, navigation}) => {
           useNativeDriver: true,
         }).start();
 
-        setShowModalMovePallet(false);
+       
 
         Toast.show({
           type: ALERT_TYPE.SUCCESS,
@@ -394,63 +395,9 @@ const GroupItem = ({item: initialItem, navigation}) => {
                 {item?.reference}
               </Text>
             </View>
-
-            {/* <View
-              style={{
-                marginLeft: 10,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-              }}>
-              <FontAwesomeIcon
-                icon={faInventory}
-                size={20}
-                style={{marginRight: 5}}
-              />
-              <Text style={{fontWeight: 'bold'}}>
-                {item?.location_code || '-'}
-              </Text>
-            </View> */}
           </View>
         </TouchableOpacity>
       </Animated.View>
-
-   {/*    <Modal
-        isVisible={showModalMovePallet}
-        title="Move Pallet"
-        onClose={() => setShowModalMovePallet(false)}>
-        <View className="w-full">
-          <Text className="text-sm font-semibold mb-1">Location</Text>
-          <Controller
-            name="location"
-            control={control}
-            render={({field}) => (
-              <Input variant="outline" size="md">
-                <InputField
-                  placeholder="Enter new location..."
-                  value={field.value}
-                  onChangeText={field.onChange}
-                />
-              </Input>
-            )}
-          />
-
-          <Button
-            size="lg"
-            className="my-3"
-            onPress={handleSubmit(onSubmitSetLocation)}>
-            {loadingSave ? (
-              <ButtonSpinner />
-            ) : (
-              <View
-                style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
-                <FontAwesomeIcon icon={faSave} size={20} color="#fff" />
-                <ButtonText>Move Pallet</ButtonText>
-              </View>
-            )}
-          </Button>
-        </View>
-      </Modal> */}
 
       <ModalMoveLocation 
        isVisible={showModalMovePallet}

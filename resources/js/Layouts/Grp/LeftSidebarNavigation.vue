@@ -31,9 +31,11 @@ faBallot, faSlidersH, faChartLineDown,faArrowFromLeft,faArrowToBottom, faWarehou
 const layout = inject('layout', layoutStructure)
 
 onMounted(() => {
-    if (localStorage.getItem('leftSideBar')) {
-        // Read from local storage then store to Pinia
-        layout.leftSidebar.show = JSON.parse(localStorage.getItem('leftSideBar') ?? '')
+    if (typeof window !== "undefined") {
+        if (localStorage.getItem('leftSideBar')) {
+            // Read from local storage then store to Pinia
+            layout.leftSidebar.show = JSON.parse(localStorage.getItem('leftSideBar') ?? '')
+        }
     }
 })
 

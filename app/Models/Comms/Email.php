@@ -46,7 +46,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Snapshot|null $liveSnapshot
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
- * @property-read \App\Models\Comms\Outbox $outbox
+ * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent|null $parent
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Snapshot|null $snapshot

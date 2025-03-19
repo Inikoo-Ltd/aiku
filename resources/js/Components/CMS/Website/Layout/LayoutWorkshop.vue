@@ -12,7 +12,7 @@ import { onMounted, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPaintBrushAlt, faRocketLaunch } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { get, isEqual, set } from 'lodash'
+import { get, isEqual, set } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 library.add(faPaintBrushAlt, faRocketLaunch)

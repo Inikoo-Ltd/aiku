@@ -197,6 +197,33 @@ class ShowPallet extends OrgAction
         $routeName = null;
         if ($this->parent instanceof Warehouse) {
             $routeName = 'grp.org.warehouses.show.inventory.pallets.current.edit';
+            $openStoredItemAudit = $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first();
+
+            if (!app()->environment('production')) {
+                if ($openStoredItemAudit) {
+                    $actions[] = [
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'tooltip' => __("Continue pallet's SKUs audit"),
+                        'label'   => __("Continue pallet's SKUs audit"),
+                        'route'   => [
+                            'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.show',
+                            'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
+                        ]
+                    ];
+                } else {
+                    $actions[] = [
+                        'type'    => 'button',
+                        'tooltip' => __("Start pallet's SKUs audit"),
+                        'label'   => __("Start pallet's SKUs audit"),
+                        'route'   => [
+                            'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ];
+                }
+
+            }
         } elseif ($this->parent instanceof Fulfilment) {
             $routeName = 'grp.org.fulfilments.show.operations.pallets.current.edit';
         } elseif ($this->parent instanceof FulfilmentCustomer) {

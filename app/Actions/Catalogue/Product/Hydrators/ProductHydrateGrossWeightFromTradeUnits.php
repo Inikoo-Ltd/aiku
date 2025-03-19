@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithWeightFromTradeUnits;
 use App\Models\Catalogue\Product;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProductHydrateGrossWeightFromTradeUnits
 {
     use AsAction;
+    use WithWeightFromTradeUnits;
 
     private Product $product;
 
@@ -30,27 +32,11 @@ class ProductHydrateGrossWeightFromTradeUnits
 
     public function handle(Product $product): void
     {
-        $changed = false;
-        $grossWeight  = 0;
-
-        foreach ($product->tradeUnits as $tradeUnit) {
-            if (is_numeric($tradeUnit->gross_weight) and is_numeric($tradeUnit->pivot->quantity)) {
-                $changed = true;
-                $grossWeight += $tradeUnit->gross_weight * $tradeUnit->pivot->quantity;
-            }
-        }
-
-        if (!$changed) {
-            $grossWeight = null;
-        }
-
-
         $product->updateQuietly(
             [
-                'gross_weight' => $grossWeight
+                'gross_weight' => $this->getWeightFromTradeUnits($product),
             ]
         );
-
     }
 
 

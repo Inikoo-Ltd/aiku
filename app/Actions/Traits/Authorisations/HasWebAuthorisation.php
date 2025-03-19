@@ -17,9 +17,9 @@ use Lorisleiva\Actions\ActionRequest;
 trait HasWebAuthorisation
 {
     private Group|Organisation|Fulfilment|Shop $scope;
+
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->asAction) {
             return true;
         }
@@ -27,18 +27,39 @@ trait HasWebAuthorisation
         if ($this->scope instanceof Organisation) {
             $this->canEdit      = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
             $this->isSupervisor = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
-            return $request->user()->authTo("websites-view.{$this->organisation->id}");
+
+            return $request->user()->authTo([
+                "websites-view.{$this->organisation->id}",
+                "group-webmaster.view"
+            ]);
         } elseif ($this->scope instanceof Group) {
             return $request->user()->authTo("group-overview");
         } elseif ($this->scope instanceof Shop) {
-            $this->canEdit      = $request->user()->authTo("web.{$this->shop->id}.edit");
-            $this->isSupervisor = $request->user()->authTo("supervisor-web.{$this->shop->id}");
-            return $request->user()->authTo("web.{$this->shop->id}.view");
-        } elseif ($this->scope instanceof Fulfilment) {
-            $this->canEdit      = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-            $this->isSupervisor = $request->user()->authTo("supervisor-fulfilment-shop.{$this->fulfilment->id}");
+            $this->canEdit      = $request->user()->authTo([
+                "
+            web.{$this->shop->id}.edit",
+                "group-webmaster.view"
+            ]);
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-web.{$this->shop->id}",
+                "group-webmaster.view"
+            ]);
 
-            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
+            return $request->user()->authTo(["web.{$this->shop->id}.view", "group-webmaster.view"]);
+        } elseif ($this->scope instanceof Fulfilment) {
+            $this->canEdit      = $request->user()->authTo([
+                "fulfilment-shop.{$this->fulfilment->id}.edit",
+                "group-webmaster.view"
+            ]);
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-fulfilment-shop.{$this->fulfilment->id}",
+                "group-webmaster.view"
+            ]);
+
+            return $request->user()->authTo([
+                "fulfilment-shop.{$this->fulfilment->id}.view",
+                "group-webmaster.view"
+            ]);
         }
 
         return false;

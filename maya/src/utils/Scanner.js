@@ -1,5 +1,6 @@
 import {Dimensions} from 'react-native';
 import {useCameraPermission} from 'react-native-vision-camera';
+import {StyleSheet, Button, Alert} from 'react-native';
 
 export const getWindowWidth = () => {
   return Dimensions.get('window').width;
@@ -12,7 +13,7 @@ export const handleCameraPermission = async () => {
   const {hasPermission, requestPermission} = useCameraPermission();
   const granted = await requestPermission();
   if (!granted) {
-    alert('Camera permission is required to use the scanner.');
+    Alert.alert('Camera permission is required to use the scanner.');
   }
 };
 

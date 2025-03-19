@@ -31,6 +31,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?DeliveryNote
     {
         $deliveryNoteData = $organisationSource->fetchDeliveryNote($organisationSourceId);
+
         if (!$deliveryNoteData or empty($deliveryNoteData['delivery_note']['source_id'])) {
             return null;
         }
@@ -68,7 +69,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             //                return null;
             //            }
 
-            if (in_array('transactions', $this->with) or $forceWithTransactions) {
+            if (in_array('transactions', $this->with) or in_array('full', $this->with) or  $forceWithTransactions) {
                 $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
             }
 
@@ -103,7 +104,8 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
                 //                    return null;
                 //                }
 
-                if (in_array('transactions', $this->with) or $forceWithTransactions) {
+
+                if (in_array('transactions', $this->with) or in_array('full', $this->with) or  $forceWithTransactions) {
                     $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
                 }
 

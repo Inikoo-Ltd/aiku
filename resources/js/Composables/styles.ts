@@ -4,9 +4,9 @@ export const getStyles = (properties: any) => {
         return null;
     }
 
-    return {
-        height: (properties?.dimension?.height?.value || 0) + properties?.dimension?.height?.unit,
-        width: (properties?.dimension?.width?.value || 0) + properties?.dimension?.width?.unit,
+    const styles = {
+        height: properties?.dimension?.height?.value  ? properties?.dimension?.height?.value  + properties?.dimension?.height?.unit : null,
+        width: properties?.dimension?.width?.value ? properties?.dimension?.width?.value + properties?.dimension?.width?.unit : null,
         color: properties?.text?.color || null,
         objectFit : properties?.object_fit|| null,
         objectPosition : properties?.object_position || null,
@@ -51,5 +51,7 @@ export const getStyles = (properties: any) => {
         borderTopLeftRadius: properties?.border?.rounded?.topleft?.value != null && properties?.border?.rounded?.unit ? 
             `${properties.border.rounded.topleft.value}${properties.border.rounded.unit}` : null,
     };
+
+    return Object.fromEntries(Object.entries(styles).filter(([_, value]) => value !== null));
 };
 

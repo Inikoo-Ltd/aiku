@@ -42,9 +42,17 @@ const toggle = (event) => {
         <div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
             <div class="w-full grid grid-cols-3 items-center gap-6">
                 <!-- Logo -->
-                <div :style="getStyles(modelValue.logo.properties)" @click="() => emits('setPanelActive', 'logo')">
-                    <Image :alt="modelValue?.logo?.alt" :src="modelValue?.logo?.image?.source" class="hover-dashed"></Image>
-                </div>
+             
+                    <Image 
+                        :style="getStyles(modelValue.logo.properties)"
+                        :alt="modelValue?.logo?.alt" 
+                         :imageCover="true"
+                        :src="modelValue?.logo?.image?.source" 
+                        :imgAttributes="modelValue?.logo.image?.attributes"
+                        @click="() => emits('setPanelActive', 'logo')"
+                        class="hover-dashed">
+                    </Image>
+               
 
                 <!-- Search Bar -->
                 <div class="relative justify-self-center w-full max-w-md">
@@ -72,11 +80,7 @@ const toggle = (event) => {
                 <MobileMenu :header="modelValue" :menu="modelValue" />
 
                 <!-- Logo for Mobile -->
-                <img v-if="!modelValue.logo"
-                    src="https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png"
-                    alt="Ancient Wisdom Logo" class="h-10 mx-2">
-
-                <Image v-else :src="modelValue?.logo?.source" class="h-10 mx-2"></Image>
+                <Image v-if="modelValue?.logo?.image?.source" :src="modelValue?.logo?.image?.source" class="h-10 mx-2"></Image>
 
                 <!-- Profile Icon with Dropdown Menu -->
                 <div @click="toggle" class="flex items-center cursor-pointer text-white">

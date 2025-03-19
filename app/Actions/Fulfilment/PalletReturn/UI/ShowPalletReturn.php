@@ -501,7 +501,7 @@ class ShowPalletReturn extends OrgAction
                     ],
                     'route' => [
                         'upload'  => [
-                            'name'       => 'grp.models.pallet-return.stored-item.upload',
+                            'name'       => 'grp.models.pallet-return.pallet-return-item.upload.upload',
                             'parameters' => [
                                 'palletReturn' => $palletReturn->id
                             ]

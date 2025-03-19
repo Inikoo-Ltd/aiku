@@ -7,7 +7,7 @@ import OverviewProperty from "@/Components/Workshop/Properties/OverviewProperty.
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrash } from "@fal";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 
 library.add(faPlus, faTrash);
 

@@ -64,8 +64,6 @@ class UpdateDeliveryNote extends OrgAction
             }
         }
 
-        DeliveryNoteRecordSearch::dispatch($deliveryNote);
-
         if (Arr::hasAny($changes, ['type', 'state', 'status'])) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
             GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);

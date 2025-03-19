@@ -8,17 +8,23 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
-use App\Actions\HydrateModel;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\OrgStock;
-use Illuminate\Support\Collection;
 
-class HydrateOrgStock extends HydrateModel
+class HydrateOrgStock
 {
+    use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:org_stocks {organisations?*} {--s|slugs=} ';
+
+    public function __construct()
+    {
+        $this->model = OrgStock::class;
+    }
 
 
     public function handle(OrgStock $orgStock): void
@@ -30,14 +36,4 @@ class HydrateOrgStock extends HydrateModel
     }
 
 
-
-    protected function getModel(string $slug): OrgStock
-    {
-        return OrgStock::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return OrgStock::withTrashed()->get();
-    }
 }

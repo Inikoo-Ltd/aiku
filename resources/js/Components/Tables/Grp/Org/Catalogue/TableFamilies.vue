@@ -11,7 +11,7 @@ import { Family } from "@/types/family"
 import Icon from "@/Components/Icon.vue"
 import { ref } from "vue"
 import { routeType } from "@/types/route"
-import { remove as loRemove } from 'lodash'
+import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fal";

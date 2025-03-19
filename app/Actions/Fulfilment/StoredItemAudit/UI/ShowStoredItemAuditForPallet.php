@@ -25,6 +25,7 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\StoredItemAudit;
 use App\Models\Fulfilment\StoredItemAuditDelta;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,10 +33,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStoredItemAuditForPallet extends OrgAction
 {
-    use WithFulfilmentShopAuthorisation;
+    // use WithFulfilmentShopAuthorisation; //idk what to use since we have inWarehouse
     use WithFulfilmentCustomerSubNavigation;
 
-    private Fulfilment|Location|FulfilmentCustomer $parent;
+    private Fulfilment|Location|FulfilmentCustomer|Warehouse $parent;
     private Pallet $pallet;
 
     private bool $selectStoredPallets = false;
@@ -242,6 +243,15 @@ class ShowStoredItemAuditForPallet extends OrgAction
         return $this->handle($storedItemAudit);
     }
 
+    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, StoredItemAudit $storedItemAudit, ActionRequest $request): StoredItemAudit
+    {
+        $this->parent = $warehouse;
+        $this->pallet = $pallet;
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($storedItemAudit);
+    }
+
     public function getBreadcrumbs(StoredItemAudit $storedItemAudit, string $routeName, array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (array $routeParameters, string $suffix) use ($storedItemAudit) {
@@ -276,6 +286,23 @@ class ShowStoredItemAuditForPallet extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.stored-item-audits.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.show' =>
+            array_merge(
+                ShowPallet::make()->getBreadcrumbs($storedItemAudit->warehouse, $routeParameters),
+                $headCrumb(
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.pallets.current.show',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.show',
                             'parameters' => $routeParameters
                         ]
                     ],

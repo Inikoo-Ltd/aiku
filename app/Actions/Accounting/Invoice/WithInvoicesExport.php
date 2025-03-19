@@ -11,6 +11,8 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Models\Accounting\Invoice;
+use App\Models\Fulfilment\Pallet;
+use Carbon\Carbon;
 use Exception;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 
@@ -23,6 +25,19 @@ trait WithInvoicesExport
             $totalShipping = (int) $invoice->order?->shipping_amount ?? 0;
 
             $totalNet = $totalItemsNet + $totalShipping;
+
+            $transactions = $invoice->invoiceTransactions->map(function ($transaction) {
+                if (!empty($transaction->data['pallet_id'])) {
+                    $pallet = Pallet::find($transaction->data['pallet_id']);
+                    $transaction->pallet = $pallet->reference;
+                }
+
+                if (!empty($transaction->data['date'])) {
+                    $transaction->handling_date = Carbon::parse($transaction->data['date'])->format('d M Y');
+                }
+
+                return $transaction;
+            });
 
             $config = [
                 'title'                  => 'hello'.$invoice->reference,
@@ -38,7 +53,7 @@ trait WithInvoicesExport
             $pdf      = PDF::loadView('invoices.templates.pdf.invoice', [
                 'shop'          => $invoice->shop,
                 'invoice'       => $invoice,
-                'transactions'  => $invoice->invoiceTransactions,
+                'transactions'  => $transactions,
                 'totalNet'      => $totalNet
             ], [], $config);
 

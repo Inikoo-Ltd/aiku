@@ -20,6 +20,7 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 class StoreInvoiceTransaction extends OrgAction
 {
@@ -28,6 +29,13 @@ class StoreInvoiceTransaction extends OrgAction
 
     public function handle(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData): InvoiceTransaction
     {
+        if (Arr::exists($modelData, 'pallet_id')) {
+            $palletId = Arr::pull($modelData, 'pallet_id');
+        }
+        if (Arr::exists($modelData, 'handle_date')) {
+            $handlingDate = Arr::pull($modelData, 'handle_date');
+        }
+
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($model instanceof Transaction) {
@@ -71,14 +79,22 @@ class StoreInvoiceTransaction extends OrgAction
             $modelData['department_id'] = $product->department_id;
         } elseif ($historicAsset->model_type == 'Service') {
             if ($historicAsset->model->is_pallet_handling == true) {
-                if (Arr::exists($modelData, 'pallet_id')) {
-                    $palletId = Arr::pull($modelData, 'pallet_id');
-                    data_set($modelData, 'data.pallet_id', $palletId);
+                if ($palletId == null) {
+                    ValidationException::withMessages([
+                        'message' => [
+                            'pallet_id' => 'Pallet ID is required when handling a pallet',
+                        ]
+                    ]);
                 }
-                if (Arr::exists($modelData, 'handle_date')) {
-                    $date = Arr::pull($modelData, 'handle_date');
-                    data_set($modelData, 'data.date', $date);
+                if ($handlingDate == null) {
+                    ValidationException::withMessages([
+                        'message' => [
+                            'handle_date' => 'Handling date is required when handling a pallet',
+                        ]
+                    ]);
                 }
+                data_set($modelData, 'data.pallet_id', $palletId);
+                data_set($modelData, 'data.date', $handlingDate);
             }
         }
 
@@ -111,7 +127,7 @@ class StoreInvoiceTransaction extends OrgAction
             'grp_exchange'    => ['sometimes', 'numeric'],
             'in_process'      => ['sometimes', 'boolean'],
             'pallet_id'       => ['sometimes'],
-            'handle_date'     => ['sometimes', 'date'],
+            'handle_date'     => ['sometimes'],
             'data'            => ['sometimes', 'array'],
         ];
 

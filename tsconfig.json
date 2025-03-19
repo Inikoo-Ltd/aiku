@@ -19,5 +19,6 @@
             "@fas": ["./private/fa/pro-solid-svg-icons"]
         }
     },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.vue"]
+    "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.vue"],
+    "exclude": ["node_modules", "public", "app", "vendor", "maya", "han", "private"]
 }

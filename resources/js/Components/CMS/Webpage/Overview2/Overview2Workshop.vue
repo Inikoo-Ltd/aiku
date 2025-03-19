@@ -16,6 +16,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faEdit } from "@far"
 import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import { sendMessageToParent } from "@/Composables/Workshop";
+import Blueprint from "@/Components/CMS/Webpage/Overview2/Blueprint"
 
 library.add(faCube, faLink)
 
@@ -46,22 +48,19 @@ function onSave() {
 </script>
 
 <template>
-	<div
-		class="container flex flex-wrap justify-between"
-		:style="getStyles(modelValue.container.properties)">
+	<div class="container flex flex-wrap justify-between" :style="getStyles(modelValue.container.properties)">
 		<!-- Image Section -->
-		<div
-			class="imgBx relative w-1/2 transition-all duration-300"
-			>
-			<div class="absolute inset-0">
-				<a :href="modelValue?.image?.url || '#'" target="_blank" rel="noopener noreferrer">
-					<img
-						v-if="!modelValue?.image"
-						src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg"
-						alt="Informative Image"
-						class="h-full w-full object-cover" />
-					<Image :src="modelValue?.image?.source" class="h-full w-full object-cover" />
-				</a>
+		<div class="imgBx relative w-1/2 transition-all duration-300">
+			<div class="absolute inset-0" 	@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))">
+				<img v-if="!modelValue?.image?.source" src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" :alt="modelValue?.image?.alt" class="h-full w-full object-cover" />
+				<Image 
+					v-else
+					:src="modelValue?.image?.source" 
+					:imageCover=true 
+					:alt="modelValue?.image?.alt"
+					:imgAttributes="modelValue?.image?.attributes"
+					:style="getStyles(modelValue?.image?.properties)"
+				/>
 			</div>
 		</div>
 

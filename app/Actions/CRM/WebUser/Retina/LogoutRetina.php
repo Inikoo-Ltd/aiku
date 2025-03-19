@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Lorisleiva\Actions\Concerns\AsController;
+use Illuminate\Support\Facades\Redirect;
 
 class LogoutRetina
 {
@@ -26,7 +27,7 @@ class LogoutRetina
         $request->session()->regenerateToken();
         Session::put('reloadLayout', '1');
 
-        return redirect('/app/login');
+        return Redirect::route('retina.login.show');
     }
 
 }

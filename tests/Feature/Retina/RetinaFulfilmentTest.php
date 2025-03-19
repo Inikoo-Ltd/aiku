@@ -620,7 +620,7 @@ test('Update Retina Pallet Return', function (PalletReturn $palletReturn) {
     return $palletReturn;
 })->depends('Create Retina Pallet Return');
 
-test('import pallets in return (xlsx)', function (PalletReturn $palletReturn) {
+test('import pallets in return (xlsx)  whole pallets ', function (PalletReturn $palletReturn) {
     Storage::fake('local');
 
     $tmpPath = 'tmp/uploads/';
@@ -715,7 +715,7 @@ test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletRetu
         ->and($palletReturn->stats->number_pallets)->toBe(2);
 
     return $palletReturn;
-})->depends('import pallets in return (xlsx)');
+})->depends('import pallets in return (xlsx)  whole pallets ');
 
 test('Detach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
     $pallet = $palletReturn->pallets()->first();
