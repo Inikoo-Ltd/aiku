@@ -10,7 +10,7 @@ import PureInput from '../Pure/PureInput.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { routeType } from '@/types/route'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { watch } from 'vue'
 import InputNumber from 'primevue/inputnumber'
 
@@ -50,6 +50,7 @@ const paymentData = ref({
 
 
 // Section: Payment invoice
+const isOpenModalInvoice = ref(false)
 const listPaymentMethod = ref([])
 const isLoadingFetch = ref(false)
 const fetchPaymentMethod = async () => {
@@ -68,7 +69,6 @@ const fetchPaymentMethod = async () => {
         isLoadingFetch.value = false
     }
 }
-const isOpenModalPayment = ref(false)
 const isLoadingPayment = ref(false)
 const errorPaymentMethod = ref<null | unknown>(null)
 const onSubmitPayment = () => {
@@ -87,7 +87,6 @@ const onSubmitPayment = () => {
             onStart: () => isLoadingPayment.value = true,
             onFinish: () => {
                 isLoadingPayment.value = false,
-                isOpenModalPayment.value = false,
                 notify({
                     title: trans('Success'),
                     text: 'Successfully add payment invoice',
@@ -113,8 +112,89 @@ watch(paymentData, () => {
     }
 })
 
-const isOpenModalInvoice = ref(false)
 
+
+
+// Section: Payment Refund
+const isOpenModalRefund = ref(false)
+const listPaymentRefund = ref([
+    {
+        label: trans("Refund money to customer's credit balance"),
+        value: 'credit_balance',
+    },
+    {
+        label: trans("Refund money to payment method of the invoice"),
+        value: 'invoice_payment_method',
+    }
+])
+
+const paymentDataRefund = ref({
+    payment_method: null as string | null,
+    payment_account: null as number | null,
+    payment_amount: 0 as number | null,
+    //   payment_reference: ""
+})
+const isLoadingPaymentRefund = ref(false)
+const errorPaymentMethodRefund = ref<null | unknown>(null)
+const onSubmitPaymentRefund = () => {
+
+    let url
+    if (paymentDataRefund.value.payment_method === 'credit_balance') {
+        url = route('grp.models.refund.refund_to_credit', {
+            refund: props.invoice_pay.invoice_id,
+        })
+    } else {
+        url = route('grp.models.refund.refund_to_payment_account', {
+            refund: props.invoice_pay.invoice_id,
+            paymentAccount: paymentDataRefund.value.payment_account
+        })
+    }
+
+    try {
+        router.post(
+            url,
+            {
+                amount: paymentDataRefund.value.payment_amount,
+            },
+            {
+                onStart: () => isLoadingPayment.value = true,
+                onFinish: () => {
+                    isLoadingPayment.value = false,
+                        isOpenModalRefund.value = false,
+                        notify({
+                            title: trans("Success"),
+                            text: "Successfully add payment invoice",
+                            type: "success"
+                        })
+                },
+                onSuccess: () => {
+                    paymentDataRefund.value.payment_account = null,
+                        paymentDataRefund.value.payment_amount = 0
+                    // paymentDataRefund.value.payment_reference = ""
+                },
+                preserveScroll: true,
+            }
+        )
+
+    } catch (error: unknown) {
+        errorPaymentMethodRefund.value = error
+    }
+}
+
+watch(paymentDataRefund, () => {
+    if (errorPaymentMethodRefund.value) {
+        errorPaymentMethodRefund.value = null
+    }
+});
+
+const generateRefundRoute = (refundSlug: string) => {
+    return route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', {
+        organisation: route().params?.organisation,
+        fulfilment: route().params?.fulfilment,
+        invoice: props.invoice_pay.invoice_slug,
+        refund: refundSlug
+    })
+}
 </script>
 
 <template>
@@ -137,38 +217,35 @@ const isOpenModalInvoice = ref(false)
 
         <div v-tooltip="trans('Amount need to pay by customer')" class="text-sm w-fit">
             Refunds: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_refunds)) }}
-            <!-- <span v-if="Number(box_stats.information.paid_amount) > 0" class='text-gray-400'>. Paid</span> -->
-        </div>
-
-        <div v-tooltip="trans('Amount need to pay by customer')" class="text-sm w-fit">
-            Balance: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_balance)) }}
-            <!-- <span v-if="Number(box_stats.information.paid_amount) > 0" class='text-gray-400'>. Paid</span> -->
-        </div>
-
-        <div class="text-sm">
-            {{ trans('Paid in') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_in)) }}
-        </div>
-
-        <div class="text-xs">
-            {{ trans('Pay out') }}:
-
             <ul class="list-disc list-inside">
-                <li v-for="paid_out in invoice_pay.total_paid_out.data">
-                    <span class="text-red-500">{{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(paid_out.payment_amount)) }}</span> ({{ paid_out.reference }})
+                <li v-for="refund in invoice_pay.list_refunds.data">
+                    <span class="text-red-500">{{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(refund.total_amount)) }}</span> (<Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}</Link>)
                 </li>
             </ul>
         </div>
 
-        <div class="text-xs">
-            {{ trans('Refund to pay left') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_need_to_refund)) }}
-            <Button size="xxs" type="secondary">Pay Refund</Button>
+        <div v-tooltip="trans('Amount need to pay by customer')" class="text-sm w-fit">
+            I+R total: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_balance)) }}
+            <!-- <span v-if="Number(box_stats.information.paid_amount) > 0" class='text-gray-400'>. Paid</span> -->
+        </div>
+        
+<div><br></div>
+
+        <div class="text-sm">
+            {{ trans('Pay in') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_in)) }}
         </div>
 
-        <div class="text-xs">
+        <div class="text-sm">
+            {{ trans('Pay out') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_out)) }}
+        </div>
+
+        <div class="text-sm">
             {{ trans('Total to pay') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_need_to_pay)) }}
-            <Button @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs" type="secondary">Pay</Button>
+            <Button v-if="Number(invoice_pay.total_need_to_pay) < 0" @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs" type="secondary">Pay Invoice</Button>
+            <Button v-if="Number(invoice_pay.total_need_to_pay) > 0" @click="() => (isOpenModalRefund = true, fetchPaymentMethod())" size="xxs" type="secondary">Pay Refunds</Button>
         </div>
 
+        <!-- Modal: Pay Invoice -->
         <Modal :isOpen="isOpenModalInvoice" @onClose="isOpenModalInvoice = false" width="w-[600px]">
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
@@ -211,7 +288,7 @@ const isOpenModalInvoice = ref(false)
                                 @input="(e) => paymentData.payment_amount = e.value"
                                 buttonLayout="horizontal" 
                                 :min="0"
-                                :max="invoice_pay.total_need_to_pay || undefined"
+                                :xxmax="invoice_pay.total_need_to_pay || undefined"
                                 :maxFractionDigits="2"
                                 style="width: 100%"
                                 inputClass="border border-gray-300"
@@ -227,8 +304,8 @@ const isOpenModalInvoice = ref(false)
                             />
                         </div>
                         <div class="space-x-1">
-                            <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_need_to_pay)) }}</span>
-                            <Button @click="() => paymentData.payment_amount = invoice_pay.total_need_to_pay" :disabled="paymentData.payment_amount === invoice_pay.total_need_to_pay" type="tertiary" label="Pay all" size="xxs" />
+                            <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(-invoice_pay.total_need_to_pay)) }}</span>
+                            <Button @click="() => paymentData.payment_amount = -invoice_pay.total_need_to_pay" :disabled="paymentData.payment_amount === -invoice_pay.total_need_to_pay" type="tertiary" label="Pay all" size="xxs" />
                         </div>
                     </div>
 
@@ -254,6 +331,95 @@ const isOpenModalInvoice = ref(false)
                 <div class="mt-6 mb-4 relative">
                     <div v-if="!(!!paymentData.payment_method)" @click="() => errorInvoicePayment.payment_method = trans('Payment method can\'t empty')" class="absolute inset-0" />
                     <Button @click="() => onSubmitPayment()" :label="trans('Submit')" :disabled="!(!!paymentData.payment_method)" :loading="isLoadingPayment" full />
+                    <Transition name="spin-to-down">
+                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
+                    </Transition>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Modal: Pay refund -->
+        <Modal :isOpen="isOpenModalRefund" @onClose="isOpenModalRefund = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
+                    <p class="text-xs leading-5 text-gray-400">
+                        {{ trans('Fill the information about refund payment') }}
+                    </p>
+                </div>
+
+                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Select payment method') }}
+                        </label>
+                        <div class="mt-1 grid grid-cols-2 gap-x-3">
+                            <div
+                                @click="() => paymentDataRefund.payment_method = item.value"
+                                v-for="item in listPaymentRefund"
+                                :key="item.value"
+                                class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
+                                :class="paymentDataRefund.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'"
+                            >
+                                {{ item.label }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <Transition name="slide-to-left">
+                        <div v-if="paymentDataRefund.payment_method === 'invoice_payment_method'" class="col-span-2">
+                            <label for="first-name" class="block text-sm font-medium leading-6">
+                                <span class="text-red-500">*</span> {{ trans('Select payment account') }}
+                            </label>
+                            <div class="mt-1">
+                                <PureMultiselect
+                                    v-model="paymentDataRefund.payment_account"
+                                    :options="listPaymentMethod"
+                                    label="name"
+                                    valueProp="id"
+                                    :isLoading="isLoadingFetch"
+                                    required
+                                    caret
+                                />
+                            </div>
+                        </div>
+                    </Transition>
+
+                    <div class="col-span-2">
+                        <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Payment amount') }}</label>
+                        <div class="mt-1">
+                            <!-- <PureInputNumber v-model="paymentDataRefund.payment_amount" /> -->
+                            <InputNumber
+                                v-model="paymentDataRefund.payment_amount" 
+                                @update:modelValue="(e) => paymentDataRefund.payment_amount = e"
+                                @input="(e) => paymentDataRefund.payment_amount = e.value"
+                                buttonLayout="horizontal" 
+                                :min="0"
+                                :xxmax="invoice_pay.total_need_to_pay || undefined"
+                                :maxFractionDigits="2"
+                                style="width: 100%"
+                                inputClass="border border-gray-300"
+                                :inputStyle="{
+                                    fontSize: '14px',
+                                    paddingTop: '10px',
+                                    paddingBottom: '10px',
+                                    width: '50px',
+                                    background: 'transparent',
+                                }"
+                                mode="currency"
+                                :currency="invoice_pay.currency_code"
+                            />
+                        </div>
+
+                        <div class="space-x-1">
+                            <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_pay.currency_code || 'usd', Math.abs(Number(-invoice_pay.total_need_to_pay))) }}</span>
+                            <Button @click="() => paymentDataRefund.payment_amount = invoice_pay.total_need_to_pay" :disabled="paymentDataRefund.payment_amount === Math.abs(-invoice_pay.total_need_to_pay)" type="tertiary" :label="trans('Pay all')" size="xxs" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <Button @click="() => onSubmitPaymentRefund()" label="Submit" :disabled="paymentDataRefund.payment_method === 'credit_balance' ? false : !(!!paymentDataRefund.payment_account)" :loading="isLoadingPayment" full />
                     <Transition name="spin-to-down">
                         <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
                     </Transition>
