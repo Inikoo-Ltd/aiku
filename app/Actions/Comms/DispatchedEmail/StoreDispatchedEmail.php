@@ -47,8 +47,9 @@ class StoreDispatchedEmail extends OrgAction
         /** @var DispatchedEmail $dispatchedEmail */
         $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
 
-        GroupHydrateDispatchedEmails::dispatch($parent->group)->delay($this->hydratorsDelay);
-
+        if($this->strict) {
+            GroupHydrateDispatchedEmails::dispatch($parent->group)->delay($this->hydratorsDelay);
+        }
         return $dispatchedEmail;
     }
 
