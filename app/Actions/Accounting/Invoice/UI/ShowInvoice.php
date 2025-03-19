@@ -151,8 +151,13 @@ class ShowInvoice extends OrgAction
         }
 
         $totalRefund = $invoice->refunds->where('in_progress', false)->sum('total_amount');
+        $ir_total    = $invoice->total_amount + $totalRefund;
+        $refunds_pay_out = $invoice->refunds->where('in_progress', false)->sum('payment_amount'); 
+
         $invoicePayBox = [
             'invoice_pay' => [
+                'invoice_slug'  => $invoice->slug,
+                'invoice_id'     => $invoice->id,
                 'routes'         => [
                     'fetch_payment_accounts' => [
                         'name'       => 'grp.json.shop.payment-accounts',
@@ -167,14 +172,15 @@ class ShowInvoice extends OrgAction
                         ]
                     ]
                 ],
+                'list_refunds'      => RefundResource::collection($invoice->refunds),
                 'currency_code'     => $invoice->currency->code,
                 'total_invoice'     => $invoice->total_amount,
                 'total_refunds'     => $totalRefund,
-                'total_balance'     => $invoice->total_amount + $totalRefund,
+                'total_balance'     => $ir_total,
                 'total_paid_in'     => $invoice->payment_amount,
-                'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_progress', false)),
-                'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('payment_amount') : 0,
-                'total_need_to_pay' => $invoice->total_amount - $invoice->payment_amount,
+                'total_paid_out'    => $refunds_pay_out,
+                'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('total_amount') : 0,
+                'total_need_to_pay' => $ir_total + $invoice->payment_amount + $refunds_pay_out,
             ],
         ];
 
