@@ -116,22 +116,21 @@ class UpdateCustomer extends OrgAction
         if (Arr::hasAny($modelData, ['contact_name', 'email'])) {
             $rootWebUser = $customer->webUsers->where('is_root', true)->first();
             if ($rootWebUser) {
-
                 $rootWebUser->update(
                     [
                         'contact_name' => $customer->contact_name,
                         'email'        => $customer->email
                     ]
                 );
-
-
             }
+        }
+        $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (count($changes) > 0) {
+            CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
         }
 
 
-
-
-        CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
 
         return $customer;
     }

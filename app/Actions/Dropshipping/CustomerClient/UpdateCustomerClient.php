@@ -44,7 +44,14 @@ class UpdateCustomerClient extends OrgAction
         }
 
         $customerClient = $this->update($customerClient, $modelData, ['data']);
-        CustomerClientRecordSearch::dispatch($customerClient);
+
+        $changes = Arr::except($customerClient->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (count($changes) > 0) {
+            CustomerClientRecordSearch::dispatch($customerClient);
+        }
+
+
 
         return $customerClient;
     }

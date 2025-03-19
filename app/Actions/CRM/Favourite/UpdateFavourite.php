@@ -14,6 +14,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateFavourites;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Favourite;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateFavourite extends OrgAction
@@ -26,9 +27,13 @@ class UpdateFavourite extends OrgAction
     {
         $favourite = $this->update($favourite, $modelData, ['data']);
 
-        CustomerHydrateFavourites::dispatch($favourite->customer)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoFavourited::dispatch($favourite->product)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoFavouritedInCategories::dispatch($favourite->product)->delay($this->hydratorsDelay);
+        $changes = Arr::except($favourite->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (count($changes) > 0) {
+            CustomerHydrateFavourites::dispatch($favourite->customer)->delay($this->hydratorsDelay);
+            ProductHydrateCustomersWhoFavourited::dispatch($favourite->product)->delay($this->hydratorsDelay);
+            ProductHydrateCustomersWhoFavouritedInCategories::dispatch($favourite->product)->delay($this->hydratorsDelay);
+        }
 
         return $favourite;
     }
