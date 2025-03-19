@@ -424,7 +424,7 @@ const setHideBlock = (block: Daum) => {
             outlined: true
         },
         acceptProps: {
-            label: 'publish'
+            label: 'Publish'
         },
 		accept: () => {
             onPublish(route, popover)
