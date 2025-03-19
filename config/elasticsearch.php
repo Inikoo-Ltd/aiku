@@ -139,10 +139,16 @@ return [
                     'group_id'   => [
                         'type' => 'keyword',
                     ],
+                    'shop_id'         => [
+                        'type' => 'keyword',
+                    ],
                     'organisation_id'   => [
                         'type' => 'keyword',
                     ],
                     'website_id'         => [
+                        'type' => 'keyword',
+                    ],
+                    'webpage_id'         => [
                         'type' => 'keyword',
                     ],
                     'image_id'         => [
