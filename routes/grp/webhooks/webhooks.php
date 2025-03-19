@@ -13,11 +13,13 @@ use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
+use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
 });
 
+Route::post('shopify-user/app-uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('webhooks.shopify.app-uninstalled');
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {
         Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');

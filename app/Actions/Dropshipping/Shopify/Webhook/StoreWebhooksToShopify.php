@@ -8,11 +8,14 @@
 
 namespace App\Actions\Dropshipping\Shopify\Webhook;
 
+use App\Actions\Dropshipping\ShopifyUser\RegisterCustomerFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Console\Command;
+use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Route;
@@ -28,7 +31,7 @@ class StoreWebhooksToShopify extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser)
+    public function handle(ShopifyUser $shopifyUser, ?Fulfilment $fulfilment)
     {
         $webhooks     = [];
         $webhookTypes = [];
@@ -55,7 +58,7 @@ class StoreWebhooksToShopify extends OrgAction
             ];
         }
 
-        DB::transaction(function () use ($webhooks, $shopifyUser) {
+        DB::transaction(function () use ($webhooks, $shopifyUser, $fulfilment) {
             DeleteWebhooksFromShopify::run($shopifyUser);
 
             $webhooksData = [];
@@ -67,6 +70,11 @@ class StoreWebhooksToShopify extends OrgAction
                 }
             }
 
+            $fulfilmentCustomer = $shopifyUser?->customer?->fulfilmentCustomer;
+            if (!$fulfilmentCustomer && $fulfilment) {
+                RegisterCustomerFromShopify::run($shopifyUser, $fulfilment);
+            }
+
             $this->update($shopifyUser, [
                 'settings' => [
                     'webhooks' => $webhooksData
@@ -75,15 +83,10 @@ class StoreWebhooksToShopify extends OrgAction
         });
     }
 
-    public function asController(ShopifyUser $shopifyUser)
+    public function asController(ShopifyUser $shopifyUser, ActionRequest $request)
     {
-        $this->handle($shopifyUser);
-    }
+        $shop = Shop::find($request->input('shop'));
 
-    public function asCommand(Command $command)
-    {
-        $shopifyUser = ShopifyUser::where('name', $command->argument('shopify'))->firstOrFail();
-
-        $this->handle($shopifyUser);
+        $this->handle($shopifyUser, $shop->fulfilment);
     }
 }

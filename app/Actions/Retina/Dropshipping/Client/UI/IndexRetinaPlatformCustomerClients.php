@@ -30,9 +30,14 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaPlatformCustomerClients extends RetinaAction
 {
     private Customer|ShopifyUser|TiktokUser $parent;
+    private Platform $platform;
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
@@ -49,7 +54,22 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         return $this->handle($this->customer);
     }
 
-    public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
+    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+
+        $this->platform = $platform;
+        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
+            $this->parent = $this->customer->shopifyUser;
+        } else {
+            $this->parent = $this->customer->tiktokUser;
+        }
+
+        return $this->handle($this->customer);
+    }
+
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -64,7 +84,9 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         }
 
         $queryBuilder = QueryBuilder::for(PlatformHasClient::class);
-        $queryBuilder->where('platform_has_clients.customer_id', $parent->id);
+        $queryBuilder->where('platform_has_clients.customer_id', $customer->id);
+        $queryBuilder->where('platform_has_clients.userable_type', $this->parent->getMorphClass());
+        $queryBuilder->where('platform_has_clients.userable_id', $this->parent->id);
 
         /*
         foreach ($this->elementGroups as $key => $elementGroup) {
@@ -89,7 +111,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'customer_clients.ulid',
                 'customer_clients.created_at'
             ])
-            ->allowedSorts(['customer_clients.reference', 'customer_clients.name', 'customer_clients.created_at'])
+            ->allowedSorts(['reference', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -146,10 +168,20 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('customer client')
         ];
-        $afterTitle = [
 
-            'label' => __('Clients')
-        ];
+        if ($this->parent instanceof TiktokUser) {
+            $afterTitle = [
+                'label' => __('Tiktok Clients')
+            ];
+        } elseif ($this->parent instanceof ShopifyUser) {
+            $afterTitle = [
+                'label' => __('Shopify Clients')
+            ];
+        } else {
+            $afterTitle = [
+                'label' => __('Clients')
+            ];
+        }
 
 
         return Inertia::render(
@@ -166,15 +198,20 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New Client'),
-                            'label'   => __('New Client'),
-                            'route'   => [
-                                'name'       => 'retina.dropshipping.client.create',
+                        match (class_basename($this->parent)) {
+                            'ShopifyUser' => [
+                                'type'    => 'button',
+                                'style'   => 'create',
+                                'tooltip' => __('Fetch Client'),
+                                'label'   => __('Fetch Client'),
+                                'route'   => [
+                                    'name'       => 'pupil.dropshipping.platforms.client.fetch',
+                                    'parameters' => [
+                                        'platform' => $this->platform->slug
+                                    ]
+                                ]
                             ]
-                        ],
+                        },
                     ],
 
                 ],

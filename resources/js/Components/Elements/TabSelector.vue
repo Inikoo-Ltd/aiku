@@ -19,6 +19,7 @@ interface OptionRadio {
 const props = withDefaults(defineProps<{
     optionRadio: OptionRadio[]
     radioValue: string[]
+    disabled: boolean
     updateRoute?: routeType
     minimal?: number  // How much value minimal selected
 }>(), {
@@ -91,7 +92,7 @@ const onClickRadio = async (value: string) => {
     <div class="grid md:grid-cols-2 gap-y-2 gap-x-1 sm:gap-x-2">
         <button v-for="radio in optionRadio" @click.prevent="(e) => onClickRadio(radio.value)"
             class="hover:bg-slate-400/20 text-xs w-full sm:text-sm flex flex-auto items-center text-left gap-x-1.5 sm:gap-x-2 rounded-lg px-2 sm:px-3 py-2 select-none cursor-pointer border disabled:bg-gray-300 disabled:cursor-default"
-            :disabled="radioLoading[radio.value]">
+            :disabled="radioLoading[radio.value] || disabled">
             <FontAwesomeIcon v-if="radioLoading[radio.value]" icon='fad fa-spinner-third'
                 class='animate-spin text-gray-700' fixed-width aria-hidden='true' />
             <FontAwesomeIcon v-else-if="radioValue.includes(radio.value)" icon='fas fa-check-circle'
