@@ -75,7 +75,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::patch('address/update', UpdateRetinaPalletReturnDeliveryAddress::class)->name('address.update');
     Route::delete('address/delete', DeleteRetinaPalletReturnAddress::class)->name('address.delete');
 
-    Route::post('stored-item-upload', ImportRetinaPalletReturnItem::class)->name('stored-item.upload');
+    Route::post('pallet-return-item-upload', ImportRetinaPalletReturnItem::class)->name('pallet-return-item.upload');
     Route::post('stored-item', StoreRetinaStoredItemsToReturn::class)->name('stored_item.store');
     
     Route::post('pallet', AttachRetinaPalletsToReturn::class)->name('pallet.store'); //No longer used (free to delete) but idk

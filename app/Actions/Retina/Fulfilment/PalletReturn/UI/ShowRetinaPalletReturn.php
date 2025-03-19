@@ -244,7 +244,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     ],
                     'route'           => [
                         'upload'   => [
-                            'name'       => 'retina.models.pallet-return.stored-item.upload',
+                            'name'       => 'retina.models.pallet-return.pallet-return-item.upload',
                             'parameters' => [
                                 'palletReturn' => $palletReturn->id
                             ]
