@@ -133,7 +133,35 @@ return [
                         'type' => 'text',
                     ],
                 ],
-            ]
+            ],
+            'web_search' => [
+                'properties' => [
+                    'group_id'   => [
+                        'type' => 'keyword',
+                    ],
+                    'organisation_id'   => [
+                        'type' => 'keyword',
+                    ],
+                    'website_id'         => [
+                        'type' => 'keyword',
+                    ],
+                    'image_id'         => [
+                        'type' => 'keyword',
+                    ],
+                    'sections'     => [
+                        'type' => 'keyword',
+                    ],
+                    'haystack_tier_1'       => [
+                        'type' => 'text',
+                    ],
+                    'haystack_tier_2' => [
+                        'type' => 'text',
+                    ],
+                    'haystack_tier_3' => [
+                        'type' => 'text',
+                    ],
+                ],
+            ],
         ]
     ]
 ];
