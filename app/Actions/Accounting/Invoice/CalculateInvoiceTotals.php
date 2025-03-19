@@ -24,8 +24,8 @@ class CalculateInvoiceTotals extends OrgAction
         $taxRate = $invoice->taxCategory->rate;
 
 
-        $rentalNet    = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space'])->sum('net_amount');
-        $rentalGross  = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space'])->sum('gross_amount');
+        $rentalNet    = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('net_amount');
+        $rentalGross  = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('gross_amount');
         $goodsNet     = $transactions->where('model_type', 'Product')->sum('net_amount');
         $goodsGross   = $transactions->where('model_type', 'Product')->sum('gross_amount');
         $serviceNet   = $transactions->where('model_type', 'Service')->sum('net_amount');
