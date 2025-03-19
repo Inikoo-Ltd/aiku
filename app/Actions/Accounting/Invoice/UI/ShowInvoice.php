@@ -158,6 +158,7 @@ class ShowInvoice extends OrgAction
             'invoice_pay' => [
                 'invoice_slug'  => $invoice->slug,
                 'invoice_id'     => $invoice->id,
+                'invoice_reference'     => $invoice->reference,
                 'routes'         => [
                     'fetch_payment_accounts' => [
                         'name'       => 'grp.json.shop.payment-accounts',

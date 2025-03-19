@@ -283,7 +283,7 @@ const generateRefundRoute = (refundSlug: string) => {
         </BoxStatPallet>
 
         <!-- Section: Detail (2nd box) -->
-        <BoxStatPallet class="py-2 px-3">
+        <BoxStatPallet class="col-span-2 py-2 px-3">
             <div class="mt-1">
                 <div v-tooltip="'Recurring bill'"
                     class="w-fit flex items-center flex-none gap-x-2">
@@ -332,7 +332,7 @@ const generateRefundRoute = (refundSlug: string) => {
         </BoxStatPallet>
 
         <!-- Section: Order Summary -->
-        <BoxStatPallet class="col-start-3 col-span-2 py-2 px-3">
+        <BoxStatPallet class="py-2 px-3">
             <OrderSummary :order_summary :currency_code="invoice.currency_code" />
         </BoxStatPallet>
 
