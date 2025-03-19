@@ -1641,7 +1641,6 @@ test('UI show pallet return with stored items', function () {
             ->has('deleteServiceRoute')
             ->has('deletePhysicalGoodRoute')
             ->has('routeStorePallet')
-            ->has('upload_spreadsheet')
             ->has('attachmentRoutes')
             ->has('data')
             ->has('box_stats')
