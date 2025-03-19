@@ -22,6 +22,7 @@ use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
@@ -149,15 +150,16 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        $totalRefund = $invoice->refunds->sum('net_amount');
+        $totalRefund = $invoice->refunds->where('in_progress', false)->sum('total_amount');
         $invoicePayBox = [
             'invoice_pay' => [
-                'currency_code'     => $invoice->currency_code,
+                'currency_code'     => $invoice->currency->code,
                 'total_invoice'     => $invoice->total_amount,
                 'total_refunds'     => $totalRefund,
                 'total_balance'     => $invoice->total_amount - $totalRefund,
                 'total_paid_in'     => $invoice->payment_amount,
-                'total_paid_out'    => $invoice->refunds->where('in_progress', false)->pluck('net_amount')->toArray(),
+                'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_progress', false)),
+                'total_need_to_refund' => $totalRefund - $invoice->refunds->sum('payment_amount'),
                 'total_need_to_pay' => $invoice->total_amount - $invoice->payment_amount,
             ],
         ];
@@ -242,7 +244,7 @@ class ShowInvoice extends OrgAction
                     ]
                 ],
                 'box_stats'      => $this->getBoxStats($invoice),
-
+                'list_refunds' => RefundResource::collection($invoice->refunds),
                 'invoice' => InvoiceResource::make($invoice),
                 'outbox'  => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,

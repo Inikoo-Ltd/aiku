@@ -319,7 +319,7 @@ watch(paymentData, () => {
 
     </BoxStatPallet>
 
-    <!-- Section: Detail -->
+    <!-- Section: Detail (2nd box) -->
     <BoxStatPallet class="py-2 px-3">
       <div class="mt-1">
 
