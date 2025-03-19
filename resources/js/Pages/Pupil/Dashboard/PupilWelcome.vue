@@ -15,6 +15,7 @@ declare global {
 
 const props = defineProps<{
     user: {}
+    data: {}
     shop: string
     shopUrl: string
     showIntro: boolean
@@ -30,6 +31,6 @@ const props = defineProps<{
 
 <template>
     <Intro v-if="props.showIntro" :shops :routes/>
-    
-    <WelcomeShop v-else-if="props.shop" :shop :shopUrl />
+
+    <WelcomeShop v-else-if="props.shop" :shop :shopUrl :data />
 </template>

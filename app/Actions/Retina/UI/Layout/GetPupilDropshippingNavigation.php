@@ -38,20 +38,6 @@ class GetPupilDropshippingNavigation
             $groupNavigation['dashboard'] = [
                 'label' => __('Dashboard'),
                 'icon' => ['fal', 'fa-tachometer-alt'],
-                'root' => 'pupil.dashboard.show',
-                'route' => [
-                    'name' => 'pupil.dashboard.show'
-                ],
-                'topMenu' => [
-
-                ]
-            ];
-
-            $groupNavigation = array_merge($groupNavigation, GetPupilDropshippingPlatformNavigation::run($shopifyUser, Platform::where('slug', PlatformTypeEnum::SHOPIFY->value)->first()));
-
-            $groupNavigation['go_to_retina'] = [
-                'label' => __($shopifyUser->customer?->shop?->name),
-                'icon' => ['fal', 'fa-tachometer-alt'],
                 'root' => 'pupil.home',
                 'route' => [
                     'name' => 'pupil.home'
@@ -60,6 +46,8 @@ class GetPupilDropshippingNavigation
 
                 ]
             ];
+
+            $groupNavigation = array_merge($groupNavigation, GetPupilDropshippingPlatformNavigation::run($shopifyUser, Platform::where('slug', PlatformTypeEnum::SHOPIFY->value)->first()));
         }
 
         return $groupNavigation;

@@ -10,6 +10,8 @@
 
 namespace App\Actions\Pupil\Dashboard;
 
+use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
+use App\Actions\Retina\UI\Dashboard\GetRetinaFulfilmentHomeData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
@@ -26,6 +28,7 @@ class ShowPupilDashboard
 
     public function asController(ActionRequest $request): Response
     {
+        $additionalProps = [];
         $routes = [];
         /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $request->user('pupil');
@@ -60,13 +63,21 @@ class ShowPupilDashboard
 
         if ($shopifyUser->customer) {
             $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();
+
+            $additionalProps = [
+                'data'       => match ($shopifyUser?->customer->shop->type) {
+                    ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($shopifyUser?->customer?->fulfilmentCustomer, $request),
+                    ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($shopifyUser?->customer, $request),
+                    default => []
+                },
+            ];
         }
 
         $render_page = null;
 
         if (!Arr::get($shopifyUser?->settings, 'webhooks')) {
             $render_page = 'Intro';
-        } else if ($shopifyUser?->customer?->shop?->name) {
+        } elseif ($shopifyUser?->customer?->shop?->name) {
             $render_page = 'WelcomeShop';
         } else {
             $render_page = 'Dashboard/PupilWelcome';
@@ -83,7 +94,8 @@ class ShowPupilDashboard
                     'name' => $shop->name
                 ];
             }),
-            ...$routes
+            ...$routes,
+            ...$additionalProps
         ]);
     }
 

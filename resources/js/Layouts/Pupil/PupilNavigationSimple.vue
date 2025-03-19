@@ -2,7 +2,7 @@
 import { useLayoutStore } from "@/Stores/retinaLayout";
 import { Navigation } from "@/types/Navigation";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faRoute } from "@fal";
+import {faMoneyBillWave, faRoute} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link } from "@inertiajs/vue3";
 import { capitalize } from "@/Composables/capitalize";
@@ -12,7 +12,7 @@ import PupilTopBarSubsections from "@/Layouts/Pupil/PupilTopBarSubsections.vue";
 import { faTachometerAlt, faFileInvoiceDollar, faHandHoldingBox, faPallet } from "@fal";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faTachometerAlt, faFileInvoiceDollar, faRoute, faPallet, faHandHoldingBox);
+library.add(faTachometerAlt, faFileInvoiceDollar, faRoute, faPallet, faHandHoldingBox, faMoneyBillWave);
 
 const props = defineProps<{
     navKey: string | number  // shops_navigation | warehouses_navigation

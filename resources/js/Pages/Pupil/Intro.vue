@@ -26,6 +26,9 @@ const onClickGetStarted = (id: number) => {
             Authorization: `Bearer ${window.sessionToken}`
         },
         preserveState: true,
+        onSuccess: () => {
+          window.location.reload()
+        },
         onError: (error) => {
             console.error('error get started: ', error)
         }
@@ -38,7 +41,7 @@ const onClickGetStarted = (id: number) => {
         <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
             {{ trans(`Let's get started.`) }}
         </h2>
-        
+
         <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
             It's looks like this is the first time you integrate Shopify, let's have a look what you can do.
         </p>

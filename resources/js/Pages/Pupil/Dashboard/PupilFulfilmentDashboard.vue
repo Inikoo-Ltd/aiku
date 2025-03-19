@@ -41,6 +41,7 @@ import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 library.add(faWallet, faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faLongArrowRight, faCheck)
 
 const props = defineProps<{
+    shop: string,
     data: {
         addresses: AddressManagement
         address_update_route: routeType
@@ -111,8 +112,7 @@ const props = defineProps<{
             shipments_per_week: string
         },
         approveRoute: routeType
-    },
-    tab: string
+    }
 }>()
 // Mendapatkan data customer dari props
 const customer = usePage().props?.layout?.customer;
@@ -134,18 +134,13 @@ const optionRadio = [
             value: 'dropshipping',
             label: trans('Dropshipping')
         },*/
-    {
-        value: 'space_rental',
-        label: trans('Space (Parking)')
-    },
 ]
 
 const isLoading = ref<string | boolean>(false)
 const tabs = {
     "pallets_storage": true,
     "items_storage": true,
-    "dropshipping": false,
-    "space_rental": true
+    "dropshipping": false
 }
 const radioValue = ref<string[]>(Object.keys(props?.data?.fulfilment_customer?.radioTabs || tabs).filter(key => props?.data?.fulfilment_customer?.radioTabs[key] || tabs[key]))
 const isLoadingButtonRentalAgreement = ref(false)
@@ -154,11 +149,11 @@ const isLoadingButtonRentalAgreement = ref(false)
 
 <template>
   <div class="p-8 pb-3 text-4xl font-bold">
-    Welcome, {{ customer?.contact_name }}!
+    Welcome, {{ shop }}!
   </div>
      <!-- Section: Radiobox, Recurring bills balance, Rental agreement-->
-     <div class="px-8 grid max-w-2xl grid-cols-1 gap-x-2 gap-y-8 lg:max-w-7xl lg:grid-cols-3 pt-4">
-     <div v-if="data?.status == 'approved'" class="w-full max-w-lg space-y-4 justify-self-end">
+     <div class="px-8 max-w-2xl gap-x-2 gap-y-8 lg:max-w-7xl pt-4">
+     <div v-if="data?.status == 'approved'" class="w-full max-w-lg space-y-4">
         <div v-if="data?.balance?.current > 0"
             class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
             <div class="w-full flex justify-between items-center">
@@ -190,7 +185,7 @@ const isLoadingButtonRentalAgreement = ref(false)
             </div>
         </div>
 
-        <TabSelector :optionRadio="optionRadio" :radioValue="radioValue" :updateRoute="data.updateRoute" />
+        <TabSelector :optionRadio="optionRadio" :radioValue="radioValue" :updateRoute="data.updateRoute" :disabled="true" />
 
         <div class="border-t border-gray-200 pt-4 w-full max-w-full">
             <!-- Section: Recurring Bills -->
