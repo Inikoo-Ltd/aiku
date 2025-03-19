@@ -181,9 +181,6 @@ class ShowInvoice extends OrgAction
                 'total_paid_out'    => $refunds_pay_out,
                 'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('total_amount') : 0,
                 'total_need_to_pay' => $ir_total + $invoice->payment_amount + $refunds_pay_out,
-                'total_paid_out'    => RefundResource::collection($invoice->refunds->where('in_process', false)),
-                'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('payment_amount') : 0,
-                'total_need_to_pay' => $invoice->total_amount - $invoice->payment_amount,
             ],
         ];
 
