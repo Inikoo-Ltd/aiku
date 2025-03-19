@@ -261,7 +261,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 							type="tertiary"
 							icon="fal fa-plus"
 							:xdisabled="get(data, ['quantity_selected'], 0) < 1"
-							v-tooltip="get(data, ['quantity_selected'], 0) < 1 ? trans('Add quantity to select') : false"
+							:xxv-tooltip="get(data, ['quantity_selected'], 0) < 1 ? trans('Add quantity to select') : false"
 							:loading="isLoadingAttach.includes(data.pallet_id)"
 							:label="trans('Select')"
 						/>
