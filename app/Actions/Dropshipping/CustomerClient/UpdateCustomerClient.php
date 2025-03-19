@@ -13,6 +13,7 @@ use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithModelAddressActions;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Rules\IUnique;
@@ -25,33 +26,39 @@ class UpdateCustomerClient extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-
+    use WithModelAddressActions;
 
     private CustomerClient $customerClient;
 
     public function handle(CustomerClient $customerClient, array $modelData): CustomerClient
     {
+        $addressChange = [];
         if (Arr::has($modelData, 'address')) {
-            $AddressData = Arr::get($modelData, 'address');
-            Arr::forget($modelData, 'address');
+            $AddressData = Arr::pull($modelData, 'address');
 
-            UpdateAddress::run($customerClient->address, $AddressData);
-            $customerClient->updateQuietly(
-                [
-                    'location' => $customerClient->address->getLocation()
-                ]
-            );
+            if ($customerClient->address) {
+                $address = UpdateAddress::run($customerClient->address, $AddressData);
+                data_set($modelData, 'location', $address->getLocation());
+
+                $addressChange = $address->getChanges();
+            } else {
+                $this->addAddressToModelFromArray(
+                    model: $customerClient,
+                    addressData: $AddressData,
+                    scope: 'delivery',
+                    canShip: true
+                );
+                $addressChange = ['new' => true];
+            }
         }
 
         $customerClient = $this->update($customerClient, $modelData, ['data']);
 
         $changes = Arr::except($customerClient->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (count($changes) > 0) {
+        if (count($changes) > 0 or count($addressChange) > 0) {
             CustomerClientRecordSearch::dispatch($customerClient);
         }
-
-
 
         return $customerClient;
     }
@@ -115,8 +122,6 @@ class UpdateCustomerClient extends OrgAction
 
     public function action(CustomerClient $customerClient, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): CustomerClient
     {
-
-
         $this->strict = $strict;
         if (!$audit) {
             CustomerClient::disableAuditing();
@@ -124,8 +129,6 @@ class UpdateCustomerClient extends OrgAction
         $this->customerClient = $customerClient;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
-
-
 
 
         $this->initialisationFromShop($customerClient->shop, $modelData);
