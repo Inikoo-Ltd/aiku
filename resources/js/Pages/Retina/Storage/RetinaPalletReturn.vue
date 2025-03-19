@@ -578,7 +578,7 @@ const openModalAddPallet = ref(false)
         :options="props.option_attach_file"
     />
     
-    <Modal :isOpen="openModalAddPallet" @onClose="openModalAddPallet = false">
+    <Modal :isOpen="openModalAddPallet" @onClose="openModalAddPallet = false" width="w-full max-w-4xl">
         <ModalAddPalletReturn
             :fetchRoute="pallets_route"
             :palletReturn="data?.data"
