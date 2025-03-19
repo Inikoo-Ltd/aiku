@@ -46,13 +46,15 @@ class SetInvoicePaymentState extends OrgAction
             }
         }
 
-        $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
-        if ($cutOffDate) {
-            $cutOffDate = Carbon::parse($cutOffDate);
-        }
+        if (!$invoice->invoice_id) {
+            $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
+            if ($cutOffDate) {
+                $cutOffDate = Carbon::parse($cutOffDate);
+            }
 
-        if ($payStatus == InvoicePayStatusEnum::UNPAID && $cutOffDate && $invoice->created_at->lt($cutOffDate)) {
-            $payStatus = InvoicePayStatusEnum::UNKNOWN;
+            if ($payStatus == InvoicePayStatusEnum::UNPAID && $cutOffDate && $invoice->created_at->lt($cutOffDate)) {
+                $payStatus = InvoicePayStatusEnum::UNKNOWN;
+            }
         }
 
         $invoice->update(

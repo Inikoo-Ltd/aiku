@@ -25,14 +25,28 @@ class RefundToCredit extends OrgAction
      */
     public function handle(Invoice $refund, array $modelData): Invoice
     {
-        // $refund->update([
-        //     'pay_status' => InvoicePayStatusEnum::PAID,
 
-        // ]);
-        StoreCreditTransaction::make()->action($refund->customer, [
+        $creditTransaction = StoreCreditTransaction::make()->action($refund->customer, [
             'amount' => -abs(Arr::get($modelData, 'amount')),
             'date'  => now(),
             'type' => CreditTransactionTypeEnum::MONEY_BACK
+        ]);
+
+        $creditTransaction->refresh();
+
+        $payStatus             = InvoicePayStatusEnum::UNPAID;
+        $paymentAt             = null;
+        $runningPaymentsAmount = $creditTransaction->running_amount;
+
+        if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $refund->total_amount) {
+            $payStatus = InvoicePayStatusEnum::PAID;
+            $paymentAt = $creditTransaction->date;
+        }
+
+        $refund->update([
+            'pay_status' => $payStatus,
+            'paid_at' => $paymentAt,
+            'payment_amount' => $runningPaymentsAmount
         ]);
 
         return $refund;

@@ -11,6 +11,8 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
@@ -27,10 +29,11 @@ class RefundToPaymentAccount extends OrgAction
     {
         $payment = StorePayment::make()->action($refund->customer, $paymentAccount, [
             'amount' => -abs(Arr::get($modelData, 'amount')),
+            'status' => PaymentStatusEnum::SUCCESS->value,
+            'state' => PaymentStateEnum::COMPLETED->value,
         ]);
 
         AttachPaymentToInvoice::make()->action($refund, $payment, []);
-
 
         return $payment;
     }
