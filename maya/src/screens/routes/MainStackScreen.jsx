@@ -18,6 +18,7 @@ import ShowOrgStock from '@/src/screens/Fulfilment/OrgStock/ShowOrgStock';
 import EditProfile from '@/src/screens/EditProfile';
 import GlobalScanner from '@/src/screens/GlobalScanner';
 import Scanner from '@/src/screens/Scanner';
+import AuditSku from '@/src/screens/Fulfilment/Pallet/AuditSku';
 import DrawerScreens from '@/src/screens/routes/drawerScreens';
 import {AuthContext} from '@/src/components/Context/context';
 
@@ -160,6 +161,14 @@ const HomeStack = () => {
                 options={{
                     headerShown: true,
                     title: 'Edit Profile',
+                }}
+            />
+             <Stack.Screen
+                name='audit-sku'
+                component={AuditSku}
+                options={{
+                    headerShown: true,
+                    title: 'Audit SKU',
                 }}
             />
         </Stack.Navigator>
