@@ -55,11 +55,11 @@ class RefundToPaymentAccount extends OrgAction
                 ]);
                 AttachPaymentToInvoice::make()->action($refund, $payment, []);
 
-                $totalRefund -= $amountPayPerRefund;
-                $totalToPay -= $amountPayPerRefund;
+                $totalRefund -= $amountPayPerRefund; // -50 become -25
+                $totalToPay -= $amountPayPerRefund; // -35 become -10
             }
 
-            return $payment ?? null; // Explicitly return null if no payment was made
+            return $payment ?? null;
         }
 
 
