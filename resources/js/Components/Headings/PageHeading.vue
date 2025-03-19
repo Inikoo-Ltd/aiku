@@ -101,7 +101,7 @@ const layout = inject('layout', layoutStructure)
             </div>
 
             <!-- Section: mini Tabs -->
-            <div v-if="data.meta?.length" class="asdzxc mb-2 block h-full">
+            <div v-if="data.meta?.length" class="mb-2 block h-full">
                 <div class="w-fit flex flex-col sm:mt-0 sm:flex-row items-end sm:flex-wrap sm:gap-x-0.5 sm:gap-y-0.5 text-gray-500 text-sm">
                     <template v-for="item in data.meta">
                         <slot :name="`tabs-${item.key}`" :data="item">
