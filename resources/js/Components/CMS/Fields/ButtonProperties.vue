@@ -14,7 +14,7 @@ import Link from '@/Components/CMS/Fields/Link.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faText } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 library.add(faText)
 
 interface ModelButtonProperties {

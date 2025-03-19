@@ -9,6 +9,7 @@
 namespace App\Imports\CRM;
 
 use App\Actions\CRM\Prospect\StoreProspect;
+use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Imports\WithImport;
 use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
@@ -35,33 +36,38 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
 
     public function storeModel($row, $uploadRecord): void
     {
+        $sanitizedData = $this->processExcelData([$row]);
+        $validatedData = array_intersect_key($sanitizedData, array_flip(array_keys($this->rules())));
 
-        $fields =
-            array_merge(
-                Arr::except(
-                    array_keys($this->rules()),
-                    []
-                ),
-                [
-                ]
-            );
+        $modelData = [
+            'company_name' => $validatedData['company'],
+            'contact_name' => $validatedData['contact_name'],
+            'email' => $validatedData['email'],
+            'phone' => $validatedData['telephone'],
+        ];
+
 
 
         try {
-            $modelData = $row->only($fields)->all();
-            data_set($modelData, 'phone', null, overwrite: false);
-            data_set($modelData, 'contact_website', null, overwrite: false);
+            $prospectKey = $validatedData['id_prospect_key'];
+            $existingProspect = null;
+            if (is_numeric($prospectKey)) {
+                $prospectKey = (int) $prospectKey;
+                $existingProspect = $this->scope->prospects()
+                ->where('id', $prospectKey)
+                ->first();
+            }
 
-            data_set($modelData, 'data.bulk_import', [
-                'id'   => $this->upload->id,
-                'type' => 'Upload',
-            ]);
+            $isNew = is_string($validatedData['id_prospect_key'])
+                && strtolower($validatedData['id_prospect_key']) === 'new';
 
-            StoreProspect::make()->action(
-                $this->scope,
-                $modelData,
-                1
-            );
+            if ($existingProspect) {
+                UpdateProspect::run($existingProspect, $modelData);
+            } elseif ($isNew) {
+                StoreProspect::run($this->scope, $modelData);
+            } else {
+                throw new Exception("Part key not found");
+            }
 
 
 
@@ -71,29 +77,46 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         }
     }
 
-    public function prepareForValidation($data)
+    // public function prepareForValidation($data)
+    // {
+
+    //     $tags = explode(',', Arr::get($data, 'tags'));
+
+    //     if ($tags[0] != '') {
+    //         $data['tags'] = $tags;
+    //     } else {
+    //         $data['tags'] = null;
+    //     }
+
+    //     return $data;
+    // }
+
+    protected function processExcelData($data)
     {
+        $mappedRow = [];
 
-        $tags = explode(',', Arr::get($data, 'tags'));
-
-        if ($tags[0] != '') {
-            $data['tags'] = $tags;
-        } else {
-            $data['tags'] = null;
+        foreach ($data as $row) {
+            foreach ($row as $key => $value) {
+                $mappedKey = str_replace([' ', ':', "'"], '_', strtolower($key));
+                $mappedRow[$mappedKey] = $value;
+            }
+            break;
         }
 
-        return $data;
+        return $mappedRow;
     }
 
 
 
     public function rules(): array
     {
-
-
         return [
+            'id_prospect_key' => [
+                'sometimes',
+                'nullable',
+            ],
+            'company'         => ['nullable', 'nullable', 'string', 'max:255'],
             'contact_name'    => ['nullable', 'nullable', 'string', 'max:255'],
-            'company_name'    => ['nullable', 'nullable', 'string', 'max:255'],
             'email'           => [
                 'present','nullable',
                 'email',
@@ -101,13 +124,13 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
 
 
             ],
-            'phone'           => [
+            'telephone'           => [
                 'nullable',
                 new Phone(),
             ],
-            'contact_website' => ['nullable'],
-            'tags'            => ['nullable', 'array'],
-            'tags.*'          => ['nullable', 'string'],
+            // 'contact_website' => ['nullable'],
+            // 'tags'            => ['nullable', 'array'],
+            // 'tags.*'          => ['nullable', 'string'],
         ];
     }
 }

@@ -50,7 +50,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
- * @property-read \App\Models\Ordering\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets

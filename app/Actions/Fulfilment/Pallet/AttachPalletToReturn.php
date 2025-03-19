@@ -9,9 +9,9 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\PalletReturn\AutoAssignServicesToPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydrateTransactions;
+use App\Actions\Fulfilment\PalletReturn\SetPalletReturnAutoServices;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -41,7 +41,7 @@ class AttachPalletToReturn extends OrgAction
 
         $palletReturn->refresh();
 
-        AutoAssignServicesToPalletReturn::run($palletReturn, $pallet);
+        $palletReturn = SetPalletReturnAutoServices::run($palletReturn);
         PalletReturnHydratePallets::run($palletReturn);
         PalletReturnHydrateTransactions::dispatch($palletReturn);
 

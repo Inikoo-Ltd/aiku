@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -101,6 +102,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
  * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
  * @property-read Group $group
+ * @property-read Collection<int, \App\Models\Fulfilment\PalletReturnItem> $items
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Fulfilment\Pallet> $pallets
@@ -257,6 +259,11 @@ class PalletReturn extends Model implements HasMedia
     public function shopifyFulfilment(): MorphOne
     {
         return $this->morphOne(ShopifyUserHasFulfilment::class, 'model');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(PalletReturnItem::class);
     }
 
 }

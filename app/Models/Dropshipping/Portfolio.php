@@ -8,6 +8,7 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\ShopifyUserHasProduct;
@@ -30,7 +31,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $customer_id
  * @property int|null $item_id
  * @property string|null $reference This is the reference that the customer uses to identify the product
- * @property string $type
+ * @property PortfolioTypeEnum $type
  * @property bool $status
  * @property string|null $last_added_at
  * @property string|null $last_removed_at
@@ -43,7 +44,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $source_id
  * @property string|null $item_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -64,6 +65,7 @@ class Portfolio extends Model implements Auditable
     use HasUniversalSearch;
 
     protected $casts = [
+        'type'                        => PortfolioTypeEnum::class,
         'data'                        => 'array',
         'settings'                    => 'array',
         'status'                      => 'boolean',

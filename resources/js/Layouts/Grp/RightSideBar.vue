@@ -21,16 +21,20 @@ library.add(faTimes, faPencil)
 const layout = useLayoutStore()
 
 onMounted(() => {
-    if (localStorage.getItem('rightSidebar')) {
-        // Read from local storage then store to Pinia
-        layout.rightSidebar = JSON.parse(localStorage.getItem('rightSidebar') || '')
+    if (typeof window !== "undefined") {
+        if (localStorage.getItem('rightSidebar')) {
+            // Read from local storage then store to Pinia
+            layout.rightSidebar = JSON.parse(localStorage.getItem('rightSidebar') || '')
+        }
     }
 })
 
 // Remove the active bar on Right Sidebar
 const onClickRemoveBar = (tabName: 'activeUsers') => {
     layout.rightSidebar[tabName].show = false
-    localStorage.setItem('rightSidebar', JSON.stringify(layout.rightSidebar))
+    if (typeof window !== "undefined") {
+        localStorage.setItem('rightSidebar', JSON.stringify(layout.rightSidebar))
+    }
 }
 
 </script>

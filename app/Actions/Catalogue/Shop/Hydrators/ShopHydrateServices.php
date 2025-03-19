@@ -33,7 +33,9 @@ class ShopHydrateServices
     public function handle(Shop $shop): void
     {
 
-        $stats         = [];
+        $stats         = [
+            'number_services'                   => Service::where('shop_id', $shop->id)->count(),
+        ];
 
         $stats = array_merge(
             $stats,

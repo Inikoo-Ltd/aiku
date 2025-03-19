@@ -24,7 +24,7 @@ class ShowRetinaRegister
     {
         $shop = $request->website->shop;
 
-        if($shop->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return Inertia::render(
                 'Auth/Register',
                 [
@@ -51,8 +51,8 @@ class ShowRetinaRegister
             ]
             );
         }
-        
-        
+
+
     }
 
 }

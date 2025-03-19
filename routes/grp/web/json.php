@@ -19,6 +19,7 @@ use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
+use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentPhysicalGoods;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
@@ -43,6 +44,7 @@ Route::get('fulfilment/{fulfilment}/invoice/{scope}/physical-goods', [GetFulfilm
 
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
 
+Route::get('fulfilment-customer/{fulfilmentCustomer}/storing-pallets', GetFulfilmentCustomerStoringPallets::class)->name('fulfilment-customer.storing-pallets.index');
 Route::get('fulfilment-customer/{fulfilmentCustomer}/audit/{storedItemAudit}/stored-items', GetPalletAuditStoredItems::class)->name('fulfilment-customer.audit.stored-items.index');
 
 Route::get('tags', GetTagOptions::class)->name('tags');

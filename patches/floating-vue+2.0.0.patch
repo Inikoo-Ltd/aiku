@@ -1,0 +1,18 @@
+diff --git a/node_modules/floating-vue/dist/floating-vue.mjs b/node_modules/floating-vue/dist/floating-vue.mjs
+index b60c630..c175918 100644
+--- a/node_modules/floating-vue/dist/floating-vue.mjs
++++ b/node_modules/floating-vue/dist/floating-vue.mjs
+@@ -1089,11 +1089,11 @@ const Q = /* @__PURE__ */ M(lt, [["render", gt]]), Z = {
+       default: void 0
+     },
+     container: {
+-      type: [String, Object, Element, Boolean],
++      type: [String, Object, Boolean],
+       default: void 0
+     },
+     boundary: {
+-      type: [String, Element],
++      type: [String],
+       default: void 0
+     },
+     strategy: {

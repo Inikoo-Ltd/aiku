@@ -62,10 +62,6 @@ class ShowWarehousePalletReturn extends OrgAction
         $navigation = PalletReturnTabsEnum::navigation($palletReturn);
 
 
-
-
-
-
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
                 'label' => '('.__("Customer's SKUs").')'

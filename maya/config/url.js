@@ -48,6 +48,9 @@ export default {
 	'set-pallet-picked' : { url : "maya/action/pallet-return-item/pallet/{}/pick"},
 	'set-pallet-not-picked' : { url : "maya/action/pallet-return-item/pallet/{}/not-picked"},
 	'undo-pallet-picked' :  { url : "maya/action/pallet-return-item/pallet/{}/undo-pick"},
+	//audit
+	'create-pallet-audit' :  { url : "maya/org/{}/warehouses/{}/inventory/pallets/{}/stored-item-audits/create"},
+	'get-pallet-audit' :  { url : "maya/org/{}/warehouses/{}/inventory/pallets/{}/stored-item-audit/{}"},
 
 
 	//return

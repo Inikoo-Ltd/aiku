@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
@@ -28,16 +29,24 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexRetinaDropshippingPortfolio extends RetinaAction
 {
     protected FulfilmentCustomer|Customer $parent;
-    protected ShopifyUser $shopifyUser;
+    protected ShopifyUser|Customer $scope;
 
-    public function handle(ShopifyUser $shopifyUser, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|Customer $scope, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
 
-        $query->where('customer_id', $shopifyUser->customer_id);
+        if ($scope instanceof ShopifyUser) {
+            $customer = $scope->customer;
+            $query->where('customer_id', $customer->id);
+            $query->where('type', PortfolioTypeEnum::SHOPIFY);
+        } elseif ($scope instanceof Customer) {
+            $customer = $scope;
+            $query->where('customer_id', $scope->id);
+        }
+
         $query->with(['item']);
 
-        if ($fulfilmentCustomer = $shopifyUser->customer->fulfilmentCustomer) {
+        if ($fulfilmentCustomer = $customer->fulfilmentCustomer) {
             $this->parent = $fulfilmentCustomer;
 
             $query->where('item_type', class_basename(StoredItem::class));
@@ -49,23 +58,27 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $shopifyUser = $request->user()->customer->shopifyUser;
-        $this->shopifyUser = $shopifyUser;
+        $customer = $request->user()->customer;
+        $this->scope = $customer;
 
-        if ($fulfilmentCustomer = $shopifyUser->customer->fulfilmentCustomer) {
+        if ($fulfilmentCustomer = $customer->fulfilmentCustomer) {
             $this->parent = $fulfilmentCustomer;
         } else {
-            $this->parent = $shopifyUser->customer;
+            $this->parent = $customer;
         }
 
         $this->initialisation($request);
 
-        return $this->handle($shopifyUser);
+        return $this->handle($customer);
     }
 
     public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
@@ -84,6 +97,14 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
         return $this->handle($shopifyUser);
     }
 
+    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+
+        return $this->handle($this->shopifyUser);
+    }
+
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
         return Inertia::render(
@@ -100,7 +121,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
-                                'name' => 'retina.models.dropshipping.shopify_user.product.sync',
+                                'name' => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
                                     'shopifyUser' => $this->shopifyUser->id
                                 ]

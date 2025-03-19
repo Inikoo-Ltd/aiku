@@ -69,7 +69,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property-read \App\Models\SupplyChain\Agent|null $agent
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SupplyChain\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \App\Models\SupplyChain\HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read Collection<int, \App\Models\SupplyChain\HistoricSupplierProduct> $historicSupplierProducts

@@ -8,7 +8,7 @@
  *
 */
 
-use App\Actions\Helpers\AskLlama\AskLlama;
+use App\Actions\Helpers\AI\AskBot;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', AskLlama::class)->name('index');
+Route::get('/', AskBot::class)->name('index');

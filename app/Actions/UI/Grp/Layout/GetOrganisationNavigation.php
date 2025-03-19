@@ -46,9 +46,9 @@ class GetOrganisationNavigation
 
         $shops_navigation = [];
         foreach ($user->authorisedShops->where('organisation_id', $organisation->id) as $shop) {
-
             $shops_navigation[$shop->slug] = [
                 'type'          => $shop->type,
+                'state'         => $shop->state,
                 'subNavigation' => GetShopNavigation::run($shop, $user)
             ];
         }

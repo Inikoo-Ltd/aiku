@@ -55,10 +55,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $historic_source_id
  * @property ServiceEditTypeEnum|null $edit_type
  * @property bool $is_public
+ * @property bool $is_pallet_handling
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
- * @property-read \App\Models\Billables\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets

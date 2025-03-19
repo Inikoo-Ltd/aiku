@@ -69,7 +69,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $basket_reminder_3_unsubscribed_origin_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms query()

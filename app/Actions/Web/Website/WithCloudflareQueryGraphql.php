@@ -601,7 +601,7 @@ trait WithCloudflareQueryGraphql
     {
         $apiToken = Arr::get($modelData, "apiToken");
 
-        $urlCLoudflareGraphql = "https://api.cloudflare.com/client/v4/graphql";
+        $urlCloudflareGraphql = "https://api.cloudflare.com/client/v4/graphql";
         if ($try == 0) {
             return [];
         }
@@ -610,7 +610,7 @@ trait WithCloudflareQueryGraphql
             $response = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $apiToken",
                 'Content-Type' => 'application/json',
-            ])->post($urlCLoudflareGraphql, [
+            ])->post($urlCloudflareGraphql, [
                 'query' => $query,
             ]);
         } catch (Exception $e) {

@@ -11,7 +11,7 @@ namespace App\Actions\Fulfilment\Pallet;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
-use App\Actions\Fulfilment\PalletDelivery\AutoAssignServicesToPalletDelivery;
+use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
 use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDeliveryStateFromItems;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
@@ -71,11 +71,11 @@ class UpdatePallet extends OrgAction
         }
 
         if ($originalType !== $pallet->type) {
-            AutoAssignServicesToPalletDelivery::run($pallet->palletDelivery, $pallet, $originalType);
+            SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
         }
         PalletRecordSearch::dispatch($pallet);
 
-        return $pallet;
+        return $pallet->refresh();
     }
 
     public function authorize(ActionRequest $request): bool

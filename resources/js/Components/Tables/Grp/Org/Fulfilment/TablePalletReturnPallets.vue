@@ -18,7 +18,7 @@ import { inject, reactive, ref, onBeforeMount } from 'vue'
 import { trans } from "laravel-vue-i18n"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Popover from '@/Components/Popover.vue'
-import { debounce, isNull } from 'lodash'
+import { debounce, isNull } from 'lodash-es'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"

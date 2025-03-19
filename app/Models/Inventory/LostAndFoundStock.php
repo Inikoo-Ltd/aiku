@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property LostAndFoundOrgStockStateEnum $state
- * @property-read \App\Models\Inventory\TFactory|null $use_factory
  * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Inventory\LostAndFoundStockFactory factory($count = null, $state = [])
  * @method static Builder<static>|LostAndFoundStock newModelQuery()

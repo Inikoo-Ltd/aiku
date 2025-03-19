@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 07-03-2025-08h-46m
@@ -9,12 +10,9 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\CRM\Customer\RegisterCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Facades\Redirect;

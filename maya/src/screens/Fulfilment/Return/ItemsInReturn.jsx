@@ -67,44 +67,29 @@ const ItemsInReturn = ({navigation, route, onChangeState}) => {
     const {data, setData} = useReturn();
     const {id} = route.params;
     const _BaseList = useRef(null);
+    const [totalItems, setTotalItems] = useState(0);
+
+     useEffect(() => {
+        setTotalItems(
+          data.number_picked_items
+        );
+      }, [data]);
+
     return (
         <View style={globalStyles.container}>
             {data.state != 'dispatched' ? (
                 <SetStateButton
-                  /*   button1={{
-                        size: 'md',
-                        variant: 'outline',
-                        action: 'primary',
-                        style: {
-                            borderTopRightRadius: 0,
-                            borderBottomRightRadius: 0,
-                        },
-                        onPress: null,
-                        text: `To do : ${
-                            (data.type == 'pallet'
-                                ? data?.number_pallet_pick
-                                : data?.number_stored_items)
-                        } / ${
-                            (data.type == 'pallet'
-                                ? data?.number_pallets
-                                : data?.number_stored_items)
-                        }`,
-                    }} */
                     progress={{
-                        value: data.type == 'pallet'
-                        ? data?.number_pallet_pick
-                        : data?.number_stored_items,
+                        value: totalItems,
                         size: 'lg',
-                        total: data.number_pallets,
+                        total: data.number_ordered_items,
                         orientation: 'horizontal',
                       }}
                     button2={{
                         size: 'md',
                         action: 'primary',
-                        style: {
-                            borderTopLeftRadius: 0,
-                            borderBottomLeftRadius: 0,
-                        },
+                        variant: 'link',
+                        style: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
                         onPress: () =>
                             onChangeState(
                                 getFilteredActionsReturn(data.state).id,
@@ -214,6 +199,11 @@ const GroupItem = ({item: initialItem, navigation}) => {
                     useNativeDriver: true,
                 }).start();
 
+                setData(prevItem => ({
+                    ...prevItem,
+                    number_picked_items: prevItem.number_picked_items + parseInt(item.quantity_ordered)
+                }));
+
                 Toast.show({
                     type: ALERT_TYPE.SUCCESS,
                     title: 'Success',
@@ -241,6 +231,10 @@ const GroupItem = ({item: initialItem, navigation}) => {
             method: 'patch',
             args: [item.id],
             onSuccess: response => {
+                setData(prevItem => ({
+                    ...prevItem,
+                    number_picked_items: prevItem.number_picked_items - item.quantity_picked
+                }));
                 setItem(prevItem => ({
                     ...prevItem,
                     state: response.data.state,
@@ -248,6 +242,7 @@ const GroupItem = ({item: initialItem, navigation}) => {
                     quantity_picked: response.data.quantity_picked,
                 }));
                 setModalSetPicked(false);
+
                 Animated.spring(translateX, {
                     toValue: 0,
                     useNativeDriver: true,

@@ -38,6 +38,7 @@ class FetchAuroraPortfolio extends FetchAurora
         $this->parsedData['customer'] = $customer;
 
         $this->parsedData['portfolio'] = [
+            'shop_id'         => $customer->shop_id,
             'product_id'      => $product->id,
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Key'},
             'reference'       => $this->auroraModelData->{'Customer Portfolio Reference'},

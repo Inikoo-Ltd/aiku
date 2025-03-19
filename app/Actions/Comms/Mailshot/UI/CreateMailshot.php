@@ -78,7 +78,7 @@ class CreateMailshot extends OrgAction
                     'label'       => __('recipients'),
                     'required'    => true,
                     'options'     => [
-                        'query'                  => IndexProspects::run($parent),
+                        'query'                  => IndexProspects::run(parent:$parent, prefix: null, scope: 'all'),
                         'custom_prospects_query' => '',
                         'tags'                   => TagResource::collection(Tag::where('type', 'crm')->get()),
                     ],

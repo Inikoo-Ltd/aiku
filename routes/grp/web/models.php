@@ -78,7 +78,7 @@ use App\Actions\Fulfilment\Pallet\PickWholePalletInPalletReturn;
 use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\Pallet\SetPalletRental;
 use App\Actions\Fulfilment\Pallet\StoreMultiplePalletsFromDelivery;
-use App\Actions\Fulfilment\Pallet\StorePalletFromDelivery;
+use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\Fulfilment\Pallet\UndoBookedInPallet;
 use App\Actions\Fulfilment\Pallet\UndoNotReceivedPallet;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
@@ -195,10 +195,13 @@ use App\Actions\Web\Banner\UpdateBanner;
 use App\Actions\Web\Banner\UpdateBannerState;
 use App\Actions\Web\Banner\UpdateUnpublishedBannerSnapshot;
 use App\Actions\Web\Banner\UploadImagesToBanner;
+use App\Actions\Web\ModelHasWebBlocks\BulkUpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
+use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -399,7 +402,7 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
 
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class, )->name('pallet.upload');
     Route::post('pallet-upload-with-stored-items', ImportPalletsInPalletDeliveryWithStoredItems::class, )->name('pallet.upload.with-stored-items');
-    Route::post('pallet', StorePalletFromDelivery::class)->name('pallet.store');
+    Route::post('pallet', StorePalletCreatedInPalletDelivery::class)->name('pallet.store');
     Route::post('multiple-pallet', StoreMultiplePalletsFromDelivery::class)->name('multiple-pallets.store');
 
     Route::post('transaction', [StoreFulfilmentTransaction::class,'inPalletDelivery'])->name('transaction.store');
@@ -430,7 +433,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     //todo this new action
     Route::post('pallet-stored-item/{palletStoredItem:id}', AttachStoredItemToReturn::class)->name('stored_item.store')->withoutScopedBindings();
     Route::post('pallet-stored-item/pick/{palletStoredItem:id}', PickNewPalletReturnItem::class)->name('pallet_return_item.new_pick')->withoutScopedBindings();
-    Route::post('stored-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('stored-item.upload');
+    Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
     // This is wrong ImportPalletsInPalletDelivery is used when creating a pallet delivery
@@ -590,20 +593,26 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
-
-
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('publish', PublishWebpage::class)->name('publish');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
+    Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
 });
 
-Route::name('model_has_web_block.')->prefix('model-has-web-block/{modelHasWebBlocks:id}')->group(function () {
-    Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
-    Route::delete('', DeleteModelHasWebBlocks::class)->name('delete');
-    Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
+Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
+    Route::patch('', UpdateRedirect::class)->name('update');
+});
+
+Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
+    Route::patch('bulk', BulkUpdateModelHasWebBlocks::class)->name('bulk.update');
+    Route::prefix('{modelHasWebBlocks:id}')->group(function () {
+        Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
+        Route::delete('', DeleteModelHasWebBlocks::class)->name('delete');
+        Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
+    });
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');

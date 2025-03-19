@@ -5,14 +5,15 @@ const DeliveryContext = createContext();
 const deliveryReducer = (state, action) => {
   switch (action.type) {
     case 'SET_DATA':
-      console.log('Updated Data:', action.payload); // Debugging
-      return { 
-        ...state, 
-        data: state.data ? { ...state.data, ...action.payload } : action.payload 
-      }; // Menggabungkan data lama dengan yang baru
+        return {
+            ...state,
+            data: state.data
+                    ? {...state.data, ...action.payload}
+                    : action.payload,
+        };
     default:
-      return state;
-  }
+        return state;
+}
 };
 
 export const DeliveryProvider = ({ children }) => {
@@ -21,7 +22,16 @@ export const DeliveryProvider = ({ children }) => {
   return (
     <DeliveryContext.Provider value={{ 
       data: state.data, 
-      setData: (payload) => dispatch({ type: 'SET_DATA', payload }) 
+      setData: (updater) => {
+        if (typeof updater === 'function') {
+            dispatch({
+                type: 'SET_DATA',
+                payload: updater(state.data || {}),
+            });
+        } else {
+            dispatch({ type: 'SET_DATA', payload: updater });
+        }
+    },
     }}>
       {children}
     </DeliveryContext.Provider>

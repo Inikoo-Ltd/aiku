@@ -21,7 +21,7 @@ use App\Actions\Fulfilment\FulfilmentTransaction\UpdateFulfilmentTransaction;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\SetPalletRental;
-use App\Actions\Fulfilment\Pallet\StorePalletFromDelivery;
+use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAsBookedIn;
 use App\Actions\Fulfilment\PalletDelivery\StartBookingPalletDelivery;
@@ -156,7 +156,7 @@ test('create fulfilment shop', function () {
     $user = $this->adminGuest->getUser();
     $user->refresh();
 
-    expect($user->getAllPermissions()->count())->toBe(25)
+    expect($user->getAllPermissions()->count())->toBe(26)
         ->and($user->hasAllRoles(["fulfilment-shop-supervisor-{$shop->fulfilment->id}"]))->toBeTrue()
         ->and($user->hasAllRoles(["shop-admin-$shop->id"]))->toBeFalse()
         ->and($shop->fulfilment->number_warehouses)->toBe(1);
@@ -367,7 +367,7 @@ test('update rental', function (Rental $rental) {
     return $rental;
 })->depends('create rental product to fulfilment shop');
 
-test('create fulfilment customer', function (Fulfilment $fulfilment) {
+test('create 4th fulfilment customer', function (Fulfilment $fulfilment) {
     $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
         $fulfilment,
         [
@@ -407,7 +407,7 @@ test('create fulfilment customer', function (Fulfilment $fulfilment) {
     return $fulfilmentCustomer;
 })->depends('create fulfilment shop');
 
-test('create rental agreement', function (FulfilmentCustomer $fulfilmentCustomer) {
+test('create rental agreement for 4th customer', function (FulfilmentCustomer $fulfilmentCustomer) {
     $rentalAgreement = StoreRentalAgreement::make()->action(
         $fulfilmentCustomer,
         [
@@ -442,7 +442,7 @@ test('create rental agreement', function (FulfilmentCustomer $fulfilmentCustomer
         ->and($rentalAgreement->stats->number_rental_agreement_snapshots)->toBe(1);
 
     return $rentalAgreement;
-})->depends('create fulfilment customer');
+})->depends('create 4th fulfilment customer');
 
 
 test('setup recurring bill', function (RentalAgreement $rentalAgreement) {
@@ -458,7 +458,7 @@ test('setup recurring bill', function (RentalAgreement $rentalAgreement) {
         ->and($recurringBill->fulfilmentCustomer->current_recurring_bill_id)->toBe($recurringBill->id);
 
     return $recurringBill->fulfilmentCustomer;
-})->depends('create rental agreement');
+})->depends('create rental agreement for 4th customer');
 
 test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
 
@@ -472,13 +472,13 @@ test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
     expect($palletDelivery)->toBeInstanceOf(PalletDelivery::class);
 
     // Add Pallets and Stored Items and Transactions
-    $pallet = StorePalletFromDelivery::make()->action(
+    $pallet = StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
             'type' => PalletTypeEnum::PALLET,
         ]
     );
-    $pallet2 = StorePalletFromDelivery::make()->action(
+    $pallet2 = StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
             'type' => PalletTypeEnum::PALLET,

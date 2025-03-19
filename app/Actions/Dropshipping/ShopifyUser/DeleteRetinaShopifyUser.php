@@ -30,6 +30,7 @@ class DeleteRetinaShopifyUser extends OrgAction
         $this->update($shopifyUser, [
             'name' => $shopifyUser->name . '-deleted-' . rand(00, 99),
             'slug' => $shopifyUser->slug . '-deleted-' . rand(00, 99),
+            'email' => $shopifyUser->email . '-deleted-' . rand(00, 99),
             'status' => false
         ]);
 
@@ -55,5 +56,12 @@ class DeleteRetinaShopifyUser extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         $this->handle($customer->shopifyUser);
+    }
+
+    public function inWebhook(ActionRequest $request): void
+    {
+        $shopifyUser = ShopifyUser::where('name', $request->input('domain'))->first();
+
+        $this->handle($shopifyUser);
     }
 }

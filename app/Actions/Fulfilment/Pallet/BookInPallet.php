@@ -94,7 +94,7 @@ class BookInPallet extends OrgAction
         return $this->handle($pallet, $this->validatedData);
     }
 
-    public function jsonResponse(Pallet $pallet,  ActionRequest $request): PalletResource|MayaPalletResource
+    public function jsonResponse(Pallet $pallet, ActionRequest $request): PalletResource|MayaPalletResource
     {
         if ($request->hasHeader('Maya-Version')) {
             return MayaPalletResource::make($pallet);

@@ -55,6 +55,7 @@ class IndexRecurringBillTransactions extends OrgAction
                 'recurring_bill_transactions.start_date',
                 'recurring_bill_transactions.end_date',
 
+                'recurring_bill_transactions.data',
                 'recurring_bill_transactions.pallet_delivery_id',
                 'recurring_bill_transactions.pallet_return_id',
 

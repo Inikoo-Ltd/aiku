@@ -110,7 +110,7 @@ class GetRetinaDropshippingNavigation
             ];
         }
 
-        if ($webUser->customer->shopifyUser || $webUser->customer->tiktokUser) {
+        if (!blank($platforms_navigation)) {
             $groupNavigation['platforms_navigation'] = [
                 'platforms_navigation'       => [
                     'label'      => __('platforms'),

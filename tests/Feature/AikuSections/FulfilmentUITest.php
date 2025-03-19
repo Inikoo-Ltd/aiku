@@ -18,7 +18,7 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\StorePallet;
-use App\Actions\Fulfilment\Pallet\StorePalletFromDelivery;
+use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
 use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAsBookedIn;
@@ -1313,7 +1313,7 @@ test('UI show pallet delivery (Physical goods Tab)', function () {
 test('UI show pallet delivery (confirmed)', function () {
     $palletDelivery = $this->palletDelivery;
 
-    StorePalletFromDelivery::make()->action(
+    StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
         'type' => PalletTypeEnum::PALLET,
@@ -1641,7 +1641,6 @@ test('UI show pallet return with stored items', function () {
             ->has('deleteServiceRoute')
             ->has('deletePhysicalGoodRoute')
             ->has('routeStorePallet')
-            ->has('upload_spreadsheet')
             ->has('attachmentRoutes')
             ->has('data')
             ->has('box_stats')

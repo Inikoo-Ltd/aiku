@@ -23,6 +23,8 @@ enum DeliveryNoteItemStateEnum: string
     case FINALISED = 'finalised';
     case DISPATCHED = 'dispatched';
     case CANCELLED = 'cancelled';
+    case OUT_OF_STOCK = 'out_of_stock'; // No dispatched because Out of stock
+    case NO_DISPATCHED = 'no_dispatched'; // Other not dispatched reasons
 
     public static function labels(): array
     {
@@ -34,7 +36,9 @@ enum DeliveryNoteItemStateEnum: string
             'packed'           => __('Packed'),
             'finalised'        => __('Finalised'),
             'dispatched'       => __('Dispatched'),
-            'cancelled'        => __('Cancelled')
+            'cancelled'        => __('Cancelled'),
+            'out_of_stock'     => __('Out of Stock'),
+            'no_dispatched'    => __('No Dispatched')
         ];
     }
 
@@ -114,6 +118,26 @@ enum DeliveryNoteItemStateEnum: string
             ],
             'cancelled'  => [
                 'tooltip' => __('Cancelled'),
+                'icon'    => 'fal fa-times',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'out_of_stock'     => [
+                'tooltip' => __('Out of Stock'),
+                'icon'    => 'fal fa-times',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'no_dispatched'    => [
+                'tooltip' => __('No Dispatched'),
                 'icon'    => 'fal fa-times',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',

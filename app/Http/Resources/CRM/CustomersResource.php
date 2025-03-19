@@ -51,6 +51,7 @@ class CustomersResource extends JsonResource
             'phone'                           => $this->phone,
             'state'                           => $this->state,
             'status'                          => $this->status,
+            'approved_at'                     => $this->approved_at ?? null,
             'address'                         => AddressResource::make($this->address),
             'is_dropshipping'                 => $this->is_dropshipping,
             'contact_name'                    => $this->contact_name,

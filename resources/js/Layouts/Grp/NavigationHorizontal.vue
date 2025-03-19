@@ -21,7 +21,7 @@ import { capitalize } from '@/Composables/capitalize'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 library.add(faChevronLeft, faChevronRight, faParachuteBox)
 
 
@@ -68,8 +68,8 @@ const layout = inject('layout', layoutStructure)
 // console.log('org', layout.organisationsState[layout.currentParams.organisation][`current${capitalize(layout.organisationsState[layout.currentParams.organisation].currentType)}`])
 
 // Navigation Fulfilment, Shop, and Merged
-const shopsOpenSlugs = layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.authorised_shops.filter(shop => shop.state !== 'openxx').map(shop => shop.slug)
-const fulfilmentsOpenSlugs = layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.authorised_fulfilments.filter(fulfilment => fulfilment.state !== 'openxx').map(fulfilment => fulfilment.slug)
+const shopsOpenSlugs = layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.authorised_shops.filter(shop => shop.state !== 'closed').map(shop => shop.slug)
+const fulfilmentsOpenSlugs = layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.authorised_fulfilments.filter(fulfilment => fulfilment.state !== 'closed').map(fulfilment => fulfilment.slug)
 const fulfilmentsNav: () => MergeNavigation[] = () => {
     const filterFulfilmentsOpen = Object.entries(props.orgNav.fulfilments_navigation.navigation).filter(([key, subNavList]) => fulfilmentsOpenSlugs?.includes(key))
 
@@ -234,13 +234,13 @@ const isLoadingNavigation = ref<string | boolean>(false)
             
             <!-- Section: Arrow left-right -->
             <Transition name="slide-to-left">
-                <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3 flex text-white text-xxs"
+                <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-2 flex text-white text-xxs"
                 >
                     <component
                         :is="previousNavigation() ? Link : 'div'"
                         :href="routeArrow(previousNavigation())"
                         :class="previousNavigation() ? 'hover:bg-black/10' : 'text-white/40'"
-                        class="py-0.5 px-[1px] flex justify-center items-center rounded"
+                        class="py-1.5 px-[3px] flex justify-center items-center rounded"
                         @start="() => isLoadingNavigation = 'prevNav'"
                         @finish="() => isLoadingNavigation = false"
                     >
@@ -251,7 +251,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                     <component
                         :is="nextNavigation() ? Link : 'div'"
                         :href="routeArrow(nextNavigation())"
-                        class="py-0.5 px-[1px] flex justify-center items-center rounded"
+                        class="py-1.5 px-[3px] flex justify-center items-center rounded"
                         :class="nextNavigation() ? 'hover:bg-black/10' : 'text-white/40'"
                         @start="() => isLoadingNavigation = 'nextNav'"
                         @finish="() => isLoadingNavigation = false"

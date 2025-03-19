@@ -71,7 +71,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcode
- * @property-read \App\Models\Goods\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images

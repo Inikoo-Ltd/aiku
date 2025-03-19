@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import { reactive, watch, ref, watchEffect } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLock } from '@fal'

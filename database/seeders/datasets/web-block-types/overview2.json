@@ -8,13 +8,7 @@
 		"fieldValue": {
 			"text": "<span><h2 style='font-size: 2.25rem; font-weight: 700; color: #1f2937; line-height: 1.25;'> Jordan Proto-Lyte <br /> <span style='font-size: 0.875rem; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280;'> Running Collection </span> </h2> <p style='margin-top: 1rem; font-size: 0.875rem; color: #374151; max-width: 85%;'> Featuring soft foam cushioning and lightweight, woven fabric in the upper, the Jordan Proto-Lyte is made for all-day, bouncy comfort. Lightweight Breathability: Lightweight woven fabric with real or synthetic leather provides breathable support. Cushioned Comfort: A full-length foam midsole delivers lightweight, plush cushioning. Secure Traction: Exaggerated herringbone-pattern outsole offers traction on a variety of surfaces. </p> </span>",
 			"image": {
-				"visible": "all",
-				"source": {
-					"avif": "http://10.0.0.100:8080/gL0QeMeXdlq4_Qk12B7FNAChIN0dxMx69Fwc3a2Ajbc/bG9jYWw6Ly8vYWlrdS9hcHAvbWVkaWEvbWVkaWEvMjA1NzMvZDY0ODhkYTFjOTA2MDQ5N2RjYmJhMjU1ZGY4NzUxYzcucG5n.avif",
-					"webp": "http://10.0.0.100:8080/vmog6A3WYob9cQeC6F4QF4q912KU1qzmxnH-B0DHxLk/bG9jYWw6Ly8vYWlrdS9hcHAvbWVkaWEvbWVkaWEvMjA1NzMvZDY0ODhkYTFjOTA2MDQ5N2RjYmJhMjU1ZGY4NzUxYzcucG5n.webp",
-					"original": "http://10.0.0.100:8080/cT5MbLlLmC9gDFZL9KN3g1Tqd2g_BEp5F9KzA4U2SNU/bG9jYWw6Ly8vYWlrdS9hcHAvbWVkaWEvbWVkaWEvMjA1NzMvZDY0ODhkYTFjOTA2MDQ5N2RjYmJhMjU1ZGY4NzUxYzcucG5n"
-				},
-				"url": "https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png",
+				"source": null,
 				"alt": "img showcase"
 			},
 			"container": {

@@ -93,8 +93,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $footer
  * @property int|null $invoice_category_id
  * @property bool $is_vip Indicate if invoice is for a VIP customer
- * @property int|null $as_organisation_id Indicate if invoice is for an organisation in this group
- * @property int|null $as_employee_id Indicate if invoice is for an employee
+ * @property int|null $as_organisation_id Indicate if invoice is for a organisation in this group
+ * @property int|null $as_employee_id Indicate if invoice is for a employee
  * @property string|null $deleted_note
  * @property int|null $deleted_by
  * @property bool $deleted_from_deleted_invoice_fetch This is used to prevent the invoice from being fetched and updated again in FetchAuroraDeletedInvoices
@@ -102,10 +102,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Currency $currency
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read \App\Models\Accounting\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \App\Models\Accounting\InvoiceCategory|null $invoiceCategory
  * @property-read Collection<int, \App\Models\Accounting\InvoiceTransaction> $invoiceTransactions

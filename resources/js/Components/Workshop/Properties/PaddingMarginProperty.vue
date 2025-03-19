@@ -7,7 +7,7 @@ import { faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLink, faUnlink } from "@fal"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 library.add(faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink)
 
 const model = defineModel<{

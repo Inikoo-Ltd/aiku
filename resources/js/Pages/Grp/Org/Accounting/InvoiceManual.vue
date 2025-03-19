@@ -10,6 +10,7 @@ import { Head, router, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { Link } from '@inertiajs/vue3'
 import Popover from '@/Components/Popover.vue'
+import DatePicker from "@vuepic/vue-datepicker"
 
 import { computed, defineAsyncComponent, inject, ref, watch } from "vue"
 import type { Component } from "vue"
@@ -61,7 +62,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import InvoiceManualTransactions from '@/Components/Accounting/InvoiceManualTransactions.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { Action } from '@/types/Action'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 // const locale = useLocaleStore()
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -116,6 +117,8 @@ const props = defineProps<{
 
     // physical_good_lists?: []
     physical_good_list_route: routeType
+    
+    pallet_list_route: routeType
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -219,7 +222,7 @@ const isLoadingButton = ref<false | 'addService' | 'addPGood'>(false)
 
 
 // Tabs: Services
-const formAddService = useForm({ service_id: '', quantity: 1 })
+const formAddService = useForm({ service_id: '', quantity: 1, pallet_id: null, handle_date: null })
 // const onOpenModalAddService = async () => {
 //     isLoadingData.value = 'addService'
 //     try {
@@ -237,13 +240,14 @@ const formAddService = useForm({ service_id: '', quantity: 1 })
 //     isLoadingData.value = false
 // }
 const dataServiceList = ref([])
+const dataPalletList = ref([])
 const onSubmitAddService = (data: Action, closedPopover: Function) => {
-    console.log('dataservicelist', dataServiceList.value)
-    console.log('formAddService.service_id', formAddService.service_id)
+    // console.log('dataservicelist', dataServiceList.value)
+    // console.log('formAddService.service_id', formAddService.service_id)
     const selectedHistoricAssetId = dataServiceList.value.filter(service => service.id == formAddService.service_id)[0]?.historic_asset_id
     /*  console.log('hhh', handleTabUpdate) */
-    console.log('data.route?.name', data.route?.name )
-    console.log('selectedHistoricAssetId', selectedHistoricAssetId)
+    // console.log('data.route?.name', data.route?.name )
+    // console.log('selectedHistoricAssetId', selectedHistoricAssetId)
     // formAddService.historic_asset_id = selectedHistoricAssetId
     isLoadingButton.value = 'addService'
 
@@ -381,9 +385,65 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
                                     </template>
 
                                     <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span></div>
+                                        <div class="">
+                                            <FontAwesomeIcon v-if="option?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                                            {{ option.name }}
+                                            <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span>
+                                        </div>
                                     </template>
                                 </PureMultiselectInfiniteScroll>
+
+                                <!-- Pallet -->
+                                <div v-if="dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling" class="mt-3">
+                                    <span class="text-xs px-1 my-2">{{ trans('Pallet to attach') }}: </span>
+                                    <PureMultiselectInfiniteScroll
+                                        v-model="formAddService.pallet_id"
+                                        :fetchRoute="props.pallet_list_route"
+                                        :placeholder="trans('Select pallet')"
+                                        required
+                                        valueProp="id"
+                                        @optionsList="(options) => dataPalletList = options"
+                                    >
+                                        <template #singlelabel="{ value }">
+                                            <div class="w-full text-left pl-4">{{ value.reference }} <span class="text-sm text-gray-400">({{ value.type }})</span></div>
+                                        </template>
+
+                                        <template #option="{ option, isSelected, isPointed }">
+                                            <div class="">{{ option.reference }} <span class="text-sm text-gray-400 capitalize">({{ option.type }})</span></div>
+                                        </template>
+                                    </PureMultiselectInfiniteScroll>
+
+                                    <p v-if="get(formAddService, ['errors', 'pallet_id'])" class="mt-2 text-sm text-red-600">
+                                        {{ formAddService.errors.pallet_id }}
+                                    </p>
+                                </div>
+
+                                <!-- Date -->
+                                <Popover v-if="dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling" position="" style="z-index: 20" class="mt-3 ">
+                                    <template #button>
+                                        <div class="text-left">
+                                            <span class="text-xs px-1 my-2">{{ trans('Date') }}: </span>
+                                            <div
+                                                xxv-tooltip="'useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)'"
+                                                class="text-left border border-gray-300 py-2 text-sm rounded px-3 cursor-pointer"
+                                                :class="formAddService.handle_date ? '' : 'text-gray-400 '"
+                                            >
+                                                <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-base" fixed-width aria-hidden="true" />
+                                                {{ formAddService.handle_date ? useFormatTime(formAddService.handle_date, { formatTime: 'ddmy' }) : trans("Select date") }}
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <template #content="{ close }">
+                                        <DatePicker
+                                            v-model="formAddService.handle_date"
+                                            @update:modelValue="() => close()"
+                                            inline
+                                            auto-apply
+                                            :enable-time-picker="false"
+                                        />
+                                    </template>
+                                </Popover>
 
                                 <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
                                     {{ formAddService.errors.service_id }}
@@ -405,7 +465,11 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
                                     @click="() => onSubmitAddService(action, closed)"
                                     :style="'save'"
                                     :loading="isLoadingButton == 'addService'"
-                                    :disabled="!formAddService.service_id || !(formAddService.quantity > 0)"
+                                    :disabled="
+                                        !formAddService.service_id
+                                        || !(formAddService.quantity > 0)
+                                        || dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling ? (!formAddService.pallet_id || !formAddService.handle_date) : false
+                                    "
                                     label="Save"
                                     full
                                 />

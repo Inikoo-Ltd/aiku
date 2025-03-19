@@ -256,7 +256,7 @@ test('show profile', function () {
     });
 });
 
-test('create rental agreement', function () {
+test('create rental agreement for 4th customer', function () {
 
     $rentalAgreement = StoreRentalAgreement::make()->action(
         $this->webUser->customer->fulfilmentCustomer,

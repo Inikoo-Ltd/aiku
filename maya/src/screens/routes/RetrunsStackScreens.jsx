@@ -1,4 +1,4 @@
-import React, {useEffect, useContext, useRef} from 'react';
+import React, {useEffect, useContext, useRef, useMemo} from 'react';
 import {
   SafeAreaView,
   ActivityIndicator,
@@ -142,13 +142,16 @@ const ReturnStackScreen = ({navigation, route}) => {
     },
   ];
 
-  const filteredTabOptions = () => {
-    if(dataReturn?.data?.type == 'pallet'){
-     return TabOptions.filter((tab)=> tab.route != 'items-in-return')
-    }else if(dataReturn?.data?.type == 'stored_item'){
-      return  TabOptions.filter((tab)=> tab.route != 'pallets-in-return' )
-    } else return TabOptions
-  }
+  const filteredTabOptions = useMemo(() => {
+    if (dataReturn?.data?.type === 'pallet') {
+      return TabOptions.filter(tab => tab.route !== 'items-in-return');
+    } 
+    if (dataReturn?.data?.type === 'stored_item') {
+      return TabOptions.filter(tab => tab.route !== 'pallets-in-return');
+    }
+    return TabOptions;
+  }, [dataReturn?.data?.type]);
+  
   
 
   useEffect(() => {
@@ -180,7 +183,7 @@ const ReturnStackScreen = ({navigation, route}) => {
   return (
     <SafeAreaView style={{flex: 1}}>
       {dataReturn?.data ? (
-        <BottomTabs tabArr={filteredTabOptions()} />
+        <BottomTabs tabArr={filteredTabOptions} />
       ) : (
         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           <ActivityIndicator size="large" color='#4F46E5' />

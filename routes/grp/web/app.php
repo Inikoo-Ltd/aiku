@@ -75,11 +75,9 @@ Route::middleware(["auth"])->group(function () {
     Route::prefix("search")
         ->name("search.")
         ->group(__DIR__."/search.php");
-    if (env('VITE_ASK_BOT_UI') == 'true') {
-        Route::prefix("ask-bot") // try llama
-            ->name("ask-bot.")
-            ->group(__DIR__."/ask_bot.php");
-    }
+    Route::prefix("ask-bot")
+        ->name("ask-bot.")
+        ->group(__DIR__."/ask_bot.php");
     Route::prefix("media")
         ->name("media.")
         ->group(__DIR__."/media.php");

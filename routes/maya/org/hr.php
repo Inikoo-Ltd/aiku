@@ -9,6 +9,7 @@
 use App\Actions\HumanResources\ClockingMachine\UI\IndexClockingMachines;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
+use Illuminate\Support\Facades\Route;
 
 Route::get('workplaces', IndexWorkplaces::class)->name('workplaces.index');
 Route::get('workplaces/{workplace:id}', ShowWorkplace::class)->name('workplaces.show');

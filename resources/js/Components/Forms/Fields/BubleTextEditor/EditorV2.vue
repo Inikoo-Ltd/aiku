@@ -324,15 +324,14 @@ const onEditorClick = () => {
     emits('onEditClick', editorInstance.value)
 }
 
-defineExpose({
-    editor: editorInstance
-})
-
-
 const setVariabel = (value) => {
     const content = `<span class="mention" data-type="mention" data-id="username" contenteditable="false">{{ ${value} }}</span>`;
     editorInstance.value?.chain().focus().insertContent(content).run();
 };
+
+defineExpose({
+    editor: editorInstance
+})
 
 
 
@@ -663,7 +662,7 @@ const setVariabel = (value) => {
 
         <div class="flex flex-col">
             <slot name="editor-content" :editor="editorInstance">
-                <EditorContent @click="onEditorClick" :editor="editorInstance" />
+                <EditorContent  @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
         </div>
 

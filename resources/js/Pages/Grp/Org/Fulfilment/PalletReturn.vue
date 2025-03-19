@@ -91,6 +91,7 @@ const props = defineProps<{
     stored_items_count?: number
 }>()
 
+
 const locale = inject('locale', aikuLocaleStructure)
 const xstored_items_count = ref(props.stored_items_count || 0)
 

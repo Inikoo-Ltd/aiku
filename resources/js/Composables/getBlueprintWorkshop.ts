@@ -10,7 +10,7 @@ import BentoGridBlueprint from '@/Components/CMS/Webpage/BentoGrid/Blueprint'
 import CTA2Blueprint from '@/Components/CMS/Webpage/CTA2/Blueprint'
 import CategoriesBlueprint from '@/Components/CMS/Webpage/Categories/Blueprint'
 import CTA3Blueprint from '@/Components/CMS/Webpage/CTA3/Blueprint'
-import CTAAurora1Blueprint from '@/Components/CMS/Webpage/CTAAurora1/Blueprint'
+import { blueprint as CTAAurora1Blueprint } from '@/Components/CMS/Webpage/CTAAurora1/Blueprint'
 import CTABlueprint from '@/Components/CMS/Webpage/CTA/Blueprint'
 import DepartmentBlueprint from '@/Components/CMS/Webpage/Department/Blueprint'
 import GalleryBlueprint from '@/Components/CMS/Webpage/Gallery/Blueprint'
@@ -23,6 +23,7 @@ import TextBlueprint from '@/Components/CMS/Webpage/Text/Blueprint'
 import ScriptBlueprint from '@/Components/CMS/Webpage/Script/Blueprint'
 import WowsbarBannerBlueprint from '@/Components/CMS/Webpage/WowsbarBanner/Blueprint'
 import SeeAlsoBlueprint from '@/Components/CMS/Webpage/SeeAlso/Blueprint'
+import PricingBlueprint from '@/Components/CMS/Webpage/Pricing/Blueprint'
 import TextColumn from '@/Components/CMS/Webpage/TextColumn/Blueprint'
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Blueprint'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Blueprint'
@@ -48,12 +49,12 @@ export const getBlueprint = (componentName: string) => {
         "iframe": IframeBlueprint.blueprint,
         'images': ImageBlueprint.blueprint,
         "overview_aurora": OverviewBlueprint.blueprint,
-
+        "pricing": PricingBlueprint.blueprint,
 /*       'product': ProductPage.blueprint,
         'products': .blueprint, */
         "script": ScriptBlueprint.blueprint,
         'text': TextBlueprint.blueprint,
-        'cta_aurora_1' : CTAAurora1Blueprint.blueprint,
+        'cta_aurora_1' : CTAAurora1Blueprint,
         'overview_2' : Overview2Blueprint.blueprint,
         'top-bar-1-fulfilment': Topbar1Fulfilment.blueprint,
         'top-bar-2-fulfilment': Topbar2Fulfilment.blueprint,

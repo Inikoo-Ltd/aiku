@@ -362,7 +362,7 @@ return [
 
     'listen' => [
         \Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent::class => [
-            // \App\Listeners\MyListener::class,
+            \App\Listeners\ShopifyAppInstalledListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\ShopAuthenticatedEvent::class => [
             // \App\Listeners\MyListener::class,
@@ -371,7 +371,7 @@ return [
             // \App\Listeners\MyListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\AppUninstalledEvent::class => [
-            // \App\Listeners\MyListener::class,
+//             \App\Listeners\ShopifyAppInstalledListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\PlanActivatedEvent::class => [
             // \App\Listeners\MyListener::class,
@@ -393,6 +393,11 @@ return [
     */
 
     'webhooks' => [
+        [
+            'topic' => 'app/uninstalled',
+            'address' => config('app.url') . '/webhooks/shopify-user/app-uninstalled',
+            'format' => 'json',
+        ],
         /*
             [
                 'topic' => env('SHOPIFY_WEBHOOK_1_TOPIC', 'ORDERS_CREATE'),

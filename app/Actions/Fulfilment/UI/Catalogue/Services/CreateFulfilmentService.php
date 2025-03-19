@@ -63,6 +63,12 @@ class CreateFulfilmentService extends OrgAction
                                         'label'    => __('unit'),
                                         'required' => true,
                                     ],
+                                    'is_pallet_handling'  => [
+                                        'type'     => 'toggle',
+                                        'label'    => __('Pallet handling'),
+                                        'required' => true,
+                                        'value'    => false
+                                    ],
 
                                 ]
                             ]

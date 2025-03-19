@@ -9,6 +9,7 @@
 namespace App\Models\Web;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Website\WebsiteCloudflareStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
@@ -95,7 +96,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
- * @property-read \App\Models\Web\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Snapshot|null $liveSnapshot
@@ -301,6 +301,18 @@ class Website extends Model implements Auditable, HasMedia
     public function timeSeries(): HasMany
     {
         return $this->hasMany(WebsiteTimeSeries::class);
+    }
+
+    public function getFullUrl(): string
+    {
+        return match (app()->environment()) {
+            'production' => 'https://'.$this->domain . '/app',
+            'staging' => 'https://canary.'.$this->domain . '/app',
+            default => match ($this->shop->type) {
+                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/app',
+                default => 'https://fulfilment.test/app'
+            }
+        };
     }
 
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toRefs, watch, ref, onBeforeMount, Ref } from 'vue'
-import { cloneDeep, get, isNull } from 'lodash'
+import { cloneDeep, get, isNull } from 'lodash-es'
 import { Image as ImageProxy } from "@/types/Image"
 
 const fallbackPath = '/fallback/fallback.svg'
@@ -10,6 +10,11 @@ const props = withDefaults(defineProps<{
     imageCover?: boolean
     alt?: string
     class?: string
+    style?: Object
+    imgAttributes?: {
+        fetchpriority?: string // 'high' | 'low'
+        loading?: string  // 'lazy'
+    }
 }>(), {
     src: () => { return ref({ original: fallbackPath }) },
 })
@@ -62,8 +67,8 @@ onBeforeMount(setImage)
 
 <template>
     <picture :class="[props.class ?? 'w-full h-full flex justify-center items-center']">
-        <!-- <source v-if="get(src, 'avif')" type="image/avif" :srcset="avif">
-        <source v-if="get(src, 'webp')" type="image/webp" :srcset="webp"> -->
-        <img :class="[imageCover ? 'w-full h-full object-cover' : '']" @load="() => emits('onLoadImage')" :srcset="original" :src="get(src, 'original')" :alt="alt" style="height: inherit;">
+        <source v-if="avif && avif != fallbackPath" type="image/avif" :srcset="avif">
+        <source v-if="webp && webp != fallbackPath" type="image/webp" :srcset="webp">
+        <img :class="[imageCover ? 'w-full object-cover aspect-auto' : undefined]" :style="{height: 'inherit', ...style }" @load="() => emits('onLoadImage')" :srcset="original" :src="get(src, 'original')" :alt="alt"  v-bind="imgAttributes">
     </picture>
 </template>

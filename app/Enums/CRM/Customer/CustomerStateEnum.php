@@ -27,8 +27,8 @@ enum CustomerStateEnum: string
             'in_process' => __('In Process'),
             'registered' => __('Registered'),
             'active'     => __('Active'),
-            'losing'     => __('Losing'),
-            'lost'       => __('Lost'),
+            'losing'     => __('Potential Comebacks'),
+            'lost'       => __('Dormant'),
         ];
     }
 
@@ -54,13 +54,13 @@ enum CustomerStateEnum: string
                 'color'   => 'emerald',
             ],
             'losing' => [
-                'tooltip' => __('Losing'),
+                'tooltip' => __('Potential Comebacks'),
                 'icon'    => 'fas fa-circle',
                 'class'   => 'text-orange-500',
                 'color'   => 'orange',
             ],
             'lost'  => [
-                'tooltip' => __('Lost'),
+                'tooltip' => __('Dormant'),
                 'icon'    => 'fas fa-circle',
                 'class'   => 'text-red-500',
                 'color'   => 'red',

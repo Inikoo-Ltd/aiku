@@ -30,15 +30,21 @@ class DeleteRecurringBillTransaction extends OrgAction
      */
     public function handle(RecurringBillTransaction $recurringBillTransaction): void
     {
+
+        $recurringBill = $recurringBillTransaction->recurringBill;
+
         DB::transaction(function () use ($recurringBillTransaction) {
             DB::table('invoice_transactions')->where('recurring_bill_transaction_id', $recurringBillTransaction->id)->update(['recurring_bill_transaction_id' => null]);
             $recurringBillTransaction->forceDelete();
 
         });
 
+
         if ($this->precursor != 'recurring_bill') {
-            RecurringBillHydrateTransactions::dispatch($recurringBillTransaction->recurringBill)->delay($this->hydratorsDelay);
+            RecurringBillHydrateTransactions::dispatch($recurringBill)->delay($this->hydratorsDelay);
         }
+
+
 
     }
 
@@ -52,7 +58,7 @@ class DeleteRecurringBillTransaction extends OrgAction
         $this->hydratorsDelay = $hydratorDelay;
         $this->precursor = $precursor;
         $this->initialisationFromFulfilment($recurringBillTransaction->fulfilment, []);
-
+        $this->handle($recurringBillTransaction);
 
     }
 

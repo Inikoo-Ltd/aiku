@@ -95,7 +95,7 @@ class StoreFulfilmentTransaction extends OrgAction
     {
         return [
             'is_auto_assign'    => ['sometimes', 'boolean'],
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'quantity'          => ['required', 'numeric', 'gt:0'],
             'historic_asset_id' => [
                 'required',
                 Rule::Exists('historic_assets', 'id')

@@ -29,6 +29,7 @@ class GetFulfilmentServiceShowcase
             'status'      => $service->status,
             'state'       => $service->state,
             'created_at'  => $service->created_at,
+            'is_pallet_handling' => $service->is_pallet_handling
         ];
     }
 }

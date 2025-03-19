@@ -127,7 +127,7 @@ class StoreDeliveryNote extends OrgAction
 
 
             $rules['delivery_address'] = ['required', new ValidAddress()];
-            $rules['reference']        = ['required', 'max:64', 'string'];
+            $rules['reference']        = ['required', 'string', 'max:255'];
             $rules['fetched_at']       = ['sometimes', 'date'];
             $rules['created_at']       = ['sometimes', 'date'];
             $rules['cancelled_at']     = ['sometimes', 'date'];

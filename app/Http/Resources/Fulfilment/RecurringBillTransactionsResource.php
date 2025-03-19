@@ -130,6 +130,21 @@ class RecurringBillTransactionsResource extends JsonResource
         if ($this->item_type == 'Service') {
             $service = Service::find($this->item_id);
             $editType = $service->edit_type ?? null;
+            if ($service->is_pallet_handling == true) {
+                $pallet = PalletResource::make(Pallet::find($this->data['pallet_id']));
+                $desc_title = $pallet->reference;
+                $desc_after_title = Carbon::parse($this->data['date'])->format('d M Y');
+                $desc_model = __('Handling');
+                $desc_route = [
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                    'parameters' => [
+                        'organisation'       => $request->route()->originalParameters()['organisation'],
+                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
+                        'pallet'             => $pallet->slug
+                    ]
+                ];
+            }
         }
 
         return [

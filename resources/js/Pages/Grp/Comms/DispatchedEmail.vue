@@ -11,7 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faEnvelopeOpenText, faStopwatch } from '@fal'
 import DummyComponent from '@/Components/DummyComponent.vue'
 import TableEmailTrackingEvents from '@/Components/Tables/TableEmailTrackingEvents.vue'
-import { capitalize } from 'lodash'
+import { capitalize } from 'lodash-es'
 library.add( 
     faStopwatch,
     faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart )

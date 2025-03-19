@@ -87,7 +87,6 @@ use Spatie\Tags\Tag;
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
- * @property-read \App\Models\CRM\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property Collection<int, Tag> $tags
@@ -103,6 +102,7 @@ use Spatie\Tags\Tag;
  * @method static Builder<static>|Prospect withAllTagsOfAnyType($tags)
  * @method static Builder<static>|Prospect withAnyTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @method static Builder<static>|Prospect withAnyTagsOfAnyType($tags)
+ * @method static Builder<static>|Prospect withAnyTagsOfType(array|string $type)
  * @method static Builder<static>|Prospect withTrashed()
  * @method static Builder<static>|Prospect withoutTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @method static Builder<static>|Prospect withoutTrashed()

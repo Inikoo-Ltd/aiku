@@ -20,6 +20,7 @@ use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Fulfilment\Space;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRecurringBillTransaction extends OrgAction
@@ -28,6 +29,13 @@ class StoreRecurringBillTransaction extends OrgAction
 
     public function handle(RecurringBill $recurringBill, Space|Pallet|StoredItem|FulfilmentTransaction|HistoricAsset $item, array $modelData): RecurringBillTransaction
     {
+        if (Arr::exists($modelData, 'pallet_id')) {
+            $palletId = Arr::pull($modelData, 'pallet_id');
+        }
+        if (Arr::exists($modelData, 'handle_date')) {
+            $handlingDate = Arr::pull($modelData, 'handle_date');
+        }
+
         data_set($modelData, 'organisation_id', $recurringBill->organisation_id);
         data_set($modelData, 'group_id', $recurringBill->group_id);
         data_set($modelData, 'fulfilment_id', $recurringBill->fulfilment_id);
@@ -56,6 +64,28 @@ class StoreRecurringBillTransaction extends OrgAction
 
             $unitCost = $item->price;
             data_set($modelData, 'item_id', $item->model_id);
+
+            if ($item->model_type == 'Service') {
+                if ($item->model->is_pallet_handling == true) {
+                    if ($palletId == null) {
+                        ValidationException::withMessages([
+                            'message' => [
+                                'pallet_id' => 'Pallet ID is required when handling a pallet',
+                            ]
+                        ]);
+                    }
+                    if ($handlingDate == null) {
+                        ValidationException::withMessages([
+                            'message' => [
+                                'handle_date' => 'Handling date is required when handling a pallet',
+                            ]
+                        ]);
+                    }
+                    data_set($modelData, 'data.pallet_id', $palletId);
+                    data_set($modelData, 'data.date', $handlingDate);
+                }
+            }
+
         } elseif ($item instanceof Space) {
             $type            = 'Space';
             $assetId         = $item->rental->asset_id;
@@ -131,6 +161,9 @@ class StoreRecurringBillTransaction extends OrgAction
             'pallet_delivery_id'        => ['sometimes', 'exists:pallet_deliveries,id'],
             'pallet_return_id'          => ['sometimes', 'exists:pallet_returns,id'],
             'fulfilment_transaction_id' => ['sometimes', 'exists:fulfilment_transactions,id'],
+            'pallet_id'                 => ['sometimes'],
+            'handle_date'               => ['sometimes'],
+            'data'                      => ['sometimes', 'array'],
         ];
     }
 

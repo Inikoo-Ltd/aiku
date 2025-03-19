@@ -105,7 +105,7 @@ const layout = inject('layout', {})
 
         <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
-                   class="space-x-1.5 whitespace-nowrap flex flex-nowrap items-center "
+                   class="space-x-1.5 whitespace-nowrap flex flex-nowrap items-center hover-dashed"
                 :style="getStyles(model?.profile.container?.properties)"
                  @click="()=> emits('setPanelActive', 'profile')"
             >

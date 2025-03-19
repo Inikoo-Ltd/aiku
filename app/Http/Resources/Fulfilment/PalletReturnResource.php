@@ -38,6 +38,10 @@ class PalletReturnResource extends JsonResource
             ]
         );
 
+        $orderedItems = (int) $palletReturn->items()->sum('quantity_ordered');
+        $pickedItems = (int) $palletReturn->items()->sum('quantity_picked');
+        $unpickedItems = $orderedItems - $pickedItems;
+
         return [
             'id'                    => $palletReturn->id,
             'customer_reference'    => $palletReturn->customer_reference,
@@ -51,8 +55,12 @@ class PalletReturnResource extends JsonResource
             'type_icon'             => $palletReturn->type->stateIcon()[$palletReturn->type->value],
             'timeline'              => $finalTimeline,
 
-            'number_pallets'        => $palletReturn->stats->number_pallets,
+            'number_ordered_items'  => $orderedItems,
+            'number_picked_items'   => $pickedItems,
+            'number_unpicked_items' => $unpickedItems,
             'number_stored_items'   => $palletReturn->stats->number_stored_items,
+
+            'number_pallets'        => $palletReturn->stats->number_pallets,
             'number_services'       => $palletReturn->stats->number_services,
             'number_physical_goods' => $palletReturn->stats->number_physical_goods,
             'number_pallet_picked'    => $palletReturn->stats->number_pallets_state_picked,

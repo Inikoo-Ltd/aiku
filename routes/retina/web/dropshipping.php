@@ -10,12 +10,13 @@
 
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreRetinaShopifyUser;
-use App\Actions\Dropshipping\Tiktok\AuthenticateTiktokAccount;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
+use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaPlatformDropshippingOrders;
@@ -57,7 +58,7 @@ Route::prefix('orders')->as('orders.')->group(function () {
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     Route::prefix('client')->as('client.')->group(function () {
-        Route::get('/', [IndexRetinaCustomerClients::class, 'inPlatform'])->name('index');
+        Route::get('/', IndexRetinaPlatformCustomerClients::class)->name('index');
         Route::get('fetch', [FetchRetinaCustomerClientFromShopify::class, 'inPlatform'])->name('fetch');
     });
 

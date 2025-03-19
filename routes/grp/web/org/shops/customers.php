@@ -23,7 +23,7 @@ use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
-use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
+use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -35,8 +35,10 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
     Route::get('/orders', [IndexOrders::class, 'inCustomer'])->name('.orders.index');
     Route::get('/orders/{order}', [ShowOrder::class, 'inCustomerInShop'])->name('.orders.show');
-    Route::get('/delivery_notes', [IndexDeliveryNotes::class, 'inCustomer'])->name('.delivery_notes.index');
+
+    Route::get('/delivery_notes', IndexDeliveryNotesInCustomers::class)->name('.delivery_notes.index');
     Route::get('/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerInShop'])->name('.delivery_notes.show');
+
     Route::get('/invoices', [IndexInvoices::class, 'inCustomer'])->name('.invoices.index');
     Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('.invoices.show');
     Route::prefix('web-users')->as('.web-users')->group(function () {
@@ -58,6 +60,11 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
                 Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
             });
+            Route::get('/delivery_notes', [IndexDeliveryNotesInCustomers::class,'inCustomerClient'])->name('.delivery_notes.index');
+            Route::get('/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClient'])->name('.delivery_notes.show');
+            Route::get('/invoices', [IndexInvoices::class, 'inCustomerClient'])->name('.invoices.index');
+            Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.invoices.show');
+
         });
     });
     Route::prefix('portfolios')->as('.portfolios')->group(function () {

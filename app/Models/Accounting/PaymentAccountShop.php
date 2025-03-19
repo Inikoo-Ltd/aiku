@@ -41,7 +41,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\PaymentAccountShopStats|null $stats
  * @method static Builder<static>|PaymentAccountShop newModelQuery()
  * @method static Builder<static>|PaymentAccountShop newQuery()

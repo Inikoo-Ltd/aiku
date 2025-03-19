@@ -5,7 +5,7 @@ import Accordion from 'primevue/accordion'
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
 
 import { getFormValue } from '@/Composables/SideEditorHelper'
-import { set as setLodash, get, cloneDeep } from 'lodash'
+import { set as setLodash, get, cloneDeep } from 'lodash-es'
 
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -56,7 +56,7 @@ const setChild = (blueprint = [], data = {}) => {
 }
 
 const getFormValues = (form: any, data: any = {}) => {
-    const keyPath = Array.isArray(form.key) ? form.key : [form.key]  // ["container", "properties", "title"]
+    const keyPath = Array.isArray(form.key) ? form.key : [form.key] 
     if (form.replaceForm) {
         const set = getFormValue(data, keyPath) || {}
         setLodash(data, keyPath, setChild(form.replaceForm, set))
@@ -93,6 +93,7 @@ onMounted(() => {
             <template #expandicon>
                 <FontAwesomeIcon :icon="faCaretLeft" class="text-black"></FontAwesomeIcon>
             </template>
+            
             <ParentFieldSideEditor 
                 :blueprint="field" 
                 :uploadImageRoute="uploadImageRoute" 

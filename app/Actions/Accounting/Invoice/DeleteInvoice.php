@@ -8,8 +8,12 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Validation\Rule;
@@ -25,6 +29,12 @@ class DeleteInvoice extends OrgAction
         $invoice->invoiceTransactions()->delete();
         $invoice->delete();
         CustomerHydrateInvoices::dispatch($invoice->customer);
+        ShopHydrateInvoices::dispatch($invoice->shop);
+        OrganisationHydrateInvoices::dispatch($invoice->organisation);
+        GroupHydrateInvoices::dispatch($invoice->group);
+        if ($invoice->invoiceCategory) {
+            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
+        }
 
         return $invoice;
     }
@@ -33,7 +43,7 @@ class DeleteInvoice extends OrgAction
     {
         return [
             'deleted_note' => ['required', 'string', 'max:4000'],
-            'deleted_by'    => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
 

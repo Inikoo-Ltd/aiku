@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,7 +24,7 @@ class GetRetinaDropshippingPlatformNavigation
         if ($webUser->customer->shopifyUser) {
             $tabs = [];
 
-            if (!$webUser->customer->fulfilmentCustomer) {
+            if (!$webUser->customer->fulfilmentCustomer or $platform->type !== PlatformTypeEnum::SHOPIFY) {
                 $tabs = [
                     [
                         'label' => __('All Products'),

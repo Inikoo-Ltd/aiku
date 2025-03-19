@@ -19,42 +19,41 @@ const props = defineProps<{
 
 <template>
 	<div
-		ref="_parentComponent"
 		class="relative isolate transition-all hidden md:block"
-		:style="getStyles(fieldValue.container.properties)">
+		:style="{...getStyles(fieldValue?.container?.properties), width : '100%', height : 'auto'}">
 		<!-- Render text elements -->
-		<div v-for="(text, index) in fieldValue.texts.values" :key="index">
+		<div v-for="(text, index) in fieldValue?.texts?.values" :key="index">
 			<div
-				class="absolute"
 				:class="`text-${index}`"
 				ref="el => textRefs[index] = el"
 				:style="{
+				zIndex: 10,
 					width:
-						theme.layout === 'fullscreen'
+						theme?.layout === 'fullscreen'
 							? 'auto'
 							: text?.properties?.width
 							? `${text.properties.width}`
 							: 'auto',
 					height:
-						theme.layout === 'fullscreen'
+						theme?.layout === 'fullscreen'
 							? 'auto'
 							: text?.properties?.height
 							? `${text.properties.height}`
 							: 'auto',
 					top:
-						theme.layout === 'fullscreen'
+						theme?.layout === 'fullscreen'
 							? '10%'
 							: text?.properties?.position?.top
 							? `${text.properties.position.top}`
 							: 'auto',
-					bottom: theme.layout === 'fullscreen' ? '10%' : 'auto',
+					bottom: theme?.layout === 'fullscreen' ? '10%' : 'auto',
 					left:
-						theme.layout === 'fullscreen'
+						theme?.layout === 'fullscreen'
 							? '10%'
 							: text?.properties?.position?.left
 							? `${text.properties.position.left}`
 							: 'auto',
-					right: theme.layout === 'fullscreen' ? '10%' : 'auto',
+					right: theme?.layout === 'fullscreen' ? '10%' : 'auto',
 				}">
 				<div v-html="text.text" />
 			</div>
@@ -62,7 +61,7 @@ const props = defineProps<{
 
 		<!-- Render image elements -->
 		<div>
-			<div v-for="(image, index) in fieldValue.images" :key="index">
+			<div v-for="(image, index) in fieldValue?.images" :key="index">
 				<div
 					class="absolute"
 					:class="`image-${index}`"
@@ -83,10 +82,10 @@ const props = defineProps<{
 		</div>
 	</div>
 	<div class="block md:hidden p-6">
-		<div v-for="(image, index) in fieldValue.images" :key="index">
+		<div v-for="(image, index) in fieldValue?.images" :key="index">
 			<Image :src="image.sources" />
 		</div>
-		<div v-for="(text, index) in fieldValue.texts.values" :key="index">
+		<div v-for="(text, index) in fieldValue?.texts.values" :key="index">
 			<div v-html="text.text" />
 		</div>
 	</div>

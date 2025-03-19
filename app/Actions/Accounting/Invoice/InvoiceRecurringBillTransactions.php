@@ -25,7 +25,9 @@ class InvoiceRecurringBillTransactions extends OrgAction
                 'quantity'        => $transaction->quantity * $transaction->temporal_quantity,
                 'gross_amount'    => $transaction->gross_amount,
                 'net_amount'      => $transaction->net_amount,
+                'data'            => $transaction->data
             ];
+
             StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $data);
         }
 

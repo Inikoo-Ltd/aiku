@@ -1,3 +1,4 @@
+import { trans } from "laravel-vue-i18n";
 export default {
     blueprint: [
       {
@@ -10,6 +11,12 @@ export default {
             type: "layout_type",
           },
           {
+            key: ["layout","properties","dimension"],
+            label:"Dimension",
+            type: "dimension",
+            information: trans("Setup all dimension in all image"),
+          },
+          {
             label: "Images",
             key: ["images"],
             type: "images-property",
@@ -20,17 +27,6 @@ export default {
         name: "Properties",
         key: ["container", "properties"],
         replaceForm: [
-          {
-            key: ["background"],
-            label:"Background",
-            type: "background",
-          },
-         /*  {
-            key: ["dimension"],
-            type: "dimension",
-            label : "Dimension",
-            props_data: {},
-          }, */
           {
             key: ["padding"],
             label:"Padding",

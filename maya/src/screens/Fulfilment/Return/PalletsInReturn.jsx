@@ -71,23 +71,24 @@ const PalletsInReturn = ({navigation, route, onChangeState}) => {
   const {organisation, warehouse} = useContext(AuthContext);
   const {data, setData} = useReturn();
   const {id} = route.params;
+  const [totalPallets, setTotalPallets] = useState(0);
   const _BaseList = useRef(null)
   
+  useEffect(() => {
+    setTotalPallets(
+      data.number_pallet_picked +
+      data.number_pallets_state_other_incident +
+      data.number_pallets_state_lost +
+      data.number_pallets_state_damaged
+    );
+  }, [data]);
 
   return (
     <View style={globalStyles.container}>
       {data.state != 'dispatched' ? (
         <SetStateButton
-          /* button1={{
-            size: 'md', 
-            variant: 'outline',
-            action: 'primary',
-            style: {borderTopRightRadius: 0, borderBottomRightRadius: 0},
-            onPress: null,
-            text: `To do : ${data.number_pallet_picked + data.number_pallets_state_other_incident + data.number_pallets_state_lost + data.number_pallets_state_damaged} / ${data.type == 'pallet' ? (data.number_pallets + data.number_oversizes + data.number_boxes ) : data.number_stored_items  || 0}`,
-          }} */
           progress={{
-            value: data.number_pallet_picked + data.number_pallets_state_other_incident,
+            value: totalPallets.toString(),
             size: 'lg',
             total: data.number_pallets,
             orientation: 'horizontal',
@@ -95,9 +96,9 @@ const PalletsInReturn = ({navigation, route, onChangeState}) => {
           button2={{
             size: 'md',
             action: 'primary',
-            style: {borderTopLeftRadius: 0, borderBottomLeftRadius: 0},
-            onPress: () =>
-            onChangeState(getFilteredActionsReturn(data.state).id),
+            variant: 'link',
+            style: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
+            onPress: () => onChangeState(getFilteredActionsReturn(data.state).id),
             text: "Set to "  + getFilteredActionsReturn(data.state).title,
           }}
         />
@@ -125,7 +126,7 @@ const PalletsInReturn = ({navigation, route, onChangeState}) => {
 
 const GroupItem = ({item: initialItem, navigation}) => {
   const [item, setItem] = useState(initialItem);
-  const {data} = useReturn();
+  const {data, setData} = useReturn();
   const [loadingSave, setLoadingSave] = useState(false);
   const [modalSetNotPicked, setModalSetNotPicked] = useState(false);
   const translateX = useRef(new Animated.Value(0)).current;
@@ -177,11 +178,15 @@ const GroupItem = ({item: initialItem, navigation}) => {
       args: [item.id],
       data: {},
       onSuccess: response => {
-        console.log(response);
         setItem(prevItem => ({
           ...prevItem,
           state: response.data.state,
           state_icon: response.data.state_icon,
+        }));
+        
+        setData(prevItem => ({
+            ...prevItem,
+            number_pallet_picked: prevItem.number_pallet_picked + 1
         }));
 
         Animated.spring(translateX, {
@@ -220,7 +225,10 @@ const GroupItem = ({item: initialItem, navigation}) => {
           state: response.data.state,
           state_icon: response.data.state_icon,
         }));
-
+        setData(prevItem => ({
+          ...prevItem,
+          number_pallet_picked: prevItem.number_pallet_picked - 1
+      }));
         Animated.spring(translateX, {
           toValue: 0,
           useNativeDriver: true,
@@ -233,7 +241,6 @@ const GroupItem = ({item: initialItem, navigation}) => {
         });
       },
       onFailed: error => {
-        console.log(error);
         Toast.show({
           type: ALERT_TYPE.DANGER,
           title: 'Error',
@@ -257,6 +264,24 @@ const GroupItem = ({item: initialItem, navigation}) => {
           state: response.data.state,
           state_icon: response.data.state_icon,
         }));
+       
+        if(formData.state == 'damaged'){
+          setData(prevItem => ({
+            ...prevItem,
+            number_pallets_state_damaged: prevItem.number_pallets_state_damaged + 1
+        }));
+        }else if(formData.state == 'lost'){
+          setData(prevItem => ({
+            ...prevItem,
+            number_pallets_state_lost: prevItem.number_pallets_state_lost + 1
+        }));
+        }else if(formData.state == 'other_incident'){
+          setData(prevItem => ({
+            ...prevItem,
+            number_pallets_state_other_incident: prevItem.number_pallets_state_other_incident + 1
+        }));
+        }
+       
 
         Animated.spring(translateX, {
           toValue: 0,
@@ -272,7 +297,6 @@ const GroupItem = ({item: initialItem, navigation}) => {
         });
       },
       onFailed: error => {
-        console.log(error);
         setModalSetNotPicked(false);
         Toast.show({
           type: ALERT_TYPE.DANGER,

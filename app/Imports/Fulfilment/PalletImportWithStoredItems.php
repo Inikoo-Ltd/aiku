@@ -9,7 +9,7 @@
 
 namespace App\Imports\Fulfilment;
 
-use App\Actions\Fulfilment\Pallet\StorePalletFromDelivery;
+use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
@@ -100,7 +100,7 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
             ];
 
             try {
-                $pallet = StorePalletFromDelivery::run($this->scope, $modelData);
+                $pallet = StorePalletCreatedInPalletDelivery::run($this->scope, $modelData);
 
                 $existingStoredItemInPallet = $existingStoredItem
                     ? $pallet->storedItems()->where('stored_item_id', $existingStoredItem->id)->first()

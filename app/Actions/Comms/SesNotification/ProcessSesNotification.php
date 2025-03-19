@@ -172,12 +172,7 @@ class ProcessSesNotification
         }
         $command->line('Number ses notifications to process '.SesNotification::count());
 
-        foreach (SesNotification::all() as $sesNotification) {
-            $pending = $this->handle($sesNotification);
-            if ($pending) {
-                // print_r($pending);
-            }
-        }
+
 
         return 0;
     }

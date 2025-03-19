@@ -114,6 +114,7 @@ const layout = inject('layout', layoutStructure)
 
 
 const boxLoaded = ref<{[key: string]: boolean}>({})
+const isLoadingMeta = ref<string | null>(null)
 </script>
 
 
@@ -126,13 +127,13 @@ const boxLoaded = ref<{[key: string]: boolean}>({})
     <div class="p-6">
         <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Link
-                v-for="(stat, index) in stats"
-                :key="'stat' + index"
+                v-for="(stat, idxStat) in stats"
+                :key="'stat' + idxStat"
                 :href="route(stat.route.name, stat.route.parameters)"
                 :style="{color: stat.color}"
                 class="isolate relative overflow-hidden rounded-lg bg-white hover:bg-gray-50 cursor-pointer border border-gray-200 px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
-                @start="() => boxLoaded[index] = true"
-                @finish="() => boxLoaded[index] = false"
+                @start="() => boxLoaded[idxStat] = true"
+                @finish="() => boxLoaded[idxStat] = false"
             >
                 <BackgroundBox class="-z-10 opacity-80 absolute top-0 right-0" />
 
@@ -141,7 +142,7 @@ const boxLoaded = ref<{[key: string]: boolean}>({})
                 </dt>
 
                 <dd class="mt-1 text-3xl font-semibold tracking-tight flex gap-x-2 items-center tabular-nums">
-                    <LoadingIcon v-if="boxLoaded[index]" class='text-xl' />
+                    <LoadingIcon v-if="boxLoaded[idxStat]" class='text-xl' />
                     <FontAwesomeIcon v-else :icon='stat.icon' class='text-xl' fixed-width aria-hidden='true' />
                     <CountUp
                         :endVal='stat?.value'
@@ -175,13 +176,17 @@ const boxLoaded = ref<{[key: string]: boolean}>({})
                 <!-- Meta -->
                 <div v-if="stat.metas?.length" class="-ml-2 py-2 text-sm text-gray-500 flex gap-x-3 gap-y-0.5 items-center flex-wrap">
                     <component
-                        v-for="meta in stat.metas"
+                        v-for="(meta, idxMeta) in stat.metas"
                         :is="meta.route?.name ? Link : 'div'"
                         :href="meta.route?.name ? route(meta.route.name, meta.route.parameters) : ''"
+                        @start="() => isLoadingMeta = idxMeta + '-' + idxStat"
+                        @finish="() => isLoadingMeta = null"
                         class="group/sub px-2 flex gap-x-0.5 items-center font-normal"
+                        :class="meta.route?.name ? 'hover:underline' : ''"
                         v-tooltip="capitalize(meta.tooltip) || capitalize(meta.icon?.tooltip)"
                     >
-                        <Icon :data="meta.icon" class="md:opacity-50 group-hover/sub:opacity-100" />
+                        <LoadingIcon v-if="isLoadingMeta == idxMeta + '-' + idxStat" class="md:opacity-50 group-hover/sub:opacity-100" />
+                        <Icon v-else :data="meta.icon" class="" :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
                         <div class="group-hover/sub:text-gray-700">
                             {{ locale.number(meta.count) }}
                         </div>

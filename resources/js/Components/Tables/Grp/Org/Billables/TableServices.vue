@@ -1,10 +1,8 @@
-
-
 <!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Wed, 18 Dec 2024 22:07:40 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2024, Raul A Perusquia Flores
-  -->
+- Author: Raul Perusquia <raul@inikoo.com>
+- Created: Thu, 23 May 2024 09:45:43 British Summer Time, Sheffield, UK
+- Copyright (c) 2024, Raul A Perusquia Flores
+-->
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
@@ -13,12 +11,12 @@ import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faRobot } from '@fal'
 import { useLocaleStore } from '@/Stores/locale'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faRobot)
 
 const props = defineProps<{
     data: {}
-    state: string
     tab?: string
 }>()
 
@@ -29,10 +27,10 @@ const emits = defineEmits<{
 function serviceRoute(service: {}) {
     switch (route().current()) {
 
-        case "grp.org.shops.show.billables.services.index":
-            return route(
-                'grp.org.shops.show.billables.services.show',
-                [route().params['organisation'], route().params['shop'], service.slug])
+        // case "grp.org.fulfilments.show.catalogue.services.index":
+        //     return route(
+        //         'grp.org.fulfilments.show.catalogue.services.show',
+        //         [route().params['organisation'], route().params['fulfilment'], service.slug])
         default:
             return null
     }
@@ -50,7 +48,12 @@ function serviceRoute(service: {}) {
             </component>
         </template>
 
-
+        <!-- Column: Shop Code -->
+        <!-- <template #cell(shop_code)="{ item: service }">
+            <Link v-if="service['shop_slug']" :href="serviceRoute(service)" class="secondaryLink">
+                {{ service['shop_slug'] }}
+            </Link>
+        </template> -->
 
         <!-- Column: Icon -->
         <template #cell(state)="{ item: service }">
@@ -63,8 +66,17 @@ function serviceRoute(service: {}) {
                 service['unit_abbreviation'] }}
         </template>
 
+        <!-- Column: Total -->
+        <!-- <template #cell(total)="{ item: service }">
+            {{ useLocaleStore().currencyFormat(service['currency_code'], service['total']) }}
+        </template> -->
 
-
-
+        <!-- Column: Workflow -->
+        <template #cell(workflow)="{ item: service }">
+            <template v-if="service['is_auto_assign']">
+                <FontAwesomeIcon icon='fal fa-robot' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
+                {{ service['auto_label'] }}
+            </template>
+        </template>
     </Table>
 </template>

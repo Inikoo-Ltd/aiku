@@ -101,7 +101,6 @@ class ReceivePalletDelivery extends OrgAction
                 modelData: [
                     'start_date' => now(),
                 ],
-                strict: true
             );
             $palletDelivery->fulfilmentCustomer->update(
                 [

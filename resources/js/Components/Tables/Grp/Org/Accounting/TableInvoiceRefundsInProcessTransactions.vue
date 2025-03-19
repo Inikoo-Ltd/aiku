@@ -10,7 +10,7 @@ import { router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputNumber from 'primevue/inputnumber'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as falSave, faExclamationCircle, faMinus, faPlus } from '@fal'

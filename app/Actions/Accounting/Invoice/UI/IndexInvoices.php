@@ -263,7 +263,7 @@ class IndexInvoices extends OrgAction
         $subNavigation = [];
 
         if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $request);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -349,7 +349,6 @@ class IndexInvoices extends OrgAction
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
 
-        $data = [];
 
         if ($this->tab && !app()->environment('production')) {
             $data = [
@@ -446,6 +445,7 @@ class IndexInvoices extends OrgAction
         return $this->handle($organisation);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function unpaidInFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'unpaid';
@@ -455,6 +455,7 @@ class IndexInvoices extends OrgAction
         return $this->handle($fulfilment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function paidInFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'paid';
@@ -494,6 +495,7 @@ class IndexInvoices extends OrgAction
         return $this->handle(group());
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inInvoiceCategory(Organisation $organisation, InvoiceCategory $invoiceCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $invoiceCategory;

@@ -17,6 +17,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShopHydrateOrderHandling
@@ -104,50 +105,70 @@ class ShopHydrateOrderHandling
             'number_delivery_notes_state_queued' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::QUEUED)->count(),
             'weight_delivery_notes_state_queued' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::QUEUED)->sum('weight'),
 
-            'number_items_delivery_notes_state_queued' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::QUEUED)
-                                                                ->with('deliveryNoteItems')
-                                                                ->get()
-                                                                ->sum(fn ($deliveryNote) => $deliveryNote->deliveryNoteItems->count()),
+            'number_items_delivery_notes_state_queued' =>  DB::table('delivery_notes')
+                                                            ->where('delivery_notes.shop_id', $shop->id)
+                                                            ->whereNull('delivery_notes.deleted_at')
+                                                            ->where('delivery_notes.state', DeliveryNoteStateEnum::QUEUED)
+                                                            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                                                            ->distinct('delivery_note_items.id')
+                                                            ->count('delivery_note_items.id'),
 
             'number_delivery_notes_state_handling' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::HANDLING)->count(),
             'weight_delivery_notes_state_handling' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::HANDLING)->sum('weight'),
 
-            'number_items_delivery_notes_state_handling' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::HANDLING)
-                                                                ->with('deliveryNoteItems')
-                                                                ->get()
-                                                                ->sum(fn ($deliveryNote) => $deliveryNote->deliveryNoteItems->count()),
+            'number_items_delivery_notes_state_handling' => DB::table('delivery_notes')
+                                                            ->where('delivery_notes.shop_id', $shop->id)
+                                                            ->whereNull('delivery_notes.deleted_at')
+                                                            ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING->value)
+                                                            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                                                            ->distinct('delivery_note_items.id')
+                                                            ->count('delivery_note_items.id'),
 
 
             'number_delivery_notes_state_handling_blocked' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)->count(),
 
 
             'weight_delivery_notes_state_handling_blocked' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)->sum('weight'),
-            'number_items_delivery_notes_state_handling_blocked' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
-                                                                    ->with('deliveryNoteItems')
-                                                                    ->get()
-                                                                    ->sum(fn ($deliveryNote) => $deliveryNote->deliveryNoteItems->count()),
+            'number_items_delivery_notes_state_handling_blocked' => DB::table('delivery_notes')
+                                                            ->where('delivery_notes.shop_id', $shop->id)
+                                                            ->whereNull('delivery_notes.deleted_at')
+                                                            ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value)
+                                                            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                                                            ->distinct('delivery_note_items.id')
+                                                            ->count('delivery_note_items.id'),
 
             'number_delivery_notes_state_packed' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::PACKED)->count(),
             'weight_delivery_notes_state_packed' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::PACKED)->sum('weight'),
 
-            'number_items_delivery_notes_state_packed' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::PACKED)
-                                                            ->get()
-                                                            ->sum(fn ($deliveryNote) => $deliveryNote->deliveryNoteItems->count()),
+            'number_items_delivery_notes_state_packed' => DB::table('delivery_notes')
+                                                            ->where('delivery_notes.shop_id', $shop->id)
+                                                            ->whereNull('delivery_notes.deleted_at')
+                                                            ->where('delivery_notes.state', DeliveryNoteStateEnum::PACKED->value)
+                                                            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                                                            ->distinct('delivery_note_items.id')
+                                                            ->count('delivery_note_items.id'),
 
             'number_delivery_notes_state_finalised' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::FINALISED)->count(),
             'weight_delivery_notes_state_finalised' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::FINALISED)->sum('weight'),
 
-            'number_items_delivery_notes_state_finalised' => $shop->deliveryNotes()->where('state', DeliveryNoteStateEnum::FINALISED)
-                                                            ->get()
-                                                            ->sum(fn ($deliveryNote) => $deliveryNote->deliveryNoteItems->count()),
+            'number_items_delivery_notes_state_finalised' => DB::table('delivery_notes')
+                                                            ->where('delivery_notes.shop_id', $shop->id)
+                                                            ->whereNull('delivery_notes.deleted_at')
+                                                            ->where('delivery_notes.state', DeliveryNoteStateEnum::FINALISED->value)
+                                                            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                                                            ->distinct('delivery_note_items.id')
+                                                            ->count('delivery_note_items.id'),
 
             'number_delivery_notes_dispatched_today' => $shop->deliveryNotes()->whereDate('dispatched_at', Carbon::Today())->count(),
             'weight_delivery_notes_dispatched_today' => $shop->deliveryNotes()->whereDate('dispatched_at', Carbon::Today())->sum('weight'),
 
-            'number_items_delivery_notes_dispatched_today' => $shop->deliveryNotes()->whereDate('dispatched_at', Carbon::Today())
-                                                            ->with('deliveryNoteItems')
-                                                            ->get()
-                                                            ->sum(fn ($deliveryNote) => $deliveryNote->deliveryNoteItems->count()),
+            'number_items_delivery_notes_dispatched_today' => DB::table('delivery_notes')
+                                                            ->where('delivery_notes.shop_id', $shop->id)
+                                                            ->whereNull('delivery_notes.deleted_at')
+                                                            ->whereDate('delivery_notes.dispatched_at', Carbon::Today())
+                                                            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                                                            ->distinct('delivery_note_items.id')
+                                                            ->count('delivery_note_items.id'),
 
             'number_pickings_state_queued' => $shop->pickings()->where('state', PickingStateEnum::QUEUED)->count(),
             'number_pickings_state_picking' => $shop->pickings()->where('state', PickingStateEnum::PICKING)->count(),

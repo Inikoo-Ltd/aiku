@@ -106,6 +106,8 @@ class AppServiceProvider extends ServiceProvider
                 // Dropshipping
                 'CustomerClient'                => 'App\Models\Dropshipping\CustomerClient',
                 'Portfolio'                     => 'App\Models\Dropshipping\Portfolio',
+                'ShopifyUser'                   => 'App\Models\Dropshipping\ShopifyUser',
+                'TiktokUser'                    => 'App\Models\Dropshipping\TiktokUser',
 
                 // Fulfilment
                 'FulfilmentCustomer'            => 'App\Models\Fulfilment\FulfilmentCustomer',
@@ -251,7 +253,7 @@ class AppServiceProvider extends ServiceProvider
                 'Production'                    => 'App\Models\Production\Production',
                 'RawMaterial'                   => 'App\Models\Production\RawMaterial',
                 'ManufactureTask'               => 'App\Models\Production\ManufactureTask',
-                'Artefact'                      => 'App\Models\Production\Artefact'
+                'Artefact'                      => 'App\Models\Production\Artefact',
             ]
         );
     }

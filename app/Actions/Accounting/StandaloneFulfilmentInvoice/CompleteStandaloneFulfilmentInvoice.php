@@ -12,7 +12,7 @@ namespace App\Actions\Accounting\StandaloneFulfilmentInvoice;
 use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
@@ -66,7 +66,7 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
 
         if ($invoice->invoiceCategory) {
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
-            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory);
+            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory);
             InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory);
         }
 

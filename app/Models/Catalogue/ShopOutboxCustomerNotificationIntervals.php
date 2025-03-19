@@ -252,7 +252,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customer_notification_unsubscribed_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOutboxCustomerNotificationIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOutboxCustomerNotificationIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOutboxCustomerNotificationIntervals query()

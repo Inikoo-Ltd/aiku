@@ -11,6 +11,7 @@ import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
 import { codecovVitePlugin } from "@codecov/vite-plugin";
 import path from "node:path";
+import tailwindcss from 'tailwindcss';
 
 export default defineConfig(
   {
@@ -24,7 +25,11 @@ export default defineConfig(
       laravel({
                 hotFile       : "public/iris.hot",
                 buildDirectory: "iris",
-                input         : "resources/js/app-iris.js",
+                input         : [
+                  "resources/css/app.css",
+                  "resources/js/app-iris.js",
+                  "node_modules/@fortawesome/fontawesome-free/css/svg-with-js.min.css"
+                ],
                 ssr           : "resources/js/ssr-iris.js",
                 refresh       : true
               }),
@@ -45,7 +50,7 @@ export default defineConfig(
                         })
     ],
     ssr    : {
-      noExternal: ["@inertiajs/server"]
+      noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss"]
     },
     resolve: {
       alias: {
@@ -67,6 +72,7 @@ export default defineConfig(
     },
     build  : {
       sourcemap    : true,
+      // transpile: ["@fortawesome/vue-fontawesome", "@fortawesome/fontawesome-svg-core"],        
       devSourcemap : true,
       rollupOptions: {
         output: {
@@ -82,6 +88,9 @@ export default defineConfig(
       }
     },
     css    : {
+      postcss: {
+        plugins: [tailwindcss],
+      },
       preprocessorOptions: {
         scss: {
           silenceDeprecations: ["legacy-js-api"]

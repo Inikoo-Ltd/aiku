@@ -50,10 +50,6 @@ const DeliveryStackScreen = ({ navigation, route }) => {
     fetchData();
   }, []);
 
-  // Debugging: Lihat perubahan data setelah setData
-  useEffect(() => {
-    console.log("Updated data:", data);
-  }, [data]);
 
   // Perbarui title setelah data diperbarui
   useEffect(() => {
@@ -68,7 +64,7 @@ const DeliveryStackScreen = ({ navigation, route }) => {
       method: 'patch',
       args: [data?.id],
       data: { state: state },
-      onSuccess: () => {
+      onSuccess: (response) => {
         fetchData();
         Toast.show({
           type: ALERT_TYPE.SUCCESS,
@@ -77,6 +73,7 @@ const DeliveryStackScreen = ({ navigation, route }) => {
         });
       },
       onFailed: error => {
+        console.log(error)
         Toast.show({
           type: ALERT_TYPE.DANGER,
           title: 'Error',

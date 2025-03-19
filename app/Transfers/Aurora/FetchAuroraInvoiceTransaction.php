@@ -54,6 +54,11 @@ class FetchAuroraInvoiceTransaction extends FetchAurora
             $taxCategory = $this->parseTaxCategory($this->auroraModelData->{'Order Transaction Tax Category Key'});
 
 
+            $date = $this->parseDatetime($this->auroraModelData->{'Invoice Date'});
+            if (!$date) {
+                $date = $invoice->date;
+            }
+
             $this->parsedData['transaction'] = [
                 'order_id'        => $orderId,
                 'transaction_id'  => $transactionId,
@@ -66,8 +71,9 @@ class FetchAuroraInvoiceTransaction extends FetchAurora
                 'fetched_at'      => now(),
                 'last_fetched_at' => now(),
                 'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'},
-                'date'            => $this->auroraModelData->{'Invoice Date'},
+                'date'            => $date
             ];
+
         } else {
             print "Warning Asset Key missing in invoice transaction >".$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
         }

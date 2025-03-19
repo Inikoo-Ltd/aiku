@@ -20,6 +20,7 @@ use App\Models\Fulfilment\PalletReturnItem;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 
 class NotPickedPalletFromReturn extends OrgAction
 {
@@ -98,8 +99,11 @@ class NotPickedPalletFromReturn extends OrgAction
         return $this->handle($palletReturnItem, $this->validatedData);
     }
 
-    public function jsonResponse(PalletReturnItem $palletReturnItem): PalletReturnItemUIResource
+    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource|MayaPalletReturnItemUIResource
     {
+        if ($request->hasHeader('Maya-Version')) {
+            return MayaPalletReturnItemUIResource::make($palletReturnItem);
+        }
         return new PalletReturnItemUIResource($palletReturnItem);
     }
 }

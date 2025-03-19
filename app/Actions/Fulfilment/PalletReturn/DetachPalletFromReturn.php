@@ -35,7 +35,7 @@ class DetachPalletFromReturn extends OrgAction
 
         $palletReturn->pallets()->detach([$pallet->id]);
 
-        AutoAssignServicesToPalletReturn::run($palletReturn, $pallet);
+        $palletReturn = SetPalletReturnAutoServices::run($palletReturn);
         PalletReturnHydratePallets::dispatch($palletReturn);
         PalletReturnHydrateTransactions::dispatch($palletReturn);
 

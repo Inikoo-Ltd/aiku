@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\Dropshipping;
 
-use App\Actions\Dropshipping\Tiktok\AuthenticateTiktokAccount;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use Inertia\Inertia;
@@ -63,9 +63,16 @@ class ShowRetinaDropshipping extends RetinaAction
                     ])
                 ] : null,
                 'tiktokAuth' => [
-                    'url' => AuthenticateTiktokAccount::make()->redirectToTikTok(),
+                    'url' => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
                     'isAuthenticated' => AuthenticateTiktokAccount::make()->checkIsAuthenticated($customer),
-                    'tiktokName' => $customer->tiktokUser?->name
+                    'tiktokName' => $customer->tiktokUser?->name,
+                    'deleteAccountRoute' => [
+                        'method' => 'delete',
+                        'name' => 'retina.models.dropshipping.tiktok.delete',
+                        'parameters' => [
+                            'tiktokUser' => $customer->tiktokUser?->id
+                        ]
+                    ]
                 ]
             ]
         );

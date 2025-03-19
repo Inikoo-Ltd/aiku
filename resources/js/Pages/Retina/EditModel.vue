@@ -8,7 +8,7 @@
 import {ref, onMounted, onBeforeUnmount} from 'vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import FieldForm from '@/Components/Forms/FieldForm.vue'
-import { get as getLodash } from 'lodash'
+import { get as getLodash } from 'lodash-es'
 import { capitalize } from "@/Composables/capitalize"
 // import { useLayoutStore } from '@/Stores/retinaLayout'
 import {library} from "@fortawesome/fontawesome-svg-core"

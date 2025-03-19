@@ -9,7 +9,7 @@ import IconPicker from '@/Components/Pure/IconPicker.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faTrashAlt, faLink, faExclamation } from '@fas';
+import { faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faTrashAlt, faLink, faExclamation ,faGlobe} from '@fas';
 import { faExternalLink, faHeart } from '@far';
 import PureInput from '@/Components/Pure/PureInput.vue';
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue';
@@ -20,7 +20,7 @@ import { faCompassDrafting } from '@fortawesome/free-solid-svg-icons';
 import { faExclamationTriangle, faTimesCircle } from '@fal';
 import ConfirmPopup from 'primevue/confirmpopup';
 
-library.add(faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faTrashAlt);
+library.add(faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faTrashAlt,faGlobe);
 
 interface navigation {
   label: String

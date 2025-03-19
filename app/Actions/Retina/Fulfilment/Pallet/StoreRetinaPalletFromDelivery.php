@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\StorePalletFromDelivery;
+use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -27,7 +27,7 @@ class StoreRetinaPalletFromDelivery extends RetinaAction
 
     public function handle(PalletDelivery $palletDelivery, array $modelData): Pallet
     {
-        return StorePalletFromDelivery::run($palletDelivery, $modelData);
+        return StorePalletCreatedInPalletDelivery::run($palletDelivery, $modelData);
 
     }
 

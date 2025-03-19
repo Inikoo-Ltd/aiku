@@ -22,5 +22,4 @@ class ShowRetinaLogin
     {
         return Inertia::render('Auth/RetinaLogin');
     }
-
 }

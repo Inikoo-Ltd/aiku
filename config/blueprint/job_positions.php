@@ -36,6 +36,16 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-wm'    => [
+            'code'               => 'gp-wm',
+            'name'               => 'Group Webmaster',
+            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'department'         => 'webmaster',
+            'roles'              => [
+                RolesEnum::GROUP_WEBMASTER
+            ],
+            'organisation_types' => []
+        ],
         'gp-sc'    => [
             'code'               => 'gp-sc',
             'name'               => 'Supply Chain Manager',

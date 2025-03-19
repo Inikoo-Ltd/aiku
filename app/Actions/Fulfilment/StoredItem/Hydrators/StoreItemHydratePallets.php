@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\StoredItem\Hydrators;
 use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
@@ -35,14 +36,16 @@ class StoreItemHydratePallets extends HydrateModel
     public function handle(StoredItem $storedItem): void
     {
 
+        // dd($storedItem->palletStoredItems()->where('in_process', false)->get());
         $stats = [
             'number_pallets' => DB::table('pallet_stored_items')
-                ->where('stored_item_id', $storedItem->id)
-                ->where('in_process', false)->count(),
+            ->join('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id')
+            ->where('pallet_stored_items.stored_item_id', $storedItem->id)
+            ->where('pallet_stored_items.in_process', false)
+            ->whereIn('pallets.status', [PalletStatusEnum::STORING, PalletStatusEnum::RETURNING])
+            ->count(),
         ];
-
-
-
+        // dd($stats);
         $storedItem->update($stats);
     }
 }

@@ -3,7 +3,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import { set, get } from "lodash"
 import { checkVAT, countries } from 'jsvat-next';
 import { ref, watch } from "vue"
-import { debounce } from "lodash"
+import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'

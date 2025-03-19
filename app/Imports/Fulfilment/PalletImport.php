@@ -8,7 +8,7 @@
 
 namespace App\Imports\Fulfilment;
 
-use App\Actions\Fulfilment\Pallet\StorePalletFromDelivery;
+use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Imports\WithImport;
 use App\Models\Fulfilment\PalletDelivery;
@@ -71,7 +71,7 @@ class PalletImport implements ToCollection, WithHeadingRow, SkipsOnFailure, With
         ]);
 
         try {
-            StorePalletFromDelivery::run(
+            StorePalletCreatedInPalletDelivery::run(
                 $this->scope,
                 $modelData
             );

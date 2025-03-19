@@ -77,6 +77,13 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
             ]
         ];
 
+        $palletsRoute = [
+            'name' => 'grp.json.fulfilment-customer.storing-pallets.index',
+            'parameters' => [
+                'fulfilmentCustomer' => $invoice->customer->fulfilmentCustomer->slug
+            ]
+        ];
+
         $actions = [];
 
         $actions[] = [
@@ -207,6 +214,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
 
                 'service_list_route'       => $serviceRoute,
                 'physical_good_list_route' => $productRoute,
+                'pallet_list_route' => $palletsRoute,
 
                 'invoice' => InvoiceResource::make($invoice),
                 'outbox'  => [

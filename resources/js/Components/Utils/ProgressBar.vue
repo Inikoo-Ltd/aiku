@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faFrown, faMeh } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { set, throttle } from 'lodash'
+import { set, throttle } from 'lodash-es'
 import { inject } from 'vue'
 library.add(faTimes, faFrown, faMeh, faSpinnerThird)
 

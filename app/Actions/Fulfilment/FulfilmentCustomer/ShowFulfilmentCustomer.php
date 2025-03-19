@@ -153,6 +153,7 @@ class ShowFulfilmentCustomer extends OrgAction
                         'title' => __('customer'),
                         'icon'  => 'fal fa-user',
                     ],
+                    'iconRight'     => FulfilmentCustomerStatusEnum::statusIcon()[$fulfilmentCustomer->status->value],
                     'model'         => __('Customer'),
                     'subNavigation' => $this->getFulfilmentCustomerSubNavigation($fulfilmentCustomer, $request),
                     'title'         => $fulfilmentCustomer->customer->name,

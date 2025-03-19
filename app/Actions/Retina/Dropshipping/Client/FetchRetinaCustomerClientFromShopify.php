@@ -45,7 +45,12 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
                 }
 
                 if (!$existsClient) {
-                    StoreCustomerClient::make()->action($this->parent, $attributes);
+                    $customerClient = StoreCustomerClient::make()->action($this->parent, $attributes);
+
+                    AttachRetinaPlatformCustomerClient::run($shopifyUser->customer, $shopifyUser, [
+                        'customer_client_id' => $customerClient->id,
+                        'platform_customer_client_id' => Arr::get($customer, 'id')
+                    ]);
                 } else {
                     UpdateCustomerClient::run($existsClient, $attributes);
                 }
@@ -72,6 +77,14 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
     public function inPlatform(Platform $platform, ActionRequest $request): void
     {
         $this->initialisation($request);
+        $this->parent = $this->customer;
+
+        $this->handle();
+    }
+
+    public function inPupil(Platform $platform, ActionRequest $request): void
+    {
+        $this->initialisationFromPupil($request);
         $this->parent = $this->customer;
 
         $this->handle();

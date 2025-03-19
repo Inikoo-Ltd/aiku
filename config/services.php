@@ -33,6 +33,8 @@ return [
 
     'tiktok' => [
         'url'    => env('TIKTOK_BUSINESS_URL'),
+        'base_url'    => env('TIKTOK_BASE_URL'),
+        'auth_url'    => env('TIKTOK_AUTH_URL'),
         'redirect_uri' => env('TIKTOK_REDIRECT_URI'),
         'client_id' => env('TIKTOK_CLIENT_ID'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),

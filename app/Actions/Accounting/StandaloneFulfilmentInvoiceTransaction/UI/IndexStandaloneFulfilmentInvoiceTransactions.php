@@ -53,6 +53,7 @@ class IndexStandaloneFulfilmentInvoiceTransactions extends OrgAction
                 'invoice_transactions.model_type',
                 'invoice_transactions.model_id',
                 'invoice_transactions.quantity',
+                'invoice_transactions.data',
 
                 'historic_assets.id as historic_asset_id',
                 'historic_assets.code as historic_asset_code',

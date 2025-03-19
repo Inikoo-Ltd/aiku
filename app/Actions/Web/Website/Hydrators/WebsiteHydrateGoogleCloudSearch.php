@@ -10,52 +10,66 @@
 
 namespace App\Actions\Web\Website\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Web\Website;
 use Exception;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Arr;
 use Google\Client;
 use Google\Service\Webmasters;
-use Lorisleiva\Actions\Concerns\AsAction;
 use GuzzleHttp\Exception\ConnectException;
 
 class WebsiteHydrateGoogleCloudSearch
 {
-    use AsAction;
+    use WithHydrateCommand;
+
+    public string $commandSignature = 'hydrate:website_data_google_cloud {organisations?*} {--s|slugs=}';
+
     private Website $website;
-    private ?string $apiToken;
 
     public function getJobMiddleware(): array
     {
         return [(new WithoutOverlapping($this->website->id))->dontRelease()];
     }
 
+    public function __construct()
+    {
+        $this->model = Website::class;
+    }
+
+
+    /**
+     * @throws \Google\Exception
+     */
     public function handle(Website $website): void
     {
+        if (app()->environment('testing')) {
+            return;
+        }
+
         $groupSettings = $website->group->settings;
-        $this->apiToken = Arr::get($groupSettings, 'gcp.oauthClientSecret');
-        if (!$this->apiToken) {
-            $this->apiToken = env('GOOGLE_OAUTH_CLIENT_SECRET');
-            if (!$this->apiToken) {
-                dd("secret is empty \n");
+        $apiToken      = Arr::get($groupSettings, 'gcp.oauthClientSecret');
+        if (!$apiToken) {
+            $apiToken = env('GOOGLE_OAUTH_CLIENT_SECRET');
+            if (!$apiToken) {
+                return;
             }
-            data_set($groupSettings, 'gcp.oauthClientSecret', $this->apiToken);
+            data_set($groupSettings, 'gcp.oauthClientSecret', $apiToken);
             $website->group->update(['settings' => $groupSettings]);
 
         }
 
         $client = new Client();
-        $gcpOauthClientSecretDecoded = base64_decode($this->apiToken);
+        $gcpOauthClientSecretDecoded = base64_decode($apiToken);
         $client->setAuthConfig(json_decode($gcpOauthClientSecretDecoded, true));
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
         $service = new Webmasters($client);
 
         $this->saveSiteUrl($website, $service);
 
-        return;
     }
 
-    private function saveSiteUrl(Website $website, $service, $retry = 3)
+    private function saveSiteUrl(Website $website, $service, $retry = 3): ?string
     {
         if ($retry == 0) {
             return '';
@@ -67,10 +81,10 @@ class WebsiteHydrateGoogleCloudSearch
                 $siteEntry = $service->sites->listSites()->getSiteEntry();
                 $listSite = Arr::pluck($siteEntry, "siteUrl");
                 $siteUrl = Arr::where($listSite, function (string $value) use ($website) {
-                    return str_contains($value, $website->website->domain);
+                    return str_contains($value, $website->domain);
                 });
                 if (empty($siteUrl)) {
-                    return;
+                    return null;
                 }
                 $siteUrl = Arr::first($siteUrl);
                 data_set($websiteData, 'gcp.siteUrl', $siteUrl);
@@ -81,26 +95,11 @@ class WebsiteHydrateGoogleCloudSearch
                 debug($e);
             }
         }
+
+        return null;
     }
 
-    public string $commandSignature = 'hydrate:website_data_google_cloud {website?}';
 
-    public function asCommand($command)
-    {
-        $webSlug = $command->argument('website', 'Website slug');
 
-        if ($webSlug) {
-            $website = Website::where('slug', $webSlug)->first();
-            if (!$website) {
-                return;
-            }
-            $this->handle($website);
-        } else {
-            $websites = Website::orderBy('id')->get();
-            $command->withProgressBar($websites, function ($website) {
-                $this->handle($website);
-            });
-        }
-    }
 
 }

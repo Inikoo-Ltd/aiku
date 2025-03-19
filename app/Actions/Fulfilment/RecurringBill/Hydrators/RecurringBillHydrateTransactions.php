@@ -36,7 +36,10 @@ class RecurringBillHydrateTransactions
         $stats = [
             'number_transactions'                   => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->count(),
             'number_transactions_type_pallets'      => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->where('item_type', 'Pallet')->count(),
-            'number_transactions_type_stored_items' => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->where('item_type', 'StoreItem')->count()
+            'number_transactions_type_stored_items' => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->where('item_type', 'StoreItem')->count(),
+            'number_transactions_type_services'     => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->where('item_type', 'Service')->count(),
+            'number_transactions_type_products'     => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->where('item_type', 'Product')->count(),
+            'number_transactions_type_spaces'       => RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)->where('item_type', 'Space')->count()
 
         ];
 

@@ -77,7 +77,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 class="bg-gradient-to-tr from-pink-200 xvia-pink-200 to-pink-100 border-none ring-1 ring-fuchsia-400 h-7 w-fit flex items-center justify-center gap-x-3 rounded-md px-3">
                 <div class="flex gap-x-1 items-center ">
                     <FontAwesomeIcon icon="fas fa-sparkles" class="text-pink-500" fixed-width aria-hidden="true" />
-                    <h1 class="animate-linear bg-gradient-to-r from-fuchsia-300 via-pink-500 to-fuchsia-300 bg-[length:200%_auto] bg-clip-text font-bold text-transparent">
+                    <h1 class="xanimate-linear xbg-gradient-to-r xfrom-fuchsia-300 text-pink-500 xto-fuchsia-300 xbg-[length:200%_auto] xbg-clip-text font-bold xtext-transparent">
                         <span class="">AI</span>
                     </h1>
                 </div>

@@ -53,7 +53,19 @@ trait WithCustomerSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-shopping-cart'],
-                    'tooltip' => __('orders')
+                    'tooltip' => __('Orders')
+                ]
+            ],
+            [
+                'label'    => __('Delivery notes'),
+                'number'   => $customer->stats->number_delivery_notes,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
+                    'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-truck'],
+                    'tooltip' => __('Delivery notes')
                 ]
             ],
             [
@@ -137,6 +149,18 @@ trait WithCustomerSubNavigation
                 ]
             ],
             [
+                'label'    => __('Delivery notes'),
+                'number'   => $customer->stats->number_delivery_notes,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
+                    'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-truck'],
+                    'tooltip' => __('Delivery notes')
+                ]
+            ],
+            [
                 'label'    => __('Invoices'),
                 'number'   => $customer->stats->number_invoices,
                 'route'     => [
@@ -151,7 +175,7 @@ trait WithCustomerSubNavigation
         ];
     }
 
-    protected function getCustomerClientSubNavigation(CustomerClient $customerClient, ActionRequest $request): array
+    protected function getCustomerClientSubNavigation(CustomerClient $customerClient): array
     {
         return [
             [
@@ -163,12 +187,12 @@ trait WithCustomerSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Customer')
+                    'tooltip' => __('Client')
                 ]
             ],
             [
                 'label'    => __('Orders'),
-                'number'   => $customerClient->orders()->count(),
+                'number'   => $customerClient->stats->number_orders,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.index',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
@@ -176,6 +200,30 @@ trait WithCustomerSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-shopping-cart'],
                     'tooltip' => __('orders')
+                ]
+            ],
+            [
+                'label'    => __('Delivery notes'),
+                'number'   => $customerClient->stats->number_delivery_notes,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.delivery_notes.index',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-truck'],
+                    'tooltip' => __('Delivery notes'),
+                ]
+            ],
+            [
+                'label'    => __('Invoices'),
+                'number'   => $customerClient->stats->number_invoices,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.invoices.index',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice'],
+                    'tooltip' => __('invoices')
                 ]
             ],
         ];

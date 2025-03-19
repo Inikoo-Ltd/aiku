@@ -28,7 +28,6 @@ use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
-use App\Models\Comms\Email;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\WebUser;
@@ -527,7 +526,53 @@ test('UI show dispatched emails', function () {
     });
 });
 
+test('UI edit outbox in fulfilment', function () {
+
+    $fulfilment = Fulfilment::first();
+    if (!$fulfilment) {
+        $fulfilment = createFulfilment($this->organisation);
+    }
+    $postRoom = $this->group->postRooms()->first();
+
+    $orgPostRoom = StoreOrgPostRoom::make()->action(
+        $postRoom,
+        $fulfilment->organisation,
+        []
+    );
+
+    $outbox = StoreOutbox::make()->action(
+        $orgPostRoom,
+        $fulfilment,
+        [
+            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type' => OutboxTypeEnum::USER_NOTIFICATION,
+            'state' => OutboxStateEnum::ACTIVE,
+            'name' => 'test sender',
+        ]
+    );
+
+    $response = $this->get(route('grp.org.fulfilments.show.operations.comms.outboxes.edit', [
+        $this->organisation,
+        $fulfilment->slug,
+        $outbox->slug
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has(
+                'formData',
+                fn (AssertableInertia $page) => $page
+                    ->where('args.updateRoute.name', 'grp.models.fulfilment.outboxes.update')
+                    ->etc()
+            )
+            ->has('breadcrumbs', 4);
+    });
+});
+
 test('UI create mailshot', function () {
+    $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.create', [
         $this->organisation,
         $this->shop
@@ -553,6 +598,7 @@ test('UI create mailshot', function () {
 });
 
 test('UI edit mailshot', function (Mailshot $mailShot) {
+    $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.edit', [
         $this->organisation,
         $this->shop,

@@ -63,7 +63,6 @@ class Handler extends ExceptionHandler
                 app('sentry')->captureException($e);
             }
         });
-
     }
 
     protected function loadErrorMiddleware($request, $callback)
@@ -88,7 +87,7 @@ class Handler extends ExceptionHandler
             $app = $this->getApp();
 
 
-            if ($app == 'aiku-public') {
+            if ($app == 'aiku-public' || $app == 'iris') {
                 return $this->renderErrorForLogOutWebpages($app, $request, $e, $response);
             }
 
@@ -176,7 +175,7 @@ class Handler extends ExceptionHandler
         return $app;
     }
 
-    private function getInertiaProps(User|WebUser $user, string $app, $request, $response, $e): array
+    private function getInertiaProps(User|WebUser|null $user, string $app, $request, $response, $e): array
     {
         $firstLoadOnlyProps = [];
 
@@ -199,13 +198,13 @@ class Handler extends ExceptionHandler
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'error'    => $this->getBaseErrorData($response, $e),
-                'datetime' => now()->tz('UTC')->toDateTimeString(),
+                'error'     => $this->getBaseErrorData($response, $e),
+                'datetime'  => now()->tz('UTC')->toDateTimeString(),
                 'routeName' => $request->route()->getName(),
-                'auth'     => [
+                'auth'      => [
                     'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
                 ],
-                'ziggy'    => [
+                'ziggy'     => [
                     'location' => $request->url(),
                 ],
 
@@ -271,9 +270,13 @@ class Handler extends ExceptionHandler
         Inertia::setRootView('app-'.$app);
 
 
+        $props     = $this->getInertiaProps($request->user(), $app, $request, $response, $e);
+        $errorData = $this->getBaseErrorData($response, $e);
+
+
         return Inertia::render(
             $this->getInertiaPage($e, $app),
-            $this->getBaseErrorData($response, $e)
+            array_merge($props, $errorData),
         )
             ->toResponse($request)
             ->setStatusCode($response->getStatusCode());

@@ -13,6 +13,7 @@ use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
@@ -645,4 +646,56 @@ test('UI get section route show shop website', function () {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_WEBSITE->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
+});
+
+
+test('ui index redirects in website', function () {
+    $this->withoutExceptionHandling();
+    $response = get(
+        route(
+            'grp.org.fulfilments.show.web.websites.show',
+            [
+                'organisation' => $this->organisation->slug,
+                'fulfilment' => $this->fulfilment->slug,
+                'website' => $this->fulfilmentWebsite,
+                'tab' => WebsiteTabsEnum::REDIRECTS->value
+            ]
+        )
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Website')
+            ->has('title')
+            ->has(
+                "tabs",
+                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::REDIRECTS->value)->etc()
+            )
+            ->has('breadcrumbs', 2);
+    });
+});
+
+test('ui index redirects in webpage', function () {
+    $this->withoutExceptionHandling();
+    $response = get(
+        route(
+            'grp.org.shops.show.web.webpages.show',
+            [
+                'organisation' => $this->organisation->slug,
+                'shop' => $this->shop->slug,
+                'website' => $this->web->slug,
+                'webpage' => $this->webpage->slug,
+                'tab' => WebsiteTabsEnum::REDIRECTS->value
+            ]
+        )
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Web/Webpage')
+            ->has('title')
+            ->has(
+                "tabs",
+                fn (AssertableInertia $page) => $page->where("current", WebpageTabsEnum::REDIRECTS->value)->etc()
+            )
+            ->has('breadcrumbs', 3);
+    });
 });

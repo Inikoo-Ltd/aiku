@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
+import DatePicker from "@vuepic/vue-datepicker"
 
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
@@ -9,7 +10,7 @@ import { computed, defineAsyncComponent, inject, ref } from 'vue'
 import type { Component } from 'vue'
 import Popover from '@/Components/Popover.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
 
@@ -27,18 +28,20 @@ import axios from 'axios'
 
 // import TablePallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePallets.vue'
 // import type { Timeline } from '@/types/Timeline'
-import { useDaysLeftFromToday } from '@/Composables/useFormatTime'
+import { useDaysLeftFromToday, useFormatTime } from '@/Composables/useFormatTime'
 import { BoxStats } from '@/types/Pallet'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWaveSine } from '@far'
+import { faDiamond } from '@fas'
+import { faCalendarAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import TablePalletDeliveries from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveries.vue"
 import TablePalletReturns from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletReturns.vue"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-library.add(faWaveSine)
+library.add(faDiamond, faWaveSine, faCalendarAlt)
 
 
 const props = defineProps<{
@@ -66,6 +69,8 @@ const props = defineProps<{
     physical_good_lists?: []
     physical_good_list_route: routeType
 
+    pallet_list_route: routeType  // to attach Service to pallet
+
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -85,11 +90,12 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
-const formAddService = useForm({ service_id: '', quantity: 1, historic_asset_id: null })
+const formAddService = useForm({ service_id: null, quantity: 1, pallet_id: null, handle_date: null, historic_asset_id: null })
 const formAddPhysicalGood = useForm({ outer_id: '', quantity: 1, historic_asset_id: null })
 const isLoadingButton = ref<string | boolean>(false)
 const isLoadingData = ref<string | boolean>(false)
-const dataServiceList = ref([])
+const dataServiceList = ref<{ is_pallet_handling: boolean, id: number }[]>([])
+const dataPalletList = ref([])
 
 const onSubmitAddService = (data: Action, closedPopover: Function) => {
     const selectedHistoricAssetId = dataServiceList.value.filter(service => service.id == formAddService.service_id)[0]?.historic_asset_id
@@ -190,28 +196,90 @@ const isLoading = ref(false)
                     </template>
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
-                            <div class="">
+                            <!-- Select Services -->
+                            <div>
+                                <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
+                                <div class="">
+                                    <PureMultiselectInfiniteScroll
+                                        v-model="formAddService.service_id"
+                                        :fetchRoute="props.service_list_route"
+                                        :placeholder="trans('Select Services')"
+                                        valueProp="id"
+                                        @optionsList="(options) => dataServiceList = options"
+                                    >
+                                        <template #singlelabel="{ value }">
+                                            <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(value.currency_code, value.price) }}/{{ value.unit }})</span></div>
+                                        </template>
+                                        <template #option="{ option, isSelected, isPointed }">
+                                            <div class="">
+                                                <FontAwesomeIcon v-if="option?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                                                {{ option.name }}
+                                                <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span>
+                                            </div>
+                                        </template>
+                                    </PureMultiselectInfiniteScroll>
+                                    <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
+                                        {{ formAddService.errors.service_id }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Pallet -->
+                            <div v-if="dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling" class="mt-3">
+                                <span class="text-xs px-1 my-2">{{ trans('Pallet to attach') }}: </span>
                                 <PureMultiselectInfiniteScroll
-                                    v-model="formAddService.service_id"
-                                    :fetchRoute="props.service_list_route"
-                                    :placeholder="trans('Select Services')"
+                                    v-model="formAddService.pallet_id"
+                                    :fetchRoute="props.pallet_list_route"
+                                    :placeholder="trans('Select pallet')"
+                                    required
                                     valueProp="id"
-                                    @optionsList="(options) => dataServiceList = options"
+                                    @optionsList="(options) => dataPalletList = options"
                                 >
                                     <template #singlelabel="{ value }">
-                                        <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(value.currency_code, value.price) }}/{{ value.unit }})</span></div>
+                                        <div class="w-full text-left pl-4">{{ value.reference }} <span class="text-sm text-gray-400">({{ value.type }})</span></div>
                                     </template>
 
                                     <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span></div>
+                                        <div class="">
+                                            {{ option.reference }}
+                                            <span class="text-sm text-gray-400 capitalize">({{ option.type }})</span>
+                                        </div>
                                     </template>
                                 </PureMultiselectInfiniteScroll>
 
-                                <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
-                                    {{ formAddService.errors.service_id }}
+                                <p v-if="get(formAddService, ['errors', 'pallet_id'])" class="mt-2 text-sm text-red-600">
+                                    {{ formAddService.errors.pallet_id }}
                                 </p>
                             </div>
+
+                            <!-- Date -->
+                            <Popover v-if="dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling" position="" style="z-index: 20" class="mt-3 ">
+                                <template #button>
+                                    <div class="text-left">
+                                        <span class="text-xs px-1 my-2">{{ trans('Date') }}: </span>
+                                        <div
+                                            xxv-tooltip="'useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)'"
+                                            class="text-left border border-gray-300 py-2 text-sm rounded px-3 cursor-pointer"
+                                            :class="formAddService.handle_date ? '' : 'text-gray-400 '"
+                                        >
+                                            <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-base" fixed-width aria-hidden="true" />
+                                            {{ formAddService.handle_date ? useFormatTime(formAddService.handle_date, { formatTime: 'ddmy' }) : trans("Select date") }}
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template #content="{ close }">
+                                    <DatePicker
+                                        v-model="formAddService.handle_date"
+                                        @update:modelValue="() => close()"
+                                        inline
+                                        auto-apply
+                                        :enable-time-picker="false"
+                                    />
+                                </template>
+                            </Popover>
+
+                            <!-- Quantity -->
                             <div class="mt-3">
                                 <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
                                 <PureInput
@@ -223,12 +291,16 @@ const isLoading = ref(false)
                                     {{ formAddService.errors.quantity }}
                                 </p>
                             </div>
+
                             <div class="flex justify-end mt-3">
                                 <Button
                                     @click="() => onSubmitAddService(action, closed)"
                                     :style="'save'"
                                     :loading="isLoadingButton == 'addService'"
-                                    :disabled="!formAddService.service_id || !(formAddService.quantity > 0)"
+                                    :disabled="
+                                        !formAddService.service_id
+                                        || !(formAddService.quantity > 0)
+                                        || dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling ? (!formAddService.pallet_id || !formAddService.handle_date) : false"
                                     label="Save"
                                     full
                                 />

@@ -67,11 +67,26 @@ function useTabChangeDashboard(tab_slug: string) {
 		},
 	})
 }
+console.log('ewqewqewq', selectedTab.value.data)
+
+const listColumnInTable = computed(() => {
+	
+	const resultSet = new Set();  // Create a Set to store unique elements
+
+    // Iterate through each sub-array in the input array
+    selectedTab.value?.data?.map((e) => Object.keys(e.interval_percentages || {}))?.forEach(subArray => {
+        // Add each element of the sub-array to the Set
+        subArray.forEach(item => resultSet.add(item));
+    });
+
+    // Convert the Set back to an Array to return the result
+    return Array.from(resultSet);
+})
 </script>
 
 <template>
 	<div class="bg-white mb-3 p-4 shadow-md border border-gray-200">
-		<div class="text-red-500">
+		<div class="">
 			<Tabs :value="activeIndexTab" class="overflow-x-auto text-sm md:text-base pb-2">
 				<TabList>
 					<Tab
@@ -96,6 +111,8 @@ function useTabChangeDashboard(tab_slug: string) {
 						No data available.
 					</div>
 				</template>
+
+				<!-- Code -->
 				<Column sortable field="code">
 					<template #header>
 						<div class="text-xs md:text-base flex items-center justify-between">
@@ -136,12 +153,13 @@ function useTabChangeDashboard(tab_slug: string) {
 
 				<!-- Refunds -->
 				<Column
+					v-if="listColumnInTable.includes('refunds')"
 					field="interval_percentages.refunds.amount"
 					sortField="interval_percentages.refunds.amount"
 					sortable
 					headerClass="align-right">
 					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end">
+						<div class="text-xs md:text-base flex justify-end items-end w-full">
 							<span class="">Refunds</span>
 						</div>
 					</template>
@@ -159,6 +177,7 @@ function useTabChangeDashboard(tab_slug: string) {
 
 				<!-- Refunds: Diff 1y -->
 				<Column
+					v-if="listColumnInTable.includes('refunds')"
 					sortable
 					field="interval_percentages.refunds.percentage"
 					sortField="interval_percentages.refunds.percentage"
@@ -166,7 +185,7 @@ function useTabChangeDashboard(tab_slug: string) {
 					headerClass="align-right"
 					headerStyle=" width: 140px">
 					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end">
+						<div class="text-xs md:text-base flex justify-end items-end w-full">
 							<span class="font-semibold">
 								<FontAwesomeIcon
 									fixed-width
@@ -185,13 +204,14 @@ function useTabChangeDashboard(tab_slug: string) {
 
 				<!-- Invoice -->
 				<Column
+					v-if="listColumnInTable.includes('invoices')"
 					sortable
 					field="interval_percentages.invoices.amount"
 					sortField="interval_percentages.invoices.amount"
 					class="overflow-hidden transition-all"
 					headerClass="align-right">
 					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end">
+						<div class="text-xs md:text-base flex justify-end items-end w-full">
 							<span class="">Invoices</span>
 						</div>
 					</template>
@@ -208,6 +228,7 @@ function useTabChangeDashboard(tab_slug: string) {
 
 				<!-- Invoice: Diff 1y -->
 				<Column
+					v-if="listColumnInTable.includes('invoices')"
 					field="interval_percentages.invoices.percentage"
 					sortField="interval_percentages.invoices.percentage"
 					sortable
@@ -215,7 +236,7 @@ function useTabChangeDashboard(tab_slug: string) {
 					headerClass="align-right"
 					headerStyle=" width: 140px">
 					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end">
+						<div class="text-xs md:text-base flex justify-end items-end w-full">
 							<span class="">
 								<FontAwesomeIcon
 									fixed-width
@@ -235,13 +256,14 @@ function useTabChangeDashboard(tab_slug: string) {
 
 				<!-- Sales -->
 				<Column
+					v-if="listColumnInTable.includes('sales')"
 					field="interval_percentages.sales.amount"
 					sortField="interval_percentages.sales.amount"
 					sortable
 					class="overflow-hidden transition-all"
 					headerClass="align-right">
 					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end">
+						<div class="text-xs md:text-base flex justify-end items-end w-full">
 							<span class="">Sales</span>
 						</div>
 					</template>
@@ -257,6 +279,7 @@ function useTabChangeDashboard(tab_slug: string) {
 
 				<!-- Sales: Diff 1y -->
 				<Column
+					v-if="listColumnInTable.includes('sales')"
 					field="interval_percentages.sales.percentage"
 					sortField="interval_percentages.sales.percentage"
 					sortable
@@ -264,7 +287,7 @@ function useTabChangeDashboard(tab_slug: string) {
 					headerClass="align-right"
 					headerStyle=" width: 140px">
 					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end">
+						<div class="text-xs md:text-base flex justify-end items-end w-full">
 							<span class="text-gray-700">
 								<FontAwesomeIcon
 									fixed-width
@@ -379,7 +402,8 @@ function useTabChangeDashboard(tab_slug: string) {
 				</ColumnGroup>
 			</DataTable>
 
-			<div v-else>Type not found</div>
+			<div v-else class="text-red-500">Type not found</div>
+			<!-- <pre>{{ listColumnInTable }}</pre> -->
 		</div>
 	</div>
 </template>

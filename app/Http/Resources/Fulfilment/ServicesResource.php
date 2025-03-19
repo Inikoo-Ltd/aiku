@@ -63,6 +63,7 @@ class ServicesResource extends JsonResource
             'price'             => $this->price * ($this->quantity ?? 1),
             'currency_code'     => $this->currency_code,
             'unit'              => $this->unit,
+            'is_pallet_handling' => $this->is_pallet_handling,
             // 'unit_abbreviation'      => $this->unit ? $this->unit->abbreviations()[$this->unit->value] : 's',
             // 'unit_label'             => $this->unit ? $this->unit->labels()[$this->unit->value] : __('service'),
             'unit_abbreviation' => 's',

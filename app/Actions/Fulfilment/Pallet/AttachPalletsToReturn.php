@@ -8,8 +8,8 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\PalletReturn\AutoAssignServicesToPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
+use App\Actions\Fulfilment\PalletReturn\SetPalletReturnAutoServices;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
@@ -59,11 +59,9 @@ class AttachPalletsToReturn extends OrgAction
                 'requested_for_return_at' => now()
             ]);
 
-            $pallets = Pallet::findOrFail($palletsToSelect);
-            foreach ($pallets as $pallet) {
-                AutoAssignServicesToPalletReturn::run($palletReturn, $pallet);
-            }
         }
+
+        $palletReturn = SetPalletReturnAutoServices::run($palletReturn);
 
         if (!empty($palletsToUnselect)) {
             $this->unselectPallets($palletReturn, $palletsToUnselect);
@@ -88,13 +86,8 @@ class AttachPalletsToReturn extends OrgAction
 
         $palletReturn->pallets()->detach($palletIds);
 
-        foreach ($palletIds as $palletId) {
-            $pallet = Pallet::find($palletId);
+        $palletReturn = SetPalletReturnAutoServices::run($palletReturn);
 
-            if ($pallet) {
-                AutoAssignServicesToPalletReturn::run($palletReturn, $pallet);
-            }
-        }
         PalletReturnHydratePallets::run($palletReturn);
         $palletReturn->refresh();
     }

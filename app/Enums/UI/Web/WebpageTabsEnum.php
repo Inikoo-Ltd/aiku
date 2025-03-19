@@ -24,6 +24,7 @@ enum WebpageTabsEnum: string
 
 
     case SNAPSHOTS            = 'snapshots';
+    case REDIRECTS            = 'redirects';
     case CHANGELOG            = 'changelog';
 
 
@@ -49,6 +50,10 @@ enum WebpageTabsEnum: string
             ],
             WebpageTabsEnum::SNAPSHOTS => [
                 'title' => __('Snapshots'),
+                'icon'  => 'fal fa-layer-group',
+            ],
+            WebpageTabsEnum::REDIRECTS => [
+                'title' => __('Redirects'),
                 'icon'  => 'fal fa-layer-group',
             ],
 

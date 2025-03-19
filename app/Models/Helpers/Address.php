@@ -38,7 +38,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Helpers\Country|null $country
  * @property-read string $formatted_address
- * @property-read \App\Models\Helpers\TFactory|null $use_factory
  * @property-read Model|\Eloquent $owner
  * @method static \Database\Factories\Helpers\AddressFactory factory($count = null, $state = [])
  * @method static Builder<static>|Address newModelQuery()

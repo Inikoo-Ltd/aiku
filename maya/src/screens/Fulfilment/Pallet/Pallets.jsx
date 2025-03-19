@@ -95,7 +95,7 @@ const GroupItem = ({item: initialItem, navigation}) => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 5,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 3,
       onPanResponderMove: (_, gestureState) => {
         if (Math.abs(gestureState.dx) > 100) {
           translateX.setValue(
@@ -132,6 +132,7 @@ const GroupItem = ({item: initialItem, navigation}) => {
       args: [formData.location, item.id],
       data: formData,
       onSuccess: response => {
+        setShowModalMovePallet(false);
         setItem(prevItem => ({
           ...prevItem,
           location_code: response.data.location_code,
@@ -141,8 +142,6 @@ const GroupItem = ({item: initialItem, navigation}) => {
           toValue: 0,
           useNativeDriver: true,
         }).start();
-
-        setShowModalMovePallet(false);
 
         Toast.show({
           type: ALERT_TYPE.SUCCESS,
@@ -281,45 +280,8 @@ const GroupItem = ({item: initialItem, navigation}) => {
         </TouchableOpacity>
       </Animated.View>
 
-   {/*    <Modal
-        isVisible={showModalMovePallet}
-        title="Move Pallet"
-        onClose={() => setShowModalMovePallet(false)}>
-        <View className="w-full">
-          <Text className="text-sm font-semibold mb-1">Location</Text>
-          <Controller
-            name="location"
-            control={control}
-            render={({field}) => (
-              <Input variant="outline" size="md">
-                <InputField
-                  placeholder="Enter new location..."
-                  value={field.value}
-                  onChangeText={field.onChange}
-                />
-              </Input>
-            )}
-          />
-
-          <Button
-            size="lg"
-            className="my-3"
-            onPress={handleSubmit(onSubmitSetLocation)}>
-            {loadingSave ? (
-              <ButtonSpinner />
-            ) : (
-              <View
-                style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
-                <FontAwesomeIcon icon={faSave} size={20} color="#fff" />
-                <ButtonText>Move Pallet</ButtonText>
-              </View>
-            )}
-          </Button>
-        </View>
-      </Modal> */}
-
-
       <ModalMoveLocation 
+      key={`${item.id}-location`} 
        isVisible={showModalMovePallet}
        title='Move Pallet'
        onClose={() => setShowModalMovePallet(false)}
@@ -328,6 +290,7 @@ const GroupItem = ({item: initialItem, navigation}) => {
       />
 
       <Modal
+        key={`${item.id}-damaged`} 
         isVisible={showModalDamaged}
         title="Set Damaged"
         onClose={() => setShowModalDamaged(false)}>

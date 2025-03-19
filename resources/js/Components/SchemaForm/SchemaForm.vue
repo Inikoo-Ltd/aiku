@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fas";
 import SchemaFileds from '@/Components/SchemaForm/SchemaFileds.vue';
 import Button from '../Elements/Buttons/Button.vue';
-import { get } from 'lodash';
+import { get } from 'lodash-es';
 
 library.add(faPlus);
 

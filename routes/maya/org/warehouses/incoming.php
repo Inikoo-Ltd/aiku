@@ -6,8 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInDelivery;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;
+use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletsInDelivery;
 use App\Actions\Inventory\GoodsIn\UI\ShowWarehousePalletDelivery;
 use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\Procurement\StockDelivery\UI\ShowStockDelivery;
@@ -25,4 +25,4 @@ Route::get('booked-in-fulfilment-deliveries', [IndexWarehousePalletDeliveries::c
 
 
 Route::get('fulfilment-deliveries/{palletDelivery:id}', ShowWarehousePalletDelivery::class)->name('pallet_deliveries.show');
-Route::get('fulfilment-deliveries/{palletDelivery:id}/pallets', IndexPalletsInDelivery::class)->name('pallet_deliveries.show.pallets');
+Route::get('fulfilment-deliveries/{palletDelivery:id}/pallets', IndexWarehousePalletsInDelivery::class)->name('pallet_deliveries.show.pallets');

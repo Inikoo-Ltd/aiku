@@ -31,7 +31,7 @@ class StoreMultiplePalletsFromDelivery extends OrgAction
         data_set($modelData, 'warehouse_id', $palletDelivery->warehouse_id);
 
         for ($i = 1; $i <= Arr::get($modelData, 'number_pallets'); $i++) {
-            StorePalletFromDelivery::run($palletDelivery, Arr::except($modelData, ['number_pallets']));
+            StorePalletCreatedInPalletDelivery::run($palletDelivery, Arr::except($modelData, ['number_pallets']));
         }
     }
 

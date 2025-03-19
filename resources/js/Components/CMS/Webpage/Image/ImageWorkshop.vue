@@ -2,24 +2,27 @@
 import { faCube, faStar, faImage } from "@fas"
 import { faPencil } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"
+/* import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue" */
 import Image from "@/Components/Image.vue"
-import { ref, toRaw, inject } from "vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+/* import { ref, toRaw, inject } from "vue" */
+/* import Button from "@/Components/Elements/Buttons/Button.vue"
 import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-import { notify } from "@kyvg/vue3-notification"
-import axios from "axios"
-import { trans } from "laravel-vue-i18n"
-import { set } from "lodash"
-import { routeType } from "@/types/route"
+import Modal from "@/Components/Utils/Modal.vue" */
+/* import { notify } from "@kyvg/vue3-notification"
+import axios from "axios" */
+/* import { trans } from "laravel-vue-i18n" */
+/* import { set } from "lodash" */
+/* import { routeType } from "@/types/route" */
 import { getStyles } from "@/Composables/styles"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faCube, faStar, faImage, faPencil)
 
 const props = defineProps<{
 	modelValue: any
+	webpageData?: any
+	blockData?: Object
 }>()
 
 const emits = defineEmits<{
@@ -27,34 +30,20 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 
-const isInWorkshop = inject("isInWorkshop", false)
+/* const isInWorkshop = inject("isInWorkshop", false)
 
 const openGallery = ref(false)
-const activeImageIndex = ref<number | null>(null)
+const activeImageIndex = ref<number | null>(null) */
 
-// Method: on select image from stock images/uploaded images
-const submitImage = (imageData: { source: {} }[]) => {
+/* const submitImage = (imageData: { source: {} }[]) => {
 	if (activeImageIndex.value !== null) {
-		// const images = toRaw(props.modelValue?.value?.images) || []
-
-		// props.modelValue?.value?.images.splice(2, 0, imageData[0])
-
-		// const fff = ['cccc', 'xxxx', 'ffff'];
-		// const dataToPut = 'bebebe';
-
-		// Ensure the array is long enough by filling with empty objects if necessary
 		while (props.modelValue?.value?.images.length <= activeImageIndex.value) {
 			props.modelValue?.value?.images.push({})
 		}
-
-		// Replace the value at the specified index with dataToPut
-		// props.modelValue.value.images[activeImageIndex.value] = imageData[0];
 		set(props.modelValue.value, ["images", activeImageIndex.value], {
 			link_data: {},
 			source: toRaw(imageData[0] || {})?.source,
 		})
-
-		// console.log(props.modelValue?.value?.images)
 
 		emits("autoSave")
 	} else {
@@ -63,9 +52,9 @@ const submitImage = (imageData: { source: {} }[]) => {
 
 	openGallery.value = false
 	activeImageIndex.value = null
-}
+} */
 
-const onUpload = async (files: File[], clear: Function) => {
+/* const onUpload = async (files: File[], clear: Function) => {
 	try {
 		const formData = new FormData()
 		Array.from(files).forEach((file, index) => {
@@ -91,47 +80,12 @@ const onUpload = async (files: File[], clear: Function) => {
 			type: "error",
 		})
 	}
-}
+} */
 
-/* const onUpload = (uploadData: any, clear : Function) => {
-	if (activeImageIndex.value !== null && uploadData && uploadData.length <= 1) {
-		const images = props.modelValue?.value?.images || []
-		while (images.length <= activeImageIndex.value) {
-			images.push({
-				source: null,
-				link_data: null,
-			})
-		}
-
-		const flattenedSource = uploadData[0].source
-			? uploadData[0].source
-			: uploadData[0]
-
-		images[activeImageIndex.value].source = {
-			...flattenedSource,
-		}
-
-		emits("update:modelValue", {
-			...props.modelValue,
-			value: {
-                ...props.modelValue.value,
-                images: images,
-            },
-		})
-
-		emits("autoSave")
-	} else {
-		console.error("Invalid index, no files, or multiple files detected.")
-	}
-
-	openGallery.value = false
-	activeImageIndex.value = null
-}
- */
-const openImageGallery = (index: number) => {
+/* const openImageGallery = (index: number) => {
 	activeImageIndex.value = index
 	openGallery.value = true
-}
+} */
 
 const getHref = (index: number) => {
 	const image = props.modelValue?.value?.images?.[index]
@@ -188,48 +142,31 @@ const getImageSlots = (layoutType: string) => {
 
 <template>
 	<div :style="getStyles(modelValue?.container?.properties)" class="flex flex-wrap overflow-hidden">
-		<div
-			v-for="index in getImageSlots(modelValue?.value?.layout_type)"
+		<div v-for="index in getImageSlots(modelValue?.value?.layout_type)"
 			:key="`${index}-${modelValue?.value?.images?.[index - 1]?.source?.avif}`"
-			class="group relative p-2 hover:bg-white/40"
+			class="group relative p-2 hover:bg-white/40 overflow-hidden"
 			:class="getColumnWidthClass(modelValue?.value?.layout_type, index - 1)">
-			<a
-				:href="getHref(index - 1)"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="transition-shadow aspect-h-1 aspect-w-1 w-full"
-				@click="(e) => (isInWorkshop ? e.preventDefault() : null)">
-				<Image
-					:style="getStyles(modelValue?.value?.images?.[index - 1]?.properties)"
-					:src="modelValue?.value?.images?.[index - 1]?.source"
-					:imageCover="'w-full object-cover object-center group-hover:opacity-75'" 
-					:alt="modelValue?.value?.images?.[index - 1]?.properties?.alt || 'image alt'"
-					@click="openImageGallery(index - 1)" 
-				/>
-			</a>
 
-			<!-- <div
-				class="bg-gray-800/50 hover:bg-gray-800/80 w-fit absolute flex items-center justify-center gap-x-2 py-2 px-3 opacity-0 top-2 right-2 group-hover:opacity-100 transition-all text-gray-300 hover:text-white rounded cursor-pointer"
-				@click="openImageGallery(index - 1)">
-				<FontAwesomeIcon
-					icon="fas fa-image"
-					class="text-lg opacity-40"
-					fixed-width
-					aria-hidden="true" />
-				<div class="text-sm font-semibold whitespace-nowrap">
-					{{ trans("Change image") }}
-				</div>
-			</div> -->
+			<component v-if="modelValue?.value?.images?.[index - 1]?.source" :is="getHref(index - 1) ? 'a' : 'div'"
+				target="_blank" rel="noopener noreferrer" class="block w-full h-full">
+			
+				<Image :style="{ ...getStyles(modelValue?.value?.layout?.properties), ...getStyles(modelValue?.value?.images?.[index - 1]?.properties)}"
+					:src="modelValue?.value?.images?.[index - 1]?.source" :imageCover="true"
+					class="w-full h-full aspect-square object-cover rounded-lg"
+					:imgAttributes="modelValue?.value?.images?.[index - 1]?.attributes"
+					:alt="modelValue?.value?.images?.[index - 1]?.properties?.alt || 'image alt'" />
+			</component>
+
+			<div v-else
+				class="flex items-center justify-center w-full h-full bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
+				<font-awesome-icon :icon="['fas', 'image']"
+					class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700" />
+			</div>
+
 		</div>
+	</div>
 
-		<!-- <Gallery
-		:open="openGallery"
-		@on-close="openGallery = false"
-		:uploadRoutes="route(webpageData?.images_upload_route.name, { modelHasWebBlocks: id })"
-		@onPick="submitImage"
-		@onUpload="onUpload" /> -->
-
-		<Modal
+	<!-- 	<Modal
 			:isOpen="openGallery"
 			@onClose="() => ((openGallery = false), (activeImageIndex = null))"
 			width="w-3/4">
@@ -244,6 +181,5 @@ const getImageSlots = (layoutType: string) => {
 						modelHasWebBlocks: blockData?.id,
 					},
 				}" />
-		</Modal>
-	</div>
+		</Modal> -->
 </template>

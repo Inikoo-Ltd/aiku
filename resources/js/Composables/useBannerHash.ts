@@ -1,5 +1,5 @@
 import md5 from 'md5'
-import { get, set, cloneDeep } from "lodash"
+import { get, set, cloneDeep } from "lodash-es"
 
 
 export const useBannerHash = (bannerObject: any) => {

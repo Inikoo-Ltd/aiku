@@ -22,7 +22,7 @@ import * as XLSX from 'xlsx'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from './LoadingIcon.vue'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 library.add(falFile, faEllipsisV, faTimes, faTimesCircle, faCheckCircle, faFileDownload, faDownload, faInfoCircle)
 
 

@@ -92,16 +92,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property bool $is_vip Indicate if delivery note  is for a VIP customer
  * @property int|null $as_organisation_id Indicate if delivery note  is for a organisation in this group
- * @property int|null $as_employee_id Indicate if delivery note is for an employee
+ * @property int|null $as_employee_id Indicate if delivery note is for a employee
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read \App\Models\Dispatching\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation

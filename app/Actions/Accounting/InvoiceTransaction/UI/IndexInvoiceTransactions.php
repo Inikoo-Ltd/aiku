@@ -50,6 +50,7 @@ class IndexInvoiceTransactions extends OrgAction
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.model_type',
                 'invoice_transactions.in_process',
+                'invoice_transactions.data',
                 'historic_assets.code',
                 'historic_assets.name',
                 'invoice_transactions.historic_asset_id',
@@ -68,6 +69,7 @@ class IndexInvoiceTransactions extends OrgAction
             ->groupBy(
                 'historic_assets.code',
                 'invoice_transactions.invoice_id',
+                'invoice_transactions.data',
                 'historic_assets.name',
                 'assets.id',
                 'invoice_transactions.in_process',
@@ -84,6 +86,7 @@ class IndexInvoiceTransactions extends OrgAction
             ->groupBy(
                 'historic_assets.code',
                 'invoice_transactions.invoice_id',
+                'invoice_transactions.data',
                 'historic_assets.name',
                 'assets.id',
                 'invoice_transactions.in_process',

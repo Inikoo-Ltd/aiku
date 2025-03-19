@@ -70,7 +70,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, Fulfilment> $fulfilments
- * @property-read \App\Models\Inventory\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read Organisation $organisation
