@@ -22,6 +22,7 @@ use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
@@ -247,7 +248,7 @@ class ShowInvoice extends OrgAction
                     ]
                 ],
                 'box_stats'      => $this->getBoxStats($invoice),
-                'refunds' => InvoiceResource::collection($invoice->refunds),
+                'refunds' => RefundResource::collection($invoice->refunds),
                 'invoice' => InvoiceResource::make($invoice),
                 'outbox'  => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,

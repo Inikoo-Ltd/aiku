@@ -18,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\Enums\UI\Accounting\RefundTabsEnum;
+use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundInProcessTransactionsResource;
@@ -223,7 +224,8 @@ class ShowRefund extends OrgAction
             'box_stats' => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
-
+            'refunds' => RefundResource::collection($refund->originalInvoice->refunds),
+            'invoice' => InvoiceResource::make($refund->originalInvoice),
             'invoice_refund' => RefundResource::make($refund),
 
 
