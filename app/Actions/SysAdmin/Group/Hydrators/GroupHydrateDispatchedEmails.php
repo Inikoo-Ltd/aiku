@@ -37,17 +37,10 @@ class GroupHydrateDispatchedEmails
     public function handle(Group $group): void
     {
         $stats = [
-            'number_dispatched_emails' => $group->DispatchedEmails()->count(),
+            'number_dispatched_emails' => $group->dispatchedEmails()->count(),
         ];
 
         $group->commsStats()->update($stats);
-    }
-    public string $commandSignature = 'hydrate:group_dispatched_emails';
-
-    public function asCommand($command): void
-    {
-        $group = Group::first();
-        $this->handle($group);
     }
 
 
