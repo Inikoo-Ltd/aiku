@@ -153,7 +153,7 @@ class IndexPalletsInDelivery extends OrgAction
 
 
             if ($palletDelivery->fulfilmentCustomer->items_storage) {
-                $table->column(key: 'stored_items', label: 'Stored Items', canBeHidden: false, searchable: true);
+                $table->column(key: 'stored_items', label: 'SKUs (Stored items)', canBeHidden: false, searchable: true);
             }
 
 
