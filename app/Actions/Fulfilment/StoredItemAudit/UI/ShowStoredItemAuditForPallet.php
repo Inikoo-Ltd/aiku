@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
+use App\Http\Resources\Fulfilment\MayaPalletStoredItemAuditResource;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemAuditResource;
@@ -46,8 +47,11 @@ class ShowStoredItemAuditForPallet extends OrgAction
         return $storedItemAudit;
     }
 
-    public function jsonResponse(StoredItemAudit $storedItemAudit): StoredItemAuditResource
+    public function jsonResponse(StoredItemAudit $storedItemAudit, ActionRequest $request): StoredItemAuditResource|MayaPalletStoredItemAuditResource
     {
+        if ($request->hasHeader('Maya-Version')) {
+            return MayaPalletStoredItemAuditResource::make($storedItemAudit);
+        }
         return StoredItemAuditResource::make($storedItemAudit);
     }
 
