@@ -165,6 +165,21 @@ class ShowRefund extends OrgAction
         }
 
 
+        $invoice = $refund->originalInvoice;
+        $totalRefund = $refund->refunds->sum('net_amount');
+        $refundPayBox = [
+            'invoice_pay' => [
+                'currency_code'     => $invoice->currency_code,
+                'total_invoice'     => $invoice->total_amount,
+                'total_refunds'     => $totalRefund,
+                'total_balance'     => $invoice->total_amount - $totalRefund,
+                'total_paid_in'     => $invoice->payment_amount,
+                'total_paid_out'    => $invoice->refunds->where('in_progress', false)->pluck('net_amount')->toArray(),
+                'total_need_to_pay' => $invoice->total_amount - $invoice->payment_amount,
+            ],
+        ];
+
+
         $props = [
             'title'       => __('refund'),
             'breadcrumbs' => $this->getBreadcrumbs(
@@ -181,7 +196,7 @@ class ShowRefund extends OrgAction
                 'model'         => __('refund'),
                 'title'         => $refund->reference,
                 'icon'          => [
-                    'icon'  => ['fas', 'fa-hand-holding-usd'],
+                    'icon'  => ['fas', 'fa-arrow-alt-circle-left'],
                     'title' => $refund->reference
                 ],
                 'actions'       => $actions,
@@ -224,7 +239,7 @@ class ShowRefund extends OrgAction
             'box_stats' => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
-            'refunds' => RefundResource::collection($refund->originalInvoice->refunds),
+            ...$refundPayBox,
             'invoice' => InvoiceResource::make($refund->originalInvoice),
             'invoice_refund' => RefundResource::make($refund),
 
