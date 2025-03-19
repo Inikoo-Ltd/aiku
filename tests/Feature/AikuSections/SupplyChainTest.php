@@ -482,11 +482,3 @@ test('UI get section route group supply chain index', function () {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::GROUP_SUPPLY_CHAIN->value);
 });
-
-// test('supplier_products notes search', function () {
-//     $this->artisan('search:supplier_products')->assertExitCode(0);
-
-//     $portfolio = Portfolio::first();
-//     ReindexPortfolioSearch::run($portfolio);
-//     expect($portfolio->universalSearch()->count())->toBe(1);
-// });

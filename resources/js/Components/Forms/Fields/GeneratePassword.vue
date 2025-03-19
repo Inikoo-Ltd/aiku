@@ -82,7 +82,7 @@ const generatePassword = () => {
             </div>
 
         <!-- Generate Button -->
-        <div
+        <div v-if="fieldData?.use_generate_password !== false"
         type="button"
             class="mt-4 text-sm bg-gray-200 inline-block select-none rounded-xs border w-full py-2 text-center hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer"
             @click="generatePassword">

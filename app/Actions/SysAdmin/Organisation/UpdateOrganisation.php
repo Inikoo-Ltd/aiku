@@ -9,9 +9,9 @@
 namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\Helpers\Address\UpdateAddress;
-use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\Phone;
@@ -24,24 +24,25 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateOrganisation extends OrgAction
 {
     use WithActionUpdate;
-
+    use WithNoStrictRules;
 
     public function handle(Organisation $organisation, array $modelData): Organisation
     {
-        $processedModelData = [];
-        foreach ($modelData as $key => $value) {
-            data_set(
-                $processedModelData,
-                match ($key) {
-                    'ui_name' => 'settings.ui.name',
-                    'google_client_id' => 'settings.google.id',
-                    'google_client_secret' => 'settings.google.secret',
-                    'google_drive_folder_key' => 'settings.google.drive.folder',
-                    default => $key
-                },
-                $value
-            );
+
+        if (Arr::has($modelData, 'ui_name')) {
+            data_set($modelData, "settings.ui.name", Arr::pull($modelData, 'ui_name'));
         }
+        if (Arr::has($modelData, 'google_client_id')) {
+            data_set($modelData, "settings.google.id", Arr::pull($modelData, 'google_client_id'));
+        }
+        if (Arr::has($modelData, 'google_client_secret')) {
+            data_set($modelData, "settings.google.secret", Arr::pull($modelData, 'google_client_secret'));
+        }
+        if (Arr::has($modelData, 'google_drive_folder_key')) {
+            data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
+        }
+
+
 
 
         if (Arr::has($modelData, 'address')) {
@@ -71,11 +72,11 @@ class UpdateOrganisation extends OrgAction
             );
         }
 
+
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
-        if ($organisation->wasChanged('created_at')) {
-            SetCurrencyHistoricFields::run($organisation->currency, $organisation->created_at);
-        }
+        $organisation->refresh();
+
 
         return $organisation;
     }
@@ -99,7 +100,7 @@ class UpdateOrganisation extends OrgAction
     {
         $rules = [
             'name'                    => ['sometimes', 'required', 'string', 'max:255'],
-            'ui_name'                 => ['sometimes', 'required', 'string', 'max:24'],
+            'ui_name'                 => ['sometimes', 'required', 'string', 'max:32'],
             'contact_name'            => ['sometimes', 'string', 'max:255'],
             'google_client_id'        => ['sometimes', 'string'],
             'google_client_secret'    => ['sometimes', 'string'],
@@ -119,10 +120,8 @@ class UpdateOrganisation extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['last_fetched_at'] = ['sometimes', 'date'];
             $rules['source']          = ['sometimes', 'array'];
-            $rules['created_at']      = ['sometimes', 'date'];
-            $rules['source_id']       = ['sometimes', 'string'];
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

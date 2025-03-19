@@ -20,7 +20,7 @@ import findKey from 'lodash-es/findKey'
 import forEach from 'lodash-es/forEach'
 import isEqual from 'lodash-es/isEqual'
 import map from 'lodash-es/map'
-import { set as setLodash, debounce, kebabCase } from 'lodash'
+import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 

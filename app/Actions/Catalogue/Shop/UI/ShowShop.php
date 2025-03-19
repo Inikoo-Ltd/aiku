@@ -13,10 +13,13 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\WithInertia;
+use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\UI\Catalogue\ShopTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -41,7 +44,12 @@ class ShowShop extends OrgAction
         $this->canEdit   = $request->user()->authTo("products.{$this->shop->id}.edit");
         $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");
 
-        return $request->user()->authTo(["products.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
+        return $request->user()->authTo([
+            "web.$this->shop->id.view",
+            "group-webmaster.view",
+            "products.{$this->shop->id}.view",
+            "accounting.{$this->shop->organisation_id}.view"
+        ]);
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
@@ -54,9 +62,7 @@ class ShowShop extends OrgAction
     private function getDashboard(Shop $shop): array
     {
         return [
-
-
-            'dashboard_stats'     => [
+            'dashboard_stats' => [
                 'widgets' => [
                     'column_count' => 4,
                     'components'   => [
@@ -81,7 +87,7 @@ class ShowShop extends OrgAction
                                 'max'         => $shop->orderingStats->number_invoices,
                                 'color'       => 'bg-blue-500',
                                 'right_label' => [
-                                    'label' => __('Unpaid').' '. $shop->orderingStats->number_unpaid_invoices,
+                                    'label' => __('Unpaid').' '.$shop->orderingStats->number_unpaid_invoices,
                                     'route' => [
                                         'name'       => 'grp.org.shops.show.dashboard.invoices.unpaid.index',
                                         'parameters' => [
@@ -95,62 +101,34 @@ class ShowShop extends OrgAction
                             ],
                         ),
 
-
-                        // $this->getWidget(
-                        //     data: [
-                        //         'value'         => $shop->stats->current_recurring_bills_amount,
-                        //         'description'   => __('Next Bills'),
-                        //         'type'          => 'currency',
-                        //         // 'status'        => $fulfilment->stats->current_recurring_bills_amount < 0 ? 'danger' : '',
-                        //         // 'currency_code' => $fulfilment->shop->currency->code,
-                        //         // 'route'         => [
-                        //         //     'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.current.index',
-                        //         //     'parameters' => [
-                        //         //         $fulfilment->organisation->slug,
-                        //         //         $fulfilment->slug
-                        //         //     ]
-                        //         // ]
-                        //     ],
-                        //     visual: [
-                        //         'label' => __('Bills'),
-                        //         'type'  => 'number_with_label',
-                        //         'value' => 444,
-                        //         // 'route' => [
-                        //         //     'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.current.index',
-                        //         //     'parameters' => [
-                        //         //         $fulfilment->organisation->slug,
-                        //         //         $fulfilment->slug
-                        //         //     ]
-                        //         // ]
-                        //     ],
-                        // ),
-
                         $this->getWidget(
                             data: [
                                 'value'       => $shop->crmStats->number_customers_state_active,
                                 'description' => __('Active Customers'),
                                 'type'        => 'number',
-                                // 'route'       => [
-                                //     'name'       => 'grp.org.shops.show.crm.customers.index',
-                                //     'parameters' => [
-                                //         'organisation'     => $shop->organisation->slug,
-                                //         'shop'       => $shop->slug,
-                                //         'tab' => 'customers',
-                                //         'customers_elements[state]' => 'active'
-                                //     ]
-                                // ]
+                                'route'       => [
+                                    'name'       => 'grp.org.shops.show.crm.customers.index',
+                                    'parameters' => [
+                                        'organisation'     => $shop->organisation->slug,
+                                        'shop'       => $shop->slug,
+                                        'tab' => 'customers',
+                                        'customers_elements[state]' => CustomerStateEnum::ACTIVE->value
+                                    ]
+                                ]
                             ],
                             visual: [
                                 'label' => __('Pending Approval Customers'),
                                 'type'  => 'number_with_label',
-                                'value' => $shop->crmStats->number_customers_status_approved,
-                                // 'route' => [
-                                //     'name'       => 'grp.org.fulfilments.show.crm.customers.pending_approval.index',
-                                //     'parameters' => [
-                                //         $fulfilment->organisation->slug,
-                                //         $fulfilment->slug
-                                //     ]
-                                // ]
+                                'value' => $shop->crmStats->number_customers_status_pending_approval,
+                                'route' => [
+                                    'name'       => 'grp.org.shops.show.crm.customers.index',
+                                    'parameters' => [
+                                        'organisation'     => $shop->organisation->slug,
+                                        'shop'       => $shop->slug,
+                                        'tab' => 'customers',
+                                        'customers_elements[status]' => CustomerStatusEnum::PENDING_APPROVAL->value
+                                    ]
+                                ]
                             ],
                         ),
                         $this->getWidget(
@@ -161,8 +139,8 @@ class ShowShop extends OrgAction
                                 'route'       => [
                                     'name'       => 'grp.org.shops.show.ordering.orders.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'   => $shop->slug,
+                                        'organisation'           => $shop->organisation->slug,
+                                        'shop'                   => $shop->slug,
                                         'orders_elements[state]' => 'submitted'
                                     ]
                                 ]

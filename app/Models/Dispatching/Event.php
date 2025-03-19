@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * App\Models\Dispatching\Event
  *
- * @property-read \App\Models\Dispatching\TFactory|null $use_factory
  * @property-read \App\Models\Dispatching\Shipment|null $shipment
  * @method static Builder<static>|Event newModelQuery()
  * @method static Builder<static>|Event newQuery()

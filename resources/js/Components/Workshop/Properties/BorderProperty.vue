@@ -9,7 +9,7 @@ import { faLink, faUnlink } from "@fal"
 import { faExclamation } from "@fas"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 library.add(faExclamation, faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink)
 
 interface Borderproperty {

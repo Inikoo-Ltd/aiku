@@ -86,7 +86,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
  * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
  * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read \App\Models\Fulfilment\TFactory|null $use_factory
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Location|null $location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\MovementPallet> $movements

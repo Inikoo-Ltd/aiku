@@ -83,7 +83,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_outboxes_type_send_invoice_to_customer
  * @property int $number_dispatched_emails_state_delay
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()
  * @method static Builder<static>|ShopCommsStats query()

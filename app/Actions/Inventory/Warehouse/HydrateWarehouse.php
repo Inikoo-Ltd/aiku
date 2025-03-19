@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\Warehouse;
 
-use App\Actions\HydrateModel;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateFulfilments;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
@@ -18,37 +17,33 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStocks;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStoredItemAudits;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStoredItems;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateWarehouseAreas;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\Warehouse;
-use Illuminate\Support\Collection;
 
-class HydrateWarehouse extends HydrateModel
+class HydrateWarehouse
 {
+    use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:warehouses {organisations?*} {--s|slugs=}';
+
+    public function __construct()
+    {
+        $this->model = Warehouse::class;
+    }
 
     public function handle(Warehouse $warehouse): void
     {
         WarehouseHydrateLocations::run($warehouse);
         WarehouseHydrateStocks::run($warehouse);
         WarehouseHydrateWarehouseAreas::run($warehouse);
-
         WarehouseHydrateFulfilments::run($warehouse);
-
         WarehouseHydratePallets::run($warehouse);
         WarehouseHydratePalletDeliveries::run($warehouse);
         WarehouseHydratePalletReturns::run($warehouse);
         WarehouseHydrateStoredItemAudits::run($warehouse);
         WarehouseHydrateStoredItems::run($warehouse);
 
-
     }
 
-    protected function getModel(string $slug): Warehouse
-    {
-        return Warehouse::where('slug', $slug)->first();
-    }
 
-    protected function getAllModels(): Collection
-    {
-        return Warehouse::all();
-    }
 }

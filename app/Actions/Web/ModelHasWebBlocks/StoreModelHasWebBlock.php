@@ -11,6 +11,7 @@ namespace App\Actions\Web\ModelHasWebBlocks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Actions\Web\WebBlock\StoreWebBlock;
+use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Events\BroadcastPreviewWebpage;
@@ -18,6 +19,7 @@ use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,7 +32,21 @@ class StoreModelHasWebBlock extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): ModelHasWebBlocks
     {
-        $position    = $webpage->webBlocks()->count() + 1; // +1 cause the position start from 1
+        $position = Arr::pull($modelData, 'position', $webpage->modelHasWebBlocks()->max('position') + 1);
+        $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
+
+        if(!$webBlocks->isEmpty()) {
+            $positions = [];
+    
+            foreach ($webBlocks as $block) {
+                if ($block->position >= $position) {
+                    $positions[$block->webBlock->id] = ['position' => $block->position + 1];
+                }
+            }
+    
+            ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
+        }
+
         $webBlockType = WebBlockType::find($modelData['web_block_type_id']);
 
         $webBlock = StoreWebBlock::run($webBlockType, $modelData);
@@ -49,7 +65,6 @@ class StoreModelHasWebBlock extends OrgAction
             ]
         );
         UpdateWebpageContent::run($webpage->refresh());
-
         /*   BroadcastPreviewWebpage::dispatch($webpage); */
 
         return $modelHasWebBlock;
@@ -61,6 +76,9 @@ class StoreModelHasWebBlock extends OrgAction
             'web_block_type_id' => [
                 'required',
                 Rule::Exists('web_block_types', 'id')->where('group_id', $this->organisation->group_id)
+            ],
+            'position' => [
+                'sometimes'
             ]
         ];
     }

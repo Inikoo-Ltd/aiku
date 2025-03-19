@@ -13,7 +13,6 @@ use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\Traits\WithImportModel;
 use App\Http\Resources\Helpers\UploadsResource;
 use App\Imports\CRM\ProspectImport;
-use App\Models\CRM\Prospect;
 use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Storage;
@@ -25,7 +24,16 @@ class ImportShopProspects
 
     public function handle(Shop $scope, $file): Upload
     {
-        $upload = StoreUpload::run($file, Prospect::class);
+        $upload = StoreUpload::make()->fromFile(
+            $scope->group,
+            $file,
+            [
+                'model' => 'Prospect',
+                'parent_type' => $scope->getMorphClass(),
+                'parent_id' => $scope->id,
+            ]
+        );
+
 
         if ($this->isSync) {
             ImportUpload::run(

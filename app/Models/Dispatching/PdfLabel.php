@@ -22,7 +22,6 @@ use Spatie\Sluggable\SlugOptions;
 /**
  * App\Models\Dispatching\Shipment
  *
- * @property-read \App\Models\Dispatching\TFactory|null $use_factory
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
  * @property-read UniversalSearch|null $universalSearch
  * @method static Builder<static>|PdfLabel newModelQuery()

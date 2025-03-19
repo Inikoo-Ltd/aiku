@@ -10,7 +10,7 @@ import Table from '@/Components/Table/Table.vue'
 import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
 
-import { remove as loRemove } from 'lodash'
+import { remove as loRemove } from 'lodash-es'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from '@fal'

@@ -10,12 +10,14 @@ import Table from '@/Components/Table/Table.vue'
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faRobot } from '@fal'
+import { faDiamond } from '@fas'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from 'laravel-vue-i18n'
 // import Button from "@/Components/Elements/Buttons/Button.vue";
 // import {ref} from "vue";
 
-library.add(faRobot)
+library.add(faRobot, faDiamond)
 
 const props = defineProps<{
     data: {}
@@ -59,6 +61,12 @@ function serviceRoute(service: {}) {
                 {{ service['shop_slug'] }}
             </Link>
         </template> -->
+
+        <!-- Column: name -->
+        <template #cell(name)="{ item: service }">
+            {{ service.name }}
+            <FontAwesomeIcon v-if="service.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500" fixed-width aria-hidden="true" />
+        </template>
 
         <!-- Column: Icon -->
         <template #cell(state)="{ item: service }">

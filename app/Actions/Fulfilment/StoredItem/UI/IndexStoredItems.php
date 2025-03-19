@@ -115,9 +115,9 @@ class IndexStoredItems extends OrgAction
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true)
-                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true)
-                ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true);
+                ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
             if (class_basename($parent) == 'Group') {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'customer_name', label: __('Customer Name'), canBeHidden: false, sortable: true, searchable: true);

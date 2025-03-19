@@ -29,12 +29,13 @@ class OrganisationHydrateSales
         $this->organisation = $organisation;
     }
 
+
     public function getJobMiddleware(): array
     {
         return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
     }
 
-    public function handle(Organisation $organisation, ?array $intervals = null, $doPreviousIntervals = null): void
+    public function handle(Organisation $organisation, ?array $intervals = null, $doPreviousPeriods = null): void
     {
         if ($organisation->type == OrganisationTypeEnum::AGENT) {
             return;
@@ -48,7 +49,7 @@ class OrganisationHydrateSales
             queryBase: $queryBase,
             statField:'sales_grp_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('organisation_id', $organisation->id)->selectRaw(' sum(org_net_amount) as  sum_aggregate  ');
@@ -57,7 +58,7 @@ class OrganisationHydrateSales
             queryBase: $queryBase,
             statField:'sales_org_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 

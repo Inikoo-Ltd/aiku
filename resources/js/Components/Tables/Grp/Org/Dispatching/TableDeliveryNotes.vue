@@ -25,7 +25,7 @@ const locale = useLocaleStore();
 const layout = inject('layout', layoutStructure)
 
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
-    // console.log(deliveryNote)
+     console.log(route().current())
     switch (route().current()) {
         case "shops.show.orders.show":
             return route(
@@ -63,7 +63,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
             return route(
                 "grp.org.shops.show.crm.customers.show.delivery_notes.show",
                 [route().params["organisation"], route().params["shop"], route().params["customer"], deliveryNote.slug])
-        case "grp.overview.ordering.delivery-notes.index":
+        case "grp.overview.ordering.delivery_notes.index":
             return route(
                "grp.org.shops.show.crm.customers.show.delivery_notes.show",
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug, deliveryNote.slug])
@@ -76,7 +76,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 
 function customerRoute(deliveryNote: DeliveryNote) {
     switch (route().current()) {
-         case "grp.overview.ordering.delivery-notes.index":
+         case "grp.overview.ordering.delivery_notes.index":
             return route(
                "grp.org.shops.show.crm.customers.show",
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug])

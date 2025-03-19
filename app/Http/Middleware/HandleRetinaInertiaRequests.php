@@ -27,7 +27,6 @@ class HandleRetinaInertiaRequests extends Middleware
     {
         /** @var WebUser $webUser */
         $webUser = $request->user();
-        $all = $request->all()['website'] ?? null;
         $firstLoadOnlyProps = [];
 
         if (!$request->inertia() or Session::get('reloadLayout')) {
@@ -41,7 +40,6 @@ class HandleRetinaInertiaRequests extends Middleware
 
         $website                           = $request->get('website');
         $firstLoadOnlyProps['environment'] = app()->environment();
-        // dd($website->published_layout);
 
         $headerLayout = Arr::get($website->published_layout, 'header');
         $isHeaderActive = Arr::get($headerLayout, 'status');
@@ -62,9 +60,7 @@ class HandleRetinaInertiaRequests extends Middleware
                 'ziggy' => [
                     'location' => $request->url(),
                 ],
-                // "layout" =>   [
-                //
-                // ],
+
                 'iris' => [
                 'header' => array_merge($isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : []),
                     'footer' => array_merge($isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : []),

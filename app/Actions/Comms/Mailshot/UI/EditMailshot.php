@@ -79,7 +79,7 @@ class EditMailshot extends OrgAction
                     'label'       => __('recipients'),
                     'required'    => true,
                     'options'     => [
-                        'query'                  => IndexProspects::run($mailshot->shop),
+                        'query'                  => IndexProspects::run(parent: $mailshot->shop, prefix: null, scope: 'all'),
                         'custom_prospects_query' => '',
                         'tags'                   => TagResource::collection(Tag::where('type', 'crm')->get()),
                     ],

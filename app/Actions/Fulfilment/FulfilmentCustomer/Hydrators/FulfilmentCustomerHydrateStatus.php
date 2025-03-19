@@ -62,6 +62,9 @@ class FulfilmentCustomerHydrateStatus
 
     protected function getStatusWhenActiveRentalAgreement(FulfilmentCustomer $fulfilmentCustomer): FulfilmentCustomerStatusEnum
     {
+
+        $status = FulfilmentCustomerStatusEnum::ACTIVE;
+
         $createdAt = $fulfilmentCustomer->rentalAgreement->created_at;
         if ($createdAt->lessThan($createdAt->addMonths(3))
             or $fulfilmentCustomer->number_pallets_status_storing
@@ -80,7 +83,7 @@ class FulfilmentCustomerHydrateStatus
             }
         }
 
-        return FulfilmentCustomerStatusEnum::INACTIVE;
+        return $status;
     }
 
     public string $commandSignature = 'hydrate:fulfilment_customers_status';

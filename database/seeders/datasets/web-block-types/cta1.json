@@ -93,9 +93,7 @@
 				}
 			},
 			"image": {
-				"visible": "all",
 				"source": null,
-				"url": "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png",
 				"alt": "CTA Image"
 			},
 			"container": {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Switch } from '@headlessui/vue'
-import { isNull, get } from 'lodash'
+import { isNull, get } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faCheck } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'

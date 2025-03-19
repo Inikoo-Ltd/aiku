@@ -10,7 +10,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue';
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue';
 import { notify } from "@kyvg/vue3-notification"
 import axios from 'axios'
-import { debounce, isArray } from 'lodash'
+import { debounce, isArray } from 'lodash-es'
 import Publish from '@/Components/Publish.vue'
 import ScreenView from "@/Components/ScreenView.vue"
 import Image from '@/Components/Image.vue'

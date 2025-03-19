@@ -30,15 +30,34 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
 
         $this->parsedData['type'] = $this->auroraModelData->{'Inventory Transaction Type'};
 
-        $state = match ($deliveryNote->state) {
-            DeliveryNoteStateEnum::UNASSIGNED => DeliveryNoteItemStateEnum::UNASSIGNED,
-            DeliveryNoteStateEnum::QUEUED => DeliveryNoteItemStateEnum::QUEUED,
-            DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED => DeliveryNoteItemStateEnum::HANDLING,
-            DeliveryNoteStateEnum::PACKED => DeliveryNoteItemStateEnum::PACKED,
-            DeliveryNoteStateEnum::FINALISED => DeliveryNoteItemStateEnum::FINALISED,
-            DeliveryNoteStateEnum::DISPATCHED => DeliveryNoteItemStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::CANCELLED => DeliveryNoteItemStateEnum::CANCELLED,
-        };
+
+        if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
+            $state = DeliveryNoteItemStateEnum::DISPATCHED;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'No Dispatched') {
+            $state = DeliveryNoteItemStateEnum::OUT_OF_STOCK;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'FailSale') {
+            $state = DeliveryNoteItemStateEnum::CANCELLED;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock' or $this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
+            return;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Order In Process') {
+            $state = match ($deliveryNote->state) {
+                DeliveryNoteStateEnum::UNASSIGNED => DeliveryNoteItemStateEnum::UNASSIGNED,
+                DeliveryNoteStateEnum::QUEUED => DeliveryNoteItemStateEnum::QUEUED,
+                DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED => DeliveryNoteItemStateEnum::HANDLING,
+                DeliveryNoteStateEnum::PACKED => DeliveryNoteItemStateEnum::PACKED,
+                DeliveryNoteStateEnum::FINALISED => DeliveryNoteItemStateEnum::FINALISED,
+                default => null
+            };
+            if (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
+                $state = DeliveryNoteItemStateEnum::OUT_OF_STOCK;
+            } elseif (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
+                $state = DeliveryNoteItemStateEnum::CANCELLED;
+            } elseif (is_null($state)) {
+                dd($this->auroraModelData, 'XX', $deliveryNote->state);
+            }
+        } else {
+            dd($this->auroraModelData);
+        }
 
 
         $quantity_required   = $this->auroraModelData->{'Required'};
@@ -53,6 +72,20 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             $stock = Stock::withTrashed()->find($orgStock->stock_id);
         }
 
+
+        $createdAt = $this->parseDatetime($this->auroraModelData->{'Date Created'});
+        if (!$createdAt) {
+            $createdAt = $this->parseDatetime($this->auroraModelData->{'Date'});
+        }
+        if (!$createdAt) {
+            $createdAt = $deliveryNote->created_at;
+        }
+
+        $weight = $this->auroraModelData->{'Inventory Transaction Weight'};
+        $weight = abs($weight);
+
+
+
         $this->parsedData['delivery_note_item'] = [
             'transaction_id'      => $transactionID,
             'state'               => $state,
@@ -61,13 +94,14 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'quantity_packed'     => $this->auroraModelData->{'Packed'},
             'quantity_dispatched' => $quantity_dispatched,
             'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
-            'created_at'          => $this->auroraModelData->{'Date Created'},
+            'created_at'          => $createdAt,
             'fetched_at'          => now(),
             'last_fetched_at'     => now(),
             'org_stock_id'        => $orgStock?->id,
             'org_stock_family_id' => $orgStock?->org_stock_family_id,
             'stock_id'            => $stock ? $stock->id : null,
-            'stock_family_id'     => $stock ? $stock->stock_family_id : null
+            'stock_family_id'     => $stock ? $stock->stock_family_id : null,
+            'weight'              => $weight
 
 
         ];

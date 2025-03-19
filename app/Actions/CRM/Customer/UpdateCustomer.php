@@ -8,15 +8,19 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -24,6 +28,7 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCustomer extends OrgAction
@@ -101,6 +106,13 @@ class UpdateCustomer extends OrgAction
         $customer->comms->update($emailSubscriptionsData);
         $customer = $this->update($customer, $modelData, ['data']);
 
+
+        if ($customer->wasChanged('state')) {
+            GroupHydrateCustomers::dispatch($customer->group);
+            OrganisationHydrateCustomers::dispatch($customer->organisation);
+            ShopHydrateCustomers::dispatch($customer->shop);
+        }
+
         if (Arr::hasAny($modelData, ['contact_name', 'email'])) {
             $rootWebUser = $customer->webUsers->where('is_root', true)->first();
             if ($rootWebUser) {
@@ -115,6 +127,8 @@ class UpdateCustomer extends OrgAction
 
             }
         }
+
+
 
 
         CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
@@ -174,6 +188,7 @@ class UpdateCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
+            'state'                                                  => ['sometimes', Rule::enum(CustomerStateEnum::class)]
 
         ];
 

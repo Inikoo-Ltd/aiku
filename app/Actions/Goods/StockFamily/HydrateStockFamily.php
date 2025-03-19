@@ -9,53 +9,24 @@
 namespace App\Actions\Goods\StockFamily;
 
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Goods\StockFamily;
-use Exception;
-use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class HydrateStockFamily
 {
-    use AsAction;
-    public string $commandSignature = 'hydrate:stock_families {--s|slug=}';
+    use WithHydrateCommand;
+    public string $commandSignature = 'hydrate:stock_families {--s|slugs=}';
+
+    public function __construct()
+    {
+        $this->model = StockFamily::class;
+    }
 
     public function handle(StockFamily $stockFamily): void
     {
         StockFamilyHydrateStocks::run($stockFamily);
     }
 
-    public function asCommand(Command $command): int
-    {
-        if ($command->option('slug')) {
-            try {
-                $stockFamily = StockFamily::where('slug', $command->option('slug'))->firstorFail();
-                $this->handle($stockFamily);
-                return 0;
-            } catch (Exception $e) {
-                $command->error($e->getMessage());
-                return 1;
-            }
-        } else {
-
-
-            $count = StockFamily::count();
-            $bar   = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
-            $bar->start();
-            StockFamily::chunk(250, function (Collection $models) use ($bar) {
-                foreach ($models as $model) {
-                    $this->handle($model);
-                    $bar->advance();
-                }
-            });
-            $bar->finish();
-
-
-        }
-
-        return 0;
-    }
 
 
 }

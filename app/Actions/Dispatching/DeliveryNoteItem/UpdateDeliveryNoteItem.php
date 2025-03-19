@@ -23,16 +23,22 @@ class UpdateDeliveryNoteItem extends OrgAction
     {
         $deliveryNoteItem = $this->update($deliveryNoteItem, $modelData, ['data']);
 
-        if ($deliveryNoteItem->wasChanged('quantity_picked') && $deliveryNoteItem->quantity_picked === $deliveryNoteItem->quantity_required) {
-            UpdateDeliveryNoteItem::run($deliveryNoteItem, [
-                'state' => DeliveryNoteItemStateEnum::HANDLING->value
-            ]);
+        if ($deliveryNoteItem->wasChanged('weight')) {
+
         }
 
-        if ($deliveryNoteItem->wasChanged('quantity_packed') && $deliveryNoteItem->quantity_packed === $deliveryNoteItem->quantity_required) {
-            UpdateDeliveryNoteItem::run($deliveryNoteItem, [
-                'state' => DeliveryNoteItemStateEnum::PACKED->value
-            ]);
+        if ($this->strict) {
+            if ($deliveryNoteItem->wasChanged('quantity_picked') && $deliveryNoteItem->quantity_picked === $deliveryNoteItem->quantity_required) {
+                UpdateDeliveryNoteItem::run($deliveryNoteItem, [
+                    'state' => DeliveryNoteItemStateEnum::HANDLING->value
+                ]);
+            }
+
+            if ($deliveryNoteItem->wasChanged('quantity_packed') && $deliveryNoteItem->quantity_packed === $deliveryNoteItem->quantity_required) {
+                UpdateDeliveryNoteItem::run($deliveryNoteItem, [
+                    'state' => DeliveryNoteItemStateEnum::PACKED->value
+                ]);
+            }
         }
 
         return $deliveryNoteItem;
@@ -58,6 +64,7 @@ class UpdateDeliveryNoteItem extends OrgAction
             $rules['source_id']           = ['sometimes', 'string', 'max:255'];
             $rules['last_fetched_at']     = ['sometimes', 'date'];
             $rules['created_at']          = ['sometimes', 'date'];
+            $rules['weight']              = ['sometimes', 'numeric', 'min:0'];
         }
 
         return $rules;

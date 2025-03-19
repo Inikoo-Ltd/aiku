@@ -23,7 +23,8 @@ class FetchAuroraDeliveryNoteItems
 
     public function handle(SourceOrganisationService $organisationSource, int $source_id, DeliveryNote $deliveryNote): ?DeliveryNoteItem
     {
-        if ($transactionData = $organisationSource->fetchDeliveryNoteItem(id: $source_id, deliveryNote: $deliveryNote)) {
+        $transactionData = $organisationSource->fetchDeliveryNoteItem(id: $source_id, deliveryNote: $deliveryNote);
+        if (isset($transactionData['delivery_note_item'])) {
 
 
             if ($deliveryNoteItem = DeliveryNoteItem::where('source_id', $transactionData['delivery_note_item']['source_id'])->first()) {

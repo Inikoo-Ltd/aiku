@@ -60,7 +60,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcodes
- * @property-read \App\Models\Goods\TFactory|null $use_factory
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images

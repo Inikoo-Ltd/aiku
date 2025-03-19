@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/Editor.vue"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@/Components/Image.vue"
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"
 import { getStyles } from "@/Composables/styles"
+import { sendMessageToParent } from "@/Composables/Workshop";
+import Blueprint from "@/Components/CMS/Webpage/CTA3/Blueprint"
 
 const props = defineProps<{
 	modelValue: any
@@ -20,28 +19,19 @@ const emits = defineEmits<{
 
 const openGallery = ref(false)
 
-const setImage = (e) => {
-	openGallery.value = false
-	emits("update:modelValue", { ...props.modelValue, image: e })
-	emits("autoSave")
-}
-
-const onUpload = (e) => {
-	// Assuming e.data contains the files, verify this structure in your context
-	if (e.data && e.data.length <= 1) {
-		openGallery.value = false
-		emits("update:modelValue", { ...props.modelValue, image: e.data[0] })
-		emits("autoSave")
-	} else {
-		console.error("No files or multiple files detected.")
-	}
-}
 </script>
 
-<template> 
+<template>
 	<div class="relative overflow-hidden rounded-lg lg:h-96" :style="getStyles(properties)">
-		<div class="absolute inset-0">
-			<img :src="modelValue.container.properties.background.image.source ? modelValue.container.properties.background.image.source.original : modelValue.image" alt="" class="h-full w-full object-cover object-center" />
+		<div class="absolute inset-0" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))" >
+			<template v-if="modelValue?.image?.source">
+				<Image :src="modelValue.image.source" :imageCover="true" :alt="modelValue.image.alt"
+					:imgAttributes="modelValue.image.attributes" :style="getStyles(modelValue.image.properties)" />
+			</template>
+			<template v-else>
+				<img src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
+					:alt="modelValue?.image?.alt" class="h-full w-full object-cover" />
+			</template>
 		</div>
 
 		<div aria-hidden="true" class="relative h-96 w-full lg:hidden" />
@@ -49,17 +39,15 @@ const onUpload = (e) => {
 
 		<div
 			class="absolute inset-x-0 bottom-0 rounded-bl-lg rounded-br-lg bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:items-center sm:justify-between lg:inset-x-auto lg:inset-y-0 lg:w-96 lg:flex-col lg:items-start lg:rounded-br-none lg:rounded-tl-lg">
-			<div class="text-gray-600 pr-3 overflow-y-auto mb-4">
-				<Editor
-					v-if="modelValue?.text"
-					v-model="modelValue.text"
+			<div class="text-center lg:text-left text-gray-600 pr-3 overflow-y-auto mb-4">
+				<Editor v-if="modelValue?.text" v-model="modelValue.text"
 					@update:modelValue="() => emits('autoSave')" />
 			</div>
 
-			<div
-				typeof="button"
-				:style="getStyles(modelValue.button.container.properties)"
-				class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
+			<div typeof="button" 
+			@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[1]?.key?.join('-'))"
+			 :style="getStyles(modelValue.button.container.properties)"
+				class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6 cursor-pointer">
 				{{ modelValue.button.text }}
 			</div>
 		</div>

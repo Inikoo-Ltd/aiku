@@ -54,6 +54,9 @@ class Kernel extends ConsoleKernel
         $schedule->job(PurgeWebUserPasswordReset::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'PurgeWebUserPasswordReset',
         );
+
+        (new Schedule())->command('hydrate -s ful')->dailyAt('23:00')->timezone('UTC');
+
     }
 
 

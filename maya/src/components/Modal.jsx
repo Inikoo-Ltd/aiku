@@ -1,7 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Modal } from 'react-native';
-import { X } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, Keyboard, Modal, ScrollView  } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faTimesCircle } from '@/private/fa/pro-light-svg-icons';
 
@@ -11,7 +9,8 @@ const CustomModal = ({ isVisible, onClose = () => null, title = '', children }) 
       visible={isVisible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={()=>{onClose(), Keyboard.dismiss()}}
+      statusBarTranslucent={true}
     >
       <View className="flex-1 justify-center items-center bg-black/50">
         <View className="bg-white p-5 rounded-lg items-center w-4/5 relative">

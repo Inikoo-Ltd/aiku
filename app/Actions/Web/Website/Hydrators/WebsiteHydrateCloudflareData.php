@@ -10,27 +10,31 @@
 
 namespace App\Actions\Web\Website\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Web\Website;
 use Exception;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class WebsiteHydrateCloudflareData
 {
-    use AsAction;
+    use WithHydrateCommand;
     private Website $website;
     private Collection $siteList;
     private ?string $apiToken;
     private Collection $zoneAccountTag;
+
+    public string $commandSignature = 'hydrate:website_data_cloudflare {organisations?*} {--s|slugs=}';
+
 
     public function __construct(Website $website)
     {
         $this->website = $website;
         $this->siteList = collect();
         $this->zoneAccountTag = collect();
+        $this->model = Website::class;
     }
 
     public function getJobMiddleware(): array
@@ -38,14 +42,22 @@ class WebsiteHydrateCloudflareData
         return [(new WithoutOverlapping($this->website->id))->dontRelease()];
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     public function handle(Website $website): void
     {
+
+        if (app()->environment('testing')) {
+            return;
+        }
+
         $groupSettings = $website->group->settings;
         $this->apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
         if (!$this->apiToken) {
             $this->apiToken = env('CLOUDFLARE_ANALYTICS_API_TOKEN'); // from env cause group not stored api token yet
             if (!$this->apiToken) {
-                dd('api token not found');
+                return;
             }
             data_set($groupSettings, 'cloudflare.apiToken', $this->apiToken);
             $website->group->update(['settings' => $groupSettings]);
@@ -55,8 +67,8 @@ class WebsiteHydrateCloudflareData
 
         $this->zoneAccountTag = $this->getZoneAccountTag($website);
         if (!$this->zoneAccountTag->isEmpty()) {
-            data_set($newWebsiteData, 'cloudflare.zoneTag', $this->zoneAccountTag->get('id'), true);
-            data_set($newWebsiteData, 'cloudflare.accountTag', $this->zoneAccountTag->get('account')['id'], true);
+            data_set($newWebsiteData, 'cloudflare.zoneTag', $this->zoneAccountTag->get('id'));
+            data_set($newWebsiteData, 'cloudflare.accountTag', $this->zoneAccountTag->get('account')['id']);
         } else {
             return;
         }
@@ -70,47 +82,30 @@ class WebsiteHydrateCloudflareData
 
         $this->siteList->each(function ($site) use ($website, &$newWebsiteData) {
             if (isset($site['ruleset']) && $site['ruleset']['zone_name'] == $website->domain) {
-                data_set($newWebsiteData, 'cloudflare.siteTag', $site['site_tag'], true);
-                return;
+                data_set($newWebsiteData, 'cloudflare.siteTag', $site['site_tag']);
             }
         });
 
         $website->update(['data' => $newWebsiteData]);
 
-        return;
     }
 
-    public string $commandSignature = 'hydrate:website_data_cloudflare {website?}';
 
-    public function asCommand($command)
-    {
-        $webSlug = $command->argument('website', 'Website slug');
 
-        if ($webSlug) {
-            $website = Website::where('slug', $webSlug)->first();
-            if (!$website) {
-                return;
-            }
-            $this->handle($website);
-        } else {
-            $websites = Website::orderBy('id')->get();
-            $command->withProgressBar($websites, function ($website) {
-                $this->handle($website);
-            });
-        }
-    }
-
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     private function getZoneAccountTag(Website $website, $try = 3): Collection
     {
-        $urlCLoudflareRest = "https://api.cloudflare.com/client/v4";
+        $urlCloudflareRest = "https://api.cloudflare.com/client/v4";
         if ($try == 0) {
             return collect();
         }
         try {
             $resultZone = Http::timeout(10)->withHeaders([
-            'Authorization' => "Bearer {$this->apiToken}",
-            'Content-Type' => 'application/json',
-            ])->get($urlCLoudflareRest . "/zones", [
+                'Authorization' => "Bearer $this->apiToken",
+                'Content-Type' => 'application/json',
+            ])->get($urlCloudflareRest . "/zones", [
             'name' => $website->domain,
             ])->json();
         } catch (Exception $e) {
@@ -132,14 +127,17 @@ class WebsiteHydrateCloudflareData
         return collect($resultZone['result'][0]);
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     private function getAnalyticsList(string $accountId, $try = 3): Collection
     {
         try {
-            $urlCLoudflareResAnalytic = "https://api.cloudflare.com/client/v4/accounts/{$accountId}/rum/site_info/list";
+            $urlCloudflareResAnalytic = "https://api.cloudflare.com/client/v4/accounts/$accountId/rum/site_info/list";
             $resultAnalytic = Http::timeout(10)->withHeaders([
-                'Authorization' => "Bearer {$this->apiToken}",
+                'Authorization' => "Bearer $this->apiToken",
                 'Content-Type' => 'application/json',
-            ])->get($urlCLoudflareResAnalytic, [
+            ])->get($urlCloudflareResAnalytic, [
                 'per_page' => Website::count(),
             ])->json();
         } catch (Exception $e) {

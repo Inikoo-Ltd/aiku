@@ -9,14 +9,14 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { notify } from "@kyvg/vue3-notification"
 import Publish from '@/Components/Publish.vue'
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import ScreenView from "@/Components/ScreenView.vue"
 import HeaderListModal from '@/Components/CMS/Fields/ListModal.vue'
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import { irisStyleVariables, setIframeView } from '@/Composables/Workshop'
 import ProgressSpinner from 'primevue/progressspinner';
 import { useColorTheme } from '@/Composables/useStockList'
-import { set, get } from 'lodash'
+import { set, get } from 'lodash-es'
 import ToggleSwitch from 'primevue/toggleswitch';
 
 import { routeType } from "@/types/route"

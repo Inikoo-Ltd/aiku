@@ -10,7 +10,7 @@
   import { trans } from "laravel-vue-i18n"
   import BannerPreview from '@/Components/Banners/BannerPreview.vue'
   import EmptyState from '@/Components/Utils/EmptyState.vue'
-  import { cloneDeep } from 'lodash'
+  import { cloneDeep } from 'lodash-es'
   import Button from '@/Components/Elements/Buttons/Button.vue'
   
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'

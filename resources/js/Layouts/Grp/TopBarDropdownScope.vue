@@ -9,7 +9,7 @@ import { MenuItem } from '@headlessui/vue'
 import Image from '@/Components/Image.vue'
 import { Image as ImageTS } from '@/types/Image'
 import axios from 'axios'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 
 const props = defineProps<{
     menuItems: {

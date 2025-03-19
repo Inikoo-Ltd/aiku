@@ -25,6 +25,7 @@ import WebpageAnalytics from "@/Components/DataDisplay/WebpageAnalytics.vue"
 import TableSnapshots from "@/Components/Tables/TableSnapshots.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import TableRedirects from '@/Components/Tables/Grp/Org/Web/TableRedirects.vue'
 
 library.add(faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink)
 
@@ -40,6 +41,7 @@ const props = defineProps<{
     changelog?: object
     showcase?: any
     snapshots?: object,
+    redirects?: {},
     external_links?: {}
     analytics:any
 }>()
@@ -58,6 +60,7 @@ const component = computed(() => {
         'analytics': WebpageAnalytics,
         'webpages': TableWebpages,
         'snapshots': TableSnapshots,
+        'redirects': TableRedirects,
         'external_links': TableExternalLinks
     }
 

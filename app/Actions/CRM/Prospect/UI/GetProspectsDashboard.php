@@ -12,6 +12,7 @@ use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
+use App\Enums\UI\CRM\ProspectsTabsEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -33,7 +34,16 @@ class GetProspectsDashboard
                 'value' => $case->value,
                 'icon'  => ProspectStateEnum::stateIcon()[$case->value],
                 'count' => ProspectStateEnum::count($parent)[$case->value],
-                'label' => ProspectStateEnum::labels()[$case->value]
+                'label' => ProspectStateEnum::labels()[$case->value],
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.prospects.index',
+                    'parameters' => [
+                        'organisation' => $parent->organisation->slug,
+                        'shop'         => $parent->slug,
+                        'prospects_elements[state]' => $case->value,
+                        'tab'          => ProspectsTabsEnum::PROSPECTS->value
+                    ]
+                ]
             ];
         }
 
@@ -49,7 +59,16 @@ class GetProspectsDashboard
                 'value' => $case->value,
                 'icon'  => ProspectContactedStateEnum::stateIcon()[$case->value],
                 'count' => ProspectContactedStateEnum::count($parent)[$case->value],
-                'label' => ProspectContactedStateEnum::labels()[$case->value]
+                'label' => ProspectContactedStateEnum::labels()[$case->value],
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.prospects.index',
+                    'parameters' => [
+                        'organisation' => $parent->organisation->slug,
+                        'shop'         => $parent->slug,
+                        'contacted_elements[contacted_state]' => $case->value,
+                        'tab'          => ProspectsTabsEnum::CONTACTED->value
+                    ]
+                ]
             ];
         }
 
@@ -65,7 +84,16 @@ class GetProspectsDashboard
                 'value' => $case->value,
                 'icon'  => ProspectFailStatusEnum::statusIcon()[$case->value],
                 'count' => ProspectFailStatusEnum::count($parent)[$case->value],
-                'label' => ProspectFailStatusEnum::labels()[$case->value]
+                'label' => ProspectFailStatusEnum::labels()[$case->value],
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.prospects.index',
+                    'parameters' => [
+                        'organisation' => $parent->organisation->slug,
+                        'shop'         => $parent->slug,
+                        'failed_elements[fail_status]' => $case->value,
+                        'tab'          => ProspectsTabsEnum::FAILED->value
+                    ]
+                ]
             ];
         }
 
@@ -81,7 +109,16 @@ class GetProspectsDashboard
                 'value' => $case->value,
                 'icon'  => ProspectSuccessStatusEnum::statusIcon()[$case->value],
                 'count' => ProspectSuccessStatusEnum::count($parent)[$case->value],
-                'label' => ProspectSuccessStatusEnum::labels()[$case->value]
+                'label' => ProspectSuccessStatusEnum::labels()[$case->value],
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.prospects.index',
+                    'parameters' => [
+                        'organisation' => $parent->organisation->slug,
+                        'shop'         => $parent->slug,
+                        'success_elements[success_status]' => $case->value,
+                        'tab'          => ProspectsTabsEnum::SUCCESS->value
+                    ]
+                ]
             ];
         }
 

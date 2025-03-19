@@ -130,6 +130,10 @@ class FetchAuroraAction extends FetchAction
             $this->with = $command->option('with');
         }
 
+        if ($command->getName() == 'fetch:orders') {
+            $this->basket = $command->option('basket') ?? false;
+        }
+
         if ($command->getName() == 'fetch:histories' and $command->option('model')) {
             $model = match ($command->option('model')) {
                 'Customer' => ['Customer'],

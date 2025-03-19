@@ -10,7 +10,7 @@ import { Combobox, ComboboxOptions, ComboboxOption, Dialog, DialogPanel, Transit
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import SearchResultDefault from '@/Components/Search/SearchResultDefault.vue'
 import SearchResultPallet from '@/Components/Search/SearchResultPallet.vue'

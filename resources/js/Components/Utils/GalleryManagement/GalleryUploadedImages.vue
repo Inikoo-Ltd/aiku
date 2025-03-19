@@ -17,7 +17,7 @@ import { ImageData } from '@/types/Image'
 import { Images } from "@/types/Images"
 import { router } from '@inertiajs/vue3'
 import { Links, Meta } from "@/types/Table"
-import { debounce } from "lodash"
+import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheckCircle } from '@fas'
 import { faSearch } from '@fal'

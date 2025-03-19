@@ -66,12 +66,11 @@ class GetShopNavigation
 
         ];
         if ($user->hasPermissionTo("products.$shop->id.view")) {
-
             $navigation["catalogue"] = [
-                "root"  => "grp.org.shops.show.catalogue.",
-                "icon"  => ["fal", "fa-books"],
-                "label" => __("catalogue"),
-                "route" => [
+                "root"    => "grp.org.shops.show.catalogue.",
+                "icon"    => ["fal", "fa-books"],
+                "label"   => __("catalogue"),
+                "route"   => [
                     "name"       => 'grp.org.shops.show.catalogue.dashboard',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
@@ -131,10 +130,10 @@ class GetShopNavigation
             ];
 
             $navigation["billables"] = [
-                "root"  => "grp.org.shops.show.billables.",
-                "icon"  => ["fal", "fa-ballot"],
-                "label" => __("Billables"),
-                "route" => [
+                "root"    => "grp.org.shops.show.billables.",
+                "icon"    => ["fal", "fa-ballot"],
+                "label"   => __("Billables"),
+                "route"   => [
                     "name"       => 'grp.org.shops.show.billables.dashboard',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
@@ -186,10 +185,10 @@ class GetShopNavigation
 
         if ($user->hasPermissionTo("discounts.$shop->id.view")) {
             $navigation["discounts"] = [
-                "root"  => "grp.org.shops.show.discounts.",
-                "icon"  => ["fal", "fa-badge-percent"],
-                "label" => __("Offers"),
-                "route" => [
+                "root"    => "grp.org.shops.show.discounts.",
+                "icon"    => ["fal", "fa-badge-percent"],
+                "label"   => __("Offers"),
+                "route"   => [
                     "name"       => 'grp.org.shops.show.discounts.dashboard',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
@@ -231,10 +230,10 @@ class GetShopNavigation
 
         if ($user->hasPermissionTo("marketing.$shop->id.view")) {
             $navigation["marketing"] = [
-                "root"  => "grp.org.shops.show.marketing.",
-                "icon"  => ["fal", "fa-bullhorn"],
-                "label" => __("Marketing"),
-                "route" => [
+                "root"    => "grp.org.shops.show.marketing.",
+                "icon"    => ["fal", "fa-bullhorn"],
+                "label"   => __("Marketing"),
+                "route"   => [
                     "name"       => 'grp.org.shops.show.marketing.dashboard',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
@@ -271,14 +270,15 @@ class GetShopNavigation
                         ],
 
 
-
                     ],
                 ],
             ];
         }
 
-        if ($user->hasPermissionTo("web.$shop->id.view")) {
-
+        if ($user->authTo([
+            "web.$shop->id.view",
+            "group-webmaster.view"
+        ])) {
             if ($shop->website) {
                 $navigation["web"] = [
                     "root"  => "grp.org.shops.show.web.",
@@ -294,23 +294,23 @@ class GetShopNavigation
 
 
                             [
-                                "label"      => __("Website"),
-                                "tooltip"    => __("website"),
-                                "icon"       => ["fal", "fa-globe"],
-                                "root"       => "grp.org.shops.show.web.websites.",
+                                "label"   => __("Website"),
+                                "tooltip" => __("website"),
+                                "icon"    => ["fal", "fa-globe"],
+                                "root"    => "grp.org.shops.show.web.websites.",
 
-                                "route"   => [
+                                "route" => [
                                     "name"       => "grp.org.shops.show.web.websites.show",
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],
                             [
-                                "label"      => __("webpages"),
-                                "tooltip"    => __("Webpages"),
-                                "icon"       => ["fal", "fa-browser"],
-                                "root"       => "grp.org.shops.show.web.webpages.",
+                                "label"   => __("webpages"),
+                                "tooltip" => __("Webpages"),
+                                "icon"    => ["fal", "fa-browser"],
+                                "root"    => "grp.org.shops.show.web.webpages.",
 
-                                "route"   => [
+                                "route" => [
                                     "name"       => "grp.org.shops.show.web.webpages.index",
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
@@ -352,9 +352,6 @@ class GetShopNavigation
                     "topMenu" => []
                 ];
             }
-
-
-
         }
 
         if ($user->hasPermissionTo("marketing.view")) {

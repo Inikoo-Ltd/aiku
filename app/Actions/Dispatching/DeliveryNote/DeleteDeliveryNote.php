@@ -8,18 +8,50 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Facades\DB;
 
-class DeleteDeliveryNote
+class DeleteDeliveryNote extends OrgAction
 {
-    use AsAction;
-    public function handle(DeliveryNote $deliveryNote): ?bool
+    use WithActionUpdate;
+
+    /**
+     * @throws \Throwable
+     */
+    public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        foreach ($deliveryNote->deliveryNoteItems as $item) {
-            $item->pickings()->delete();
-        }
-        $deliveryNote->deliveryNoteItems()->delete();
-        return $deliveryNote->delete();
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+            $deliveryNote = $this->update($deliveryNote, $modelData);
+
+            foreach ($deliveryNote->deliveryNoteItems as $item) {
+                $item->pickings()->delete();
+            }
+            $deliveryNote->deliveryNoteItems()->delete();
+            $deliveryNote->delete();
+
+            return $deliveryNote;
+        });
+        CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer);
+        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop);
+        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation);
+        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group);
+
+        return $deliveryNote;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function action(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
+    {
+        $this->initialisationFromShop($deliveryNote->shop, $modelData);
+
+        return $this->handle($deliveryNote, $this->validatedData);
     }
 }

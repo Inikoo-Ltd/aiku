@@ -19,7 +19,9 @@ const layout = inject('layout', layoutStructure)
 
 const onPinTab = () => {
     layout.rightSidebar[props.tabName].show = !layout.rightSidebar[props.tabName]?.show
-    localStorage.setItem('rightSidebar', JSON.stringify(layout.rightSidebar))
+    if (typeof window !== "undefined") {
+        localStorage.setItem('rightSidebar', JSON.stringify(layout.rightSidebar))
+    }
 }
 </script>
 

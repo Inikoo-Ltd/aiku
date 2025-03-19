@@ -10,6 +10,7 @@ import ImageWorkshop from '@/Components/CMS/Webpage/Image/ImageWorkshop.vue'
 import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
 import CTA3 from '@/Components/CMS/Webpage/CTA3/CTA3Workshop.vue'
 import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
+import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
 import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
 import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
 import Department from '@/Components/CMS/Webpage/Department/DepartmentWorkshop.vue'
@@ -62,6 +63,7 @@ export const getComponent = (componentName: string) => {
         'top-bar-1-fulfilment': Topbar1Fulfilment,
         'top-bar-2-fulfilment': Topbar2Fulfilment,
         'top-bar-3-fulfilment': Topbar3Fulfilment,
+        'pricing': Pricing
     }
     return components[componentName] ?? NotFoundComponents
 }

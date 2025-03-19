@@ -52,6 +52,7 @@ class FetchAction implements ShouldBeUnique
     protected ?Shop $shop;
     protected array $with;
     protected bool $onlyNew = false;
+    protected bool $basket = false;
     protected bool $fetchAll = false;
     protected string $dbSuffix = '';
     protected ?array $model = null;

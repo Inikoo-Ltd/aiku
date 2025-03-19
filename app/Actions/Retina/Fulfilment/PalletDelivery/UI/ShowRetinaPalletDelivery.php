@@ -259,7 +259,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 'upload_spreadsheet' => [
                     'event'           => 'action-progress',
                     'channel'         => 'retina.personal.'.$palletDelivery->organisation->id,
-                    'required_fields' => ['customer_reference', 'notes', 'stored_items', 'type'],
+                    'required_fields' => ['pallet_customer_reference', 'pallet_notes', 'pallet_stored_items', 'pallet_type'],
                     'template'        => [
                         'label' => 'Download template (.xlsx)',
                     ],
@@ -309,7 +309,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
                         'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['customer_reference', 'notes', 'stored_items', 'type'],
+                        'required_fields' => ['pallet_customer_reference', 'pallet_notes', 'pallet_stored_items', 'pallet_type'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)',
                         ],

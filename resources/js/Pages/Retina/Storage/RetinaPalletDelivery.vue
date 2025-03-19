@@ -10,7 +10,7 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'

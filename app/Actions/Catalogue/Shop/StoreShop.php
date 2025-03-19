@@ -129,7 +129,7 @@ class StoreShop extends OrgAction
             }
 
 
-            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
+            if ($shop->type === ShopTypeEnum::DROPSHIPPING || $shop->type === ShopTypeEnum::FULFILMENT) {
                 $shop->dropshippingStats()->create();
             }
 

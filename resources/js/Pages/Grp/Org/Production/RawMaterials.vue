@@ -17,7 +17,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import type { Navigation } from "@/types/Tabs";
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 

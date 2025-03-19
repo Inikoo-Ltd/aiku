@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -73,7 +74,8 @@ class PalletResource extends JsonResource
             'state_icon'           => $pallet->state->stateIcon()[$pallet->state->value],
             'status_icon'           => $pallet->status->statusIcon()[$pallet->status->value],
             'items'                 => StoredItemResource::collection($this->storedItems ?? []),
-            'timeline'              => $timeline
+            'timeline'              => $timeline,
+            'audit'                 => (bool) $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()
         ];
     }
 }

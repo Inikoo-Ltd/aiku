@@ -80,15 +80,28 @@ const isLoggedIn = inject("isPreviewLoggedIn", false);
     <div class="flex flex-col justify-between items-center py-4 px-6">
       <div class="w-full grid grid-cols-3 items-center gap-6">
         <!-- Logo -->
-        <div href="/">
-          <div :style="getStyles(fieldValue.logo.properties)">
-            <Image 
-              :alt="fieldValue?.logo?.alt" 
-              :src="fieldValue?.logo?.image?.source" 
-              class="hover-dashed" 
-            />
-          </div>
-      </div>
+        <component
+					:is="fieldValue?.logo?.url ? 'a' : 'div'"
+					:href="fieldValue?.logo?.url || '#'"
+				>
+        <!-- <Image
+						:alt="fieldValue?.logo?.alt"
+						:src="fieldValue?.logo?.image?.source"
+						:style="getStyles(fieldValue?.logo?.properties)"
+						:imgAttributes="{
+							loading:'lazy'
+						}"
+					/> -->
+
+          <Image 
+                        :style="getStyles(fieldValue.logo.properties)"
+                        :alt="fieldValue?.logo?.alt" 
+                         :imageCover="true"
+                        :src="fieldValue?.logo?.image?.source" 
+                        :imgAttributes="fieldValue?.logo.image?.attributes"
+                       >
+                    </Image>
+        </component>
 
         <!-- Search Bar -->
         <div class="relative justify-self-center w-full max-w-md">

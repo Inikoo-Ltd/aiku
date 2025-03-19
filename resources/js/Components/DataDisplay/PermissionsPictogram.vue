@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, Ref, ref, watch } from 'vue'
 import { Collapse } from 'vue-collapsed'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import Fieldset from 'primevue/fieldset'
 import { router } from '@inertiajs/vue3'

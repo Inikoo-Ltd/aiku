@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Actions\Traits\WithFulfilmentCustomersSubNavigation;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Http\Resources\Fulfilment\FulfilmentCustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Fulfilment;
@@ -34,23 +33,6 @@ class IndexFulfilmentCustomersApproved extends OrgAction
     use WithFulfilmentCustomersSubNavigation;
 
 
-    protected function getElementGroups(Fulfilment $fulfilment): array
-    {
-        return [
-            'status' => [
-                'label'    => __('Status'),
-                'elements' => array_merge_recursive(
-                    FulfilmentCustomerStatusEnum::labels(),
-                    FulfilmentCustomerStatusEnum::count($fulfilment)
-                ),
-
-                'engine' => function ($query, $elements) {
-                    $query->whereIn('fulfilment_customers.status', $elements);
-                }
-
-            ]
-        ];
-    }
 
     public function handle(Fulfilment $fulfilment, $prefix = null): LengthAwarePaginator
     {
@@ -72,14 +54,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
         $queryBuilder->whereIn('customers.status', [CustomerStatusEnum::APPROVED]);
 
 
-        foreach ($this->getElementGroups($fulfilment) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
-        }
+
 
         return $queryBuilder
             ->defaultSort('-customers.created_at')
@@ -124,14 +99,6 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-
-            foreach ($this->getElementGroups($fulfilment) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
-            }
 
 
             $table

@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Dispatch;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -18,15 +19,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowDispatchHub extends OrgAction
 {
+    use WithDispatchingAuthorisation;
+
     public function handle(Warehouse $warehouse): Warehouse
     {
         return $warehouse;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("dispatching.{$this->warehouse->id}.view");
-    }
 
     public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
     {

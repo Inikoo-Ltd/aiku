@@ -29,13 +29,15 @@ class ShopHydrateSales
         $this->shop = $shop;
     }
 
+
     public function getJobMiddleware(): array
     {
         return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
     }
 
-    public function handle(Shop $shop, ?array $intervals = null, $doPreviousIntervals = null): void
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
+
         $stats     = [];
         $queryBase = Invoice::where('in_process', false)->where('shop_id', $shop->id)->selectRaw('sum(net_amount) as  sum_aggregate  ');
         $stats     = $this->getIntervalsData(
@@ -43,7 +45,7 @@ class ShopHydrateSales
             queryBase: $queryBase,
             statField: 'sales_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('shop_id', $shop->id)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
@@ -52,7 +54,7 @@ class ShopHydrateSales
             queryBase: $queryBase,
             statField:'sales_grp_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 
@@ -63,8 +65,9 @@ class ShopHydrateSales
             queryBase: $queryBase,
             statField: 'sales_org_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
+
 
         $shop->salesIntervals()->update($stats);
     }

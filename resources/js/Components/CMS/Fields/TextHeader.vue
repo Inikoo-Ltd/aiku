@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import OverviewProperty from "@/Components/Workshop/Properties/OverviewProperty.vue";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 
 // Define reactive modelValue prop
 const props = defineProps({

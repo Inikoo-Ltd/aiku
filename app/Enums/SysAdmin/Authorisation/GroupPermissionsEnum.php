@@ -16,6 +16,11 @@ enum GroupPermissionsEnum: string
     case SYSADMIN_EDIT               = 'sysadmin.edit';
     case SYSADMIN_VIEW               = 'sysadmin.view';
 
+
+    case GROUP_WEBMASTER                    = 'group-webmaster';
+    case GROUP_WEBMASTER_EDIT               = 'group-webmaster.edit';
+    case GROUP_WEBMASTER_VIEW               = 'group-webmaster.view';
+
     case ORGANISATIONS      = 'organisations';
     case ORGANISATIONS_VIEW = 'organisations.edit';
 

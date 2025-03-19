@@ -108,49 +108,23 @@ function onDragText(e) {
 
 	if (_parentComponent.value) {
 		const parentRect = _parentComponent.value.getBoundingClientRect()
-		// Calculate the element's position relative to the parent
+
 		const relativeLeft = e.clientX - parentRect.left - dragOffset.x;
    		const relativeTop = e.clientY - parentRect.top - dragOffset.y;
 
-		// Convert to percentages relative to the parent's dimensions
 		const leftPercent = (relativeLeft / parentRect.width) * 100
 		const topPercent = (relativeTop / parentRect.height) * 100
-
+		
 		e.target.style.left = `${leftPercent}%`
 		e.target.style.top = `${topPercent}%`
-		e.target.style.transform = "" // Reset transform
+		e.target.style.transform = ""
 
-		// Update the model values in percentage.
 		props.modelValue.text.container.properties.position.left = `${leftPercent}%`
 		props.modelValue.text.container.properties.position.top = `${topPercent}%`
 
 		onSave()
 	}
-	/* const { target, beforeTranslate } = e
-	const parent = target.parentElement
-	if (!parent) return
 
-	const parentWidth = parent.clientWidth
-	const parentHeight = parent.clientHeight
-
-	if (beforeTranslate) {
-		const newLeft = beforeTranslate[0]
-		const newTop = beforeTranslate[1]
-
-		// Convert px to %
-		const leftPercent = (newLeft / parentWidth) * 100
-		const topPercent = (newTop / parentHeight) * 100
-
-		target.style.left = `${leftPercent}%`
-		target.style.top = `${topPercent}%`
-		target.style.transform = "" // Reset transform
-
-		// Update modelValue with percentages
-		props.modelValue.text.container.properties.position.left = `${leftPercent}%`
-		props.modelValue.text.container.properties.position.top = `${topPercent}%`
-
-		onSave()
-	} */
 }
 
 
@@ -190,14 +164,18 @@ const editable = ref(true)
 		<div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
-				<div
-					:style="getStyles(modelValue.logo.properties)"
-					@click="() => emits('setPanelActive', 'logo')">
-					<Image
-						:alt="modelValue?.logo?.alt"
-						:src="modelValue?.logo?.image?.source"
-						class="hover-dashed"></Image>
-				</div>
+				
+				<Image 
+                        :style="getStyles(modelValue.logo.properties)"
+                        :alt="modelValue?.logo?.alt" 
+                         :imageCover="true"
+                        :src="modelValue?.logo?.image?.source" 
+                        :imgAttributes="modelValue?.logo.image?.attributes"
+                        class="hover-dashed"
+						@click="() => emits('setPanelActive', 'logo')"
+						
+                    </Image>
+		
 
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-md"></div>
@@ -249,13 +227,13 @@ const editable = ref(true)
 				<MobileMenu :header="modelValue" :menu="modelValue" />
 
 				<!-- Logo for Mobile -->
+				<Image v-if="modelValue?.logo?.source?.original" :src="modelValue?.logo?.source" class="h-10 mx-2"></Image>
 				<img
-					v-if="!modelValue.logo"
+					v-else-if="modelValue.logo"
 					src="https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png"
 					alt="Ancient Wisdom Logo"
 					class="h-10 mx-2" />
 
-				<Image v-else :src="modelValue?.logo?.source" class="h-10 mx-2"></Image>
 
 				<!-- Profile Icon with Dropdown Menu -->
 				<div @click="toggle" class="flex items-center cursor-pointer text-white">

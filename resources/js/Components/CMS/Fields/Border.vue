@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeMount } from 'vue'
+import { onMounted } from 'vue'
 import BorderProperty from '@/Components/Workshop/Properties/BorderProperty.vue'
-import { trans } from 'laravel-vue-i18n'
-import { set, get } from 'lodash'
+import { set } from 'lodash-es'
 
 
 const model = defineModel<typeof localModel>({
@@ -11,18 +10,18 @@ const model = defineModel<typeof localModel>({
 
 // Create a local copy of the model for internal use
 const localModel = {
-    top: { value: 0 },
-    left: { value: 0 },
+    top: { value: null },
+    left: { value: null },
     unit: 'px',
-    color: '',
-    right: { value: 0 },
-    bottom: { value: 0 },
+    color: null,
+    right: { value: null },
+    bottom: { value: null },
     rounded: {
         unit: 'px',
-        topleft: { value: 0 },
-        topright: { value: 0 },
-        bottomleft: { value: 0 },
-        bottomright: { value: 0 },
+        topleft: { value: null },
+        topright: { value: null },
+        bottomleft: { value: null },
+        bottomright: { value: null },
     },
 }
 
