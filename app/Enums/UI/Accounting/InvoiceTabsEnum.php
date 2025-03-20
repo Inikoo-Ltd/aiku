@@ -17,6 +17,7 @@ enum InvoiceTabsEnum: string
     use HasTabs;
 
     case GROUPED                  = 'grouped';
+    case ITEMIZED               = 'itemized';
     case HISTORY                = 'history';
     case PAYMENTS               = 'payments';
     case EMAIL = 'email';
@@ -48,6 +49,10 @@ enum InvoiceTabsEnum: string
 
             InvoiceTabsEnum::GROUPED => [
                 'title' => __('Grouped'),
+                'icon'  => 'fal fa-bars',
+            ],
+            InvoiceTabsEnum::ITEMIZED => [
+                'title' => __('Itemized'),
                 'icon'  => 'fal fa-bars',
             ],
         };
