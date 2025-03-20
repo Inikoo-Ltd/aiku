@@ -21,7 +21,7 @@ class GetPupilDropshippingNavigation
     {
         $groupNavigation = [];
 
-        if (!$shopifyUser?->customer) {
+        if (blank($shopifyUser?->customer_id)) {
             $groupNavigation['setup'] = [
                 'label' => __('Get Started'),
                 'icon' => ['fal', 'fa-tachometer-alt'],
@@ -33,7 +33,7 @@ class GetPupilDropshippingNavigation
 
                 ]
             ];
-        } else {
+        } elseif ($shopifyUser?->customer_id) {
             $groupNavigation['dashboard'] = [
                 'label' => __('Dashboard'),
                 'icon' => ['fal', 'fa-tachometer-alt'],

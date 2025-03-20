@@ -23,6 +23,7 @@ class GroupHydrateInvoices
     use WithHydrateInvoices;
 
     private Group $group;
+    public string $jobQueue = 'sales';
 
     public function __construct(Group $group)
     {

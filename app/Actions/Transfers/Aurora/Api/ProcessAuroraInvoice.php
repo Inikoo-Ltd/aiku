@@ -18,7 +18,6 @@ class ProcessAuroraInvoice extends OrgAction
 {
     use WithProcessAurora;
 
-    public string $jobQueue = 'urgent';
 
     public function __construct()
     {

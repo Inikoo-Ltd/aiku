@@ -2,6 +2,7 @@
 import Dialog from "./Dialog.vue"
 import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import { routeType } from "@/types/route";
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
   show: boolean,
