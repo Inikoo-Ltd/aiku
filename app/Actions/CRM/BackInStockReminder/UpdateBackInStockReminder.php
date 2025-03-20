@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\BackInStockReminder;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBackInStockReminder extends OrgAction
@@ -27,10 +28,13 @@ class UpdateBackInStockReminder extends OrgAction
     {
         $backInStockReminder = $this->update($backInStockReminder, $modelData, ['data']);
 
-        CustomerHydrateBackInStockReminders::dispatch($backInStockReminder->customer)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
+        $changes = Arr::except($backInStockReminder->getChanges(), ['updated_at', 'last_fetched_at']);
 
+        if (count($changes) > 0) {
+            CustomerHydrateBackInStockReminders::dispatch($backInStockReminder->customer)->delay($this->hydratorsDelay);
+            ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
+            ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
+        }
         return $backInStockReminder;
     }
 

@@ -21,6 +21,7 @@ class GroupHydrateUserRequests implements ShouldBeUnique
     use AsAction;
 
     private Group $group;
+    public string $jobQueue = 'analytics';
     public function __construct(Group $group)
     {
         $this->group = $group;

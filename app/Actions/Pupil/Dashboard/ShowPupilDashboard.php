@@ -75,7 +75,7 @@ class ShowPupilDashboard
 
         $render_page = null;
 
-        if (!Arr::get($shopifyUser?->settings, 'webhooks')) {
+        if (!$shopifyUser?->customer) {
             $render_page = 'Intro';
         } elseif ($shopifyUser?->customer?->shop?->name) {
             $render_page = 'WelcomeShop';

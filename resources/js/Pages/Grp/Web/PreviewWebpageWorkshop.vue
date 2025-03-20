@@ -108,9 +108,13 @@ onMounted(() => {
 									</div>
 								</div>
 
-								<component class="w-full" :is="getComponent(activityItem.type)" :webpageData="webpage"
-									:blockData="activityItem" @autoSave="() => updateData(activityItem)"
-									v-model="activityItem.web_block.layout.data.fieldValue" />
+								<component 
+									class="w-full" :is="getComponent(activityItem.type)" 
+									:webpageData="webpage"
+									:blockData="activityItem" 
+									@autoSave="() => updateData(activityItem)"
+									v-model="activityItem.web_block.layout.data.fieldValue" 
+								/>
 							</section>
 						</template>
 					</TransitionGroup>

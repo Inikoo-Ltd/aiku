@@ -72,7 +72,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                     </div>
                     <component 
                         :is="getComponent(blueprint.type)" 
-                         :key="blueprint.key "
+                        :key="blueprint.key "
                         :modelValue="getFormValue(modelValue, blueprint.key)"
                         :uploadRoutes="uploadImageRoute" 
                         v-bind="blueprint?.props_data" 
@@ -89,6 +89,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                 :blueprint="blueprint.replaceForm"
                 :modelValue="getFormValue(modelValue, blueprint.key)"
                 :key="blueprint.key "
+                :uploadImageRoute="uploadImageRoute" 
                 @update:modelValue="newValue => onPropertyUpdate(blueprint.key, newValue)"
             />
         </template>

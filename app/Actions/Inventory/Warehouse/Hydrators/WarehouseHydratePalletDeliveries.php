@@ -20,6 +20,8 @@ class WarehouseHydratePalletDeliveries
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'urgent';
+
     private Warehouse $warehouse;
     public function __construct(Warehouse $warehouse)
     {

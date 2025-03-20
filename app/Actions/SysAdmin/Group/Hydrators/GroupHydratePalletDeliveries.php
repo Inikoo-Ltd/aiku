@@ -20,6 +20,8 @@ class GroupHydratePalletDeliveries
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'low-priority';
+
     private Group $group;
     public function __construct(Group $group)
     {

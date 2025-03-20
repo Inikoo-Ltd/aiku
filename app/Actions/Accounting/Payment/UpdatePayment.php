@@ -14,6 +14,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Models\Accounting\Payment;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePayment extends OrgAction
@@ -24,9 +25,10 @@ class UpdatePayment extends OrgAction
     public function handle(Payment $payment, array $modelData): Payment
     {
         $payment = $this->update($payment, $modelData, ['data']);
-
-        PaymentRecordSearch::dispatch($payment);
-
+        $changes = Arr::except($payment->getChanges(), ['updated_at', 'last_fetched_at']);
+        if(count($changes)>0) {
+            PaymentRecordSearch::dispatch($payment);
+        }
         return $payment;
     }
 
