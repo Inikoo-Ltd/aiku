@@ -159,8 +159,9 @@ class ShowInvoice extends OrgAction
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refunds_pay_out : 0;
 
         $totalNeedToPay = round($ir_total - $totalPaid, 2);
-        if ($totalNeedToPay < 0) {
-            $totalNeedToPay += $invoice->customer->balance;
+
+        if ($totalPaid > $invoice->payment_amount) {
+            $totalNeedToPay = 0;
         }
 
         $invoicePayBox = [

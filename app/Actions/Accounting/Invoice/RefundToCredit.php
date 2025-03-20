@@ -51,9 +51,8 @@ class RefundToCredit extends OrgAction
 
                 $payStatus             = InvoicePayStatusEnum::UNPAID;
                 $paymentAt             = null;
-                $runningPaymentsAmount = -$creditTransaction->running_amount;
 
-                if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $refund->total_amount) {
+                if ($payStatus == InvoicePayStatusEnum::UNPAID && $amountPayPerRefund >= $refund->total_amount) {
                     $payStatus = InvoicePayStatusEnum::PAID;
                     $paymentAt = $creditTransaction->date;
                 }
@@ -61,7 +60,7 @@ class RefundToCredit extends OrgAction
                 $refund->update([
                     'pay_status' => $payStatus,
                     'paid_at' => $paymentAt,
-                    'payment_amount' => $runningPaymentsAmount
+                    'payment_amount' => $amountPayPerRefund
                 ]);
 
                 $totalRefund -= $amountPayPerRefund;
@@ -84,9 +83,8 @@ class RefundToCredit extends OrgAction
 
         $payStatus             = InvoicePayStatusEnum::UNPAID;
         $paymentAt             = null;
-        $runningPaymentsAmount = $creditTransaction->running_amount;
 
-        if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $refund->total_amount) {
+        if ($payStatus == InvoicePayStatusEnum::UNPAID && $totalToPay >= $refund->total_amount) {
             $payStatus = InvoicePayStatusEnum::PAID;
             $paymentAt = $creditTransaction->date;
         }
@@ -94,7 +92,7 @@ class RefundToCredit extends OrgAction
         $refund->update([
             'pay_status' => $payStatus,
             'paid_at' => $paymentAt,
-            'payment_amount' => $runningPaymentsAmount
+            'payment_amount' => $totalToPay
         ]);
 
         CustomerHydrateCreditTransactions::dispatch($invoice->customer);
