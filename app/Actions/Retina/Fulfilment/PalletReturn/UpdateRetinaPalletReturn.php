@@ -46,6 +46,7 @@ class UpdateRetinaPalletReturn extends RetinaAction
             'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
     }
 
