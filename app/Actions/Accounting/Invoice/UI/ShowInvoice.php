@@ -184,7 +184,7 @@ class ShowInvoice extends OrgAction
                         ]
                     ]
                 ],
-                'list_refunds'      => RefundResource::collection($invoice->refunds),
+                'list_refunds'      => RefundResource::collection($invoice->refunds->where('in_process', false)),
                 'currency_code'     => $invoice->currency->code,
                 'total_invoice'     => $invoice->total_amount,
                 'total_refunds'     => $totalRefund,

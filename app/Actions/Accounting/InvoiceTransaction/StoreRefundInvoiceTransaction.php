@@ -32,10 +32,20 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
 
-        $netAmount = -Arr::get($modelData, 'net_amount', 0);
+        $netAmount = Arr::get($modelData, 'net_amount', 0) * -1;
+        if ($netAmount === 0) {
+            $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
+            return $invoiceTransaction;
+        }
 
-        $totalTrRefunded = $invoiceTransaction->transactionRefunds->sum('net_amount');
+        $totalTrRefunded = $invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
         $totalTr = $invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
+
+        if (abs($netAmount) == $invoiceTransaction->net_amount) {
+            $totalTr = 0;
+            $netAmount = (abs($netAmount) - abs($totalTrRefunded)) * -1;
+        }
+
 
         if ($totalTr < 0) {
             throw ValidationException::withMessages(
@@ -103,7 +113,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function rules(): array
     {
         return [
-            'net_amount' => ['required', 'numeric', 'gt:0'],
+            'net_amount' => ['required', 'numeric', 'gte:0'],
         ];
     }
 
