@@ -19,6 +19,7 @@ import { faArrowAltCircleLeft } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import Tag from '@/Components/Tag.vue'
 library.add(faArrowAltCircleLeft, faSave, falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft)
 
 defineProps<{
@@ -79,6 +80,8 @@ const localeCode = navigator.language
                     :loading="isLoading.includes(item.code)"
                 /> -->
                 <div class="space-x-2 w-[350px]">
+                    <Tag v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" :label="locale.currencyFormat(item.currency_code, item.refund_net_amount)" noHoverColor :theme="3" size="sm" />
+
                     <ButtonWithLink
                         v-if="!get(proxyItem, ['refund_net_amount'], 0) && get(proxyItem, ['refund_net_amount'], 0) != item.net_amount"
                         @xclick="() => get(proxyItem, 'refund_type', null) == 'full' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'full')"
@@ -104,51 +107,61 @@ const localeCode = navigator.language
                     />
                 </div>
 
-                <Transition name="slide-to-left">
-                    <div v-show="get(proxyItem, 'refund_type', null) == 'partial' || get(proxyItem, ['refund_net_amount'], 0)" class="w-fit flex items-center gap-x-1 mt-2">
-                        <div>
-                            <InputNumber
-                                :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
-                                @input="(e) => (console.log(e.value), set(proxyItem, ['new_refund_amount'], e.value))"
-                                @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
-                                :class="get(proxyItem, ['new_refund_amount'], null) > item.net_amount ? 'errorShake' : ''"
-                                inputClass="width-12"
-                                :max="Number(item.net_amount)"
-                                :min="0"
-                                placeholder="0"
-                                mode="currency"
-                                :currency="item.currency_code"
-                                :locale="localeCode"
-                                showButtons buttonLayout="horizontal"
-                                :step="item.unit_price"
-                                size="small"
-                            >
-                                <template #decrementicon>
-                                    <FontAwesomeIcon icon="fal fa-minus" aria-hidden="true" />
-                                </template>
-                                <template #incrementicon>
-                                    <FontAwesomeIcon icon="fal fa-plus" aria-hidden="true" />
-                                </template>
-                            </InputNumber>
+                <!-- {{ item.net_amount }} -->
+
+                <template v-if="item.refund_net_amount != item.net_amount">
+                    <Transition name="slide-to-left">
+                        <div v-show="get(proxyItem, 'refund_type', null) == 'partial' || get(proxyItem, ['refund_net_amount'], 0)" class="w-fit flex items-center gap-x-1 mt-2">
+                            <div>
+                                <InputNumber
+                                    :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
+                                    @input="(e) => (console.log(e.value), set(proxyItem, ['new_refund_amount'], e.value))"
+                                    @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
+                                    :class="get(proxyItem, ['new_refund_amount'], null) > item.net_amount ? 'errorShake' : ''"
+                                    inputClass="width-12"
+                                    :max="Number(item.net_amount) - Number(item.refund_net_amount)"
+                                    :min="0"
+                                    placeholder="0"
+                                    mode="currency"
+                                    :currency="item.currency_code"
+                                    :locale="localeCode"
+                                    showButtons buttonLayout="horizontal"
+                                    :step="item.unit_price"
+                                    size="small"
+                                >
+                                    <template #decrementicon>
+                                        <FontAwesomeIcon icon="fal fa-minus" aria-hidden="true" />
+                                    </template>
+                                    <template #incrementicon>
+                                        <FontAwesomeIcon icon="fal fa-plus" aria-hidden="true" />
+                                    </template>
+                                </InputNumber>
                     
-                            <p v-if="get(proxyItem, ['new_refund_amount'], null) > item.net_amount" class="italic text-red-500 text-xs mt-1">
-                                <!-- <FontAwesomeIcon icon='fal fa-exclamation-circle' class='' fixed-width aria-hidden='true' /> -->
-                                {{ trans('Refund amount should not over the net amount') }}
-                            </p>
+                                <p v-if="get(proxyItem, ['new_refund_amount'], null) > item.net_amount" class="italic text-red-500 text-xs mt-1">
+                                    <!-- <FontAwesomeIcon icon='fal fa-exclamation-circle' class='' fixed-width aria-hidden='true' /> -->
+                                    {{ trans('Refund amount should not over the net amount') }}
+                                </p>
+                            </div>
+                            <!-- {{ get(proxyItem, ['new_refund_amount'], null) > item.net_amount }} -->
+                            <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
+                            <FontAwesomeIcon
+                                v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false"
+                                @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))"
+                                icon="fad fa-save"
+                                class="h-8 cursor-pointer"
+                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                                aria-hidden="true"
+                            />
+                            <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                         </div>
-                        <!-- {{ get(proxyItem, ['new_refund_amount'], null) > item.net_amount }} -->
-                        <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
-                        <FontAwesomeIcon
-                            v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false"
-                            @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))"
-                            icon="fad fa-save"
-                            class="h-8 cursor-pointer"
-                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
-                            aria-hidden="true"
-                        />
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
-                    </div>
-                </Transition>
+                    </Transition>
+                </template>
+                
+                <ButtonWithLink
+                    v-else
+                    :routeTarget="item.delete_route"
+                    type="delete"
+                />
             </template>
         </Table>
     </div>
