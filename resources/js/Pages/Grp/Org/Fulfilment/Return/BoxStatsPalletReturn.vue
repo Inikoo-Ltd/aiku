@@ -34,6 +34,7 @@ const props = defineProps<{
 	boxStats: BoxStats
 	updateRoute: routeType
 }>()
+console.log(props.boxStats,'asd');
 
 onMounted(() => {
 	JsBarcode("#palletReturnBarcode", route().v().params.palletReturn, {
@@ -49,7 +50,7 @@ const isModalAddress = ref(false)
 const isModalAddressCollection = ref(false)
 const enabled = ref(props.dataPalletReturn.is_collection || false)
 const isLoading = ref<string | boolean>(false)
-const textValue = ref("")
+const textValue = ref(props.boxStats.collection_notes)
 const textUpdateTimeout = ref<number | null>(null)
 
 // Computed property to intercept changes via v-model
