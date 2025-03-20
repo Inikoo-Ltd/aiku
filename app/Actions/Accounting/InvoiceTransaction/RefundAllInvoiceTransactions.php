@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 17-03-2025-14h-19m
@@ -10,7 +11,6 @@ namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\InvoiceTransaction;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundAllInvoiceTransactions extends OrgAction
@@ -21,8 +21,13 @@ class RefundAllInvoiceTransactions extends OrgAction
     public function handle(Invoice $refund): Invoice
     {
         $invoice = $refund->originalInvoice;
-        
+
         foreach ($invoice->invoiceTransactions as $transaction) {
+            $totalTrRefund = $transaction->transactionRefunds->sum('net_amount');
+            $totalTr = $transaction->net_amount - abs($totalTrRefund);
+            if ($totalTr <= 0) {
+                continue;
+            }
             CreateFullRefundInvoiceTransaction::make()->action($refund, $transaction);
         }
 
