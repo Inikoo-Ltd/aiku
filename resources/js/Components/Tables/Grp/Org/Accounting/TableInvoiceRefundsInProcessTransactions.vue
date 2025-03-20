@@ -20,10 +20,11 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import Tag from '@/Components/Tag.vue'
+import { notify } from '@kyvg/vue3-notification'
 library.add(faArrowAltCircleLeft, faSave, falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft)
 
-defineProps<{
-    data: object
+const props = defineProps<{
+    data: {}
     tab: string
 }>()
 
@@ -50,6 +51,13 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: num
                 if (index > -1) {
                     isLoadingQuantity.value.splice(index, 1)
                 }
+            },
+            onError: (e) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: e.net_amount,
+                    type: "error",
+                })
             }
         }
     )
@@ -66,6 +74,11 @@ const localeCode = navigator.language
                     {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
                 </div>
             </template>
+            <template #cell(prev_refund)="{ item }">
+                <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
+                    <Tag v-if="!Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
+                </div>
+            </template>
 
             <template #cell(action)="{ item, proxyItem }">
                 <!-- <pre>{{ item.data }}</pre> -->
@@ -80,7 +93,10 @@ const localeCode = navigator.language
                     :loading="isLoading.includes(item.code)"
                 /> -->
                 <div class="space-x-2 w-[350px]">
-                    <Tag v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" :label="locale.currencyFormat(item.currency_code, item.refund_net_amount)" noHoverColor :theme="3" size="sm" />
+                    <!-- <Tag v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" :label="locale.currencyFormat(item.currency_code, item.refund_net_amount)" noHoverColor :theme="3" size="sm" /> -->
+                    <div v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" class="w-fit font-semibold">
+                        {{ locale.currencyFormat(item.currency_code, item.refund_net_amount) }}
+                    </div>
 
                     <ButtonWithLink
                         v-if="!get(proxyItem, ['refund_net_amount'], 0) && get(proxyItem, ['refund_net_amount'], 0) != item.net_amount"
@@ -115,11 +131,11 @@ const localeCode = navigator.language
                             <div>
                                 <InputNumber
                                     :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
-                                    @input="(e) => (console.log(e.value), set(proxyItem, ['new_refund_amount'], e.value))"
+                                    @input="(e) => (set(proxyItem, ['new_refund_amount'], e.value))"
                                     @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
                                     :class="get(proxyItem, ['new_refund_amount'], null) > item.net_amount ? 'errorShake' : ''"
                                     inputClass="width-12"
-                                    :max="Number(item.net_amount) - Number(item.refund_net_amount)"
+                                    :max="Number(item.net_amount) - Number(item.refund_net_amount) - Number(item.total_last_refund)"
                                     :min="0"
                                     placeholder="0"
                                     mode="currency"
@@ -145,7 +161,7 @@ const localeCode = navigator.language
                             <!-- {{ get(proxyItem, ['new_refund_amount'], null) > item.net_amount }} -->
                             <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
                             <FontAwesomeIcon
-                                v-else-if="get(proxyItem, ['new_refund_amount'], null) ? proxyItem.new_refund_amount !== (proxyItem.refund_amount || 0) : false"
+                                v-else-if="proxyItem.new_refund_amount >= 0 ? proxyItem.new_refund_amount !== (proxyItem.refund_net_amount || 0) : false"
                                 @click="() => onClickQuantity(item.refund_route, item.rowIndex, get(proxyItem, ['new_refund_amount'], 0))"
                                 icon="fad fa-save"
                                 class="h-8 cursor-pointer"
@@ -155,6 +171,7 @@ const localeCode = navigator.language
                             <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                         </div>
                     </Transition>
+                    <!-- <pre>{{ proxyItem }}</pre> -->
                 </template>
                 
                 <!-- <ButtonWithLink
@@ -162,6 +179,7 @@ const localeCode = navigator.language
                     :routeTarget="item.delete_route"
                     type="delete"
                 /> -->
+                <!-- <pre>{{ props }}</pre> -->
             </template>
         </Table>
     </div>

@@ -90,6 +90,7 @@ class IndexRefundInProcessTransactions extends OrgAction
             $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'prev_refund', label: __('Previous refund'), tooltip: __('Total of previous refund on the same invoice'), canBeHidden: false, sortable: false, searchable: false);
 
             if ($invoice instanceof Invoice && $invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {
                 $table->column(key: 'action', label: __('action'), canBeHidden: false);
