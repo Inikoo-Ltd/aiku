@@ -11,10 +11,8 @@
 
 ![](https://codecov.io/gh/Inikoo-Ltd/aiku/graphs/tree.svg?token=12HMR5XCOW)
 
+# Multi-tenant enterprise grade open source SaaS EPR (enterprise resource planning) system
 
-#### Comprehensive business management tools
-
-- Multi-tenant enterprise grade open source SaaS platform
 - Fulfillment and inventory management
 - Shopify, TikTok integration for eCommerce dropshipping
 - Custom-made CMS for creating ecommerce websites
