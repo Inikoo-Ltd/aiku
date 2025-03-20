@@ -20,7 +20,7 @@ class GroupHydrateWebsites implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-
+    public string $jobQueue = 'low-priority';
     public function handle(Group $group): void
     {
         $stats = [

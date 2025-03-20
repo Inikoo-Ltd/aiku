@@ -21,7 +21,6 @@ class GroupHydrateProductions
     use WithEnumStats;
 
     private Group $group;
-
     public function __construct(Group $group)
     {
         $this->group = $group;
