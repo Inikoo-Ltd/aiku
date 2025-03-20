@@ -9,6 +9,7 @@ import Tag from "@/Components/Tag.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { trans } from "laravel-vue-i18n"
+import { useLocaleStore } from "@/Stores/locale"
 
 defineProps<{
 	data: object
@@ -86,6 +87,7 @@ const onDeleteTransaction = (id: Number, fulfilment_transaction_id: number) => {
 </script>
 
 <template>
+    <pre>{{ data }}</pre>
 	<div class="h-min">
 		<Table :resource="data" :name="tab" class="mt-5" :is-check-box="false">
 			<template #cell(description)="{ item }">
@@ -114,92 +116,9 @@ const onDeleteTransaction = (id: Number, fulfilment_transaction_id: number) => {
 				<div v-else></div>
 			</template>
 
-			<!-- Column: asset code -->
-			<template #cell(asset_code)="{ item }">
-				<div>
-					{{ item.asset_code }} <br />
-					<span class="text-gray-400">({{ item.asset_name }})</span>
-				</div>
-			</template>
-
-			<!-- Column: quantity -->
-			<template #cell(quantity)="{ item }">
-				<div class="flex justify-end">
-					<div
-						v-if="
-							item.edit_type !== 'net' &&
-							status == 'current' &&
-							item.data.type !== 'Pallet' &&
-							item.data.type !== 'Space'
-						">
-						<NumberWithButtonSave
-							v-model="item.quantity"
-							@onSave="
-								(e) => onUpdateQuantity(item.id, item.fulfilment_transaction_id, e)
-							" />
-					</div>
-					<div v-else-if="item.data.type == 'Pallet'">
-						{{ locale.number(item.quantity) }}
-						{{ item.quantity > 1 ? trans("days") : trans("day") }}
-					</div>
-					<div v-else-if="item.data.type == 'Product'">
-						{{ locale.number(item.quantity) }}
-						{{ item.quantity > 1 ? trans("pcs") : trans("pc") }}
-					</div>
-					<div v-else class="text-gray-500"></div>
-				</div>
-			</template>
-
-			<!-- Column: asset price -->
-			<template #cell(asset_price)="{ item }">
-				{{ locale.currencyFormat(item.currency_code, item.asset_price || 0) }}/{{
-					item.unit_label
-				}}
-				<Tag v-if="item['discount'] > 0" :theme="17" noHoverColor>
-					<template #label>
-						<font-awesome-icon icon="fal fa-tag" class="text-xs text-emerald-700" />
-						{{ item["discount"] }}%
-					</template>
-				</Tag>
-			</template>
-
-			<template #cell(total)="{ item, proxyItem }">
-				<div class="relative">
-					<template v-if="item.edit_type === 'net'">
-						<div class="w-72 float-right">
-							<NumberWithButtonSave
-								v-model="proxyItem.total"
-								:saveOnForm="true"
-								:routeSubmit="getRoute(item)"
-								keySubmit="net_amount"
-								:bindToTarget="{
-									mode: 'currency',
-									fluid: true,
-									currency: item.currency_code,
-									locale: 'en-US',
-									step: 0.25,
-								}" />
-						</div>
-					</template>
-
-					<Transition v-else name="spin-to-right">
-						<span :key="item.total">
-							{{ locale.currencyFormat(item.currency_code, item.total || 0) }}
-						</span>
-					</Transition>
-				</div>
-			</template>
-
-			<!-- Column: Action -->
-			<template #cell(actions)="{ item }">
-				<Button
-					v-if="item.data.type !== 'Pallet' && item.data.type !== 'Space'"
-					@click="() => onDeleteTransaction(item.id, item.fulfilment_transaction_id)"
-					:loading="isLoading === 'buttonReset' + item.id"
-					icon="fal fa-trash-alt"
-					type="negative"
-					v-tooltip="'Unselect this field'" />
-			</template>
+            <template #cell(net_amount)="{ item }">
+                <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.net_amount)  }}</div>
+            </template>
 		</Table>
 	</div>
 </template>
