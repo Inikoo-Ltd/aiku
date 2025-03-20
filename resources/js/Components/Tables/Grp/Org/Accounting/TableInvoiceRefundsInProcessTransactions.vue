@@ -157,11 +157,11 @@ const localeCode = navigator.language
                     </Transition>
                 </template>
                 
-                <ButtonWithLink
+                <!-- <ButtonWithLink
                     v-else
                     :routeTarget="item.delete_route"
                     type="delete"
-                />
+                /> -->
             </template>
         </Table>
     </div>

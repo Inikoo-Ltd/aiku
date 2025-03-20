@@ -47,6 +47,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
             );
         }
 
+        $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
+
         data_set($modelData, 'net_amount', $netAmount);
 
         $orgExchange = GetCurrencyExchange::run($refund->currency, $refund->organisation->currency);
