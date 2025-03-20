@@ -17,6 +17,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRefundInvoiceTransaction extends OrgAction
@@ -32,6 +33,20 @@ class StoreRefundInvoiceTransaction extends OrgAction
     {
 
         $netAmount = -Arr::get($modelData, 'net_amount', 0);
+
+        $totalTrRefunded = $invoiceTransaction->transactionRefunds->sum('net_amount');
+        $totalTr = $invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
+
+        if ($totalTr <= 0) {
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'net_amount' => 'Refund amount exceeds or already refunded in other refund',
+                    ]
+                ]
+            );
+        }
+
         data_set($modelData, 'net_amount', $netAmount);
 
         $orgExchange = GetCurrencyExchange::run($refund->currency, $refund->organisation->currency);
