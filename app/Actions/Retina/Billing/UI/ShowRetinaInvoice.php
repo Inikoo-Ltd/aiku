@@ -151,9 +151,9 @@ class ShowRetinaInvoice extends RetinaAction
                 'invoice' => InvoiceResource::make($invoice),
 
 
-                InvoiceTabsEnum::ITEMS->value => $this->tab == InvoiceTabsEnum::ITEMS->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))),
+                InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
+                    fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
 
                 InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
@@ -162,7 +162,7 @@ class ShowRetinaInvoice extends RetinaAction
 
             ]
         )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
-            ->table(IndexRetinaInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMS->value));
+            ->table(IndexRetinaInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value));
     }
 
 

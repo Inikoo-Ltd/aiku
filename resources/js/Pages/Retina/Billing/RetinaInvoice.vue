@@ -74,7 +74,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
       order_summary: FieldOrderSummary[][]
       recurring_bill_route: routeType
       invoice: InvoiceResource
-      items: {}
+      grouped: {}
       payments: {}
       details: {}
       history: {}
@@ -87,7 +87,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
   
   const component = computed(() => {
       const components: Component = {
-          items: TableInvoiceTransactions,
+          grouped: TableInvoiceTransactions,
           payments: TablePayments,
           details: ModelDetails,
           history: TableHistories,

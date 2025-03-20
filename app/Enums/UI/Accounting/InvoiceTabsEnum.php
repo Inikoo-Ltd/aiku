@@ -16,7 +16,7 @@ enum InvoiceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case ITEMS                  = 'items';
+    case GROUPED                  = 'grouped';
     case HISTORY                = 'history';
     case PAYMENTS               = 'payments';
     case EMAIL = 'email';
@@ -46,8 +46,8 @@ enum InvoiceTabsEnum: string
                 'align' => 'right',
             ],
 
-            InvoiceTabsEnum::ITEMS => [
-                'title' => __('Items'),
+            InvoiceTabsEnum::GROUPED => [
+                'title' => __('Grouped'),
                 'icon'  => 'fal fa-bars',
             ],
         };
