@@ -33,7 +33,7 @@ enum InvoicesTabsEnum: string
 
             InvoicesTabsEnum::REFUNDS     => [
                 'title' => __('Refunds'),
-                'icon'    => 'fal fa-hand-holding-usd',
+                'icon'    => 'fal fa-arrow-circle-left',
             ],
 
             InvoicesTabsEnum::IN_PROCESS => [
