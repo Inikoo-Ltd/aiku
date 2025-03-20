@@ -8,12 +8,10 @@
 
 namespace App\Actions\Dropshipping\Shopify\Webhook;
 
-use App\Actions\Dropshipping\ShopifyUser\RegisterCustomerFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -31,7 +29,7 @@ class StoreWebhooksToShopify extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, ?Fulfilment $fulfilment)
+    public function handle(ShopifyUser $shopifyUser)
     {
         $webhooks     = [];
         $webhookTypes = [];
@@ -58,7 +56,7 @@ class StoreWebhooksToShopify extends OrgAction
             ];
         }
 
-        DB::transaction(function () use ($webhooks, $shopifyUser, $fulfilment) {
+        DB::transaction(function () use ($webhooks, $shopifyUser) {
             DeleteWebhooksFromShopify::run($shopifyUser);
 
             $webhooksData = [];
@@ -68,11 +66,6 @@ class StoreWebhooksToShopify extends OrgAction
                 if (!$webhook['errors'] && is_array($webhook['body']['webhook']['container'])) {
                     $webhooksData[] = $webhook['body']['webhook']['container'];
                 }
-            }
-
-            $fulfilmentCustomer = $shopifyUser?->customer?->fulfilmentCustomer;
-            if (!$fulfilmentCustomer && $fulfilment) {
-                RegisterCustomerFromShopify::run($shopifyUser, $fulfilment);
             }
 
             $this->update($shopifyUser, [
@@ -87,6 +80,6 @@ class StoreWebhooksToShopify extends OrgAction
     {
         $shop = Shop::find($request->input('shop'));
 
-        $this->handle($shopifyUser, $shop->fulfilment);
+        $this->handle($shopifyUser);
     }
 }
