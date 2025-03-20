@@ -6,7 +6,7 @@ import { Link, router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { routeType } from "@/types/route"
 import Tag from "@/Components/Tag.vue"
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { trans } from "laravel-vue-i18n"
 import { useLocaleStore } from "@/Stores/locale"
@@ -87,7 +87,6 @@ const onDeleteTransaction = (id: Number, fulfilment_transaction_id: number) => {
 </script>
 
 <template>
-    <pre>{{ data }}</pre>
 	<div class="h-min">
 		<Table :resource="data" :name="tab" class="mt-5" :is-check-box="false">
 			<template #cell(description)="{ item }">
@@ -113,12 +112,22 @@ const onDeleteTransaction = (id: Number, fulfilment_transaction_id: number) => {
 					</div>
 				</div>
 
-				<div v-else></div>
+				<div v-else>
+					<span class="text-gray-400 italic text-xs">data unavailable</span>
+                </div>
 			</template>
 
-            <template #cell(net_amount)="{ item }">
-                <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.net_amount)  }}</div>
-            </template>
+			<template #cell(code)="{ item }">
+				<div>
+					{{ item.code }} <br />
+					<span class="text-gray-400">({{ item.name }})</span>
+				</div>
+			</template>
+			<template #cell(net_amount)="{ item }">
+				<div class="text-gray-500">
+					{{ useLocaleStore().currencyFormat(item.currency_code, item.net_amount) }}
+				</div>
+			</template>
 		</Table>
 	</div>
 </template>
