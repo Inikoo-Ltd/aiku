@@ -53,7 +53,7 @@ const props = defineProps<{
 		headerText: string
 		chip_text: string
 		text: {
-			container : {
+			container: {
 				properties: {
 					position: {
 						top: string
@@ -77,7 +77,7 @@ const emits = defineEmits<{
 
 const _menu = ref()
 const _textRef = ref<HTMLElement | null>(null) // Correct reference type
-const _parentComponent = ref<HTMLElement | null>(null);
+const _parentComponent = ref<HTMLElement | null>(null)
 
 // Ensure Moveable gets the correct target
 onMounted(() => {
@@ -93,13 +93,13 @@ function onSave() {
 	emits("update:modelValue", props.modelValue)
 }
 
-let dragOffset = { x: 0, y: 0 };
+let dragOffset = { x: 0, y: 0 }
 
 function onMouseDown(e) {
-  const elementRect = e.target.getBoundingClientRect();
-  // Set the offset to half the element's dimensions.
-  dragOffset.x = elementRect.width / 2;
-  dragOffset.y = elementRect.height / 2;
+	const elementRect = e.target.getBoundingClientRect()
+	// Set the offset to half the element's dimensions.
+	dragOffset.x = elementRect.width / 2
+	dragOffset.y = elementRect.height / 2
 }
 
 // Dragging function for Moveable
@@ -109,12 +109,12 @@ function onDragText(e) {
 	if (_parentComponent.value) {
 		const parentRect = _parentComponent.value.getBoundingClientRect()
 
-		const relativeLeft = e.clientX - parentRect.left - dragOffset.x;
-   		const relativeTop = e.clientY - parentRect.top - dragOffset.y;
+		const relativeLeft = e.clientX - parentRect.left - dragOffset.x
+		const relativeTop = e.clientY - parentRect.top - dragOffset.y
 
 		const leftPercent = (relativeLeft / parentRect.width) * 100
 		const topPercent = (relativeTop / parentRect.height) * 100
-		
+
 		e.target.style.left = `${leftPercent}%`
 		e.target.style.top = `${topPercent}%`
 		e.target.style.transform = ""
@@ -124,10 +124,7 @@ function onDragText(e) {
 
 		onSave()
 	}
-
 }
-
-
 
 function onResizeText(e) {
 	const { target, width, height } = e
@@ -160,29 +157,48 @@ const editable = ref(true)
 </script>
 
 <template>
-	<div ref="_parentComponent" class="relative shadow-sm" :style="getStyles(modelValue.container.properties)">
+	<div
+		ref="_parentComponent"
+		class="relative shadow-sm"
+		:style="getStyles(modelValue.container.properties)">
 		<div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
-				
-				<Image 
-                        :style="getStyles(modelValue.logo.properties)"
-                        :alt="modelValue?.logo?.alt" 
-                         :imageCover="true"
-                        :src="modelValue?.logo?.image?.source" 
-                        :imgAttributes="modelValue?.logo.image?.attributes"
-                        class="hover-dashed"
-						@click="() => emits('setPanelActive', 'logo')"
-						
-                    </Image>
-		
+
+				<component
+					v-if="modelValue?.logo?.image?.source"
+					:is="modelValue?.logo?.image?.source ? 'a' : 'div'"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="block w-full h-full"
+					@click="() => emits('setPanelActive', 'logo')"
+					>
+					<Image
+						:style="getStyles(modelValue.logo.properties)"
+						:alt="modelValue?.logo?.image?.alt || modelValue?.logo?.alt"
+						:imageCover="true"
+						:src="modelValue?.logo?.image?.source"
+						:imgAttributes="modelValue?.logo.image?.attributes" />
+				</component>
+				<div
+					v-else
+					@click="() => emits('setPanelActive', 'logo')"
+					class="flex items-center justify-center w-[100px] h-[100px] bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
+					<font-awesome-icon
+						:icon="['fas', 'image']"
+						class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700" />
+				</div>
 
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-md"></div>
 
 				<!-- Text (Movable & Resizable) -->
-				<div ref="_textRef" @mousedown="onMouseDown" class="absolute" :style="{
-					width: modelValue.text?.container?.properties?.width || 'auto',
+				<div
+					ref="_textRef"
+					@mousedown="onMouseDown"
+					class="absolute"
+					:style="{
+						width: modelValue.text?.container?.properties?.width || 'auto',
 						height: modelValue.text?.container?.properties?.height || 'auto',
 						top: modelValue.text?.container?.properties?.position?.top || 'auto',
 						left: modelValue.text?.container?.properties?.position?.left || 'auto',
@@ -205,7 +221,6 @@ const editable = ref(true)
 					:resizable="true"
 					:scalable="true"
 					:keepRatio="false"
-	
 					@drag="onDragText"
 					@resize="onResizeText"
 					@scale="onTextScale"
@@ -227,13 +242,15 @@ const editable = ref(true)
 				<MobileMenu :header="modelValue" :menu="modelValue" />
 
 				<!-- Logo for Mobile -->
-				<Image v-if="modelValue?.logo?.source?.original" :src="modelValue?.logo?.source" class="h-10 mx-2"></Image>
+				<Image
+					v-if="modelValue?.logo?.source?.original"
+					:src="modelValue?.logo?.source"
+					class="h-10 mx-2"></Image>
 				<img
 					v-else-if="modelValue.logo"
 					src="https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png"
 					alt="Ancient Wisdom Logo"
 					class="h-10 mx-2" />
-
 
 				<!-- Profile Icon with Dropdown Menu -->
 				<div @click="toggle" class="flex items-center cursor-pointer text-white">
@@ -250,8 +267,6 @@ const editable = ref(true)
 </template>
 
 <style scoped>
-
-
 .resizable-box {
 	display: inline-block;
 	background: #f0f0f0;
