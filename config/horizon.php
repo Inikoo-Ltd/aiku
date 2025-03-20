@@ -270,10 +270,10 @@ return [
     'environments' => [
         'production' => [
             'normal'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 512),
+                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 1024),
             ],
             'sales'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 128),
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 256),
             ],
             'universal-search' => [
                 'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 64),
@@ -294,7 +294,7 @@ return [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 2),
             ],
             'sales'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 2),
             ],
             'universal-search' => [
                 'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 8),
@@ -316,7 +316,7 @@ return [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 5),
             ],
             'sales'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 5),
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 5),
             ],
             'universal-search' => [
                 'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 5),
