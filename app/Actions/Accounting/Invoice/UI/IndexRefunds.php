@@ -20,7 +20,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Http\Resources\Accounting\InvoicesResource;
+use App\Http\Resources\Accounting\RefundsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
@@ -97,6 +97,7 @@ class IndexRefunds extends OrgAction
         $queryBuilder->defaultSort('-date')
             ->select([
                 'invoices.reference',
+                'invoices.in_process',
                 'invoices.total_amount',
                 'invoices.net_amount',
                 'invoices.pay_status',
@@ -178,6 +179,7 @@ class IndexRefunds extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->column(key: 'in_process', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Fulfilment || $parent instanceof Shop || $parent instanceof Organisation) {
@@ -234,12 +236,12 @@ class IndexRefunds extends OrgAction
     //    }
 
 
-    public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $refunds): AnonymousResourceCollection
     {
-        return InvoicesResource::collection($invoices);
+        return RefundsResource::collection($refunds);
     }
 
-    public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $refunds, ActionRequest $request): Response
     {
         $subNavigation = [];
 
@@ -335,7 +337,7 @@ class IndexRefunds extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'        => InvoicesResource::collection($invoices),
+                'data'        => RefundsResource::collection($refunds),
 
 
             ]

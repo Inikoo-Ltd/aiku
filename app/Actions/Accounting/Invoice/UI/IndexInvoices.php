@@ -26,6 +26,7 @@ use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
+use App\Http\Resources\Accounting\RefundsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
@@ -360,8 +361,8 @@ class IndexInvoices extends OrgAction
                             ? fn () => InvoicesResource::collection($invoices)
                             : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
                         InvoicesTabsEnum::REFUNDS->value => $this->tab == InvoicesTabsEnum::REFUNDS->value
-                            ? fn () => InvoicesResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
-                            : Inertia::lazy(fn () => InvoicesResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
+                            ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
+                            : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
 
                         InvoicesTabsEnum::IN_PROCESS->value => $this->tab == InvoicesTabsEnum::IN_PROCESS->value
                             ? fn () => InvoicesResource::collection(IndexInvoicesInProcess::run($this->parent, InvoicesTabsEnum::IN_PROCESS->value))
