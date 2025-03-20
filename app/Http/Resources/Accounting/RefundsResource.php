@@ -55,7 +55,7 @@ class RefundsResource extends JsonResource
                 'class'   => 'text-lime-500',
                 'color'   => '#7CCE00',
             ] : [
-                'tooltip' => __('In process'),
+                'tooltip' => __('Refunded'),
                 'icon'    => 'fal fa-arrow-circle-left',
             ],
             'pay_status'        => $this->pay_status->typeIcon()[$this->pay_status->value],
