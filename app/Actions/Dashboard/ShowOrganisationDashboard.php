@@ -24,7 +24,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrganisationDashboard extends OrgAction
 {
-    use WithDashboard; // <-- to delete
+    use WithDashboard;
+
+    // <-- to delete
+
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
 
@@ -36,7 +39,7 @@ class ShowOrganisationDashboard extends OrgAction
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings; // <-- to delete
-        $settings = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []); // <-- to delete
+        $settings     = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []); // <-- to delete
 
 
         $dashboard = [
@@ -52,22 +55,41 @@ class ShowOrganisationDashboard extends OrgAction
                         $this->dashboardModelStateSettings($settings, 'left'),
                         $this->dashboardDataDisplayTypeSettings($settings),
                     ],
+
+
                     'blocks'    => [
                         [
-                            'id'   => 'sales_table',
-                            'type' => 'table',
+                            'id'          => 'sales_table',
+                            'type'        => 'table',
                             'current_tab' => Arr::get($settings, 'sales_table_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values())),
-                            'tabs' => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables' => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
-                            'charts' => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
+                            'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
+                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
+                            'charts'      => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
 
-                        ]
+                        ],
+                        [
+                            'id'          => 'sales_chart',
+                            'type'        => 'pie-chart',
+                            'data_source' => 'sales'
+                        ],
+                        [
+                            'id'          => 'invoices_chart',
+                            'type'        => 'pie-chart',
+                            'data_source' => 'invoices'
+                        ],
+//                        [
+//                            'id'          => 'average_invoice_amount_chart',
+//                            'type'        => 'bar-chart',
+//                            'data_source' => 'average_invoice_amount'
+//                        ]
                     ]
 
                 ]
 
             ]
         ];
+
+     //   dd($dashboard);
 
 
         return Inertia::render(
@@ -399,7 +421,7 @@ class ShowOrganisationDashboard extends OrgAction
             $data,
             $selectedCurrency,
             $selectedInterval,
-            fn ($child) => [
+            fn($child) => [
                 'route'         => [
                     'name'       => 'grp.org.accounting.invoice-categories.show',
                     'parameters' => [
