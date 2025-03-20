@@ -270,7 +270,7 @@ return [
     'environments' => [
         'production' => [
             'normal'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 1024),
+                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 256),
             ],
             'sales'           => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 256),
