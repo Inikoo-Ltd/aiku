@@ -34,7 +34,7 @@ const props = defineProps<{
 	boxStats: BoxStats
 	updateRoute: routeType
 }>()
-console.log(props.boxStats,'asd');
+console.log(props.boxStats, "asd")
 
 onMounted(() => {
 	JsBarcode("#palletReturnBarcode", route().v().params.palletReturn, {
@@ -51,7 +51,6 @@ const isModalAddressCollection = ref(false)
 const enabled = ref(props.dataPalletReturn.is_collection || false)
 const isLoading = ref<string | boolean>(false)
 const textValue = ref(props.boxStats.collection_notes)
-const textUpdateTimeout = ref<number | null>(null)
 
 // Computed property to intercept changes via v-model
 const computedEnabled = computed({
@@ -131,43 +130,29 @@ const computedEnabled = computed({
 	},
 })
 
-const computedText = computed({
-	get() {
-		return textValue.value
-	},
-	set(newValue: string) {
-		textValue.value = newValue
-
-		// Clear any existing debounce timer.
-		if (textUpdateTimeout.value) {
-			clearTimeout(textUpdateTimeout.value)
+function updateCollectionNotes() {
+	router.patch(
+		route(props.updateRoute.name, props.updateRoute.parameters),
+		{ collection_notes: textValue.value },
+		{
+			preserveScroll: true,
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Text updated successfully"),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to update text"),
+					type: "error",
+				})
+			},
 		}
-
-		textUpdateTimeout.value = setTimeout(() => {
-			router.patch(
-				route(props.updateRoute.name, props.updateRoute.parameters),
-				{ collection_notes: textValue.value },
-				{
-					preserveScroll: true,
-					onSuccess: () => {
-						notify({
-							title: trans("Success"),
-							text: trans("Text updated successfully"),
-							type: "success",
-						})
-					},
-					onError: () => {
-						notify({
-							title: trans("Something went wrong"),
-							text: trans("Failed to update text"),
-							type: "error",
-						})
-					},
-				}
-			)
-		}, 500) as unknown as number // Type assertion for browser compatibility.
-	},
-})
+	)
+}
 </script>
 
 <template>
@@ -315,7 +300,14 @@ const computedText = computed({
 
 				<!-- Alternative Display for Collection -->
 				<div v-else class="w-full">
-					<Textarea  v-model="computedText" autoResize rows="5" class="w-full" cols="30" />
+					<Textarea
+						v-model="textValue"
+						@blur="updateCollectionNotes"
+						autoResize
+						rows="5"
+						class="w-full"
+						cols="30"
+						placeholder="typing..." />
 				</div>
 			</div>
 		</BoxStatPallet>
