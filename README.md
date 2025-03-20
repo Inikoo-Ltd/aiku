@@ -11,6 +11,29 @@
 
 ![](https://codecov.io/gh/Inikoo-Ltd/aiku/graphs/tree.svg?token=12HMR5XCOW)
 
-Open source ERP web application
+
+#### Comprehensive business management tools
+
+- Multi-tenant enterprise grade open source SaaS platform
+- Fulfillment and inventory management
+- Shopify, TikTok integration for eCommerce dropshipping
+- Custom-made CMS for creating ecommerce websites
+
+#### Technology Stack
+
+Backend: PHP/Laravel
+Frontend: Vue.js (inertia.js)
+Mobile: React Native
+Search: ElasticSearch
+
+#### Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+
+#### License
+This project is licensed under the GNU AGPLv3 - see the LICENSE file for details.
+
+
 
 Copyright (C) Raul A Perusquia Flores - All Rights Reserved GNU AGPLv3
