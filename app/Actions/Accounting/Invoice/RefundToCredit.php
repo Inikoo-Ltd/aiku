@@ -10,6 +10,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
@@ -41,7 +42,7 @@ class RefundToCredit extends OrgAction
                 $amountPayPerRefund = max($totalToPay, $refund->total_amount);
 
                 $creditTransaction = StoreCreditTransaction::make()->action($refund->customer, [
-                    'amount' => $amountPayPerRefund,
+                    'amount' => abs($amountPayPerRefund),
                     'date'  => now(),
                     'type' => CreditTransactionTypeEnum::MONEY_BACK
                 ]);
@@ -50,7 +51,7 @@ class RefundToCredit extends OrgAction
 
                 $payStatus             = InvoicePayStatusEnum::UNPAID;
                 $paymentAt             = null;
-                $runningPaymentsAmount = $creditTransaction->running_amount;
+                $runningPaymentsAmount = -$creditTransaction->running_amount;
 
                 if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $refund->total_amount) {
                     $payStatus = InvoicePayStatusEnum::PAID;
@@ -66,6 +67,8 @@ class RefundToCredit extends OrgAction
                 $totalRefund -= $amountPayPerRefund;
                 $totalToPay -= $amountPayPerRefund;
             }
+
+            CustomerHydrateCreditTransactions::dispatch($invoice->customer);
 
             return $invoice;
         }
@@ -94,6 +97,7 @@ class RefundToCredit extends OrgAction
             'payment_amount' => $runningPaymentsAmount
         ]);
 
+        CustomerHydrateCreditTransactions::dispatch($invoice->customer);
 
         return $refund;
     }

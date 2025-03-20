@@ -46,7 +46,15 @@ class SetInvoicePaymentState extends OrgAction
             }
         }
 
+
         if (!$invoice->invoice_id) {
+            $totalRefund = $invoice->refunds->where('in_prosess', false)->sum('total_amount');
+            if ($totalRefund > 0) {
+                $runningPaymentsAmount -= $totalRefund;
+                if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $invoice->total_amount) {
+                    $payStatus = InvoicePayStatusEnum::PAID;
+                }
+            }
             $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
             if ($cutOffDate) {
                 $cutOffDate = Carbon::parse($cutOffDate);
