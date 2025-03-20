@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Invoice;
@@ -35,8 +36,8 @@ class RefundToPaymentAccount extends OrgAction
         // input amount = -35
 
         if (!$invoice->invoice_id) {
-            $refunds = $invoice->refunds->where('in_process', false)->all();
-            $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount'); // -50
+            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->all();
+            $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount'); // -50
             $totalToPay = -abs(Arr::get($modelData, 'amount')); // -35
 
             $payment = null;

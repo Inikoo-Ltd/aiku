@@ -29,10 +29,9 @@ class RefundToCredit extends OrgAction
 
         $totalToPay = -abs(Arr::get($modelData, 'amount'));
 
-
         if (!$invoice->invoice_id) {
-            $refunds = $invoice->refunds->where('in_process', false)->all();
-            $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
+            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->all();
+            $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount');
 
             foreach ($refunds as $refund) {
                 if ($totalRefund >= 0 || $totalToPay >= 0) {
