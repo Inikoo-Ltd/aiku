@@ -58,10 +58,8 @@ class DeleteRetinaShopifyUser extends OrgAction
         $this->handle($customer->shopifyUser);
     }
 
-    public function inWebhook(ActionRequest $request): void
+    public function inWebhook(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
-        $shopifyUser = ShopifyUser::where('name', $request->input('domain'))->first();
-
         $this->handle($shopifyUser);
     }
 }
