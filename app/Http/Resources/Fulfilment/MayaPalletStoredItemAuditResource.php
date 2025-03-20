@@ -64,8 +64,16 @@ class MayaPalletStoredItemAuditResource extends JsonResource
                 ])
             ];
 
+            $mergedItems = collect($editDeltas['stored_items'])
+            ->map(fn($item) => array_merge($item, ['is_new' => false]))
+            ->merge(
+                collect($editDeltas['new_stored_items'])
+                ->map(fn($item) => array_merge($item, ['is_new' => true]))
+            )
+            ->values();
+
         $deltas = StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItemAudit, 'stored_item_deltas'));
-        // dd($this);
+
         return [
             'id'                               => $this->id,
             'scope_id'                         => $this->scope ? $this->scope->id : null,
@@ -79,7 +87,7 @@ class MayaPalletStoredItemAuditResource extends JsonResource
             'state'                            => $this->state,
             'state_label'                      => $this->state->labels()[$this->state->value],
             'state_icon'                       => $this->state->stateIcon()[$this->state->value],
-            'editDeltas'                       => $editDeltas,
+            'editDeltas'                       => $mergedItems,
             'deltas'                           => $deltas,
             "number_audited_pallets" => $this->number_audited_pallets,
             "number_audited_stored_items" => $this->number_audited_stored_items,
