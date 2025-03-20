@@ -123,7 +123,8 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                     'type'  => 'button',
                                     'style' => 'secondary',
                                     'icon'  => 'fal fa-plus',
-                                    'label' => __('pallet'),
+                                    'key'   => 'storage',
+                                    'label' => __('storage'),
                                     'route' => [
                                         'name'       => 'retina.models.pallet-delivery.pallet.store',
                                         'parameters' => [
