@@ -44,8 +44,9 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
             if ($this->model_type == 'Rental') {
                 $pallet = Pallet::find($recurringBillTransaction->item_id);
                 if ($pallet) {
-                    $desc_title = $pallet->reference;
+                    $desc_title = $pallet->customer_reference;
                     $desc_model = __('Storage');
+                    $desc_after_title = $pallet->reference;
                     $desc_route = [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                         'parameters' => [
@@ -108,8 +109,8 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
             $service = Service::find($this->model_id);
             if ($service->is_pallet_handling == true) {
                 $pallet = Pallet::find($this->data['pallet_id']);
-                $desc_title = $pallet->reference;
-                $desc_after_title = Carbon::parse($this->data['date'])->format('d M Y');
+                $desc_title = $pallet->customer_reference;
+                $desc_after_title = $pallet->reference . ' - ' . Carbon::parse($this->data['date'])->format('d M Y');
                 $desc_model = __('Pallet Handling');
                 $desc_route = [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
