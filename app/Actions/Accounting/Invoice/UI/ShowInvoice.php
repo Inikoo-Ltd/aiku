@@ -180,8 +180,8 @@ class ShowInvoice extends OrgAction
                 'total_balance'     => $ir_total,
                 'total_paid_in'     => $invoice->payment_amount,
                 'total_paid_out'    => $refunds_pay_out,
-                'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('total_amount') : 0,
-                'total_need_to_pay' => $ir_total - $invoice->payment_amount,
+                // 'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('total_amount') : 0,
+                'total_need_to_pay' => $ir_total + ($invoice->payment_amount + $refunds_pay_out),
             ],
         ];
 

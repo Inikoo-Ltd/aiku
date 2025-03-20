@@ -300,7 +300,7 @@ const generateRefundRoute = (refundSlug: string) => {
                 </div>
 
                 <div v-tooltip="'Invoice created'"
-                    class="flex items-center w-full flex-none gap-x-2">
+                    class="flex items-center flex-none gap-x-2 w-fit">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon='fal fa-calendar-alt' fixed-width aria-hidden='true' class="text-gray-500" />
                     </dt>

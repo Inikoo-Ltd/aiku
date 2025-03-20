@@ -203,21 +203,11 @@ const generateRefundRoute = (refundSlug: string) => {
 
 <template>
     <dd class="relative w-full flex flex-col border rounded-md border-gray-300 overflow-hidden">
-        <!-- Block: Corner label (fully paid) -->
-        <!-- <Transition>
-            <div v-if="Number(invoice_pay.total_need_to_pay) <= 0" v-tooltip="trans('Fully paid')"
-                class="absolute top-0 right-0 text-green-500 p-1 text-xxs">
-                <div
-                    class="absolute top-0 right-0 w-0 h-0 border-b-[25px] border-r-[25px] border-transparent border-r-green-500">
-                </div>
-                <FontAwesomeIcon icon='far fa-check' class='absolute top-1/2 right-1/2 text-white text-[8px]'
-                    fixed-width aria-hidden='true' />
-            </div>
-        </Transition> -->
         <dl class="">
+            <!-- Invoice -->
             <div class="border-b border-gray-200 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">
-                    <FontAwesomeIcon icon="fal fa-file-invoice-dollar" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-file-invoice-dollar" class="text-gray-400" fixed-width aria-hidden="true" />
                     {{ invoice_pay.invoice_reference }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
@@ -229,7 +219,7 @@ const generateRefundRoute = (refundSlug: string) => {
             <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-200">
                 <div v-for="refund in invoice_pay.list_refunds.data" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-hand-holding-usd" class="text-gray-400" fixed-width aria-hidden="true" />
                         <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}</Link>
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
@@ -412,8 +402,9 @@ const generateRefundRoute = (refundSlug: string) => {
                     </Transition>
 
                     <div class="col-span-2">
-                        <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Payment amount')
-                            }}</label>
+                        <label for="last-name" class="block text-sm font-medium leading-6">
+                            {{ trans('Payment amount') }}
+                        </label>
                         <div class="mt-1">
                             <!-- <PureInputNumber v-model="paymentRefund.payment_amount" /> -->
                             <InputNumber v-model="paymentRefund.payment_amount"
