@@ -22,7 +22,7 @@ class GetPupilDropshippingNavigation
     {
         $groupNavigation = [];
 
-        if (!Arr::get($shopifyUser?->settings, 'webhooks')) {
+        if (!Arr::get($shopifyUser->settings, 'webhooks')) {
             $groupNavigation['setup'] = [
                 'label' => __('Get Started'),
                 'icon' => ['fal', 'fa-tachometer-alt'],
