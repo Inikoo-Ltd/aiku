@@ -34,7 +34,9 @@ class DeleteRetinaShopifyUser extends OrgAction
             'status' => false
         ]);
 
-        DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        if ($shopifyUser->customer) {
+            DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        }
 
         $shopifyUser->delete();
     }
