@@ -76,7 +76,8 @@ const localeCode = navigator.language
             </template>
             <template #cell(prev_refund)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
-                    <Tag v-if="!Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
+                    <Tag v-if="Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
+                    <span v-else>-</span>
                 </div>
             </template>
 
@@ -97,35 +98,36 @@ const localeCode = navigator.language
                     <div v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" class="w-fit font-semibold">
                         {{ locale.currencyFormat(item.currency_code, item.refund_net_amount) }}
                     </div>
-
-                    <ButtonWithLink
-                        v-if="!get(proxyItem, ['refund_net_amount'], 0) && get(proxyItem, ['refund_net_amount'], 0) != item.net_amount"
-                        @xclick="() => get(proxyItem, 'refund_type', null) == 'full' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'full')"
-                        :key="item.code"
-                        :routeTarget="item.refund_transaction_full_refund"
-                        :label="trans('Refund item')"
-                        icon="fas fa-arrow-alt-circle-left"
-                        size="s"
-                        :bindToLink="{ preserveScroll: true }"
-                        type="secondary"
-                        :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
-                    />
-                    
-                    <Button
-                        v-if="!get(proxyItem, ['refund_net_amount'], 0)"
-                        @click="() => get(proxyItem, 'refund_type', null) == 'partial' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'partial')"
-                        :key="get(proxyItem, 'refund_type', null) + '-' + item.code"
-                        :label="trans('Refund Item Partially')"
-                        icon="fal fa-arrow-circle-left"
-                        size="s"
-                        :bindToLink="{ preserveScroll: true }"
-                        :type="get(proxyItem, 'refund_type', null) == 'partial' ? 'gray' : 'tertiary'"
-                    />
+                    <template v-if="item.net_amount !=  item.total_last_refund">
+                        <ButtonWithLink
+                            v-if="!get(proxyItem, ['refund_net_amount'], 0) && get(proxyItem, ['refund_net_amount'], 0) != item.net_amount"
+                            @xclick="() => get(proxyItem, 'refund_type', null) == 'full' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'full')"
+                            :key="item.code"
+                            :routeTarget="item.refund_transaction_full_refund"
+                            :label="trans('Refund item')"
+                            icon="fas fa-arrow-alt-circle-left"
+                            size="s"
+                            :bindToLink="{ preserveScroll: true }"
+                            type="secondary"
+                            :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
+                        />
+                        
+                        <Button
+                            v-if="!get(proxyItem, ['refund_net_amount'], 0)"
+                            @click="() => get(proxyItem, 'refund_type', null) == 'partial' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'partial')"
+                            :key="get(proxyItem, 'refund_type', null) + '-' + item.code"
+                            :label="trans('Refund Item Partially')"
+                            icon="fal fa-arrow-circle-left"
+                            size="s"
+                            :bindToLink="{ preserveScroll: true }"
+                            :type="get(proxyItem, 'refund_type', null) == 'partial' ? 'gray' : 'tertiary'"
+                        />
+                    </template>
                 </div>
 
                 <!-- {{ item.net_amount }} -->
 
-                <template v-if="item.refund_net_amount != item.net_amount">
+                <template v-if="(item.refund_net_amount != item.net_amount) ">
                     <Transition name="slide-to-left">
                         <div v-show="get(proxyItem, 'refund_type', null) == 'partial' || get(proxyItem, ['refund_net_amount'], 0)" class="w-fit flex items-center gap-x-1 mt-2">
                             <div>
