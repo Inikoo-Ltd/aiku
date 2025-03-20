@@ -104,7 +104,7 @@ const props = defineProps<{
         [key: string]: PDRNotes
     }
 
-	pallets?: {}
+	goods?: {}
     stored_items?: {}
     services?: {}
     service_list_route: routeType
@@ -142,7 +142,7 @@ const formAddPhysicalGood = useForm({ outer_id: '', quantity: 1, historic_asset_
 
 const component = computed(() => {
 	const components: Component = {
-		pallets: TablePalletReturnPallets,
+		goods: TablePalletReturnPallets,
         stored_items: TableStoredItems,
         services: TableFulfilmentTransactions,
         physical_goods: TableFulfilmentTransactions,

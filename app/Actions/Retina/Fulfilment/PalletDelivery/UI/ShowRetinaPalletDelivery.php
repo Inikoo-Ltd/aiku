@@ -18,7 +18,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\FulfilmentTransaction\FulfilmentTransactionTypeEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
-use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
+use App\Enums\UI\Fulfilment\RetinaPalletDeliveryTabsEnum;
 use App\Http\Resources\Catalogue\RentalsResource;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
@@ -41,7 +41,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
     {
-        $this->initialisation($request)->withTab(PalletDeliveryTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaPalletDeliveryTabsEnum::values());
 
         return $palletDelivery;
     }
@@ -444,7 +444,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => PalletDeliveryTabsEnum::navigation($palletDelivery)
+                    'navigation' => RetinaPalletDeliveryTabsEnum::navigation($palletDelivery)
                 ],
 
                 'pallet_limits' => $palletLimitData,
@@ -519,39 +519,39 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     ]
                 ],
 
-                PalletDeliveryTabsEnum::PALLETS->value => $this->tab == PalletDeliveryTabsEnum::PALLETS->value ?
-                    fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))),
+                RetinaPalletDeliveryTabsEnum::GOODS->value => $this->tab == RetinaPalletDeliveryTabsEnum::GOODS->value ?
+                    fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))
+                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))),
 
-                PalletDeliveryTabsEnum::SERVICES->value => $this->tab == PalletDeliveryTabsEnum::SERVICES->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))),
+                RetinaPalletDeliveryTabsEnum::SERVICES->value => $this->tab == RetinaPalletDeliveryTabsEnum::SERVICES->value ?
+                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))
+                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))),
 
-                PalletDeliveryTabsEnum::PHYSICAL_GOODS->value => $this->tab == PalletDeliveryTabsEnum::PHYSICAL_GOODS->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
+                RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value => $this->tab == RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value ?
+                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
+                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
 
-                PalletDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == PalletDeliveryTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))),
+                RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))),
 
             ]
         )->table(
             IndexPalletsInDelivery::make()->tableStructure(
                 $palletDelivery,
-                prefix: PalletDeliveryTabsEnum::PALLETS->value
+                prefix: RetinaPalletDeliveryTabsEnum::GOODS->value
             )
         )->table(
             IndexServiceInPalletDelivery::make()->tableStructure(
                 $palletDelivery,
-                prefix: PalletDeliveryTabsEnum::SERVICES->value
+                prefix: RetinaPalletDeliveryTabsEnum::SERVICES->value
             )
         )->table(
             IndexPhysicalGoodInPalletDelivery::make()->tableStructure(
                 $palletDelivery,
-                prefix: PalletDeliveryTabsEnum::PHYSICAL_GOODS->value
+                prefix: RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value
             )
-        )->table(IndexAttachments::make()->tableStructure(PalletDeliveryTabsEnum::ATTACHMENTS->value));
+        )->table(IndexAttachments::make()->tableStructure(RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value));
     }
 
 

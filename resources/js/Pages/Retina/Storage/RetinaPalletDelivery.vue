@@ -93,7 +93,7 @@ const props = defineProps<{
         message: string
     }
 
-    pallets?: Table
+    goods?: Table
     stored_items?: Table
 
     services?: Table
@@ -126,7 +126,7 @@ const formAddPhysicalGood = useForm({ outer_id: '', quantity: 1, historic_asset_
 
 const component = computed(() => {
     const components: Component = {
-        pallets: RetinaTablePalletDeliveryPallets,
+        goods: RetinaTablePalletDeliveryPallets,
         stored_items: TableStoredItems,
         services: TableFulfilmentTransactions,
         physical_goods: TableFulfilmentTransactions,
