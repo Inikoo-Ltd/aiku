@@ -21,10 +21,10 @@
 
 #### Technology Stack
 
-Backend: PHP/Laravel
-Frontend: Vue.js (inertia.js)
-Mobile: React Native
-Search: ElasticSearch
+- Backend: PHP/Laravel 11
+- Frontend: Vue.js (inertia.js)
+- Mobile: React Native
+-m Search: ElasticSearch
 
 #### Contributing
 
