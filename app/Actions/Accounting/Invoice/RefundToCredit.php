@@ -26,14 +26,8 @@ class RefundToCredit extends OrgAction
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
 
-        $totalToPay = -abs(Arr::get($modelData, 'amount')); // -35
-        $creditTransaction = StoreCreditTransaction::make()->action($invoice->customer, [
-            'amount' => $totalToPay,
-            'date'  => now(),
-            'type' => CreditTransactionTypeEnum::MONEY_BACK
-        ]);
+        $totalToPay = -abs(Arr::get($modelData, 'amount'));
 
-        $creditTransaction->refresh();
 
         if (!$invoice->invoice_id) {
             $refunds = $invoice->refunds->where('in_process', false)->all();
@@ -46,11 +40,19 @@ class RefundToCredit extends OrgAction
 
                 $amountPayPerRefund = max($totalToPay, $refund->total_amount);
 
+                $creditTransaction = StoreCreditTransaction::make()->action($refund->customer, [
+                    'amount' => $amountPayPerRefund,
+                    'date'  => now(),
+                    'type' => CreditTransactionTypeEnum::MONEY_BACK
+                ]);
+
+                $creditTransaction->refresh();
+
                 $payStatus             = InvoicePayStatusEnum::UNPAID;
                 $paymentAt             = null;
                 $runningPaymentsAmount = $creditTransaction->running_amount;
 
-                if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $invoice->total_amount) {
+                if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $refund->total_amount) {
                     $payStatus = InvoicePayStatusEnum::PAID;
                     $paymentAt = $creditTransaction->date;
                 }
@@ -66,10 +68,16 @@ class RefundToCredit extends OrgAction
             }
 
             return $invoice;
-
         }
 
         $refund = $invoice;
+
+        $creditTransaction = StoreCreditTransaction::make()->action($invoice->customer, [
+            'amount' => $totalToPay,
+            'date'  => now(),
+            'type' => CreditTransactionTypeEnum::MONEY_BACK
+        ]);
+        $creditTransaction->refresh();
 
         $payStatus             = InvoicePayStatusEnum::UNPAID;
         $paymentAt             = null;
