@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n';
-import TabSelector from '@/Components/Elements/TabSelector.vue'
 
 import { computed, inject, ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -12,23 +11,19 @@ import { FulfilmentCustomerStats } from '@/types/Pallet'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { Link } from '@inertiajs/vue3'
-import Tag from '@/Components/Tag.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import Dialog from 'primevue/dialog';
-import { get } from 'lodash-es'
-import ButtonPrimeVue from 'primevue/button';
 
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faLongArrowRight } from '@far'
 import { faPencil, faWallet } from '@fal'
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard } from '@fal'
+import { faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faCircle } from '@fal'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import CountUp from 'vue-countup-v3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { faCheck, faCheckCircle } from '@fas'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-library.add(faWallet, faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faLongArrowRight, faCheck, faCheckCircle)
+library.add(faWallet, faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faChevronRight, faExternalLink, faMapMarkerAlt, faAddressCard, faCircle, faLongArrowRight, faCheck, faCheckCircle)
 
 const props = defineProps<{
     data: {
@@ -130,14 +125,7 @@ const optionRadio = [
 ]
 
 const isLoading = ref<string | boolean>(false)
-const tabs = {
-    "pallets_storage": true,
-    "items_storage": true,
-    "dropshipping": false,
-    "space_rental": true
-}
-const radioValue = ref<string[]>(Object.keys(props?.data?.fulfilment_customer?.radioTabs || tabs).filter(key => props?.data?.fulfilment_customer?.radioTabs[key] || tabs[key]))
-const isLoadingButtonRentalAgreement = ref(false)
+const radioValue = ref<string[]>(Object.keys(props?.data?.fulfilment_customer?.radioTabs).filter(key => props?.data?.fulfilment_customer?.radioTabs[key]))
 
 </script>
 

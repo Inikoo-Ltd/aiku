@@ -197,9 +197,14 @@ class ShowRefund extends OrgAction
                 'model'         => __('refund'),
                 'title'         => $refund->reference,
                 'icon'          => [
-                    'icon'  => ['fal', 'fa-arrow-circle-left'],
+                    'icon'  => 'fal fa-hand-holding-usd',
                     'title' => $refund->reference
                 ],
+                'iconRight'     => $refund->in_process ? [
+                    'icon'      => 'fal fa-seedling',
+                    'class'     => 'text-green-500',
+                    'tooltip'   => __('In process')
+                ] : null,
                 'actions'       => $actions,
             ],
             'tabs'        => [

@@ -28,12 +28,12 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faFileMinus, faUndoAlt, faStarHalfAlt, faArrowCircleLeft } from "@fal";
-import { faClock, faFileInvoice, faFilePdf } from "@fas";
+import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft } from "@fas";
 import { faCheck } from "@far";
 
 library.add(
   faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,
-  faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faStarHalfAlt);
+  faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt);
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
@@ -50,7 +50,7 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import { InvoiceResource } from "@/types/invoice";
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
-import { faHandHoldingUsd } from "@fas";
+import { faHandHoldingUsd } from "@fal";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 
 const locale = inject("locale", aikuLocaleStructure);
