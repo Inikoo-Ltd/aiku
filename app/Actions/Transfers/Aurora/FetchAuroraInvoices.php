@@ -48,7 +48,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
                 $invoice = UpdateInvoice::make()->action(
                     invoice: $invoice,
                     modelData: $invoiceData['invoice'],
-                    hydratorsDelay: 300,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -65,7 +65,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
             $invoice = StoreInvoice::make()->action(
                 parent: $invoiceData['parent'],
                 modelData: $invoiceData['invoice'],
-                hydratorsDelay: 300,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );
