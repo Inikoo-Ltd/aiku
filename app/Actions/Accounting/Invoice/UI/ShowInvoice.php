@@ -91,6 +91,44 @@ class ShowInvoice extends OrgAction
 
         $actions = [];
 
+        if ($this->parent instanceof Organisation) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('edit'),
+                'route' => [
+                    'name'       => 'grp.org.accounting.invoices.edit',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+            ];
+        } elseif ($this->parent instanceof FulfilmentCustomer) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('edit'),
+                'route' => [
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.edit',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+            ];
+        }
+
+
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'tertiary',
+                'label' => __('send invoice'),
+                'key'   => 'send-invoice',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.invoice.send_invoice',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+
         $actions[] =
             [
                 'type'  => 'button',
@@ -113,43 +151,6 @@ class ShowInvoice extends OrgAction
             ];
 
 
-        $actions[] =
-            [
-                'type'  => 'button',
-                'style' => 'tertiary',
-                'label' => __('send invoice'),
-                'key'   => 'send-invoice',
-                'route' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.invoice.send_invoice',
-                    'parameters' => [
-                        'invoice' => $invoice->id
-                    ]
-                ]
-            ];
-
-
-        if ($this->parent instanceof Organisation) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('edit'),
-                'route' => [
-                    'name'       => 'grp.org.accounting.invoices.edit',
-                    'parameters' => $request->route()->originalParameters()
-                ],
-            ];
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('edit'),
-                'route' => [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.edit',
-                    'parameters' => $request->route()->originalParameters()
-                ],
-            ];
-        }
 
         $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
         $ir_total    = $invoice->total_amount + $totalRefund;
