@@ -40,7 +40,7 @@ console.log('environment', isStaging)
 <template>
     <Disclosure as="nav" class="fixed z-[21] w-full " v-slot="{ open }" :style="{
         'color': layout.app.theme[2]
-    }" :class="isStaging ? 'top-4' : 'top-0'">
+    }">
         <ScreenWarning v-if="isStaging" />
 
         <div class="mt-1 flex h-11 lg:h-10 flex-shrink-0 gap-x-2">
