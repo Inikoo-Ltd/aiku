@@ -4,6 +4,7 @@ import Dialog from "./Dialog.vue"
 import axios from "axios"
 import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import { routeType } from "@/types/route";
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
   show: boolean,
@@ -64,7 +65,7 @@ onMounted(() => {
 
 
 <template>
-    <Dialog title="Pilih Gambar" :show="show" @close="closeDialog" class="w-[700px]">
+    <Dialog :title="trans('Add image')" :show="show" @close="closeDialog" class="w-[700px]">
       <GalleryManagement 
 				:maxSelected="1" 
 				:closePopup="closeDialog" 
