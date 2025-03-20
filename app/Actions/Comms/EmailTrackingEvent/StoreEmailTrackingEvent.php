@@ -28,7 +28,9 @@ class StoreEmailTrackingEvent extends OrgAction
         /** @var EmailTrackingEvent $emailTrackingEvent */
         $emailTrackingEvent = $dispatchedEmail->emailTrackingEvents()->create($modelData);
 
-        DispatchedEmailHydrateEmailTracking::dispatch($dispatchedEmail);
+        if($this->strict) {
+            DispatchedEmailHydrateEmailTracking::dispatch($dispatchedEmail);
+        }
 
         return $emailTrackingEvent;
     }

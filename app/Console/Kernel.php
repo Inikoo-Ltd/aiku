@@ -55,6 +55,21 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'PurgeWebUserPasswordReset',
         );
 
+        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'FetchOrdersInBasket',
+        );
+
+        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)
+            ->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'FetchOrdersInBasket',
+        );
+
+        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11,23)->timezone('UTC')
+            ->sentryMonitor(
+            monitorSlug: 'FetchOrdersInBasket',
+        );
+
+
         (new Schedule())->command('hydrate -s ful')->dailyAt('23:00')->timezone('UTC');
 
     }
