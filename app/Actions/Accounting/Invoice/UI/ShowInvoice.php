@@ -16,7 +16,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
-use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -92,28 +91,27 @@ class ShowInvoice extends OrgAction
 
         $actions = [];
 
-        if ($invoice->pay_status == InvoicePayStatusEnum::PAID) {
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('create refund'),
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.refund.create',
-                        'parameters' => [
-                            'invoice' => $invoice->id,
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('create refund'),
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.refund.create',
+                    'parameters' => [
+                        'invoice' => $invoice->id,
 
-                        ],
-                        'body'       => [
-                            'referral_route' => [
-                                'name'       => $request->route()->getName(),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
                     ],
-                ];
-        }
+                    'body'       => [
+                        'referral_route' => [
+                            'name'       => $request->route()->getName(),
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ]
+                ],
+            ];
+
 
         $actions[] =
             [
