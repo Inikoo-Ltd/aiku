@@ -28,7 +28,6 @@ const props = defineProps<{
     uploadImageRoute?: routeType
 }>()
 
-console.log('dddd',props)
 const model = defineModel<BackgroundProperty>({
     required: true,
     default : {
