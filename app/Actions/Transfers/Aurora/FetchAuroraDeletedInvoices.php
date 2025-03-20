@@ -20,6 +20,8 @@ use Throwable;
 
 class FetchAuroraDeletedInvoices extends FetchAuroraAction
 {
+    public string $jobQueue = 'urgent';
+
     public string $commandSignature = 'fetch:deleted_invoices {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
 

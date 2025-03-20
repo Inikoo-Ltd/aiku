@@ -189,7 +189,7 @@ return [
         ],
         'universal-search' => [
             'connection'      => 'redis',
-            'queue'           => ['universal-search'],
+            'queue'           => ['universal-search','analytics'],
             'balance'         => 'auto',
             'maxProcesses'    => 20,
             'maxTime'         => 0,
@@ -218,7 +218,7 @@ return [
         ],
         'low-priority'     => [
             'connection'          => 'redis',
-            'queue'               => ['low-priority'],
+            'queue'               => ['low-priority','analytics','aurora'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,

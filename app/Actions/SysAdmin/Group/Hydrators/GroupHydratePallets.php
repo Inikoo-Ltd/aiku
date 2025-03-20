@@ -23,6 +23,7 @@ class GroupHydratePallets
     use WithEnumStats;
 
     private Group $group;
+    public string $jobQueue = 'low-priority';
     public function __construct(Group $group)
     {
         $this->group = $group;

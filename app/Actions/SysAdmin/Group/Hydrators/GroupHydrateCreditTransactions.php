@@ -18,6 +18,8 @@ class GroupHydrateCreditTransactions
     use AsAction;
     use WithActionUpdate;
     private Group $group;
+    public string $jobQueue = 'low-priority';
+
     public function __construct(Group $group)
     {
         $this->group = $group;
