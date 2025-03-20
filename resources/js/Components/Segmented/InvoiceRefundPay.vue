@@ -322,9 +322,9 @@ const generateRefundRoute = (refundSlug: string) => {
                         <div class="space-x-1">
                             <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{
                                 locale.currencyFormat(invoice_pay.currency_code || 'usd',
-                                Number(-invoice_pay.total_need_to_pay)) }}</span>
-                            <Button @click="() => paymentData.payment_amount = -invoice_pay.total_need_to_pay"
-                                :disabled="paymentData.payment_amount === -invoice_pay.total_need_to_pay"
+                                Number(invoice_pay.total_need_to_pay)) }}</span>
+                            <Button @click="() => paymentData.payment_amount = invoice_pay.total_need_to_pay"
+                                :disabled="paymentData.payment_amount === invoice_pay.total_need_to_pay"
                                 type="tertiary" label="Pay all" size="xxs" />
                         </div>
                     </div>
