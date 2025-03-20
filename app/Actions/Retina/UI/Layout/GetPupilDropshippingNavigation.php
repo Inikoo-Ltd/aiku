@@ -11,7 +11,6 @@ namespace App\Actions\Retina\UI\Layout;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetPupilDropshippingNavigation
@@ -22,7 +21,7 @@ class GetPupilDropshippingNavigation
     {
         $groupNavigation = [];
 
-        if (!Arr::get($shopifyUser?->settings, 'webhooks')) {
+        if (!$shopifyUser?->customer) {
             $groupNavigation['setup'] = [
                 'label' => __('Get Started'),
                 'icon' => ['fal', 'fa-tachometer-alt'],
