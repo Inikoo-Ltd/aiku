@@ -31,7 +31,10 @@ trait WithInvoicesExport
                     $pallet = Pallet::find($transaction->data['pallet_id']);
                     $transaction->pallet = $pallet->reference;
                 } elseif ($transaction->model_type == 'Rental') {
-                    $transaction->pallet = $transaction->recurringBillTransaction->item->reference;
+                    if($transaction->recurringBillTransaction)
+                    {
+                        $transaction->pallet = $transaction->recurringBillTransaction->item->reference;
+                    }
                 }
 
                 if (!empty($transaction->data['date'])) {
