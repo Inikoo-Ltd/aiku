@@ -23,16 +23,53 @@ class RefundToCredit extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Invoice $refund, array $modelData): Invoice
+    public function handle(Invoice $invoice, array $modelData): Invoice
     {
 
-        $creditTransaction = StoreCreditTransaction::make()->action($refund->customer, [
-            'amount' => -abs(Arr::get($modelData, 'amount')),
+        $totalToPay = -abs(Arr::get($modelData, 'amount')); // -35
+        $creditTransaction = StoreCreditTransaction::make()->action($invoice->customer, [
+            'amount' => $totalToPay,
             'date'  => now(),
             'type' => CreditTransactionTypeEnum::MONEY_BACK
         ]);
 
         $creditTransaction->refresh();
+
+        if (!$invoice->invoice_id) {
+            $refunds = $invoice->refunds->where('in_process', false)->all();
+            $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
+
+            foreach ($refunds as $refund) {
+                if ($totalRefund >= 0 || $totalToPay >= 0) {
+                    break;
+                }
+
+                $amountPayPerRefund = max($totalToPay, $refund->total_amount);
+
+                $payStatus             = InvoicePayStatusEnum::UNPAID;
+                $paymentAt             = null;
+                $runningPaymentsAmount = $creditTransaction->running_amount;
+
+                if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $invoice->total_amount) {
+                    $payStatus = InvoicePayStatusEnum::PAID;
+                    $paymentAt = $creditTransaction->date;
+                }
+
+                $refund->update([
+                    'pay_status' => $payStatus,
+                    'paid_at' => $paymentAt,
+                    'payment_amount' => $runningPaymentsAmount
+                ]);
+
+                $totalRefund -= $amountPayPerRefund;
+                $totalToPay -= $amountPayPerRefund;
+            }
+
+            return $invoice;
+
+        }
+
+        $refund = $invoice;
 
         $payStatus             = InvoicePayStatusEnum::UNPAID;
         $paymentAt             = null;
@@ -48,6 +85,7 @@ class RefundToCredit extends OrgAction
             'paid_at' => $paymentAt,
             'payment_amount' => $runningPaymentsAmount
         ]);
+
 
         return $refund;
     }

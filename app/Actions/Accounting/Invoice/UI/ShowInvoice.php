@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -91,26 +92,28 @@ class ShowInvoice extends OrgAction
 
         $actions = [];
 
-        $actions[] =
-            [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('create refund'),
-                'route' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.refund.create',
-                    'parameters' => [
-                        'invoice' => $invoice->id,
+        if ($invoice->pay_status == InvoicePayStatusEnum::PAID) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('create refund'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.refund.create',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
 
-                    ],
-                    'body'       => [
-                        'referral_route' => [
-                            'name'       => $request->route()->getName(),
-                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'body'       => [
+                            'referral_route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
                         ]
-                    ]
-                ],
-            ];
+                    ],
+                ];
+        }
 
         $actions[] =
             [
@@ -154,6 +157,9 @@ class ShowInvoice extends OrgAction
         $ir_total    = $invoice->total_amount + $totalRefund;
         $refunds_pay_out = $invoice->refunds->where('in_process', false)->sum('payment_amount');
 
+        $totalPaid = $invoice->payment_amount + $refunds_pay_out;
+        $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refunds_pay_out : 0;
+
         $invoicePayBox = [
             'invoice_pay' => [
                 'invoice_slug'  => $invoice->slug,
@@ -180,8 +186,8 @@ class ShowInvoice extends OrgAction
                 'total_balance'     => $ir_total,
                 'total_paid_in'     => $invoice->payment_amount,
                 'total_paid_out'    => $refunds_pay_out,
-                // 'total_need_to_refund' => $invoice->payment_amount > 0 ? $totalRefund - $invoice->refunds->sum('total_amount') : 0,
-                'total_need_to_pay' => $ir_total + ($invoice->payment_amount + $refunds_pay_out),
+                'total_need_to_refund' => $totalNeedToRefund,
+                'total_need_to_pay' => $ir_total - $totalPaid,
             ],
         ];
 
