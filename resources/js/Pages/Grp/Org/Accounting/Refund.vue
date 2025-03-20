@@ -92,6 +92,7 @@ const props = defineProps<{
   order_summary: FieldOrderSummary[][]
   recurring_bill_route: routeType
   invoice_refund: InvoiceResource
+  invoice: InvoiceResource
   items_in_process: {}
   items: {}
   payments: {}
@@ -316,6 +317,24 @@ watch(paymentData, () => {
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
       </div>
+
+      <div class="pl-1 flex items-start w-full gap-x-2">
+        <dt v-tooltip="'Phone'" class="flex-none">
+            <span class="sr-only">Phone</span>
+            <FontAwesomeIcon icon='fal fa-map-marker-alt' size="xs" class='text-gray-400' fixed-width
+                aria-hidden='true' />
+        </dt>
+
+        <dd class="text-base text-gray-500 w-full">
+            <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+                <div v-html="invoice.address.formatted_address" />
+            </div>
+
+            <div v-else class="text-gray-400 italic">
+                No address
+            </div>
+        </dd>
+    </div>
 
     </BoxStatPallet>
 
