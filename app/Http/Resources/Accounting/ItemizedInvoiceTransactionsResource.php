@@ -125,6 +125,7 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
         return [
             'type'                      => $this->model_type,
             'code'                      => $this->code,
+            'name'                      => $this->name,
             'description'       => [
                         'model' => $desc_model,
                         'title' => $desc_title,
@@ -135,6 +136,7 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
+            'currency_code'             => $this->currency_code,
         ];
     }
 }

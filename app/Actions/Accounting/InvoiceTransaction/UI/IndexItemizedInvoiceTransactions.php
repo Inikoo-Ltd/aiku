@@ -34,7 +34,8 @@ class IndexItemizedInvoiceTransactions extends OrgAction
         $queryBuilder->where('invoice_transactions.invoice_id', $invoice->id);
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
-
+        $queryBuilder->leftJoin('invoices', 'invoice_transactions.invoice_id', 'invoices.id');
+        $queryBuilder->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');
         $queryBuilder
             ->defaultSort('invoice_transactions.id')
             ->select([
@@ -50,6 +51,8 @@ class IndexItemizedInvoiceTransactions extends OrgAction
                 'invoice_transactions.quantity',
                 'invoice_transactions.net_amount',
                 'invoice_transactions.recurring_bill_transaction_id',
+                'currencies.code as currency_code',
+                'currencies.id as currency_id'
             ]);
 
 
