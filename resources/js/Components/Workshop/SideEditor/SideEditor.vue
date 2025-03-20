@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<{
 }>(), {
     panelOpen: null,
 })
-
+console.log('sssss',props.uploadImageRoute)
 
 const modelValue = defineModel()
 

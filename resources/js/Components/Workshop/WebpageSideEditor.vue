@@ -27,6 +27,7 @@ import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import { faCogs, faExclamation, faExclamationTriangle, faLayerGroup } from '@fas'
+import { routeType } from '@/types/route'
 
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
@@ -39,6 +40,7 @@ const props = defineProps<{
     isAddBlockLoading: number | null
     isLoadingDeleteBlock: number | null
 }>()
+
 
 const selectedTab = ref(1)
 

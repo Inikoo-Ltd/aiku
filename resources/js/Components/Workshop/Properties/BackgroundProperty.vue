@@ -28,7 +28,7 @@ const props = defineProps<{
     uploadImageRoute?: routeType
 }>()
 
-
+console.log('dddd',props)
 const model = defineModel<BackgroundProperty>({
     required: true,
     default : {
@@ -50,19 +50,10 @@ const onSubmitSelectedImage = (images: ImageData[]) => {
     onSaveWorkshopFromId(side_editor_block_id, 'background property')
 }
 
-/* onMounted(() => {
-    if (!model.value?.type) {
-        set(model.value, 'type', 'color')
-        onSaveWorkshopFromId(side_editor_block_id, 'background type')
-    }
-    if (!model.value?.color) {
-        set(model.value, 'color', 'var(--iris-color-primary)')
-        onSaveWorkshopFromId(side_editor_block_id, 'background color')
-    }
-}) */
+
 
 const isLoadingSubmit = ref(false)
-const onSubmitUpload = async (files: File[], clear?: Function) => {
+const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
     const formData = new FormData()
     Array.from(files).forEach((file, index) => {
         formData.append(`images[${index}]`, file)
@@ -71,11 +62,8 @@ const onSubmitUpload = async (files: File[], clear?: Function) => {
     // console.log('form', files, formData)
     isLoadingSubmit.value = true
     try {
-        if(!route_list?.upload_image?.name) {
-            throw "Something wrong in the route."
-        }
 
-        const aaa = await axios.post(route(route_list?.upload_image.name, route_list?.upload_image.parameters),
+        const aaa = await axios.post(route(props.uploadImageRoute.name, props.uploadImageRoute.parameters),
             formData,
             {
                 headers: {
@@ -94,10 +82,14 @@ const onSubmitUpload = async (files: File[], clear?: Function) => {
             type: 'success',
         });
 
+        console.log(galleryUploadRef)
+        isOpenGallery.value = false
         // Clear the input or perform any other success actions
-        if (clear) {
-            clear();
+        if (galleryUploadRef.value) {
+            galleryUploadRef.value.fileUploadRef.uploadedFiles = files
+            galleryUploadRef.value.fileUploadRef.files = []
         }
+
 
     } catch (error) {
         console.error('Upload error:', error);
@@ -199,13 +191,8 @@ const onSubmitUpload = async (files: File[], clear?: Function) => {
     <Modal :isOpen="isOpenGallery" @onClose="() => isOpenGallery = false" width="w-3/4" >
         <GalleryManagement
             :uploadRoute="route_list?.upload_image"
-            :imagesUploadedRoutes="route_list?.uploaded_images_list"
-            :stockImagesRoute="route_list?.stock_images_list"
-            :attachImageRoute="route_list?.attachImageRoute"
-            :closePopup="() => isOpenGallery = false"
             :maxSelected="1"
-            :uploadFileLimit="1"
-            :isLoadingSubmit="isLoadingSubmit"
+            :multiple="false"
             :submitUpload="onSubmitUpload"
             @selectImage="(image: {}) => false"
             @submitSelectedImages="(images: ImageData[]) => onSubmitSelectedImage(images)"
