@@ -12,6 +12,7 @@ namespace App\Actions\Pupil\Dashboard;
 
 use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
 use App\Actions\Retina\UI\Dashboard\GetRetinaFulfilmentHomeData;
+use App\Actions\Retina\UI\Layout\GetPupilDropshippingNavigation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
@@ -88,6 +89,9 @@ class ShowPupilDashboard
             'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
             'user'                  => $shopifyUser,
             // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
+            'layout'   => [
+                'navigation'    => GetPupilDropshippingNavigation::run($shopifyUser),
+            ],
             'shops' => $query->map(function ($shop) {
                 return [
                     'id' => $shop->id,
