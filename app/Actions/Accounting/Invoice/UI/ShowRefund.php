@@ -197,7 +197,7 @@ class ShowRefund extends OrgAction
                 'model'         => __('refund'),
                 'title'         => $refund->reference,
                 'icon'          => [
-                    'icon'  => ['fas', 'fa-arrow-alt-circle-left'],
+                    'icon'  => ['fal', 'fa-arrow-circle-left'],
                     'title' => $refund->reference
                 ],
                 'actions'       => $actions,

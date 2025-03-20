@@ -219,7 +219,7 @@ const generateRefundRoute = (refundSlug: string) => {
             <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-200">
                 <div v-for="refund in invoice_pay.list_refunds.data" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-hand-holding-usd" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left" class="text-gray-400" fixed-width aria-hidden="true" />
                         <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}</Link>
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
