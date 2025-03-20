@@ -59,6 +59,7 @@ import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
 import InputNumber from 'primevue/inputnumber'
+import TableItemizedTransactions from '@/Components/Tables/Grp/Org/Accounting/TableItemizedTransactions.vue'
 // const locale = useLocaleStore()
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -117,7 +118,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         grouped: TableInvoiceTransactions,
-        itemized: TableInvoiceTransactions,
+        itemized: TableItemizedTransactions,
         payments: TablePayments,
         details: ModelDetails,
         history: ModelChangelog,
