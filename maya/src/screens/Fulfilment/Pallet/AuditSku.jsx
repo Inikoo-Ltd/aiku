@@ -20,7 +20,12 @@ import {useForm, Controller} from 'react-hook-form';
 
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {library} from '@fortawesome/fontawesome-svg-core';
-import {faFragile, faSave} from '@/private/fa/pro-light-svg-icons';
+import {
+    faEdit,
+    faFragile,
+    faHistory,
+    faSave,
+} from '@/private/fa/pro-light-svg-icons';
 import {faInventory} from '@/private/fa/pro-regular-svg-icons';
 
 library.add(faFragile, faInventory);
@@ -37,12 +42,10 @@ const AuditPallet = ({navigation, route}) => {
             urlKey: 'get-pallet-audit',
             args: [organisation.id, warehouse.id, pallet_id, id],
             onSuccess: response => {
-                console.log(response);
                 setData(response.data);
                 setLoading(false);
             },
             onFailed: error => {
-                console.log(error);
                 Toast.show({
                     type: ALERT_TYPE.DANGER,
                     title: 'Error',
@@ -128,7 +131,27 @@ const GroupItem = ({item: initialItem}) => {
     ).current;
 
     const submitData = value => {
-        console.log(value);
+        console.log(value,item);
+        request({
+            urlKey: 'edit-stored-item-audit',
+            method: 'patch',
+            args:[item.stored_item_audit_id],
+            data: value,
+            onSuccess: responese => {
+                setItem({...item, audited_quantity: value.audited_quantity});
+                setOpenModalAudit(false);
+            },
+            onFailed: error => {
+                console.log(error)
+                Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: 'Error',
+                    textBody:
+                        error.detail?.message ||
+                        'Failed to update pallet ' + item.reference,
+                });
+            },
+        });
     };
 
     return (
@@ -139,11 +162,7 @@ const GroupItem = ({item: initialItem}) => {
                     size="md"
                     variant="solid"
                     onPress={() => setOpenModalAudit(true)}>
-                    <FontAwesomeIcon
-                        icon={faInventory}
-                        size={25}
-                        color="#615FFF"
-                    />
+                    <FontAwesomeIcon icon={faEdit} size={25} color="#615FFF" />
                 </TouchableOpacity>
             </View>
 
@@ -153,7 +172,7 @@ const GroupItem = ({item: initialItem}) => {
                     size="md"
                     variant="solid"
                     onPress={() => setOpenModalAudit(true)}>
-                    <FontAwesomeIcon icon={faFragile} color="red" size={25} />
+                    <FontAwesomeIcon icon={faHistory} color="red" size={25} />
                 </TouchableOpacity>
             </View>
 
