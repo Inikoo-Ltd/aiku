@@ -247,7 +247,7 @@
                     {{ $transaction->historicAsset?->name }}
                     @if(isset($transaction->pallet))
                     <br>
-                        {{ __('Pallet') }}: {{ $transaction->pallet }}
+                        {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
                     @endif
                     @if(isset($transaction->handling_date))
                     <br>
