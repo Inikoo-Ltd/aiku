@@ -37,7 +37,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
         $totalTrRefunded = $invoiceTransaction->transactionRefunds->sum('net_amount');
         $totalTr = $invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
 
-        if ($totalTr <= 0) {
+        if ($totalTr < 0) {
             throw ValidationException::withMessages(
                 [
                     'message' => [
