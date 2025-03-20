@@ -10,12 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from "vue"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@/Components/Image.vue"
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"
 import { getStyles } from "@/Composables/styles"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faEdit } from "@far"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
-import Modal from "@/Components/Utils/Modal.vue"
 import { sendMessageToParent } from "@/Composables/Workshop";
 import Blueprint from "@/Components/CMS/Webpage/Overview2/Blueprint"
 
@@ -33,14 +28,6 @@ const emits = defineEmits<{
 }>()
 
 const isModalGallery = ref(false)
-
-const onChangeImage = (image) => {
-	const data = { ...props.modelValue }
-	data.image.source = { ...image[0].source }
-	isModalGallery.value = false
-	props.modelValue = data
-	onSave()
-}
 
 function onSave() {
 	emits("autoSave")

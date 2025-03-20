@@ -331,8 +331,8 @@ watch(() => props.data, (newValue) => {
 }, { deep: true })
 
 const typePallet = [
+    { label : 'Carton', value : 'box'}, 
     { label : 'Pallet', value : 'pallet'}, 
-    { label : 'Box', value : 'box'}, 
     { label : 'Oversize', value : 'oversize'}
 ]
 
@@ -501,7 +501,7 @@ const isModalUploadStoredItemOpen = ref(false)
         </template>
 
         <!-- Button: Add pallet (single) -->
-        <template #button-group-pallet="{ action }">
+        <template #button-group-storage="{ action }">
             <div v-if="currentTab !== 'cccccccpallets'" class="md:relative" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
                 <Popover>
                     <template #button>

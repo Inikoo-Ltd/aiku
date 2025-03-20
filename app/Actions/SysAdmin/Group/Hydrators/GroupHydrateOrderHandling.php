@@ -26,7 +26,7 @@ class GroupHydrateOrderHandling
     use WithEnumStats;
 
     private Group $group;
-
+    public string $jobQueue = 'sales';
     public function __construct(Group $group)
     {
         $this->group = $group;
