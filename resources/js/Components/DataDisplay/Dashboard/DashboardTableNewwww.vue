@@ -168,7 +168,7 @@ console.log('%c Table ', 'background: red; color: white', props.tableData.tables
 						<!-- {{ data.columns[colIndex]?.[intervals.value]?.formatted_value }} -->
 							<Transition name="spin-to-right">
 								<div :key="intervals.value">
-									{{ data.columns?.[colIndex]?.[intervals.value]?.formatted_value ?? data[colIndex]?.[intervals.value]?.formatted_value ?? data[colIndex]?.formatted_value ?? data[colIndex] }}
+									{{ data.columns?.[colIndex]?.[intervals.value]?.formatted_value ?? data.columns[colIndex]?.formatted_value }}
 								</div>
 							</transition>
 						</div>
