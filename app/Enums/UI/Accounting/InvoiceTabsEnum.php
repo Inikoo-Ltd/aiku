@@ -28,7 +28,7 @@ enum InvoiceTabsEnum: string
 
             InvoiceTabsEnum::REFUNDS     => [
                 'title' => __('Refunds'),
-                'icon'  => 'fal fa-hand-holding-usd',
+                'icon'  => 'fal fa-arrow-circle-left',
                 'type'  => 'icon',
                 'align' => 'right',
             ],

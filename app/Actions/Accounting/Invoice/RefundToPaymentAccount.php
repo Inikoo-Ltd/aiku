@@ -62,14 +62,15 @@ class RefundToPaymentAccount extends OrgAction
             return $payment ?? null;
         }
 
+        $refund = $invoice;
 
-        $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, [
+        $payment = StorePayment::make()->action($refund->customer, $paymentAccount, [
             'amount' => -abs(Arr::get($modelData, 'amount')),
             'status' => PaymentStatusEnum::SUCCESS->value,
             'state' => PaymentStateEnum::COMPLETED->value,
         ]);
 
-        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+        AttachPaymentToInvoice::make()->action($refund, $payment, []);
 
         return $payment;
     }
