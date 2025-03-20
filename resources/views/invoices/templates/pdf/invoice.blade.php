@@ -245,11 +245,11 @@
             <td style="text-align:left" colspan="2">
                 @if($transaction->historicAsset)
                     {{ $transaction->historicAsset?->name }}
-                    @if(isset($transaction->data['pallet_id']))
+                    @if(isset($transaction->pallet))
                     <br>
                         {{ __('Pallet') }}: {{ $transaction->pallet }}
                     @endif
-                    @if(isset($transaction->data['date']))
+                    @if(isset($transaction->handling_date))
                     <br>
                         {{ __('Date') }}: {{ $transaction->handling_date }}
                     @endif
