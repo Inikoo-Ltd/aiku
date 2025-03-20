@@ -83,7 +83,7 @@ class ShowRetinaPalletReturn extends RetinaAction
             ];
         } else {
             $afterTitle = [
-                'label' => '('.__('Whole pallets').')'
+                'label' => '('.__('Whole goods').')'
             ];
         }
 
@@ -166,7 +166,7 @@ class ShowRetinaPalletReturn extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('pallet return'),
+                'title'       => __('goods return'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -182,7 +182,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'      => __('pallet return'),
+                    'model'      => __('goods return'),
                     'actions'    => $actions
                 ],
 
@@ -539,7 +539,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('pallet returns')
+                            'label' => __('goods returns')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
