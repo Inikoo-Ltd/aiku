@@ -25,7 +25,9 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 
         $deltaLabel = [
             'formatted_value' => 'Δ 1Y',
-            'tooltip'         => __('Change versus 1 Year ago')
+            'tooltip'         => __('Change versus 1 Year ago'),
+            'sortable'        => true,
+            'align'           => 'right'
         ];
 
         $columns = array_merge(
@@ -41,12 +43,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_shop_currency' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
                 'baskets_created_shop_currency_minified' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
@@ -54,12 +60,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
@@ -67,12 +77,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'invoices' => [
-                    'formatted_value' => __('Invoices')
+                    'formatted_value' => __('Invoices'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
                 'invoices_minified' => [
-                    'formatted_value' => __('Invoices')
+                    'formatted_value' => __('Invoices'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
@@ -80,12 +94,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'sales_shop_currency' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
                 'sales_shop_currency_minified' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
@@ -93,12 +111,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'sales_org_currency' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [
                 'sales_org_currency_minified' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'sortable'       => true,
+                    'align'          => 'right'
                 ]
             ],
             [

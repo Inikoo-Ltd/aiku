@@ -57,20 +57,25 @@ const props = defineProps<{
 				}
 			}[]
 			intervals: {
-				label: string
-				value: string
-				labelShort: string
-			}[]
-			settings: {
-				align: string
-				id: string
 				options: {
 					label: string
 					value: string
+					labelShort: string
 				}[]
-				type: string
 				value: string
-			}[]
+			}
+			settings: {
+				[key: string]: {  // 'model_state', 'data_display_type'
+					align: string
+					id: string
+					options: {
+						label: string
+						value: string
+					}[]
+					type: string
+					value: string
+				}
+			}
 		}[]
 	}
 }>()
@@ -88,6 +93,7 @@ console.log('22 ewewqq', props.dashboard_stats)
 <template>
 	<Head :title="trans('Dashboard')" />
 	
+	<!-- <pre>{{ props.dashboard?.super_blocks?.[0].settings }}</pre> -->
 	<DashboardSettingsNew
 		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		:settings="props.dashboard?.super_blocks?.[0].settings"
@@ -95,6 +101,7 @@ console.log('22 ewewqq', props.dashboard_stats)
 	<DashboardTableNewwww
 		:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+		:settings="props.dashboard?.super_blocks?.[0].settings"
 	/>
 
 	<!-- {{ props.dashboard?.super_blocks?.[0].blocks[0] }} -->

@@ -20,47 +20,53 @@ import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
+interface Column {
+	formatted_value: string  // "€0.00"
+	raw_value: string  // "0.00"
+	tooltip: string
+	sortable?: boolean
+	align?: string
+} 
+
+interface Header {
+	slug: string
+	columns: {
+		[key: string]: {  // key: 'baskets_created_org_currency', 'baskets_created_grp_currency', 'baskets_created_grp_currency_minified'
+			[key: string]: Column  // key: '1y', '3m', '1m', '7d', '1d'
+		}
+	} | Column
+}
+interface Tables {
+	[key: string]: {
+		body: {
+
+		}
+		header: Header
+		total: {
+
+		}
+		slug: string
+		state: string
+		columns: {
+			baskets_created_org_currency: {
+				'1y': {
+					formatted_value: string  // "€0.00"
+					raw_value: string  // "0.00"
+					tooltip: string
+				} 
+			}
+		}
+	}[]
+}
+
 const props = defineProps<{
 	tableData: {
 		charts: []
 		current_tab: string  // 'shops'
 		id: string  // 'sales_table'
-		tables: {
-			invoice_categories: []
-			shops: {
-				body: {
-
-				}
-				header: {
-					slug: string
-					columns: {
-						baskets_created_org_currency: {
-							'1y': {
-								formatted_value: string  // "€0.00"
-								raw_value: string  // "0.00"
-								tooltip: string
-							} 
-						}
-					}
-				}
-				total: {
-
-				}
-				slug: string
-				state: string
-				columns: {
-					baskets_created_org_currency: {
-						'1y': {
-							formatted_value: string  // "€0.00"
-							raw_value: string  // "0.00"
-							tooltip: string
-						} 
-					}
-				}
-			}[]
-		}
+		tables: Tables
 		tabs: {
-			[tab: string]: {
+			[key: string]: {
 				icon: string
 				title: string
 			}
@@ -70,51 +76,70 @@ const props = defineProps<{
 		options: {}[]
 		value: string
 	}
+	settings: {
+		[key: string]: {  // 'model_state', 'data_display_type'
+			align: string
+			id: string
+			options: {
+				label: string
+				value: string
+			}[]
+			type: string
+			value: string
+		}
+	}
 }>()
 
-function ShopDashboard(shop: any) {
-	return route(shop?.route?.name, shop?.route?.parameters)
-}
-
-const activeIndexTab = ref(props.current)
-
-// const selectedTab = computed(() => {
-// 	return props.dashboardTable.find((tab) => tab.tab_slug === activeIndexTab.value)
-// })
-// function useTabChangeDashboard(tab_slug: string) {
-// 	if (tab_slug === activeIndexTab.value) {
-// 		return
-// 	}
-
-// 	router.reload({
-// 		data: { tab_dashboard_interval: tab_slug },
-// 		// only: ['dashboard_stats'],
-// 		onSuccess: () => {
-// 			activeIndexTab.value = tab_slug
-// 		},
-// 		onError: (error) => {
-// 			console.error("Error reloading dashboard:", error)
-// 		},
-// 	})
-// }
-// console.log('ewqewqewq', selectedTab.value.data)
-
-// const listColumnInTable = computed(() => {
-	
-// 	const resultSet = new Set();  // Create a Set to store unique elements
-
-//     // Iterate through each sub-array in the input array
-//     selectedTab.value.data?.map((e) => Object.keys(e.interval_percentages || {})).forEach(subArray => {
-//         // Add each element of the sub-array to the Set
-//         subArray.forEach(item => resultSet.add(item));
-//     });
-
-//     // Convert the Set back to an Array to return the result
-//     return Array.from(resultSet);
-// })
 
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
 console.log('%c Table ', 'background: red; color: white', props.tableData.tables[props.tableData.current_tab]);
+
+const compTableHeaderColumns = computed<Header>(() => {
+	if (props.settings.data_display_type.value === 'minified') {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
+			if (key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	} else {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
+			if (!key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	}
+})
+const compTableTotalColumns = computed(() => {
+	if (props.settings.data_display_type.value === 'minified') {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
+			if (key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	} else {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
+			if (!key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	}
+})
 </script>
 
 <template>
@@ -145,11 +170,11 @@ console.log('%c Table ', 'background: red; color: white', props.tableData.tables
 
 				<!-- Column (looping) -->
 				<Column
-					v-for="(column, colIndex) in tableData.tables[tableData.current_tab].header.columns"
+					v-for="(column, colIndex) in compTableHeaderColumns"
 					:key="colIndex"
 					:sortable="column.sortable"
-					:sortField="`${column.key}.${intervals.value}.formatted_value`"
-					:field="column.key"
+					:sortField="`columns.${colIndex}.${intervals.value}.formatted_value`"
+					:field="colIndex"
 				>
 					<template #header>
 						<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
@@ -174,12 +199,13 @@ console.log('%c Table ', 'background: red; color: white', props.tableData.tables
 						</div>
 					</template>
 				</Column>
+				
 
 				<!-- Total -->
 				<ColumnGroup type="footer">
 					<Row>
 						<Column
-							v-for="(column, colIndex) in tableData.tables[tableData.current_tab].totals.columns"
+							v-for="(column, colIndex) in compTableTotalColumns"
 							:key="colIndex"
 							:sortable="column.sortable"
 							:sortField="`${column.key}.${intervals.value}.formatted_value`"

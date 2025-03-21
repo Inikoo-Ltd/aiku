@@ -59,13 +59,13 @@ class DashboardTotalShopsSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $organisation->name
+                    'formatted_value' => $organisation->name,
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $organisation->code,
-                    'tooltip'         => $organisation->name
+                    'tooltip'         => $organisation->name,
                 ]
             ],
             $baskets_created_shop_currency,

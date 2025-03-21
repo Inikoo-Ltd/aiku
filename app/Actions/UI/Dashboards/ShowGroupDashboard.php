@@ -41,9 +41,8 @@ class ShowGroupDashboard extends OrgAction
                     'id'        => 'main_sales',
                     'intervals' => $this->dashboardIntervalOption(),
                     'settings'  => [
-
-                        $this->dashboardModelStateSettings($settings, 'left'),
-                        $this->dashboardDataDisplayTypeSettings($settings),
+                        'model_state'       => $this->dashboardModelStateSettings($settings, 'left'),
+                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($settings),
                     ],
                     'blocks'    => [
                         [

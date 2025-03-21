@@ -52,8 +52,8 @@ class ShowOrganisationDashboard extends OrgAction
                     ],
                     'settings'  => [
 
-                        $this->dashboardModelStateSettings($settings, 'left'),
-                        $this->dashboardDataDisplayTypeSettings($settings),
+                        'model_state'       => $this->dashboardModelStateSettings($userSettings, 'left'),
+                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     ],
 
 
