@@ -73,21 +73,21 @@ class StoreManyOutboxHasSubscriber extends OrgAction
             'external_emails' => [
                 'required_if:users_id,null',
                 'array',
+            ],
+
+            'external_emails.*' => [
+                'email',
                 function ($attribute, $value, $fail) {
                     $existingEmails = \DB::table('outbox_has_subscribers')
                         ->where('organisation_id', $this->organisation->id)
                         ->where('outbox_id', $this->outbox->id)
-                        ->whereIn('external_email', $value)
-                        ->pluck('external_email')
-                        ->toArray();
+                        ->where('external_email', $value)
+                        ->exists();
 
-                    if (!empty($existingEmails)) {
-                        $fail('Some emails are already subscribed.');
+                    if ($existingEmails) {
+                        $fail("The email {$value} is already subscribed.");
                     }
                 },
-            ],
-            'external_emails.*' => [
-                'email',
             ],
         ];
 
