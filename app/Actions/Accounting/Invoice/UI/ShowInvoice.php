@@ -156,11 +156,15 @@ class ShowInvoice extends OrgAction
         $ir_total    = $invoice->total_amount + $totalRefund;
         $refunds_pay_out = $invoice->refunds->where('in_process', false)->sum('payment_amount');
 
-        $totalPaid = $invoice->payment_amount + $refunds_pay_out;
+        $totalNeedToRefund = (abs($totalRefund) - abs($refunds_pay_out)) * -1;
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refunds_pay_out : 0;
 
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
-        $totalNeedToPay = round($ir_total - $totalPaid, 2) + $totalExceesPayment;
+        $totalNeedToPay = round($ir_total - $invoice->payment_amount, 2);
+
+        if ($totalNeedToPay <= 0 && $totalNeedToRefund > 0) {
+            $totalNeedToPay = $totalNeedToRefund;
+        }
 
         $invoicePayBox = [
             'invoice_pay' => [
