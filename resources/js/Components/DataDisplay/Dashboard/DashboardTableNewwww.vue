@@ -3,7 +3,7 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Row from "primevue/row"
 import ColumnGroup from "primevue/columngroup"
-import { ref, computed } from "vue"
+import { ref, computed, inject } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
@@ -18,6 +18,7 @@ import LabelItemDashboard from "@/Components/Utils/LabelItemDashboard.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -90,6 +91,7 @@ const props = defineProps<{
 	}
 }>()
 
+const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
 console.log('%c Table ', 'background: red; color: white', props.tableData.tables[props.tableData.current_tab]);
@@ -140,10 +142,19 @@ const compTableTotalColumns = computed(() => {
 		return aaa;
 	}
 })
+
+const compTableBody = computed(() => {
+	if (props.settings.model_state?.value === 'open') {
+		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
+	}
+
+	return props.tableData.tables[props.tableData.current_tab].body;
+})
 </script>
 
 <template>
-	<div class="bg-white mb-3 p-4 shadow-md border border-gray-200">
+	<div class="relative bg-white mb-3 p-4 border border-gray-200">
+		<!-- <pre>{{ props.tableData.tables[props.tableData.current_tab].body.filter(row => row.state === 'open') }}</pre> -->
 		<div class="">
 			<!-- Section: Tabs -->
 			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-sm md:text-base pb-2">
@@ -161,13 +172,12 @@ const compTableTotalColumns = computed(() => {
 			</Tabs>
 
 			<!-- Section: Table -->
-			<DataTable :value="tableData.tables[tableData.current_tab].body" removableSort>
+			<DataTable :value="compTableBody" removableSort>
 				<template #empty>
 					<div class="flex items-center justify-center h-full text-center">
 						{{ trans("No data available.") }}
 					</div>
 				</template>
-
 				<!-- Column (looping) -->
 				<Column
 					v-for="(column, colIndex) in compTableHeaderColumns"
@@ -185,7 +195,6 @@ const compTableTotalColumns = computed(() => {
 							<FontAwesomeIcon v-if="column.iconRight" :icon="column.iconRight" class="" fixed-width aria-hidden="true" />
 						</div>
 					</template>
-
 					<template #body="{ data }">
 						<div class="px-2 flex relative"
 							:class="column.align === 'right' ? 'justify-end' : ''"
@@ -199,8 +208,7 @@ const compTableTotalColumns = computed(() => {
 						</div>
 					</template>
 				</Column>
-				
-
+			
 				<!-- Total -->
 				<ColumnGroup type="footer">
 					<Row>
@@ -223,10 +231,13 @@ const compTableTotalColumns = computed(() => {
 								</div>
 							</template>
 						</Column>
-
 					</Row>
 				</ColumnGroup>
 			</DataTable>
+
+			<div v-if="isLoadingOnTable" class="absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
+				<LoadingIcon />
+			</div>
 
 			<!-- <pre>{{ tableData.tables[tableData.current_tab] }}</pre> -->
 

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { provide, ref } from "vue"
 import { faChevronDown } from "@far"
 import { faPlay, faTriangle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -87,12 +87,12 @@ const checked = ref(true)
 console.log('11 ewewqq', props.dashboard)
 console.log('22 ewewqq', props.dashboard_stats)
 
-
+const isLoadingOnTable = ref(false)
+provide('isLoadingOnTable', isLoadingOnTable)
 </script>
 
 <template>
 	<Head :title="trans('Dashboard')" />
-	
 	<!-- <pre>{{ props.dashboard?.super_blocks?.[0].settings }}</pre> -->
 	<DashboardSettingsNew
 		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"

@@ -24,11 +24,13 @@ trait WithDashboardModelStateSettings
             'options' => [
                 [
                     'value' => 'open',
-                    'label' => __('Open')
+                    'label' => __('Open only'),
+                    'tooltip'   => __('Only show shops that are open')
                 ],
                 [
                     'value' => 'closed',
-                    'label' => __('Closed')
+                    'label' => __('All shops including closed'),
+                    'tooltip'   => __('Show all shops including closed')
                 ]
             ]
         ];

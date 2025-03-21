@@ -24,11 +24,13 @@ trait WithDashboardDataDisplayTypeSettings
             'options' => [
                 [
                     'value' => 'minified',
-                    'label' => __('Minified')
+                    'label' => __('Minified'),
+                    'tooltip'   => __('Show only the most important information')
                 ],
                 [
                     'value' => 'full',
-                    'label' => __('Full')
+                    'label' => __('Full'),
+                    'tooltip'   => __('Show all available information')
                 ]
             ]
         ];
