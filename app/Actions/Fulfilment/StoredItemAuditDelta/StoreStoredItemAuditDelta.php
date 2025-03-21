@@ -90,6 +90,7 @@ class StoreStoredItemAuditDelta extends OrgAction
         return [
             'pallet_id'        => ['required', 'integer', 'exists:pallets,id'],
             'stored_item_id'   => ['required', 'integer', 'exists:stored_items,id'],
+            'stored_item_slug' => ['sometimes'],
             'audited_quantity' => ['required', 'integer', 'min:0'],
             'user_id'          => ['sometimes', 'required', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
 
@@ -100,6 +101,11 @@ class StoreStoredItemAuditDelta extends OrgAction
     {
         if (!$this->asAction) {
             $this->set('user_id', $request->user()->id);
+        }
+
+        if ($this->has('stored_item_slug')) {
+            $storedItem = StoredItem::where('slug', $this->get('stored_item_slug'))->first();
+            $this->set('stored_item_id', $storedItem->id);
         }
     }
 
