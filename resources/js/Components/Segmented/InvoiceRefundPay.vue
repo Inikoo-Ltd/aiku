@@ -90,21 +90,26 @@ const onSubmitPayment = () => {
         {
             onStart: () => isLoadingPayment.value = true,
             onFinish: () => {
-                isLoadingPayment.value = false,
-                notify({
-                    title: trans('Success'),
-                    text: 'Successfully add payment invoice',
-                    type: 'success',
-                })
+                isLoadingPayment.value = false
             },
             onSuccess: () => {
                 paymentData.value.payment_method = null,
                 paymentData.value.payment_amount = 0,
                 paymentData.value.payment_reference = ''
                 isOpenModalInvoice.value = false
+                notify({
+                    title: trans('Success'),
+                    text: 'Successfully add payment invoice',
+                    type: 'success',
+                })
             },
             onError: (error) => {
                 errorPaymentMethod.value = error
+                notify({
+                    title: trans('Something went wrong'),
+                    text: error.message,
+                    type: 'error',
+                })
             }
         }
     )
@@ -164,17 +169,25 @@ const onSubmitPaymentRefund = () => {
                 onStart: () => isLoadingPayment.value = true,
                 onFinish: () => {
                     isLoadingPayment.value = false,
-                        isOpenModalRefund.value = false,
-                        notify({
-                            title: trans("Success"),
-                            text: "Successfully add payment invoice",
-                            type: "success"
-                        })
+                    isOpenModalRefund.value = false
                 },
                 onSuccess: () => {
                     paymentRefund.value.payment_account = null,
-                        paymentRefund.value.payment_amount = 0
+                    paymentRefund.value.payment_amount = 0,
+                    notify({
+                        title: trans("Success"),
+                        text: "Successfully add payment invoice",
+                        type: "success"
+                    })
                     // paymentRefund.value.payment_reference = ""
+                },
+                onError: (error) => {
+                    errorPaymentMethodRefund.value = error
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: error.message,
+                        type: "error",
+                    })
                 },
                 preserveScroll: true,
             }
@@ -251,6 +264,13 @@ const generateRefundRoute = (refundSlug: string) => {
                     <dt class="text-sm/6 font-medium ">Pay out</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_out)) }}
+                    </dd>
+                </div>
+                <!-- addition customer balance -->
+                <div v-if="Number(invoice_pay.addition_customer_balance) > 0" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                    <dt class="text-sm/6 font-medium ">Customer Balance</dt>
+                    <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-green-600">
+                        +{{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.addition_customer_balance)) }}
                     </dd>
                 </div>
             </div>

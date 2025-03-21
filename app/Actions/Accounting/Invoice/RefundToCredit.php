@@ -17,6 +17,7 @@ use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundToCredit extends OrgAction
@@ -29,9 +30,21 @@ class RefundToCredit extends OrgAction
 
         $totalToPay = -abs(Arr::get($modelData, 'amount'));
 
+        $totalToPayRound = round($totalToPay, 2);
+
         if (!$invoice->invoice_id) {
             $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->all();
             $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount');
+
+            if ($totalToPayRound < round($totalRefund, 2)) {
+                throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'amount' => 'The refund amount exceeds the total amount that should be refund',
+                        ]
+                    ]
+                );
+            }
 
             foreach ($refunds as $refund) {
                 if ($totalRefund >= 0 || $totalToPay >= 0) {
@@ -72,6 +85,16 @@ class RefundToCredit extends OrgAction
         }
 
         $refund = $invoice;
+
+        if ($totalToPayRound < round($refund->total_amount, 2)) {
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'amount' => 'The refund amount exceeds the total amount that should be refund',
+                    ]
+                ]
+            );
+        }
 
         $creditTransaction = StoreCreditTransaction::make()->action($invoice->customer, [
             'amount' => $totalToPay,

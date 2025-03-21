@@ -19,6 +19,7 @@ use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundToPaymentAccount extends OrgAction
@@ -35,10 +36,23 @@ class RefundToPaymentAccount extends OrgAction
         // pay out = [-25,-25] (2 refund transactions)
         // input amount = -35
 
+        $totalToPay = -abs(Arr::get($modelData, 'amount')); // -35
+
+        $totalToPayRound = round($totalToPay, 2);
+
         if (!$invoice->invoice_id) {
             $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->all();
             $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount'); // -50
-            $totalToPay = -abs(Arr::get($modelData, 'amount')); // -35
+
+            if ($totalToPayRound < round($totalRefund, 2)) {
+                throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'amount' => 'The refund amount exceeds the total amount that should be refund',
+                        ]
+                    ]
+                );
+            }
 
             $payment = null;
             foreach ($refunds as $refund) {
@@ -64,6 +78,16 @@ class RefundToPaymentAccount extends OrgAction
         }
 
         $refund = $invoice;
+
+        if ($$totalToPayRound < round($refund->total_amount, 2)) {
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'amount' => 'The refund amount exceeds the total amount that should be refund',
+                    ]
+                ]
+            );
+        }
 
         $payment = StorePayment::make()->action($refund->customer, $paymentAccount, [
             'amount' => -abs(Arr::get($modelData, 'amount')),
