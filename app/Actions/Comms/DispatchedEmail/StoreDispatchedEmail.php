@@ -54,9 +54,9 @@ class StoreDispatchedEmail extends OrgAction
         $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
 
         GroupHydrateDispatchedEmails::dispatch($dispatchedEmail->group)->delay($this->hydratorsDelay);
-        OrganisationHydrateDispatchedEmails::run($dispatchedEmail->organisation)->delay($this->hydratorsDelay);
+        OrganisationHydrateDispatchedEmails::run($dispatchedEmail->organisation);
         if ($dispatchedEmail->shop_id) {
-            ShopHydrateDispatchedEmails::dispatch($dispatchedEmail->group)->delay($this->hydratorsDelay);
+            ShopHydrateDispatchedEmails::dispatch($dispatchedEmail->shop)->delay($this->hydratorsDelay);
 
         }
 

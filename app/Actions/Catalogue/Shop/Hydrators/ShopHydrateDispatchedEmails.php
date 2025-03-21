@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -35,7 +36,7 @@ class ShopHydrateDispatchedEmails
     public function handle(Shop $shop): void
     {
         $stats = [
-            'number_dispatched_emails' => $shop->dispatchedEmails()->count(),
+            'number_dispatched_emails' => DispatchedEmail::where('shop_id', $shop->id)->count(),
         ];
 
         $shop->commsStats()->update($stats);

@@ -55,23 +55,4 @@ class SendCustomerWelcomeEmail extends OrgAction
         );
     }
 
-    public string $commandSignature = 'x';
-
-    public function asCommand($command)
-    {
-        $c = Customer::first();
-        // $outbox = $c->shop->outboxes()->where('code', OutboxCodeEnum::NEW_CUSTOMER->value)->first();
-        // // 'external_email' => 'dev@aw-advantage.com',
-
-        // StoreOutboxHasSubscriber::make()->action(
-        //     Outbox::find(158),
-        //     [
-        //         'external_email' => 'artha@aw-advantage.com',
-        //     ]
-        // );
-
-
-
-        $this->handle($c);
-    }
 }
