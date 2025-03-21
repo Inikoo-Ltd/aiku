@@ -10,7 +10,6 @@ defineProps<{
 	status?: string
 }>()
 
-
 </script>
 
 <template>
@@ -41,7 +40,7 @@ defineProps<{
 
 				<div v-else>
 					<span class="text-gray-400 italic text-xs">data unavailable</span>
-                </div>
+				</div>
 			</template>
 
 			<template #cell(code)="{ item }">

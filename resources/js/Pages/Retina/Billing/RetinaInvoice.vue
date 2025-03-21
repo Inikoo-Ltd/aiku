@@ -36,6 +36,7 @@
 
   import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.vue'
   const locale = inject('locale', aikuLocaleStructure)
   
   
@@ -88,6 +89,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
   const component = computed(() => {
       const components: Component = {
           grouped: TableInvoiceTransactions,
+          itemized: RetinaTableItemizedTransactions,
           payments: TablePayments,
           details: ModelDetails,
           history: TableHistories,
