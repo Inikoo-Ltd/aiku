@@ -122,6 +122,12 @@ class ShowRetinaInvoice extends RetinaAction
                         'invoice' => $invoice->slug
                     ]
                 ],
+                'exportTransactionsRoute' => [
+                    'name'       => 'retina.fulfilment.billing.invoices.invoice-transactions.export',
+                    'parameters' => [
+                        'invoice' => $invoice->slug
+                    ]
+                ],
                 'box_stats'      => [
                     'customer'    => [
                         'route'        => [
