@@ -48,11 +48,11 @@ enum InvoiceTabsEnum: string
             ],
 
             InvoiceTabsEnum::GROUPED => [
-                'title' => __('Grouped'),
+                'title' => __('Itemized by rental/service'),
                 'icon'  => 'fal fa-bars',
             ],
             InvoiceTabsEnum::ITEMIZED => [
-                'title' => __('Itemized'),
+                'title' => __('Itemised by pallets'),
                 'icon'  => 'fal fa-bars',
             ],
         };
