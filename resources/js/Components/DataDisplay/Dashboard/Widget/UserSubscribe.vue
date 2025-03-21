@@ -131,9 +131,9 @@ const saveChanges = () => {
 	router.post(route(routeToSubmit.name, routeToSubmit.parameters), payload, {
 		preserveScroll: true,
 		onSuccess: (page) => {
-			if (page.props.widget) {
-				widgetItems.value = page.props.widget
-			}
+
+			widgetItems.value = page.props.showcase.outbox_subscribe.data
+			
 			notify({
 				title: trans("Succes"),
 				text: trans("Successfully attach"),
