@@ -147,7 +147,7 @@ const saveChanges = () => {
 		onError: (errors: any) => {
 			notify({
 				title: trans("Something went wrong."),
-				text: trans(errors.external_emails || errors.users_id),
+				text: trans(errors["external_emails.0"] || errors.users_id),
 				type: "error",
 			})
 		},
