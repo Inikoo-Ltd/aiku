@@ -30,7 +30,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faFileMinus, faUndoAlt, faStarHalfAlt, faArrowCircleLeft } from "@fal";
 import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft } from "@fas";
-import { faCheck } from "@far";
+import { faCheck, faTrash } from "@far";
 
 library.add(
   faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,
@@ -245,8 +245,8 @@ watch(paymentData, () => {
       <div>
         <ModalConfirmationDelete :routeDelete="action.route" isFullLoading>
           <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-            <Button @click="() => changeModel()" :style="action.style" :label="action.label" :icon="action.icon"
-              :loading="isLoadingdelete" :iconRight="action.iconRight"
+            <Button @click="() => changeModel()" :style="'negative'"  :icon="faTrash"
+              :loading="isLoadingdelete" :iconRight="action.iconRight" :label="''"
               :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
 
           </template>
