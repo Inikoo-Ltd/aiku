@@ -42,12 +42,13 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 				<component
 					v-if="fieldValue?.logo?.image?.source"
 					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
-					target="_blank" rel="noopener noreferrer"
+					:href="fieldValue?.logo?.link?.href || '#'"
+					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-full h-full"
 				>
 				    <Image 
                         :style="getStyles(fieldValue.logo.properties)"
-                        :alt="fieldValue?.logo?.alt" 
-                         :imageCover="true"
+                        :alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" 
+                        :imageCover="true"
                         :src="fieldValue?.logo?.image?.source" 
                        >
                     </Image>

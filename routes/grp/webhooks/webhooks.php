@@ -19,11 +19,13 @@ Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
 });
 
-Route::post('shopify-user/app-uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('webhooks.shopify.app-uninstalled');
+//Route::post('shopify-user/app-uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('webhooks.shopify.app-uninstalled');
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {
         Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
     });
+
+    Route::post('app/uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
 
     //    Route::prefix('fulfillments')->as('fulfillments.')->group(function () {
     //        // Dont change the create to store, its default needed from shopify

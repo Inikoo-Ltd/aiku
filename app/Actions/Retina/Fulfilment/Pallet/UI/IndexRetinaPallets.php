@@ -152,20 +152,31 @@ class IndexRetinaPallets extends RetinaAction
         $subNavigation      = $this->getPalletSubNavigation($fulfilmentCustomer);
 
         $actions = [];
-
-        if (!app()->environment('production') && $fulfilmentCustomer->pallets_storage) {
-            $actions = [
-                [
+        if ($fulfilmentCustomer->pallets_storage) {
+            $actions[] = [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('New Delivery'),
+                    'label' => __('New Goods Delivery'),
                     'route' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.pallet-delivery.store',
                         'parameters' => []
                     ]
-                ]
             ];
+        }
+
+        if ($fulfilmentCustomer->number_pallets_status_storing) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('New Goods Return'),
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.pallet-return.store',
+                        'parameters' => []
+                    ]
+                ];
         }
 
         return Inertia::render(
@@ -174,9 +185,9 @@ class IndexRetinaPallets extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                 ),
-                'title'       => __('pallets'),
+                'title'       => __('My Stored Goods'),
                 'pageHead'    => [
-                    'title'         => __('pallets'),
+                    'title'         => __('my stored goods'),
                     'icon'          => ['fal', 'fa-pallet'],
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
@@ -238,7 +249,7 @@ class IndexRetinaPallets extends RetinaAction
                             'route' => [
                                 'name' => 'retina.fulfilment.storage.pallets.index',
                             ],
-                            'label' => __('Pallets'),
+                            'label' => __('Goods'),
                             'icon'  => 'fal fa-bars',
                         ],
 
@@ -255,7 +266,7 @@ class IndexRetinaPallets extends RetinaAction
                             'route' => [
                                 'name' => 'retina.fulfilment.storage.pallets.storing_pallets.index',
                             ],
-                            'label' => __('Pallets').' ('.__('Storing').')',
+                            'label' => __('Goods').' ('.__('Storing').')',
                             'icon'  => 'fal fa-bars',
                         ],
 
@@ -272,7 +283,7 @@ class IndexRetinaPallets extends RetinaAction
                             'route' => [
                                 'name' => 'retina.fulfilment.storage.pallets.returned_pallets.index',
                             ],
-                            'label' => __('Pallets').' ('.__('Returned').')',
+                            'label' => __('Goods').' ('.__('Returned').')',
                             'icon'  => 'fal fa-bars',
                         ],
 
@@ -289,7 +300,7 @@ class IndexRetinaPallets extends RetinaAction
                             'route' => [
                                 'name' => 'retina.fulfilment.storage.pallets.in_process_pallets.index',
                             ],
-                            'label' => __('Pallets').' ('.__('In Process').')',
+                            'label' => __('Goods').' ('.__('In Process').')',
                             'icon'  => 'fal fa-bars',
                         ],
 
@@ -306,7 +317,7 @@ class IndexRetinaPallets extends RetinaAction
                             'route' => [
                                 'name' => 'retina.fulfilment.storage.pallets.incidents_pallets.index',
                             ],
-                            'label' => __('Pallets').' ('.__('Incidents').')',
+                            'label' => __('Goods').' ('.__('Incidents').')',
                             'icon'  => 'fal fa-bars',
                         ],
 

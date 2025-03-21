@@ -39,11 +39,8 @@ class GetPupilFirstLoadProps
                     'languageOptions' => GetLanguagesOptions::make()->translated(),
                 ],
                 'layout'   => [
-                    'xxx' => 'string',
                     'navigation'    => GetPupilDropshippingNavigation::run($shopifyUser),
                 ],
-                //todo @artha is layout needed here?
-                //'layout'      => GetLayout::run($request, $webUser),
                 'environment' => app()->environment(),
             ];
     }

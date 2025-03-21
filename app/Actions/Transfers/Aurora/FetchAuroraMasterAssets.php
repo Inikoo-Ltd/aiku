@@ -50,7 +50,7 @@ class FetchAuroraMasterAssets extends FetchAuroraAction
             $masterAsset = UpdateMasterAsset::make()->action(
                 masterAsset: $masterAsset,
                 modelData: $masterAssetData['master_asset'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );
@@ -64,7 +64,7 @@ class FetchAuroraMasterAssets extends FetchAuroraAction
             $masterAsset = StoreMasterAsset::make()->action(
                 parent: $masterAssetData['parent'],
                 modelData: $masterAssetData['master_asset'],
-                hydratorsDelay: 120,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );

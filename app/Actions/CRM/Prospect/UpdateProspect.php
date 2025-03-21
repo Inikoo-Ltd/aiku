@@ -49,21 +49,32 @@ class UpdateProspect extends OrgAction
             data_set($modelData, 'is_valid_email', $isValidEmail);
         }
 
-        $prospect = $this->update($prospect, $modelData, ['data']);
-
         if ($addressData) {
             UpdateAddress::run($prospect->address, $addressData);
-            $prospect->update(
-                [
-                    'location' => $prospect->address->getLocation()
-                ]
-            );
+            data_set($modelData, 'location', $prospect->address->getLocation());
         }
-        $prospect->refresh();
 
-        ProspectRecordSearch::dispatch($prospect);
-        OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
-        ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
+
+        $prospect = $this->update($prospect, $modelData, ['data']);
+        $changes  = Arr::except($prospect->getChanges(), ['updated_at', 'last_fetched_at']);
+
+
+        if (count($changes) > 0) {
+            ProspectRecordSearch::dispatch($prospect);
+
+            if (count(array_intersect(array_keys($changes), [
+                'state',
+                'contacted_state',
+                'fail_status',
+                'success_status',
+            ]))) {
+                OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
+                ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
+
+            }
+
+        }
+
 
         return $prospect;
     }

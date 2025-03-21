@@ -59,7 +59,7 @@ class FetchAuroraTransactions
                 order: $order,
                 historicAsset: $transactionData['historic_asset'],
                 modelData: $transactionData['transaction'],
-                hydratorsDelay: 1200,
+                hydratorsDelay: 10,
                 strict: false
             );
 

@@ -32,7 +32,7 @@ class FetchAuroraPortfolios extends FetchAuroraAction
                     $portfolio = UpdatePortfolio::make()->action(
                         portfolio: $portfolio,
                         modelData: $portfolioData['portfolio'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -47,7 +47,7 @@ class FetchAuroraPortfolios extends FetchAuroraAction
                     $portfolio = StorePortfolio::make()->action(
                         customer: $portfolioData['customer'],
                         modelData: $portfolioData['portfolio'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

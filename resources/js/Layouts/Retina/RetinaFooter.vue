@@ -6,7 +6,6 @@
 
 <script setup lang="ts">
 import { ref, Ref } from 'vue'
-import RetinaFooterActiveUsers from '@/Layouts/Retina/RetinaFooterActiveUsers.vue'
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import { usePage } from "@inertiajs/vue3"
 import Image from "@/Components/Image.vue"
@@ -56,7 +55,6 @@ library.add(faHeart, faComputerClassic, faDiscord)
                     Local
                 </div>
                 <FooterLanguage :isTabActive="isTabActive" @isTabActive="(value: any) => isTabActive = value" />
-                <RetinaFooterActiveUsers v-if="layout.liveUsers?.enabled" :isTabActive="isTabActive" @isTabActive="(value: any) => isTabActive = value" />
             </div>
         </div>
     </footer>

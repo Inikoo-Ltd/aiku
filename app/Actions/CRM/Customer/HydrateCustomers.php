@@ -15,7 +15,6 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
-use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\Fulfilment\FulfilmentCustomer\HydrateFulfilmentCustomer;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\CRM\Customer;
@@ -36,7 +35,6 @@ class HydrateCustomers
         CustomerHydrateInvoices::run($customer);
         CustomerHydrateWebUsers::run($customer);
         CustomerHydrateClients::run($customer);
-        CustomerRecordSearch::run($customer);
         CustomerHydrateOrders::run($customer);
         CustomerHydrateInvoices::run($customer);
         CustomerHydrateDeliveryNotes::run($customer);

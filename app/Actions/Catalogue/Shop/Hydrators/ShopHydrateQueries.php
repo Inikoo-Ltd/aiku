@@ -10,11 +10,17 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Models\Helpers\Query;
 use App\Models\Catalogue\Shop;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateQueries
+class ShopHydrateQueries implements ShouldBeUnique
 {
     use AsAction;
+
+    public function getJobUniqueId(Shop $shop): string
+    {
+        return $shop->id;
+    }
 
 
     public function handle(Shop $shop): void

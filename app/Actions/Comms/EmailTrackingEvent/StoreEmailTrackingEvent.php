@@ -28,7 +28,9 @@ class StoreEmailTrackingEvent extends OrgAction
         /** @var EmailTrackingEvent $emailTrackingEvent */
         $emailTrackingEvent = $dispatchedEmail->emailTrackingEvents()->create($modelData);
 
+
         DispatchedEmailHydrateEmailTracking::dispatch($dispatchedEmail);
+
 
         return $emailTrackingEvent;
     }
@@ -36,8 +38,8 @@ class StoreEmailTrackingEvent extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'type'               => ['required', Rule::enum(EmailTrackingEventTypeEnum::class)],
-            'data'               => ['sometimes', 'array']
+            'type' => ['required', Rule::enum(EmailTrackingEventTypeEnum::class)],
+            'data' => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

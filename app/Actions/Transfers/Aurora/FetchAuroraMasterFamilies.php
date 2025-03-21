@@ -31,7 +31,7 @@ class FetchAuroraMasterFamilies extends FetchAuroraAction
                     $masterFamily = UpdateMasterProductCategory::make()->action(
                         masterProductCategory: $masterFamily,
                         modelData: $masterFamilyData['master_family'],
-                        hydratorsDelay: 10,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraMasterFamilies extends FetchAuroraAction
                     $masterFamily = StoreMasterProductCategory::make()->action(
                         parent: $masterFamilyData['parent'],
                         modelData: $masterFamilyData['master_family'],
-                        hydratorsDelay: 10,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false
                     );
                     MasterProductCategory::enableAuditing();

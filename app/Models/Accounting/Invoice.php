@@ -145,10 +145,13 @@ class Invoice extends Model implements Auditable
         'pay_status'       => InvoicePayStatusEnum::class,
         'data'             => 'array',
         'payment_data'     => 'array',
+        'date'             => 'datetime',
         'paid_at'          => 'datetime',
         'tax_liability_at' => 'datetime',
         'fetched_at'       => 'datetime',
         'last_fetched_at'  => 'datetime',
+        'grp_exchange'     => 'decimal:4',
+        'org_exchange'     => 'decimal:4',
     ];
 
     protected $attributes = [

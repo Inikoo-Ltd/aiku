@@ -41,9 +41,16 @@ class UpdateTransaction extends OrgAction
         }
 
         $this->update($transaction, $modelData, ['data']);
-        $transaction->order->refresh();
-        CalculateOrderTotalAmounts::run($transaction->order);
 
+        if($this->strict) {
+            $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
+            if (count($changes) ) {
+                if (array_key_exists('net_amount', $changes) || array_key_exists('gross_amount', $changes)) {
+                    $transaction->order->refresh();
+                    CalculateOrderTotalAmounts::run($transaction->order);
+                }
+            }
+        }
         return $transaction;
     }
 
