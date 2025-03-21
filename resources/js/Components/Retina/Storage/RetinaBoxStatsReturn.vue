@@ -130,7 +130,7 @@ const computedEnabled = computed({
 
 function updateCollectionNotes() {
 	router.patch(
-		route(props.updateRoute.name, props.updateRoute.parameters),
+		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
 		{ collection_notes: textValue.value },
 		{
 			preserveScroll: true,
