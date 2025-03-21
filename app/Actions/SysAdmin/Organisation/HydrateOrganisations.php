@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransac
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
@@ -103,6 +104,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOrgPostRooms::run($organisation);
         OrganisationHydrateOutboxes::run($organisation);
         OrganisationHydrateCustomerBalances::run($organisation);
+        OrganisationHydrateDispatchedEmails::run($organisation);
 
 
 

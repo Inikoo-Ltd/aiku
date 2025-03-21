@@ -727,7 +727,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(EmailBulkRun::class);
     }
 
-    public function DispatchedEmails(): HasMany
+    public function dispatchedEmails(): HasMany
     {
         return $this->hasMany(DispatchedEmail::class);
     }

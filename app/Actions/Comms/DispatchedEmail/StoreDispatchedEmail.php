@@ -8,9 +8,11 @@
 
 namespace App\Actions\Comms\DispatchedEmail;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDispatchedEmails;
 use App\Actions\Comms\EmailAddress\StoreEmailAddress;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
@@ -34,10 +36,14 @@ class StoreDispatchedEmail extends OrgAction
 
     public function handle(EmailOngoingRun|EmailBulkRun|Mailshot $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber $recipient, array $modelData): DispatchedEmail
     {
+        $outbox = $parent->outbox;
+
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
-        data_set($modelData, 'outbox_id', $parent->outbox_id);
+        data_set($modelData, 'outbox_id', $outbox->id);
+        data_set($modelData, 'post_room_id', $outbox->post_room_id);
+        data_set($modelData, 'org_post_room_id', $outbox->org_post_room_id);
         data_set($modelData, 'recipient_type', class_basename($recipient));
         data_set($modelData, 'recipient_id', $recipient->id);
 
@@ -48,7 +54,12 @@ class StoreDispatchedEmail extends OrgAction
         $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
 
 
-        GroupHydrateDispatchedEmails::dispatch($parent->group)->delay($this->hydratorsDelay);
+        GroupHydrateDispatchedEmails::dispatch($dispatchedEmail->group)->delay($this->hydratorsDelay);
+        OrganisationHydrateDispatchedEmails::dispatch($dispatchedEmail->organisation)->delay($this->hydratorsDelay);
+        if ($dispatchedEmail->shop_id) {
+            ShopHydrateDispatchedEmails::dispatch($dispatchedEmail->shop)->delay($this->hydratorsDelay);
+        }
+
 
         return $dispatchedEmail;
     }

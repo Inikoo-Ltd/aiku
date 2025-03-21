@@ -46,11 +46,12 @@ class SendInvoiceEmailToCustomer extends OrgAction
 
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first();
+        $outboxDispatch = $customer->shop->outboxes()->where('type', OutboxTypeEnum::MARKETING_NOTIFICATION)->first();
 
 
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
             'is_test'       => false,
-            'outbox_id'     => Outbox::where('type', OutboxTypeEnum::MARKETING_NOTIFICATION)->pluck('id')->first(),
+            'outbox_id'     => $outboxDispatch->id,
             'email_address' => $recipient->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);

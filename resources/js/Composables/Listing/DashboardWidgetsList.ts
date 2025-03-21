@@ -1,3 +1,4 @@
+import { User } from './../../../../vendor/laravel/breeze/stubs/inertia-react-ts/resources/js/types/index.d';
 /**
  * Author: Vika Aqordi
  * Created on: 09-01-2025-14h-05m
@@ -15,6 +16,7 @@ const OperationDisplay = defineAsyncComponent(() => import('@/Components/DataDis
 const ChartDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/ChartDisplay.vue'))
 const CircleDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/CircleDisplay.vue'))
 const MultipleDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/MultipleChartDisplay.vue'))
+const UserSubscriber = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/UserSubscribe.vue'))
 
 export const widgetList: {[key: string]: Component} = {
     'basic': BasicDisplay,
@@ -23,7 +25,8 @@ export const widgetList: {[key: string]: Component} = {
     'operation_display': OperationDisplay,
     'chart_display' : ChartDisplay,
     'circle_display': CircleDisplay,
-    'multiple_chart_display': MultipleDisplay
+    'multiple_chart_display': MultipleDisplay,
+    'user_subscribe': UserSubscriber,
 }
 
 export const getComponentWidget = (componentName: string) => {

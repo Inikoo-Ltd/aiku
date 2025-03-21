@@ -28,7 +28,7 @@ class GroupHydrateDispatchedEmails implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_dispatched_emails' => $group->DispatchedEmails()->count(),
+            'number_dispatched_emails' => $group->dispatchedEmails()->count(),
         ];
 
         $group->commsStats()->update($stats);

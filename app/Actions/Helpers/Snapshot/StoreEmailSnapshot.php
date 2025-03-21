@@ -45,15 +45,6 @@ class StoreEmailSnapshot extends OrgAction
         return $snapshot;
     }
 
-    public function authorize(): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
-
 
     public function rules(): array
     {
