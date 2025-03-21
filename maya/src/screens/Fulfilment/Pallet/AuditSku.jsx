@@ -8,6 +8,8 @@ import {
     ActivityIndicator,
     FlatList,
     TextInput,
+    StyleSheet,
+    Modal as ModalNative,
 } from 'react-native';
 import {Button, ButtonText, ButtonSpinner} from '@/src/components/ui/button';
 import Modal from '@/src/components/Modal';
@@ -17,14 +19,27 @@ import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 import {AuthContext} from '@/src/components/Context/context';
 import Empty from '@/src/components/Empty';
 import {useForm, Controller} from 'react-hook-form';
+import {RNHoleView} from 'react-native-hole-view';
+import Menu from '@/src/components/Menu';
 
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {library} from '@fortawesome/fontawesome-svg-core';
+import {
+    Camera,
+    useCameraDevice,
+    useCodeScanner,
+} from 'react-native-vision-camera';
+import {
+    holesConfig,
+    handleCameraPermission,
+    ScannerConfig,
+} from '@/src/utils/Scanner';
 import {
     faEdit,
     faFragile,
     faHistory,
     faSave,
+    faBars
 } from '@/private/fa/pro-light-svg-icons';
 import {faInventory} from '@/private/fa/pro-regular-svg-icons';
 
@@ -33,9 +48,15 @@ library.add(faFragile, faInventory);
 const AuditPallet = ({navigation, route}) => {
     const {organisation, warehouse} = useContext(AuthContext);
     const [data, setData] = useState(null);
-
+    const [showScanner, setShowScanner] = useState(false);
     const [loading, setLoading] = useState(true);
     const {id, pallet_id} = route.params;
+    const menuRef = useRef(null);
+    const Menus = [
+        {id: 'add-sku', title: 'Add SKU'},
+        {id: 'complete-audit', title: 'Complete Audit'},
+    ];
+
 
     const fetchData = async () => {
         request({
@@ -56,9 +77,103 @@ const AuditPallet = ({navigation, route}) => {
         });
     };
 
+    const device = useCameraDevice('back');
+    const codeScanner = useCodeScanner({
+        ...ScannerConfig,
+        onCodeScanned: codes => {
+            setShowScanner(false)
+            createSKU(codes[0].value)
+        },
+    });
+
+    const onPressMenu = event => {
+        switch (event.event) {
+            case 'add-sku':
+                setShowScanner(true);
+                break;
+            case 'complete-audit':
+                CompleteAudit();
+                break;
+            default:
+                console.log('Unknown option selected');
+        }
+    };
+
+
+    const CompleteAudit = () =>{
+        request({
+            urlKey: 'complete-stored-item-audit',
+            method: 'post',
+            args: [id],
+            data:{
+                pallet_id        : pallet_id,
+                stored_item_id   : slug,
+                audited_quantity : 1
+            },
+            onSuccess: response => {
+               navigation.navigate("show-pallet", { id : pallet_id})
+            },
+            onFailed: error => {
+                console.log(error);
+                Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: 'Error',
+                    textBody:
+                        error.detail?.message || 'Failed to complete the audit',
+                });
+            },
+        })
+    }
+
+    const createSKU = (slug) => {
+        request({
+            urlKey: 'add-stored-item-audit',
+            method: 'post',
+            args: [id],
+            data:{
+                pallet_id        : pallet_id,
+                stored_item_slug  : slug,
+                audited_quantity : 1
+            },
+            onSuccess: response => {
+                fetchData();
+            },
+            onFailed: error => {
+                console.log(error);
+                Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: 'Error',
+                    textBody:
+                        error.detail?.message || 'Failed to create new SKU',
+                });
+            },
+        })
+    };
+
     useEffect(() => {
         fetchData();
-    }, [id]);
+        navigation.setOptions({
+          /*   title: data ? `Pallet ${data.reference}` : 'Pallet Details', */
+            headerRight: () => (
+                <View className="px-4">
+                    <Menu
+                        ref={menuRef}
+                        onPressAction={({nativeEvent}) =>
+                            onPressMenu(nativeEvent)
+                        }
+                        button={
+                            <TouchableOpacity
+                                onPress={() => menuRef?.current?.menu.show()}>
+                                <FontAwesomeIcon icon={faBars} />
+                            </TouchableOpacity>
+                        }
+                        actions={Menus}
+                    />
+                </View>
+            ),
+        });
+    }, [id,navigation]);
+
 
     if (loading) {
         return (
@@ -75,13 +190,38 @@ const AuditPallet = ({navigation, route}) => {
                 keyExtractor={item => item.stored_item_id.toString()}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={<Empty />}
-                renderItem={({item}) => <GroupItem item={item} />}
+                renderItem={({item}) => <GroupItem item={item} fetchData={fetchData()}/>}
             />
+
+            <View style={styles.container}>
+                <ModalNative
+                    visible={showScanner}
+                    animationType="slide"
+                    transparent={false}
+                    onRequestClose={() => setShowScanner(false)}
+                    presentationStyle="fullScreen">
+                    <View style={styles.modalContent}>
+                        <Camera
+                            codeScanner={codeScanner}
+                            style={styles.camera}
+                            device={device}
+                            isActive={true}
+                        />
+                        <RNHoleView
+                            holes={holesConfig()}
+                            style={[
+                                globalStyles.scanner.rnholeView,
+                                globalStyles.scanner.fullScreenCamera,
+                            ]}
+                        />
+                    </View>
+                </ModalNative>
+            </View>
         </View>
     );
 };
 
-const GroupItem = ({item: initialItem}) => {
+const GroupItem = ({item: initialItem, fetchData}) => {
     const [item, setItem] = useState(initialItem);
     const [openModalAudit, setOpenModalAudit] = useState(false);
     const translateX = useRef(new Animated.Value(0)).current;
@@ -131,15 +271,43 @@ const GroupItem = ({item: initialItem}) => {
     ).current;
 
     const submitData = value => {
-        console.log(value,item);
         request({
             urlKey: 'edit-stored-item-audit',
             method: 'patch',
-            args:[item.stored_item_audit_id],
-            data: value,
+            args: [item.stored_item_audit_delta_id],
+            data: {audited_quantity : parseInt(value.audited_quantity)},
             onSuccess: responese => {
                 setItem({...item, audited_quantity: value.audited_quantity});
                 setOpenModalAudit(false);
+                Toast.show({
+                    type: ALERT_TYPE.SUCCESS,
+                    title: 'SUCCESS',
+                    textBody:
+                        "Update Audit Delta"
+                });
+            },
+            onFailed: error => {
+                console.log(error);
+                setOpenModalAudit(false);
+                Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: 'Error',
+                    textBody:
+                        error.detail?.message ||
+                        'Failed to update pallet ' + item.reference,
+                });
+            },
+        });
+    };
+
+
+    const undoAudit = () => {
+        request({
+            urlKey: 'delete-stored-item-audit',
+            method: 'delete',
+            args: [item.stored_item_audit_delta_id],
+            onSuccess: responese => {
+                fetchData
             },
             onFailed: error => {
                 console.log(error)
@@ -152,7 +320,7 @@ const GroupItem = ({item: initialItem}) => {
                 });
             },
         });
-    };
+    }
 
     return (
         <View style={{marginVertical: 0}}>
@@ -171,7 +339,7 @@ const GroupItem = ({item: initialItem}) => {
                 <TouchableOpacity
                     size="md"
                     variant="solid"
-                    onPress={() => setOpenModalAudit(true)}>
+                    onPress={() => undoAudit()}>
                     <FontAwesomeIcon icon={faHistory} color="red" size={25} />
                 </TouchableOpacity>
             </View>
@@ -197,7 +365,7 @@ const GroupItem = ({item: initialItem}) => {
                                     {item.reference}
                                 </Text>
                                 {item.type === 'new_item' && (
-                                    <View className="bg-blue-500 px-2 py-1 rounded-full self-start">
+                                    <View className="bg-indigo-500 px-2 py-1 rounded-full self-start">
                                         <Text className="text-white text-xs font-bold">
                                             New
                                         </Text>
@@ -267,5 +435,11 @@ const GroupItem = ({item: initialItem}) => {
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+    modalContent: {flex: 1, backgroundColor: 'black'},
+    camera: {flex: 1},
+});
 
 export default AuditPallet;
