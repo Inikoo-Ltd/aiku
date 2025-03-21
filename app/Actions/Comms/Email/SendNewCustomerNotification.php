@@ -82,6 +82,7 @@ class SendNewCustomerNotification extends OrgAction
             );
         }
 
+
     }
 
 
