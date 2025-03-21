@@ -47,30 +47,46 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
                     $desc_title = $pallet->customer_reference;
                     $desc_model = __('Storage');
                     $desc_after_title = $pallet->reference;
-                    $desc_route = [
+                    $desc_route = match (request()->routeIs('retina.*')) {
+                    true => [
+                        'name'       => 'retina.fulfilment.storage.pallets.show',
+                        'parameters' => [
+                            'pallet'             => $pallet->slug
+                            ]
+                    ],  
+                    default => [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                         'parameters' => [
                             'organisation'       => $request->route()->originalParameters()['organisation'],
                             'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
                             'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
                             'pallet'             => $pallet->slug
+                            ]
                         ]
-                    ];
+                    };
                 }
             } elseif ($recurringBillTransaction->pallet_delivery_id) {
                 $palletDelivery = PalletDelivery::find($recurringBillTransaction->pallet_delivery_id);
                 if ($palletDelivery) {
                     $desc_title = $palletDelivery->reference;
                     $desc_model = __('Pallet Delivery');
-                    $desc_route = [
+                    $desc_route = match (request()->routeIs('retina.*')) {
+                    true => [
+                        'name' => 'retina.fulfilment.storage.pallet_deliveries.show',
+                        'parameters'    => [
+                            'palletDelivery'       => $palletDelivery->slug
+                            ]
+                    ],  
+                    default => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
                         'parameters'    => [
                             'organisation'         => $request->route()->originalParameters()['organisation'],
                             'fulfilment'           => $request->route()->originalParameters()['fulfilment'],
                             'fulfilmentCustomer'   => $palletDelivery->fulfilmentCustomer->slug,
                             'palletDelivery'       => $palletDelivery->slug
+                            ]
                         ]
-                    ];
+                    };
                 }
     
             } elseif ($recurringBillTransaction->pallet_return_id) {
@@ -78,30 +94,41 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
                 if ($palletReturn) {
                     $desc_title = $palletReturn->reference;
                     $desc_model = __('Pallet Return');
-                    $desc_route = [
+                    $desc_route = match (request()->routeIs('retina.*')) { 
+                    true => [
+                        'name' => 'retina.fulfilment.storage.pallet_returns.show',
+                        'parameters'    => [
+                            'palletReturn'       => $palletReturn->slug
+                            ]
+                    ],
+                    default => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
                         'parameters'    => [
                             'organisation'         => $request->route()->originalParameters()['organisation'],
                             'fulfilment'           => $request->route()->originalParameters()['fulfilment'],
                             'fulfilmentCustomer'   => $palletReturn->fulfilmentCustomer->slug,
                             'palletReturn'       => $palletReturn->slug
+                            ]
                         ]
-                    ];
+                    };
                 }
             } elseif ($this->model_type === 'Space') {
                 $space = Space::find($this->model_id);
                 if ($space) {
                     $desc_model = __('Space (parking)');
                     $desc_title = $space->reference;
-                    $desc_route = [
+                    $desc_route = match (request()->routeIs('retina.*')) {
+                    true => [],
+                    default => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
                         'parameters'    => [
                             'organisation'          => $request->route()->originalParameters()['organisation'],
                             'fulfilment'            => $request->route()->originalParameters()['fulfilment'],
                             'fulfilmentCustomer'    => $space->fulfilmentCustomer->slug,
                             'space'                 => $space->slug
+                            ]
                         ]
-                    ];
+                    };
                 }
             }
         } 
@@ -112,15 +139,23 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
                 $desc_title = $pallet->customer_reference;
                 $desc_after_title = $pallet->reference . ' - ' . Carbon::parse($this->data['date'])->format('d M Y');
                 $desc_model = __('Pallet Handling');
-                $desc_route = [
+                $desc_route = match (request()->routeIs('retina.*')) {
+                true => [
+                    'name'       => 'retina.fulfilment.storage.pallets.show',
+                    'parameters' => [
+                        'pallet'             => $pallet->slug
+                        ]
+                ], 
+                default =>[
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                     'parameters' => [
                         'organisation'       => $request->route()->originalParameters()['organisation'],
                         'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
                         'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
                         'pallet'             => $pallet->slug
+                        ]
                     ]
-                ];
+                };
             }
         }
         return [

@@ -76,6 +76,7 @@ import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.v
       recurring_bill_route: routeType
       invoice: InvoiceResource
       grouped: {}
+      itemized: {}
       payments: {}
       details: {}
       history: {}
