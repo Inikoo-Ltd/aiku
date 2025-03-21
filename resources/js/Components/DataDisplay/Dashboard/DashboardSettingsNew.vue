@@ -159,51 +159,50 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 			<!-- Mobile: Interval Dropdown -->
 		</div>
 		
-		<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
-			<!-- Toggle: Align left (open/closed) -->
-			<template v-for="setting, indexSetting in settings" :key="indexSetting">
-				<div v-if="setting.align !== 'right'" class="flex items-center space-x-4">
-					<template v-if="setting.type === 'toggle'">
-						<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-							{{ setting.options[0].label }}
-						</p>
-						<ToggleSwitch
-							:modelValue="setting.value"
-							@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
-							:falseValue="setting.options[0].value"
-							:trueValue="setting.options[1].value"
-							:disabled="`left${indexSetting}` === isLoadingToggle"
-						/>
-						<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-							{{ setting.options[1].label }}
-						</p>
-					</template>
-				</div>
-			</template>
-
-			<!-- Toggle: Align right (minified/full) -->
-			<template v-for="setting, indexSetting in settings" :key="indexSetting">
-				<div v-if="setting.align === 'right'" class="flex items-center space-x-4">
-					<template v-if="setting.type === 'toggle'">
-						<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-							{{ setting.options[0].label }}
-						</p>
-
-						<ToggleSwitch
-							:modelValue="setting.value"
-							@update:modelValue="(value: any) => updateToggle(setting.id, value, `right${indexSetting}`, true)"
-							:falseValue="setting.options[0].value"
-							:trueValue="setting.options[1].value"
-							:disabled="`right${indexSetting}` === isLoadingToggle"
-						/>
-
-						<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-							{{ setting.options[1].label }}
-						</p>
-					</template>
-				</div>
-			</template>
-		</div>
+		<transition name="slide-to-right">
+			<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
+				<!-- Toggle: Align left (open/closed) -->
+				<template v-for="setting, indexSetting in settings" :key="indexSetting">
+					<div v-if="setting.align !== 'right'" class="flex items-center space-x-4">
+						<template v-if="setting.type === 'toggle'">
+							<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[0].label }}
+							</p>
+							<ToggleSwitch
+								:modelValue="setting.value"
+								@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
+								:falseValue="setting.options[0].value"
+								:trueValue="setting.options[1].value"
+								:disabled="`left${indexSetting}` === isLoadingToggle"
+							/>
+							<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[1].label }}
+							</p>
+						</template>
+					</div>
+				</template>
+				<!-- Toggle: Align right (minified/full) -->
+				<template v-for="setting, indexSetting in settings" :key="indexSetting">
+					<div v-if="setting.align === 'right'" class="flex items-center space-x-4">
+						<template v-if="setting.type === 'toggle'">
+							<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[0].label }}
+							</p>
+							<ToggleSwitch
+								:modelValue="setting.value"
+								@update:modelValue="(value: any) => updateToggle(setting.id, value, `right${indexSetting}`, true)"
+								:falseValue="setting.options[0].value"
+								:trueValue="setting.options[1].value"
+								:disabled="`right${indexSetting}` === isLoadingToggle"
+							/>
+							<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[1].label }}
+							</p>
+						</template>
+					</div>
+				</template>
+			</div>
+		</transition>
 	</div>
 </template>
 
