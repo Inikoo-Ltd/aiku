@@ -31,11 +31,15 @@ class StoreInvoiceTransaction extends OrgAction
     {
         if (Arr::exists($modelData, 'pallet_id')) {
             $palletId = Arr::pull($modelData, 'pallet_id');
+        } else {
+            $palletId = Arr::pull($modelData, 'data.pallet_id');
         }
         if (Arr::exists($modelData, 'handle_date')) {
             $handlingDate = Arr::pull($modelData, 'handle_date');
+        } else {
+            $handlingDate = Arr::pull($modelData, 'data.date');
         }
-
+        
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($model instanceof Transaction) {
@@ -129,6 +133,7 @@ class StoreInvoiceTransaction extends OrgAction
             'pallet_id'       => ['sometimes'],
             'handle_date'     => ['sometimes'],
             'data'            => ['sometimes', 'array'],
+            'recurring_bill_transaction_id' => ['sometimes'],
         ];
 
         if (!$this->strict) {
