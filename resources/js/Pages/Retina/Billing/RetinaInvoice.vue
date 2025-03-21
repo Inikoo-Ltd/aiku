@@ -1,10 +1,10 @@
   <script setup lang="ts">
-  import { Head } from '@inertiajs/vue3'
+  import { Head, usePage } from '@inertiajs/vue3'
   
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import { Link } from '@inertiajs/vue3'
   
-  import { computed, inject, ref, watch } from "vue"
+  import { computed, inject, ref, watch, watchEffect } from "vue"
   import type { Component } from "vue"
   import { useTabChange } from "@/Composables/tab-change"
   import ModelDetails from "@/Components/ModelDetails.vue"
@@ -100,7 +100,14 @@ import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.v
       return components[currentTab.value]
   })
   
-  
+  const urlPage = ref(location)
+const cleanedSearchUrl = ref(location.search ? location.search.slice(1) : '')
+
+watchEffect(() => {
+    urlPage.value = location
+    cleanedSearchUrl.value = location.search ? location.search.slice(1) : ''
+    usePage().url  // to trigger watchEffect on filter table changed
+})
 
   
 
@@ -117,7 +124,12 @@ import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.v
                   class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
                   <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
               </a>
-              <a v-if="exportTransactionsRoute?.name" :href="route(exportTransactionsRoute.name, exportTransactionsRoute.parameters)" target="_blank"
+              <a v-if="exportTransactionsRoute?.name" :href="
+              exportTransactionsRoute
+                        ? `${route(exportTransactionsRoute.name, exportTransactionsRoute.parameters)}?type=xlsx`
+                        : `${urlPage.origin}${urlPage.pathname}/export?type=xlsx&${cleanedSearchUrl}`
+                "
+                 target="_blank"
                   class="mt-4  sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
                   <Button label="Excel" icon="fas fa-file-excel" type="tertiary" />
               </a>
