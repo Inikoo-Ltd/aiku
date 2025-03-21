@@ -22,9 +22,9 @@
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
   import { library } from '@fortawesome/fontawesome-svg-core'
   import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt } from '@fal'
-  import { faClock, faFileInvoice, faFilePdf } from '@fas'
+  import { faClock, faFileExcel, faFileInvoice, faFilePdf } from '@fas'
   import { faCheck } from '@far'
-  library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt)
+  library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel)
   
 
   
@@ -72,6 +72,7 @@ import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.v
           }
       }
       exportPdfRoute: routeType
+      exportTransactionsRoute: routeType
       order_summary: FieldOrderSummary[][]
       recurring_bill_route: routeType
       invoice: InvoiceResource
@@ -115,6 +116,10 @@ import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.v
               <a v-if="exportPdfRoute?.name" :href="route(exportPdfRoute.name, exportPdfRoute.parameters)" target="_blank"
                   class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
                   <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
+              </a>
+              <a v-if="exportTransactionsRoute?.name" :href="route(exportTransactionsRoute.name, exportTransactionsRoute.parameters)" target="_blank"
+                  class="mt-4  sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
+                  <Button label="Excel" icon="fas fa-file-excel" type="tertiary" />
               </a>
           </template>
       </PageHeading>
