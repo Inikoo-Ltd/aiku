@@ -9,17 +9,11 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
-use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
-use App\Enums\Accounting\Payment\PaymentStateEnum;
-use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundToPaymentAccount extends OrgAction
@@ -27,77 +21,12 @@ class RefundToPaymentAccount extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Payment
+    public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
-        // Imagine the following scenario:
-        // invoice = 100
-        // pay in = 100
-        // refund = -50
-        // pay out = [-25,-25] (2 refund transactions)
-        // input amount = -35
-
-        $totalToPay = -abs(Arr::get($modelData, 'amount')); // -35
-
-        $totalToPayRound = round($totalToPay, 2);
-
-        if (!$invoice->invoice_id) {
-            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sortByDesc('total_amount')->all();
-            $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount'); // -50
-
-            if ($totalToPayRound < round($totalRefund, 2)) {
-                throw ValidationException::withMessages(
-                    [
-                        'message' => [
-                            'amount' => 'The refund amount exceeds the total amount that should be refund',
-                        ]
-                    ]
-                );
-            }
-
-            $payment = null;
-            foreach ($refunds as $refund) {
-                if ($totalRefund >= 0 || $totalToPay >= 0) {
-                    break;
-                }
-
-                // Ensure we pay only the minimum required amount per refund
-                $amountPayPerRefund = max($totalToPay, $refund->total_amount); // -25
-
-                $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, [
-                    'amount' => $amountPayPerRefund,
-                    'status' => PaymentStatusEnum::SUCCESS->value,
-                    'state' => PaymentStateEnum::COMPLETED->value,
-                ]);
-                AttachPaymentToInvoice::make()->action($refund, $payment, []);
-
-                $totalRefund -= $amountPayPerRefund; // -50 become -25
-                $totalToPay -= $amountPayPerRefund; // -35 become -10
-            }
-
-            return $payment ?? null;
-        }
-
-        $refund = $invoice;
-
-        if ($$totalToPayRound < round($refund->total_amount, 2)) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'amount' => 'The refund amount exceeds the total amount that should be refund',
-                    ]
-                ]
-            );
-        }
-
-        $payment = StorePayment::make()->action($refund->customer, $paymentAccount, [
-            'amount' => -abs(Arr::get($modelData, 'amount')),
-            'status' => PaymentStatusEnum::SUCCESS->value,
-            'state' => PaymentStateEnum::COMPLETED->value,
+        return RefundToInvoice::make()->action($invoice, $paymentAccount, [
+            'amount' => Arr::get($modelData, 'amount'),
+            'type' => 'payment',
         ]);
-
-        AttachPaymentToInvoice::make()->action($refund, $payment, []);
-
-        return $payment;
     }
 
     public function rules(): array
@@ -110,7 +39,7 @@ class RefundToPaymentAccount extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Invoice $refund, PaymentAccount $paymentAccount, array $modelData): Payment
+    public function action(Invoice $refund, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $this->initialisationFromShop($refund->shop, $modelData);
 
