@@ -8,12 +8,14 @@
 
 namespace App\Actions\Retina\Billing\UI;
 
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexItemizedInvoiceTransactions;
 use App\Actions\Retina\Accounting\Invoice\Transaction\UI\IndexRetinaInvoiceTransactions;
 use App\Actions\Retina\Accounting\Payment\UI\IndexRetinaPayments;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
+use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Models\Accounting\Invoice;
 use Inertia\Inertia;
@@ -44,8 +46,6 @@ class ShowRetinaInvoice extends RetinaAction
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
         $toPayAmount   = round($invoice->total_amount - $invoice->payment_amount, 2);
-
-
 
         return Inertia::render(
             'Billing/RetinaInvoice',
@@ -122,6 +122,12 @@ class ShowRetinaInvoice extends RetinaAction
                         'invoice' => $invoice->slug
                     ]
                 ],
+                'exportTransactionsRoute' => [
+                    'name'       => 'retina.fulfilment.billing.invoices.invoice-transactions.export',
+                    'parameters' => [
+                        'invoice' => $invoice->slug
+                    ]
+                ],
                 'box_stats'      => [
                     'customer'    => [
                         'route'        => [
@@ -155,6 +161,10 @@ class ShowRetinaInvoice extends RetinaAction
                     fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
                     : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
 
+                InvoiceTabsEnum::ITEMIZED->value => $this->tab == InvoiceTabsEnum::ITEMIZED->value ?
+                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
+                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
+
                 InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
@@ -162,6 +172,7 @@ class ShowRetinaInvoice extends RetinaAction
 
             ]
         )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
+            ->table(IndexItemizedInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMIZED->value))
             ->table(IndexRetinaInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value));
     }
 
