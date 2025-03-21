@@ -76,8 +76,10 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
 				<component
-					:is="fieldValue?.logo?.url ? 'a' : 'div'"
-					:href="fieldValue?.logo?.url || '#'">
+					v-if="fieldValue?.logo?.image?.source"
+					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
+					:href="fieldValue?.logo?.link?.href || '#'"
+					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-full h-full">
 					<!-- <Image
 						:alt="fieldValue?.logo?.alt"
 						:src="fieldValue?.logo?.image?.source"
