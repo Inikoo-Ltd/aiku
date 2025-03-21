@@ -67,10 +67,10 @@ const onLogoutAuth = () => {
 </script>
 
 <template>
-    <div class="pb-20 px-2 pt-3 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all"
+    <div class="pb-20 px-2 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all"
         :class="[
             layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-16',
-            isStaging ? 'mt-9 lg:mt-12' : 'mt-9 lg:mt-10'
+            isStaging ? 'mt-9 lg:mt-12 pt-7' : 'mt-9 lg:mt-10 pt-3'
         ]"
         :style="{
             'background-color': layout.app.theme[0] + '00',
