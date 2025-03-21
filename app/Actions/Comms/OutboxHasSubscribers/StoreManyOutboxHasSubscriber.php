@@ -23,6 +23,8 @@ class StoreManyOutboxHasSubscriber extends OrgAction
 {
     use WithNoStrictRules;
 
+    protected Outbox $outbox;
+
     public function handle(Outbox $outbox, array $modelData): Collection
     {
         $externalEmails = $modelData['external_emails'] ?? [];
@@ -56,6 +58,9 @@ class StoreManyOutboxHasSubscriber extends OrgAction
                 'exists:users,id',
                 function ($attribute, $value, $fail) {
                     $existingSubscribers = \DB::table('outbox_has_subscribers')
+                        ->when('organisation_id', $this->organisationId, function ($query) {
+                            return $query->where('organisation_id', $this->organisationId)->where('outbox_id', $this->outbox->id);
+                        })
                         ->whereIn('user_id', $value)
                         ->pluck('user_id')
                         ->toArray();
@@ -71,6 +76,9 @@ class StoreManyOutboxHasSubscriber extends OrgAction
                 'array',
                 function ($attribute, $value, $fail) {
                     $existingEmails = \DB::table('outbox_has_subscribers')
+                        ->when('organisation_id', $this->organisationId, function ($query) {
+                            return $query->where('organisation_id', $this->organisationId)->where('outbox_id', $this->outbox->id);
+                        })
                         ->whereIn('external_email', $value)
                         ->pluck('external_email')
                         ->toArray();
@@ -87,6 +95,7 @@ class StoreManyOutboxHasSubscriber extends OrgAction
 
     public function inFulfilment(Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request)
     {
+        $this->outbox = $outbox;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         $this->handle($outbox, $this->validatedData);
