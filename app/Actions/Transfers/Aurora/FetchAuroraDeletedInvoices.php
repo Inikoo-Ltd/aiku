@@ -54,7 +54,7 @@ class FetchAuroraDeletedInvoices extends FetchAuroraAction
             $invoice = StoreInvoice::make()->action(
                 parent: $deletedInvoiceData['parent'],
                 modelData: $deletedInvoiceData['invoice'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );

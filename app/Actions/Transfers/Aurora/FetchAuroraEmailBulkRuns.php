@@ -52,7 +52,7 @@ class FetchAuroraEmailBulkRuns extends FetchAuroraAction
                 $snapshot   = StoreEmailSnapshot::make()->action(
                     email: $emailOnGoingRun->email,
                     modelData: $emailRunData['snapshot'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
                 $snapshotId = $snapshot->id;
@@ -75,7 +75,7 @@ class FetchAuroraEmailBulkRuns extends FetchAuroraAction
                 $emailRun = UpdateEmailBulkRun::make()->action(
                     emailRun: $emailRun,
                     modelData: $emailRunData['email_bulk_run'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
                 $this->recordChange($organisationSource, $emailRun->wasChanged());
@@ -89,7 +89,7 @@ class FetchAuroraEmailBulkRuns extends FetchAuroraAction
                 $emailRun = StoreEmailBulkRun::make()->action(
                     emailOngoingRun: $emailRunData['email_ongoing_run'],
                     modelData: $emailRunData['email_bulk_run'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
 

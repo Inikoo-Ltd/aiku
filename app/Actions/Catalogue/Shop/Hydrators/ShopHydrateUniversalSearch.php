@@ -9,13 +9,20 @@
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Models\Catalogue\Shop;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateUniversalSearch
+class ShopHydrateUniversalSearch implements ShouldBeUnique
 {
     use AsAction;
 
     public string $jobQueue = 'universal-search';
+
+    public function getJobUniqueId(Shop $shop): string
+    {
+        return $shop->id;
+    }
+
 
     public function handle(Shop $shop): void
     {

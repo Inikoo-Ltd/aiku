@@ -30,7 +30,7 @@ class FetchAuroraPollReplies extends FetchAuroraAction
                     $pollReply = UpdatePollReply::make()->action(
                         pollReply: $pollReply,
                         modelData: $pollReplyData['poll_reply'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordChange($organisationSource, $pollReply->wasChanged());
@@ -44,7 +44,7 @@ class FetchAuroraPollReplies extends FetchAuroraAction
                     $pollReply = StorePollReply::make()->action(
                         poll: $pollReplyData['poll'],
                         modelData: $pollReplyData['poll_reply'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
 

@@ -30,6 +30,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
@@ -861,6 +862,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function adjustments(): HasMany
     {
         return $this->hasMany(Adjustment::class);
+    }
+
+    public function dispatchedEmails(): HasMany
+    {
+        return $this->hasMany(DispatchedEmail::class);
     }
 
 }

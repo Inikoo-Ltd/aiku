@@ -15,24 +15,18 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Models\Catalogue\Shop;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateVariants
+class ShopHydrateVariants implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Shop $shop;
 
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
+        return $shop->id;
     }
     public function handle(Shop $shop): void
     {

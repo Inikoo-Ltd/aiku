@@ -34,7 +34,7 @@ class FetchAuroraEmailCopies extends FetchAuroraAction
                 $emailCopy = UpdateEmailCopy::make()->action(
                     emailCopy: $emailCopy,
                     modelData: $emailCopyData['emailCopy'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
                 //                } catch (Exception $e) {
@@ -47,7 +47,7 @@ class FetchAuroraEmailCopies extends FetchAuroraAction
                 $emailCopy = StoreEmailCopy::make()->action(
                     dispatchedEmail: $emailCopyData['dispatchedEmail'],
                     modelData: $emailCopyData['emailCopy'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
 

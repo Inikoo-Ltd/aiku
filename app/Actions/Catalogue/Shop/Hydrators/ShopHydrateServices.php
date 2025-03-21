@@ -12,23 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateServices
+class ShopHydrateServices implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Shop $shop;
 
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
+        return $shop->id;
     }
     public function handle(Shop $shop): void
     {

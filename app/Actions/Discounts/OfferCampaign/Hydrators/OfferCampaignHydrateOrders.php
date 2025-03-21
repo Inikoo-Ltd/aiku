@@ -11,24 +11,19 @@ namespace App\Actions\Discounts\OfferCampaign\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Discounts\OfferCampaign;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OfferCampaignHydrateOrders
+class OfferCampaignHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private OfferCampaign $offerCampaign;
-    public function __construct(OfferCampaign $offerCampaign)
+    public function getJobUniqueId(OfferCampaign $offerCampaign): string
     {
-        $this->offerCampaign = $offerCampaign;
+        return $offerCampaign->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->offerCampaign->id))->dontRelease()];
-    }
 
     public function handle(OfferCampaign $offerCampaign): void
     {
