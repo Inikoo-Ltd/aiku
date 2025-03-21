@@ -24,12 +24,13 @@ import { routeType } from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
 import { FieldOrderSummary } from "@/types/Pallet";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefundPay.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faFileMinus, faUndoAlt, faStarHalfAlt, faArrowCircleLeft } from "@fal";
 import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft } from "@fas";
-import { faCheck } from "@far";
+import { faCheck, faTrash } from "@far";
 
 library.add(
   faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,
@@ -93,6 +94,21 @@ const props = defineProps<{
   recurring_bill_route: routeType
   invoice_refund: InvoiceResource
   invoice: InvoiceResource
+  invoice_pay: {
+    routes: {
+      fetch_payment_accounts: routeType
+      submit_payment: routeType
+    }
+    currency_code: string
+    total_invoice: number
+    total_refunds: number
+    total_balance: number
+    total_paid_in: number
+    total_paid_out: {
+      data: {}[]
+    }
+    total_need_to_pay: number
+  }
   items_in_process: {}
   items: {}
   payments: {}
@@ -212,13 +228,14 @@ watch(paymentData, () => {
 
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
 
     <!-- Button: PDF -->
     <template #otherBefore>
       <a v-if="exportPdfRoute?.name" :href="route(exportPdfRoute.name, exportPdfRoute.parameters)" target="_blank"
-         class="mt-4 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
+        class="mt-4 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
         <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
       </a>
     </template>
@@ -226,21 +243,11 @@ watch(paymentData, () => {
     <!-- Button: delete Refund -->
     <template #button-delete-refund="{ action }">
       <div>
-        <ModalConfirmationDelete
-          :routeDelete="action.route"
-          isFullLoading
-        >
+        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading>
           <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-            <Button
-              @click="() => changeModel()"
-              :style="action.style"
-              :label="action.label"
-              :icon="action.icon"
-              :loading="isLoadingdelete"
-              :iconRight="action.iconRight"
-              :key="`ActionButton${action.label}${action.style}`"
-              :tooltip="action.tooltip"
-            />
+            <Button @click="() => changeModel()" :style="'negative'"  :icon="faTrash"
+              :loading="isLoadingdelete" :iconRight="action.iconRight" :label="''"
+              :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
 
           </template>
         </ModalConfirmationDelete>
@@ -255,22 +262,21 @@ watch(paymentData, () => {
     <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
 
       <!-- Field: Registration Number -->
-      <Link as="a" v-if="box_stats?.customer.reference" :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
-            class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-        <dt v-tooltip="'Company name'" class="flex-none">
-          <span class="sr-only">Registration number</span>
-          <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
-        </dt>
-        <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
+      <Link as="a" v-if="box_stats?.customer.reference"
+        :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
+        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+      <dt v-tooltip="'Company name'" class="flex-none">
+        <span class="sr-only">Registration number</span>
+        <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+      </dt>
+      <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
       </Link>
 
       <!-- Field: Contact name -->
       <div v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Contact name'" class="flex-none">
           <span class="sr-only">Contact name</span>
-          <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
+          <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
       </div>
@@ -279,8 +285,7 @@ watch(paymentData, () => {
       <div v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Company name'" class="flex-none">
           <span class="sr-only">Company name</span>
-          <FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
+          <FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.company_name }}</dd>
       </div>
@@ -312,29 +317,28 @@ watch(paymentData, () => {
       <div v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Phone'" class="flex-none">
           <span class="sr-only">Phone</span>
-          <FontAwesomeIcon icon="fal fa-phone" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
+          <FontAwesomeIcon icon="fal fa-phone" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
       </div>
 
       <div class="pl-1 flex items-start w-full gap-x-2">
         <dt v-tooltip="'Phone'" class="flex-none">
-            <span class="sr-only">Phone</span>
-            <FontAwesomeIcon icon='fal fa-map-marker-alt' size="xs" class='text-gray-400' fixed-width
-                aria-hidden='true' />
+          <span class="sr-only">Phone</span>
+          <FontAwesomeIcon icon='fal fa-map-marker-alt' size="xs" class='text-gray-400' fixed-width
+            aria-hidden='true' />
         </dt>
 
         <dd class="text-base text-gray-500 w-full">
-            <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
-                <div v-html="invoice.address.formatted_address" />
-            </div>
+          <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+            <div v-html="invoice.address.formatted_address" />
+          </div>
 
-            <div v-else class="text-gray-400 italic">
-                No address
-            </div>
+          <div v-else class="text-gray-400 italic">
+            No address
+          </div>
         </dd>
-    </div>
+      </div>
 
     </BoxStatPallet>
 
@@ -342,8 +346,7 @@ watch(paymentData, () => {
     <BoxStatPallet class="py-2 px-3">
       <div class="mt-1">
 
-        <div v-tooltip="trans('Refund created')"
-             class="flex items-center w-fit flex-none gap-x-2">
+        <div v-tooltip="trans('Refund created')" class="flex items-center w-fit flex-none gap-x-2">
           <dt class="flex-none">
             <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500" />
           </dt>
@@ -352,41 +355,10 @@ watch(paymentData, () => {
           </dd>
         </div>
 
-        <div v-if="false" class="relative flex items-start w-full flex-none gap-x-2">
-            <dt class="flex-none pt-1">
-                <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
-            </dt>
-
-            <dd @click="() => (isOpenModalPayment = true, fetchPaymentMethod())"
-                class="cursor-pointer relative w-full flex flex-col border px-2.5 py-1 rounded-md  overflow-hidden"
-                :class="Number(box_stats.information.pay_amount) === 0 ? 'border-gray-300' : 'border-orange-400 bg-orange-50 hover:bg-orange-100'"
-                v-tooltip="trans('Need to refund')"
-            >
-                <!-- Block: Corner label (fully paid) -->
-                <Transition>
-                    <div v-if="Number(box_stats.information.pay_amount) === 0" v-tooltip="trans('Fully refunded')"
-                        class="absolute top-0 right-0 text-green-500 p-1 text-xxs">
-                        <div class="absolute top-0 right-0 w-0 h-0 border-b-[25px] border-r-[25px] border-transparent border-r-green-500">
-                        </div>
-                        <FontAwesomeIcon icon='far fa-check' class='absolute top-1/2 right-1/2 text-white text-[8px]'
-                            fixed-width aria-hidden='true' />
-                    </div>
-                </Transition>
-
-                <div v-tooltip="trans('Amount need to pay by customer')" class="text-sm w-fit">
-                    {{ locale.currencyFormat(invoice_refund.currency_code || 'usd', Math.abs(Number(invoice_refund.total_amount))) }}
-                    <span v-if="Number(box_stats.information.paid_amount) > 0" class='text-gray-400'>. Paid</span>
-                </div>
-                <div v-if="Number(box_stats.information.paid_amount) !== undefined && Number(box_stats.information.pay_amount) !== 0" class="text-xs text-gray-500 font-light">
-                    {{ trans('Refunded') }}: {{ locale.currencyFormat(invoice_refund.currency_code || 'usd', Number(box_stats.information.paid_amount)) }}
-                </div>
-                <div v-if="Number(box_stats.information.paid_amount) !== undefined && Number(box_stats.information.pay_amount) !== 0" class="text-xs text-gray-500 font-light">
-                    {{ trans('Need to refund') }}: {{ locale.currencyFormat(invoice_refund.currency_code || 'usd', Math.abs(Number(box_stats.information.pay_amount))) }}
-                </div>
-            </dd>
-
-
-        </div>
+        <InvoiceRefundPay :invoice_pay :routes="{
+          submit_route: invoice_pay.routes.submit_payment,
+          fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts
+        }" />
       </div>
     </BoxStatPallet>
 
@@ -416,70 +388,65 @@ watch(paymentData, () => {
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
   <component :is="component" :data="props[currentTab]" :tab="currentTab" />
 
-    <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
-        <div class="isolate bg-white px-6 lg:px-8">
-            <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
-                <p class="text-xs leading-5 text-gray-400">
-                    {{ trans('Fill the information about refund payment') }}
-                </p>
+  <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
+    <div class="isolate bg-white px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
+        <p class="text-xs leading-5 text-gray-400">
+          {{ trans('Fill the information about refund payment') }}
+        </p>
+      </div>
+
+      <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+        <div class="col-span-2">
+          <label for="first-name" class="block text-sm font-medium leading-6">
+            <span class="text-red-500">*</span> {{ trans('Select payment method') }}
+          </label>
+          <div class="mt-1 grid grid-cols-2 gap-x-3">
+            <div @click="() => paymentData.payment_method = item.value" v-for="item in listPaymentRefund"
+              :key="item.value"
+              class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
+              :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'">
+              {{ item.label }}
             </div>
+          </div>
+        </div>
 
-            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                <div class="col-span-2">
-                    <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Select payment method') }}
-                    </label>
-                    <div class="mt-1 grid grid-cols-2 gap-x-3">
-                        <div
-                            @click="() => paymentData.payment_method = item.value"
-                            v-for="item in listPaymentRefund"
-                            :key="item.value"
-                            class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
-                            :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'"
-                        >
-                            {{ item.label }}
-                        </div>
-                    </div>
-                </div>
+        <Transition name="slide-to-left">
+          <div v-if="paymentData.payment_method === 'invoice_payment_method'" class="col-span-2">
+            <label for="first-name" class="block text-sm font-medium leading-6">
+              <span class="text-red-500">*</span> {{ trans('Select payment account') }}
+            </label>
+            <div class="mt-1">
+              <PureMultiselect v-model="paymentData.payment_account" :options="listPaymentMethod" label="name"
+                valueProp="id" required caret />
+            </div>
+          </div>
+        </Transition>
 
-                <Transition name="slide-to-left">
-                    <div v-if="paymentData.payment_method === 'invoice_payment_method'" class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Select payment account') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureMultiselect
-                                v-model="paymentData.payment_account"
-                                :options="listPaymentMethod"
-                                label="name"
-                                valueProp="id"
-                                required
-                                caret
-                            />
-                        </div>
-                    </div>
-                </Transition>
+        <div class="col-span-2">
+          <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Amount to refund') }}</label>
+          <div class="mt-1">
+            <PureInputNumber v-model="paymentData.payment_amount" />
+          </div>
+          <div class="space-x-1 mt-1 ">
+            <span class="text-sm  text-gray-500">{{ trans('Need to refund') }}: {{
+              locale.currencyFormat(props.invoice_refund.currency_code || 'usd',
+              Math.abs(Number(box_stats.information.pay_amount))) }}</span>
+            <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)"
+              :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary"
+              :label="trans('Refund all')" size="sm" />
+          </div>
+        </div>
 
-                <div class="col-span-2">
-                    <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Amount to refund') }}</label>
-                    <div class="mt-1">
-                        <PureInputNumber v-model="paymentData.payment_amount" />
-                    </div>
-                    <div class="space-x-1 mt-1 ">
-                        <span class="text-sm  text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_refund.currency_code || 'usd', Math.abs(Number(box_stats.information.pay_amount))) }}</span>
-                        <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)" :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary" :label="trans('Refund all')" size="sm" />
-                    </div>
-                </div>
-
-                <!-- <div class="col-span-2">
+        <!-- <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Reference') }}</label>
                     <div class="mt-1">
                         <PureInput v-model="paymentData.payment_reference" placeholder="#000000"/>
                     </div>
                 </div> -->
 
-                <!-- <div class="col-span-2">
+        <!-- <div class="col-span-2">
                     <label for="message" class="block text-sm font-medium leading-6">Note</label>
                     <div class="mt-1">
                         <PureTextarea
@@ -489,14 +456,16 @@ watch(paymentData, () => {
                         />
                     </div>
                 </div> -->
-            </div>
+      </div>
 
-            <div class="mt-6 mb-4 relative">
-                <Button @click="() => onSubmitPayment()" label="Submit" :disabled="paymentData.payment_method === 'credit_balance' ? false : !(!!paymentData.payment_account)" :loading="isLoadingPayment" full />
-                <Transition name="spin-to-down">
-                    <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
-                </Transition>
-            </div>
-        </div>
-    </Modal>
+      <div class="mt-6 mb-4 relative">
+        <Button @click="() => onSubmitPayment()" label="Submit"
+          :disabled="paymentData.payment_method === 'credit_balance' ? false : !(!!paymentData.payment_account)"
+          :loading="isLoadingPayment" full />
+        <Transition name="spin-to-down">
+          <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
+        </Transition>
+      </div>
+    </div>
+  </Modal>
 </template>
