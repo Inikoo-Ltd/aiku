@@ -131,9 +131,9 @@ const saveChanges = () => {
 	router.post(route(routeToSubmit.name, routeToSubmit.parameters), payload, {
 		preserveScroll: true,
 		onSuccess: (page) => {
-			if (page.props.widget) {
-				widgetItems.value = page.props.widget
-			}
+
+			widgetItems.value = page.props.showcase.outbox_subscribe.data
+			
 			notify({
 				title: trans("Succes"),
 				text: trans("Successfully attach"),
@@ -147,7 +147,7 @@ const saveChanges = () => {
 		onError: (errors: any) => {
 			notify({
 				title: trans("Something went wrong."),
-				text: trans(errors.external_emails || errors.users_id),
+				text: trans(errors["external_emails.0"] || errors.users_id),
 				type: "error",
 			})
 		},
