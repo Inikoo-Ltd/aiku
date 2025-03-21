@@ -19,6 +19,7 @@ use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -148,6 +149,11 @@ class SeedEmailTemplates
                 }
             }
         }
+
+        Artisan::call('shop:seed_outboxes');
+        Artisan::call('fulfilment:seed_outboxes');
+        Artisan::call('website:seed_outboxes');
+        Artisan::call('org:seed_outboxes');
     }
 
     public string $commandSignature = 'group:seed_email_templates';
