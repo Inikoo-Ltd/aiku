@@ -40,6 +40,7 @@ use App\Actions\Fulfilment\PalletReturnItem\UndoStoredItemPick;
 use App\Actions\Fulfilment\StoredItemAuditDelta\DeleteStoredItemAuditDelta;
 use App\Actions\Fulfilment\StoredItemAuditDelta\StoreStoredItemAuditDelta;
 use App\Actions\Fulfilment\StoredItemAuditDelta\UpdateStoredItemAuditDelta;
+use App\Actions\Fulfilment\StoredItemAudit\CompleteStoredItemAudit;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('pallet/{pallet:id}/location/{location:slug}/move', [UpdatePalletLocation::class, 'usingLocationSlug'])->name('move_pallet')->withoutScopedBindings();
@@ -108,5 +109,6 @@ Route::delete(
     'stored-item-audit-delta/{storedItemAuditDelta:id}',
     DeleteStoredItemAuditDelta::class
 )->name('stored_item_audit_delta.delete');
+Route::patch('stored-item-audit/{storedItemAudit:id}/complete', action: CompleteStoredItemAudit::class)->name('stored_item_audit.complete');
 
 require __DIR__."/actions/inventory/location_org_stock.php";
