@@ -250,12 +250,12 @@ const generateRefundRoute = (refundSlug: string) => {
                     {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_balance)) }}
                 </dd>
             </div>
-            <div class="border-b border-gray-200" v-if="Number(invoice_pay.addition_customer_balance) > 0">
-                 <!-- addition customer balance -->
+            <!-- addition excees payment -->
+            <div class="border-b border-gray-200" v-if="Number(invoice_pay.total_excees_payment) > 0">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium ">Customer Balance</dt>
-                    <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-green-600">
-                        +{{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.addition_customer_balance)) }}
+                    <dt class="text-sm/6 font-medium" v-tooltip="'auto add to customer balance'">Excess Payment</dt>
+                    <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
+                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_excees_payment)) }}
                     </dd>
                 </div>
             </div>
