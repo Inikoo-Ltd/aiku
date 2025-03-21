@@ -41,7 +41,7 @@ class RefundToPaymentAccount extends OrgAction
         $totalToPayRound = round($totalToPay, 2);
 
         if (!$invoice->invoice_id) {
-            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->all();
+            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sortByDesc('total_amount')->all();
             $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount'); // -50
 
             if ($totalToPayRound < round($totalRefund, 2)) {

@@ -33,7 +33,7 @@ class RefundToCredit extends OrgAction
         $totalToPayRound = round($totalToPay, 2);
 
         if (!$invoice->invoice_id) {
-            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->all();
+            $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sortByDesc('total_amount')->all();
             $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount');
 
             if ($totalToPayRound < round($totalRefund, 2)) {
@@ -64,7 +64,7 @@ class RefundToCredit extends OrgAction
                 $payStatus             = InvoicePayStatusEnum::UNPAID;
                 $paymentAt             = null;
 
-                if ($payStatus == InvoicePayStatusEnum::UNPAID && $amountPayPerRefund >= $refund->total_amount) {
+                if ($payStatus == InvoicePayStatusEnum::UNPAID && $amountPayPerRefund <= $refund->total_amount) {
                     $payStatus = InvoicePayStatusEnum::PAID;
                     $paymentAt = $creditTransaction->date;
                 }
@@ -72,7 +72,7 @@ class RefundToCredit extends OrgAction
                 $refund->update([
                     'pay_status' => $payStatus,
                     'paid_at' => $paymentAt,
-                    'payment_amount' => $amountPayPerRefund
+                    'payment_amount' => (abs($amountPayPerRefund) + abs($refund->payment_amount)) * -1
                 ]);
 
                 $totalRefund -= $amountPayPerRefund;

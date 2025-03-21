@@ -40,7 +40,7 @@ class SetInvoicePaymentState extends OrgAction
             $invoice->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment
         ) {
             $runningPaymentsAmount += $payment->amount;
-            if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $invoice->total_amount) {
+            if ($payStatus == InvoicePayStatusEnum::UNPAID && abs($runningPaymentsAmount) >= abs($invoice->total_amount)) {
                 $payStatus = InvoicePayStatusEnum::PAID;
                 $paymentAt = $payment->date;
             }
