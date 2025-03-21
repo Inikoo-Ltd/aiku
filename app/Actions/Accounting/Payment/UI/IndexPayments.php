@@ -106,6 +106,7 @@ class IndexPayments extends OrgAction
                 'payments.status',
                 'payments.date',
                 'payments.amount',
+                'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_accounts_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
                 'shops.name as shop_name',
@@ -179,7 +180,8 @@ class IndexPayments extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->defaultSort('-date')
                 ->column(key: 'status', label: __('status'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'payment_account_name', label: __('Payment Account'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
