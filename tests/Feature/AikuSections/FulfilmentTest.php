@@ -18,6 +18,9 @@ use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
+use App\Actions\Comms\Outbox\StoreOutbox;
+use App\Actions\Comms\PostRoom\StorePostRoom;
 use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -90,6 +93,10 @@ use App\Enums\Billables\Rental\RentalTypeEnum;
 use App\Enums\Billables\Rental\RentalUnitEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
+use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Enums\CRM\Customer\CustomerRejectReasonEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -114,6 +121,8 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\Outbox;
+use App\Models\Comms\PostRoom;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -227,8 +236,24 @@ test('create fulfilment shop', function () {
     return $shop->fulfilment;
 });
 
+test('create marketing outbox', function (Fulfilment $fulfilment) {
+    $postRoom = PostRoom::where('code', PostRoomCodeEnum::MARKETING_NOTIFICATION)->first();
 
+    $orgPostRoom = StoreOrgPostRoom::make()->action($postRoom, $this->organisation, []);
 
+    $shop = $fulfilment->shop;
+
+    $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $shop, [
+        'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+        'type' => OutboxTypeEnum::MARKETING_NOTIFICATION,
+        'state' => OutboxStateEnum::ACTIVE,
+        'name' => 'invoice outbox'
+    ]);
+
+    expect($marketingOutbox)->toBeInstanceOf(Outbox::class);
+
+    return $marketingOutbox;
+})->depends('create fulfilment shop');
 
 // case reject customer
 test('create fulfilment second customer (pending approval)', function (Fulfilment $fulfilment) {
