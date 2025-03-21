@@ -86,6 +86,9 @@ class StoreManyOutboxHasSubscriber extends OrgAction
                     }
                 },
             ],
+            'external_emails.*' => [
+                'email',
+            ],
         ];
 
         return $rules;
