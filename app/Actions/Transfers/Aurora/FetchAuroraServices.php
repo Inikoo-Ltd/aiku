@@ -36,7 +36,7 @@ class FetchAuroraServices extends FetchAuroraAction
                     $service = UpdateService::make()->action(
                         service:      $service,
                         modelData:    $serviceData['service'],
-                        hydratorsDelay: 60
+                        hydratorsDelay: $this->hydratorsDelay,
                     );
                 } else {
 
@@ -45,7 +45,7 @@ class FetchAuroraServices extends FetchAuroraAction
                         $service = StoreService::make()->action(
                             shop:         $serviceData['shop'],
                             modelData:    $serviceData['service'],
-                            hydratorsDelay: 60
+                            hydratorsDelay: $this->hydratorsDelay,
                         );
                     } catch (Exception $e) {
                         $this->recordError($organisationSource, $e, $serviceData['service'], 'Asset', 'store');
@@ -67,7 +67,7 @@ class FetchAuroraServices extends FetchAuroraAction
                     $rental = UpdateRental::make()->action(
                         rental:      $rental,
                         modelData:    $serviceData['service'],
-                        hydratorsDelay: 60
+                        hydratorsDelay: $this->hydratorsDelay,
                     );
                 } else {
                     try {
@@ -75,7 +75,7 @@ class FetchAuroraServices extends FetchAuroraAction
                         $rental = StoreRental::make()->action(
                             shop:         $serviceData['shop'],
                             modelData:    $serviceData['service'],
-                            hydratorsDelay: 60
+                            hydratorsDelay: $this->hydratorsDelay,
                         );
                     } catch (Exception $e) {
                         $this->recordError($organisationSource, $e, $serviceData['service'], 'Asset', 'store');

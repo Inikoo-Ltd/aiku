@@ -60,6 +60,7 @@ use Inspector\Laravel\Middleware\InspectorOctaneMiddleware;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
 
 class Kernel extends HttpKernel
 {
@@ -178,6 +179,7 @@ class Kernel extends HttpKernel
             InspectorOctaneMiddleware::class
         ],
         'pupil'      => [
+            VerifyShopify::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -186,8 +188,8 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandlePupilInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            SameSiteSession::class,
-            InspectorOctaneMiddleware::class
+//            SameSiteSession::class,
+            InspectorOctaneMiddleware::class,
         ],
 
         'cornea'      => [

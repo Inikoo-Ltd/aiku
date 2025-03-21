@@ -10,22 +10,17 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateCreditTransactions
+class ShopHydrateCreditTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
-    private Shop $shop;
-    public function __construct(Shop $shop)
-    {
-        $this->shop = $shop;
-    }
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Shop $shop): string
     {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
+        return $shop->id;
     }
 
     public function handle(Shop $shop): void

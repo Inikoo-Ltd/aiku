@@ -34,7 +34,7 @@ class FetchAuroraSubscriptionEvents extends FetchAuroraAction
                     $subscriptionEvent = UpdateSubscriptionEvent::make()->action(
                         subscriptionEvent: $subscriptionEvent,
                         modelData: $subscriptionEventData['subscription_event'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                 } catch (Exception $e) {
@@ -47,7 +47,7 @@ class FetchAuroraSubscriptionEvents extends FetchAuroraAction
                 $subscriptionEvent = StoreSubscriptionEvent::make()->action(
                     parent: $subscriptionEventData['model'],
                     modelData: $subscriptionEventData['subscription_event'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
 

@@ -30,7 +30,7 @@ class FetchAuroraUploads extends FetchAuroraAction
                     $upload = UpdateUpload::make()->action(
                         upload: $upload,
                         modelData: $uploadData['upload'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -44,7 +44,7 @@ class FetchAuroraUploads extends FetchAuroraAction
                     $upload = StoreUpload::make()->action(
                         parent: $uploadData['parent'],
                         modelData: $uploadData['upload'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

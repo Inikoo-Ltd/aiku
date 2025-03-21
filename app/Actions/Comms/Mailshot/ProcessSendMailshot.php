@@ -75,7 +75,7 @@ class ProcessSendMailshot
 
                     ]
                 );
-
+                // todo create this class
                 StoreMailshotRecipient::run(
                     $mailshot,
                     $dispatchedEmail,
@@ -89,13 +89,14 @@ class ProcessSendMailshot
             $counter++;
 
         }
-
+        // todo create this class
         UpdateMailshotSendChannel::run(
             $mailshotSendChannel,
             [
                 'number_emails' => $mailshot->recipients()->where('channel', $mailshotSendChannel->id)->count()
             ]
         );
+        // todo create this class
         SendMailshotChannel::dispatch($mailshotSendChannel);
 
 
@@ -107,7 +108,8 @@ class ProcessSendMailshot
             ]
         );
         MailshotHydrateDispatchedEmails::run($mailshot);
-        MailshotHydrateDispatchedEmailsState::run($mailshot);
+        // todo create this hydrator
+        //MailshotHydrateDispatchedEmailsState::run($mailshot);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';

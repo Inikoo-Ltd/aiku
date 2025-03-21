@@ -31,7 +31,7 @@ class FetchAuroraDepartments extends FetchAuroraAction
                     $department = UpdateProductCategory::make()->action(
                         productCategory: $department,
                         modelData: $departmentData['department'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraDepartments extends FetchAuroraAction
                     $department = StoreProductCategory::make()->action(
                         parent: $departmentData['shop'],
                         modelData: $departmentData['department'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false
                     );
                     ProductCategory::enableAuditing();

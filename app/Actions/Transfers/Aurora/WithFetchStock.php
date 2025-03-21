@@ -29,7 +29,7 @@ trait WithFetchStock
                 return UpdateOrgStock::make()->action(
                     orgStock: $orgStock,
                     modelData: $stockData['org_stock'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -53,7 +53,7 @@ trait WithFetchStock
                     parent: $orgParent,
                     stock: $effectiveStock,
                     modelData: $stockData['org_stock'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -87,7 +87,7 @@ trait WithFetchStock
                 return UpdateOrgStock::make()->action(
                     orgStock: $orgStock,
                     modelData: $orgStockData,
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -103,7 +103,7 @@ trait WithFetchStock
                 $orgStock = StoreAbnormalOrgStock::make()->action(
                     parent: $organisation,
                     modelData: $orgStockData,
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

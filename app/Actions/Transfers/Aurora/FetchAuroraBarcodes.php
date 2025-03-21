@@ -30,7 +30,7 @@ class FetchAuroraBarcodes extends FetchAuroraAction
                     $barcode = UpdateBarcode::make()->action(
                         barcode: $barcode,
                         modelData: $barcodeData['barcode'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -45,7 +45,7 @@ class FetchAuroraBarcodes extends FetchAuroraAction
                     $barcode = StoreBarcode::make()->action(
                         group: $organisationSource->getOrganisation()->group,
                         modelData: $barcodeData['barcode'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
