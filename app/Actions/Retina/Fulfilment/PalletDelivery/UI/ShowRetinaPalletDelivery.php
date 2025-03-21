@@ -67,12 +67,12 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 : ($palletLimitLeft == 0
                     ? [
                         'status'  => 'limit',
-                        'message' => __("Pallet has reached the limit, no space left.")
+                        'message' => __("Your Contract Agreement has reached the limit (no space left), please contact us to extend your agreement limit.")
                     ]
                     : ($palletLimitLeft <= 5
                         ? [
                             'status'  => 'almost',
-                            'message' => __("Pallet almost reached the limit: :palletLimitLeft left.", ['palletLimitLeft' => $palletLimitLeft])
+                            'message' => __("Your Contract Agreement almost reached the limit: :palletLimitLeft left.", ['palletLimitLeft' => $palletLimitLeft])
                         ]
                         : null)));
 
