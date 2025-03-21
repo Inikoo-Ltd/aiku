@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
+use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
@@ -45,4 +46,8 @@ Route::middleware('verify.shopify.webhook')->group(function () {
     Route::prefix('shop')->as('shop.')->group(function () {
         Route::post('redact', ShopRedactWebhookShopify::class)->name('redact');
     });
+});
+
+Route::prefix('tiktok')->as('tiktok.')->group(function () {
+    Route::post('orders', HandleOrderIncomingTiktok::class)->name('orders.create');
 });
