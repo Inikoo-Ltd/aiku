@@ -44,11 +44,13 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
             $service = Service::find($row->model_id);
             if ($service->is_pallet_handling == true) {
                 $pallet = Pallet::find($row->data['pallet_id']);
-                $palletData = $pallet->customer_reference . ' (' . $pallet->reference . ')';
+                $palletData = $pallet->reference;
+                $palletRef = $pallet->customer_reference;
             }
         } 
         elseif (isset($row->recurringBillTransaction)) {
-            $palletData = $row->recurringBillTransaction->item->customer_reference . ' (' . $row->recurringBillTransaction->item->reference . ')';
+            $palletData = $row->recurringBillTransaction->item->reference;
+            $palletRef = $row->recurringBillTransaction->item->customer_reference;
         }
 
         return [
@@ -57,6 +59,7 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
             $row->historicAsset->code,
             $row->historicAsset->name,
             $palletData,
+            $palletRef,
             $row->quantity,
             $row->invoice->currency->symbol . $row->net_amount,
         ];
@@ -69,7 +72,8 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
             'Type',
             'Code',
             'Name',
-            'Pallet',
+            'Pallet ID',
+            'Pallet Reference',
             'Quantity',
             'Net',
         ];
