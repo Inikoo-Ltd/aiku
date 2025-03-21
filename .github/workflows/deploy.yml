@@ -76,5 +76,5 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
         with:
-          environment: staging
-          release: ${{ steps.date.outputs.date }}
+          environment: production
+          release: ${{ steps.semver.outputs.next }}
