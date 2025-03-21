@@ -162,8 +162,12 @@ class ShowInvoice extends OrgAction
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
         $totalNeedToPay = round($ir_total - $invoice->payment_amount, 2);
 
-        if ($totalNeedToPay <= 0 && $totalNeedToRefund > 0) {
-            $totalNeedToPay = $totalNeedToRefund;
+        if ($totalNeedToPay <= 0) {
+            if ($totalNeedToRefund > 0) {
+                $totalNeedToPay = $totalNeedToRefund;
+            } else {
+                $totalNeedToPay = 0;
+            }
         }
 
         $invoicePayBox = [
