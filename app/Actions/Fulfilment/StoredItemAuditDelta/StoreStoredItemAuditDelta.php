@@ -28,7 +28,6 @@ class StoreStoredItemAuditDelta extends OrgAction
 
     public function handle(StoredItemAudit $storedItemAudit, array $modelData)
     {
-        dd($modelData);
         data_set($modelData, 'group_id', $storedItemAudit->group_id);
         data_set($modelData, 'organisation_id', $storedItemAudit->organisation_id);
         data_set($modelData, 'audited_at', now());
