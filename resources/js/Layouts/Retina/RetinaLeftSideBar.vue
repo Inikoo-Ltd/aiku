@@ -8,7 +8,6 @@
 
 import RetinaLeftSidebarNavigation from "@/Layouts/Retina/RetinaLeftSidebarNavigation.vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import { useLiveUsers } from '@/Stores/active-users'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -48,20 +47,6 @@ const onLogoutAuth = () => {
         onError: () => isLoadingLogout.value = false,
     })
 
-    const dataActiveUser = {
-        ...layout.user,
-        name: null,
-        last_active: new Date(),
-        action: 'logout',
-        current_page: {
-            label: trans('Logout'),
-            url: null,
-            icon_left: null,
-            icon_right: null,
-        },
-    }
-    window.Echo.join(`retina.active.users`).whisper('otherIsNavigating', dataActiveUser)
-    useLiveUsers().unsubscribe()  // Unsubscribe from Laravel Echo
 }
 
 </script>

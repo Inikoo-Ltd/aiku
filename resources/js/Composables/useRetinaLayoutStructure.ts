@@ -13,9 +13,6 @@ import { Navigation, grpNavigation, orgNavigation } from "@/types/Navigation"
 import { Image } from "@/types/Image"
 import { Notification } from '@/types/Notification'
 
-interface LiveUsers {
-    enabled?: boolean
-}
 
 export const retinaLayoutStructure = {
     app: {
@@ -34,9 +31,6 @@ export const retinaLayoutStructure = {
     leftSidebar: {
         show: true,
     },
-    liveUsers: {
-        enabled: false,
-    } as LiveUsers | null,
     navigation: {
         grp: {} as grpNavigation,
         org: {} as { [key: string]: orgNavigation } | { [key: string]: Navigation } | Navigation
