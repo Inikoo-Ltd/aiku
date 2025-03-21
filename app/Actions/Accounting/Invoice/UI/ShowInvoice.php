@@ -160,10 +160,10 @@ class ShowInvoice extends OrgAction
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refunds_pay_out : 0;
 
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
-        $totalNeedToPay = round($ir_total - $invoice->payment_amount, 2);
+        $totalNeedToPay = round($invoice->total_amount - $invoice->payment_amount, 2);
 
         if ($totalNeedToPay <= 0) {
-            if ($totalNeedToRefund > 0) {
+            if ($totalNeedToRefund < 0) {
                 $totalNeedToPay = $totalNeedToRefund;
             } else {
                 $totalNeedToPay = 0;
