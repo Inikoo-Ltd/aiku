@@ -7,7 +7,6 @@
 <script setup lang="ts">
 
 import PupilLeftSidebarNavigation from "@/Layouts/Pupil/PupilLeftSidebarNavigation.vue"
-// import { useLiveUsers } from '@/Stores/active-users'
 // import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -45,29 +44,15 @@ const isStaging = layout.app.environment === 'staging'
 //         onError: () => isLoadingLogout.value = false,
 //     })
 
-//     const dataActiveUser = {
-//         ...layout.user,
-//         name: null,
-//         last_active: new Date(),
-//         action: 'logout',
-//         current_page: {
-//             label: trans('Logout'),
-//             url: null,
-//             icon_left: null,
-//             icon_right: null,
-//         },
-//     }
-//     window.Echo.join(`retina.active.users`).whisper('otherIsNavigating', dataActiveUser)
-//     useLiveUsers().unsubscribe()  // Unsubscribe from Laravel Echo
 // }
 
 </script>
 
 <template>
-    <div class="pb-20 px-2 pt-3 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all"
+    <div class="pb-20 px-2 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all"
         :class="[
             layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-16',
-            isStaging ? 'mt-9 lg:mt-12' : 'mt-9 lg:mt-10'
+            isStaging ? 'mt-9 lg:mt-12 pt-7' : 'mt-9 lg:mt-10 pt-3'
         ]"
         :style="{
             'background-color': layout.app.theme[0] + '00',

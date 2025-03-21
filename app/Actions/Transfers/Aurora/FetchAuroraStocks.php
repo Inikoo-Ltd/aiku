@@ -84,7 +84,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                 $stock       = UpdateStock::make()->action(
                     stock: $stock,
                     modelData: $stockData['stock'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -119,7 +119,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                 $stock       = StoreStock::make()->action(
                     parent: $parent,
                     modelData: $stockData['stock'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -166,7 +166,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                     modelData: [
                         'state' => StockStateEnum::ACTIVE
                     ],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

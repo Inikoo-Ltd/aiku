@@ -31,7 +31,7 @@ class FetchAuroraPolls extends FetchAuroraAction
                     $poll = UpdatePoll::make()->action(
                         poll: $poll,
                         modelData: $pollData['poll'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraPolls extends FetchAuroraAction
                     $poll = StorePoll::make()->action(
                         shop: $pollData['shop'],
                         modelData: $pollData['poll'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

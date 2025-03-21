@@ -38,7 +38,7 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
                     $purchaseOrder = UpdatePurchaseOrder::make()->action(
                         purchaseOrder: $purchaseOrder,
                         modelData: $purchaseOrderData['purchase_order'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -53,7 +53,7 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
                     $purchaseOrder = StorePurchaseOrder::make()->action(
                         parent: $purchaseOrderData['org_parent'],
                         modelData: $purchaseOrderData['purchase_order'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

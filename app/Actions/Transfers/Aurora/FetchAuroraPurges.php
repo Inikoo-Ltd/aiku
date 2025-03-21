@@ -37,7 +37,7 @@ class FetchAuroraPurges extends FetchAuroraAction
                     $purge = UpdatePurge::make()->action(
                         purge: $purge,
                         modelData: $purgeData['purge'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -52,7 +52,7 @@ class FetchAuroraPurges extends FetchAuroraAction
                     $purge = StorePurge::make()->action(
                         shop: $purgeData['shop'],
                         modelData: $purgeData['purge'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

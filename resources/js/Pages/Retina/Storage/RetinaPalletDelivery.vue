@@ -191,7 +191,7 @@ const onAddPallet = (data: {route: routeType}, closedPopover: Function) => {
             closedPopover()
             formAddPallet.reset('notes', 'customer_reference','type')
             isLoading.value = false
-            handleTabUpdate('pallets')
+            handleTabUpdate('goods')
             const index = deliveryListError.value?.indexOf('number_pallets');
             if (index > -1) {
                 deliveryListError.value?.splice(index, 1);

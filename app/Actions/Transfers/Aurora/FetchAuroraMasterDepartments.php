@@ -31,7 +31,7 @@ class FetchAuroraMasterDepartments extends FetchAuroraAction
                     $masterDepartment = UpdateMasterProductCategory::make()->action(
                         masterProductCategory: $masterDepartment,
                         modelData: $masterDepartmentData['master_department'],
-                        hydratorsDelay: 10,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraMasterDepartments extends FetchAuroraAction
                     $masterDepartment = StoreMasterProductCategory::make()->action(
                         parent: $masterDepartmentData['master_shop'],
                         modelData: $masterDepartmentData['master_department'],
-                        hydratorsDelay: 10,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false
                     );
                     MasterProductCategory::enableAuditing();

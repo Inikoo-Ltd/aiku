@@ -36,7 +36,7 @@ class FetchAuroraOrganisations
         $organisation = UpdateOrganisation::make()->action(
             organisation: $organisation,
             modelData: $organisationData['organisation'],
-            hydratorsDelay: 60,
+            hydratorsDelay: 5,
             strict: false,
             audit: false
         );
