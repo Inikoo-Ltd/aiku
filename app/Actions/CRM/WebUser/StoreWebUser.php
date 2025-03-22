@@ -10,6 +10,7 @@ namespace App\Actions\CRM\WebUser;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
@@ -63,6 +64,7 @@ class StoreWebUser extends OrgAction
             return $webUser;
         });
 
+        GroupHydrateWebUsers::dispatch($webUser->group, $modelData);
         CustomerHydrateWebUsers::dispatch($webUser->customer)->delay($this->hydratorsDelay);
 
         return $webUser;
@@ -179,18 +181,7 @@ class StoreWebUser extends OrgAction
         return $this->handle($customer, $this->validatedData);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function inRetina(ActionRequest $request): Webuser
-    {
-        $customer = $request->user()->customer;
-        $this->parent   = $customer;
-        $this->customer = $customer;
-        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
-    }
 
     /**
      * @throws \Throwable
