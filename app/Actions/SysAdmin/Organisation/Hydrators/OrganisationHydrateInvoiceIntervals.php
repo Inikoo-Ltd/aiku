@@ -13,26 +13,27 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateInvoiceIntervals
+class OrganisationHydrateInvoiceIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->organisation = $organisation;
-    }
+        $uniqueId = $organisation->id;
+        if (!is_null($intervals)) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if (!is_null($doPreviousPeriods)) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $uniqueId;
     }
 
     public function handle(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): void

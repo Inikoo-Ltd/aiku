@@ -22,11 +22,19 @@ class GroupHydrateInvoiceIntervals implements ShouldBeUnique
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    public function getJobUniqueId(Group $group): string
+    public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $group->id;
+        $uniqueId = $group->id;
+        if (!is_null($intervals)) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if (!is_null($doPreviousPeriods)) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
     public function handle(Group $group, ?array $intervals = null, $doPreviousPeriods = null): void
