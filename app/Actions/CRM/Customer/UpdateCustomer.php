@@ -60,11 +60,8 @@ class UpdateCustomer extends OrgAction
                 }
             }
 
-            $customer->updateQuietly(
-                [
-                    'location' => $customer->address->getLocation()
-                ]
-            );
+            data_set($modelData, 'location', $customer->address->getLocation());
+
         }
         if (Arr::has($modelData, 'delivery_address')) {
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
@@ -126,10 +123,22 @@ class UpdateCustomer extends OrgAction
         }
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (count($changes) > 0) {
+        if (Arr::hasAny($changes, [
+            'company_name',
+            'contact_name',
+            'email',
+            'internal_notes',
+            'warehouse_internal_notes',
+            'warehouse_public_notes',
+            'reference',
+            'name',
+            'state',
+            'created_at',
+            'location',
+            'phone'
+        ])) {
             CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
         }
-
 
 
         return $customer;
@@ -193,10 +202,9 @@ class UpdateCustomer extends OrgAction
 
 
         if (!$this->strict) {
-
-            $rules['is_vip'] = ['sometimes', 'boolean'];
-            $rules['as_organisation_id'] = ['sometimes','nullable', 'integer'];
-            $rules['as_employee_id'] = ['sometimes','nullable', 'integer'];
+            $rules['is_vip']             = ['sometimes', 'boolean'];
+            $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
 
             $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['email']           = [
