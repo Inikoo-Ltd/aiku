@@ -85,6 +85,7 @@
         "tightenco/ziggy": "^1.0",
         "tuupola/base32": "^2.0",
         "vemcogroup/laravel-translation": "^3.0",
+        "vincentbean/horizon-extended-dashboard": "^1.2",
         "vlucas/phpdotenv": "^5.4",
         "xendit/xendit-php": "^5.0"
     },
@@ -127,7 +128,8 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan horizon-dashboard:publish"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
