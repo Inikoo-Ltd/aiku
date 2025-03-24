@@ -26,6 +26,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $currency_code
  * @property mixed $id
  * @property mixed $in_process
+ * @property mixed $model_type
+ * @property mixed $model_id
+ * @property mixed $recurring_bill_transaction_id
+ * @property mixed $data
  */
 class ItemizedInvoiceTransactionsResource extends JsonResource
 {
@@ -131,7 +135,7 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
         }
         if ($this->model_type == 'Service') {
             $service = Service::find($this->model_id);
-            if ($service->is_pallet_handling == true) {
+            if ($service->is_pallet_handling) {
                 $pallet = Pallet::find($this->data['pallet_id']);
                 $desc_title = $pallet->customer_reference;
                 $desc_after_title = $pallet->reference . ' - ' . Carbon::parse($this->data['date'])->format('d M Y');
@@ -169,7 +173,6 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
-            'currency_code'             => $this->currency_code,
         ];
     }
 }
