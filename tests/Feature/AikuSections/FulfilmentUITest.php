@@ -15,6 +15,9 @@ use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
+use App\Actions\Comms\Outbox\StoreOutbox;
+use App\Actions\Comms\PostRoom\StorePostRoom;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\StorePallet;
@@ -46,6 +49,10 @@ use App\Enums\Billables\Rental\RentalUnitEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
+use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
@@ -66,6 +73,8 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\Outbox;
+use App\Models\Comms\PostRoom;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
@@ -134,6 +143,22 @@ beforeEach(function () {
     $this->website = createWebsite($this->shop);
 
     $this->customer = createCustomer($this->shop);
+
+    $postRoom = PostRoom::where('code', PostRoomCodeEnum::MARKETING_NOTIFICATION)->first();
+
+    $orgPostRoom = StoreOrgPostRoom::make()->action($postRoom, $this->organisation, []);
+
+    $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::MARKETING_NOTIFICATION)->first();
+        
+    if(!$marketingOutbox) {
+            $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $this->shop, [
+                'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                'type' => OutboxTypeEnum::MARKETING_NOTIFICATION,
+                'state' => OutboxStateEnum::ACTIVE,
+                'name' => 'invoice outbox'
+        ]);
+    }
+    
 
     $pallet = Pallet::first();
     if (!$pallet) {

@@ -15,25 +15,20 @@ use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateOrgStocks
+class GroupHydrateOrgStocks implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Group $group;
     public string $jobQueue = 'low-priority';
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
     public function handle(Group $group): void

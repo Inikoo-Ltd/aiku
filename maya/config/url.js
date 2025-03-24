@@ -52,6 +52,9 @@ export default {
 	'create-pallet-audit' :  { url : "maya/org/{}/warehouses/{}/inventory/pallets/{}/stored-item-audits/create"},
 	'get-pallet-audit' :  { url : "maya/org/{}/warehouses/{}/inventory/pallets/{}/stored-item-audit/{}"},
 	'edit-stored-item-audit' :  { url : "maya/action/stored-item-audit-delta/{}"},
+	'add-stored-item-audit' :  { url : "maya/action/stored-item-audit/{}/stored-item-audit-delta"},
+	'delete-stored-item-audit' :  { url : "maya/action/stored-item-audit-delta/{}"},
+	'complete-stored-item-audit' :  { url : "maya/action/stored-item-audit/{}/complete"},
 
 	//return
 	"get-returns" : { url: "maya/org/{}/warehouses/{}/dispatching/handling-fulfilment-returns" },

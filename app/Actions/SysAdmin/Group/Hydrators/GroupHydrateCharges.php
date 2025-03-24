@@ -12,29 +12,23 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Models\Billables\Charge;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateCharges
+class GroupHydrateCharges implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Group $group;
 
     public string $jobQueue = 'low-priority';
 
-    public function __construct(Group $group)
+    public function getJobUniqueId(Group $group): string
     {
-        $this->group = $group;
+        return $group->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
-    }
     public function handle(Group $group): void
     {
-
         $stats = [
             'number_assets_type_charge' => $group->charges()->count(),
         ];
@@ -53,8 +47,6 @@ class GroupHydrateCharges
         );
 
         $group->catalogueStats()->update($stats);
-
-
     }
 
 }
