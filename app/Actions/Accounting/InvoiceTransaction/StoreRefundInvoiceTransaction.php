@@ -31,6 +31,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        $isRefundAll = Arr::pull($modelData, 'refund_all', false);
 
         $netAmount = Arr::get($modelData, 'net_amount', 0) * -1;
         if ($netAmount === 0) {
@@ -105,7 +106,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
 
         $refund->refresh();
 
-        CalculateInvoiceTotals::run($refund);
+        if (!$isRefundAll) {
+            CalculateInvoiceTotals::run($refund);
+        }
 
         return $invoiceTransaction;
     }

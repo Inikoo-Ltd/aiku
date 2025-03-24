@@ -43,6 +43,7 @@ class IndexRefundInProcessTransactions extends OrgAction
         $queryBuilder->select(
             [
                 'invoice_transactions.id',
+                'invoice_transactions.updated_at',
                 'invoice_transactions.in_process',
                 'historic_assets.code',
                 'historic_assets.name',
@@ -65,7 +66,7 @@ class IndexRefundInProcessTransactions extends OrgAction
 
         $queryBuilder->defaultSort('code');
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'quantity', 'net_amount'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'quantity', 'net_amount', 'updated_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

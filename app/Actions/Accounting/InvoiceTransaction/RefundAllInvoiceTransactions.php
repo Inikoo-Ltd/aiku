@@ -9,8 +9,10 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
+use Laravel\Octane\Facades\Octane;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundAllInvoiceTransactions extends OrgAction
@@ -22,13 +24,24 @@ class RefundAllInvoiceTransactions extends OrgAction
     {
         $invoice = $refund->originalInvoice;
 
-        foreach ($invoice->invoiceTransactions as $transaction) {
-            $totalTrRefund = $transaction->transactionRefunds->sum('net_amount');
-            $totalTr = $transaction->net_amount - abs($totalTrRefund);
-            if ($totalTr <= 0) {
-                continue;
+
+        $totalTrRefund = $refund->invoiceTransactions()->sum('net_amount');
+        $totalTr = $invoice->invoiceTransactions()->sum('net_amount') - abs($totalTrRefund);
+        if ($totalTr > 0) {
+            $transactions = $invoice->invoiceTransactions->where('net_amount', '>', 0);
+            $tasks = [];
+            foreach ($transactions->chunk(100) as $chunkedTransactions) {
+                foreach ($chunkedTransactions as $transaction) {
+                    $tasks[] = fn () => StoreRefundInvoiceTransaction::run($refund, $transaction, [
+                        'net_amount' => $transaction->net_amount,
+                        'refund_all' => true,
+                    ]);
+                }
+                Octane::concurrently($tasks);
+                $tasks = [];
             }
-            CreateFullRefundInvoiceTransaction::make()->action($refund, $transaction);
+
+            CalculateInvoiceTotals::run($refund);
         }
 
         return $refund;
