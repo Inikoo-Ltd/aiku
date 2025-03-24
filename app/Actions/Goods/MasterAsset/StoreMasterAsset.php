@@ -73,7 +73,7 @@ class StoreMasterAsset extends OrgAction
 
             return $masterAsset;
         });
-
+        
         GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);
 
         return $masterAsset;

@@ -11,6 +11,8 @@
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
+use App\Actions\Goods\MasterAsset\StoreMasterAsset;
+use App\Actions\Goods\MasterAsset\UpdateMasterAsset;
 use App\Actions\Goods\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Goods\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Goods\MasterShop\HydrateMasterShop;
@@ -25,9 +27,15 @@ use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Goods\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Models\Goods\Ingredient;
+use App\Models\Goods\MasterAsset;
+use App\Models\Goods\MasterAssetOrderingIntervals;
+use App\Models\Goods\MasterAssetOrderingStats;
+use App\Models\Goods\MasterAssetSalesIntervals;
+use App\Models\Goods\MasterAssetStats;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterProductCategoryOrderingIntervals;
 use App\Models\Goods\MasterProductCategoryOrderingStats;
@@ -653,6 +661,63 @@ test('update master product category', function (MasterProductCategory $masterPr
         ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(0);
 })->depends("create master product category");
 
+test('create master asset', function (MasterShop $masterShop) {
+    $masterAsset = StoreMasterAsset::make()->action(
+        $masterShop,
+        [
+            'code' => 'MASTER_ASSET1',
+            'name' => 'master asset 1',
+            'is_main' => true,
+            'type' => MasterAssetTypeEnum::RENTAL,
+            'price' => 10,
+            'stocks' => [],
+        ]
+    );
+
+    $masterAsset->refresh();
+    $masterShop->refresh();
+
+    expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
+        ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
+        ->and($masterAsset->orderingStats)->toBeInstanceOf(MasterAssetOrderingStats::class)
+        ->and($masterAsset->orderingIntervals)->toBeInstanceOf(MasterAssetOrderingIntervals::class)
+        ->and($masterAsset->salesIntervals)->toBeInstanceOf(MasterAssetSalesIntervals::class)
+        ->and($masterAsset->timeSeries()->count())->toBe(5)
+        ->and($masterAsset)->not->toBeNull()
+        ->and($masterAsset->code)->toBe('MASTER_ASSET1')
+        ->and($masterAsset->name)->toBe('master asset 1')
+        ->and($masterAsset->master_shop_id)->toBe($masterShop->id)
+        ->and($masterAsset->group_id)->toBe($this->group->id)
+        ->and($masterAsset->type)->toBe(MasterAssetTypeEnum::RENTAL);
+
+    return $masterAsset;
+})->depends("create master shop");
+
+test('update master asset', function (MasterAsset $masterAsset) {
+    $masterAsset = UpdateMasterAsset::make()->action(
+        $masterAsset,
+        [
+            'name' => 'master asset 100',
+            'price' => 100,
+        ]
+    );
+
+    $masterAsset->refresh();
+
+    expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
+        ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
+        ->and($masterAsset->orderingStats)->toBeInstanceOf(MasterAssetOrderingStats::class)
+        ->and($masterAsset->orderingIntervals)->toBeInstanceOf(MasterAssetOrderingIntervals::class)
+        ->and($masterAsset->salesIntervals)->toBeInstanceOf(MasterAssetSalesIntervals::class)
+        ->and($masterAsset->timeSeries()->count())->toBe(5)
+        ->and($masterAsset)->not->toBeNull()
+        ->and($masterAsset->code)->toBe('MASTER_ASSET1')
+        ->and($masterAsset->name)->toBe('master asset 100')
+        ->and((int) $masterAsset->price)->toBe(100)
+        ->and($masterAsset->type)->toBe(MasterAssetTypeEnum::RENTAL);
+
+    return $masterAsset;
+})->depends("create master asset");
 
 test('Hydrate master_shops', function () {
     HydrateMasterShop::run(MasterShop::first());
