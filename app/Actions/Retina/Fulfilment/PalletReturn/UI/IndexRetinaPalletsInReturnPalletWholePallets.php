@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 20-03-2025-13h-09m
@@ -11,7 +12,6 @@ namespace App\Actions\Retina\Fulfilment\PalletReturn\UI;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
-use App\Enums\Fulfilment\PalletReturn\PalletsInPalletReturnWholePalletsOptionEnum;
 use App\Enums\Fulfilment\PalletReturn\RetinaPalletsInPalletReturnWholePalletsOptionEnum;
 use App\Http\Resources\Fulfilment\PalletReturnItemsUIResource;
 use App\InertiaTable\InertiaTable;

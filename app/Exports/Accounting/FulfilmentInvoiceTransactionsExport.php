@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 21-03-2025-09h-30m
@@ -40,15 +41,14 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
     {
         $palletData = 'no data';
 
-        if($row->model_type == 'Service') {
+        if ($row->model_type == 'Service') {
             $service = Service::find($row->model_id);
             if ($service->is_pallet_handling == true) {
                 $pallet = Pallet::find($row->data['pallet_id']);
                 $palletData = $pallet->reference;
                 $palletRef = $pallet->customer_reference;
             }
-        } 
-        elseif (isset($row->recurringBillTransaction)) {
+        } elseif (isset($row->recurringBillTransaction)) {
             $palletData = $row->recurringBillTransaction->item->reference;
             $palletRef = $row->recurringBillTransaction->item->customer_reference;
         }

@@ -64,7 +64,7 @@ class UpdateInvoice extends OrgAction
 
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if(count($changes)>0) {
+        if (count($changes) > 0) {
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
                 InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);

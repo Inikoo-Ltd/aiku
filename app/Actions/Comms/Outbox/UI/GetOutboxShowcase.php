@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Outbox\UI;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;

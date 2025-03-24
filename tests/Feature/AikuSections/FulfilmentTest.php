@@ -20,7 +20,6 @@ use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\StoreOutbox;
-use App\Actions\Comms\PostRoom\StorePostRoom;
 use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;

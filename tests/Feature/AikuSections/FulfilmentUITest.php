@@ -17,7 +17,6 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\StoreOutbox;
-use App\Actions\Comms\PostRoom\StorePostRoom;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\StorePallet;
@@ -85,7 +84,6 @@ use App\Models\Fulfilment\RentalAgreement;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Fulfilment\StoredItemAudit;
 use App\Models\Inventory\Location;
-use Checkout\Sessions\Recurring;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -151,16 +149,16 @@ beforeEach(function () {
     $orgPostRoom = StoreOrgPostRoom::make()->action($postRoom, $this->organisation, []);
 
     $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::MARKETING_NOTIFICATION)->first();
-        
-    if(!$marketingOutbox) {
-            $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $this->shop, [
-                'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-                'type' => OutboxTypeEnum::MARKETING_NOTIFICATION,
-                'state' => OutboxStateEnum::ACTIVE,
-                'name' => 'invoice outbox'
+
+    if (!$marketingOutbox) {
+        $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $this->shop, [
+            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type' => OutboxTypeEnum::MARKETING_NOTIFICATION,
+            'state' => OutboxStateEnum::ACTIVE,
+            'name' => 'invoice outbox'
         ]);
     }
-    
+
 
     $pallet = Pallet::first();
     if (!$pallet) {

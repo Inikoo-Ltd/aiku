@@ -39,7 +39,7 @@ class StoreInvoiceTransaction extends OrgAction
         } else {
             $handlingDate = Arr::pull($modelData, 'data.date');
         }
-        
+
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($model instanceof Transaction) {

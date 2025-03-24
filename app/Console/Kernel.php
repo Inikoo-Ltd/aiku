@@ -19,11 +19,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
-//        $schedule->command('horizon-dashboard:queue-snapshot')->everyFiveMinutes();
-//        $schedule->command('horizon-dashboard:aggregate-queue-statistics --interval=60 --keep=240')->everyFifteenMinutes();
-//        $schedule->command('horizon-dashboard:aggregate-job-statistics --interval=15 --keep=60')->everyFifteenMinutes();
-//        $schedule->command('horizon-dashboard:cleanup-statistics --hours=168')->daily();
-//        $schedule->command('horizon-dashboard:cleanup-exceptions --hours=168')->everyFifteenMinutes();
+        //        $schedule->command('horizon-dashboard:queue-snapshot')->everyFiveMinutes();
+        //        $schedule->command('horizon-dashboard:aggregate-queue-statistics --interval=60 --keep=240')->everyFifteenMinutes();
+        //        $schedule->command('horizon-dashboard:aggregate-job-statistics --interval=15 --keep=60')->everyFifteenMinutes();
+        //        $schedule->command('horizon-dashboard:cleanup-statistics --hours=168')->daily();
+        //        $schedule->command('horizon-dashboard:cleanup-exceptions --hours=168')->everyFifteenMinutes();
 
 
         $schedule->command('cloudflare:reload')->daily();

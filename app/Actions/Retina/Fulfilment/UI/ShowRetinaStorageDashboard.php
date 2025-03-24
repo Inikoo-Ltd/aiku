@@ -49,8 +49,8 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
         $routeActions = [];
 
-        if($fulfilmentCustomer->pallets_storage) {
-            $routeActions[] =[
+        if ($fulfilmentCustomer->pallets_storage) {
+            $routeActions[] = [
                 'type'  => 'button',
                 'style' => 'create',
                 'label' => __('New Goods Delivery'),
@@ -62,8 +62,8 @@ class ShowRetinaStorageDashboard extends RetinaAction
                 ]
             ];
         }
-        if($fulfilmentCustomer->number_pallets_status_storing) {
-            $routeActions[] =[
+        if ($fulfilmentCustomer->number_pallets_status_storing) {
+            $routeActions[] = [
                 'type'  => 'button',
                 'style' => 'create',
                 'label' => __('New Goods Return'),
