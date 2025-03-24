@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject } from 'vue'
+import { inject, computed } from 'vue'
 import Button from '../Elements/Buttons/Button.vue'
 import { ref } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -16,6 +16,14 @@ import InputNumber from 'primevue/inputnumber'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import BluePrintTableRefund from '@/Components/Segmented/BlueprintTableRefund'
+import PureTable from '@/Components/Pure/PureTable/PureTable.vue'
+import Dialog from 'primevue/dialog';
+import ColumnGroup from 'primevue/columngroup';
+import Row from 'primevue/row'; 
+import Column from 'primevue/column';
+import { useLocaleStore } from "@/Stores/locale"
+import { data } from '../CMS/Website/Product/ProductTemplates/Product1/Descriptor'
 library.add(faCheck)
 
     
@@ -34,12 +42,16 @@ const props = defineProps<{
     routes: {
         submit_route: routeType
         fetch_payment_accounts_route: routeType
-
+        payments : routeType
     }
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
+const emits = defineEmits<{
+    (e: 'onPayInOnClick'): void
+}>()
 
+const locale = inject('locale', aikuLocaleStructure)
+const _PureTable = ref(null)
 const errorInvoicePayment = ref({
     payment_method: null,
     payment_amount: null,
@@ -138,33 +150,17 @@ const listPaymentRefund = ref([
 ])
 
 const paymentRefund = ref({
-    payment_method: null as string | null,
+    payment_method: "credit_balance",
     payment_account: null as number | null,
     payment_amount: 0 as number | null,
     //   payment_reference: ""
 })
 const isLoadingPaymentRefund = ref(false)
 const errorPaymentMethodRefund = ref<null | unknown>(null)
-const onSubmitPaymentRefund = () => {
-
-    let url
-    if (paymentRefund.value.payment_method === 'credit_balance') {
-        url = route('grp.models.refund.refund_to_credit', {
-            refund: props.invoice_pay.invoice_id,
-        })
-    } else {
-        url = route('grp.models.refund.refund_to_payment_account', {
-            refund: props.invoice_pay.invoice_id,
-            paymentAccount: paymentRefund.value.payment_account
-        })
-    }
-
+const sendSubmitPaymentRefund = (url, data) => {
     try {
         router.post(
-            url,
-            {
-                amount: paymentRefund.value.payment_amount,
-            },
+            url,data,
             {
                 onStart: () => isLoadingPayment.value = true,
                 onFinish: () => {
@@ -198,6 +194,31 @@ const onSubmitPaymentRefund = () => {
     }
 }
 
+
+const onSubmitPaymentRefund = () => {
+    let url
+    if (paymentRefund.value.payment_method === 'credit_balance') {
+        url = route('grp.models.refund.refund_to_credit', {
+            refund: props.invoice_pay.invoice_id,
+        })
+        sendSubmitPaymentRefund(url, {
+            amount: paymentRefund.value.payment_amount,
+        })
+    } else {
+        url = route('grp.models.refund.refund_to_payment_account', {
+            refund: props.invoice_pay.invoice_id,
+        })
+        let finalData = []
+        _PureTable.value.data.map((item)=>{
+            finalData.push({
+                id : item.id,
+                refund : item.refund
+            })
+        })
+        sendSubmitPaymentRefund(url,finalData)
+    }
+}
+
 watch(paymentRefund, () => {
     if (errorPaymentMethodRefund.value) {
         errorPaymentMethodRefund.value = null
@@ -212,15 +233,30 @@ const generateRefundRoute = (refundSlug: string) => {
         refund: refundSlug
     })
 }
+
+const totalAmount = computed(() => {
+    return _PureTable.value ?  _PureTable.value?.data.reduce((sum, item) => sum + Number(item.amount || 0), 0) : 0
+})
+
+const totalRefunded = computed(() => {
+    return _PureTable.value ?  _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refunded || 0), 0) : 0
+})
+
+const totalRefund = computed(() => {
+    return _PureTable.value ?  _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refund || 0), 0) : 0
+})
+
+
 </script>
 
 <template>
-    <dd class="relative w-full flex flex-col border rounded-md border-gray-300 overflow-hidden">
+    <dd class="relative w-full flex flex-col border rounded-md border-gray-400 overflow-hidden">
         <dl class="">
             <!-- Invoice -->
-            <div class="border-b border-gray-200 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">
-                    <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-file-invoice-dollar" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-file-invoice-dollar"
+                        class="text-gray-400" fixed-width aria-hidden="true" />
                     {{ invoice_pay.invoice_reference }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
@@ -229,11 +265,14 @@ const generateRefundRoute = (refundSlug: string) => {
             </div>
 
             <!-- Refunds -->
-            <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-200">
-                <div v-for="refund in invoice_pay.list_refunds.data" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-400">
+                <div v-for="refund in invoice_pay.list_refunds.data"
+                    class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left" class="text-gray-400" fixed-width aria-hidden="true" />
-                        <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}</Link>
+                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left"
+                            class="text-gray-400" fixed-width aria-hidden="true" />
+                        <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}
+                        </Link>
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(refund.total_amount)) }}
@@ -242,73 +281,96 @@ const generateRefundRoute = (refundSlug: string) => {
             </div>
 
             <!-- I+R total -->
-            <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-200 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="Number(invoice_pay.total_refunds) < 0"
+                class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">I+R total</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right"
-                    :class="Number(invoice_pay.total_balance) > 0 ? 'text-green-500' : Number(invoice_pay.total_balance) < 0 ? 'text-red-500' : ''"
-                >
+                    :class="Number(invoice_pay.total_balance) > 0 ? '' : Number(invoice_pay.total_balance) < 0 ? '' : ''">
                     {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_balance)) }}
                 </dd>
             </div>
             <!-- addition excees payment -->
-            <div class="border-b border-gray-200" v-if="Number(invoice_pay.total_excees_payment) > 0">
+            <div class="border-b border-gray-400" v-if="Number(invoice_pay.total_excees_payment) > 0">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium" v-tooltip="'auto add to customer balance'">Excess Payment</dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
-                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_excees_payment)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd',
+                        Number(invoice_pay.total_excees_payment)) }}
                     </dd>
                 </div>
             </div>
-            
+
 
             <!-- Pay in -->
-            <div class="border-b border-gray-200">
+            <div class="border-b border-gray-400">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium ">Pay in</dt>
+                    <dt class="text-sm/6 font-medium secondaryLink" @click="()=>emits('onPayInOnClick')">Pay in</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_in)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_in))
+                        }}
                     </dd>
                 </div>
                 <!-- Pay out -->
-                <div v-if="Number(invoice_pay.total_refunds) < 0" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium ">Pay out</dt>
+                <div v-if="Number(invoice_pay.total_refunds) < 0"
+                    class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                    <dt class="text-sm/6 font-medium ">Pay back</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_out)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_out))
+                        }}
                     </dd>
                 </div>
             </div>
 
             <!-- Total to pay -->
-            <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="Number(invoice_pay.total_need_to_pay) != 0 "
+                class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
-                    {{ Number(invoice_pay.total_need_to_pay) < 0 ? 'Total to refund' : 'Total to pay' }}
-                </dt>
+                    {{ Number(invoice_pay.total_need_to_pay) < 0 ? 'Total to refund' : 'Total to pay' }} </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0" v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_need_to_pay)) }}
-                    <Button v-if="Number(invoice_pay.total_need_to_pay) > 0"
-                        @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs" type="secondary">Pay
-                        Invoice
-                    </Button>
-                    <Button v-else-if="Number(invoice_pay.total_need_to_pay) < 0"
-                        @click="() => (isOpenModalRefund = true, fetchPaymentMethod())" size="xxs" type="secondary">Pay
-                        Refunds
-                    </Button>
+                    <button v-if="Number(invoice_pay.total_need_to_pay) > 0"
+                        @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
+                        class="secondaryLink text-indigo-500">
+                        Pay Invoice
+                    </button>
+
+                    <button v-else-if="Number(invoice_pay.total_need_to_pay) < 0"
+                        @click="() => (isOpenModalRefund = true)" size="xxs" class="secondaryLink text-indigo-500">
+                        Refund payment
+                    </button>
+
+                    <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
+                        v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
+                        fixed-width aria-hidden="true" />
+                    <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">{{
+                        locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_need_to_pay))
+                        }}</span>
                 </dd>
+            </div>
+
+            <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                <dt class="text-sm/6 font-medium">
+                    Paid
+                    <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
+                        v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
+                        fixed-width aria-hidden="true" />
+                </dt>
             </div>
         </dl>
 
         <!-- Modal: Pay Invoice -->
-        <Modal :isOpen="isOpenModalInvoice" @onClose="isOpenModalInvoice = false" width="w-[600px]">
-            <div class="isolate bg-white px-6 lg:px-8">
+        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '600px' }" modal dismissableMask>
+            <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Invoice Payment') }}</h2>
-                    <p class="text-xs leading-5 text-gray-400">
-                        {{ trans('Information about payment from customer') }}
-                    </p>
                 </div>
+            </template>
+            <!--         <Modal :isOpen="isOpenModalInvoice" @onClose="isOpenModalInvoice = false" width="w-[600px]"> -->
+            <div class="isolate bg-white px-6 lg:px-8">
+                <!--   <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Invoice Payment') }}</h2>
+                </div> -->
 
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Select payment method') }}
@@ -325,7 +387,7 @@ const generateRefundRoute = (refundSlug: string) => {
                         </Transition>
                     </div>
 
-                    <div class="col-span-2">
+                    <div v-if="paymentData.payment_method" class="col-span-2">
                         <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Payment amount')
                             }}</label>
                         <div class="mt-1" :class="errorInvoicePayment.payment_amount ? 'errorShake' : ''">
@@ -342,17 +404,18 @@ const generateRefundRoute = (refundSlug: string) => {
                                     background: 'transparent',
                                 }" mode="currency" :currency="invoice_pay.currency_code" />
                         </div>
+
                         <div class="space-x-1">
                             <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{
                                 locale.currencyFormat(invoice_pay.currency_code || 'usd',
                                 Number(invoice_pay.total_need_to_pay)) }}</span>
                             <Button @click="() => paymentData.payment_amount = invoice_pay.total_need_to_pay"
-                                :disabled="paymentData.payment_amount === invoice_pay.total_need_to_pay"
-                                type="tertiary" label="Pay all" size="xxs" />
+                                :disabled="paymentData.payment_amount === invoice_pay.total_need_to_pay" type="tertiary"
+                                label="Pay all" size="xxs" />
                         </div>
                     </div>
 
-                    <div class="col-span-2">
+                    <div v-if="paymentData.payment_method" class="col-span-2">
                         <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Reference')
                             }}</label>
                         <div class="mt-1">
@@ -384,22 +447,23 @@ const generateRefundRoute = (refundSlug: string) => {
                     </Transition>
                 </div>
             </div>
-        </Modal>
+            <!--  </Modal> -->
+        </Dialog>
 
         <!-- Modal: Pay refund -->
-        <Modal :isOpen="isOpenModalRefund" @onClose="isOpenModalRefund = false" width="w-[600px]">
-            <div class="isolate bg-white px-6 lg:px-8">
+        <!--  <Modal :isOpen="isOpenModalRefund" @onClose="isOpenModalRefund = false" width="w-[600px]"> -->
+        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '75vw' }" maximizable modal :draggable="false">
+            <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
-                    <p class="text-xs leading-5 text-gray-400">
-                        {{ trans('Fill the information about refund payment') }}
-                    </p>
                 </div>
+            </template>
+            <div class="isolate bg-white px-6 lg:px-8">
 
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
                         <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Select payment method') }}
+                            <span class="text-red-500">*</span> {{ trans('Select refund method') }}
                         </label>
                         <div class="mt-1 grid grid-cols-2 gap-x-3">
                             <div @click="() => paymentRefund.payment_method = item.value"
@@ -411,25 +475,25 @@ const generateRefundRoute = (refundSlug: string) => {
                         </div>
                     </div>
 
-                    <Transition name="slide-to-left">
+
+
+                    <!-- <Transition name="slide-to-left">
                         <div v-if="paymentRefund.payment_method === 'invoice_payment_method'" class="col-span-2">
                             <label for="first-name" class="block text-sm font-medium leading-6">
                                 <span class="text-red-500">*</span> {{ trans('Select payment account') }}
                             </label>
                             <div class="mt-1">
-                                <PureMultiselect v-model="paymentRefund.payment_account"
-                                    :options="listPaymentMethod" label="name" valueProp="id" :isLoading="isLoadingFetch"
-                                    required caret />
+                                <PureMultiselect v-model="paymentRefund.payment_account" :options="listPaymentMethod"
+                                    label="name" valueProp="id" :isLoading="isLoadingFetch" required caret />
                             </div>
                         </div>
-                    </Transition>
+                    </Transition> -->
 
-                    <div class="col-span-2">
+                     <div v-if="paymentRefund.payment_method == 'credit_balance'" class="col-span-2">
                         <label for="last-name" class="block text-sm font-medium leading-6">
-                            {{ trans('Payment amount') }}
+                            {{ trans('Refund amount') }}
                         </label>
                         <div class="mt-1">
-                            <!-- <PureInputNumber v-model="paymentRefund.payment_amount" /> -->
                             <InputNumber v-model="paymentRefund.payment_amount"
                                 @update:modelValue="(e) => paymentRefund.payment_amount = e"
                                 @input="(e) => paymentRefund.payment_amount = e.value" buttonLayout="horizontal"
@@ -444,17 +508,62 @@ const generateRefundRoute = (refundSlug: string) => {
                         </div>
 
                         <div class="space-x-1">
-                            <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_pay.currency_code || 'usd', Number(-invoice_pay.total_need_to_pay)) }}</span>
+                            <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{
+                                locale.currencyFormat(props.invoice_pay.currency_code || 'usd',
+                                Number(-invoice_pay.total_need_to_pay)) }}</span>
                             <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_pay"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
-                                type="tertiary" :label="trans('Pay all')" size="xxs" />
+                                type="tertiary" :label="trans('Refund all')" size="xxs" />
+                        </div>
+                    </div>
+
+                    <div v-if="paymentRefund.payment_method == 'invoice_payment_method'" class="col-span-2">
+                        <div class="my-2">
+                            <PureTable ref="_PureTable"  :route="routes.payments" :blueprint="BluePrintTableRefund" :tableProps="{
+                                    size: 'small',
+                                    showGridlines: true
+                                }">
+                                <template #amount="{data}">
+                                    <div class="text-gray-500">{{ useLocaleStore().currencyFormat( data.currency_code,data.amount) }}</div>
+                                </template>
+
+                                <template #refunded="{data}">
+                                    <div class="text-gray-500">{{useLocaleStore().currencyFormat( data.currency_code,data.refunded) }}</div>
+                                </template>
+
+                                <template #refund="{ data }">
+                                    <InputNumber v-model="data.refund"
+                                        @update:modelValue="(e) => data.refund = e"
+                                         buttonLayout="horizontal"
+                                         @input="(e) => data.refund = e.value" 
+                                        :maxFractionDigits="2" style="width: 100%" inputClass="border border-gray-300"
+                                        :inputStyle="{
+                                            fontSize: '14px',
+                                            paddingTop: '10px',
+                                            paddingBottom: '10px',
+                                            width: '50px',
+                                            background: 'transparent',
+                                        }" mode="currency" :currency="invoice_pay.currency_code" />
+                                </template>
+
+
+                                <template #footer :data="{data}">
+                                    <ColumnGroup type="footer">
+                                        <Row>
+                                            <Column footer="Totals:"  footerStyle="text-align:right" />
+                                            <Column :footer="useLocaleStore().currencyFormat(invoice_pay.currency_code, totalAmount)" />
+                                            <Column :footer="useLocaleStore().currencyFormat(invoice_pay.currency_code, totalRefunded)" />
+                                            <Column :footer="useLocaleStore().currencyFormat(invoice_pay.currency_code, totalRefund)" />
+                                        </Row>
+                                    </ColumnGroup>
+                                </template>
+                            </PureTable>
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-6 mb-4 relative">
                     <Button @click="() => onSubmitPaymentRefund()" label="Submit"
-                        :disabled="paymentRefund.payment_method === 'credit_balance' ? false : !(!!paymentRefund.payment_account)"
                         :loading="isLoadingPayment" full />
                     <Transition name="spin-to-down">
                         <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
@@ -462,6 +571,7 @@ const generateRefundRoute = (refundSlug: string) => {
                     </Transition>
                 </div>
             </div>
-        </Modal>
+            <!--  </Modal> -->
+        </Dialog>
     </dd>
 </template>
