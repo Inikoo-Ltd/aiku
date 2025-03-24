@@ -103,6 +103,7 @@ class IndexPayments extends OrgAction
             ->select([
                 'payments.id',
                 'payments.reference',
+                'payments.type',
                 'payments.status',
                 'payments.date',
                 'payments.amount',
@@ -117,9 +118,7 @@ class IndexPayments extends OrgAction
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->when($parent, function ($query) use ($parent) {
-            })
-            ->allowedSorts(['reference', 'status', 'date'])
+            ->allowedSorts(['reference', 'status', 'type' ,'date'])
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -181,7 +180,8 @@ class IndexPayments extends OrgAction
                 ->defaultSort('-date')
                 ->column(key: 'status', label: __('status'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'payment_account_name', label: __('Payment Account'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'payment_account_name', label: __('Payment Account'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);

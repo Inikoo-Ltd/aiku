@@ -11,16 +11,12 @@
 namespace App\Actions\Accounting\Payment\Json;
 
 use App\Actions\OrgAction;
-use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Http\Resources\Accounting\RefundPaymentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
-use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
