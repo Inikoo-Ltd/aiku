@@ -52,14 +52,14 @@ class RefundToInvoice extends OrgAction
 
             $amountPayPerRefund = max($totalToPay, $refund->total_amount);
 
-            $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, [
+            $paymentInRefund = StorePayment::make()->action($invoice->customer, $paymentAccount, [
                 'amount' => $amountPayPerRefund,
                 'status' => PaymentStatusEnum::SUCCESS->value,
                 'state' => PaymentStateEnum::COMPLETED->value,
             ]);
 
             // for invoice refund
-            AttachPaymentToInvoice::make()->action($refund, $payment, []);
+            AttachPaymentToInvoice::make()->action($refund, $paymentInRefund, []);
 
             if ($type === 'credit') {
                 StoreCreditTransaction::make()->action($invoice->customer, [
@@ -73,14 +73,14 @@ class RefundToInvoice extends OrgAction
             $totalToPay -= $amountPayPerRefund;
         }
 
-        $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, [
-            'amount' => -abs(Arr::get($modelData, 'amount')),
+        $paymentInInvoice = StorePayment::make()->action($invoice->customer, $paymentAccount, [
+            'amount' => abs(Arr::get($modelData, 'amount')) * -1,
             'status' => PaymentStatusEnum::SUCCESS->value,
             'state' => PaymentStateEnum::COMPLETED->value,
         ]);
 
         // invoice
-        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+        AttachPaymentToInvoice::make()->action($invoice, $paymentInInvoice, []);
 
         if ($type === 'credit') {
             CustomerHydrateCreditTransactions::dispatch($invoice->customer);

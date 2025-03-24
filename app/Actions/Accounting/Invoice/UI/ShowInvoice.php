@@ -153,14 +153,15 @@ class ShowInvoice extends OrgAction
 
 
         $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
-        $ir_total    = $invoice->total_amount + $totalRefund;
-        $refunds_pay_out = $invoice->refunds->where('in_process', false)->sum('payment_amount');
+        $irTotal    = $invoice->total_amount + $totalRefund;
+        $refundsPayOut = $invoice->refunds->where('in_process', false)->sum('payment_amount');
 
-        $totalNeedToRefund = (abs($totalRefund) - abs($refunds_pay_out)) * -1;
-        // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refunds_pay_out : 0;
+        $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
+        $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
+        // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
 
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
-        $totalNeedToPay = round($invoice->total_amount - $invoice->payment_amount, 2);
+        $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
 
         if ($totalNeedToPay <= 0) {
             if ($totalNeedToRefund < 0) {
@@ -193,9 +194,9 @@ class ShowInvoice extends OrgAction
                 'currency_code'     => $invoice->currency->code,
                 'total_invoice'     => $invoice->total_amount,
                 'total_refunds'     => $totalRefund,
-                'total_balance'     => $ir_total,
-                'total_paid_in'     => $invoice->payment_amount,
-                'total_paid_out'    => $refunds_pay_out,
+                'total_balance'     => $irTotal,
+                'total_paid_in'     => $totalPaidIn,
+                'total_paid_out'    => $refundsPayOut,
                 'total_excees_payment' => $totalExceesPayment,
                 // 'total_need_to_refund' => $totalNeedToRefund,
                 'total_need_to_pay' => $totalNeedToPay,
