@@ -13,7 +13,7 @@ namespace App\Actions\Accounting\Payment\Json;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
-use App\Http\Resources\Accounting\PaymentsJsonResource;
+use App\Http\Resources\Accounting\RefundPaymentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetPayments extends OrgAction
+class GetRefundPayments extends OrgAction
 {
     public function handle(Invoice $parent, $prefix = null): LengthAwarePaginator
     {
@@ -104,16 +104,16 @@ class GetPayments extends OrgAction
         return $request->user()->authTo("accounting.{$this->organisation->id}.view");
     }
 
-    public function inFulfilmentInvoice(Fulfilment $fulfilment, Invoice $invoice, ActionRequest $request): LengthAwarePaginator
+    public function asController(Invoice $invoice, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $invoice;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromShop($invoice->shop, $request);
 
         return $this->handle($invoice);
     }
 
     public function jsonResponse($payments): AnonymousResourceCollection
     {
-        return PaymentsJsonResource::collection($payments);
+        return RefundPaymentsResource::collection($payments);
     }
 }

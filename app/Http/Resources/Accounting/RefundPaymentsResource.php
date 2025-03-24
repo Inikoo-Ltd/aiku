@@ -25,7 +25,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  *
  */
-class PaymentsJsonResource extends JsonResource
+class RefundPaymentsResource extends JsonResource
 {
     public function toArray($request): array
     {

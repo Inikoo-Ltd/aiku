@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Payment\Json\GetPayments;
+use App\Actions\Accounting\Payment\Json\GetRefundPayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
@@ -43,7 +43,7 @@ Route::get('fulfilment/{fulfilment}/return/{scope}/physical-goods', [GetFulfilme
 Route::get('fulfilment/{fulfilment}/recurring-bill/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inRecurringBill'])->name('fulfilment.recurring-bill.physical-goods.index');
 Route::get('fulfilment/{fulfilment}/invoice/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inInvoice'])->name('fulfilment.invoice.physical-goods.index');
 
-Route::get('fulfilment/{fulfilment}/invoice/{invoice:id}/payments', [GetPayments::class, 'inFulfilmentInvoice'])->name('fulfilment.invoice.show.payments.index');
+Route::get('refund/{invoice:id}/payments', GetRefundPayments::class)->name('refund.show.payments.index');
 
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
 
