@@ -116,6 +116,7 @@ const props = defineProps<{
         routes: {
             fetch_payment_accounts: routeType
             submit_payment: routeType
+            payments: routeType
         }
         currency_code: string
         total_invoice: number
@@ -128,7 +129,7 @@ const props = defineProps<{
         total_need_to_pay: number
     }
 }>()
-
+console.log('sdsdsd',props)
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -146,7 +147,9 @@ const component = computed(() => {
 })
 
 
-
+const onPayInOnClick = () => {
+    handleTabUpdate('payments')
+}
 
 
 // Section: Send Invoice
@@ -321,9 +324,11 @@ const generateRefundRoute = (refundSlug: string) => {
                     
                     <InvoiceRefundPay
                         :invoice_pay
+                        @onPayInOnClick="onPayInOnClick"
                         :routes="{
                             submit_route: invoice_pay.routes.submit_payment,
-                            fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts
+                            fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
+                            payments : invoice_pay.routes.payments
                         }"
                     />
 
