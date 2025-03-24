@@ -15,6 +15,7 @@ import { watch } from 'vue'
 import InputNumber from 'primevue/inputnumber'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck } from "@far"
+import { faSave }  from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import BluePrintTableRefund from '@/Components/Segmented/BlueprintTableRefund'
 import PureTable from '@/Components/Pure/PureTable/PureTable.vue'
@@ -24,7 +25,7 @@ import Row from 'primevue/row';
 import Column from 'primevue/column';
 import { useLocaleStore } from "@/Stores/locale"
 import { data } from '../CMS/Website/Product/ProductTemplates/Product1/Descriptor'
-library.add(faCheck)
+library.add(faCheck, faSave)
 
     
 const props = defineProps<{
@@ -204,19 +205,36 @@ const onSubmitPaymentRefund = () => {
         sendSubmitPaymentRefund(url, {
             amount: paymentRefund.value.payment_amount,
         })
-    } else {
+    } /* else {
         url = route('grp.models.refund.refund_to_payment_account', {
             refund: props.invoice_pay.invoice_id,
+            paymentAccount : paymentRefund.value.payment_account
         })
         let finalData = []
+        console.log(_PureTable.value.data)
         _PureTable.value.data.map((item)=>{
             finalData.push({
                 id : item.id,
-                refund : item.refund
+                refund : item.refund,
+                payment_account_slug 
             })
         })
+    } */
+}
+
+const onSubmitRefundToPaymentsMethod = (data) => {
+    console.log(data)
+    let url,finalData
+    if (paymentRefund.value.payment_method === 'invoice_payment_method') {
+        url = route('grp.models.refund.refund_to_payment_account', {
+            refund: props.invoice_pay.invoice_id,
+            paymentAccount : data.payment_account_slug
+        })
+        finalData = {
+            ...data
+        }
         sendSubmitPaymentRefund(url,finalData)
-    }
+    } 
 }
 
 watch(paymentRefund, () => {
@@ -334,7 +352,7 @@ const totalRefund = computed(() => {
                     </button>
 
                     <button v-else-if="Number(invoice_pay.total_need_to_pay) < 0"
-                        @click="() => (isOpenModalRefund = true)" size="xxs" class="secondaryLink text-indigo-500">
+                        @click="() => (isOpenModalRefund = true,  fetchPaymentMethod())" size="xxs" class="secondaryLink text-indigo-500">
                         Refund payment
                     </button>
 
@@ -532,19 +550,29 @@ const totalRefund = computed(() => {
                                 </template>
 
                                 <template #refund="{ data }">
-                                    <InputNumber v-model="data.refund"
-                                        @update:modelValue="(e) => data.refund = e"
-                                         buttonLayout="horizontal"
-                                         @input="(e) => data.refund = e.value" 
-                                        :maxFractionDigits="2" style="width: 100%" inputClass="border border-gray-300"
-                                        :inputStyle="{
-                                            fontSize: '14px',
-                                            paddingTop: '10px',
-                                            paddingBottom: '10px',
-                                            width: '50px',
-                                            background: 'transparent',
-                                        }" mode="currency" :currency="invoice_pay.currency_code" />
-                                </template>
+                                    <div class="flex items-center gap-2">
+                                        <InputNumber v-model="data.refund"
+                                            @update:modelValue="(e) => data.refund = e"
+                                            buttonLayout="horizontal"
+                                            @input="(e) => data.refund = e.value" 
+                                            :min="0" :max="data.amount - data.refunded"
+                                            :maxFractionDigits="2" style="width: 100%" inputClass="border border-gray-300"
+                                            :inputStyle="{
+                                                fontSize: '14px',
+                                                paddingTop: '10px',
+                                                paddingBottom: '10px',
+                                                width: '50px',
+                                                background: 'transparent',
+                                            }" mode="currency" :currency="invoice_pay.currency_code" />
+
+                                        <button class="h-9 align-bottom text-center"  type="submit" :disabled="data.refund == 0" @click="onSubmitRefundToPaymentsMethod(data)">
+                                            <FontAwesomeIcon v-if="data.refund == 0" icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    </template>
+                                 
+                                    
 
 
                                 <template #footer :data="{data}">
@@ -563,7 +591,7 @@ const totalRefund = computed(() => {
                 </div>
 
                 <div class="mt-6 mb-4 relative">
-                    <Button @click="() => onSubmitPaymentRefund()" label="Submit"
+                    <Button v-if="paymentRefund.payment_method == 'credit_balance'" @click="() => onSubmitPaymentRefund()" label="Submit"
                         :loading="isLoadingPayment" full />
                     <Transition name="spin-to-down">
                         <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
