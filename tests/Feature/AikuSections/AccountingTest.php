@@ -1083,7 +1083,7 @@ test('UI show list invoices', function () {
     });
 });
 
-test('UI show invoice', function () {
+test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
     $shop = StoreShop::run(
         $this->organisation,
@@ -1092,6 +1092,68 @@ test('UI show invoice', function () {
     $customer = createCustomer($shop);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     $response = get(route('grp.org.accounting.invoices.show', [$this->organisation->slug, $invoice->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
+        $page->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has(
+                'navigation',
+                fn (AssertableInertia $page) => $page
+                    ->has('previous')
+                    ->has('next')
+            )
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('model', 'invoice')
+                    ->where('title', $invoice->reference)
+                    ->etc()
+            )
+            ->has(
+                'tabs',
+                fn (AssertableInertia $page) => $page
+                    ->has('current')
+                    ->has('navigation')
+            )
+            ->has('order_summary', 3)
+            ->has('exportPdfRoute')
+            ->has(
+                'box_stats',
+                fn (AssertableInertia $page) => $page
+                    ->has(
+                        'customer',
+                        fn (AssertableInertia $page) => $page
+                            ->has('slug')
+                            ->has('reference')
+                            ->has('route')
+                            ->has('contact_name')
+                            ->has('company_name')
+                            ->has('location')
+                            ->has('phone')
+                    )
+                    ->has(
+                        'information',
+                        fn (AssertableInertia $page) => $page
+                            ->has('recurring_bill')
+                            ->has('routes')
+                            ->has('paid_amount')
+                            ->has('pay_amount')
+                    )
+            )
+            ->has('invoice');
+    });
+});
+
+test('UI show invoice in Shop', function () {
+    $this->withoutExceptionHandling();
+    $shop = StoreShop::run(
+        $this->organisation,
+        Shop::factory()->definition()
+    );
+    $customer = createCustomer($shop);
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $response = get(route('grp.org.shops.show.dashboard.invoices.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
         $page->component('Org/Accounting/Invoice')

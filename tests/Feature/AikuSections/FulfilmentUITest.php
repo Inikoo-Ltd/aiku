@@ -652,6 +652,50 @@ test('UI index fulfilment invoices all', function () {
     });
 });
 
+test('UI show invoice (in Operation)', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.operations.invoices.show', [$this->organisation->slug, $this->fulfilment->slug, $this->invoice->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $this->invoice->reference)
+                        ->etc()
+            )
+            ->has('box_stats')
+            ->has('order_summary')
+            ->has('exportPdfRoute')
+            ->has('tabs');
+
+    });
+});
+
+test('UI show invoice (in Fulfilment Customer)', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.crm.customers.show.invoices.show', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug, $this->invoice->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $this->invoice->reference)
+                        ->etc()
+            )
+            ->has('box_stats')
+            ->has('order_summary')
+            ->has('exportPdfRoute')
+            ->has('tabs');
+
+    });
+});
+
 test('UI index fulfilment invoices unpaid', function () {
     $fulfilment = $this->shop->fulfilment;
     $response  = get(
