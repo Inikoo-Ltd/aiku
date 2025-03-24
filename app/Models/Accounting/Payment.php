@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\UniversalSearch;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -27,6 +28,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -148,5 +153,15 @@ class Payment extends Model implements Auditable
     public function topUps(): HasMany
     {
         return $this->hasMany(TopUp::class);
+    }
+
+    public function invoices(): MorphToMany
+    {
+        return $this->morphedByMany(Invoice::class, 'model', 'model_has_payments');
+    }
+
+    public function orders(): MorphToMany
+    {
+        return $this->morphedByMany(Order::class, 'model', 'model_has_payments');
     }
 }

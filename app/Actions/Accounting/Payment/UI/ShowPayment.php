@@ -113,9 +113,10 @@ class ShowPayment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => PaymentTabsEnum::navigation()
                 ],
-                // PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
-                //     fn () => GetPaymentServiceProviderShowcase::run($paymentServiceProvider)
-                //     : Inertia::lazy(fn () => GetPaymentServiceProviderShowcase::run($paymentServiceProvider)),
+
+                PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
+                    fn () => GetPaymentShowcase::run($payment)
+                    : Inertia::lazy(fn () => GetPaymentShowcase::run($payment)),
 
             ]
         );
