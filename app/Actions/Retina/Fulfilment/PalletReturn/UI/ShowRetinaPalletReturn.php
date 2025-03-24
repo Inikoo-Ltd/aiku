@@ -310,6 +310,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'navigation' => $navigation
                 ],
                 'box_stats'  => [
+                    'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'fulfilment_customer' => array_merge(
                         FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                         [

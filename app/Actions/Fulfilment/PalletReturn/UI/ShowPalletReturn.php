@@ -558,6 +558,7 @@ class ShowPalletReturn extends OrgAction
                 ],
                 'data'             => PalletReturnResource::make($palletReturn),
                 'box_stats'        => [
+                    'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'recurring_bill'      => $recurringBillData,
                     'fulfilment_customer'          => array_merge(
                         FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
