@@ -62,7 +62,8 @@ class GetApiProductsFromShopify extends OrgAction
         foreach ($products as $product) {
             foreach ($product['variants'] as $variant) {
                 DB::transaction(function () use ($variant, $product, $shopifyUser, $shopType) {
-                    $storedItem = StoredItem::where('reference', $product['handle'])->first();
+                    $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
+                        ->where('reference', $product['handle'])->first();
                     $storedItemShopify = $storedItem?->shopifyPortfolio;
 
                     if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {

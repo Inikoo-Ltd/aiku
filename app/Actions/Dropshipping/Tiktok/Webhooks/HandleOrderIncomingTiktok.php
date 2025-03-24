@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Tiktok\Webhooks;
 
 use App\Actions\Dropshipping\Tiktok\Order\ShowTiktokOrderApi;
+use App\Actions\Dropshipping\Tiktok\Order\StoreTiktokOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
@@ -31,7 +32,7 @@ class HandleOrderIncomingTiktok extends RetinaAction
         $order = ShowTiktokOrderApi::run($tiktokUser, $orderId);
 
         if ($orderStatus === 'AWAITING_SHIPMENT') {
-            //
+            StoreTiktokOrder::run($tiktokUser, $order);
         }
     }
 
