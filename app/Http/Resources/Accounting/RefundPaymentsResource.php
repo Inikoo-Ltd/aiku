@@ -34,6 +34,7 @@ class RefundPaymentsResource extends JsonResource
             'status'     => $this->status,
             'refunded'   => $this->refunded,
             'payment_account_name' => $this->payment_account_name,
+            'payment_account_slug' => $this->payment_account_slug,
             'date'       => $this->date,
             'reference'  => $this->reference,
             'created_at' => $this->created_at,

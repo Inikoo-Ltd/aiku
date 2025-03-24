@@ -69,7 +69,7 @@ class GetRefundPayments extends OrgAction
                 'payments.date',
                 'payments.amount',
                 'payment_accounts.name as payment_account_name',
-                'payment_accounts.slug as payment_accounts_slug',
+                'payment_accounts.slug as payment_account_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
                 'currencies.code as currency_code',
                 DB::raw('ABS(SUM(refunds.payment_amount)) as refunded'),
@@ -77,7 +77,7 @@ class GetRefundPayments extends OrgAction
             ->groupBy([
                 'payments.id',
                 'payment_account_name',
-                'payment_accounts_slug',
+                'payment_account_slug',
                 'payment_service_providers_slug',
                 'currency_code'
             ])
