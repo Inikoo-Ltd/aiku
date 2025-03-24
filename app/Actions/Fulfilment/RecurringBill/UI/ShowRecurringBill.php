@@ -415,6 +415,25 @@ class ShowRecurringBill extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.fulfilments.show.operations.recurring_bills.former.show' => array_merge(
+                ShowFulfilment::make()->getBreadcrumbs(
+                    Arr::only($routeParameters, ['organisation', 'fulfilment'])
+                ),
+                $headCrumb(
+                    $recurringBill,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.former.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.former.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'recurringBill'])
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
 
 
             'grp.org.fulfilments.show.crm.customers.show.recurring_bills.show' => array_merge(

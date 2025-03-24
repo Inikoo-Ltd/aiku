@@ -59,6 +59,7 @@ use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
@@ -84,6 +85,7 @@ use App\Models\Fulfilment\RentalAgreement;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Fulfilment\StoredItemAudit;
 use App\Models\Inventory\Location;
+use Checkout\Sessions\Recurring;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1973,6 +1975,54 @@ test('UI show Recurring Bill', function () {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                         ->where('title', $this->recurringBill->slug)
+                        ->etc()
+            )
+            ->has('timeline_rb')
+            ->has('consolidateRoute')
+            ->has('status_rb')
+            ->has('box_stats')
+            ->has('tabs');
+
+    });
+});
+
+test('UI show Recurring Bill in operation (current)', function () {
+    $this->withoutExceptionHandling();
+    $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::CURRENT)->first();
+    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
+        $page
+            ->component('Org/Fulfilment/RecurringBill')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $recurringBill->slug)
+                        ->etc()
+            )
+            ->has('timeline_rb')
+            ->has('consolidateRoute')
+            ->has('status_rb')
+            ->has('box_stats')
+            ->has('tabs');
+
+    });
+});
+
+test('UI show Recurring Bill in operation (former)', function () {
+    $this->withoutExceptionHandling();
+    $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::FORMER)->first();
+    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.former.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
+        $page
+            ->component('Org/Fulfilment/RecurringBill')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $recurringBill->slug)
                         ->etc()
             )
             ->has('timeline_rb')
