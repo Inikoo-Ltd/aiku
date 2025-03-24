@@ -36,6 +36,10 @@ enum PaymentTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
+            PaymentTabsEnum::SHOWCASE => [
+                'title' => __('showcase'),
+                'icon'  => 'fas fa-info-circle',
+            ],
         };
     }
 }
