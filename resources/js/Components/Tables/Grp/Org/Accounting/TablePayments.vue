@@ -48,6 +48,9 @@ function paymentsRoute(payment: Payment) {
 		<template #cell(amount)="{ item: item }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.amount)  }}</div>
         </template>
+		<template #cell(refunded)="{ item: item }">
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.refunded)  }}</div>
+        </template>
 		<template #cell(date)="{ item }">
 			<div class="text-gray-500 text-right">
 				{{

@@ -18,6 +18,7 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Support\Arr;
@@ -56,6 +57,7 @@ class RefundToInvoice extends OrgAction
                 'amount' => $amountPayPerRefund,
                 'status' => PaymentStatusEnum::SUCCESS->value,
                 'state' => PaymentStateEnum::COMPLETED->value,
+                'type' => PaymentTypeEnum::REFUND
             ]);
 
             // for invoice refund
@@ -77,6 +79,7 @@ class RefundToInvoice extends OrgAction
             'amount' => abs(Arr::get($modelData, 'amount')) * -1,
             'status' => PaymentStatusEnum::SUCCESS->value,
             'state' => PaymentStateEnum::COMPLETED->value,
+            'type' => PaymentTypeEnum::REFUND
         ]);
 
         // invoice

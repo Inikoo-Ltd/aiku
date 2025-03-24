@@ -22,6 +22,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePayments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePayments;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
@@ -120,7 +121,8 @@ class StorePayment extends OrgAction
             'status'        => ['sometimes', 'required', Rule::enum(PaymentStatusEnum::class)],
             'state'         => ['sometimes', 'required', Rule::enum(PaymentStateEnum::class)],
             'items'         => ['sometimes', 'array'],
-            'currency_code' => ['sometimes', 'string']
+            'currency_code' => ['sometimes', 'string'],
+            'type' => ['sometimes', 'required', Rule::enum(PaymentTypeEnum::class)]
         ];
 
         if (!$this->strict) {
