@@ -112,9 +112,10 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        // Todo run this 3 hydrators more clever, hydrate only need intervals, e.g. exclude yesterday or last week
+        //AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        //AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        //AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
     }
