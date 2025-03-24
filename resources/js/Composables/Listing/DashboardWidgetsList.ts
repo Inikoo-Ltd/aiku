@@ -15,6 +15,7 @@ const OperationDisplay = defineAsyncComponent(() => import('@/Components/DataDis
 const ChartDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/ChartDisplay.vue'))
 const CircleDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/CircleDisplay.vue'))
 const MultipleDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/MultipleChartDisplay.vue'))
+const DistributionChartDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/DistributionChartDisplay.vue'))
 
 export const widgetList: {[key: string]: Component} = {
     'basic': BasicDisplay,
@@ -23,7 +24,8 @@ export const widgetList: {[key: string]: Component} = {
     'operation_display': OperationDisplay,
     'chart_display' : ChartDisplay,
     'circle_display': CircleDisplay,
-    'multiple_chart_display': MultipleDisplay
+    'multiple_chart_display': MultipleDisplay,
+    'distribution_chart_display': DistributionChartDisplay
 }
 
 export const getComponentWidget = (componentName: string) => {
