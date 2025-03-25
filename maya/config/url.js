@@ -19,6 +19,7 @@ export default {
 	"get-areas" : { url: "maya/org/{}/warehouses/{}/areas" },
 	"get-location" : { url: "maya/org/{}/warehouses/{}/locations/{}" },
 	"get-area" : { url: "maya/org/{}/warehouses/{}/areas/{}" },
+	"get-location-pallet" : { url: "maya/org/{}/warehouses/{}/inventory/locations/{}/pallets" },
 
 	//stored items
 	'get-stored-items' :  { url: "maya/org/{}/warehouses/{}/inventory/stored-items" },

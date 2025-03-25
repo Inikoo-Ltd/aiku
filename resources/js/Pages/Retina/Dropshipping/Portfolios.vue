@@ -10,7 +10,7 @@ import type { Component } from 'vue'
 
 import { PageHeading as TSPageHeading } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
-import TablePortfolios from "@/Components/Tables/Grp/Org/Catalogue/TablePortfolios.vue";
+import PupilTablePortofolios from "@/Components/Tables/Retina/PupilTablePortofolios.vue";
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -44,5 +44,5 @@ const component = computed(() => {
     <PageHeading :data="pageHead" />
 <!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 <!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-    <TablePortfolios :data="props.products" :tab="'products'" />
+    <PupilTablePortofolios :data="props.products" :tab="'products'" />
 </template>
