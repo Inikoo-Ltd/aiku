@@ -12,6 +12,7 @@ namespace App\Actions\Accounting\Payment\Json;
 
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Http\Resources\Accounting\RefundPaymentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
@@ -41,11 +42,11 @@ class GetRefundPayments extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Payment::class);
         if (class_basename($parent) == 'Invoice') {
-
             $queryBuilder
             ->where('payments.type', PaymentTypeEnum::PAYMENT)
             ->leftJoin('model_has_payments', 'payments.id', 'model_has_payments.payment_id')
             ->where('model_has_payments.model_id', $parent->id)
+            ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT)
             ->where('model_has_payments.model_type', 'Invoice')
             ->leftJoin('payments as refund_payments', 'refund_payments.original_payment_id', 'payments.id');
         } else {
