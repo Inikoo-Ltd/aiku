@@ -244,7 +244,7 @@ test('create marketing outbox', function (Fulfilment $fulfilment) {
 
     $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $shop, [
         'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-        'type' => OutboxTypeEnum::MARKETING_NOTIFICATION,
+        'type' => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
         'state' => OutboxStateEnum::ACTIVE,
         'name' => 'invoice outbox'
     ]);

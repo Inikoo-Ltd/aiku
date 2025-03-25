@@ -148,12 +148,12 @@ beforeEach(function () {
 
     $orgPostRoom = StoreOrgPostRoom::make()->action($postRoom, $this->organisation, []);
 
-    $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::MARKETING_NOTIFICATION)->first();
+    $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
 
     if (!$marketingOutbox) {
         $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $this->shop, [
             'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            'type' => OutboxTypeEnum::MARKETING_NOTIFICATION,
+            'type' => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
             'state' => OutboxStateEnum::ACTIVE,
             'name' => 'invoice outbox'
         ]);
@@ -711,6 +711,33 @@ test('UI index fulfilment invoices unpaid', function () {
             ->has('data')
             ->has('pageHead')
             ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', 'Invoices')
+                        ->has('subNavigation')
+                        ->etc()
+            );
+    });
+});
+
+test('UI index fulfilment invoices paid', function () {
+    $fulfilment = $this->shop->fulfilment;
+    $response  = get(
+        route(
+            'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',
+            [
+                $this->organisation->slug,
+                $fulfilment->slug
+            ]
+        )
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('data')
+            ->has('pageHead')
+            ->has('breadcrumbs')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page

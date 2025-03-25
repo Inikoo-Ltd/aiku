@@ -489,6 +489,18 @@ class ShowInvoice extends OrgAction
 
                 ]
             ],
+            'grp.org.shops.show.dashboard.invoices.invoices.show' => [
+                'label' => $invoice->reference,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation' => $invoice->organisation->slug,
+                        'shop'   => $this->parent->slug,
+                        'invoice'      => $invoice->slug
+                    ]
+
+                ]
+            ],
 
             //  'grp.org.fulfilments.show.crm.customers.show.refund.show'
             'grp.org.fulfilments.show.crm.customers.show.invoices.show' => [
