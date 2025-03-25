@@ -43,5 +43,5 @@ const component = computed(() => {
     <PageHeading :data="pageHead" />
 <!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 <!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-    <RetinaTablePalletOrders :data="props.orders" :tab="'orders'" />
+    <RetinaTablePalletOrders :data="props.orders" :location="'pupil'" :tab="'orders'" />
 </template>
