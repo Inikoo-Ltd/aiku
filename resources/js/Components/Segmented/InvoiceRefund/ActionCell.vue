@@ -7,7 +7,7 @@ import InputNumber from 'primevue/inputnumber'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowAltCircleLeft } from "@fas"
-import { faPlus, faMinus } from "@fal"
+import { faPlus, faMinus, faEdit, faCross, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faArrowAltCircleLeft)
 const props = withDefaults(
@@ -32,19 +32,25 @@ const refundAll = () => {
     emit('refund', loadingRefundAll)
 }
 
+const toggleEditMode = () => {
+    editMode.value = !editMode.value
+}
+
 </script>
 
 <template>
-    <div class="flex gap-3 my-2">
-        <Button size="s" :label="trans('Refund All')" type="secondary" icon="fas fa-arrow-alt-circle-left"
-            :loading="loadingRefundAll" @click="refundAll" />
-        <Button :key="editMode + 'button' + modelValue" :label="trans('Refund Item Partially')"
-            icon="fal fa-arrow-circle-left" :type="editMode ? 'gray' : 'tertiary'" @click="editMode = !editMode"
-            :loading="loadingPartial" />
-    </div>
+   <!--    <div class="flex items-center gap-3"> -->
+          <!--   <Button 
+            :key="editMode + 'button' + modelValue"
+            :label="editMode ? trans('Close') : trans('Refund')" 
+            :icon="editMode ? faTimes : faEdit" 
+            :type="editMode ? 'negative' : 'tertiary'" 
+            @click="toggleEditMode" 
+            :loading="loadingPartial"
+        /> -->
 
-    <Transition name="slide-to-left">
-        <div v-show="editMode" class="w-fit flex items-center gap-x-1 mt-2">
+
+        <div class="w-fit max-w-[100px] flex items-center gap-x-2">
             <div>
                 <InputNumber :modelValue="props.modelValue"
                     @update:modelValue="(value) => emit('update:modelValue', value)" buttonLayout="horizontal"
@@ -65,9 +71,8 @@ const refundAll = () => {
                     icon="fad fa-save" class="h-8 cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
                     aria-hidden="true" />
                 <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
-          
-        </div>
-    </Transition>
+            </div>
+<!-- </div> -->
 </template>
 
 <style scoped></style>

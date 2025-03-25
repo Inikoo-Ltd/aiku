@@ -480,7 +480,7 @@ const totalRefund = computed(() => {
         </Dialog>
 
         <!-- Modal: Pay refund -->
-        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '75vw' }" maximizable modal :draggable="false" :dismissableMask="true">
+        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '75vw', display: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
@@ -585,8 +585,8 @@ const totalRefund = computed(() => {
 
                                 <!-- Refund Column -->
                                 <template #refund="{ data }">
-                                    <div v-if="data.amount !== data.refunded" class="flex items-center gap-2">
                                         <ActionCell 
+                                            v-if="data.amount !== data.refunded || invoice_pay.total_need_to_pay != 0"
                                             v-model="data.refund" 
                                             :max="data.amount - data.refunded"
                                             :min="0"
@@ -594,7 +594,6 @@ const totalRefund = computed(() => {
                                             @refund="(loading) => onSubmitRefundToPaymentsMethod(data, loading)"
                                             :data="data"
                                         />
-                                    </div>
                                     <span v-else class="text-gray-400 font-medium italic">Refund Complete</span>
                                 </template>
 

@@ -24,8 +24,8 @@ const meta = ref({
 	total: 2,
 })
 
-const fetchData = async (pageNumber = 1, pageSize = 10) => {
-	loading.value = true
+const fetchData = async (pageNumber = 1, pageSize = 10, loadingFetch = false) => {
+	loadingFetch = true
 	try {
 		const response = await axios.get(
 			route(props.route.name, {
@@ -49,17 +49,17 @@ const fetchData = async (pageNumber = 1, pageSize = 10) => {
 			type: "error",
 		})
 	} finally {
-		loading.value = false
+		loadingFetch.value = false
 	}
 }
 
 // Handle perubahan halaman atau jumlah data per halaman
 const onPage = (event: { page: number; rows: number }) => {
-	fetchData(event.page + 1, event.rows)
+	fetchData(event.page + 1, event.rows,  loading.value)
 }
 
 // Fetch data saat komponen dimuat
-onMounted(() => fetchData(meta.value.current_page, meta.value.per_page))
+onMounted(() => fetchData(meta.value.current_page, meta.value.per_page, loading.value ))
 
 defineExpose({
   data,
@@ -84,7 +84,7 @@ defineExpose({
 		class="custom-paginator"
 		@page="onPage">
 		<template v-for="col in blueprint" :key="col.key">
-			<Column :field="col.key">
+			<Column :field="col.key"   :style="{ width: '100px' }" >
 				<template #header>
 					<slot :name="`${col.key}-header`">
 						<span class="font-bold">{{ col.header }}</span>
