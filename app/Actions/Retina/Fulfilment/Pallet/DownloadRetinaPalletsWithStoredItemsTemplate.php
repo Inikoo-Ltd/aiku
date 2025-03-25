@@ -1,14 +1,15 @@
 <?php
-
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 21 Sep 2023 08:23:57 Malaysia Time, Pantai Lembeng, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 25-03-2025-16h-26m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
 namespace App\Actions\Retina\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Pallet\DownloadPalletsTemplate;
+use App\Actions\Fulfilment\Pallet\DownloadPalletStoredItemTemplate;
 use App\Actions\RetinaAction;
 use App\Exports\Pallets\PalletTemplateExport;
 use App\Models\Fulfilment\Fulfilment;
@@ -22,14 +23,14 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class DownloadRetinaPalletsTemplate extends RetinaAction
+class DownloadRetinaPalletsWithStoredItemsTemplate extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
 
     public function handle(): BinaryFileResponse
     {
-        return DownloadPalletsTemplate::run();
+        return DownloadPalletStoredItemTemplate::run();
     }
 
     public function authorize(ActionRequest $request): bool
