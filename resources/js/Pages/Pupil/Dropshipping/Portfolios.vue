@@ -44,5 +44,5 @@ const component = computed(() => {
     <PageHeading :data="pageHead" />
 <!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 <!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-    <TablePortfolios :data="props.products" :tab="'products'" />
+    <TablePortfolios :data="props.products" :location="'pupil'" :tab="'products'" />
 </template>
