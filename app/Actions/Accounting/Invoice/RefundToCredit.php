@@ -27,7 +27,7 @@ class RefundToCredit extends OrgAction
 
         return RefundToInvoice::make()->action($invoice, $paymentAccount, [
             'amount' => Arr::get($modelData, 'amount'),
-            'type' => 'credit',
+            'type_refund' => 'credit',
         ]);
     }
 

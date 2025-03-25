@@ -203,7 +203,13 @@ class ShowRefund extends OrgAction
                         'parameters' => [
                             'invoice'  => $invoice->id,
                         ]
-                    ]
+                    ],
+                    'payments'  => [
+                        'name'       => 'grp.json.refund.show.payments.index',
+                        'parameters' => [
+                            'invoice'  => $invoice->id,
+                        ]
+                    ],
                 ],
                 'list_refunds'      => RefundResource::collection($invoice->refunds->where('in_process', false)),
                 'currency_code'     => $invoice->currency->code,

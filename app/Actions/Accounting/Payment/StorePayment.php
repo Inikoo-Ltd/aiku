@@ -122,7 +122,12 @@ class StorePayment extends OrgAction
             'state'         => ['sometimes', 'required', Rule::enum(PaymentStateEnum::class)],
             'items'         => ['sometimes', 'array'],
             'currency_code' => ['sometimes', 'string'],
-            'type' => ['sometimes', 'required', Rule::enum(PaymentTypeEnum::class)]
+            'type' => ['sometimes', 'required', Rule::enum(PaymentTypeEnum::class)],
+            'original_payment_id' => [
+                'sometimes',
+                'nullable',
+                'exists:payments,id'
+            ]
         ];
 
         if (!$this->strict) {

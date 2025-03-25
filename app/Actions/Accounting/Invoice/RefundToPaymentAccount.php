@@ -23,9 +23,12 @@ class RefundToPaymentAccount extends OrgAction
      */
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
+        $paymentId = Arr::pull($modelData, 'original_payment_id');
+
         return RefundToInvoice::make()->action($invoice, $paymentAccount, [
             'amount' => Arr::get($modelData, 'amount'),
-            'type' => 'payment',
+            'original_payment_id' => $paymentId,
+            'type_refund' => 'payment',
         ]);
     }
 
@@ -33,6 +36,7 @@ class RefundToPaymentAccount extends OrgAction
     {
         return [
             'amount'     => ['required', 'numeric'],
+            'original_payment_id' => ['required', 'exists:payments,id'],
         ];
     }
 

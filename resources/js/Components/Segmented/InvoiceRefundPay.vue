@@ -231,7 +231,8 @@ const onSubmitRefundToPaymentsMethod = (data) => {
             paymentAccount : data.payment_account_slug
         })
         finalData = {
-            ...data
+            'amount' : data.refund,
+            'original_payment_id' : data.id,
         }
         sendSubmitPaymentRefund(url,finalData)
     } 

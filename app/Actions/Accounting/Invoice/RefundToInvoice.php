@@ -28,7 +28,8 @@ class RefundToInvoice extends OrgAction
 {
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
-        $type = Arr::get($modelData, 'type', 'payment');
+        // dd(Arr::get($modelData, 'original_payment_id'));
+        $type = Arr::get($modelData, 'type_refund', 'payment');
         $totalToPay = -abs(Arr::get($modelData, 'amount'));
         $totalToPayRound = round($totalToPay, 2);
 
@@ -57,7 +58,7 @@ class RefundToInvoice extends OrgAction
                 'amount' => $amountPayPerRefund,
                 'status' => PaymentStatusEnum::SUCCESS->value,
                 'state' => PaymentStateEnum::COMPLETED->value,
-                'type' => PaymentTypeEnum::REFUND
+                'type' => PaymentTypeEnum::REFUND,
             ]);
 
             // for invoice refund
@@ -79,7 +80,8 @@ class RefundToInvoice extends OrgAction
             'amount' => abs(Arr::get($modelData, 'amount')) * -1,
             'status' => PaymentStatusEnum::SUCCESS->value,
             'state' => PaymentStateEnum::COMPLETED->value,
-            'type' => PaymentTypeEnum::REFUND
+            'type' => PaymentTypeEnum::REFUND,
+            'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
         ]);
 
         // invoice
@@ -97,7 +99,8 @@ class RefundToInvoice extends OrgAction
     {
         return [
             'amount'    => ['required', 'numeric'],
-            'type'     => ['required', 'string', 'in:payment,credit'],
+            'type_refund'     => ['required', 'string', 'in:payment,credit'],
+            'original_payment_id' => ['sometimes', 'nullable', 'exists:payments,id'],
         ];
     }
 

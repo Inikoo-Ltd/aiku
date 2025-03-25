@@ -47,10 +47,7 @@ class GetRefundPayments extends OrgAction
             ->leftJoin('model_has_payments', 'payments.id', 'model_has_payments.payment_id')
             ->where('model_has_payments.model_id', $parent->id)
             ->where('model_has_payments.model_type', 'Invoice')
-            ->leftJoin('invoices', 'invoices.id', '=', 'model_has_payments.model_id')
-            ->leftJoin('invoices as refunds', 'refunds.invoice_id', '=', 'invoices.id')
-            ->where('refunds.in_process', false);
-            // ->where('refunds.pay_status', InvoicePayStatusEnum::UNPAID);
+            ->leftJoin('payments as refund_payments', 'refund_payments.original_payment_id', 'payments.id');
         } else {
             abort(422);
         }
@@ -72,7 +69,7 @@ class GetRefundPayments extends OrgAction
                 'payment_accounts.slug as payment_account_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
                 'currencies.code as currency_code',
-                DB::raw('ABS(SUM(refunds.payment_amount)) as refunded'),
+                DB::raw('ABS(SUM(refund_payments.amount)) as refunded'),
             ])
             ->groupBy([
                 'payments.id',
