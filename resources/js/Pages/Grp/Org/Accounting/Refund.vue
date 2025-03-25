@@ -102,6 +102,7 @@ const props = defineProps<{
     }
     currency_code: string
     total_invoice: number
+    total_paid_account : number
     total_refunds: number
     total_balance: number
     total_paid_in: number

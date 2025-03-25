@@ -36,6 +36,7 @@ const props = defineProps<{
         total_refunds: number
         total_balance: number
         total_paid_in: number
+        total_paid_account : number
         total_paid_out: {
             data: {}[]
         }
@@ -51,6 +52,8 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: 'onPayInOnClick'): void
 }>()
+
+console.log('asdasd',props)
 
 const locale = inject('locale', aikuLocaleStructure)
 const _PureTable = ref(null)
@@ -135,7 +138,6 @@ watch(paymentData, () => {
         errorPaymentMethod.value = null
     }
 })
-
 
 
 
@@ -281,6 +283,20 @@ const totalRefunded = computed(() => {
 const totalRefund = computed(() => {
     return _PureTable.value ?  _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refund || 0), 0) : 0
 })
+
+
+const totalRefundAccount = computed(() => {
+  const totalNeedToPay = Number(props.invoice_pay.total_need_to_pay);
+  const totalPaidAccount = Number(props.invoice_pay.total_paid_account);
+
+  let result = totalNeedToPay < 0 
+    ? totalNeedToPay + totalPaidAccount
+    : totalNeedToPay - totalPaidAccount;
+
+  return Math.abs(result) < 0.01 ? 0 : result;
+});
+
+
 
 
 </script>
@@ -548,11 +564,11 @@ const totalRefund = computed(() => {
                         <div class="mb-4 border-b border-gray-300 pb-3">
                             <h3 class="text-xl font-semibold text-gray-800">Refund Details</h3>
                             <div class="mt-2 flex items-center text-lg">
-                                <span class="text-gray-600 font-medium">Need to Refund:</span>
+                                <span class="text-gray-600 font-medium">Need to Refund Outside AWF Account:</span>
                                 <span 
-                                    :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : 'text-green-600', 
+                                    :class="[totalRefundAccount < 0 ? 'text-red-500' : 'text-green-600', 
                                     'ml-2 font-semibold tracking-wide']">
-                                    {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_need_to_pay)) }}
+                                    {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', totalRefundAccount) }}
                                 </span>
                             </div>
                         </div>
@@ -586,7 +602,7 @@ const totalRefund = computed(() => {
                                 <!-- Refund Column -->
                                 <template #refund="{ data }">
                                         <ActionCell 
-                                            v-if="data.amount !== data.refunded || invoice_pay.total_need_to_pay != 0"
+                                            v-if="(data.amount - data.refunded) > 0 && totalRefundAccount !== 0"
                                             v-model="data.refund" 
                                             :max="data.amount - data.refunded"
                                             :min="0"

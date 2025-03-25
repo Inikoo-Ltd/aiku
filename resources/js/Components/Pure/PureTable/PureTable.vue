@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { routeType } from "@/types/route"
-import { onMounted, ref, computed, defineExpose } from "vue"
+import { onMounted, ref, defineExpose } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import DataTable from "primevue/datatable"
@@ -24,8 +24,8 @@ const meta = ref({
 	total: 2,
 })
 
-const fetchData = async (pageNumber = 1, pageSize = 10, loadingFetch = false) => {
-	loadingFetch = true
+const fetchData = async (pageNumber = 1, pageSize = 10, showLoading = false) => {
+	if (showLoading) loading.value = true // Only show loading if needed
 	try {
 		const response = await axios.get(
 			route(props.route.name, {
@@ -49,17 +49,17 @@ const fetchData = async (pageNumber = 1, pageSize = 10, loadingFetch = false) =>
 			type: "error",
 		})
 	} finally {
-		loadingFetch.value = false
+		if (showLoading) loading.value = false // Only reset loading if it was set
 	}
 }
 
-// Handle perubahan halaman atau jumlah data per halaman
+// Handle pagination
 const onPage = (event: { page: number; rows: number }) => {
-	fetchData(event.page + 1, event.rows,  loading.value)
+	fetchData(event.page + 1, event.rows, true)
 }
 
-// Fetch data saat komponen dimuat
-onMounted(() => fetchData(meta.value.current_page, meta.value.per_page, loading.value ))
+// Fetch data on mount (with loading)
+onMounted(() => fetchData(meta.value.current_page, meta.value.per_page, true))
 
 defineExpose({
   data,
@@ -75,16 +75,15 @@ defineExpose({
 		:value="data"
 		v-bind="tableProps"
 		:paginator="meta.last_page != 1"
-		:rows="rows"
-		:rowsPerPageOptions="rowsPerPageOptions"
-		:totalRecords="totalRecords"
+		:rows="meta.per_page"
+		:totalRecords="meta.total"
 		lazy
 		:loading="loading"
 		paginatorPosition="bottom"
 		class="custom-paginator"
 		@page="onPage">
 		<template v-for="col in blueprint" :key="col.key">
-			<Column :field="col.key"   :style="{ width: '100px' }" >
+			<Column :field="col.key" :style="{ width: '100px' }">
 				<template #header>
 					<slot :name="`${col.key}-header`">
 						<span class="font-bold">{{ col.header }}</span>
