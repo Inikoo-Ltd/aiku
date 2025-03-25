@@ -721,6 +721,33 @@ test('UI index fulfilment invoices unpaid', function () {
     });
 });
 
+test('UI index fulfilment invoices paid', function () {
+    $fulfilment = $this->shop->fulfilment;
+    $response  = get(
+        route(
+            'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',
+            [
+                $this->organisation->slug,
+                $fulfilment->slug
+            ]
+        )
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('data')
+            ->has('pageHead')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', 'Invoices')
+                        ->has('subNavigation')
+                        ->etc()
+            );
+    });
+});
+
 test('UI show fulfilment customer space sub navigation', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.spaces.index', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
