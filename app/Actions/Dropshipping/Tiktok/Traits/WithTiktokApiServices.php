@@ -37,9 +37,8 @@ trait WithTiktokApiServices
         return hash_hmac('sha256', $baseString, $appSecret);
     }
 
-    public function restApi($path = null, $body = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true): PendingRequest
+    public function restApi($path = null, $body = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true, array $params = []): PendingRequest
     {
-        $params = [];
         $timestamp = now()->timestamp;
         $appKey = config('services.tiktok.client_id');
         $appSecret = config('services.tiktok.client_secret');
@@ -73,10 +72,10 @@ trait WithTiktokApiServices
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function makeApiRequest(string $method, string $path, array $productData = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true)
+    public function makeApiRequest(string $method, string $path, array $productData = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true, array $params = [])
     {
         try {
-            $apiRequest = $this->restApi($path, $productData, $requireShopCipher, $headers, $requireSign);
+            $apiRequest = $this->restApi($path, $productData, $requireShopCipher, $headers, $requireSign, $params);
 
             $response = match (strtoupper($method)) {
                 'POST' => $apiRequest->post($path, $productData),
@@ -121,5 +120,14 @@ trait WithTiktokApiServices
         return $this->makeApiRequest('POST', $path, $productData, true, [
             'content-type' => 'application/json'
         ]);
+    }
+
+    public function getOrders(array $params): array
+    {
+        $path = '/order/202309/orders';
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ], true, $params);
     }
 }

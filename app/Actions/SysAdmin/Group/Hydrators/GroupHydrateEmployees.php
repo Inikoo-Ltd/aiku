@@ -13,24 +13,19 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\HumanResources\Employee;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateEmployees
+class GroupHydrateEmployees implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Group $group;
     public string $jobQueue = 'low-priority';
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
 

@@ -19,6 +19,13 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
+        //        $schedule->command('horizon-dashboard:queue-snapshot')->everyFiveMinutes();
+        //        $schedule->command('horizon-dashboard:aggregate-queue-statistics --interval=60 --keep=240')->everyFifteenMinutes();
+        //        $schedule->command('horizon-dashboard:aggregate-job-statistics --interval=15 --keep=60')->everyFifteenMinutes();
+        //        $schedule->command('horizon-dashboard:cleanup-statistics --hours=168')->daily();
+        //        $schedule->command('horizon-dashboard:cleanup-exceptions --hours=168')->everyFifteenMinutes();
+
+
         $schedule->command('cloudflare:reload')->daily();
         $schedule->command('domain:check-cloudflare-status')->hourly();
 
@@ -61,13 +68,13 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)
             ->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'FetchOrdersInBasket',
-        );
+                monitorSlug: 'FetchOrdersInBasket',
+            );
 
-        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11,23)->timezone('UTC')
+        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')
             ->sentryMonitor(
-            monitorSlug: 'FetchOrdersInBasket',
-        );
+                monitorSlug: 'FetchOrdersInBasket',
+            );
 
 
         (new Schedule())->command('hydrate -s ful')->dailyAt('23:00')->timezone('UTC');

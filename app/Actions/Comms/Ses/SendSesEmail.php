@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Ses;
 
-use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
 use App\Actions\Comms\DispatchedEmail\UpdateDispatchedEmail;
 use App\Actions\Comms\EmailAddress\Traits\AwsClient;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateEmails;
@@ -152,7 +151,6 @@ class SendSesEmail
             break;
         } while ($attempt < $numberAttempts);
 
-        DispatchedEmailHydrateEmailTracking::dispatch($dispatchedEmail);
         OutboxHydrateEmails::run($dispatchedEmail->outbox);
 
         return $dispatchedEmail;

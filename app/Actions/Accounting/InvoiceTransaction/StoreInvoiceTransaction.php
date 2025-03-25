@@ -39,7 +39,7 @@ class StoreInvoiceTransaction extends OrgAction
         } else {
             $handlingDate = Arr::pull($modelData, 'data.date');
         }
-        
+
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($model instanceof Transaction) {
@@ -112,9 +112,10 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        // Todo run this 3 hydrators more clever, hydrate only need intervals, e.g. exclude yesterday or last week
+        //AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        //AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        //AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
     }

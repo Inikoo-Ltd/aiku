@@ -104,7 +104,7 @@ class StoreStoredItemAuditDelta extends OrgAction
         }
 
         if ($this->has('stored_item_slug')) {
-        
+
             $storedItem = StoredItem::where('slug', $this->get('stored_item_slug'))->first();
             $this->set('stored_item_id', $storedItem->id);
         }

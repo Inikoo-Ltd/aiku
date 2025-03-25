@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 20-03-2025-15h-51m
@@ -8,17 +9,13 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
-
 use App\Actions\OrgAction;
 use App\Http\Resources\Fulfilment\RecurringBillTransactionsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Fulfilment\RecurringBill;
-use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 
@@ -74,13 +71,13 @@ class IndexItemizedInvoiceTransactions extends OrgAction
                 ->withModelOperations()
                 ->withGlobalSearch();
 
-                $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
 
-                $table->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-                $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-                $table->defaultSort('code');
+            $table->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->defaultSort('code');
 
         };
     }

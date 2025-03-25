@@ -39,8 +39,9 @@ const props = defineProps<{
                 class="relative group flex-1 flex gap-x-1.5 justify-center md:justify-start items-center">
                 <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`"
                     class="flex gap-x-2 items-center">
-                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
-                    <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
+<!--                  This icon cause an error-->
+<!--                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />-->
+                    WA: <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
             </div>
 

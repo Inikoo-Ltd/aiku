@@ -382,7 +382,7 @@ const isModalUploadStoredItemOpen = ref(false)
                 <div>
                     <MenuButton class="">
                         <Button
-                            v-if="currentTab === 'pallets'"
+                            v-if="currentTab === 'goods'"
                             :label="action.label"
                             :style="action.style"
                             :icon="action.icon"
@@ -397,7 +397,7 @@ const isModalUploadStoredItemOpen = ref(false)
                     <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
                         <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload pallet") }}
+                            {{ trans("Upload goods") }}
                         </div>
                         <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
@@ -439,7 +439,7 @@ const isModalUploadStoredItemOpen = ref(false)
 
         <!-- Button: Add multiple pallets -->
         <template #button-group-multiple="{ action }">
-            <Popover v-if="currentTab === 'pallets'" position="-right-32" class="md:relative h-full" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
+            <Popover v-if="currentTab === 'goods'" position="-right-32" class="md:relative h-full" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
                 <template #button>
                     <Button
                         :style="action.style"

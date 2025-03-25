@@ -8,29 +8,24 @@
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
-use App\Actions\OrgAction;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydratePortfolios extends OrgAction
+class GroupHydratePortfolios implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
 
-    protected Group $group;
-    public string $jobQueue = 'low-priority';
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
 
-    public function getJobMiddleware(): array
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
     public function handle(Group $group): void

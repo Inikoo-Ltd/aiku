@@ -12,7 +12,6 @@ namespace App\Actions\Discounts\OfferComponent\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Discounts\OfferComponent;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class OfferComponentHydrateOrders implements ShouldBeUnique

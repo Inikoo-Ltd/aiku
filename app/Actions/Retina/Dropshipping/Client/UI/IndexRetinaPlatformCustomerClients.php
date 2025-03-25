@@ -43,6 +43,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
     public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $this->platform = $platform;
         $this->initialisation($request);
 
         $this->parent = match ($platform->type) {

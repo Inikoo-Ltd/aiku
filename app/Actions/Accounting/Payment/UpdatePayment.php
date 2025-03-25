@@ -26,7 +26,7 @@ class UpdatePayment extends OrgAction
     {
         $payment = $this->update($payment, $modelData, ['data']);
         $changes = Arr::except($payment->getChanges(), ['updated_at', 'last_fetched_at']);
-        if(count($changes)>0) {
+        if (count($changes) > 0) {
             PaymentRecordSearch::dispatch($payment);
         }
         return $payment;

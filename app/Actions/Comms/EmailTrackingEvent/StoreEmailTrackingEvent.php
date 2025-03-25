@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\EmailTrackingEvent;
 
+use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -29,7 +30,12 @@ class StoreEmailTrackingEvent extends OrgAction
         $emailTrackingEvent = $dispatchedEmail->emailTrackingEvents()->create($modelData);
 
 
-        DispatchedEmailHydrateEmailTracking::dispatch($dispatchedEmail);
+        DispatchedEmailHydrateEmailTracking::run($dispatchedEmail);
+        if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
+            DispatchedEmailHydrateClicks::run($dispatchedEmail);
+        } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
+            DispatchedEmailHydrateClicks::run($dispatchedEmail);
+        }
 
 
         return $emailTrackingEvent;

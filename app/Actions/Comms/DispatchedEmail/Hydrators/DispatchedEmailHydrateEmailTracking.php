@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\DispatchedEmail\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Models\Comms\DispatchedEmail;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,14 +29,6 @@ class DispatchedEmailHydrateEmailTracking implements ShouldBeUnique
     public function handle(DispatchedEmail $dispatchedEmail): void
     {
         $stats = [
-            'number_clicks' => $dispatchedEmail
-                ->emailTrackingEvents()
-                ->where('type', EmailTrackingEventTypeEnum::CLICKED)
-                ->count(),
-            'number_reads' => $dispatchedEmail
-                ->emailTrackingEvents()
-                ->where('type', EmailTrackingEventTypeEnum::OPENED)
-                ->count(),
             'number_email_tracking_events' => $dispatchedEmail
                 ->emailTrackingEvents()
                 ->count()

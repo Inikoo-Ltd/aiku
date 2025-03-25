@@ -13,25 +13,19 @@ use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Models\Catalogue\Asset;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateAssets
+class GroupHydrateAssets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Group $group;
 
     public string $jobQueue = 'low-priority';
 
-    public function __construct(Group $group)
+    public function getJobUniqueId(Group $group): string
     {
-        $this->group = $group;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
     public function handle(Group $group): void
     {

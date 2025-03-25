@@ -52,7 +52,14 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
                         'platform_customer_client_id' => Arr::get($customer, 'id')
                     ]);
                 } else {
-                    UpdateCustomerClient::run($existsClient, $attributes);
+                    if (!$shopifyUser->clients()->where('customer_client_id', $existsClient->id)->exists()) {
+                        AttachRetinaPlatformCustomerClient::run($shopifyUser->customer, $shopifyUser, [
+                            'customer_client_id' => $existsClient->id,
+                            'platform_customer_client_id' => Arr::get($customer, 'id')
+                        ]);
+                    }
+
+                    UpdateCustomerClient::run($existsClient, Arr::except($attributes, 'address'));
                 }
             }
         }

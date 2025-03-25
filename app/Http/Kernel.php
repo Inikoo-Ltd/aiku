@@ -93,7 +93,6 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
         ],
 
         'han' => [
@@ -101,14 +100,12 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SetHanAsAppScope::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
         ],
 
         'maya' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
         ],
 
         'api' => [
@@ -128,7 +125,6 @@ class Kernel extends HttpKernel
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
         ],
         'web_errors' => [
             EncryptCookies::class,
@@ -148,7 +144,6 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleAikuPublicInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
         ],
         'iris'        => [
             DetectWebsite::class,
@@ -189,7 +184,6 @@ class Kernel extends HttpKernel
             HandlePupilInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
 //            SameSiteSession::class,
-            InspectorOctaneMiddleware::class,
         ],
 
         'cornea'      => [

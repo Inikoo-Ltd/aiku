@@ -99,7 +99,11 @@ class UpdatePalletReturn extends OrgAction
                 ->ignore($this->palletReturn->id)],
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:5000'],
             'address'             => ['sometimes'],
-            'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')]
+            'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'reference'      => ['sometimes', 'string', 'max:255'],
+            'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
     }
 
