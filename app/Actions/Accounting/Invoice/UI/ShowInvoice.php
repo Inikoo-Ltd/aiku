@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -25,11 +26,13 @@ use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -151,10 +154,18 @@ class ShowInvoice extends OrgAction
             ];
 
 
-
         $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
         $irTotal    = $invoice->total_amount + $totalRefund;
         $refundsPayOut = $invoice->refunds->where('in_process', false)->sum('payment_amount');
+
+        $totalPaidAccount = DB::table('invoices')
+            ->where('invoices.id', $invoice->id)
+            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+            ->where('model_has_payments.model_type', 'Invoice')
+            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
+            ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
+
 
         $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
         $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
@@ -205,6 +216,7 @@ class ShowInvoice extends OrgAction
                 'total_paid_out'    => $refundsPayOut,
                 'total_excees_payment' => $totalExceesPayment,
                 // 'total_need_to_refund' => $totalNeedToRefund,
+                'total_paid_account' => $totalPaidAccount,
                 'total_need_to_pay' => $totalNeedToPay,
             ],
         ];

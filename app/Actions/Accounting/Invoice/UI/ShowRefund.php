@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\Enums\UI\Accounting\RefundTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -29,6 +30,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -178,6 +180,14 @@ class ShowRefund extends OrgAction
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
         $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
 
+        $totalPaidAccount = DB::table('invoices')
+            ->where('invoices.id', $invoice->id)
+            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+            ->where('model_has_payments.model_type', 'Invoice')
+            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
+            ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
+
         if ($totalNeedToPay <= 0) {
             if ($totalNeedToRefund < 0) {
                 $totalNeedToPay = $totalNeedToRefund;
@@ -220,6 +230,7 @@ class ShowRefund extends OrgAction
                 'total_paid_out'    => $refundsPayOut,
                 'total_excees_payment' => $totalExceesPayment,
                 // 'total_need_to_refund' => $totalNeedToRefund,
+                'total_paid_account' => $totalPaidAccount,
                 'total_need_to_pay' => $totalNeedToPay,
             ],
         ];
