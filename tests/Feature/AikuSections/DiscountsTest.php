@@ -120,6 +120,20 @@ test('update offer component', function ($offerComponent) {
     $this->assertModelExists($offerComponent);
 })->depends('create offer component');
 
+test('UI Discount Dashboard', function () {
+    $response = get(route('grp.org.shops.show.discounts.dashboard', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Discounts/DiscountsDashboard')
+            ->has('title')
+            ->has('pageHead')
+            ->has('stats')
+            ->has('tabs')
+            ->has('breadcrumbs', 3);
+    });
+});
+
 test('UI Index offer campaigns', function () {
     $response = get(route('grp.org.shops.show.discounts.campaigns.index', [$this->organisation->slug, $this->shop->slug]));
 
