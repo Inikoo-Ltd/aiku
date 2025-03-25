@@ -40,9 +40,9 @@ class IndexPallets extends OrgAction
 
     private bool $selectStoredPallets = false;
 
-    private Group|Fulfilment|Location $parent;
+    private Group|Fulfilment $parent;
 
-    protected function getElementGroups(Group|Fulfilment|Location $parent): array
+    protected function getElementGroups(Group|Fulfilment $parent): array
     {
         return [
             'status' => [
@@ -251,14 +251,6 @@ class IndexPallets extends OrgAction
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($fulfilment, 'pallets');
-    }
-
-    public function inLocation(Organisation $organisation, Warehouse $warehouse, Location $location, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $location;
-        $this->initialisationFromWarehouse($warehouse, $request);
-
-        return $this->handle($location, 'pallets');
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

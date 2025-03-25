@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Fulfilment\Pallet\UI\IndexPallets;
+use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInLocation;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemPallets;
@@ -24,7 +25,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
 });
 
 Route::prefix('locations')->as('locations.')->group(function () {
-    Route::get('{location:id}/pallets', [IndexPallets::class, 'inLocation'])->name('pallets.index');
+    Route::get('{location:id}/pallets', IndexPalletsInLocation::class)->name('pallets.index');
 });
 
 Route::prefix('pallets')->as('pallets.')->group(function () {
