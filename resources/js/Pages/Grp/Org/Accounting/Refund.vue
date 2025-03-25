@@ -24,7 +24,7 @@ import { routeType } from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
 import { FieldOrderSummary } from "@/types/Pallet";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefundPay.vue'
+import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -97,7 +97,8 @@ const props = defineProps<{
   invoice_pay: {
     routes: {
       fetch_payment_accounts: routeType
-      submit_payment: routeType
+      submit_payment: routeType,
+      payments : routeType
     }
     currency_code: string
     total_invoice: number
@@ -357,7 +358,8 @@ watch(paymentData, () => {
 
         <InvoiceRefundPay :invoice_pay :routes="{
           submit_route: invoice_pay.routes.submit_payment,
-          fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts
+          fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
+          payments : invoice_pay.routes.payments
         }" />
       </div>
     </BoxStatPallet>

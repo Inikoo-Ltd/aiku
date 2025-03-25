@@ -34,8 +34,6 @@ const fetchData = async (pageNumber = 1, pageSize = 10) => {
 				per_page: pageSize,
 			})
 		)
-
-		console.log(response)
 		if (response.data?.data) {
 			data.value = response.data.data.map((item) => ({
 				...item,
@@ -44,6 +42,7 @@ const fetchData = async (pageNumber = 1, pageSize = 10) => {
 			meta.value = response.data.meta
 		}
 	} catch (error) {
+		console.log(error)
 		notify({
 			title: trans("Something went wrong"),
 			text: trans("Failed to fetch data"),
@@ -63,7 +62,8 @@ const onPage = (event: { page: number; rows: number }) => {
 onMounted(() => fetchData(meta.value.current_page, meta.value.per_page))
 
 defineExpose({
-  data
+  data,
+  fetchData
 })
 </script>
 

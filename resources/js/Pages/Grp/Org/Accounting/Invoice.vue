@@ -60,7 +60,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
 import InputNumber from 'primevue/inputnumber'
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
-import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefundPay.vue'
+import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue'
 // const locale = useLocaleStore()
 const locale = inject('locale', aikuLocaleStructure)
 
