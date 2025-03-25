@@ -33,10 +33,14 @@ class RefundToInvoice extends OrgAction
         $totalToPay = -abs(Arr::get($modelData, 'amount'));
 
 
-        $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sortByDesc('total_amount')->all();
-        $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount');
+        $refundsQuery = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID);
 
-        if (abs(round($totalToPay, 2)) > abs(round($totalRefund, 2))) {
+        $refunds = $refundsQuery->sortByDesc('total_amount')->all();
+
+        $totalRefund = $refundsQuery->sum('total_amount');
+        $totalAlreadyRefunded = abs($totalRefund) - abs($refundsQuery->sum('payment_amount'));
+
+        if (abs(round($totalToPay, 2)) > abs(round($totalAlreadyRefunded, 2))) {
             throw ValidationException::withMessages(
                 [
                     'message' => [
