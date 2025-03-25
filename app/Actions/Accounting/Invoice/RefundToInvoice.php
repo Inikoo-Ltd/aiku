@@ -28,20 +28,19 @@ class RefundToInvoice extends OrgAction
 {
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
-        // dd(Arr::get($modelData, 'original_payment_id'));
+
         $type = Arr::get($modelData, 'type_refund', 'payment');
         $totalToPay = -abs(Arr::get($modelData, 'amount'));
-        $totalToPayRound = round($totalToPay, 2);
 
 
         $refunds = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sortByDesc('total_amount')->all();
         $totalRefund = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount');
 
-        if ($totalToPayRound < round($totalRefund, 2)) {
+        if (abs(round($totalToPay, 2)) > abs(round($totalRefund, 2))) {
             throw ValidationException::withMessages(
                 [
                     'message' => [
-                        'amount' => 'The refund amount exceeds the total amount that should be refund',
+                        'amount' => 'The refund amount exceeds the total need to be refunded',
                     ]
                 ]
             );
