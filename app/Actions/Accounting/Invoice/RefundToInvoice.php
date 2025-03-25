@@ -61,10 +61,13 @@ class RefundToInvoice extends OrgAction
                 'status' => PaymentStatusEnum::SUCCESS->value,
                 'state' => PaymentStateEnum::COMPLETED->value,
                 'type' => PaymentTypeEnum::REFUND,
+                'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
             ]);
 
             // for invoice refund
             AttachPaymentToInvoice::make()->action($refund, $paymentInRefund, []);
+
+            AttachPaymentToInvoice::make()->action($invoice, $paymentInRefund, []);
 
             // if only update the refund invoice and no need payment data for refund invoice
             // $payStatus             = InvoicePayStatusEnum::UNPAID;
@@ -96,20 +99,20 @@ class RefundToInvoice extends OrgAction
             $totalRefund -= $amountPayPerRefund;
         }
 
-        $paymentInInvoice = StorePayment::make()->action($invoice->customer, $paymentAccount, [
-            'amount' => abs(Arr::get($modelData, 'amount')) * -1,
-            'status' => PaymentStatusEnum::SUCCESS->value,
-            'state' => PaymentStateEnum::COMPLETED->value,
-            'type' => PaymentTypeEnum::REFUND,
-            'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
-        ]);
+        // $paymentInInvoice = StorePayment::make()->action($invoice->customer, $paymentAccount, [
+        //     'amount' => abs(Arr::get($modelData, 'amount')) * -1,
+        //     'status' => PaymentStatusEnum::SUCCESS->value,
+        //     'state' => PaymentStateEnum::COMPLETED->value,
+        //     'type' => PaymentTypeEnum::REFUND,
+        //     'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
+        // ]);
 
         // invoice
-        AttachPaymentToInvoice::make()->action($invoice, $paymentInInvoice, []);
+        // AttachPaymentToInvoice::make()->action($invoice, $paymentInInvoice, []);
 
-        if ($type === 'credit') {
-            CustomerHydrateCreditTransactions::dispatch($invoice->customer);
-        }
+        // if ($type === 'credit') {
+        //     CustomerHydrateCreditTransactions::dispatch($invoice->customer);
+        // }
 
         return $invoice;
 
