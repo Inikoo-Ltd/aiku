@@ -66,6 +66,24 @@ class RefundToInvoice extends OrgAction
             // for invoice refund
             AttachPaymentToInvoice::make()->action($refund, $paymentInRefund, []);
 
+            // if only update the refund invoice and no need payment data for refund invoice
+            // $payStatus             = InvoicePayStatusEnum::UNPAID;
+            // $paymentAt             = null;
+            // $runningPaymentsAmount = 0;
+
+            // if ($payStatus == InvoicePayStatusEnum::UNPAID && abs($amountPayPerRefund) >= abs($invoice->total_amount)) {
+            //     $payStatus = InvoicePayStatusEnum::PAID;
+            //     $paymentAt = now();
+            // }
+
+            // $invoice->update(
+            //     [
+            //         'pay_status'     => $payStatus,
+            //         'paid_at'        => $paymentAt,
+            //         'payment_amount' => $runningPaymentsAmount
+            //     ]
+            // );
+
             if ($type === 'credit') {
                 StoreCreditTransaction::make()->action($invoice->customer, [
                     'amount' => abs($amountPayPerRefund),
