@@ -53,7 +53,6 @@ const emits = defineEmits<{
     (e: 'onPayInOnClick'): void
 }>()
 
-console.log('asdasd',props)
 
 const locale = inject('locale', aikuLocaleStructure)
 const _PureTable = ref(null)
@@ -78,7 +77,6 @@ const fetchPaymentMethod = async () => {
     try {
         isLoadingFetch.value = true
         const { data } = await axios.get(route(props.routes.fetch_payment_accounts_route.name, props.routes.fetch_payment_accounts_route.parameters))
-        console.log('ssdsd', data)
         listPaymentMethod.value = data.data
     } catch (error) {
         notify({
@@ -143,16 +141,7 @@ watch(paymentData, () => {
 
 // Section: Payment Refund
 const isOpenModalRefund = ref(false)
-const listPaymentRefund = ref([
-    {
-        label: trans("Refund money to customer's credit balance"),
-        value: 'credit_balance',
-    },
-    {
-        label: trans("Refund money to payment method of the invoice"),
-        value: 'invoice_payment_method',
-    }
-])
+
 
 const paymentRefund = ref({
     payment_method: "credit_balance",
@@ -296,8 +285,18 @@ const totalRefundAccount = computed(() => {
   return Math.abs(result) < 0.01 ? 0 : result;
 });
 
-
-
+const listPaymentRefund = computed(() => [
+    {
+        label: trans("Refund money to customer's credit balance"),
+        value: 'credit_balance',
+        disable : false
+    },
+    {
+        label: trans("Refund money to payment method of the invoice"),
+        value: 'invoice_payment_method',
+        disable: totalRefundAccount.value == 0
+    }
+]);
 
 </script>
 
@@ -503,19 +502,24 @@ const totalRefundAccount = computed(() => {
                 </div>
             </template>
             <div class="isolate bg-white px-6 lg:px-8">
-
                 <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Select refund method') }}
                         </label>
                         <div class="mt-1 grid grid-cols-2 gap-x-3">
-                            <div @click="() => paymentRefund.payment_method = item.value"
-                                v-for="item in listPaymentRefund" :key="item.value"
-                                class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
-                                :class="paymentRefund.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'">
+                            <div 
+                                @click="() => !item.disable ? paymentRefund.payment_method = item.value : null"
+                                v-for="item in listPaymentRefund" 
+                                :key="item.value"
+                                class="flex justify-center items-center border px-3 py-2 rounded text-center cursor-pointer transition"
+                                :class="[
+                                    paymentRefund.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300',
+                                    item.disable ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-500' : 'hover:bg-indigo-100'
+                                ]"
+                                >
                                 {{ item.label }}
-                            </div>
+                                </div>
                         </div>
                     </div>
 
