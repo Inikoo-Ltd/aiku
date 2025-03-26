@@ -166,7 +166,6 @@ class ShowInvoice extends OrgAction
             ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
             ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
 
-
         $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
         $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
@@ -174,9 +173,19 @@ class ShowInvoice extends OrgAction
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
         $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
 
+        $totalNeedToRefundInPaymentMethod = 0;
+        $totalPaymentWithoutAccount = $totalPaidIn - $totalPaidAccount;
+
         if ($totalNeedToPay <= 0) {
             if ($totalNeedToRefund < 0) {
                 $totalNeedToPay = $totalNeedToRefund;
+
+                if (abs($totalNeedToRefund) > abs($totalPaymentWithoutAccount)) {
+                    $totalNeedToRefundInPaymentMethod = $totalPaymentWithoutAccount;
+                } else {
+                    $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
+                }
+
             } else {
                 $totalNeedToPay = 0;
             }
@@ -215,6 +224,7 @@ class ShowInvoice extends OrgAction
                 'total_paid_in'     => $totalPaidIn,
                 'total_paid_out'    => $refundsPayOut,
                 'total_excees_payment' => $totalExceesPayment,
+                'total_need_to_refund_in_payment_method' => $totalNeedToRefundInPaymentMethod,
                 // 'total_need_to_refund' => $totalNeedToRefund,
                 'total_paid_account' => $totalPaidAccount,
                 'total_need_to_pay' => $totalNeedToPay,
