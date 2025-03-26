@@ -287,10 +287,11 @@ const totalRefundAccount = computed(() => {
   return Math.abs(result - total_excees_payment) < 0.01 ? 0 : result;
 });
 
-const maxRefund = computed((data) => {
+const maxRefund = (data) => {
+  if (!data) return 0;
   const maxPossible = data.amount - data.refunded;
   return Math.min(maxPossible, totalRefundAccount.value);
-});
+};
 
 const onClickRefundPayments = () => {
     isOpenModalRefund.value = true
@@ -423,7 +424,7 @@ const listPaymentRefund = computed(() => [
         </dl>
 
         <!-- Modal: Pay Invoice -->
-        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '600px' }" modal dismissableMask>
+        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '600px'}" modal dismissableMask>
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Invoice Payment') }}</h2>
@@ -510,7 +511,7 @@ const listPaymentRefund = computed(() => [
         </Dialog>
 
         <!-- Modal: Pay refund -->
-        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '75vw', display: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
+        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '75vw', position: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
@@ -519,6 +520,7 @@ const listPaymentRefund = computed(() => [
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
+                        {{ totalRefund }}
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Select refund method') }}
                         </label>
