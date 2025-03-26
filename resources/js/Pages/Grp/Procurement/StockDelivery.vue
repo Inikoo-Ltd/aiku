@@ -14,6 +14,7 @@ import { capitalize } from "@/Composables/capitalize"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import TableStockDeliveryItems from '@/Components/Tables/Grp/Procurement/TableStockDeliveryItems.vue'
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -36,11 +37,11 @@ let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
-
     const components = {
         details: ModelDetails,
         history: ModelChangelog,
         attachments: TableAttachments,
+        items : TableStockDeliveryItems
     }
     return components[currentTab.value]
 
