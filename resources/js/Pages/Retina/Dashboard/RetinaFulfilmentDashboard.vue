@@ -135,7 +135,7 @@ const layout = inject("layout", layoutStructure)
 const optionRadio = [
 	{
 		value: "pallets_storage",
-		label: trans("Pallet Storage"),
+		label: trans("Storage"),
 	},
 	{
 		value: "items_storage",

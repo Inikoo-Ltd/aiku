@@ -162,7 +162,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
 
         $stats['pallet_deliveries'] = [
-            'label' => __('Goods Deliveries'),
+            'label' => __('Goods In'),
             'count' => $fulfilmentCustomer->number_pallet_deliveries,
             'route' => [
                 'name' => 'retina.fulfilment.storage.pallet_deliveries.index'
@@ -178,7 +178,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
 
         $stats['pallet_returns'] = [
-            'label' => __('Goods Returns'),
+            'label' => __('Goods Out'),
             'count' => $fulfilmentCustomer->number_pallet_returns,
             'route' => [
                 'name' => 'retina.fulfilment.storage.pallet_returns.index'
