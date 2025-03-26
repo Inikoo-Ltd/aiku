@@ -148,7 +148,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             $fulfilmentCustomer->pallets_storage ? [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('New Goods Delivery'),
+                    'label' => __('New Goods In'),
                     'fullLoading'   => true,
                     'route' => [
                         'method'     => 'post',
@@ -162,10 +162,10 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             'Storage/RetinaPalletDeliveries',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('goods deliveries'),
+                'title'       => __('goods in'),
                 'pageHead'    => [
                     'model'     => __('Storage'),
-                    'title'   => __('Goods Deliveries'),
+                    'title'   => __('Goods In'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-truck'],
                         'title' => __('delivery')
@@ -201,7 +201,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
                         'route' => [
                             'name' => 'retina.fulfilment.storage.pallet_deliveries.index',
                         ],
-                        'label' => __('Goods Deliveries'),
+                        'label' => __('Goods In'),
                         'icon'  => 'fal fa-bars',
                     ],
 
