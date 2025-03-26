@@ -25,6 +25,7 @@ const props = defineProps<{
         current: string
         navigation: object
     },
+    items?:any
     attachments?: {}
     attachmentRoutes?: {}
 }>()
