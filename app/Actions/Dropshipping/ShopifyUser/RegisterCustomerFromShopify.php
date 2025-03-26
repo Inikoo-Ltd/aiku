@@ -41,7 +41,7 @@ class RegisterCustomerFromShopify extends OrgAction
         data_set($modelData, 'password', $shopifyUser->name);
         data_set($modelData, 'phone', '81234567890');
         data_set($modelData, 'contact_address', $fulfilment->shop->address->toArray());
-        data_set($modelData, 'interest', ['dropshipping', 'items_storage']);
+        data_set($modelData, 'interest', ['dropshipping', 'items_storage', 'pallets_storage']);
         data_set($modelData, 'product', 'unknown');
         data_set($modelData, 'shipments_per_week', 'unknown');
         data_set($modelData, 'size_and_weight', 'unknown');
