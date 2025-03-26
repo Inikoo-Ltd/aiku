@@ -288,7 +288,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
                 'upload_pallet' => [
                     'title' => [
-                        'label' => __('Upload pallet'),
+                        'label' => __('Upload goods'),
                         'information' => __('The list of column file: customer_reference, notes')
                     ],
                     'progressDescription'   => __('Adding Pallet Deliveries'),
