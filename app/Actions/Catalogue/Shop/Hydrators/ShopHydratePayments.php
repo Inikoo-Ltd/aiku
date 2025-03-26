@@ -14,25 +14,18 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydratePayments
+class ShopHydratePayments implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithPaymentAggregators;
 
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
+        return $shop->id;
     }
 
     public function handle(Shop $shop): void

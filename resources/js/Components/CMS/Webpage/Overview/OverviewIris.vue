@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import Image from "@/Components/Image.vue"
-import { ref, onMounted, onBeforeUnmount } from "vue"
-import Moveable from "vue3-moveable"
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
-import Modal from "@/Components/Utils/Modal.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faEdit } from "@far"
 
 const props = defineProps<{
 	fieldValue: {}

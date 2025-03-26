@@ -47,7 +47,7 @@ class FetchAuroraProducts extends FetchAuroraAction
                 $product = UpdateProduct::make()->action(
                     product: $product,
                     modelData: $productData['product'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

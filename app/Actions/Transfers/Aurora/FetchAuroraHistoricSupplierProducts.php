@@ -34,7 +34,7 @@ class FetchAuroraHistoricSupplierProducts
             $historicSupplierProduct = UpdateHistoricSupplierProduct::make()->action(
                 historicSupplierProduct: $historicSupplierProduct,
                 modelData: $historicProductData['historic_supplier_product'],
-                hydratorsDelay: 60,
+                hydratorsDelay: 5,
                 strict: false
             );
         } else {
@@ -57,7 +57,7 @@ class FetchAuroraHistoricSupplierProducts
             $historicSupplierProduct = StoreHistoricSupplierProduct::make()->action(
                 supplierProduct: $historicProductData['supplier_product'],
                 modelData: $historicProductData['historic_supplier_product'],
-                hydratorsDelay: 60,
+                hydratorsDelay: 5,
                 strict: false
             );
         }

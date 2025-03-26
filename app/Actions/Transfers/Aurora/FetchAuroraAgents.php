@@ -47,7 +47,7 @@ class FetchAuroraAgents extends FetchAuroraAction
                     $agent = UpdateAgent::make()->action(
                         agent:$agent,
                         modelData: $agentData['agent'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -56,7 +56,7 @@ class FetchAuroraAgents extends FetchAuroraAction
                 $agent = StoreAgent::make()->action(
                     group: $organisation->group,
                     modelData: $agentData['agent'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

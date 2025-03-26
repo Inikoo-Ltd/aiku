@@ -31,7 +31,7 @@ class FetchAuroraCustomerNotes extends FetchAuroraAction
                     $customerNote = UpdateCustomerNote::make()->action(
                         customerNote: $customerNote,
                         modelData: $customerNoteData['customer_note'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordChange($organisationSource, $customerNote->wasChanged());
@@ -45,7 +45,7 @@ class FetchAuroraCustomerNotes extends FetchAuroraAction
                     $customerNote = StoreCustomerNote::make()->action(
                         customer: $customerNoteData['customer'],
                         modelData: $customerNoteData['customer_note'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
 

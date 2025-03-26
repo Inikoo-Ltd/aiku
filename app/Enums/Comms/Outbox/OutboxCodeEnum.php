@@ -91,7 +91,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_LOW_STOCK => 'Low stock in basket',
             OutboxCodeEnum::BASKET_PUSH => 'Basket push',
             OutboxCodeEnum::NEW_CUSTOMER_PUSH => 'New customer push',
-            OutboxCodeEnum::NEW_CUSTOMER => 'New customer',
+            OutboxCodeEnum::NEW_CUSTOMER => 'New registration',
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED => 'Delivery note dispatched',
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED => 'Delivery note undispatched',
             OutboxCodeEnum::INVOICE_DELETED => 'Invoice deleted',

@@ -17,23 +17,30 @@ use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydratePallets;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
-use App\Models\CRM\WebUser;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeletePallet extends OrgAction
 {
     use WithActionUpdate;
+    use WithFulfilmentShopEditAuthorisation;
 
 
+
+    private Pallet $pallet;
 
     public function handle(Pallet $pallet): Pallet
     {
+        $pallet->refresh();
+
         $this->update($pallet, ['customer_reference' => null]);
         $pallet->delete();
+
 
         FulfilmentCustomerHydratePallets::dispatch($pallet->fulfilmentCustomer);
         FulfilmentHydratePallets::dispatch($pallet->fulfilment);
@@ -43,38 +50,26 @@ class DeletePallet extends OrgAction
         }
 
         PalletDeliveryHydratePallets::run($pallet->palletDelivery);
-        SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
+        SetPalletDeliveryAutoServices::run($pallet->palletDelivery, true);
         PalletDeliveryHydrateTransactions::run($pallet->palletDelivery);
         PalletRecordSearch::dispatch($pallet);
         return $pallet;
     }
 
-    public function authorize(ActionRequest $request): bool
+
+    public function afterValidator(Validator $validator): void
     {
-        if ($this->asAction) {
-            return true;
+
+        if ($this->pallet->status != PalletStatusEnum::IN_PROCESS) {
+            $validator->errors()->add('state', 'Only pallets in process can be deleted');
         }
 
-        if ($request->user() instanceof WebUser) {
-            // TODO: Raul please do the permission for the web user
-            return true;
-        }
-
-        return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
     }
 
-    public function fromRetina(Pallet $pallet, ActionRequest $request): Pallet
-    {
-        /** @var FulfilmentCustomer $fulfilmentCustomer */
-        $fulfilmentCustomer = $request->user()->customer->fulfilmentCustomer;
-        $this->fulfilment   = $fulfilmentCustomer->fulfilment;
-
-        $this->initialisation($request->get('website')->organisation, $request);
-        return $this->handle($pallet);
-    }
 
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
+        $this->pallet = $pallet;
         $this->initialisationFromFulfilment($pallet->fulfilment, $request);
 
         return $this->handle($pallet);
@@ -82,6 +77,7 @@ class DeletePallet extends OrgAction
 
     public function action(Pallet $pallet, array $modelData, int $hydratorsDelay = 0): Pallet
     {
+        $this->pallet = $pallet;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromFulfilment($pallet->fulfilment, $modelData);

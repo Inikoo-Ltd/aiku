@@ -9,6 +9,7 @@
 
 use App\Actions\CRM\WebUser\Retina\LogoutRetina;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
+use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaPrepareAccount;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegister;
@@ -22,6 +23,8 @@ use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest:retina')->group(function () {
+    Route::get('auth-shopify', AuthenticateRetinaShopifyUser::class)->name('auth.shopify');
+
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
     Route::get('register', ShowRetinaRegister::class)->name('register');

@@ -36,7 +36,7 @@ class FetchAuroraTimesheets extends FetchAuroraAction
                     $timesheet = UpdateTimesheet::make()->action(
                         timesheet: $timesheet,
                         modelData: $timesheetData['timesheet'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordChange($organisationSource, $timesheet->wasChanged());
@@ -50,7 +50,7 @@ class FetchAuroraTimesheets extends FetchAuroraAction
                     $timesheet = StoreTimesheet::make()->action(
                         parent: $timesheetData['employee'],
                         modelData: $timesheetData['timesheet'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordNew($organisationSource);
@@ -71,7 +71,7 @@ class FetchAuroraTimesheets extends FetchAuroraAction
                         $clocking = UpdateClocking::make()->action(
                             clocking: $clocking,
                             modelData: $clockingData['clockingData'],
-                            hydratorsDelay: 60,
+                            hydratorsDelay: $this->hydratorsDelay,
                             strict: false,
                         );
                         $this->recordChange($organisationSource, $clocking->wasChanged());

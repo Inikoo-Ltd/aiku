@@ -14,26 +14,20 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateOrders
+class ShopHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
+        return $shop->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
-    }
 
     public function handle(Shop $shop): void
     {

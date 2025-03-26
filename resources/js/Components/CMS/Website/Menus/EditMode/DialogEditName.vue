@@ -18,8 +18,6 @@ const emits = defineEmits<{
     (e: 'onSave', value: string): void
 }>()
 
-console.log('dddd', props.data_form)
-
 </script>
 
 <template>

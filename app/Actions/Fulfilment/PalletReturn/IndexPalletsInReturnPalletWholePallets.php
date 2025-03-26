@@ -21,6 +21,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -121,7 +122,7 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
                 'locations.slug as location_slug',
                 'locations.code as location_code'
             );
-
+        $query->addSelect(DB::raw("'{$palletReturn->state->value}' AS pallet_return_state"));
 
         return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name'])
             ->allowedFilters([$globalSearch])

@@ -39,8 +39,9 @@ const props = defineProps<{
                 class="relative group flex-1 flex gap-x-1.5 justify-center md:justify-start items-center">
                 <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`"
                     class="flex gap-x-2 items-center">
-                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
-                    <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
+<!--                  This icon cause an error-->
+<!--                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />-->
+                    WA: <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
             </div>
 
@@ -245,9 +246,10 @@ const props = defineProps<{
                     </div>
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
-                        <img v-for="item of modelValue?.paymentData.data" :src="item.value" :alt="item.name"
-                            class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
-                    </div>
+                            <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
+                                <img :src="payment.image" :alt="payment.alt" class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
+                            </div>
+                        </div>
                 </div>
             </div>
 
@@ -262,7 +264,6 @@ const props = defineProps<{
 
                 <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
                     <a v-for="socmed of modelValue?.socialMedia" target="_blank" :href="socmed.link">
-                        {{ socmed.icon }} =====
                         <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl"></FontAwesomeIcon>
                     </a>
                 </div>

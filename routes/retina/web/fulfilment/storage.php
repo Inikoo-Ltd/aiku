@@ -8,6 +8,7 @@
 
 use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
 use App\Actions\Retina\Fulfilment\Pallet\DownloadRetinaPalletsTemplate;
+use App\Actions\Retina\Fulfilment\Pallet\DownloadRetinaPalletsWithStoredItemsTemplate;
 use App\Actions\Retina\Fulfilment\Pallet\UI\EditRetinaPallet;
 use App\Actions\Retina\Fulfilment\Pallet\UI\IndexRetinaPallets;
 use App\Actions\Retina\Fulfilment\Pallet\UI\ShowRetinaPallet;
@@ -33,6 +34,7 @@ Route::prefix('pallet-deliveries')->as('pallet_deliveries.')->group(function () 
     Route::get('{palletDelivery}', ShowRetinaPalletDelivery::class)->name('show');
     Route::get('{palletDelivery}/pallets/{pallet}', [ShowRetinaPallet::class, 'inPalletDelivery'])->name('pallets.show');
     Route::get('{palletDelivery}/pallets-templates', DownloadRetinaPalletsTemplate::class)->name('pallets.uploads.templates');
+    Route::get('{palletDelivery}/pallet-stored-items-templates', DownloadRetinaPalletsWithStoredItemsTemplate::class)->name('pallet-stored-items.uploads.templates');
     Route::get('{palletDelivery}/pallets-histories', [IndexRecentUploads::class, 'inPalletRetina'])->name('pallets.uploads.history');
 });
 

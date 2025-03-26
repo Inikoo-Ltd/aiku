@@ -47,7 +47,7 @@ class FetchAuroraUsers extends FetchAuroraAction
                         $user = UpdateUser::make()->action(
                             user: $user,
                             modelData: $userData['user'],
-                            hydratorsDelay: 60,
+                            hydratorsDelay: $this->hydratorsDelay,
                             strict: false,
                             audit: false
                         );
@@ -89,7 +89,7 @@ class FetchAuroraUsers extends FetchAuroraAction
                         //                                    [
                         //                                        'permissions' => $userData['user']['positions']
                         //                                    ],
-                        //                                    hydratorsDelay: 60,
+                        //                                    hydratorsDelay: $this->hydratorsDelay,
                         //                                    strict: false,
                         //                                    audit: false
                         //                                );
@@ -119,7 +119,7 @@ class FetchAuroraUsers extends FetchAuroraAction
                             $guest = StoreGuest::make()->action(
                                 $organisationSource->getOrganisation()->group,
                                 $userData['guest'],
-                                hydratorsDelay: 60,
+                                hydratorsDelay: $this->hydratorsDelay,
                                 strict: false,
                                 audit: false
                             );

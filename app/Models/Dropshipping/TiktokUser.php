@@ -8,13 +8,15 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Dropshipping\Tiktok\Traits\WithTiktokApiServices;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\PlatformHasClient;
+use App\Models\TiktokUserHasProduct;
 use App\Models\Traits\HasEmail;
-use App\Models\Traits\HasImage;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasPermissions;
@@ -46,12 +48,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PlatformHasClient> $clients
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TiktokUserHasProduct> $products
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser newQuery()
@@ -67,9 +67,9 @@ class TiktokUser extends Model
 {
     use HasPermissions;
     use HasEmail;
-    use HasImage;
     use InCustomer;
     use SoftDeletes;
+    use WithTiktokApiServices;
 
     protected $guarded = [];
 
@@ -108,4 +108,8 @@ class TiktokUser extends Model
         return $this->morphMany(PlatformHasClient::class, 'userable');
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(TiktokUserHasProduct::class, 'tiktok_user_id');
+    }
 }

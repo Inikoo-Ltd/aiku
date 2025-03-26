@@ -39,7 +39,7 @@ class FetchAuroraQueries extends FetchAuroraAction
                     $query = UpdateQuery::make()->action(
                         query: $query,
                         modelData: $queryData['query'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordChange($organisationSource, $query->wasChanged());
@@ -53,7 +53,7 @@ class FetchAuroraQueries extends FetchAuroraAction
                     $query = StoreQuery::make()->action(
                         parent: $queryData['shop'],
                         modelData: $queryData['query'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
 

@@ -46,7 +46,7 @@ class FetchAuroraEmployees extends FetchAuroraAction
                     $employee = UpdateEmployee::make()->action(
                         employee: $employee,
                         modelData: $employeeData['employee'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -65,7 +65,7 @@ class FetchAuroraEmployees extends FetchAuroraAction
                     $employee = StoreEmployee::make()->action(
                         parent: $workplace,
                         modelData: $employeeData['employee'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

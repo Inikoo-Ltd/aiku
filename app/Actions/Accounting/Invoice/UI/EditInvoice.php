@@ -60,7 +60,7 @@ class EditInvoice extends OrgAction
         $this->parent = $invoice->shop;
         $this->initialisationFromShop($invoice->shop, $request);
 
-        return $this->handle($$invoice);
+        return $this->handle($invoice);
     }
 
     /** @noinspection PhpUnusedParameterInspection */

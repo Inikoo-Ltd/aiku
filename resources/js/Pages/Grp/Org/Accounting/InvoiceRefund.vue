@@ -126,24 +126,33 @@ const component = computed(() => {
 
 
 // Section: Payment invoice
-const listPaymentMethod = ref([])
-const isLoadingFetch = ref(false)
-const fetchPaymentMethod = async () => {
-    try {
-        isLoadingFetch.value = true
-        const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters))
-        listPaymentMethod.value = data.data
-    } catch (error) {
-        notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to fetch payment method list'),
-            type: 'error',
-        })
+const listPaymentRefund = ref([
+    {
+        label: trans("Refund money to customer's credit balance"),
+        value: 'credit_balance',
+    },
+    {
+        label: trans("Refund money to payment method of the invoice"),
+        value: 'invoice_payment_method',
     }
-    finally {
-        isLoadingFetch.value = false
-    }
-}
+])
+// const isLoadingFetch = ref(false)
+// const fetchPaymentMethod = async () => {
+//     try {
+//         isLoadingFetch.value = true
+//         const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters))
+//         listPaymentMethod.value = data.data
+//     } catch (error) {
+//         notify({
+//             title: trans('Something went wrong'),
+//             text: trans('Failed to fetch payment method list'),
+//             type: 'error',
+//         })
+//     }
+//     finally {
+//         isLoadingFetch.value = false
+//     }
+// }
 
 const paymentData = ref({
     payment_method: null as number | null,
@@ -181,7 +190,8 @@ const onSubmitPayment = () => {
                     paymentData.value.payment_method = null,
                     paymentData.value.payment_amount = 0,
                     paymentData.value.payment_reference = ''
-                }
+                },
+                preserveScroll: true,
             }
         )
 
@@ -352,18 +362,38 @@ watch(paymentData, () => {
                     </dd>
                 </div>
 
-                <div class="relative flex items-start w-full flex-none gap-x-2">
+                <div v-if="false" class="relative flex items-start w-full flex-none gap-x-2">
                     <dt class="flex-none pt-1">
                         <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
                     </dt>
-                    <NeedToPay
-                        @click="() => Number(box_stats.information.pay_amount) > 0 ? (isOpenModalPayment = true, fetchPaymentMethod()) : false"
-                        :totalAmount="Number(props.invoice_refund.total_amount)"
-                        :paidAmount="Number(box_stats.information.paid_amount)"
-                        :payAmount="Number(box_stats.information.pay_amount)"
-                        :currencyCode="invoice_refund.currency_code"
-                        :class="[Number(box_stats.information.pay_amount) ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                    />
+
+                    <dd @click="() => isOpenModalPayment = true"
+                        class="cursor-pointer relative w-full flex flex-col border px-2.5 py-1 rounded-md  overflow-hidden"
+                        :class="Number(box_stats.information.pay_amount) === 0 ? 'border-gray-300' : 'border-orange-400 bg-orange-50 hover:bg-orange-100'"
+                        v-tooltip="trans('Need to refund')"
+                    >
+                        <!-- Block: Corner label (fully paid) -->
+                        <Transition>
+                            <div v-if="Number(box_stats.information.pay_amount) === 0" v-tooltip="trans('Fully refunded')"
+                                class="absolute top-0 right-0 text-green-500 p-1 text-xxs">
+                                <div class="absolute top-0 right-0 w-0 h-0 border-b-[25px] border-r-[25px] border-transparent border-r-green-500">
+                                </div>
+                                <FontAwesomeIcon icon='far fa-check' class='absolute top-1/2 right-1/2 text-white text-[8px]'
+                                    fixed-width aria-hidden='true' />
+                            </div>
+                        </Transition>
+
+                        <div v-tooltip="trans('Amount need to pay by customer')" class="text-sm w-fit">
+                            {{ locale.currencyFormat(invoice_refund.currency_code || 'usd', Math.abs(Number(invoice_refund.total_amount))) }}
+                            <span v-if="Number(box_stats.information.paid_amount) > 0" class='text-gray-400'>. Paid</span>
+                        </div>
+                        <div v-if="Number(box_stats.information.paid_amount) !== undefined && Number(box_stats.information.pay_amount) !== 0" class="text-xs text-gray-500 font-light">
+                            {{ trans('Refunded') }}: {{ locale.currencyFormat(invoice_refund.currency_code || 'usd', Number(box_stats.information.paid_amount)) }}
+                        </div>
+                        <div v-if="Number(box_stats.information.paid_amount) !== undefined && Number(box_stats.information.pay_amount) !== 0" class="text-xs text-gray-500 font-light">
+                            {{ trans('Need to refund') }}: {{ locale.currencyFormat(invoice_refund.currency_code || 'usd', Math.abs(Number(box_stats.information.pay_amount))) }}
+                        </div>
+                    </dd>
 
 
                 </div>
@@ -399,9 +429,9 @@ watch(paymentData, () => {
     <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Invoice Payment') }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
                 <p class="text-xs leading-5 text-gray-400">
-                    {{ trans('Information about payment from customer') }}
+                    {{ trans('Fill the information about refund payment') }}
                 </p>
             </div>
 
@@ -413,10 +443,9 @@ watch(paymentData, () => {
                     <div class="mt-1">
                         <PureMultiselect
                             v-model="paymentData.payment_method"
-                            :options="listPaymentMethod"
-                            :isLoading="isLoadingFetch"
-                            label="name"
-                            valueProp="id"
+                            :options="listPaymentRefund"
+                            label="label"
+                            valueProp="value"
                             required
                             caret
                         />
@@ -429,8 +458,8 @@ watch(paymentData, () => {
                         <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
                     <div class="space-x-1">
-                        <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{ locale.currencyFormat(props.invoice_refund.currency_code || 'usd', Number(box_stats.information.pay_amount)) }}</span>
-                        <Button @click="() => paymentData.payment_amount = box_stats.information.pay_amount" :disabled="paymentData.payment_amount === box_stats.information.pay_amount" type="tertiary" label="Pay all" size="xxs" />
+                        <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_refund.currency_code || 'usd', Math.abs(Number(box_stats.information.pay_amount))) }}</span>
+                        <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)" :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary" :label="trans('Pay all')" size="xxs" />
                     </div>
                 </div>
 

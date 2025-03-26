@@ -9,21 +9,16 @@
 namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Models\CRM\Customer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateClients
+class CustomerHydrateClients implements ShouldBeUnique
 {
     use AsAction;
-    private Customer $customer;
-    public function __construct(Customer $customer)
-    {
-        $this->customer = $customer;
-    }
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Customer $customer): string
     {
-        return [(new WithoutOverlapping($this->customer->id))->dontRelease()];
+        return $customer->id;
     }
 
     public function handle(Customer $customer): void

@@ -35,7 +35,7 @@ class FetchAuroraOffers extends FetchAuroraAction
                 $offer = UpdateOffer::make()->action(
                     offer: $offer,
                     modelData: $offerData['offer'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -51,7 +51,7 @@ class FetchAuroraOffers extends FetchAuroraAction
                     offerCampaign: $offerData['offer_campaign'],
                     trigger: $offerData['trigger'],
                     modelData: $offerData['offer'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

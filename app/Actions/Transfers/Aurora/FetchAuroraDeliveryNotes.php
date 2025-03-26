@@ -81,7 +81,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
                 $deliveryNote = StoreDeliveryNote::make()->action(
                     $deliveryNoteData['order'],
                     $deliveryNoteData['delivery_note'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

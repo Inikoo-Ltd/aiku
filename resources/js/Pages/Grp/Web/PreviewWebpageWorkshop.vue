@@ -75,7 +75,7 @@ onMounted(() => {
 
 <template>
 	<div class="editor-class">
-		<div class="shadow-xl px-1" :class="layout?.layout === 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
+		<div class="shadow-xl px-1" :class="'container max-w-7xl mx-auto'">
 			<div v-if="webpage">
 				<div v-if="webpage?.layout?.web_blocks?.length">
 					<TransitionGroup tag="div" name="list" class="relative">
@@ -108,9 +108,13 @@ onMounted(() => {
 									</div>
 								</div>
 
-								<component class="w-full" :is="getComponent(activityItem.type)" :webpageData="webpage"
-									:blockData="activityItem" @autoSave="() => updateData(activityItem)"
-									v-model="activityItem.web_block.layout.data.fieldValue" />
+								<component 
+									class="w-full" :is="getComponent(activityItem.type)" 
+									:webpageData="webpage"
+									:blockData="activityItem" 
+									@autoSave="() => updateData(activityItem)"
+									v-model="activityItem.web_block.layout.data.fieldValue" 
+								/>
 							</section>
 						</template>
 					</TransitionGroup>

@@ -394,7 +394,6 @@ const isModalGallery = ref(false)
 			:imagesUploadedRoutes="data.imagesUploadedRoutes"
 			:attachImageRoute="data.attachImageRoute"
 			:stockImagesRoute="data.stockImagesRoute"
-			:closePopup="() => (isModalGallery = false)"
 			@selectImage="(image: {}) => console.log('image', image)" />
 	</Modal>
 </template>

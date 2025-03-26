@@ -32,7 +32,7 @@ class FetchAuroraPaymentAccounts extends FetchAuroraAction
                     $paymentAccount = UpdatePaymentAccount::make()->action(
                         paymentAccount: $paymentAccount,
                         modelData: $paymentAccountData['paymentAccount'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraPaymentAccounts extends FetchAuroraAction
                     $paymentAccount = StorePaymentAccount::make()->action(
                         orgPaymentServiceProvider: $paymentAccountData['orgPaymentServiceProvider'],
                         modelData: $paymentAccountData['paymentAccount'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -70,15 +70,6 @@ class FetchAuroraPaymentAccounts extends FetchAuroraAction
                     return null;
                 }
             }
-
-
-            foreach (DB::connection('aurora')->table('Payment Account Store Bridge')
-                 ->where('Payment Account Store Payment Account Key', $paymentAccount->source_id)->get() as $paymentAccountStoreBridgeData) {
-
-            }
-
-
-
 
 
             return $paymentAccount;

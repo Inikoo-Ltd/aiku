@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -59,7 +60,7 @@ class PalletReturnItemsUIResource extends JsonResource
             'location'                         => $this->location_slug,
             'location_code'                    => $this->location_code,
             'location_id'                      => $this->location_id,
-            'is_checked'                       => $this->state->value === PalletStateEnum::IN_PROCESS ? (bool) $this->pallet_return_id : false,
+            'is_checked'                       => $this->pallet_return_state === PalletReturnStateEnum::IN_PROCESS->value ? (bool) $this->pallet_return_id : false,
             'stored_items'                     => $pallet->storedItems->map(fn ($storedItem) => [
                 'reference' => $storedItem->reference,
                 'quantity'  => (int)$storedItem->pivot->quantity,

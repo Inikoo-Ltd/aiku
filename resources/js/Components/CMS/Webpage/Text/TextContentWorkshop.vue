@@ -3,9 +3,9 @@ import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from '@/Composables/styles'
 
 const props = defineProps<{
-	modelValue: any
-	webpageData?: any
-	blockData?: Object
+    modelValue: any
+    webpageData?: any
+    blockData?: Object
 }>()
 
 const emits = defineEmits<{
@@ -13,14 +13,17 @@ const emits = defineEmits<{
 }>()
 
 
-
 </script>
 
 <template>
     <div id="blockTextContent" :style="getStyles(modelValue?.container.properties)">
         <EditorV2 
-            v-model="modelValue.value"
-            @update:modelValue="(e) => (emits('autoSave'))"
+            v-model="modelValue.value" 
+            @update:modelValue="() => emits('autoSave')" 
+            :uploadImageRoute="{ 
+                name: webpageData.images_upload_route.name, 
+                parameters: { modelHasWebBlocks: blockData.id } 
+            }" 
         />
     </div>
 </template>

@@ -5,7 +5,7 @@ import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
 
 const props = defineProps<{
-    uploadImageRoute?: routeType
+    uploadRoutes?: routeType
 }>()
 
 const defaultModel = {
@@ -26,7 +26,7 @@ const localModel = computed({
 
 <template>
     <div>
-        <BackgroundProperty v-model="localModel" :uploadImageRoute="uploadImageRoute" />
+        <BackgroundProperty v-model="localModel" :uploadImageRoute="uploadRoutes" />
     </div>
 </template>
 

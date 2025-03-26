@@ -24,6 +24,7 @@ class ProcessRetinaWebUserRequest extends RetinaAction
     use WithNoStrictRules;
     use WithLogRequest;
 
+    public string $jobQueue = 'analytics';
 
     /**
      * @throws \Throwable

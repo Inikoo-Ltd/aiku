@@ -40,6 +40,8 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UI\CreateCustomerClient;
+use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -49,6 +51,7 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
@@ -63,6 +66,7 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
@@ -88,6 +92,15 @@ beforeEach(function () {
     $this->orgStock2 = $orgStocks[1];
 
     $this->adminGuest->refresh();
+
+    $shop = Shop::where('type', '!=', ShopTypeEnum::FULFILMENT)->first();
+    if (!$shop) {
+        $shop = StoreShop::run(
+            $this->organisation,
+            Shop::factory()->definition()
+        );
+    }
+    $this->shop = $shop;
 
     Config::set(
         'inertia.testing.page_paths',
@@ -174,22 +187,22 @@ test('create other org payment service provider account', function () {
     /** @var Organisation $organisation */
     $organisation = $this->organisation;
 
-    expect($organisation->accountingStats->number_payment_accounts)->toBe(0);
+    expect($organisation->accountingStats->number_payment_accounts)->toBe(1);
 
     $paymentServiceProvider    = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
     $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
         $organisation,
         $paymentServiceProvider,
         [
-            'code' => 'Acc1',
-            'name' => 'Account 1'
+            'code' => 'Acc2',
+            'name' => 'Account 2'
         ]
     );
 
     $this->organisation->refresh();
 
     expect($paymentAccount)->toBeInstanceOf(PaymentAccount::class)
-        ->and($organisation->accountingStats->number_payment_accounts)->toBe(1);
+        ->and($organisation->accountingStats->number_payment_accounts)->toBe(2);
 
     return $paymentAccount;
 });
@@ -213,7 +226,7 @@ test('create payment account', function ($orgPaymentServiceProvider) {
 })->depends('add payment service provider to organisation');
 
 test('update payment account shop', function (PaymentAccount $paymentAccount) {
-    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $shop     = $this->shop;
     $paymentAccountShop = StorePaymentAccountShop::make()->action(
         $paymentAccount,
         $shop,
@@ -255,7 +268,7 @@ test(
         GetCurrencyExchange::shouldRun()
             ->andReturn(2);
 
-        $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+        $shop     = $this->shop;
         $customer = StoreCustomer::make()->action(
             $shop,
             Customer::factory()->definition()
@@ -1063,6 +1076,25 @@ test('UI show list payments', function () {
     });
 });
 
+test('UI show list invoices in group', function () {
+    $response = get(route('grp.overview.ordering.invoices.index'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Invoices')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
 test('UI show list invoices', function () {
     $response = get(route('grp.org.accounting.invoices.index', $this->organisation->slug));
 
@@ -1083,12 +1115,144 @@ test('UI show list invoices', function () {
     });
 });
 
-test('UI show invoice', function () {
+test('UI show list paid invoices', function () {
+    $response = get(route('grp.org.accounting.paid_invoices.index', $this->organisation->slug));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show list unpaid invoices', function () {
+    $response = get(route('grp.org.accounting.unpaid_invoices.index', $this->organisation->slug));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show list invoices in shop', function () {
     $this->withoutExceptionHandling();
-    $shop = StoreShop::run(
-        $this->organisation,
-        Shop::factory()->definition()
-    );
+    $shop = $this->shop;
+    $response = get(route('grp.org.shops.show.dashboard.invoices.index', [$this->organisation->slug, $shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show list unpaid invoices in shop', function () {
+    $this->withoutExceptionHandling();
+    $shop = $this->shop;
+    $response = get(route('grp.org.shops.show.dashboard.invoices.unpaid.index', [$this->organisation->slug, $shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show list invoices in customer', function () {
+    $this->withoutExceptionHandling();
+    $shop = $this->shop;
+    $customer = createCustomer($shop);
+    $response = get(route('grp.org.shops.show.crm.customers.show.invoices.index', [$this->organisation->slug, $shop->slug, $customer->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $customer->name)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show list invoices in customer client', function () {
+    $this->withoutExceptionHandling();
+    $shop = $this->shop;
+    $customer = createCustomer($shop);
+    $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
+    $response = get(route('grp.org.shops.show.crm.customers.show.customer-clients.invoices.index', [
+        'organisation' => $this->organisation->slug, 
+        'shop' => $shop->slug, 
+        'customer' => $customer->slug, 
+        'customerClient' => $customerClient->ulid]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $customerClient->name)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show invoice in Organisation', function () {
+    $this->withoutExceptionHandling();
+    $shop = $this->shop;
     $customer = createCustomer($shop);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     $response = get(route('grp.org.accounting.invoices.show', [$this->organisation->slug, $invoice->slug]));
@@ -1145,22 +1309,78 @@ test('UI show invoice', function () {
     });
 });
 
-test('Delete invoice', function () {
+test('UI show invoice in Shop', function () {
     $this->withoutExceptionHandling();
-    $shop = StoreShop::run(
-        $this->organisation,
-        Shop::factory()->definition()
-    );
+    $shop = $this->shop;
     $customer = createCustomer($shop);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
-    expect($customer->stats->number_invoices)->toBe(1);
+    $response = get(route('grp.org.shops.show.dashboard.invoices.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
+        $page->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has(
+                'navigation',
+                fn (AssertableInertia $page) => $page
+                    ->has('previous')
+                    ->has('next')
+            )
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('model', 'invoice')
+                    ->where('title', $invoice->reference)
+                    ->etc()
+            )
+            ->has(
+                'tabs',
+                fn (AssertableInertia $page) => $page
+                    ->has('current')
+                    ->has('navigation')
+            )
+            ->has('order_summary', 3)
+            ->has('exportPdfRoute')
+            ->has(
+                'box_stats',
+                fn (AssertableInertia $page) => $page
+                    ->has(
+                        'customer',
+                        fn (AssertableInertia $page) => $page
+                            ->has('slug')
+                            ->has('reference')
+                            ->has('route')
+                            ->has('contact_name')
+                            ->has('company_name')
+                            ->has('location')
+                            ->has('phone')
+                    )
+                    ->has(
+                        'information',
+                        fn (AssertableInertia $page) => $page
+                            ->has('recurring_bill')
+                            ->has('routes')
+                            ->has('paid_amount')
+                            ->has('pay_amount')
+                    )
+            )
+            ->has('invoice');
+    });
+});
+
+test('Delete invoice', function () {
+    $this->withoutExceptionHandling();
+    $shop = $this->shop;
+    $customer = createCustomer($shop);
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    expect($customer->stats->number_invoices)->toBe(3);
 
     $invoice = DeleteInvoice::make()->action($invoice, [
         'deleted_note' => 'test'
     ]);
     $customer->refresh();
     expect($invoice->trashed())->toBeTrue();
-    expect($customer->stats->number_invoices)->toBe(0);
+    expect($customer->stats->number_invoices)->toBe(2);
     return $invoice;
 });
 
@@ -1223,10 +1443,7 @@ test('UI show invoices deleted', function (Invoice $invoice) {
 
 test('Store invoice refund', function () {
     $this->withoutExceptionHandling();
-    $shop = StoreShop::run(
-        $this->organisation,
-        Shop::factory()->definition()
-    );
+    $shop = $this->shop;
     $customer = createCustomer($shop);
 
     $orgStocks = [

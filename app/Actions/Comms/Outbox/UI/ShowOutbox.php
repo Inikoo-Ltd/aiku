@@ -9,15 +9,12 @@
 namespace App\Actions\Comms\Outbox\UI;
 
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
-use App\Actions\Comms\EmailBulkRun\UI\IndexEmailBulkRuns;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\OrgAction;
 use App\Actions\Web\HasWorkshopAction;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
-use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\UI\Mail\OutboxTabsEnum;
 use App\Http\Resources\Mail\DispatchedEmailResource;
-use App\Http\Resources\Mail\EmailBulkRunsResource;
 use App\Http\Resources\Mail\MailshotResource;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\Models\Catalogue\Shop;
@@ -46,20 +43,6 @@ class ShowOutbox extends OrgAction
         return $outbox;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Fulfilment) {
-            return    $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-        }
-
-        return $request->user()->authTo([
-            'shop-admin.'.$this->shop->id,
-            'marketing.'.$this->shop->id.'.view',
-            'web.'.$this->shop->id.'.view',
-            'orders.'.$this->shop->id.'.view',
-            'crm.'.$this->shop->id.'.view',
-        ]);
-    }
 
     public function inOrganisation(Organisation $organisation, Outbox $outbox, ActionRequest $request): Outbox
     {
@@ -90,6 +73,7 @@ class ShowOutbox extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): Outbox
     {
+
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OutboxTabsEnum::values());
 
@@ -129,9 +113,7 @@ class ShowOutbox extends OrgAction
             unset($navigation[OutboxTabsEnum::MAILSHOTS->value]);
         }
 
-        // if ($outbox->state == OutboxStateEnum::IN_PROCESS) {
-        //     unset($navigation[OutboxTabsEnum::EMAIL_BULK_RUNS->value]);
-        // }
+
 
         return Inertia::render(
             'Comms/Outbox',
@@ -169,15 +151,12 @@ class ShowOutbox extends OrgAction
                     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))
                     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
 
-                // OutboxTabsEnum::EMAIL_BULK_RUNS->value => $this->tab == OutboxTabsEnum::EMAIL_BULK_RUNS->value ?
-                // fn () => EmailBulkRunsResource::collection(IndexEmailBulkRuns::run($outbox))
-                // : Inertia::lazy(fn () => EmailBulkRunsResource::collection(IndexEmailBulkRuns::run($outbox))),
+
 
 
             ]
         )->table(IndexMailshots::make()->tableStructure(parent:$outbox, prefix: OutboxTabsEnum::MAILSHOTS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::DISPATCHED_EMAILS->value));
-        // ->table(IndexEmailBulkRuns::make()->tableStructure(parent:$outbox, prefix: OutboxTabsEnum::EMAIL_BULK_RUNS->value))
 
     }
 

@@ -28,7 +28,7 @@ class FetchAuroraOrgPaymentServiceProviders extends FetchAuroraAction
                 $orgPaymentServiceProvider = UpdateOrgPaymentServiceProvider::make()->action(
                     orgPaymentServiceProvider: $orgPaymentServiceProvider,
                     modelData: $paymentServiceProviderData['orgPaymentServiceProvider'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -37,7 +37,7 @@ class FetchAuroraOrgPaymentServiceProviders extends FetchAuroraAction
                     paymentServiceProvider: $paymentServiceProviderData['paymentServiceProvider'],
                     organisation: $organisationSource->getOrganisation(),
                     modelData: $paymentServiceProviderData['orgPaymentServiceProvider'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

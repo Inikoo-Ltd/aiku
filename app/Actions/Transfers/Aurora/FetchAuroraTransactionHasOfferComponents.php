@@ -39,7 +39,7 @@ class FetchAuroraTransactionHasOfferComponents
             $transactionHasOfferComponent = UpdateTransactionHasOfferComponent::make()->action(
                 transactionHasOfferComponent: $transactionHasOfferComponent,
                 modelData: $transactionHasOfferComponentData,
-                hydratorsDelay: 60,
+                hydratorsDelay: 5,
                 strict: false
             );
         }
@@ -49,7 +49,7 @@ class FetchAuroraTransactionHasOfferComponents
                 transaction: $transactionHasOfferComponentData['transaction'],
                 offerComponent: $transactionHasOfferComponentData['offer_component'],
                 modelData: $transactionHasOfferComponentData['transaction_has_offer_component'],
-                hydratorsDelay: 60,
+                hydratorsDelay: 5,
                 strict: false
             );
         }

@@ -51,6 +51,7 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
                         parent: $dispatchedEmailData['parent'],
                         recipient: $dispatchedEmailData['recipient'],
                         modelData: $dispatchedEmailData['dispatchedEmail'],
+                        hydratorsDelay: 60,
                         strict: false,
                     );
 

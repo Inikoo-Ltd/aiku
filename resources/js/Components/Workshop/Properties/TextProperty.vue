@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter } from "@fad"
@@ -8,13 +8,18 @@ import { faLink, faUnlink } from "@fal"
 import { faExclamation } from "@fas"
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import { useFontFamilyList } from '@/Composables/useFont'
-import RadioButton from 'primevue/radiobutton'
+import { set, get } from 'lodash'
+
 library.add(faExclamation, faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink)
 
 interface TextProperty {
     color: string,
     fontFamily: String
 }
+
+
+const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
 
 const model = defineModel<TextProperty>({
     required: true
@@ -39,7 +44,20 @@ const fontFamilies = [...useFontFamilyList];
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
                 <div class="text-xs">{{ trans('Color') }}</div>
-                <ColorPicker :color="localModel?.color"
+                <ColorPicker
+                    :color="get(localModel, 'color', 'rgba(0, 0, 0, 1)')"
+                    @changeColor="(newColor)=> (set(localModel, 'color', `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a}`), onSaveWorkshopFromId(side_editor_block_id, 'textPorperty'))"
+                    closeButton
+                >
+                    <template #button>
+                        <div v-bind="$attrs" class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center" :style="{
+                            background: `${get(localModel, 'color', 'transparent')}`
+                        }"
+                        >
+                        </div>
+                    </template>
+                </ColorPicker>
+                <!-- <ColorPicker :color="localModel?.color"
                     @changeColor="(newColor) => localModel.color = `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`"
                     closeButton
                     :isEditable="!localModel?.color?.includes('var')"
@@ -70,13 +88,13 @@ const fontFamilies = [...useFontFamilyList];
                             <label class="cursor-pointer" for="bg-color-picker-3">{{ trans("Custom") }}</label>
                         </div>
                     </template>
-                </ColorPicker>
+                </ColorPicker> -->
             </div>
 
             <div class="px-3 items-center">
                 <div class="text-xs mb-2">{{ trans('Font') }}</div>
                 <div class="col-span-4">
-                    <PureMultiselect v-model="localModel.fontFamily" class="" required :options="fontFamilies">
+                    <PureMultiselect v-model="localModel.fontFamily"  @update:modelValue="(e) => (set(localModel, 'fontFamily', e),onSaveWorkshopFromId(side_editor_block_id, 'textStyle'))" required :options="fontFamilies">
                         <template #option="{ option, isSelected, isPointed, search }">
                             <span :style="{
                                 fontFamily: option.value

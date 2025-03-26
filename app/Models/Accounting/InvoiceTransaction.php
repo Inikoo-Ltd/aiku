@@ -13,6 +13,7 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferComponent;
+use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
 use App\Models\Ordering\Order;
@@ -127,6 +128,11 @@ class InvoiceTransaction extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function recurringBillTransaction(): BelongsTo
+    {
+        return $this->belongsTo(RecurringBillTransaction::class);
     }
 
     public function order(): BelongsTo

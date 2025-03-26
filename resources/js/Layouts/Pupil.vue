@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
+import {usePage} from "@inertiajs/vue3";
 
 </script>
 
@@ -18,7 +19,6 @@ import Notification from '@/Components/Utils/Notification.vue'
         <!-- Main Content -->
         <main class="h-screen pl-2 md:pl-0 pr-2 ">
             <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col text-gray-700">
-
                 <slot />
 
             </div>
@@ -30,10 +30,10 @@ import Notification from '@/Components/Utils/Notification.vue'
         :max="3"
         width="500"
         classes="custom-style-notification"
-        :pauseOnHover="true"    
+        :pauseOnHover="true"
     >
         <template #body="props">
-            <Notification :notification="props" />  
+            <Notification :notification="props" />
         </template>
     </notifications>
 </template>

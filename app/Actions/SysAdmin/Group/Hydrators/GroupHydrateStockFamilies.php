@@ -21,20 +21,10 @@ class GroupHydrateStockFamilies implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public int $jobUniqueFor = 3600;
-
-    private Group $group;
-
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
-
-    public function getJobUniqueId(Group $group): int
+    public function getJobUniqueId(Group $group): string
     {
         return $group->id;
     }
-
 
     public function handle(Group $group): void
     {

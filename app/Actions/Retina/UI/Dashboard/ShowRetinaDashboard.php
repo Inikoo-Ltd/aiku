@@ -25,6 +25,12 @@ class ShowRetinaDashboard extends RetinaAction
         $inertiaPage = 'Dashboard/RetinaFulfilmentDashboard';
         if ($this->shop->type === ShopTypeEnum::DROPSHIPPING) {
             $inertiaPage = 'Dashboard/RetinaDropshippingDashboard';
+        } elseif ($this->shop->type === ShopTypeEnum::B2B) {
+            $inertiaPage = 'Dashboard/RetinaB2BDashboard';
+        }
+
+        if ($this->asPupil) {
+            $inertiaPage = 'Dashboard/PupilFulfilmentDashboard';
         }
 
         return Inertia::render(
@@ -36,6 +42,7 @@ class ShowRetinaDashboard extends RetinaAction
                 'data'       => match ($this->shop->type) {
                     ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($this->fulfilmentCustomer, $request),
                     ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer, $request),
+                    ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer, $request),
                     default => []
                 },
             ]
@@ -45,6 +52,13 @@ class ShowRetinaDashboard extends RetinaAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
+
+        return $this->handle($request);
+    }
+
+    public function inPupil(ActionRequest $request): Response
+    {
+        $this->initialisationFromPupil($request);
 
         return $this->handle($request);
     }

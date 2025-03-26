@@ -28,6 +28,7 @@ library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil)
 const props = defineProps<{
     data: {}
     tab?: string,
+    location?: string,
     routes: {
         dataList: routeType
         submitAttach: routeType
@@ -132,6 +133,11 @@ onUnmounted(() => {
     document.removeEventListener('keydown', () => false)
 })
 
+function isShopifyAdmin() {
+    console.log(window.location.hostname)
+    return window.location.hostname === 'admin.shopify.com';
+}
+
 </script>
 
 <template>
@@ -141,9 +147,14 @@ onUnmounted(() => {
         </template>
 
         <template #cell(slug)="{ item: product }">
-            <Link :href="productRoute(product)" class="primaryLink">
+            <div v-if="location !== 'pupil'">
+                <Link :href="productRoute(product)" class="primaryLink">
+                    {{ product['slug'] }}
+                </Link>
+            </div>
+            <div v-else>
                 {{ product['slug'] }}
-            </Link>
+            </div>
         </template>
 
         <template #cell(shop_code)="{ item: product }">

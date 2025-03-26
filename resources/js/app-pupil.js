@@ -16,7 +16,8 @@ import {createPinia} from 'pinia';
 import * as Sentry from '@sentry/vue';
 import FloatingVue from 'floating-vue'
 import 'floating-vue/dist/style.css'
-import Layout from '@/Layouts/Pupil.vue'
+// import Layout from '@/Layouts/Pupil.vue'
+import PupilRetina from '@/Layouts/PupilRetina.vue'
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import { definePreset } from '@primevue/themes';
@@ -49,7 +50,7 @@ createInertiaApp(
             let page = pages[`./Pages/Pupil/${name}.vue`]
             if(!page) console.error(`File './Pages/Pupil/${name}.vue' is not exist`)
 
-            page.default.layout = page.default.layout || Layout
+            page.default.layout = page.default.layout || PupilRetina
             return page
         },
       setup({el, App, props, plugin}) {

@@ -38,7 +38,7 @@ class UpdateDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
         $deliveryNote = $this->update($deliveryNote, $modelData, ['data']);
-        $changes      = $deliveryNote->getChanges();
+        $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
         $deliveryNote->refresh();
 
@@ -64,12 +64,15 @@ class UpdateDeliveryNote extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changes, ['type', 'state', 'status'])) {
+
+        if (count($changes) > 0) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
-            GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
-            OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
-            ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
-            CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer)->delay($this->hydratorsDelay);
+            if (Arr::hasAny($changes, ['type', 'state', 'status'])) {
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
+                OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
+                ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
+                CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer)->delay($this->hydratorsDelay);
+            }
         }
 
 
@@ -100,7 +103,7 @@ class UpdateDeliveryNote extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules              = $this->noStrictUpdateRules($rules);
             $rules['reference'] = ['sometimes', 'string', 'max:255'];
         }
 
@@ -109,7 +112,6 @@ class UpdateDeliveryNote extends OrgAction
 
     public function action(DeliveryNote $deliveryNote, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): DeliveryNote
     {
-
         $this->strict = $strict;
         if (!$audit) {
             DeliveryNote::disableAuditing();

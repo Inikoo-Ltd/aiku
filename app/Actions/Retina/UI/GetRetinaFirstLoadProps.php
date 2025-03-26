@@ -42,9 +42,6 @@ class GetRetinaFirstLoadProps
                 ],
 
                 'layout'   => GetRetinaLayout::run($request, $webUser),
-                'liveUsers' => [
-                'enabled'   => true,
-            ],
                 'environment' => app()->environment(),
         ];
     }

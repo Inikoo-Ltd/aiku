@@ -20,6 +20,8 @@ use Throwable;
 
 class FetchAuroraDeletedInvoices extends FetchAuroraAction
 {
+    public string $jobQueue = 'urgent';
+
     public string $commandSignature = 'fetch:deleted_invoices {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
 
@@ -52,7 +54,7 @@ class FetchAuroraDeletedInvoices extends FetchAuroraAction
             $invoice = StoreInvoice::make()->action(
                 parent: $deletedInvoiceData['parent'],
                 modelData: $deletedInvoiceData['invoice'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );

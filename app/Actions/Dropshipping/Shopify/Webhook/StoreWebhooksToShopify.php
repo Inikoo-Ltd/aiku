@@ -10,9 +10,10 @@ namespace App\Actions\Dropshipping\Shopify\Webhook;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Route;
@@ -75,14 +76,9 @@ class StoreWebhooksToShopify extends OrgAction
         });
     }
 
-    public function asController(ShopifyUser $shopifyUser)
+    public function asController(ShopifyUser $shopifyUser, ActionRequest $request)
     {
-        $this->handle($shopifyUser);
-    }
-
-    public function asCommand(Command $command)
-    {
-        $shopifyUser = ShopifyUser::where('name', $command->argument('shopify'))->firstOrFail();
+        $shop = Shop::find($request->input('shop'));
 
         $this->handle($shopifyUser);
     }

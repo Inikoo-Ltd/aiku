@@ -29,6 +29,7 @@ export default {
 		{
 			name: "Button",
 			key: ["button"],
+			editGlobalStyle : "button",
 			replaceForm: [
 				{
 					key: ["link"],

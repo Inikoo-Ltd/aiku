@@ -14,6 +14,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\UI\Fulfilment\PalletTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaPalletResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
@@ -64,10 +65,36 @@ class ShowRetinaPallet extends RetinaAction
             'icon'    => ['fal', 'fa-pallet'],
             'tooltip' => __('Pallet')
         ];
-        $model = __('Pallet');
+        $model = __('Goods');
         $title = $this->pallet->reference;
         $iconRight = $pallet->status->statusIcon()[$pallet->status->value];
         $afterTitle = [];
+        $actions = [
+            [
+                'type'    => 'button',
+                'style'   => 'edit',
+                'tooltip' => __('edit pallet'),
+                'label'   => __('Edit'),
+                'route'   => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => array_values(request()->route()->originalParameters())
+                ]
+            ],
+        ];
+
+        if ($pallet->status == PalletStatusEnum::STORING) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('Return Goods'),
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.pallet-return.store',
+                        'parameters' => []
+                    ]
+                ];
+        }
 
         if ($this->pallet->customer_reference) {
             $afterTitle = [
@@ -85,7 +112,7 @@ class ShowRetinaPallet extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPallet',
             [
-                'title'                         => __('pallets'),
+                'title'                         => __('goods'),
                 'breadcrumbs'                   => $this->getBreadcrumbs(
                     $pallet,
                     request()->route()->getName(),
@@ -101,18 +128,7 @@ class ShowRetinaPallet extends RetinaAction
                     'iconRight'     => $iconRight,
                     'noCapitalise'  => true,
                     'afterTitle'    => $afterTitle,
-                    'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'tooltip' => __('edit pallet'),
-                            'label'   => __('Edit'),
-                            'route'   => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values(request()->route()->originalParameters())
-                            ]
-                        ],
-                    ],
+                    'actions'       => $actions,
                 ],
                 'tabs'                          => [
                     'current'    => $this->tab,
@@ -159,7 +175,7 @@ class ShowRetinaPallet extends RetinaAction
                                 'name'       => 'retina.fulfilment.storage.pallets.index',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
-                            'label' => __('Pallets')
+                            'label' => __('Goods')
                         ],
                         'model' => [
                             'route' => [

@@ -118,11 +118,20 @@ class Transaction extends Model
         'submitted_at'              => 'datetime',
         'in_warehouse_at'           => 'datetime',
         'settled_at'                => 'datetime',
-
-
         'out_of_stock_in_basket_at' => 'datetime',
         'fetched_at'                => 'datetime',
         'last_fetched_at'           => 'datetime',
+        'quantity_ordered'          => 'decimal:3',
+        'quantity_bonus'            => 'decimal:3',
+        'quantity_dispatched'       => 'decimal:3',
+        'quantity_fail'             => 'decimal:3',
+        'quantity_cancelled'        => 'decimal:3',
+        'gross_amount'              => 'decimal:2',
+        'net_amount'                => 'decimal:2',
+        'grp_net_amount'            => 'decimal:2',
+        'org_net_amount'            => 'decimal:2',
+        'grp_exchange'              => 'decimal:4',
+        'org_exchange'              => 'decimal:4',
 
 
     ];

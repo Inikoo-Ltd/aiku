@@ -235,7 +235,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 					</template>
 				</Column>
 
-				<Column field="quantity" header="Quantity">
+				<!-- <Column field="quantity" header="Quantity">
 					<template #body="{ data }">
 						<pre>{{ data.id }}</pre>
 						<div class="w-fit">
@@ -251,7 +251,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 							<div v-else></div>
 						</div>
 					</template>
-				</Column>
+				</Column> -->
 
 				<Column header="Action" style="width: 12%">
 					<template #body="{ data }">
@@ -260,8 +260,8 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 							@click="() => onSelectAttach(data.attachRoute, data.pallet_id, data)"
 							type="tertiary"
 							icon="fal fa-plus"
-							:disabled="get(data, ['quantity_selected'], 0) < 1"
-							v-tooltip="get(data, ['quantity_selected'], 0) < 1 ? trans('Add quantity to select') : false"
+							:xdisabled="get(data, ['quantity_selected'], 0) < 1"
+							:xxv-tooltip="get(data, ['quantity_selected'], 0) < 1 ? trans('Add quantity to select') : false"
 							:loading="isLoadingAttach.includes(data.pallet_id)"
 							:label="trans('Select')"
 						/>

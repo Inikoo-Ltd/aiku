@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\EmailTrackingEvent;
 
+use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -28,7 +29,14 @@ class StoreEmailTrackingEvent extends OrgAction
         /** @var EmailTrackingEvent $emailTrackingEvent */
         $emailTrackingEvent = $dispatchedEmail->emailTrackingEvents()->create($modelData);
 
-        DispatchedEmailHydrateEmailTracking::dispatch($dispatchedEmail);
+
+        DispatchedEmailHydrateEmailTracking::run($dispatchedEmail);
+        if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
+            DispatchedEmailHydrateClicks::run($dispatchedEmail);
+        } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
+            DispatchedEmailHydrateClicks::run($dispatchedEmail);
+        }
+
 
         return $emailTrackingEvent;
     }
@@ -36,8 +44,8 @@ class StoreEmailTrackingEvent extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'type'               => ['required', Rule::enum(EmailTrackingEventTypeEnum::class)],
-            'data'               => ['sometimes', 'array']
+            'type' => ['required', Rule::enum(EmailTrackingEventTypeEnum::class)],
+            'data' => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

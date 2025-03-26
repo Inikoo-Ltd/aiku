@@ -37,7 +37,7 @@ class FetchAuroraHistories extends FetchAuroraAction
                 $history = UpdateHistory::make()->action(
                     history: $history,
                     modelData: $historyData['history'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                 );
                 $this->recordChange($organisationSource, $history->wasChanged());
             } catch (Exception $e) {
@@ -50,7 +50,7 @@ class FetchAuroraHistories extends FetchAuroraAction
                 $history = StoreHistory::make()->action(
                     auditable: $historyData['auditable'],
                     modelData: $historyData['history'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                 );
 
                 $sourceData = explode(':', $history->source_id);

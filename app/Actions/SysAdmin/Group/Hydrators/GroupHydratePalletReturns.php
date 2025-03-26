@@ -12,23 +12,19 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydratePalletReturns
+class GroupHydratePalletReturns implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Group $group;
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
+    public string $jobQueue = 'low-priority';
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
     public function handle(Group $group): void

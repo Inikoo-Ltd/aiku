@@ -146,8 +146,8 @@ const formMultiplePallet = useForm({ number_pallets: 1, type : 'pallet' })
 
 const tableKey = ref(1)  // To re-render Table after click Confirm (so the Table retrieve the new props)
 const typePallet = [
+    { label : 'Carton', value : 'box'},
     { label : 'Pallet', value : 'pallet'},
-    { label : 'Box', value : 'box'},
     { label : 'Oversize', value : 'oversize'}
 ]
 

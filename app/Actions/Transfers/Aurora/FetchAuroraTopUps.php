@@ -31,7 +31,7 @@ class FetchAuroraTopUps extends FetchAuroraAction
                     $topUp = UpdateTopUp::make()->action(
                         topUp: $topUp,
                         modelData: $topUpData['topUp'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraTopUps extends FetchAuroraAction
                     $topUp = StoreTopUp::make()->action(
                         payment: $topUpData['payment'],
                         modelData: $topUpData['topUp'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

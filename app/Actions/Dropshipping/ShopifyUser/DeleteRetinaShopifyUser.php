@@ -18,6 +18,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Random\RandomException;
 
 class DeleteRetinaShopifyUser extends OrgAction
 {
@@ -25,15 +26,23 @@ class DeleteRetinaShopifyUser extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    /**
+     * @throws RandomException
+     */
     public function handle(ShopifyUser $shopifyUser)
     {
+        $randomNumber = random_int(00, 99);
+
         $this->update($shopifyUser, [
-            'name' => $shopifyUser->name . '-deleted-' . rand(00, 99),
-            'slug' => $shopifyUser->slug . '-deleted-' . rand(00, 99),
+            'name' => $shopifyUser->name . '-deleted-' . $randomNumber,
+            'slug' => $shopifyUser->slug . '-deleted-' . $randomNumber,
+            'email' => $shopifyUser->email . '-deleted-' . $randomNumber,
             'status' => false
         ]);
 
-        DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        if ($shopifyUser->customer) {
+            DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        }
 
         $shopifyUser->delete();
     }
@@ -55,5 +64,10 @@ class DeleteRetinaShopifyUser extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         $this->handle($customer->shopifyUser);
+    }
+
+    public function inWebhook(ShopifyUser $shopifyUser, ActionRequest $request): void
+    {
+        $this->handle($shopifyUser);
     }
 }

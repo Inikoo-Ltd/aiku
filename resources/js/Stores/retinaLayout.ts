@@ -13,10 +13,6 @@ import { Colors } from "@/types/Color"
 import { ref } from 'vue'
 import { StackedComponent } from '@/types/LayoutRules'
 
-interface LiveUsers {
-    enabled?: boolean
-}
-
 export const useLayoutStore = defineStore("retinaLayout", () => {
     const app = ref({
         name: "",  // For styling navigation depend on which App
@@ -33,9 +29,6 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     // group: null as Group | null,
     const leftSidebar = ref({
         show: true,
-    })
-    const liveUsers = ref<LiveUsers | null>({
-        enabled: false as boolean
     })
     const navigation = ref({
         // grp: {} as grpNavigation,
@@ -58,5 +51,5 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     const user = ref<{ id: number, avatar_thumbnail: Image, email: string, username: string } | {}>({})
     
 
-    return { root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, liveUsers, navigation, currentPlatform, rightSidebar, user }
+    return { root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, navigation, currentPlatform, rightSidebar, user }
 });

@@ -10,7 +10,7 @@
 
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreRetinaShopifyUser;
-use App\Actions\Dropshipping\Tiktok\AuthenticateTiktokAccount;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;

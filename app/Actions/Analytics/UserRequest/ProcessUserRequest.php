@@ -24,6 +24,8 @@ class ProcessUserRequest extends GrpAction
     use WithNoStrictRules;
     use WithLogRequest;
 
+    public string $jobQueue = 'analytics';
+
     /**
      * @throws \Throwable
      */

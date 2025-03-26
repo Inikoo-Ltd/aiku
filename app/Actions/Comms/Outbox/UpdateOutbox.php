@@ -36,6 +36,7 @@ class UpdateOutbox extends OrgAction
     public function rules(): array
     {
         return [
+            'name'    => ['sometimes', 'required', 'string'],
             'subject' => ['sometimes', 'required', 'string']
         ];
     }

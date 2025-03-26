@@ -29,7 +29,7 @@ class FetchAuroraCredits extends FetchAuroraAction
                 $creditTransaction = UpdateCreditTransaction::make()->action(
                     creditTransaction: $creditTransaction,
                     modelData: $creditData['credit'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
                 $this->recordChange($organisationSource, $creditTransaction->wasChanged());
@@ -43,7 +43,7 @@ class FetchAuroraCredits extends FetchAuroraAction
                 $creditTransaction = StoreCreditTransaction::make()->action(
                     customer: $creditData['customer'],
                     modelData: $creditData['credit'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
 

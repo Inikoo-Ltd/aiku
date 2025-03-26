@@ -23,8 +23,8 @@ class LoggedShopifyUserResource extends JsonResource
 
         return [
             'id'               => $shopifyUser->id,
-            'customer_id'      => $shopifyUser->customer_id,
-            'token'            => $request->get('token')
+            'name'             => $shopifyUser->name,
+            'customer_id'      => $shopifyUser->customer_id
         ];
     }
 }

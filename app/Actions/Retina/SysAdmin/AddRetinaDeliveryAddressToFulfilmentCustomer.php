@@ -10,7 +10,6 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\Search\FulfilmentCustomerRecordSearch;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
@@ -28,14 +27,8 @@ class AddRetinaDeliveryAddressToFulfilmentCustomer extends RetinaAction
     private bool $action = false;
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
-
         AddDeliveryAddressToCustomer::make()->action($fulfilmentCustomer->customer, $modelData);
         $fulfilmentCustomer->refresh();
-
-        FulfilmentCustomerRecordSearch::dispatch($fulfilmentCustomer);
-
-
-
         return $fulfilmentCustomer;
     }
 

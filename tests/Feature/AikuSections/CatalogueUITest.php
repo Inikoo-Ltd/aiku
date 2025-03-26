@@ -526,6 +526,18 @@ test('UI Index Charges', function () {
     });
 });
 
+test('UI Index Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.index', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Billables/Services')
+            ->has('title')
+            ->has('tabs')
+            ->has('breadcrumbs', 3);
+    });
+});
+
 test('UI create Charges', function () {
     $response = get(route('grp.org.shops.show.billables.charges.create', [$this->organisation->slug, $this->shop->slug]));
 

@@ -50,6 +50,7 @@ const PalletStackScreen = ({navigation, route}) => {
     });
 
     const Menus = [
+        {id: 'audit-sku', title: 'Audit SKU'},
         {id: 'move-pallet', title: 'Move Pallet'},
         {
             id: 'set-damaged',
@@ -58,6 +59,27 @@ const PalletStackScreen = ({navigation, route}) => {
         },
     ];
 
+    const createAudit = () =>{
+        request({
+            urlKey: 'create-pallet-audit',
+            args: [organisation.id, warehouse.id, id],
+            data: {
+                pallet_id: data.id,
+            },
+            onSuccess: response => {
+                console.log(response)
+                navigation.navigate('audit-sku', {id: response.id, pallet_id: data.id  });
+            },
+            onFailed: error => {
+                Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: 'Error',
+                    textBody: error.detail?.message || 'Failed to create audit',
+                });
+            },
+        });
+    }
+
     const onPressMenu = event => {
         switch (event.event) {
             case 'move-pallet':
@@ -65,6 +87,13 @@ const PalletStackScreen = ({navigation, route}) => {
                 break;
             case 'set-damaged':
                 setShowModalDamaged(true);
+                break;
+            case 'audit-sku':
+                if(data.audit){
+                    navigation.navigate('audit-sku', {id: data.audit ,pallet_id: data.id });
+                }else{
+                    createAudit()
+                }
                 break;
             default:
                 console.log('Unknown option selected');

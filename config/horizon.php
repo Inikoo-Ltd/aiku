@@ -157,7 +157,7 @@ return [
     |
     */
 
-    'memory_limit' => 1024,
+    'memory_limit' => 2048,
 
     /*
     |--------------------------------------------------------------------------
@@ -172,35 +172,52 @@ return [
 
     'defaults' => [
 
-        'normal'       => [
+        'normal'           => [
             'connection'      => 'redis',
-            'queue'           => ['default', 'sales'],
+            'queue'           => ['default', 'aurora'],
             'balance'         => 'auto',
             'maxProcesses'    => 1,
             'maxTime'         => 0,
             'maxJobs'         => 0,
             'memory'          => 128,
-            'tries'           => 1,
-            'timeout'         => 150,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
             'nice'            => 0,
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'universal-search'       => [
+        'sales'            => [
             'connection'      => 'redis',
-            'queue'           => ['universal-search'],
+            'queue'           => ['sales'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 1,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 128,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'retry_after'     => 120,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
+        'universal-search' => [
+            'connection'      => 'redis',
+            'queue'           => ['universal-search', 'analytics'],
             'balance'         => 'auto',
             'maxProcesses'    => 20,
             'maxTime'         => 0,
             'maxJobs'         => 0,
             'memory'          => 128,
-            'tries'           => 1,
-            'timeout'         => 150,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'retry_after'     => 120,
             'nice'            => 0,
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'urgent'       => [
+        'urgent'           => [
             'connection'      => 'redis',
             'queue'           => ['urgent'],
             'balance'         => 'auto',
@@ -208,28 +225,29 @@ return [
             'maxTime'         => 0,
             'maxJobs'         => 0,
             'memory'          => 128,
-            'tries'           => 1,
-            'timeout'         => 150,
+            'tries'           => 10,
+            'timeout'         => 3600,
             'nice'            => 0,
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
-        'low-priority' => [
+        'low-priority'     => [
             'connection'          => 'redis',
-            'queue'               => ['low-priority'],
+            'queue'               => ['low-priority', 'analytics'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
             'maxTime'             => 0,
             'maxJobs'             => 0,
             'memory'              => 128,
-            'tries'               => 3,
-            'timeout'             => 150,
+            'tries'               => 24,
+            'timeout'             => 3600,
+            'retry_after'         => 600,
             'nice'                => 0,
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'long-running' => [
+        'long-running'     => [
             'connection'          => 'redis-long-running',
             'queue'               => ['default-long', 'ses'],
             'balance'             => 'auto',
@@ -238,8 +256,9 @@ return [
             'maxTime'             => 0,
             'maxJobs'             => 0,
             'memory'              => 128,
-            'tries'               => 1,
+            'tries'               => 3,
             'timeout'             => 7200,
+            'retry_after'         => 600,
             'nice'                => 0,
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
@@ -250,50 +269,59 @@ return [
 
     'environments' => [
         'production' => [
-            'normal'       => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 192),
+            'normal'           => [
+                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 256),
             ],
-            'universal-search'       => [
-                'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 32),
+            'sales'            => [
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 256),
             ],
-            'urgent'       => [
+            'universal-search' => [
+                'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 64),
+            ],
+            'urgent'           => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 16),
             ],
-            'low-priority' => [
+            'low-priority'     => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 24),
             ],
-            'long-running' => [
+            'long-running'     => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 16),
             ],
 
         ],
         'staging'    => [
-            'normal'       => [
+            'normal'           => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 2),
             ],
-            'universal-search'       => [
+            'sales'            => [
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 2),
+            ],
+            'universal-search' => [
                 'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 8),
             ],
-            'urgent'       => [
+            'urgent'           => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 2),
             ],
-            'low-priority' => [
+            'low-priority'     => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
             ],
-            'long-running' => [
+            'long-running'     => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 2),
             ],
 
 
         ],
         'local'      => [
-            'normal' => [
+            'normal'           => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 5),
             ],
-            'universal-search'       => [
+            'sales'            => [
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 5),
+            ],
+            'universal-search' => [
                 'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 5),
             ],
-            'urgent' => [
+            'urgent'           => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 5),
             ],
 

@@ -132,7 +132,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
                 ->column(key: 'reference', label: __('Id'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
-                ->column(key: 'number_pallets', label: __('total pallets'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_pallets', label: __('total'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
@@ -148,7 +148,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             $fulfilmentCustomer->pallets_storage ? [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('New Delivery'),
+                    'label' => __('New Goods Delivery'),
                     'fullLoading'   => true,
                     'route' => [
                         'method'     => 'post',
@@ -162,9 +162,10 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             'Storage/RetinaPalletDeliveries',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('pallet deliveries'),
+                'title'       => __('goods deliveries'),
                 'pageHead'    => [
-                    'title'   => __('Deliveries'),
+                    'model'     => __('Storage'),
+                    'title'   => __('Goods Deliveries'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-truck'],
                         'title' => __('delivery')
@@ -200,7 +201,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
                         'route' => [
                             'name' => 'retina.fulfilment.storage.pallet_deliveries.index',
                         ],
-                        'label' => __('Deliveries'),
+                        'label' => __('Goods Deliveries'),
                         'icon'  => 'fal fa-bars',
                     ],
 

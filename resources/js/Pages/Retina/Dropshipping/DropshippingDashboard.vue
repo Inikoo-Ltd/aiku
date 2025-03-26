@@ -35,6 +35,7 @@ const props = defineProps<{
         url: string
         isAuthenticated: boolean
         tiktokName: string
+        deleteAccountRoute: routeType
     }
 }>()
 
@@ -154,7 +155,24 @@ const onCreateStore = () => {
                     <a v-if="!tiktokAuth?.isAuthenticated" target="_blank" class="w-full" :href="tiktokAuth?.url">
                         <Button label="Connect" type="primary" full/>
                     </a>
-                    <Button v-else :capitalize="false" :label="`Connected: ${tiktokAuth?.tiktokName}`" type="positive" icon="fal fa-check" full/>
+                    <div v-else class="relative w-full">
+                        <Transition name="spin-to-down">
+                            <div class="w-full flex justify-end gap-x-2">
+                                <Link as="button" :href="route(tiktokAuth?.deleteAccountRoute?.name, tiktokAuth?.deleteAccountRoute?.parameters)"
+                                      :method="tiktokAuth?.deleteAccountRoute?.method" @start="isLoading = 'unlink-tiktok'" @error="(error) => notify({
+                                    title: trans('Something went wrong.'),
+                                    text: trans('Please try again'),
+                                    type: 'error',
+                                }) " @finish="isLoading = false">
+                                    <Button :loading="isLoading === 'unlink-tiktok'" label="Unlink" type="negative"
+                                            icon="fal fa-unlink" size="xs" full/>
+                                </Link>
+                            <Button :capitalize="false" :label="`Connected`" type="positive" icon="fal fa-check" size="xs" full/>
+                            <Button :loading="isLoading === 'fetch-customers'" type="positive"
+                                    icon="fal fa-users" size="xs"/>
+                            </div>
+                        </Transition>
+                    </div>
                 </div>
             </div>
         </div>

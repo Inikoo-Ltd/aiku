@@ -42,6 +42,7 @@ import Highlight from '@tiptap/extension-highlight'
 import PureColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
 import ColorPicker from 'primevue/colorpicker';
 import suggestion from './Variables/suggestion'
+import ImageResize from 'tiptap-extension-resize-image';
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
 
@@ -136,6 +137,7 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
+        ImageResize,
         History,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...", // Fallback to default placeholder
@@ -324,15 +326,14 @@ const onEditorClick = () => {
     emits('onEditClick', editorInstance.value)
 }
 
-defineExpose({
-    editor: editorInstance
-})
-
-
 const setVariabel = (value) => {
     const content = `<span class="mention" data-type="mention" data-id="username" contenteditable="false">{{ ${value} }}</span>`;
     editorInstance.value?.chain().focus().insertContent(content).run();
 };
+
+defineExpose({
+    editor: editorInstance
+})
 
 
 
@@ -663,7 +664,7 @@ const setVariabel = (value) => {
 
         <div class="flex flex-col">
             <slot name="editor-content" :editor="editorInstance">
-                <EditorContent @click="onEditorClick" :editor="editorInstance" />
+                <EditorContent  @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
         </div>
 
@@ -812,9 +813,9 @@ const setVariabel = (value) => {
     margin-block-end: 0em;
 }
 
-:deep(.ProseMirror img) {
+/* :deep(.ProseMirror img) {
     @apply mr-6 w-full max-w-[480px] max-h-[320px] object-contain object-center;
-}
+} */
 
 :deep(.ProseMirror img.ProseMirror-selectednode),
 :deep(.ProseMirror div[data-youtube-video]) {

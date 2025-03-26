@@ -5,6 +5,11 @@ export default {
 			key: ["container", "properties"],
 			replaceForm: [
 				{
+					key: ["background"],
+					label: "Background",
+					type: "background",
+				},
+				{
 					key: ["dimension"],
 					label : "Dimension", 
 					type: "dimension",

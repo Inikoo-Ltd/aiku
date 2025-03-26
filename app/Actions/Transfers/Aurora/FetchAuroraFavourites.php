@@ -35,7 +35,7 @@ class FetchAuroraFavourites extends FetchAuroraAction
                     $favourite = UpdateFavourite::make()->action(
                         favourite: $favourite,
                         modelData: $favouriteData['favourite'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordChange($organisationSource, $favourite->wasChanged());
@@ -51,7 +51,7 @@ class FetchAuroraFavourites extends FetchAuroraAction
                         customer: $favouriteData['customer'],
                         product: $favouriteData['product'],
                         modelData: $favouriteData['favourite'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false
                     );
 

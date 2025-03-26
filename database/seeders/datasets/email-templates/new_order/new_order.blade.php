@@ -13,7 +13,7 @@
 <head>
   <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <title>New order {{$order->shop->name}}</title>
+  <title>New order [Order Shop Name]</title>
 
 
   <style type="text/css">
@@ -106,7 +106,7 @@
             <td class="alert alert-warning"
                 style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#26A65B; margin: 0; padding: 20px;"
                 align="center" bgcolor="#26A65B" valign="top">
-              New customer registration {{$customer->shop->name}}
+              New customer registration [Customer Shop Name]
             </td>
           </tr>
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -115,7 +115,7 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    New customer {{$customer->name}} @if ($customer->emaill)({{$customer->email}})@endif
+                    New customer [Customer Name or Email]
                   </td>
                 </tr>
 
@@ -123,7 +123,7 @@
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
                     <a href="{{$customer->getUrl()}}" class="btn-primary"
-                       style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px;  background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;">{{$customer->name}}</a>
+                       style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px;  background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;">[Customer Name]</a>
                   </td>
                 </tr>
               </table>
@@ -136,7 +136,7 @@
               <td class="aligncenter content-block"
                   style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
                   align="center" valign="top">
-                {{$customer->organisation->name}}<br/>{{now()->toDayDateTimeString()}}
+                [Customer Organisation Name]<br/>[Order Date]
               </td>
             </tr>
 

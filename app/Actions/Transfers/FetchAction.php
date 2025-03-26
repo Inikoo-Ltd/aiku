@@ -47,7 +47,7 @@ class FetchAction implements ShouldBeUnique
 
     protected AuroraOrganisationService|WowsbarOrganisationService|SourceOrganisationService|null $organisationSource = null;
 
-    protected int $hydratorsDelay = 0;
+    protected int $hydratorsDelay = 5;
 
     protected ?Shop $shop;
     protected array $with;

@@ -16,7 +16,7 @@ use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
 use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
-use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxHasSubscribers;
+use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
@@ -30,7 +30,7 @@ use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use Illuminate\Support\Facades\Route;
 
-Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/subscribers', [GetOutboxHasSubscribers::class, 'inFulfilment'])->name('fulfilment.outbox.subcribers.index');
+Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/users', [GetOutboxUsers::class, 'inFulfilment'])->name('fulfilment.outbox.users.index');
 
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/services', [GetFulfilmentServices::class, 'inPalletDelivery'])->name('fulfilment.delivery.services.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/services', [GetFulfilmentServices::class, 'inPalletReturn'])->name('fulfilment.return.services.index');

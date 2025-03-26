@@ -30,7 +30,7 @@ class FetchAuroraShippingZoneSchemas extends FetchAuroraAction
                     $shippingZoneSchema = UpdateShippingZoneSchema::make()->action(
                         shippingZoneSchema: $shippingZoneSchema,
                         modelData: $shippingZoneSchemaData['shipping-zone-schema'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -45,7 +45,7 @@ class FetchAuroraShippingZoneSchemas extends FetchAuroraAction
                     $shippingZoneSchema = StoreShippingZoneSchema::make()->action(
                         shop: $shippingZoneSchemaData['shop'],
                         modelData: $shippingZoneSchemaData['shipping-zone-schema'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

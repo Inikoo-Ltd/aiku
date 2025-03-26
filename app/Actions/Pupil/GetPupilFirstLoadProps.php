@@ -9,8 +9,9 @@
 namespace App\Actions\Pupil;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Retina\UI\Layout\GetPupilDropshippingNavigation;
 use App\Http\Resources\Helpers\LanguageResource;
-use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -20,10 +21,10 @@ class GetPupilFirstLoadProps
 {
     use AsObject;
 
-    public function handle(Request $request, ?WebUser $webUser): array
+    public function handle(Request $request, ?ShopifyUser $shopifyUser): array
     {
-        if ($webUser) {
-            $language = $webUser->language;
+        if ($shopifyUser) {
+            $language = $shopifyUser->language;
         } else {
             $language = Language::where('code', App::currentLocale())->first();
         }
@@ -31,18 +32,16 @@ class GetPupilFirstLoadProps
             $language = Language::where('code', 'en')->first();
         }
 
-
         return
             [
-            'localeData' =>
-                [
+                'localeData' => [
                     'language'        => LanguageResource::make($language)->getArray(),
                     'languageOptions' => GetLanguagesOptions::make()->translated(),
                 ],
-
-            //todo @artha is layout needed here?
-            //'layout'      => GetLayout::run($request, $webUser),
-            'environment' => app()->environment(),
-        ];
+                'layout'   => [
+                    'navigation'    => GetPupilDropshippingNavigation::run($shopifyUser),
+                ],
+                'environment' => app()->environment(),
+            ];
     }
 }

@@ -36,7 +36,7 @@ class FetchAuroraDeletedUsers extends FetchAuroraAction
                             $user = UpdateUser::make()->action(
                                 user: $user,
                                 modelData: $userData['user'],
-                                hydratorsDelay: 60,
+                                hydratorsDelay: $this->hydratorsDelay,
                                 strict: false,
                                 audit: false
                             );
@@ -74,7 +74,7 @@ class FetchAuroraDeletedUsers extends FetchAuroraAction
                         $guest = StoreGuest::make()->action(
                             $organisationSource->getOrganisation()->group,
                             $userData['guest'],
-                            hydratorsDelay: 60,
+                            hydratorsDelay: $this->hydratorsDelay,
                             strict: false
                         );
 

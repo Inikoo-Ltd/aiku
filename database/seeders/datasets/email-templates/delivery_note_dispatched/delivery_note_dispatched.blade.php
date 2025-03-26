@@ -7,7 +7,7 @@
 <head>
   <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <title>New order {{$delivery_note->shop->name}}</title>
+  <title>New order [Shop Name]</title>
 
 
   <style type="text/css">
@@ -100,7 +100,7 @@
             <td class="alert alert-warning"
                 style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#26A65B; margin: 0; padding: 20px;"
                 align="center" bgcolor="#26A65B" valign="top">
-             The following delivery_note {{$delivery_note->reference}} has been deleted.
+             The following delivery_note [Reference] has been deleted.
             </td>
           </tr>
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -130,7 +130,7 @@
               <td class="aligncenter content-block"
                   style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
                   align="center" valign="top">
-                {{$delivery_note->organisation->name}}<br/>{{now()->toDayDateTimeString()}}
+                [Organisation Name]<br/>[Dispatched Date]
               </td>
             </tr>
 

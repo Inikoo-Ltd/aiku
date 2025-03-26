@@ -172,7 +172,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                 'label'   => __('delete'),
                 'key'     => 'delete_return',
                 'route'   => [
-                    'method'     => 'delete',
+                    'method'     => 'patch',
                     'name'       => 'retina.models.pallet-return.delete',
                     'parameters' => [
                         'palletReturn' => $palletReturn->id
@@ -184,7 +184,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('pallet return'),
+                'title'       => __('goods return'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -200,7 +200,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'     => __('pallet return'),
+                    'model'     => __('goods return'),
                     'actions'   => $actions
                 ],
 
@@ -252,36 +252,6 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                'upload_spreadsheet' => [
-                    'event'             => 'action-progress',
-                    'channel'           => 'retina.personal.' . $palletReturn->organisation_id,
-                    'required_fields'   => ['pallet_stored_item', 'pallet', 'stored_item', 'quantity'],
-                    'template'          => [
-                        'label' => 'Download template (.xlsx)',
-                    ],
-                    'route' => [
-                        'upload'  => [
-                            'name'       => 'retina.models.pallet-return.stored-item.upload',
-                            'parameters' => [
-                                'palletReturn' => $palletReturn->id
-                            ]
-                        ],
-                        'history' => [
-                            'name'       => 'retina.fulfilment.storage.pallet_returns.uploads.history',
-                            'parameters' => [
-                                'palletReturn'     => $palletReturn->slug
-                            ]
-                        ],
-                        'download' => [
-                            'name'       => $downloadRoute,
-                            'parameters' => [
-                                'fulfilmentCustomer'     => $palletReturn->fulfilmentCustomer->slug,
-                                'type'                   => 'xlsx'
-                            ]
-                        ],
-                    ],
-                ],
-
                 'routeStorePallet' => [
                     'name'       => 'retina.models.pallet-return.pallet.store',
                     'parameters' => [
@@ -311,6 +281,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'navigation' => $navigation
                 ],
                 'box_stats'        => [
+                    'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'fulfilment_customer'          => array_merge(
                         FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                         [
@@ -520,7 +491,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('pallet returns')
+                            'label' => __('goods returns')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

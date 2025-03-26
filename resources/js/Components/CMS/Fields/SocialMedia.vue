@@ -29,27 +29,27 @@ const openIndex = ref<number | null>(null); // Track the currently open disclosu
 const icons = [
     {
         type: "Facebook",
-        value: "fab fa-facebook",
+        value: faFacebook,
     },
     {
         type: "Instagram",
-        value: "fab fa-instagram",
+        value: faInstagram,
     },
     {
         type: "Tik Tok",
-        value: "fab fa-tiktok",
+        value: faTiktok,
     },
     {
         type: "Pinterest",
-        value: "fab fa-pinterest",
+        value: faPinterest,
     },
     {
         type: "Youtube",
-        value: "fab fa-youtube",
+        value: faYoutube,
     },
     {
         type: "Linkedin",
-        value: "fab fa-linkedin-in",
+        value: faLinkedinIn,
     },
 ];
 

@@ -62,7 +62,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         $emailOngoingRun = UpdateEmailOngoingRun::make()->action(
             emailOngoingRun: $emailOngoingRun,
             modelData: $emailOngoingRunData['email_ongoing_run'],
-            hydratorsDelay: 60,
+            hydratorsDelay: $this->hydratorsDelay,
             strict: false,
         );
         $this->recordChange($organisationSource, $emailOngoingRun->wasChanged());
@@ -114,7 +114,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
                 $emailOngoingRun,
                 null,
                 modelData: $emailOngoingRunData['snapshot'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false
             );
         } elseif ($email->builder == EmailBuilderEnum::BLADE) {
@@ -155,7 +155,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
                 $emailOngoingRun,
                 null,
                 modelData: $emailOngoingRunData['snapshot'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false
             );
         } else {
@@ -177,7 +177,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         UpdateSnapshot::make()->action(
             $email->liveSnapshot,
             $emailOngoingRunData['snapshot'],
-            hydratorsDelay: 60,
+            hydratorsDelay: $this->hydratorsDelay,
             strict: false
         );
     }
@@ -194,7 +194,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         UpdateSnapshot::make()->action(
             $unpublishedSnapshot,
             $emailOngoingRunData['snapshot'],
-            hydratorsDelay: 60,
+            hydratorsDelay: $this->hydratorsDelay,
             strict: false
         );
         if ($emailOngoingRun->status == EmailOngoingRunStatusEnum::IN_PROCESS) {
@@ -203,7 +203,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
             UpdateSnapshot::make()->action(
                 $liveSnapshot,
                 $emailOngoingRunData['snapshot'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false
             );
         }

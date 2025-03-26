@@ -280,10 +280,11 @@ function routePallet(storageData: any, key: string) {
                     <ButtonWithLink
                         :label="btn.label"
                         :bindToLink="{ preserveScroll: true, preserveState: true }"
-                        :type="btn.style"  
+                        :type="btn.style"
+                        :tooltip="btn.tooltip"  
                         full
                         :routeTarget="btn.route"
-                   
+                        :disabled="btn.disabled"
                     />
                     </div>
                 </div>

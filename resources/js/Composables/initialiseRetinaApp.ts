@@ -12,7 +12,6 @@ import { watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
-import { useLiveUsers } from "@/Stores/echo-retina-active-users.js"
 
 
 export const initialiseRetinaApp = () => {
@@ -22,13 +21,8 @@ export const initialiseRetinaApp = () => {
     const echoPersonal = useEchoRetinaPersonal()
     const echoWebsite = useEchoRetinaWebsite()
     const echoCustomer = useEchoRetinaCustomer()
-    const echoLiveUsers = useLiveUsers()
 
-    layout.liveUsers = usePage().props.liveUsers || null
 
-    if (layout.liveUsers?.enabled) {
-        echoLiveUsers.subscribe()  // Websockets: active users
-    }
 
     const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
     layout.currentPlatform = storageLayout.currentPlatform  // { 'awa' : { currentShop: 'bali', currentWarehouse: 'ed' }, ... }
@@ -51,28 +45,6 @@ export const initialiseRetinaApp = () => {
                     ...storageLayout,
                     currentPlatform: layout.currentPlatform
                 }))
-            }
-
-            const dataActiveUser = {
-                ...usePage().props.auth.user,
-                name: null,
-                last_active: new Date(),
-                action: 'navigate',
-                current_page: {
-                    label: event.detail.page.props.title,
-                    url: event.detail.page.url,
-                    icon_left: usePage().props.live_users?.icon_left || null,
-                    icon_right: usePage().props.live_users?.icon_right || null,
-                },
-            }
-
-            // To avoid emit when logged out
-            if (dataActiveUser.id) {
-                // Set to self
-                useLiveUsers().liveUsers[usePage().props.auth.user.id] = dataActiveUser
-
-                // Websockets: broadcast to others
-                window.Echo.join(`retina.active.users`).whisper('otherIsNavigating', dataActiveUser)
             }
         })
     }

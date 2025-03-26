@@ -13,25 +13,18 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateInvoices
+class ShopHydrateInvoices implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateInvoices;
 
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
+        return $shop->id;
     }
 
     public function handle(Shop $shop): void

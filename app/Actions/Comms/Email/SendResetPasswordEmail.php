@@ -32,11 +32,12 @@ class SendResetPasswordEmail extends OrgAction
     {
         /** @var Outbox $outbox */
         $outbox = $webUser->shop->outboxes()->where('code', 'password_reminder')->first();
+        $outboxDispatch = $webUser->shop->outboxes()->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
 
         $recipient       = $webUser;
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
             'is_test'       => false,
-            'outbox_id'     => Outbox::where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->pluck('id')->first(),
+            'outbox_id'     => $outboxDispatch->id,
             'email_address' => $recipient->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);

@@ -33,7 +33,7 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
                     $customerClient = UpdateCustomerClient::make()->action(
                         customerClient: $customerClient,
                         modelData: $customerClientData['customer_client'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -48,7 +48,7 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
                     $customerClient = StoreCustomerClient::make()->action(
                         customer: $customerClientData['customer'],
                         modelData: $customerClientData['customer_client'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

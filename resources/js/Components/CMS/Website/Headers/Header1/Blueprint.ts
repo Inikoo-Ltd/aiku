@@ -36,6 +36,11 @@ export default {
 					type: "upload_image",
 				},
 				{
+					key: ["link"],
+					label : "Link",
+					type: "link",
+				},
+				{
 					key: ["image", "alt"],
 					label: "Alternate Text",
 					type: "text",

@@ -46,7 +46,7 @@ class FetchAuroraWebsites extends FetchAuroraAction
                 $website = UpdateWebsite::make()->action(
                     website: $website,
                     modelData: $websiteData['website'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -54,7 +54,7 @@ class FetchAuroraWebsites extends FetchAuroraAction
                 $website = StoreWebsite::make()->action(
                     shop: $websiteData['shop'],
                     modelData: $websiteData['website'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

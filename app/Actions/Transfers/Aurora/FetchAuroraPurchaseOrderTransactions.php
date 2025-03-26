@@ -35,7 +35,7 @@ class FetchAuroraPurchaseOrderTransactions
                     $purchaseOrderTransaction = UpdatePurchaseOrderTransaction::make()->action(
                         purchaseOrderTransaction: $purchaseOrderTransaction,
                         modelData: $transactionData['purchase_order_transaction'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: 5,
                         strict: false,
                     );
                 } catch (Exception $e) {
@@ -50,7 +50,7 @@ class FetchAuroraPurchaseOrderTransactions
                         historicSupplierProduct: $transactionData['historic_supplier_product'],
                         orgStock: $transactionData['org_stock'],
                         modelData: $transactionData['purchase_order_transaction'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: 5,
                         strict: false
                     );
 

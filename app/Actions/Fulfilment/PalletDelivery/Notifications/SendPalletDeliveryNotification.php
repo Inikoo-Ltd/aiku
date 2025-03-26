@@ -19,6 +19,8 @@ class SendPalletDeliveryNotification extends OrgAction
     use AsAction;
     use WithAttributes;
 
+    public string $jobQueue = 'urgent';
+
     public function handle(PalletDelivery $palletDelivery): void
     {
         $palletDelivery->refresh();

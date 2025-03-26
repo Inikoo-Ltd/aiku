@@ -23,7 +23,7 @@ class CancelFulfilmentRequestToShopify extends OrgAction
 
     public function handle(PalletReturn $palletReturn): void
     {
-        $customer = $palletReturn->customer;
+        $customer = $palletReturn->fulfilmentCustomer->customer;
         $shopifyUser = $customer->shopifyUser;
 
         /** @var ShopifyUserHasFulfilment $fulfilmentShopify */

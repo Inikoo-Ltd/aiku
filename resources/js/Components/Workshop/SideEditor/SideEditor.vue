@@ -37,7 +37,6 @@ const props = withDefaults(defineProps<{
     panelOpen: null,
 })
 
-
 const modelValue = defineModel()
 
 provide('side_editor_block_id', props.block?.id)

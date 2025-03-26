@@ -28,8 +28,10 @@ class StandaloneFulfilmentInvoiceTransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-
+        $palletRef = null;
+        $palletRoute = null;
         $editType = null;
+        $handlingDate = null;
         if ($this->model_type == 'Service') {
             $service = Service::find($this->model_id);
             $editType = $service->edit_type ?? null;

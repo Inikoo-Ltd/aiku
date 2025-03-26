@@ -45,7 +45,7 @@ class FetchAuroraInvoiceTransactions
                 invoice: $invoice,
                 model: $transactionData['model'],
                 modelData: $transactionData['transaction'],
-                hydratorsDelay: 1200,
+                hydratorsDelay: 10,
                 strict: false
             );
 

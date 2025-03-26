@@ -44,16 +44,30 @@ class GetOutboxShowcase
 
                 'dashboard_stats' => [
                     'widgets' => [
-                        'column_count' => 2,
-                        'components' => [
+                        'column_count' => 1,
+                        'components' => array_filter([
                             [
                                 'type' => 'circle_display',
 
                                 'data' => $stats
-                            ]
-                        ]
+                            ],
+                        ])
                     ]
-                ]
+                ],
+                'outbox_subscribe' => [
+                    'data' => $outbox->subscribedUsers->map(function ($subscribedUser) {
+                        return $subscribedUser->user ? [
+                            'user_id' => $subscribedUser->user->id,
+                            'subscriber_id' => $subscribedUser->id,
+                            'username' => $subscribedUser->user->username,
+                            'contact_name' => $subscribedUser->user->contact_name,
+                            'email' => $subscribedUser->user->email,
+                        ] : [
+                            'subscriber_id' => $subscribedUser->id,
+                            'email' => $subscribedUser->external_email,
+                        ];
+                    })
+                ],
         ];
     }
 }

@@ -19,7 +19,7 @@ class InvoiceFactory extends Factory
         $currency = Currency::first();
 
         return [
-            'reference'      => '00001',
+            'reference'      => uniqid(),
             'type'           => InvoiceTypeEnum::INVOICE,
             'currency_id'    => $currency->id,
             'gross_amount'   => 10,

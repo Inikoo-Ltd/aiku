@@ -35,7 +35,7 @@ class FetchAuroraBackInStockReminders extends FetchAuroraAction
                     $backInStockReminder = UpdateBackInStockReminder::make()->action(
                         backInStockReminder: $backInStockReminder,
                         modelData: $backInStockReminderData['back_in_stock_reminder'],
-                        hydratorsDelay: 900,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                     );
                     $this->recordChange($organisationSource, $backInStockReminder->wasChanged());
@@ -51,7 +51,7 @@ class FetchAuroraBackInStockReminders extends FetchAuroraAction
                         customer: $backInStockReminderData['customer'],
                         product: $backInStockReminderData['product'],
                         modelData: $backInStockReminderData['back_in_stock_reminder'],
-                        hydratorsDelay: 900,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false
                     );
 

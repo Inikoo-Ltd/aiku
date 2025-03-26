@@ -94,8 +94,8 @@ class IndexRetinaPalletReturns extends RetinaAction
             $fulfilmentCustomer->number_pallets_status_storing ? [
                 'type'    => 'button',
                 'style'   => 'create',
-                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new return (whole pallet)') : __('Create new return'),
-                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Return (whole pallet)') : __('Return'),
+                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new return (whole goods)') : __('Create new return'),
+                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Goods Return (whole goods)') : __('Goods Return'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return.store',
@@ -106,7 +106,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => __('Create new return (Selected SKUs)'),
-                'label'   => __('Return (Selected SKUs)'),
+                'label'   => __('Goods Return (Selected SKUs)'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return-stored-items.store',
@@ -120,10 +120,10 @@ class IndexRetinaPalletReturns extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'    => __('returns'),
+                'title'    => __('goods returns'),
                 'pageHead' => [
-                    'title'     => __('returns'),
-                    'model'     => __('storage'),
+                    'title'     => __('Goods Returns'),
+                    'model'     => __('Storage'),
                     'icon' => [
                         'icon'  => ['fal', 'fa-truck-ramp'],
                         'title' => __('return')
@@ -147,7 +147,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                         'route' => [
                             'name' => 'retina.fulfilment.storage.pallet_returns.index',
                         ],
-                        'label' => __('Returns'),
+                        'label' => __('Goods Returns'),
                         'icon'  => 'fal fa-bars',
                     ],
 

@@ -14,26 +14,22 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Ordering\Order;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateOrders
+class OrganisationHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Organisation $organisation;
+    public string $jobQueue = 'sales';
 
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
+        return $organisation->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
-    }
 
     public function handle(Organisation $organisation): void
     {

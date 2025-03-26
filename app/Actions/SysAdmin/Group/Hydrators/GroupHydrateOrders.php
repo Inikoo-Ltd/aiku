@@ -14,25 +14,21 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\Ordering\Order;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateOrders
+class GroupHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Group $group;
 
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
+    public string $jobQueue = 'sales';
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
     public function handle(Group $group): void

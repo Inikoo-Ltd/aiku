@@ -54,14 +54,16 @@ const isStaging = layout.app.environment === 'staging'
             <!-- Mobile Helper: background to close hamburger -->
             <div @click="sidebarOpen = !sidebarOpen" class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen" />
             <RetinaLeftSideBar class="-left-2/3 transition-all z-20 block md:left-[0]"
-                :class="{ 'left-[0]': sidebarOpen }" @click="sidebarOpen = !sidebarOpen" />
+                :class="[
+                    { 'left-[0]': sidebarOpen },
+                ]" @click="sidebarOpen = !sidebarOpen" />
         </div>
 
         <!-- Main Content -->
         <main class="h-screen pb-10 transition-all pl-2 md:pl-0 pr-2 "
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
-                isStaging ? 'pt-14 md:pt-[59px]' : ' pt-14 md:pt-[52px]',
+                isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
             <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">

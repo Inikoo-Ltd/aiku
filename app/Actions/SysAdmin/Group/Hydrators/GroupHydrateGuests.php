@@ -10,22 +10,17 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GroupHydrateGuests implements ShouldBeUnique
 {
     use AsAction;
 
-    private Group $group;
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
+    public string $jobQueue = 'low-priority';
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
 

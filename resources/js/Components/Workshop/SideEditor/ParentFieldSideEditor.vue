@@ -15,7 +15,7 @@ import { routeType } from '@/types/route'
 import Icon from '@/Components/Icon.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle } from "@fal"
+import { faInfoCircle, fa } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faInfoCircle)
 
@@ -32,7 +32,7 @@ const props = defineProps<{
 const modelValue = defineModel()
 
 const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })
 
 const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     setFormValue(modelValue.value, fieldKeys, newVal)
@@ -72,7 +72,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                     </div>
                     <component 
                         :is="getComponent(blueprint.type)" 
-                         :key="blueprint.key "
+                        :key="blueprint.key "
                         :modelValue="getFormValue(modelValue, blueprint.key)"
                         :uploadRoutes="uploadImageRoute" 
                         v-bind="blueprint?.props_data" 
@@ -89,6 +89,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                 :blueprint="blueprint.replaceForm"
                 :modelValue="getFormValue(modelValue, blueprint.key)"
                 :key="blueprint.key "
+                :uploadImageRoute="uploadImageRoute" 
                 @update:modelValue="newValue => onPropertyUpdate(blueprint.key, newValue)"
             />
         </template>

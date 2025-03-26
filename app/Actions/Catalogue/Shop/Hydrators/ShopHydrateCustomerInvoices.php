@@ -11,26 +11,18 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateCustomerInvoices
+class ShopHydrateCustomerInvoices implements ShouldBeUnique
 {
     use AsAction;
 
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
+        return $shop->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
-    }
-
 
     public function handle(Shop $shop): void
     {

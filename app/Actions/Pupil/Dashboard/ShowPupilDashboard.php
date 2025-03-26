@@ -10,8 +10,11 @@
 
 namespace App\Actions\Pupil\Dashboard;
 
+use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
+use App\Actions\Retina\UI\Dashboard\GetRetinaFulfilmentHomeData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,6 +28,7 @@ class ShowPupilDashboard
 
     public function asController(ActionRequest $request): Response
     {
+        $additionalProps = [];
         $routes = [];
         /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $request->user('pupil');
@@ -55,32 +59,56 @@ class ShowPupilDashboard
             ];
         }
 
-        return Inertia::render('Dashboard/PupilWelcome', [
-             'shop'                  => $shopifyUser?->customer?->shop?->name,
-             'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop),
+        $query = Shop::where('type', ShopTypeEnum::FULFILMENT->value)->get();
+
+        if ($shopifyUser->customer) {
+            $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();
+
+            $additionalProps = [
+                'data'       => match ($shopifyUser?->customer->shop->type) {
+                    ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($shopifyUser?->customer?->fulfilmentCustomer, $request),
+                    ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($shopifyUser?->customer, $request),
+                    default => []
+                },
+            ];
+        }
+
+        $render_page = null;
+
+        if (!$shopifyUser?->customer) {
+            $render_page = 'Intro';
+        } elseif ($shopifyUser?->customer?->shop?->name) {
+            $render_page = 'WelcomeShop';
+        } else {
+            $render_page = 'Dashboard/PupilWelcome';
+        }
+
+        return Inertia::render($render_page, [
+            'shop'                  => $shopifyUser?->customer?->shop?->name,
+            'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
             'user'                  => $shopifyUser,
-            'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
-            'shops' => Shop::where('type', ShopTypeEnum::FULFILMENT->value)->get()->map(function ($shop) {
+            // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
+            'shops' => $query->map(function ($shop) {
                 return [
                     'id' => $shop->id,
-                    'name' => $shop->name,
-                    'domain' => $this->getShopUrl($shop),
+                    'name' => $shop->name
                 ];
             }),
-            ...$routes
+            ...$routes,
+            ...$additionalProps
         ]);
     }
 
-    public function getShopUrl(?Shop $shop): string|null
+    public function getShopUrl(?Shop $shop, ShopifyUser $shopifyUser): string|null
     {
         if (!$shop) {
             return null;
         }
 
         return match (app()->environment()) {
-            'production' => 'https://'.$shop?->website?->domain . '/app',
-            'staging' => 'https://canary.'.$shop?->website?->domain . '/app',
-            default => 'https://fulfilment.test/app'
+            'production' => 'https://'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
+            'staging' => 'https://canary.'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
+            default => 'https://fulfilment.test/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password)
         };
     }
 

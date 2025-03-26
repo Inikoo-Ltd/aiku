@@ -33,11 +33,13 @@ class SendCustomerApprovedEmail extends OrgAction
     {
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::REGISTRATION_APPROVED->value)->first();
+        $outboxDispatch = $customer->shop->outboxes()->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
+
 
         $recipient       = $customer;
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
             'is_test'       => false,
-            'outbox_id'     => Outbox::where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->pluck('id')->first(),
+            'outbox_id'     => $outboxDispatch->id,
             'email_address' => $recipient->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);

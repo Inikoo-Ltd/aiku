@@ -2,18 +2,7 @@
 import { faCube, faStar, faImage } from "@fas"
 import { faPencil } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-/* import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue" */
 import Image from "@/Components/Image.vue"
-/* import { ref, toRaw, inject } from "vue" */
-/* import Button from "@/Components/Elements/Buttons/Button.vue"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
-import Modal from "@/Components/Utils/Modal.vue" */
-/* import { notify } from "@kyvg/vue3-notification"
-import axios from "axios" */
-/* import { trans } from "laravel-vue-i18n" */
-/* import { set } from "lodash" */
-/* import { routeType } from "@/types/route" */
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -30,62 +19,6 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 
-/* const isInWorkshop = inject("isInWorkshop", false)
-
-const openGallery = ref(false)
-const activeImageIndex = ref<number | null>(null) */
-
-/* const submitImage = (imageData: { source: {} }[]) => {
-	if (activeImageIndex.value !== null) {
-		while (props.modelValue?.value?.images.length <= activeImageIndex.value) {
-			props.modelValue?.value?.images.push({})
-		}
-		set(props.modelValue.value, ["images", activeImageIndex.value], {
-			link_data: {},
-			source: toRaw(imageData[0] || {})?.source,
-		})
-
-		emits("autoSave")
-	} else {
-		console.error("Invalid index or modelValue structure.")
-	}
-
-	openGallery.value = false
-	activeImageIndex.value = null
-} */
-
-/* const onUpload = async (files: File[], clear: Function) => {
-	try {
-		const formData = new FormData()
-		Array.from(files).forEach((file, index) => {
-			formData.append(`images[${index}]`, file)
-		})
-		const response = await axios.post(
-			route(props.webpageData?.images_upload_route.name, {
-				modelHasWebBlocks: props.blockData?.id,
-			}),
-			formData,
-			{
-				headers: {
-					"Content-Type": "multipart/form-data",
-				},
-			}
-		)
-		submitImage(response.data.data)
-	} catch (error) {
-		console.log(error)
-		notify({
-			title: "Failed",
-			text: "Error while uploading data",
-			type: "error",
-		})
-	}
-} */
-
-/* const openImageGallery = (index: number) => {
-	activeImageIndex.value = index
-	openGallery.value = true
-} */
 
 const getHref = (index: number) => {
 	const image = props.modelValue?.value?.images?.[index]
@@ -165,21 +98,4 @@ const getImageSlots = (layoutType: string) => {
 
 		</div>
 	</div>
-
-	<!-- 	<Modal
-			:isOpen="openGallery"
-			@onClose="() => ((openGallery = false), (activeImageIndex = null))"
-			width="w-3/4">
-			<GalleryManagement
-				:maxSelected="1"
-				:closePopup="() => (openGallery = false)"
-				@submitSelectedImages="submitImage"
-				:submitUpload="onUpload"
-				:uploadRoute="{
-					...webpageData?.images_upload_route,
-					parameters: {
-						modelHasWebBlocks: blockData?.id,
-					},
-				}" />
-		</Modal> -->
 </template>

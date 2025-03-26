@@ -10,32 +10,7 @@ import Description from '@/src/components/Description';
 import Barcode from 'react-native-barcode-svg';
 import {Center} from '@/src/components/ui/center';
 
-const ShowLocation = ({navigation, route}) => {
-  const {organisation, warehouse} = useContext(AuthContext);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const id = route.params.id;
-
-  const getDataFromServer = async () => {
-    setLoading(true);
-    request({
-      urlKey: 'get-location',
-      args: [organisation.id, warehouse.id, id],
-      onSuccess: response => {
-        setData(response);
-        setLoading(false);
-      },
-      onFailed: error => {
-        setLoading(false);
-        Toast.show({
-          type: ALERT_TYPE.DANGER,
-          title: 'Error',
-          textBody: error.detail?.message || 'Failed to fetch data',
-        });
-      },
-    });
-  };
-
+const ShowLocation = ({navigation, route, data, handleRefresh}) => {
   const schema = [
     {
       label: 'code',
@@ -57,17 +32,6 @@ const ShowLocation = ({navigation, route}) => {
     },
   ];
 
-  useEffect(() => {
-    getDataFromServer();
-  }, []);
-
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-gray-100">
-        <ActivityIndicator size="large" color='#4F46E5' />
-      </View>
-    );
-  }
 
   if (!data) {
     return (
@@ -79,11 +43,6 @@ const ShowLocation = ({navigation, route}) => {
 
   return (
     <ScrollView className="flex-1 bg-gray-50 p-4">
-      {/* <Card className="bg-indigo-600 p-6 rounded-xl shadow-lg mb-5">
-      <Heading className="text-white text-2xl font-bold">
-        Location : {data.code}
-      </Heading>
-    </Card> */}
 
       <Card>
         <Center>

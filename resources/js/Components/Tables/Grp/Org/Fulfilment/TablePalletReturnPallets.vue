@@ -43,7 +43,7 @@ const props = defineProps<{
     palletReturn: {}
 }>()
 
-console.log(props)
+console.log('s',props)
 
 const isPickingLoading = ref(false)
 const isUndoLoading = ref(false)
@@ -127,6 +127,7 @@ const SetSelected = debounce(() => {
 const onChangeCheked = (value) => {
     selectedRow.value = value;
     SetSelected();
+    console.log('lkm')
 }
 
 
@@ -152,7 +153,7 @@ const onCheckTable = async (item: {}) => {
             if(!item.attachRoute?.name) {
                 throw new Error('Attach route is not defined')
             }
-            axios.post(
+            const response = await axios.post(
                 route(item.attachRoute.name, {
                     ...item.attachRoute.parameters,
                     palletReturn: props.palletReturn.id
@@ -171,16 +172,18 @@ const onCheckTable = async (item: {}) => {
         }
         
     } else {
+        console.log(item)
         try {
             if(!item.deleteFromReturnRoute?.name) {
                 throw new Error('Delete route is not defined')
             }
             axios.delete(
-                route(item.deleteFromReturnRoute.name, item.deleteFromReturnRoute.parameters)   
+                route(item.deleteFromReturnRoute.name, {palletReturn : props.palletReturn.id , pallet : item.pallet_id })   
             )
 
             debounceReloadBoxStats()
         } catch (error) {
+            console.log('sssss',error)
             notify({
                 title: 'Something went wrong',
                 text: 'Failed to select the data',

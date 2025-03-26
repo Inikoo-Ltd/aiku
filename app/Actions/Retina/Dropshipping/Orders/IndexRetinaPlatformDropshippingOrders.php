@@ -55,6 +55,10 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
@@ -72,6 +76,15 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
         $this->initialisation($request);
 
         $shopifyUser = $request->user()->customer->shopifyUser;
+
+        return $this->handle($shopifyUser);
+    }
+
+    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+        $shopifyUser = $this->shopifyUser;
 
         return $this->handle($shopifyUser);
     }

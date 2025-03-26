@@ -16,23 +16,17 @@ use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Events\BroadcastProspectsDashboard;
 use App\Models\CRM\Prospect;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateProspects
+class ShopHydrateProspects implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Shop $shop;
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop): string
     {
-        $this->shop = $shop;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
+        return $shop->id;
     }
 
     public function handle(Shop $shop): void

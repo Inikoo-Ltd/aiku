@@ -21,6 +21,8 @@ class FulfilmentCustomerHydrateStoredItems
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'urgent';
+
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void
     {
         $numberPalletsWithStoredItemsStateStoring = DB::table('pallet_stored_items')->where('pallet_stored_items.state', PalletStoredItemStateEnum::ACTIVE)->leftjoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id')->where('fulfilment_customer_id', $fulfilmentCustomer->id)->count();

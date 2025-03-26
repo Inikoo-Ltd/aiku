@@ -194,7 +194,7 @@ watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) 
 
         if (newVal?.number_success > 0) {
             router.reload({
-                only: ['pallets'],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+                only: ['pallets','goods'],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
                 onSuccess: () => {
                     notify({
                         title: trans('Upload finish'),

@@ -501,7 +501,7 @@ class ShowPalletReturn extends OrgAction
                     ],
                     'route' => [
                         'upload'  => [
-                            'name'       => 'grp.models.pallet-return.stored-item.upload',
+                            'name'       => 'grp.models.pallet-return.pallet-return-item.upload.upload',
                             'parameters' => [
                                 'palletReturn' => $palletReturn->id
                             ]
@@ -558,6 +558,7 @@ class ShowPalletReturn extends OrgAction
                 ],
                 'data'             => PalletReturnResource::make($palletReturn),
                 'box_stats'        => [
+                    'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'recurring_bill'      => $recurringBillData,
                     'fulfilment_customer'          => array_merge(
                         FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),

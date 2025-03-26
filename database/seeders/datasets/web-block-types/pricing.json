@@ -6,7 +6,7 @@
 	"icon": ["fal", "text"],
 	"data": {
 		"fieldValue": {
-			"text": "<p class=\"mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty text-gray-600 sm:text-xl/8\">Choose an affordable plan that’s packed with the best features for engaging your audience, creating customer loyalty, and driving sales.</p>",
+			"text": "<p style=\"text-align: center\">Choose an affordable plan that’s packed with the best features for engaging your audience, creating customer loyalty, and driving sales.</p>",
 			"container": {
 				"properties": {
 					"border": {
@@ -22,6 +22,13 @@
 							"topright": { "value": 0 },
 							"bottomleft": { "value": 0 },
 							"bottomright": { "value": 0 }
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#ffffff",
+						"image": {
+							"original": null
 						}
 					},
 					"margin": {
@@ -48,13 +55,97 @@
 				{
 					"name": "Freelancer",
 					"id": "tier-freelancer",
-					"link": {
-						"id": 9011,
-						"url": "http://aw-fulfilment.co.uk/rework",
-						"href": "http://aw-fulfilment.co.uk/rework",
-						"type": "external",
-						"target": "_blank",
-						"workshop": "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/rework-awf/workshop"
+					"button": {
+						"link": {
+							"id": 9,
+							"url": "https://ancientwisdom.biz/showroom",
+							"href": "https://ancientwisdom.biz/showroom",
+							"type": "internal"
+						},
+						"text": "Buy Plan",
+						"container": {
+							"properties": {
+								"text": {
+									"color": "rgba(0, 0, 0, 1",
+									"fontFamily": null
+								},
+								"border": {
+									"top": {
+										"value": 2
+									},
+									"left": {
+										"value": 2
+									},
+									"unit": "px",
+									"color": "rgba(20, 20, 20, 1",
+									"right": {
+										"value": 2
+									},
+									"bottom": {
+										"value": 2
+									},
+									"rounded": {
+										"unit": "px",
+										"topleft": {
+											"value": 10
+										},
+										"topright": {
+											"value": 10
+										},
+										"bottomleft": {
+											"value": 10
+										},
+										"bottomright": {
+											"value": 10
+										}
+									}
+								},
+								"margin": {
+									"top": {
+										"value": null
+									},
+									"left": {
+										"value": null
+									},
+									"unit": "px",
+									"right": {
+										"value": null
+									},
+									"bottom": {
+										"value": null
+									}
+								},
+								"padding": {
+									"top": {
+										"value": 10
+									},
+									"left": {
+										"value": 40
+									},
+									"unit": "px",
+									"right": {
+										"value": 40
+									},
+									"bottom": {
+										"value": 10
+									}
+								},
+								"background": {
+									"type": "color",
+									"color": "rgba(246, 246, 246, 1)",
+									"image": {
+										"original": null
+									}
+								}
+							}
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "rgba(252, 252, 252, 1)",
+						"image": {
+							"original": null
+						}
 					},
 					"priceMonthly": "$19",
 					"description": "The essentials to provide your best work for clients.",
@@ -69,13 +160,97 @@
 				{
 					"name": "Startup",
 					"id": "tier-startup",
-					"link": {
-						"id": 9011,
-						"url": "http://aw-fulfilment.co.uk/rework",
-						"href": "http://aw-fulfilment.co.uk/rework",
-						"type": "external",
-						"target": "_blank",
-						"workshop": "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/rework-awf/workshop"
+					"button": {
+						"link": {
+							"id": 9,
+							"url": "https://ancientwisdom.biz/showroom",
+							"href": "https://ancientwisdom.biz/showroom",
+							"type": "internal"
+						},
+						"text": "Buy Plan",
+						"container": {
+							"properties": {
+								"text": {
+									"color": "rgba(0, 0, 0, 1",
+									"fontFamily": null
+								},
+								"border": {
+									"top": {
+										"value": 2
+									},
+									"left": {
+										"value": 2
+									},
+									"unit": "px",
+									"color": "rgba(20, 20, 20, 1",
+									"right": {
+										"value": 2
+									},
+									"bottom": {
+										"value": 2
+									},
+									"rounded": {
+										"unit": "px",
+										"topleft": {
+											"value": 10
+										},
+										"topright": {
+											"value": 10
+										},
+										"bottomleft": {
+											"value": 10
+										},
+										"bottomright": {
+											"value": 10
+										}
+									}
+								},
+								"margin": {
+									"top": {
+										"value": null
+									},
+									"left": {
+										"value": null
+									},
+									"unit": "px",
+									"right": {
+										"value": null
+									},
+									"bottom": {
+										"value": null
+									}
+								},
+								"padding": {
+									"top": {
+										"value": 10
+									},
+									"left": {
+										"value": 40
+									},
+									"unit": "px",
+									"right": {
+										"value": 40
+									},
+									"bottom": {
+										"value": 10
+									}
+								},
+								"background": {
+									"type": "color",
+									"color": "rgba(246, 246, 246, 1)",
+									"image": {
+										"original": null
+									}
+								}
+							}
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "rgba(252, 252, 252, 1)",
+						"image": {
+							"original": null
+						}
 					},
 					"priceMonthly": "$49",
 					"description": "A plan that scales with your rapidly growing business.",
@@ -91,13 +266,97 @@
 				{
 					"name": "Enterprise",
 					"id": "tier-enterprise",
-					"link": {
-						"id": 9011,
-						"url": "http://aw-fulfilment.co.uk/rework",
-						"href": "http://aw-fulfilment.co.uk/rework",
-						"type": "external",
-						"target": "_blank",
-						"workshop": "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/rework-awf/workshop"
+					"button": {
+						"link": {
+							"id": 9,
+							"url": "https://ancientwisdom.biz/showroom",
+							"href": "https://ancientwisdom.biz/showroom",
+							"type": "internal"
+						},
+						"text": "Buy Plan",
+						"container": {
+							"properties": {
+								"text": {
+									"color": "rgba(0, 0, 0, 1",
+									"fontFamily": null
+								},
+								"border": {
+									"top": {
+										"value": 2
+									},
+									"left": {
+										"value": 2
+									},
+									"unit": "px",
+									"color": "rgba(20, 20, 20, 1",
+									"right": {
+										"value": 2
+									},
+									"bottom": {
+										"value": 2
+									},
+									"rounded": {
+										"unit": "px",
+										"topleft": {
+											"value": 10
+										},
+										"topright": {
+											"value": 10
+										},
+										"bottomleft": {
+											"value": 10
+										},
+										"bottomright": {
+											"value": 10
+										}
+									}
+								},
+								"margin": {
+									"top": {
+										"value": null
+									},
+									"left": {
+										"value": null
+									},
+									"unit": "px",
+									"right": {
+										"value": null
+									},
+									"bottom": {
+										"value": null
+									}
+								},
+								"padding": {
+									"top": {
+										"value": 10
+									},
+									"left": {
+										"value": 40
+									},
+									"unit": "px",
+									"right": {
+										"value": 40
+									},
+									"bottom": {
+										"value": 10
+									}
+								},
+								"background": {
+									"type": "color",
+									"color": "rgba(246, 246, 246, 1)",
+									"image": {
+										"original": null
+									}
+								}
+							}
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "rgba(252, 252, 252, 1)",
+						"image": {
+							"original": null
+						}
 					},
 					"priceMonthly": "$99",
 					"description": "Dedicated support and infrastructure for your company.",

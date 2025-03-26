@@ -38,36 +38,34 @@ class StoreEmail extends OrgAction
         data_set($modelData, 'outbox_id', $parent->outbox_id);
 
 
-        $snapshotData = null;
-        if (!$this->strict) {
-            $snapshotData = [
-                'layout'          => Arr::pull($modelData, 'layout'),
-                'compiled_layout' => Arr::pull($modelData, 'compiled_layout'),
-                'state'           => Arr::pull($modelData, 'snapshot_state'),
-                'recyclable'      => Arr::pull($modelData, 'snapshot_recyclable'),
-                'first_commit'    => Arr::pull($modelData, 'snapshot_first_commit'),
-            ];
+        $snapshotData = [
+            'layout'          => Arr::pull($modelData, 'layout'),
+            'compiled_layout' => Arr::pull($modelData, 'compiled_layout'),
+            'state'           => Arr::pull($modelData, 'snapshot_state'),
+            'recyclable'      => Arr::pull($modelData, 'snapshot_recyclable'),
+            'first_commit'    => Arr::pull($modelData, 'snapshot_first_commit'),
+        ];
 
-            if (Arr::has($modelData, 'source_id')) {
-                $snapshotData['source_id'] = Arr::pull($modelData, 'snapshot_source_id');
-            }
-
-            if (Arr::has($modelData, 'fetched_at')) {
-                $snapshotData['fetched_at'] = Arr::get($modelData, 'fetched_at');
-            }
-
-            if ($publishedAt = Arr::pull($modelData, 'snapshot_published_at')) {
-                $snapshotData['published_at'] = $publishedAt;
-            }
-
-
-            /** @var EmailBuilderEnum $builder */
-            $builder = Arr::get($modelData, 'builder');
-
-            if ($builder) {
-                $snapshotData['builder'] = $builder->value;
-            }
+        if (Arr::has($modelData, 'source_id')) {
+            $snapshotData['source_id'] = Arr::pull($modelData, 'snapshot_source_id');
         }
+
+        if (Arr::has($modelData, 'fetched_at')) {
+            $snapshotData['fetched_at'] = Arr::get($modelData, 'fetched_at');
+        }
+
+        if ($publishedAt = Arr::pull($modelData, 'snapshot_published_at')) {
+            $snapshotData['published_at'] = $publishedAt;
+        }
+
+
+        /** @var EmailBuilderEnum $builder */
+        $builder = Arr::get($modelData, 'builder');
+
+        if ($builder) {
+            $snapshotData['builder'] = $builder->value;
+        }
+
 
         if ($emailTemplate) {
             data_set($modelData, 'builder', $emailTemplate->builder->value);
@@ -79,7 +77,6 @@ class StoreEmail extends OrgAction
         return DB::transaction(function () use ($parent, $modelData, $snapshotData) {
             /** @var Email $email */
             $email = $parent->email()->create($modelData);
-
 
 
             if ($snapshotData) {
@@ -100,7 +97,7 @@ class StoreEmail extends OrgAction
         $liveSnapShot = StoreEmailSnapshot::make()->action(
             $email,
             $snapshotData,
-            strict: $this->strict,
+            strict: false, // todo check this
         );
 
         $email->update(
@@ -165,17 +162,16 @@ class StoreEmail extends OrgAction
             'builder'    => ['required', Rule::enum(EmailBuilderEnum::class)],
         ];
 
+        $rules['layout']                = ['sometimes', 'required', 'array'];
+        $rules['compiled_layout']       = ['sometimes', 'nullable', 'string'];
+        $rules['snapshot_state']        = ['sometimes', 'required', Rule::enum(SnapshotStateEnum::class)];
+        $rules['snapshot_published_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['snapshot_recyclable']   = ['sometimes', 'required', 'boolean'];
+        $rules['snapshot_first_commit'] = ['sometimes', 'required', 'boolean'];
+
         if (!$this->strict) {
-            $rules['layout']                = ['sometimes', 'required', 'array'];
-            $rules['compiled_layout']       = ['sometimes', 'nullable', 'string'];
-            $rules['snapshot_state']        = ['sometimes', 'required', Rule::enum(SnapshotStateEnum::class)];
-            $rules['snapshot_published_at'] = ['sometimes', 'nullable', 'date'];
-            $rules['snapshot_recyclable']   = ['sometimes', 'required', 'boolean'];
-            $rules['snapshot_first_commit'] = ['sometimes', 'required', 'boolean'];
-            $rules['snapshot_source_id']    = ['sometimes', 'required', 'string'];
-
-
-            $rules = $this->noStrictStoreRules($rules);
+            $rules['snapshot_source_id'] = ['sometimes', 'required', 'string'];
+            $rules                       = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

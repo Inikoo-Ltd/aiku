@@ -11,7 +11,7 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
-use App\Actions\Comms\Email\SendNewCustomerToSubcriberEmail;
+use App\Actions\Comms\Email\SendNewCustomerNotification;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -48,7 +48,7 @@ class RegisterCustomer extends OrgAction
 
         SendCustomerWelcomeEmail::run($customer);
 
-        // SendNewCustomerToSubcriberEmail::run($fulfilmentCustomer->customer);
+        SendNewCustomerNotification::run($customer);
 
         ShopHydrateCrmStats::run($shop);
 

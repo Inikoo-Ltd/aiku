@@ -27,6 +27,7 @@ import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import { faCogs, faExclamation, faExclamationTriangle, faLayerGroup } from '@fas'
+import { routeType } from '@/types/route'
 
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
@@ -40,7 +41,8 @@ const props = defineProps<{
     isLoadingDeleteBlock: number | null
 }>()
 
-const selectedTab = ref(0)
+
+const selectedTab = ref(1)
 
 function changeTab(index : Number) {
   selectedTab.value = index
@@ -52,6 +54,7 @@ const emits = defineEmits<{
     (e: 'update', value: Daum): void
     (e: 'order', value: Object): void
     (e: 'setVisible', value: Object): void
+    (e: 'onSaveSiteSettings', value: Object): void
 }>()
 
 const confirm = useConfirm();
@@ -157,6 +160,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                     <SiteSettings 
                     :webpage="webpage"
                     :webBlockTypes="webBlockTypes" 
+                    @onSaveSiteSettings="(value)=>emits('onSaveSiteSettings',value)"
                 />
                 </div>
                

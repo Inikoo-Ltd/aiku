@@ -51,12 +51,12 @@ Broadcast::channel('retina.personal.{webUserID}', function (Webuser $webUser, in
     return $webUserID === $webUser->id;
 });
 
-Broadcast::channel('retina.active.users', function (Webuser $webUser) {
-    return [
-        'id'    => $webUser->id,
-        'alias' => $webUser->slug,
-    ];
-});
+// Broadcast::channel('retina.active.users', function (Webuser $webUser) {
+//     return [
+//         'id'    => $webUser->id,
+//         'alias' => $webUser->slug,
+//     ];
+// });
 
 Broadcast::channel('webpage.{webpage}.preview', function (User $user) {
     return true;

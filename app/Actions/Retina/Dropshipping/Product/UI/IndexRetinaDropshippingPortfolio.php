@@ -58,6 +58,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->is_root;
     }
 
@@ -93,6 +97,14 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
         return $this->handle($shopifyUser);
     }
 
+    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->asAction = true;
+        $this->initialisationFromPupil($request);
+
+        return $this->handle($this->shopifyUser);
+    }
+
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
         return Inertia::render(
@@ -109,7 +121,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
-                                'name' => 'retina.models.dropshipping.shopify_user.product.sync',
+                                'name' => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
                                     'shopifyUser' => $this->shopifyUser->id
                                 ]

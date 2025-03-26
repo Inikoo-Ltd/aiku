@@ -42,7 +42,14 @@ const toggle = (event) => {
         <div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
             <div class="w-full grid grid-cols-3 items-center gap-6">
                 <!-- Logo -->
-             
+                <component
+					v-if="modelValue?.logo?.image?.source"
+					:is="modelValue?.logo?.image?.source ? 'a' : 'div'"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="block w-full h-full"
+					@click="() => emits('setPanelActive', 'logo')"
+					>
                     <Image 
                         :style="getStyles(modelValue.logo.properties)"
                         :alt="modelValue?.logo?.alt" 
@@ -52,8 +59,15 @@ const toggle = (event) => {
                         @click="() => emits('setPanelActive', 'logo')"
                         class="hover-dashed">
                     </Image>
-               
-
+                </component>
+                <div
+					v-else
+					@click="() => emits('setPanelActive', 'logo')"
+					class="flex items-center justify-center w-[200px] h-[100px] bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
+					<font-awesome-icon
+						:icon="['fas', 'image']"
+						class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700" />
+				</div>
                 <!-- Search Bar -->
                 <div class="relative justify-self-center w-full max-w-md">
                     <!-- <input type="text" placeholder="Search Products"

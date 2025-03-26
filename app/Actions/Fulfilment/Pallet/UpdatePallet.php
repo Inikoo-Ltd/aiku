@@ -71,7 +71,7 @@ class UpdatePallet extends OrgAction
         }
 
         if ($originalType !== $pallet->type) {
-            SetPalletDeliveryAutoServices::run($pallet->palletDelivery, $pallet, $originalType);
+            SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
         }
         PalletRecordSearch::dispatch($pallet);
 

@@ -31,7 +31,7 @@ class FetchAuroraFeedbacks extends FetchAuroraAction
                     $feedback = UpdateFeedback::make()->action(
                         feedback: $feedback,
                         modelData: $feedbackData['feedback'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraFeedbacks extends FetchAuroraAction
                     $feedback = StoreFeedback::make()->action(
                         origin: $feedbackData['origin'],
                         modelData: $feedbackData['feedback'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

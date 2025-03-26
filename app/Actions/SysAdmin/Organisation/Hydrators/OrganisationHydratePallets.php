@@ -22,6 +22,8 @@ class OrganisationHydratePallets
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'low-priority';
+
     private Organisation $organisation;
     public function __construct(Organisation $organisation)
     {

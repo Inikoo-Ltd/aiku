@@ -31,7 +31,7 @@ class FetchAuroraDeletedLocations extends FetchAuroraAction
                     $location = UpdateLocation::make()->action(
                         location: $location,
                         modelData: $deletedLocationData['location'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraDeletedLocations extends FetchAuroraAction
                     $location = StoreLocation::make()->action(
                         parent: $deletedLocationData['parent'],
                         modelData: $deletedLocationData['location'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

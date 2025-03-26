@@ -32,7 +32,7 @@ class FetchAuroraFamilies extends FetchAuroraAction
                     $family = UpdateProductCategory::make()->action(
                         productCategory: $family,
                         modelData: $familyData['family'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -47,7 +47,7 @@ class FetchAuroraFamilies extends FetchAuroraAction
                     $family = StoreProductCategory::make()->action(
                         parent: $familyData['parent'],
                         modelData: $familyData['family'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

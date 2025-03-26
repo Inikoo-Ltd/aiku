@@ -46,7 +46,7 @@ trait FetchSuppliersTrait
                     $supplier = UpdateSupplier::make()->action(
                         $supplier,
                         $supplierData['supplier'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -64,7 +64,7 @@ trait FetchSuppliersTrait
                 $supplier = StoreSupplier::make()->action(
                     parent: $supplierData['parent'],
                     modelData: $supplierData['supplier'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -125,7 +125,7 @@ trait FetchSuppliersTrait
                 [
                     'source_id' => $supplierData['supplier']['source_id']
                 ],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
             );
         } catch (Exception|Throwable $e) {

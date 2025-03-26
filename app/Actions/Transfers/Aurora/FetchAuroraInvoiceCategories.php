@@ -34,7 +34,7 @@ class FetchAuroraInvoiceCategories extends FetchAuroraAction
             return UpdateInvoiceCategory::make()->action(
                 invoiceCategory: $invoiceCategory,
                 modelData: $invoiceCategoryData['invoice_category'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );
@@ -44,7 +44,7 @@ class FetchAuroraInvoiceCategories extends FetchAuroraAction
         return StoreInvoiceCategory::make()->action(
             parent: $organisationSource->getOrganisation()->group,
             modelData: $invoiceCategoryData['invoice_category'],
-            hydratorsDelay: 60,
+            hydratorsDelay: $this->hydratorsDelay,
             strict: false,
             audit: false
         );

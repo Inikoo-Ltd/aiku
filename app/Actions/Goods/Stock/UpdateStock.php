@@ -38,7 +38,8 @@ class UpdateStock extends GrpAction
     public function handle(Stock $stock, array $modelData): Stock
     {
         $stock   = $this->update($stock, $modelData, ['data', 'settings']);
-        $changes = $stock->getChanges();
+        $changes = Arr::except($stock->getChanges(), ['updated_at', 'last_fetched_at']);
+
         if (Arr::hasAny($changes, ['code', 'name', 'stock_family_id', 'unit_value', 'state'])) {
 
             if ($stock->state != StockStateEnum::IN_PROCESS) {
@@ -77,9 +78,6 @@ class UpdateStock extends GrpAction
             }
         }
 
-
-        StockHydrateUniversalSearch::dispatch($stock);
-
         if (Arr::has($changes, 'state')) {
             GroupHydrateStocks::dispatch($stock->group)->delay($this->hydratorsDelay);
 
@@ -88,6 +86,12 @@ class UpdateStock extends GrpAction
                 StockFamilyHydrateStocks::dispatch($stock->stockFamily)->delay($this->hydratorsDelay);
             }
         }
+
+
+        if (count($changes) > 0) {
+            StockHydrateUniversalSearch::dispatch($stock);
+        }
+
 
         $stock->refresh();
 

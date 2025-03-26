@@ -4,7 +4,7 @@ import Home from '@/src/screens/Home';
 import AgentStockControl from '@/src/screens/Agent/StockControl/AgentStockControl'
 import AgentsGoodOut from '@/src/screens/Agent/GoodsOut/AgentsGoodOut'
 import AgentGoodsIn from '@/src/screens/Agent/GoodsIn/AgentGoodsIn'
-import LocationStackScreen from '@/src/screens/routes/LocationStackScreen';
+import LocationsStackScreen from '@/src/screens/routes/LocationsStackScreen';
 import AgentSkus from '@/src/screens/Agent/StockControl/AgentSkus';
 
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
@@ -29,7 +29,7 @@ const agentMenu = (fulfilment,warehouse) => {
         },
         {
             name: 'Location',
-            component: LocationStackScreen,
+            component: LocationsStackScreen,
             options: {
                 drawerIcon: ({color}) => (
                     <FontAwesomeIcon

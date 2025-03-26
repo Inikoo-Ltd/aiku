@@ -56,7 +56,7 @@ trait WithSendBulkEmails
 
         if ($dispatchedEmail->recipient instanceof WebUser) {
             $customerName = $dispatchedEmail->recipient->customer->name;
-        } elseif ($dispatchedEmail instanceof OutBoxHasSubscriber) {
+        } elseif ($dispatchedEmail->recipient instanceof OutBoxHasSubscriber) {
             $customerName = Arr::get($additionalData, 'customer_name');
         } else {
             $customerName = $dispatchedEmail->recipient->name;
@@ -72,6 +72,10 @@ trait WithSendBulkEmails
                 "<a ses:no-track href=\"$unsubscribeUrl\">%s</a>",
                 __('Unsubscribe')
             ),
+            'customer-shop' => Arr::get($additionalData, 'customer_shop'),
+            'customer-email' => Arr::get($additionalData, 'customer_email'),
+            'customer-url' => Arr::get($additionalData, 'customer_url'),
+            'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
             default => $originalPlaceholder,
         };
     }
