@@ -48,9 +48,9 @@ onMounted(() => {
 // Method: Create new address
 const isModalAddress = ref(false)
 const isModalAddressCollection = ref(false)
-const enabled = ref(props.dataPalletReturn.is_collection || false)
+const enabled = ref(props.dataPalletReturn?.is_collection || false)
 const isLoading = ref<string | boolean>(false)
-const textValue = ref(props.boxStats.collection_notes)
+const textValue = ref(props.boxStats?.collection_notes)
 
 // Computed property to intercept changes via v-model
 const computedEnabled = computed({
