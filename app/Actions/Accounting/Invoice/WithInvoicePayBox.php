@@ -31,7 +31,7 @@ trait WithInvoicePayBox
             ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
             ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
 
-        $totalPaidOtherPayment = DB::table('invoices')
+        $totalPaidRefundInOtherPayment = DB::table('invoices')
             ->where('invoices.id', $invoice->id)
             ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
             ->where('model_has_payments.model_type', 'Invoice')
@@ -56,9 +56,9 @@ trait WithInvoicePayBox
                 $totalNeedToPay = $totalNeedToRefund;
 
                 // payment method
-                if (abs($totalNeedToRefund) > abs($totalPaidOtherPayment)) {
-                    $limitPayment = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidOtherPayment);
-                    $totalNeedToRefundInPaymentMethod = min($limitPayment, abs($totalRefund) - abs($totalPaidOtherPayment)) * -1;
+                if (abs($totalNeedToRefund) > abs($totalPaidRefundInOtherPayment)) {
+                    $totalPaymentAfterRefunded = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
+                    $totalNeedToRefundInPaymentMethod = min($totalPaymentAfterRefunded, abs($totalNeedToPay)) * -1;
 
                 } else {
                     $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
