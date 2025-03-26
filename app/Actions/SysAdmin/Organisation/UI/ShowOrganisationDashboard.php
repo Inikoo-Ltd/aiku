@@ -149,21 +149,21 @@ class ShowOrganisationDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'label' => $orderingHandling->number_orders_state_submitted_paid ?? 0,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ],
                             [
                                 'tab_slug' => 'submitted_unpaid',
-                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'label' => $orderingHandling->number_orders_state_submitted_not_paid ?? 0,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ]
@@ -177,20 +177,20 @@ class ShowOrganisationDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'label' => $orderingHandling->number_orders_state_submitted_paid ?? 0,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ],
                             [
-                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'label' => $orderingHandling->number_orders_state_submitted_not_paid ?? 0,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ]
@@ -204,20 +204,20 @@ class ShowOrganisationDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_handling,
+                                'label' => $orderingHandling->number_orders_state_handling ?? 0,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_handling_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_handling_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ],
                             [
-                                'label' => $orderingHandling->number_orders_state_handling_blocked,
+                                'label' => $orderingHandling->number_orders_state_handling_blocked ?? 0,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_handling_blocked_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_handling_blocked_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ]
@@ -231,20 +231,20 @@ class ShowOrganisationDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_packed,
+                                'label' => $orderingHandling->number_orders_state_packed ?? 0,
                                 'icon' => 'fal fa-box',
                                 'iconClass' => 'text-teal-500',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_packed_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_packed_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ],
                             [
-                                'label' => $orderingHandling->number_orders_state_finalised,
+                                'label' => $orderingHandling->number_orders_state_finalised ?? 0,
                                 'icon' => 'fal fa-box-check',
                                 'iconClass' => 'text-orange-500',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_finalised_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_finalised_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ]
@@ -258,10 +258,10 @@ class ShowOrganisationDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_dispatched_today,
+                                'label' => $orderingHandling->number_orders_dispatched_today ?? 0,
                                 'type' => 'number',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_dispatched_today_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_dispatched_today_amount_org_currency"} ?? 0,
                                     'type' => 'currency'
                                 ]
                             ]

@@ -16,6 +16,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\UI\Dispatch\ShowAgentDispatchHub;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\Warehouse;
@@ -295,6 +296,22 @@ class IndexStockDeliveries extends OrgAction
                         'simple' => [
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Stock deliveries'),
+                            'icon'  => 'fal fa-bars'
+                        ]
+                    ]
+                ]
+            ),
+            'grp.org.warehouses.show.agent_dispatching.stock_deliveries.index' => array_merge(
+                ShowAgentDispatchHub::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.warehouses.show.agent_dispatching.stock_deliveries.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Stock deliveries'),

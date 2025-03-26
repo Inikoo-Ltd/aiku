@@ -14,6 +14,7 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
+use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -42,6 +43,13 @@ class ShowStockDelivery extends OrgAction
         return $this->handle($stockDelivery);
     }
 
+    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
+    {
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(StockDeliveryTabsEnum::values());
+        $this->stockDelivery    = $stockDelivery;
+        return $this->handle($stockDelivery);
+    }
+
     public function maya(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): void
     {
         $this->maya   = true;
@@ -56,14 +64,11 @@ class ShowStockDelivery extends OrgAction
 
     public function htmlResponse(StockDelivery $stockDelivery, ActionRequest $request): Response
     {
-        $this->validateAttributes();
-
-
         return Inertia::render(
             'Procurement/StockDelivery',
             [
                 'title'                                 => __('supplier delivery'),
-                'breadcrumbs'                           => $this->getBreadcrumbs($this->stockDelivery, $request->route()->originalParameters()),
+                'breadcrumbs'                           => $this->getBreadcrumbs($stockDelivery, $request->route()->getName(), $request->route()->originalParameters()),
                 // 'navigation'                            => [
                 //     'previous' => $this->getPrevious($this->stockDelivery, $request),
                 //     'next'     => $this->getNext($this->stockDelivery, $request),
@@ -112,9 +117,10 @@ class ShowStockDelivery extends OrgAction
         return new StockDeliveryResource($this->stockDelivery);
     }
 
-    public function getBreadcrumbs(StockDelivery $stockDelivery, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(StockDelivery $stockDelivery, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        return array_merge(
+        return match ($routeName) {
+        'grp.org.procurement.stock_deliveries.index' => array_merge(
             (new ShowProcurementDashboard())->getBreadcrumbs($routeParameters),
             [
                 [
@@ -139,38 +145,33 @@ class ShowStockDelivery extends OrgAction
 
                 ],
             ]
-        );
+        ),
+        'grp.org.warehouses.show.agent_dispatching.stock_deliveries.show' => array_merge(
+            IndexStockDeliveries::make()->getBreadcrumbs('grp.org.warehouses.show.agent_dispatching.stock_deliveries.index', $routeParameters),
+            [
+                [
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => [
+                                'name' => 'grp.org.warehouses.show.agent_dispatching.stock_deliveries.index',
+                                'parameters' => $routeParameters,
+                            ],
+                            'label' => __('Stocky Deliveries')
+                        ],
+                        'model' => [
+                            'route' => [
+                                'name'       => 'grp.org.warehouses.show.agent_dispatching.stock_deliveries.show',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => $stockDelivery->reference,
+                        ],
+                    ],
+                    'suffix' => $suffix,
+
+                ],
+            ]
+        ),
+    };
     }
-
-    // public function getPrevious(StockDelivery $stockDelivery, ActionRequest $request): ?array
-    // {
-    //     $previous = StockDelivery::where('number', '<', $stockDelivery->number)->orderBy('number', 'desc')->first();
-    //     return $this->getNavigation($previous, $request->route()->getName());
-
-    // }
-
-    // public function getNext(StockDelivery $stockDelivery, ActionRequest $request): ?array
-    // {
-    //     $next = StockDelivery::where('number', '>', $stockDelivery->number)->orderBy('number')->first();
-    //     return $this->getNavigation($next, $request->route()->getName());
-    // }
-
-    // private function getNavigation(?StockDelivery $stockDelivery, string $routeName): ?array
-    // {
-    //     if (!$stockDelivery) {
-    //         return null;
-    //     }
-    //     return match ($routeName) {
-    //         'grp.org.procurement.stock_deliveries.show' => [
-    //             'label' => $stockDelivery->reference,
-    //             'route' => [
-    //                 'name'      => $routeName,
-    //                 'parameters' => [
-    //                     'employee' => $stockDelivery->number
-    //                 ]
-
-    //             ]
-    //         ]
-    //     };
-    // }
 }

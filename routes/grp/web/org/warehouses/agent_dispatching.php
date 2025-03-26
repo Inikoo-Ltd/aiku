@@ -9,17 +9,26 @@
 use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\Procurement\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\UI\Dispatch\ShowAgentDispatchHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowAgentDispatchHub::class)->name('backlog');
-Route::get('/stock-deliveries', IndexDeliveryNotes::class)->name('stock_deliveries');
-Route::get('/stock-deliveries/unassigned', [IndexDeliveryNotes::class, 'unassigned'])->name('unassigned.stock_deliveries');
-Route::get('/stock-deliveries/queued', [IndexDeliveryNotes::class, 'queued'])->name('queued.stock_deliveries');
-Route::get('/stock-deliveries/handling', [IndexDeliveryNotes::class, 'handling'])->name('handling.stock_deliveries');
-Route::get('/stock-deliveries/handling-blocked', [IndexDeliveryNotes::class, 'handlingBlocked'])->name('handling-blocked.stock_deliveries');
-Route::get('/stock-deliveries/packed', [IndexDeliveryNotes::class, 'packed'])->name('packed.stock_deliveries');
-Route::get('/stock-deliveries/finalised', [IndexDeliveryNotes::class, 'finalised'])->name('finalised.stock_deliveries');
-Route::get('/stock-deliveries/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.stock_deliveries');
-Route::get('/stock-deliveries/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('stock_deliveries.show');
-Route::get('/stock-deliveries/{deliveryNote}/pdf', PdfDeliveryNote::class)->name('stock_deliveries.pdf');
+Route::get('/deelivery-notes', IndexDeliveryNotes::class)->name('delivery_notes');
+Route::get('/deelivery-notes/unassigned', [IndexDeliveryNotes::class, 'unassigned'])->name('unassigned.delivery_notes');
+Route::get('/deelivery-notes/queued', [IndexDeliveryNotes::class, 'queued'])->name('queued.delivery_notes');
+Route::get('/deelivery-notes/handling', [IndexDeliveryNotes::class, 'handling'])->name('handling.delivery_notes');
+Route::get('/deelivery-notes/handling-blocked', [IndexDeliveryNotes::class, 'handlingBlocked'])->name('handling-blocked.delivery_notes');
+Route::get('/deelivery-notes/packed', [IndexDeliveryNotes::class, 'packed'])->name('packed.delivery_notes');
+Route::get('/deelivery-notes/finalised', [IndexDeliveryNotes::class, 'finalised'])->name('finalised.delivery_notes');
+Route::get('/deelivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery_notes');
+Route::get('/deelivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery_notes.show');
+Route::get('/deelivery-notes/{deliveryNote}/pdf', PdfDeliveryNote::class)->name('delivery_notes.pdf');
+
+Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {
+    Route::get('', [IndexStockDeliveries::class, 'inWarehouse'])->name('index');
+    Route::prefix('/{stockDelivery}')->as('show')->group(function () {
+        Route::get('', [ShowStockDelivery::class, 'inWarehouse'])->name('');
+    });
+});
