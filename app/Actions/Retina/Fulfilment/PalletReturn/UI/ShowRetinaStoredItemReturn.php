@@ -172,7 +172,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                 'label'   => __('delete'),
                 'key'     => 'delete_return',
                 'route'   => [
-                    'method'     => 'delete',
+                    'method'     => 'patch',
                     'name'       => 'retina.models.pallet-return.delete',
                     'parameters' => [
                         'palletReturn' => $palletReturn->id
