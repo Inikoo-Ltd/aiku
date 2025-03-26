@@ -124,6 +124,7 @@ const props = defineProps<{
         total_refunds: number
         total_balance: number
         total_paid_in: number
+        total_need_to_refund_in_payment_method : number
         total_paid_out: {
             data: {}[]
         }

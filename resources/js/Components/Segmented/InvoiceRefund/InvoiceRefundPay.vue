@@ -38,6 +38,7 @@ const props = defineProps<{
         total_paid_in: number
         total_paid_account : number
         total_excees_payment : number
+        total_need_to_refund_in_payment_method : number
         total_paid_out: {
             data: {}[]
         }
@@ -270,34 +271,18 @@ const totalRefunded = computed(() => {
     return _PureTable.value ?  _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refunded || 0), 0) : 0
 })
 
-const totalRefund = computed(() => {
-    return _PureTable.value ?  _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refund || 0), 0) : 0
-})
-
-
-const totalRefundAccount = computed(() => {
-  const total_excees_payment = Number(props.invoice_pay.total_excees_payment)
-  const totalNeedToPay = Number(props.invoice_pay.total_need_to_pay);
-  const totalPaidAccount = Number(props.invoice_pay.total_paid_account);
-
-  let result = totalNeedToPay < 0 
-    ? totalNeedToPay + totalPaidAccount
-    : totalNeedToPay - totalPaidAccount;
-
-  return Math.abs(result - total_excees_payment) < 0.01 ? 0 : result;
-});
 
 const maxRefund = (data) => {
   if (!data) return 0;
   const maxPossible = data.amount - data.refunded;
-  return Math.min(maxPossible, totalRefundAccount.value);
+  return Math.min(maxPossible, props.invoice_pay.total_need_to_refund_in_payment_method);
 };
 
 const onClickRefundPayments = () => {
     isOpenModalRefund.value = true
-    if(totalRefundAccount.value < 0)
+    if(props.invoice_pay.total_need_to_refund_in_payment_method < 0)
         paymentRefund.value.payment_method ='invoice_payment_method'
-    else if(totalRefundAccount.value == 0)
+    else if(props.invoice_pay.total_need_to_refund_in_payment_method == 0)
         paymentRefund.value.payment_method ='credit_balance'
 }
 
@@ -305,12 +290,12 @@ const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to customer's credit balance"),
         value: 'credit_balance',
-        disable : totalRefundAccount.value < 0
+        disable : (props.invoice_pay.total_invoice - props.invoice_pay.total_need_to_refund_in_payment_method) < 0
     },
     {
         label: trans("Refund money to payment method of the invoice"),
         value: 'invoice_payment_method',
-        disable: totalRefundAccount.value == 0
+        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) == 0
     }
 ]);
 
@@ -520,7 +505,7 @@ const listPaymentRefund = computed(() => [
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
-                        {{ totalRefund }}
+                        {{(props.invoice_pay.total_invoice - props.invoice_pay.total_paid_account) < 0}}
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Select refund method') }}
                         </label>
@@ -587,9 +572,9 @@ const listPaymentRefund = computed(() => [
                             <div class="mt-2 flex items-center text-lg">
                                 <span class="text-gray-600 font-medium">Need to Refund Outside AWF Account:</span>
                                 <span 
-                                    :class="[totalRefundAccount < 0 ? 'text-red-500' : 'text-green-600', 
+                                    :class="[props.invoice_pay.total_need_to_refund_in_payment_method < 0 ? 'text-red-500' : 'text-green-600', 
                                     'ml-2 font-semibold tracking-wide']">
-                                    {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', totalRefundAccount) }}
+                                    {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', props.invoice_pay.total_need_to_refund_in_payment_method) }}
                                 </span>
                             </div>
                         </div>
@@ -623,7 +608,7 @@ const listPaymentRefund = computed(() => [
                                 <!-- Refund Column -->
                                 <template #refund="{ data }">
                                         <ActionCell 
-                                            v-if="(data.amount - data.refunded) > 0 && totalRefundAccount !== 0"
+                                            v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"
                                             v-model="data.refund" 
                                             :max="maxRefund(data)"
                                             :min="0"
