@@ -39,6 +39,7 @@ const props = defineProps<{
         total_paid_account : number
         total_excees_payment : number
         total_need_to_refund_in_payment_method : number
+        total_need_to_refund_in_credit_method : number
         total_paid_out: {
             data: {}[]
         }
@@ -54,7 +55,7 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: 'onPayInOnClick'): void
 }>()
-
+console.log('dfsdfsfd',props)
 
 const locale = inject('locale', aikuLocaleStructure)
 const _PureTable = ref(null)
@@ -275,7 +276,7 @@ const totalRefunded = computed(() => {
 const maxRefund = (data) => {
   if (!data) return 0;
   const maxPossible = data.amount - data.refunded;
-  return Math.min(maxPossible, props.invoice_pay.total_need_to_refund_in_payment_method);
+  return Math.min(maxPossible, -props.invoice_pay.total_need_to_refund_in_payment_method);
 };
 
 const onClickRefundPayments = () => {
@@ -290,7 +291,7 @@ const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to customer's credit balance"),
         value: 'credit_balance',
-        disable : (-props.invoice_pay.total_need_to_pay  - props.invoice_pay.total_need_to_refund_in_payment_method) < 0
+        disable : props.invoice_pay.total_need_to_refund_in_credit_method > 0
     },
     {
         label: trans("Refund money to payment method of the invoice"),
@@ -558,7 +559,7 @@ const listPaymentRefund = computed(() => [
                             <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{
                                 locale.currencyFormat(props.invoice_pay.currency_code || 'usd',
                                 Number(-invoice_pay.total_need_to_pay)) }}</span>
-                            <Button @click="() => paymentRefund.payment_amount = (-invoice_pay.total_need_to_pay - invoice_pay.total_need_to_refund_in_payment_method)"
+                            <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_refund_in_credit_method"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
                                 type="tertiary" :label="trans('Refund all')" size="xxs" />
                         </div>
