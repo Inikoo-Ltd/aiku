@@ -37,6 +37,7 @@ const props = defineProps<{
         total_balance: number
         total_paid_in: number
         total_paid_account : number
+        total_excees_payment : number
         total_paid_out: {
             data: {}[]
         }
@@ -275,6 +276,7 @@ const totalRefund = computed(() => {
 
 
 const totalRefundAccount = computed(() => {
+  const total_excees_payment = Number(props.invoice_pay.total_excees_payment)
   const totalNeedToPay = Number(props.invoice_pay.total_need_to_pay);
   const totalPaidAccount = Number(props.invoice_pay.total_paid_account);
 
@@ -282,14 +284,27 @@ const totalRefundAccount = computed(() => {
     ? totalNeedToPay + totalPaidAccount
     : totalNeedToPay - totalPaidAccount;
 
-  return Math.abs(result) < 0.01 ? 0 : result;
+  return Math.abs(result - total_excees_payment) < 0.01 ? 0 : result;
 });
+
+const maxRefund = computed((data) => {
+  const maxPossible = data.amount - data.refunded;
+  return Math.min(maxPossible, totalRefundAccount.value);
+});
+
+const onClickRefundPayments = () => {
+    isOpenModalRefund.value = true
+    if(totalRefundAccount.value < 0)
+        paymentRefund.value.payment_method ='invoice_payment_method'
+    else if(totalRefundAccount.value == 0)
+        paymentRefund.value.payment_method ='credit_balance'
+}
 
 const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to customer's credit balance"),
         value: 'credit_balance',
-        disable : false
+        disable : totalRefundAccount.value < 0
     },
     {
         label: trans("Refund money to payment method of the invoice"),
@@ -384,7 +399,7 @@ const listPaymentRefund = computed(() => [
                     </button>
 
                     <button v-else-if="Number(invoice_pay.total_need_to_pay) < 0"
-                        @click="() => (isOpenModalRefund = true)" size="xxs" class="secondaryLink text-indigo-500">
+                        @click="onClickRefundPayments" size="xxs" class="secondaryLink text-indigo-500">
                         Refund payment
                     </button>
 
@@ -420,7 +435,7 @@ const listPaymentRefund = computed(() => [
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Select payment method') }}
                         </label>
-                        <div class="mt-1" :class="errorInvoicePayment.payment_method ? 'errorShake' : ''">
+                        <div class="mt-1 relative" :class="errorInvoicePayment.payment_method ? 'errorShake' : ''">
                             <PureMultiselect v-model="paymentData.payment_method"
                                 @update:modelValue="() => errorInvoicePayment.payment_method = null"
                                 @input="() => errorInvoicePayment.payment_method = null" :options="listPaymentMethod"
@@ -608,7 +623,7 @@ const listPaymentRefund = computed(() => [
                                         <ActionCell 
                                             v-if="(data.amount - data.refunded) > 0 && totalRefundAccount !== 0"
                                             v-model="data.refund" 
-                                            :max="data.amount - data.refunded"
+                                            :max="maxRefund(data)"
                                             :min="0"
                                             :currency="invoice_pay.currency_code"
                                             @refund="(loading) => onSubmitRefundToPaymentsMethod(data, loading)"
