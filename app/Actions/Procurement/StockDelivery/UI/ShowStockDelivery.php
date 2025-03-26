@@ -108,8 +108,8 @@ class ShowStockDelivery extends OrgAction
                 fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))
                 : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))),
                 StockDeliveryTabsEnum::ITEMS->value => $this->tab == StockDeliveryTabsEnum::ITEMS->value ?
-                fn () => StockDeliveryItemsResource::collection(IndexStockDeliveryItems::run($stockDelivery))
-                : Inertia::lazy(fn () => StockDeliveryItemsResource::collection(IndexStockDeliveryItems::run($stockDelivery))),
+                fn () => StockDeliveryItemsResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))
+                : Inertia::lazy(fn () => StockDeliveryItemsResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))),
             ]
         )->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
         ->table(IndexStockDeliveryItems::make()->tableStructure(stockDelivery: $stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value));
