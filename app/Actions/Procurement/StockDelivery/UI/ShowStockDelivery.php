@@ -10,9 +10,11 @@ namespace App\Actions\Procurement\StockDelivery\UI;
 
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Http\Resources\Procurement\StockDeliveryItemsResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\StockDelivery;
@@ -103,12 +105,14 @@ class ShowStockDelivery extends OrgAction
                     'navigation' => StockDeliveryTabsEnum::navigation()
                 ],
                 StockDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == StockDeliveryTabsEnum::ATTACHMENTS->value ?
-                fn () => AttachmentsResource::collection(IndexAttachments::run($this->stockDelivery))
-                : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($this->stockDelivery))),
+                fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))
+                : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))),
+                StockDeliveryTabsEnum::ITEMS->value => $this->tab == StockDeliveryTabsEnum::ITEMS->value ?
+                fn () => StockDeliveryItemsResource::collection(IndexStockDeliveryItems::run($stockDelivery))
+                : Inertia::lazy(fn () => StockDeliveryItemsResource::collection(IndexStockDeliveryItems::run($stockDelivery))),
             ]
-        )->table(IndexAttachments::make()->tableStructure(
-            prefix: StockDeliveryTabsEnum::ATTACHMENTS->value
-        ));
+        )->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
+        ->table(IndexStockDeliveryItems::make()->tableStructure(stockDelivery: $stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value));
     }
 
 
