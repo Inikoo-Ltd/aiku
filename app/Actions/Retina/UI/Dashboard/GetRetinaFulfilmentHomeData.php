@@ -101,7 +101,7 @@ class GetRetinaFulfilmentHomeData
                 'type'    => 'button',
                 'style'   => 'create',
                 'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
-                'tooltip' => __('Create new goods return'),
+                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new goods return') : __('You do not have any goods to return'),
                 'label'   => __('New Goods Return'),
                 'route'   => [
                     'method'     => 'post',

@@ -54,6 +54,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
                 'type'  => 'button',
                 'style' => 'create',
                 'label' => __('New Goods Delivery'),
+                'tooltip' => __('Create new goods delivery'),
                 'fullLoading'   => true,
                 'route' => [
                     'method'     => 'post',
@@ -67,6 +68,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
                 'style' => 'create',
                 'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
                 'label' => __('New Goods Return'),
+                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new goods return') : __('You do not have any goods to return'),
                 'fullLoading'   => true,
                 'route'   => [
                         'method'     => 'post',
