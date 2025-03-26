@@ -290,7 +290,7 @@ const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to customer's credit balance"),
         value: 'credit_balance',
-        disable : (props.invoice_pay.total_invoice - props.invoice_pay.total_need_to_refund_in_payment_method) < 0
+        disable : (-props.invoice_pay.total_need_to_pay  - props.invoice_pay.total_need_to_refund_in_payment_method) < 0
     },
     {
         label: trans("Refund money to payment method of the invoice"),
@@ -505,7 +505,6 @@ const listPaymentRefund = computed(() => [
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
-                        {{(props.invoice_pay.total_invoice - props.invoice_pay.total_paid_account) < 0}}
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Select refund method') }}
                         </label>
@@ -559,7 +558,7 @@ const listPaymentRefund = computed(() => [
                             <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{
                                 locale.currencyFormat(props.invoice_pay.currency_code || 'usd',
                                 Number(-invoice_pay.total_need_to_pay)) }}</span>
-                            <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_pay"
+                            <Button @click="() => paymentRefund.payment_amount = (-invoice_pay.total_need_to_pay - invoice_pay.total_need_to_refund_in_payment_method)"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
                                 type="tertiary" :label="trans('Refund all')" size="xxs" />
                         </div>
