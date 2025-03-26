@@ -53,7 +53,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
             $routeActions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'tooltip' => __('Book goods into stock, rent storage space, but packaging material etc'),
+                'tooltip' => __('Book goods into stock, rent storage space, buy packaging material etc'),
                 'label' => __('New Storage or Service'),
                 'fullLoading'   => true,
                 'route' => [
