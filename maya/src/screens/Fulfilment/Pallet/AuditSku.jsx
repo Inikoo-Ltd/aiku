@@ -389,7 +389,7 @@ const GroupItem = ({item: initialItem, fetchData}) => {
                     </View>
                 </TouchableOpacity>
             </Animated.View>
-
+  
             <Modal
                 key={`${item.reference}-audit`}
                 isVisible={openModalAudit}

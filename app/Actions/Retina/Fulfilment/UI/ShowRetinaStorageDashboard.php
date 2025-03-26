@@ -53,7 +53,8 @@ class ShowRetinaStorageDashboard extends RetinaAction
             $routeActions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('New Goods Delivery'),
+                'tooltip' => __('Book goods into stock, rent storage space, buy packaging material etc'),
+                'label' => __('New Storage or Service'),
                 'fullLoading'   => true,
                 'route' => [
                     'method'     => 'post',
@@ -62,19 +63,18 @@ class ShowRetinaStorageDashboard extends RetinaAction
                 ]
             ];
         }
-        if ($fulfilmentCustomer->number_pallets_status_storing) {
-            $routeActions[] = [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('New Goods Return'),
-                'fullLoading'   => true,
-                'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'retina.models.pallet-return.store',
-                        'parameters' => []
-                    ]
-            ];
-        }
+        $routeActions[] = [
+            'type'    => 'button',
+            'style'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? 'create' : 'gray',
+            'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
+            'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Make a new dispatch from your stock') : __('This service is available if you have stock to dispatch'),
+            'label'   => __('New Dispatch'),
+            'route'   => [
+                'method'     => 'post',
+                'name'       => 'retina.models.pallet-return.store',
+                'parameters' => []
+            ]
+        ];
         // $routeActions = [
         //     $fulfilmentCustomer->pallets_storage ? [
         //         'type'  => 'button',
@@ -162,7 +162,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
 
         $stats['pallet_deliveries'] = [
-            'label' => __('Goods Deliveries'),
+            'label' => __('Goods In'),
             'count' => $fulfilmentCustomer->number_pallet_deliveries,
             'route' => [
                 'name' => 'retina.fulfilment.storage.pallet_deliveries.index'
@@ -178,7 +178,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
 
         $stats['pallet_returns'] = [
-            'label' => __('Goods Returns'),
+            'label' => __('Goods Out'),
             'count' => $fulfilmentCustomer->number_pallet_returns,
             'route' => [
                 'name' => 'retina.fulfilment.storage.pallet_returns.index'
