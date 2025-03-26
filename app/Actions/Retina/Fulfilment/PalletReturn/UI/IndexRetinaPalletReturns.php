@@ -95,7 +95,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new return (whole goods)') : __('Create new return'),
-                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Goods Return (whole goods)') : __('Goods Return'),
+                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Goods Out (whole goods)') : __('Goods Out'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return.store',
@@ -106,7 +106,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => __('Create new return (Selected SKUs)'),
-                'label'   => __('Goods Return (Selected SKUs)'),
+                'label'   => __('Goods Out (Selected SKUs)'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return-stored-items.store',
@@ -120,9 +120,9 @@ class IndexRetinaPalletReturns extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'    => __('goods returns'),
+                'title'    => __('goods out'),
                 'pageHead' => [
-                    'title'     => __('Goods Returns'),
+                    'title'     => __('Goods Out'),
                     'model'     => __('Storage'),
                     'icon' => [
                         'icon'  => ['fal', 'fa-truck-ramp'],
@@ -147,7 +147,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                         'route' => [
                             'name' => 'retina.fulfilment.storage.pallet_returns.index',
                         ],
-                        'label' => __('Goods Returns'),
+                        'label' => __('Goods Out'),
                         'icon'  => 'fal fa-bars',
                     ],
 

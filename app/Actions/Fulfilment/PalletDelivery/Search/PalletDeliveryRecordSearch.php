@@ -29,15 +29,6 @@ class PalletDeliveryRecordSearch
         }
 
         $result =  [
-            'route'     => [
-                'name'          => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
-                'parameters'    => [
-                    'organisation'           => $palletDelivery->organisation->slug,
-                    'fulfilment'             => $palletDelivery->fulfilment->slug,
-                    'fulfilmentCustomer'     => $palletDelivery->fulfilmentCustomer->slug,
-                    'palletDelivery'         => $palletDelivery->slug
-                ]
-            ],
             'description'     => [
                 'label'   => $palletDelivery->warehouse->name
             ],
@@ -76,7 +67,20 @@ class PalletDeliveryRecordSearch
                 'fulfilment_slug'   => $palletDelivery->fulfilment->slug,
                 'sections'          => ['fulfilment'],
                 'haystack_tier_1'   => $palletDelivery->reference,
-                'result'            => $result,
+                'result'            => array_merge(
+                    [
+                        'route'     => [
+                            'name'          => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
+                            'parameters'    => [
+                                'organisation'           => $palletDelivery->organisation->slug,
+                                'fulfilment'             => $palletDelivery->fulfilment->slug,
+                                'fulfilmentCustomer'     => $palletDelivery->fulfilmentCustomer->slug,
+                                'palletDelivery'         => $palletDelivery->slug
+                            ]
+                        ],
+                    ],
+                    $result
+                ),
                 'keyword'           => $palletDelivery->slug
             ]
         );
@@ -88,7 +92,14 @@ class PalletDeliveryRecordSearch
                 'organisation_id'     => $palletDelivery->organisation_id,
                 'customer_id'         => $palletDelivery->fulfilmentCustomer->customer_id,
                 'haystack_tier_1'     => $palletDelivery->reference,
-                'result'              => $result,
+                'result'              => array_merge([
+                    'route'     => [
+                        'name'          => 'retina.fulfilment.storage.pallet_deliveries.show',
+                        'parameters'    => [
+                            'palletDelivery'         => $palletDelivery->slug
+                        ]
+                    ],
+                ], $result),
                 'keyword'             => $palletDelivery->slug,
                 'keyword_2'           => $palletDelivery->reference
             ]
