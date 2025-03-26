@@ -9,9 +9,9 @@
   import Table from '@/Components/Table/Table.vue'
   import { Product } from "@/types/product"
   import Icon from "@/Components/Icon.vue"
-  
+
   import { remove as loRemove } from 'lodash-es'
-  
+
   import { library } from "@fortawesome/fontawesome-svg-core"
   import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from '@fal'
   import { routeType } from '@/types/route'
@@ -23,8 +23,8 @@
   import { notify } from '@kyvg/vue3-notification'
   import Multiselect from '@vueform/multiselect'
   library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil)
-  
-  
+
+
   const props = defineProps<{
       data: {}
       tab?: string,
@@ -36,14 +36,14 @@
       tagsList: tag[],
       tagRoute?: {}
   }>()
-  
+
   interface tag {
       id: number
       slug: string
       name: string
       type: string
   }
-  
+
   function productRoute(product: Product) {
       switch (route().current()) {
           case 'retina.dropshipping.products.index':
@@ -52,17 +52,17 @@
                   [product.slug])
           case 'retina.dropshipping.portfolios.index':
           case 'retina.dropshipping.platforms.portfolios.index':
-  
+
               if(product.type == 'StoredItem') {
                   return route(
                       'retina.fulfilment.itemised_storage.stored_items.show',
                       [product.slug])
               }
-  
+
               return route(
               'retina.dropshipping.portfolios.show',
               [product.slug])
-  
+
           case 'grp.overview.catalogue.products.index':
               return route(
                   'grp.org.shops.show.catalogue.products.current_products.show',
@@ -71,12 +71,12 @@
               return null
       }
   }
-  
+
   const tagsListTemp = ref<tag[]>(props.tagsList)
   const onEditProduct = ref(false)
-  
+
   const isLoadingDetach = ref<string[]>([])
-  
+
   // Add new Tag
   const addNewTag = async (option: tag, idProduct: number) => {
       // console.log('option', option, idLocation)
@@ -98,14 +98,14 @@
           // return false
       }
   }
-  
+
   // On update data Tags (add tag or delete tag)
   const updateTagItemTable = async (tags: string[], idProduct: number) => {
       try {
           await axios.patch(route('grp.models.product.tag.attach', idProduct),
               { tags: tags },
           )
-  
+
           // Refetch the data of Table to update the item.tags (v-model doesn't work)
           router.reload(
               {
@@ -121,33 +121,33 @@
           return false
       }
   }
-  
+
   onMounted(() => {
       if (typeof window !== 'undefined') {
           document.addEventListener('keydown', (e) => e.keyCode == 27 ? onEditProduct.value = false : '')
       }
   })
-  
+
   onUnmounted(() => {
       document.removeEventListener('keydown', () => false)
   })
-  
+
   </script>
-  
+
   <template>
       <Table :resource="data" :name="tab" class="mt-5">
           <template #cell(state)="{ item: product }">
               <Icon :data="product.state"> </Icon>
           </template>
-  
+
           <template #cell(slug)="{ item: product }">
                   {{ product['slug'] }}
           </template>
-  
+
           <template #cell(shop_code)="{ item: product }">
                   {{ product['shop_slug'] }}
           </template>
-  
+
           <template #cell(actions)="{ item }">
               <Link
                   v-if="routes?.detach?.name"
@@ -188,7 +188,7 @@
                   />
               </Link>
           </template>
-  
+
           <template #cell(tags)="{ item }">
               <div class="min-w-[200px] relative p-0">
                   <div v-if="onEditProduct !== item.slug" class="flex gap-x-1 gap-y-1.5 mb-2">
@@ -202,13 +202,13 @@
                       <div v-else class="italic text-gray-400">
                           No tags
                       </div>
-  
+
                       <!-- Icon: pencil -->
                       <div class="flex items-center px-1" @click="() => onEditProduct = item.slug">
                           <FontAwesomeIcon icon='fal fa-pencil' class='text-gray-400 text-lg cursor-pointer hover:text-gray-500' fixed-width aria-hidden='true' />
                       </div>
                   </div>
-  
+
                   <div v-else>
                       <Multiselect v-model="item.tags"
                           :key="item.id"
@@ -247,36 +247,35 @@
           </template>
       </Table>
   </template>
-  
-  <style src="../../../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>
-  
+
+  <style src="../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>
+
   <style lang="scss">
   .multiselect-tags-search {
       @apply focus:outline-none focus:ring-0 focus:border-none h-full #{!important}
   }
-  
+
   .multiselect.is-active {
       @apply shadow-none
   }
-  
+
   // .multiselect-tag {
   //     @apply bg-gradient-to-r from-lime-300 to-lime-200 hover:bg-lime-400 ring-1 ring-lime-500 text-lime-600
   // }
-  
+
   .multiselect-tags-search-wrapper {
       @apply mb-0 #{!important}
   }
-  
+
   .multiselect-tags {
       @apply my-0.5 #{!important}
   }
-  
+
   .multiselect-tags-search {
       @apply px-1 #{!important}
   }
-  
+
   .multiselect-tag-remove-icon {
       @apply text-lime-800
   }
   </style>
-  
