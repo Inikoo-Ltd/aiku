@@ -296,9 +296,10 @@ const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to payment method of the invoice"),
         value: 'invoice_payment_method',
-        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) == 0
+        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) <= 0
     }
 ]);
+
 
 </script>
 
