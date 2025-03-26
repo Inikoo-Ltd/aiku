@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexRefundInProcessTransactions;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexRefundTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -16,7 +17,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\Enums\UI\Accounting\RefundTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -30,7 +30,6 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -38,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowRefund extends OrgAction
 {
     use IsInvoiceUI;
+    use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
 
     private Invoice|Organisation|Fulfilment|FulfilmentCustomer|Shop $parent;
@@ -167,73 +167,6 @@ class ShowRefund extends OrgAction
         }
 
 
-        $invoice = $refund->originalInvoice;
-
-        $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
-        $irTotal    = $invoice->total_amount + $totalRefund;
-        $refundsPayOut = $invoice->refunds->where('in_process', false)->sum('payment_amount');
-
-        $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
-        $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
-        // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
-
-        $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
-        $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
-
-        $totalPaidAccount = DB::table('invoices')
-            ->where('invoices.id', $invoice->id)
-            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
-            ->where('model_has_payments.model_type', 'Invoice')
-            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
-            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
-            ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
-
-        if ($totalNeedToPay <= 0) {
-            if ($totalNeedToRefund < 0) {
-                $totalNeedToPay = $totalNeedToRefund;
-            } else {
-                $totalNeedToPay = 0;
-            }
-        }
-
-        $refundPayBox = [
-            'invoice_pay' => [
-                'invoice_slug'  => $invoice->slug,
-                'invoice_id'     => $invoice->id,
-                'invoice_reference'     => $invoice->reference,
-                'routes'         => [
-                    'fetch_payment_accounts' => [
-                        'name'       => 'grp.json.shop.payment-accounts',
-                        'parameters' => [
-                            'shop' => $invoice->shop->slug
-                        ]
-                    ],
-                    'submit_payment'         => [
-                        'name'       => 'grp.models.invoice.payment.store',
-                        'parameters' => [
-                            'invoice'  => $invoice->id,
-                        ]
-                    ],
-                    'payments'  => [
-                        'name'       => 'grp.json.refund.show.payments.index',
-                        'parameters' => [
-                            'invoice'  => $invoice->id,
-                        ]
-                    ],
-                ],
-                'list_refunds'      => RefundResource::collection($invoice->refunds->where('in_process', false)),
-                'currency_code'     => $invoice->currency->code,
-                'total_invoice'     => $invoice->total_amount,
-                'total_refunds'     => $totalRefund,
-                'total_balance'     => $irTotal,
-                'total_paid_in'     => $totalPaidIn,
-                'total_paid_out'    => $refundsPayOut,
-                'total_excees_payment' => $totalExceesPayment,
-                // 'total_need_to_refund' => $totalNeedToRefund,
-                'total_paid_account' => $totalPaidAccount,
-                'total_need_to_pay' => $totalNeedToPay,
-            ],
-        ];
 
 
         $props = [
@@ -300,7 +233,7 @@ class ShowRefund extends OrgAction
             'box_stats' => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
-            ...$refundPayBox,
+            ...$this->getPayBoxData($refund->originalInvoice),
             'invoice' => InvoiceResource::make($refund->originalInvoice),
             'invoice_refund' => RefundResource::make($refund),
 
