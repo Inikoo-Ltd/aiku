@@ -31,6 +31,16 @@ trait WithInvoicePayBox
             ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
             ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
 
+        $totalPaidOtherPayment = DB::table('invoices')
+            ->where('invoices.id', $invoice->id)
+            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+            ->where('model_has_payments.model_type', 'Invoice')
+            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payments as payments_refund', 'payments_refund.original_payment_id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments_refund.payment_account_id')
+            ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments_refund.amount');
+
+
         $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
         $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
@@ -40,22 +50,23 @@ trait WithInvoicePayBox
 
         $totalNeedToRefundInPaymentMethod = 0;
         $totalNeedToRefundInCreditMethod = 0;
-        $totalPaymentWithoutAccount = $totalPaidIn - $totalPaidAccount;
 
         if ($totalNeedToPay <= 0) {
             if ($totalNeedToRefund < 0) {
                 $totalNeedToPay = $totalNeedToRefund;
 
-                if (abs($totalNeedToRefund) > abs($totalPaymentWithoutAccount)) {
-                    $totalNeedToRefundInPaymentMethod = $totalPaymentWithoutAccount * -1;
+                // payment method
+                if (abs($totalNeedToRefund) > abs($totalPaidOtherPayment)) {
+                    $limitPayment = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidOtherPayment);
+                    $totalNeedToRefundInPaymentMethod = min($limitPayment, abs($totalRefund) - abs($totalPaidOtherPayment)) * -1;
+
                 } else {
                     $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
                 }
 
-                $totalPaymentWithoutPaymentMethod = $totalPaidIn - abs($totalNeedToRefundInPaymentMethod);
-
-                if (abs($totalNeedToRefund) > abs($totalPaymentWithoutPaymentMethod)) {
-                    $totalNeedToRefundInPaymentMethod = $totalPaymentWithoutPaymentMethod * -1;
+                // credit method
+                if (abs($totalNeedToRefund) > $totalPaidAccount) {
+                    $totalNeedToRefundInCreditMethod = $totalPaidAccount * -1;
                 } else {
                     $totalNeedToRefundInCreditMethod = $totalNeedToRefund;
                 }
