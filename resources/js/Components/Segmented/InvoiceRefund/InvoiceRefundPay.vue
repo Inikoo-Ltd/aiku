@@ -281,9 +281,9 @@ const maxRefund = (data) => {
 
 const onClickRefundPayments = () => {
     isOpenModalRefund.value = true
-    if(props.invoice_pay.total_need_to_refund_in_payment_method < 0)
+    if(props.invoice_pay.total_need_to_refund_in_payment_method > 0)
         paymentRefund.value.payment_method ='invoice_payment_method'
-    else if(props.invoice_pay.total_need_to_refund_in_payment_method == 0)
+    else if(props.invoice_pay.total_need_to_refund_in_payment_method <= 0)
         paymentRefund.value.payment_method ='credit_balance'
 }
 
@@ -296,10 +296,11 @@ const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to payment method of the invoice"),
         value: 'invoice_payment_method',
-        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) <= 0
+        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) >= 0
     }
 ]);
 
+console.log(props.invoice_pay.total_need_to_refund_in_payment_method)
 
 </script>
 
