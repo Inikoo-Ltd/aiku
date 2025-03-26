@@ -88,7 +88,8 @@ class GetRetinaFulfilmentHomeData
             $fulfilmentCustomer->pallets_storage ? [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('New Delivery'),
+                'tooltip' => __('Create new goods delivery'),
+                'label' => __('New Goods Delivery'),
                 'fullLoading'   => true,
                 'route' => [
                     'method'     => 'post',
@@ -96,6 +97,18 @@ class GetRetinaFulfilmentHomeData
                     'parameters' => []
                 ]
             ] : false,
+            [
+                'type'    => 'button',
+                'style'   => 'create',
+                'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
+                'tooltip' => __('Create new goods return'),
+                'label'   => __('New Goods Return'),
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'retina.models.pallet-return.store',
+                    'parameters' => []
+                ]
+            ],
         ];
 
         //        if (!app()->environment('production') && $fulfilmentCustomer->pallets_storage) {

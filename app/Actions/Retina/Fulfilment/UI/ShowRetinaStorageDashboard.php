@@ -62,10 +62,10 @@ class ShowRetinaStorageDashboard extends RetinaAction
                 ]
             ];
         }
-        if ($fulfilmentCustomer->number_pallets_status_storing) {
-            $routeActions[] = [
+        $routeActions[] = [
                 'type'  => 'button',
                 'style' => 'create',
+                'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
                 'label' => __('New Goods Return'),
                 'fullLoading'   => true,
                 'route'   => [
@@ -73,8 +73,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
                         'name'       => 'retina.models.pallet-return.store',
                         'parameters' => []
                     ]
-            ];
-        }
+        ];
         // $routeActions = [
         //     $fulfilmentCustomer->pallets_storage ? [
         //         'type'  => 'button',
