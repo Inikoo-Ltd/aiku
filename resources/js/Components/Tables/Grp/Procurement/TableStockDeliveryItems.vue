@@ -17,7 +17,7 @@
       detachRoute?: routeType
   }>();
   
-
+console.log(props)
   </script>
   
   <template>
