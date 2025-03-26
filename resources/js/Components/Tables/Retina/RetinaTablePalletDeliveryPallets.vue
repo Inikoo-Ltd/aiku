@@ -91,7 +91,7 @@ const onSaveField = async (pallet: any, fieldName: string) => {
 
 const typePallet = [
     { label : 'Pallet', value : 'pallet'},
-    { label : 'Box', value : 'box'},
+    { label : 'Carton', value : 'box'},
     { label : 'Oversize', value : 'oversize'}
 ]
 
@@ -172,7 +172,7 @@ const typePallet = [
                     :onStart="() => isActionLoading = 'delete' + pallet.id"
 					:onSuccess="() => emits('renderTableKey')"
                     :onFinish="() => isActionLoading = false"
-                    v-tooltip="'Delete this pallet'"
+                    v-tooltip="'Delete this items'"
                     preserve-scroll
                     class="w-fit"
                 >

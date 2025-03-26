@@ -365,6 +365,10 @@ const onClickDisabledSubmit = () => {
 
 const isModalUploadFileOpen = ref(false)
 
+const palletLabel = computed(() => {
+  const selected = typePallet.find(item => item.value === formMultiplePallet.type)
+  return selected ? selected.label : 'pallets'
+})
 
 // Section: Upload spreadsheet
 const isModalUploadPallet = ref(false)
@@ -446,7 +450,7 @@ const isModalUploadStoredItemOpen = ref(false)
                         :icon="action.icon"
                         :iconRight="action.iconRight"
                         :key="`ActionButton${action.label}${action.style}`"
-                        :tooltip="trans('Add multiple pallets')"
+                        :tooltip="trans('Add multiple items')"
                         class="rounded-none border-none"
                     />
                 </template>
@@ -469,7 +473,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                 </div>
                             </div>
                         </div>
-                        <span class="text-xs px-1 my-2">Number of pallets : </span>
+                        <span class="text-xs px-1 my-2">Number of {{ palletLabel }} : </span>
                         <div>
                             <PureInput
                                 v-model="formMultiplePallet.number_pallets"
@@ -507,7 +511,7 @@ const isModalUploadStoredItemOpen = ref(false)
                     <template #button>
                         <Button :style="action.style" :label="action.label" :icon="action.icon"
                             :key="`ActionButton${action.label}${action.style}`"
-                            :tooltip="action.tooltip"
+                            :tooltip="trans('Add single item')"
                             class="rounded-l-none rounded-r-none border-none " />
                     </template>
 
