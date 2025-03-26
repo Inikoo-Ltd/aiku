@@ -558,7 +558,7 @@ const listPaymentRefund = computed(() => [
                         <div class="space-x-1">
                             <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{
                                 locale.currencyFormat(props.invoice_pay.currency_code || 'usd',
-                                Number(-invoice_pay.total_need_to_pay)) }}</span>
+                                Number(-invoice_pay.total_need_to_refund_in_credit_method)) }}</span>
                             <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_refund_in_credit_method"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
                                 type="tertiary" :label="trans('Refund all')" size="xxs" />
