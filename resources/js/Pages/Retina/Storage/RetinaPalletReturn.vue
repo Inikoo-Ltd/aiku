@@ -108,7 +108,7 @@ const props = defineProps<{
     stored_items?: {}
     services?: {}
     service_list_route: routeType
-
+    addresses?: {}
     physical_goods?: {}
     physical_good_list_route: routeType
     stored_item_list_route : routeType
@@ -544,6 +544,7 @@ const openModalAddPallet = ref(false)
         :box_stats
         :updateRoute
         :notes_data
+        :addresses
     />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"  />

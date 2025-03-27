@@ -36,6 +36,7 @@ const props = defineProps<{
     updateRoute: {
         route: routeType
     }
+	addresses: {}
     notes_data: {
         [key: string]: PDRNotes
     }
@@ -263,13 +264,14 @@ function updateCollectionNotes() {
 				<div
 					v-if="data_pallet.is_collection !== true"
 					class="w-full text-xs text-gray-500">
+					Send to:
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
 						<span
 							v-html="
                             box_stats.fulfilment_customer?.address?.value?.formatted_address
 							" />
 						<div
-							@click="() => (isModalAddressCollection = true)"
+							@click="() => (isModalAddress = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
 							<span>Edit</span>
 						</div>
@@ -344,7 +346,7 @@ function updateCollectionNotes() {
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <ModalAddress
-            :addresses="box_stats.fulfilment_customer.address"
+            :addresses="addresses"
             :updateRoute="updateRoute.route"
         />
     </Modal>
