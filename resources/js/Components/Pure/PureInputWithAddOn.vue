@@ -25,12 +25,9 @@ defineOptions({
 </script>
 
 <template>
-    <div
-        class="relative flex items-center justify-between rounded-md px-3 shadow-sm ring-1 ring-inset ring-gray-300 sm:max-w-md"
-        :class="[
-            readonly ? 'focus-within:ring-1 bg-gray-100' : 'focus-within:ring-2 focus-within:ring-inset focus-within:ring-gray-500',
-            isError ? 'errorShake' : ''
-        ]"
+   <div
+        class="bg-white w-full px-2 flex relative ring-1 ring-gray-300 focus-within:ring-2 focus-within:ring-gray-500 rounded-md overflow-hidden"
+        :class="isError ? 'errorShake' : ''"
     >
         <div class="flex w-full">
             <div v-if="leftAddOn" class="flex items-center gap-x-1.5">
@@ -44,7 +41,12 @@ defineOptions({
                 v-model="model"
                 v-bind="attrs"
                 type="text"
-                class="h-full w-full border-transparent focus:border-transparent bg-transparent py-1.5 px-2 placeholder:text-gray-400 read-only:text-gray-600 focus:ring-0 sm:text-sm sm:leading-6"
+                class="remove-arrows-input bg-transparent py-2.5 block w-full px-0
+                    text-gray-600 sm:text-sm placeholder:text-gray-400
+                    border-transparent
+                    focus:ring-0 focus:ring-gray-500 focus:outline-0 focus:border-transparent
+                    read-only:bg-gray-100 read-only:ring-0 read-only:ring-transparent read-only:focus:border-transparent read-only:focus:border-gray-300 read-only:text-gray-500
+                "
                 :placeholder="placeholder || 'Enter value'"
                 :readonly="readonly"
             />

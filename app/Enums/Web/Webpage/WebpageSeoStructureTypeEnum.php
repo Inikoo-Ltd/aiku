@@ -19,12 +19,12 @@ enum WebpageSeoStructureTypeEnum: string
 
     case ECOMMERCE = 'ecommerce';
     case ORGANISATION = 'organisation';
-    case SPORT = 'sport';
+  /*   case SPORT = 'sport';
     case JOB = 'job';
-    case ENTERTAINMENT = 'entertainment';
-    case NEWS = 'news';
+    case ENTERTAINMENT = 'entertainment'; */
+    case NEWS = 'news';/* 
     case FOOD_AND_DRINK = 'food_and_drink';
-    case EDUCATION_AND_SCIENCE = 'education_and_science';
+    case EDUCATION_AND_SCIENCE = 'education_and_science'; */
 
 
 
@@ -33,12 +33,12 @@ enum WebpageSeoStructureTypeEnum: string
         return [
             'ecommerce' => __('Ecommerce'),
             'organisation' => __('Organisation'),
-            'sport' => __('Sport'),
+            /* 'sport' => __('Sport'),
             'job' => __('Job'),
-            'entertainment' => __('Entertainment'),
+            'entertainment' => __('Entertainment'), */
             'news' => __('News'),
-            'food_and_drink' => __('Food and Drink'),
-            'education_and_science' => __('Education and Science'),
+          /*   'food_and_drink' => __('Food and Drink'),
+            'education_and_science' => __('Education and Science'), */
         ];
     }
 

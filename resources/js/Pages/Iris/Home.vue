@@ -14,7 +14,7 @@ import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
-  head: {
+  meta: {
     title: string,
     description: string,
     keywords: string,
@@ -40,11 +40,10 @@ const showWebpage = (activityItem) => {
 
 <template>
   <Head>
-    <title>{{head.title}}</title>
-    <meta name="description" content="head.description">
-    <meta name="keywords" content="head.keywords">
+    <title>{{meta.title}}</title>
+    <meta name="description" :content="meta.description">
+    <meta name="keywords" :content="meta.keywords">
   </Head>
-
   <div class="bg-white">
     <template v-if="props.blocks?.web_blocks?.length">
       <div v-for="(activityItem, activityItemIdx) in props.blocks.web_blocks" :key="'block' + activityItem.id"
