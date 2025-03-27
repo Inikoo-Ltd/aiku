@@ -85,6 +85,10 @@ class StoreFulfilmentFromShopify extends OrgAction
                 } else {
                     $allComplete = false;
                 }
+
+                $this->update($shopifyUserHasProduct->portfolio->item, [
+                    'total_quantity' => $itemQuantity - $requiredQuantity
+                ]);
             }
 
             if (blank($storedItems)) {
