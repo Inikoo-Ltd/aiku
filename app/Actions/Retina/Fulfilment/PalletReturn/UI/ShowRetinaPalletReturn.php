@@ -360,14 +360,14 @@ class ShowRetinaPalletReturn extends RetinaAction
                     ],
                     'pinned_address_id'              => $palletReturn->fulfilmentCustomer->customer->delivery_address_id,
                     'home_address_id'                => $palletReturn->fulfilmentCustomer->customer->address_id,
-                    'current_selected_address_id'    => $palletReturn->fulfilmentCustomer->customer->delivery_address_id,
+                    'current_selected_address_id'    => $palletReturn->delivery_address_id,
                     'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
                     'routes_list'                    => [
                         'pinned_route'                   => [
                             'method'     => 'patch',
-                            'name'       => 'retina.models.customer.delivery-address.update',
+                            'name'       => 'retina.models.pallet-return.address.switch',
                             'parameters' => [
-                                'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                                'palletReturn' => $palletReturn->id
                             ]
                         ],
                         'delete_route'  => [

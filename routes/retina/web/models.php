@@ -40,6 +40,7 @@ use App\Actions\Retina\Fulfilment\PalletReturn\ImportRetinaPalletReturnItem;
 use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaStoredItemsToReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\SubmitRetinaPalletReturn;
+use App\Actions\Retina\Fulfilment\PalletReturn\SwitchRetinaPalletReturnDeliveryAddress;
 use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturnDeliveryAddress;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
@@ -72,8 +73,9 @@ Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'with
 Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(function () {
     Route::post('attachment/attach', [AttachRetinaAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachRetinaAttachmentFromModel::class, 'inPalletReturn'])->name('attachment.detach')->withoutScopedBindings();
-
+    
     Route::post('address', AddRetinaAddressToPalletReturn::class)->name('address.store');
+    Route::patch('address/switch', SwitchRetinaPalletReturnDeliveryAddress::class)->name('address.switch');
     Route::patch('address/update', UpdateRetinaPalletReturnDeliveryAddress::class)->name('address.update');
     Route::delete('address/delete', DeleteRetinaPalletReturnAddress::class)->name('address.delete');
 

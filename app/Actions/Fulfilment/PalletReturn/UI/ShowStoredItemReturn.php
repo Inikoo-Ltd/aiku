@@ -472,14 +472,14 @@ class ShowStoredItemReturn extends OrgAction
                     ],
                     'pinned_address_id'              => $palletReturn->fulfilmentCustomer->customer->delivery_address_id,
                     'home_address_id'                => $palletReturn->fulfilmentCustomer->customer->address_id,
-                    'current_selected_address_id'    => $palletReturn->fulfilmentCustomer->customer->delivery_address_id,
+                    'current_selected_address_id'    => $palletReturn->delivery_address_id,
                     'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
                     'routes_list'                    => [
                         'pinned_route'                   => [
                             'method'     => 'patch',
-                            'name'       => 'grp.models.customer.delivery-address.update',
+                            'name'       => 'grp.models.pallet-return.address.switch',
                             'parameters' => [
-                                'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                                'palletReturn' => $palletReturn->id
                             ]
                         ],
                         'delete_route'  => [
