@@ -165,7 +165,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 [
                     'type'     => 'button',
                     'icon'     => 'fad fa-save',
-                    'tooltip'  => $palletsInDelivery == 0 ? __('Add pallet before submit') : (!($palletDelivery->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit Delivery')),
+                    'tooltip'  => $palletsInDelivery == 0 ? __('Add items before submit') : (!($palletDelivery->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit Delivery')),
                     'label'    => __('submit'),
                     'disabled' => ($palletsInDelivery != 0 || $transactionsInDelivery != 0) && $palletDelivery->estimated_delivery_date ? false : true,
                     'key'      => 'submit',
