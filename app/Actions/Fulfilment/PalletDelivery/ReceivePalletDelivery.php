@@ -50,44 +50,45 @@ class ReceivePalletDelivery extends OrgAction
     {
         $modelData['received_at'] = now();
         $modelData['state']       = PalletDeliveryStateEnum::RECEIVED;
-
-        foreach ($palletDelivery->pallets as $pallet) {
-            UpdatePallet::run($pallet, [
-                'state'       => PalletStateEnum::RECEIVED,
-                'status'      => PalletStatusEnum::RECEIVING,
-                'received_at' => now()
-            ]);
-
-            $pallet->generateSlug();
-            $pallet->save();
-
-            /** @var Rental $rental */
-            $rental = $this->organisation->rentals()
-                ->where('auto_assign_asset', class_basename(Pallet::class))
-                ->where('auto_assign_asset_type', $pallet->type->value)
-                ->first();
-
-            if ($rental) {
-                SetPalletRental::run($pallet, [
-                    'rental_id' => $rental->id
+        if($palletDelivery->pallets) {
+            foreach ($palletDelivery->pallets as $pallet) {
+                UpdatePallet::run($pallet, [
+                    'state'       => PalletStateEnum::RECEIVED,
+                    'status'      => PalletStatusEnum::RECEIVING,
+                    'received_at' => now()
                 ]);
-            }
 
-            foreach ($pallet->storedItems as $storedItem) {
-                UpdateStoredItem::run($storedItem, [
-                    'state' => StoredItemStateEnum::ACTIVE->value
-                ]);
-            }
+                $pallet->generateSlug();
+                $pallet->save();
 
-            foreach ($pallet->palletStoredItems as $palletStoredItem) {
+                /** @var Rental $rental */
+                $rental = $this->organisation->rentals()
+                    ->where('auto_assign_asset', class_basename(Pallet::class))
+                    ->where('auto_assign_asset_type', $pallet->type->value)
+                    ->first();
 
-                StoreStoredItemAuditDeltaFromDelivery::run(
-                    $palletDelivery,
-                    $palletStoredItem,
-                    [
-                        'user_id' => $this->user_id
-                    ]
-                );
+                if ($rental) {
+                    SetPalletRental::run($pallet, [
+                        'rental_id' => $rental->id
+                    ]);
+                }
+
+                foreach ($pallet->storedItems as $storedItem) {
+                    UpdateStoredItem::run($storedItem, [
+                        'state' => StoredItemStateEnum::ACTIVE->value
+                    ]);
+                }
+
+                foreach ($pallet->palletStoredItems as $palletStoredItem) {
+
+                    StoreStoredItemAuditDeltaFromDelivery::run(
+                        $palletDelivery,
+                        $palletStoredItem,
+                        [
+                            'user_id' => $this->user_id
+                        ]
+                    );
+                }
             }
         }
 

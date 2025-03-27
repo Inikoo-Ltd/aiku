@@ -50,6 +50,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
     public function htmlResponse(PalletDelivery $palletDelivery, ActionRequest $request): Response
     {
         $palletsInDelivery = $palletDelivery->pallets()->count();
+        $transactionsInDelivery = $palletDelivery->transactions()->count();
 
         $numberPallets       = $palletDelivery->fulfilmentCustomer->pallets()->count();
         $numberStoredPallets = $palletDelivery->pallets()->where('state', PalletDeliveryStateEnum::BOOKED_IN->value)->count();
@@ -166,7 +167,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     'icon'     => 'fad fa-save',
                     'tooltip'  => $palletsInDelivery == 0 ? __('Add pallet before submit') : (!($palletDelivery->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit Delivery')),
                     'label'    => __('submit'),
-                    'disabled' => $palletsInDelivery == 0 || !($palletDelivery->estimated_delivery_date),
+                    'disabled' => ($palletsInDelivery != 0 || $transactionsInDelivery != 0) && $palletDelivery->estimated_delivery_date ? false : true,
                     'key'      => 'submit',
                     'route'    => [
                         'method'     => 'post',
