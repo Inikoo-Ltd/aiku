@@ -42,7 +42,7 @@ const showWebpage = (activityItem) => {
   <Head>
     <title>{{meta.title}}</title>
     <meta name="description" :content="meta.description">
-    <meta name="keywords" :content="meta.keywords">
+<!--     <meta name="keywords" :content="meta.keywords"> -->
   </Head>
   <div class="bg-white">
     <template v-if="props.blocks?.web_blocks?.length">

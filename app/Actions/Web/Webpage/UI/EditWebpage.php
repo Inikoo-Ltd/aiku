@@ -139,11 +139,11 @@ class EditWebpage extends OrgAction
                                         'label'    => __('Meta description'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_description')
                                 ],
-                                'meta_keywords' => [
+                                /* 'meta_keywords' => [
                                         'type'     => 'textarea',
                                         'label'    => __('Meta keywords'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_keywords')
-                                ],
+                                ], */
                             ],  
                         ],
                         [
