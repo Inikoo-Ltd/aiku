@@ -117,6 +117,7 @@ class Webpage extends Model implements Auditable
         'settings'         => 'array',
         'published_layout' => 'array',
         'migration_data'   => 'array',
+        'seo_data'         => 'array',
         'state'            => WebpageStateEnum::class,
         'sub_type'         => WebpageSubTypeEnum::class,
         'type'             => WebpageTypeEnum::class,
@@ -131,6 +132,7 @@ class Webpage extends Model implements Auditable
         'data'             => '{}',
         'settings'         => '{}',
         'published_layout' => '{}',
+        'seo_data'         => '{}',
         'migration_data'   => '{}'
     ];
 
