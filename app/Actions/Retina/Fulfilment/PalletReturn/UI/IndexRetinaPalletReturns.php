@@ -49,7 +49,23 @@ class IndexRetinaPalletReturns extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->where('pallet_returns.fulfilment_customer_id', $fulfilmentCustomer->id);
+        $queryBuilder->leftJoin('currencies', 'pallet_returns.currency_id', '=', 'currencies.id');
+        $queryBuilder->leftJoin('pallet_return_stats', 'pallet_returns.id', '=', 'pallet_return_stats.pallet_return_id');
 
+        $queryBuilder->select(
+            'pallet_returns.id',
+            'pallet_returns.slug',
+            'pallet_returns.reference',
+            'pallet_returns.state',
+            'pallet_returns.type',
+            'pallet_returns.customer_reference',
+            'pallet_return_stats.number_pallets as number_pallets',
+            'pallet_return_stats.number_services as number_services',
+            'pallet_return_stats.number_physical_goods as number_physical_goods',
+            'pallet_returns.date',
+            'pallet_returns.total_amount',
+            'currencies.code as currency_code',
+        );
         return $queryBuilder
             ->defaultSort('reference', 'state', 'type', 'date')
             ->allowedSorts(['reference'])
@@ -76,7 +92,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 ->column(key: 'reference', label: __('reference number'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('Your reference'), canBeHidden: false, sortable: true, searchable: true)
                 // ->column(key: 'customer', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+                ->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->column(key: 'total_amount', label: __('total amount'), canBeHidden: false, sortable: false, searchable: false, type: 'currency');
         };
     }
@@ -94,8 +110,8 @@ class IndexRetinaPalletReturns extends RetinaAction
             $fulfilmentCustomer->number_pallets_status_storing ? [
                 'type'    => 'button',
                 'style'   => 'create',
-                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new return (whole goods)') : __('Create new return'),
-                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Goods Out (whole goods)') : __('Goods Out'),
+                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new dispatch (whole goods)') : __('Create new dispatch'),
+                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Dispatch (whole goods)') : __('Dispatch'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return.store',
@@ -105,8 +121,8 @@ class IndexRetinaPalletReturns extends RetinaAction
             $this->customer->fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? [
                 'type'    => 'button',
                 'style'   => 'create',
-                'tooltip' => __('Create new return (Selected SKUs)'),
-                'label'   => __('Goods Out (Selected SKUs)'),
+                'tooltip' => __('Create new dispatch (Selected SKUs)'),
+                'label'   => __('Dispatch (Selected SKUs)'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return-stored-items.store',

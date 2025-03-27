@@ -156,7 +156,7 @@ class IndexRetinaPallets extends RetinaAction
             $actions[] = [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('New Goods Delivery'),
+                    'label' => __('New Storage or Service'),
                     'route' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.pallet-delivery.store',
@@ -170,7 +170,7 @@ class IndexRetinaPallets extends RetinaAction
                 [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('New Goods Return'),
+                    'label' => __('New Dispatch'),
                     'route'   => [
                         'method'     => 'post',
                         'name'       => 'retina.models.pallet-return.store',
