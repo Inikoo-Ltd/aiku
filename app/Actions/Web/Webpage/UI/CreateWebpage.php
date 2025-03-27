@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Fulfilment\Fulfilment;
@@ -125,6 +126,13 @@ class CreateWebpage extends OrgAction
                                     ],
                                     'value'     => '',
                                     'required'  => true,
+                                ],
+                                'seo_structure_type' => [
+                                        'type'     => 'select',
+                                        'label'    => __('seo structure type'),
+                                        'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
+                                        'value'    => '',
+                                        'required' => false,
                                 ],
 
                             ]
