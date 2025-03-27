@@ -457,6 +457,13 @@ class ShowStoredItemReturn extends OrgAction
                     'navigation' => $navigation
                 ],
                 'data'       => PalletReturnResource::make($palletReturn),
+                'address_update_route'  => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer.address.update',
+                    'parameters' => [
+                        'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                    ]
+                ],
                 'addresses'   => [
                     'isCannotSelect'                => true,
                     'address_list'                  => $addressCollection,

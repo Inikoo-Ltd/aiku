@@ -345,6 +345,13 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+                'address_update_route'  => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer.address.update',
+                    'parameters' => [
+                        'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                    ]
+                ],
                 'addresses'   => [
                     'isCannotSelect'                => true,
                     'address_list'                  => $addressCollection,
