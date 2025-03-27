@@ -61,4 +61,11 @@ class FinaliseRefund extends OrgAction
 
         return $this->handle($refund);
     }
+
+    public function action(Invoice $refund, array $modelData): Invoice
+    {
+        $this->initialisationFromShop($refund->shop, $modelData);
+
+        return $this->handle($refund);
+    }
 }
