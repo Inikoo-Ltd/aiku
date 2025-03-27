@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
+use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
@@ -31,6 +32,7 @@ class UpdateWebpage extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use HasWebAuthorisation;
 
     private Webpage $webpage;
 
@@ -58,15 +60,6 @@ class UpdateWebpage extends OrgAction
         return $webpage;
     }
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("web.{$this->shop->id}.edit");
-    }
 
 
     public function rules(): array
@@ -152,6 +145,7 @@ class UpdateWebpage extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->webpage = $webpage;
+        $this->scope  = $webpage->organisation;
 
         $this->initialisation($webpage->organisation, $request);
 
@@ -162,6 +156,7 @@ class UpdateWebpage extends OrgAction
     public function inShop(Shop $shop, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->webpage = $webpage;
+        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request);
 
         $modelData = [];
