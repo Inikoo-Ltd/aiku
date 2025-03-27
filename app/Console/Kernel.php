@@ -19,12 +19,6 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
-        //        $schedule->command('horizon-dashboard:queue-snapshot')->everyFiveMinutes();
-        //        $schedule->command('horizon-dashboard:aggregate-queue-statistics --interval=60 --keep=240')->everyFifteenMinutes();
-        //        $schedule->command('horizon-dashboard:aggregate-job-statistics --interval=15 --keep=60')->everyFifteenMinutes();
-        //        $schedule->command('horizon-dashboard:cleanup-statistics --hours=168')->daily();
-        //        $schedule->command('horizon-dashboard:cleanup-exceptions --hours=168')->everyFifteenMinutes();
-
 
         $schedule->command('cloudflare:reload')->daily();
         $schedule->command('domain:check-cloudflare-status')->hourly();
@@ -77,7 +71,10 @@ class Kernel extends ConsoleKernel
             );
 
 
-        (new Schedule())->command('hydrate -s ful')->dailyAt('23:00')->timezone('UTC');
+        (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
+        (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
+        (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
+        (new Schedule())->command('hydrate:invoice_categories')->everyTwoHours('23:00')->timezone('UTC');
 
     }
 

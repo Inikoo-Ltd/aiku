@@ -147,7 +147,7 @@ function orderRoute(palletReturn: PalletDelivery) {
             </Link>
 
             <div v-else-if="palletReturn.type === 'stored_item'">
-                <Link v-if="!location !== 'pupil'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-if="location !== 'pupil'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
                     {{ palletReturn['reference'] }}
                 </Link>
                 <div v-else>
