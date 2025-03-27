@@ -142,9 +142,9 @@ class RefundToInvoice extends OrgAction
         // invoice
         // AttachPaymentToInvoice::make()->action($invoice, $paymentInInvoice, []);
 
-        // if ($type === 'credit') {
-        //     CustomerHydrateCreditTransactions::dispatch($invoice->customer);
-        // }
+        if ($type === 'credit') {
+            CustomerHydrateCreditTransactions::dispatch($invoice->customer);
+        }
 
         return $invoice;
 
