@@ -151,7 +151,7 @@ function orderRoute(palletReturn: PalletDelivery) {
                     {{ palletReturn['reference'] }}
                 </Link>
                 <div v-else>
-                    {{ product['slug'] }}
+                    {{ palletReturn['reference'] }}
                 </div>
             </div>
 
