@@ -349,8 +349,8 @@ class ShowStoredItemReturn extends OrgAction
                 ->setAttribute('can_edit', true);
         });
 
-        $customerAddressId         = $palletReturn->customer->address->id;
-        $customerDeliveryAddressId = $palletReturn->customer->deliveryAddress->id;
+        $customerAddressId         = $palletReturn->fulfilmentCustomer->customer->address->id;
+        $customerDeliveryAddressId = $palletReturn->fulfilmentCustomer->customer->deliveryAddress->id;
         $palletReturnDeliveryAddressIds   = PalletReturn::where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)
             ->pluck('delivery_address_id')
             ->unique()
