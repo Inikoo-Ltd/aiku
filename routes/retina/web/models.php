@@ -121,7 +121,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 
     Route::patch('update', UpdateRetinaCustomer::class)->name('update');
 
-    Route::patch('delivery-address/store', AddRetinaDeliveryAddressToFulfilmentCustomer::class)->name('delivery-address.store');
+    Route::post('delivery-address/store', AddRetinaDeliveryAddressToFulfilmentCustomer::class)->name('delivery-address.store');
     Route::patch('delivery-address/update', UpdateRetinaCustomerDeliveryAddress::class)->name('delivery-address.update');
     Route::delete('delivery-address/{address:id}/delete', DeleteRetinaCustomerDeliveryAddress::class)->name('delivery-address.delete');
 });
