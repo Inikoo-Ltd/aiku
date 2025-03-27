@@ -37,6 +37,7 @@ const props = defineProps<{
         route: routeType
     }
 	addresses: {}
+	address_update_route: routeType
     notes_data: {
         [key: string]: PDRNotes
     }
@@ -280,6 +281,7 @@ function updateCollectionNotes() {
 
 				<!-- Alternative Display for Collection -->
 				<div v-else class="w-full">
+				Collection by:
 					<Textarea
 						v-model="textValue"
 						@blur="updateCollectionNotes"
@@ -347,7 +349,7 @@ function updateCollectionNotes() {
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <ModalAddress
             :addresses="addresses"
-            :updateRoute
+            :updateRoute="address_update_route"
         />
     </Modal>
 

@@ -115,7 +115,7 @@ const props = defineProps<{
     stored_items_add_route : routeType
     routeStorePallet : routeType
     route_check_stored_items : routeType
-
+    address_update_route: routeType
     option_attach_file?: {
 		name: string
 		code: string
@@ -545,6 +545,7 @@ const openModalAddPallet = ref(false)
         :updateRoute
         :notes_data
         :addresses
+        :address_update_route
     />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"  />
