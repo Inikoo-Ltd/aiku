@@ -128,7 +128,7 @@ const typePallet = [
         <!-- Column: Notes -->
 		<template #cell(notes)="{ item }">
 			<div v-if="state == 'in_process'" class="min-w-40">
-				<FieldEditableTable :data="item" @onSave="onSaveField" fieldName="notes" placeholder="Enter pallet notes"/>
+				<FieldEditableTable :data="item" @onSave="onSaveField" fieldName="notes" placeholder="Enter notes"/>
 			</div>
 			<div v-else>
                 <div v-if="item.notes">
