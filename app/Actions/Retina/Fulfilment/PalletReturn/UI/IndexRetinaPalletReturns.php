@@ -68,7 +68,7 @@ class IndexRetinaPalletReturns extends RetinaAction
         );
         return $queryBuilder
             ->defaultSort('reference', 'state', 'type', 'date')
-            ->allowedSorts(['reference'])
+            ->allowedSorts(['reference', 'customer_reference', 'number_pallets'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
