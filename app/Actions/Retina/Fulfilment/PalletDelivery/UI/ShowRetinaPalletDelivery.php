@@ -224,7 +224,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletDelivery',
             [
-                'title'       => __('goods delivery').' '.$palletDelivery->reference,
+                'title'       => __('goods in').' '.$palletDelivery->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($palletDelivery),
                 'navigation'  => [
                     'previous' => $this->getPrevious($palletDelivery, $request),
@@ -232,8 +232,8 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 ],
                 'pageHead'    => [
                     'model' => $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS
-                        ? __('New goods delivery')
-                        : __('Goods delivery'),
+                        ? __('New goods in')
+                        : __('Goods in'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-truck'],
                         'title' => $palletDelivery->reference
@@ -566,7 +566,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Goods deliveries')
+                            'label' => __('Goods in')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
