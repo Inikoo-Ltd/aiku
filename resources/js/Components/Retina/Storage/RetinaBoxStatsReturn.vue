@@ -347,7 +347,7 @@ function updateCollectionNotes() {
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <ModalAddress
             :addresses="addresses"
-            :updateRoute="updateRoute.route"
+            :updateRoute
         />
     </Modal>
 
