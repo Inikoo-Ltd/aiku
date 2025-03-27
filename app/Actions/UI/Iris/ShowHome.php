@@ -56,6 +56,7 @@ class ShowHome
                 'head' => [
                     'title' => $webpage?->title,
                     'description' => $webpage?->description,
+                    'seo' => $webpage?->data,
                 ],
                 'blocks' => $webPageLayout ,
                 'data' => $website,
