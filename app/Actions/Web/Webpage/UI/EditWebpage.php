@@ -98,7 +98,7 @@ class EditWebpage extends OrgAction
                                     'label_no_capitalize' => true,
                                     'value'     => $webpage->title,
                                     'required'  => true,
-                                ],    
+                                ],
                                 /* 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
@@ -122,15 +122,15 @@ class EditWebpage extends OrgAction
                                         'image'         => [    // TODO
                                             'original'  => 'https://socialsharepreview.com/api/image-proxy?url=https%3A%2F%2Fwww.zelolab.com%2Fwp-content%2Fuploads%2F2022%2F12%2Fhow-to-create-and-set-up-a-social-share-preview-image-on-your-website.jpg',
                                         ],
-                                        'seo_title'       => Arr::get($webpage->seo_data, 'seo_title')       ?? '',
-                                        'seo_description' => Arr::get($webpage->seo_data, 'seo_description') ?? '',
+                                        'meta_title'       => Arr::get($webpage->seo_data, 'meta_title')       ?? '',
+                                        'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
                                         'url'             =>  $webpage->url,
                                         'is_use_canonical_url' => $webpage->is_use_canonical_url,
                                         'canonical_url'     => $webpage->canonical_url,
                                     ],
                                     'noTitle'  => true,
                                 ]
-                            ],  
+                            ],
                         ],
                         [
                             'label'  => __('Structured data'),
@@ -141,8 +141,8 @@ class EditWebpage extends OrgAction
                                     'type'     => 'structure_data_website',
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
                                         'value'    => [
-                                            "structured_data" =>  Arr::get($webpage->structured_data, 'structured_data') ?? '',
-                                            "structured_data_type" =>  Arr::get($webpage->structured_data_type, 'structured_data_type') ?? '',
+                                            "structured_data" =>   Arr::get($webpage->seo_data, 'structured_data') ?? '',
+                                            "structured_data_type" =>  Arr::get($webpage->seo_data, 'structured_data_type') ?? '',
                                         ],
                                         'required' => true,
                                 ],
