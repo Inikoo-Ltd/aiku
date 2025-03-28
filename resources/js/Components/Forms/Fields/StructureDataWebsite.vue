@@ -2,7 +2,7 @@
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { Codemirror } from "vue-codemirror"
 import { ref, watch } from "vue"
-/* import { json } from "@codemirror/lang-json" */
+import { json } from "@codemirror/lang-json"
 
 const props = defineProps<{
     form?: any
@@ -55,9 +55,9 @@ watch(jsonValue, (newValue) => {
         </div>
         <div class="mt-3">
             <label class="text-gray-600 font-semibold cursor-pointer">SEO Structured Data (JSON-LD)</label>
-           <!--  <Codemirror v-model="jsonValue"   :style="{ height: '500px', textOverflow: 'ellipsis', border: '1px solid #ddd' }"
+            <Codemirror v-model="jsonValue"   :style="{ height: '500px', textOverflow: 'ellipsis', border: '1px solid #ddd' }"
                 :autofocus="true" :indent-with-tab="true" :tab-size="2"
-                :extensions="extensions" /> -->
+                :extensions="extensions" />
         </div>
     </div>
 </template>
