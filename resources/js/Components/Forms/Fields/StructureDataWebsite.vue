@@ -40,7 +40,7 @@ const jsonValue = ref(JSON.stringify(props.form?.[props.fieldName].structured_da
 // Perubahan JSON yang diinput oleh user akan diperbarui ke form
 watch(jsonValue, (newValue) => {
     try {
-        props.form[props.fieldName] = JSON.parse(newValue)
+        props.form[props.fieldName].structured_data = JSON.parse(newValue)
     } catch (error) {
         console.error("Invalid JSON:", error)
     }
@@ -55,7 +55,7 @@ watch(jsonValue, (newValue) => {
         </div>
         <div class="mt-3">
             <label class="text-gray-600 font-semibold cursor-pointer">SEO Structured Data (JSON-LD)</label>
-            <Codemirror v-model="jsonValue" :style="{ height: '500px', textOverflow: 'ellipsis' }"
+            <Codemirror v-model="jsonValue"   :style="{ height: '500px', textOverflow: 'ellipsis', border: '1px solid #ddd' }"
                 :autofocus="true" :indent-with-tab="true" :tab-size="2"
                 :extensions="extensions" />
         </div>
