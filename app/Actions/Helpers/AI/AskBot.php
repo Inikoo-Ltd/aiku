@@ -11,6 +11,7 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAIBot;
+use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Actions\OrgAction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -19,6 +20,7 @@ class AskBot extends OrgAction
 {
     use AsController;
     use WithAIBot;
+    use WithPromptAI;
 
     public function handle($q)
     {
@@ -71,9 +73,8 @@ class AskBot extends OrgAction
 
         // return $response;
 
-        $q = $this->simplePrompt($q);
         if (config('askbot-laravel.ai_provider') == 'r1') {
-            return $this->askDeepseek($q);
+            return $this->askDeepseek($this->promptLessResponse($q));
         }
 
         return $this->askLlama($q);
