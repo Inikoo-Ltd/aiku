@@ -76,7 +76,7 @@ const computedEnabled = computed({
 					props.box_stats.fulfilment_customer.address.routes_address.store.parameters
 				),
 				{
-					delivery_address: filterDataAddress,
+					delivery_address_id: props.addresses.pinned_address_id,
 				},
 				{
 					preserveScroll: true,
@@ -354,6 +354,6 @@ function updateCollectionNotes() {
     </Modal>
 
     <Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
-		<ModalAddressCollection :addresses="box_stats.fulfilment_customer.address" :updateRoute :is_collection="data_pallet.is_collection" />
+		<ModalAddressCollection :addresses_list="addresses" :addresses="box_stats.fulfilment_customer.address" :updateRoute :is_collection="data_pallet.is_collection" />
 	</Modal>
 </template>
