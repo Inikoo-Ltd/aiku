@@ -76,7 +76,7 @@ const computedEnabled = computed({
 					props.box_stats.fulfilment_customer.address.routes_address.store.parameters
 				),
 				{
-					delivery_address_id: props.addresses.pinned_address_id,
+					delivery_address_id: props.addresses?.current_selected_address_id || props.addresses?.home_address_id,
 				},
 				{
 					preserveScroll: true,
