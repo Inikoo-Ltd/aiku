@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 27-03-2025-13h-53m
@@ -9,11 +10,8 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\OrgAction;
-use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class SwitchPalletReturnDeliveryAddress extends OrgAction
@@ -24,6 +22,8 @@ class SwitchPalletReturnDeliveryAddress extends OrgAction
     {
         if (isset($modelData['delivery_address_id'])) {
             $palletReturn->delivery_address_id = $modelData['delivery_address_id'];
+            $palletReturn->fulfilmentCustomer->customer->delivery_address_id = $modelData['delivery_address_id'];
+            $palletReturn->fulfilmentCustomer->customer->save();
             $palletReturn->save();
         }
         return $palletReturn;

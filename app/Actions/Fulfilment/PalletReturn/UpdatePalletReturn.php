@@ -60,13 +60,13 @@ class UpdatePalletReturn extends OrgAction
                 unset($addressData['can_delete']);
                 $updatedAddress     = UpdateAddress::run(Address::find(Arr::get($addressData, 'id')), $addressData);
                 $pivotData['label'] = $label;
-                $palletReturn->addresses()->updateExistingPivot(
+                $palletReturn->fulfilmentCustomer->customer->addresses()->updateExistingPivot(
                     $updatedAddress->id,
                     $pivotData
                 );
             } else {
                 $this->addAddressToModelFromArray(
-                    $palletReturn,
+                    $palletReturn->fulfilmentCustomer->customer,
                     $addressData,
                     'delivery',
                     false,
