@@ -3,7 +3,7 @@ import { trans } from "laravel-vue-i18n"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import DatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { useFormatTime, useDaysLeftFromToday } from '@/Composables/useFormatTime'
+import { useFormatTime, useDaysLeftFromToday, retinaUseDaysLeftFromToday } from '@/Composables/useFormatTime'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 
@@ -23,11 +23,11 @@ import ModalAddress from '@/Components/Utils/ModalAddress.vue'
 import Textarea from "primevue/textarea"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBuilding, faIdCardAlt, faMapMarkerAlt, faPenSquare } from '@fal'
+import { faBuilding, faIdCardAlt, faMapMarkerAlt, faPencil, faPenSquare, faCalendarDay } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
-library.add(faBuilding, faIdCardAlt, faMapMarkerAlt, faPenSquare)
+library.add(faBuilding, faIdCardAlt, faMapMarkerAlt, faPenSquare, faPencil, faCalendarDay)
 
 
 const props = defineProps<{
@@ -44,8 +44,9 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+const deliveryListError = inject('deliveryListError', [])
 
-
+const isLoadingSetEstimatedDate = ref<string | boolean>(false)
 const isModalAddress = ref(false)
 const isModalAddressCollection = ref(false)
 const enabled = ref(props.data_pallet?.is_collection || false)
@@ -153,7 +154,47 @@ function updateCollectionNotes() {
 		}
 	)
 }
+const onChangeEstimateDate = async (close: Function) => {
+    try {
+        router.patch(
+            route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+            {
+                estimated_delivery_date: props.data_pallet.estimated_delivery_date
+            },
+            {
+                onStart: () => isLoadingSetEstimatedDate.value = true,
+                onError: () => {
+                    notify({
+                        title: "Failed",
+                        text: "Failed to update the Delivery date, try again.",
+                        type: "error",
+                    })
+                },
+                onSuccess: () => {
+                    const index = deliveryListError?.indexOf('estimated_delivery_date');
+                    if (index > -1) {
+                        deliveryListError?.splice(index, 1);
+                    }
+                    close()
+                },
+                onFinish: () => isLoadingSetEstimatedDate.value = false,
+            })
+    } catch (error) {
+        console.log(error)
+        notify({
+            title: "Failed",
+            text: "Failed to update the Delivery date, try again.",
+            type: "error",
+        })
+    }
+}
 
+const disableBeforeToday = (date: Date) => {
+    const today = new Date()
+    // Set time to 00:00:00 for comparison purposes
+    today.setHours(0, 0, 0, 0)
+    return date < today
+}
 // Method: On change estimated date
 // const onChangeEstimateDate = async (close: Function) => {
 //     try {
@@ -231,7 +272,45 @@ function updateCollectionNotes() {
                 </dt>
                 <dd class=" text-gray-500">{{ box_stats.fulfilment_customer.customer.company_name }}</dd>
             </div>
-            
+			<div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
+                <dt class="flex-none">
+                    <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
+                    <FontAwesomeIcon :icon="['fal', 'calendar-day']"  :class='box_stats?.delivery_status?.class'
+                        fixed-width aria-hidden='true' size="xs" />
+                </dt>
+
+                <Popover v-if="data_pallet.state === 'in_process'" position="">
+                    <template #button>
+                        <div v-if="data_pallet?.estimated_delivery_date"
+                            v-tooltip="retinaUseDaysLeftFromToday(data_pallet?.estimated_delivery_date)"
+                            class="group text-sm text-gray-500">
+                            {{ useFormatTime(data_pallet?.estimated_delivery_date) }}
+                            <FontAwesomeIcon icon='fal fa-pencil' size="sm"
+                                class='text-gray-400 group-hover:text-gray-600' fixed-width aria-hidden='true' />
+                        </div>
+
+                        <div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
+                            {{ trans('Set estimated delivery') }}
+                        </div>
+                    </template>
+
+                    <template #content="{ close }">
+                        <DatePicker v-model="data_pallet.estimated_delivery_date"
+                            @update:modelValue="() => onChangeEstimateDate(close)" inline auto-apply
+                            :xdisabled-dates="disableBeforeToday" :enable-time-picker="false" />
+                        
+                        <div v-if="isLoadingSetEstimatedDate" class="absolute inset-0 bg-white/70 flex items-center justify-center">
+                            <LoadingIcon class="text-5xl" />
+                        </div>
+                    </template>
+                </Popover>
+
+                <div v-else>
+                    <dd class="text-sm text-gray-500">{{ data_pallet?.estimated_delivery_date ?
+                        useFormatTime(data_pallet?.estimated_delivery_date) : trans('Not Set') }}</dd>
+                </div>
+
+            </div>
             <!-- Field: Delivery Address -->
             <div class="flex flex-col w-full gap-y-2 mb-1">
 				<!-- Top Row: Icon and Switch -->
@@ -274,7 +353,7 @@ function updateCollectionNotes() {
 						<div
 							@click="() => (isModalAddressCollection = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-							<span>Edit</span>
+							<span>Choose Other Address</span>
 						</div>
 					</div>
 				</div>

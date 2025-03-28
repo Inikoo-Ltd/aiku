@@ -76,6 +76,7 @@ const props = defineProps<{
         items_storage: boolean
         dropshipping: boolean
     }
+    addresses?: {}
     
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
@@ -83,6 +84,7 @@ const props = defineProps<{
     notes_data: PDRNotes[]
     route_check_stored_items : routeType
     routeStorePallet : routeType
+    address_update_route: routeType
 
     option_attach_file?: {
 		name: string
@@ -480,7 +482,8 @@ const isModalUploadFileOpen = ref(false)
     </div>
 
     <!-- Section: Box Stats -->
-    <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute" />
+    <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute"  :addresses
+    :address_update_route />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component 

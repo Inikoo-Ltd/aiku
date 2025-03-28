@@ -33,6 +33,8 @@ const props = defineProps<{
 	dataPalletReturn: PalletReturn
 	boxStats: BoxStats
 	updateRoute: routeType
+	addresses: {}
+	address_update_route: routeType
 }>()
 console.log(props.boxStats, "asd")
 
@@ -76,7 +78,7 @@ const computedEnabled = computed({
 					props.boxStats.fulfilment_customer.address.routes_address.store.parameters
 				),
 				{
-					delivery_address: filterDataAddress,
+					delivery_address_id: props.addresses?.current_selected_address_id || props.addresses?.pinned_address_id || props.addresses?.home_address_id,
 				},
 				{
 					preserveScroll: true,
@@ -412,9 +414,8 @@ function updateCollectionNotes() {
 
 	<Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
 		<ModalAddressCollection
-			:addresses="boxStats.fulfilment_customer.address"
-			:updateRoute
-			:is_collection="dataPalletReturn.is_collection" />
+		:addresses="addresses"
+		:updateRoute="address_update_route" />
 	</Modal>
 </template>
 

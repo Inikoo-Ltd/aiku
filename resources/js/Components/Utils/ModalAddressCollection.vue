@@ -378,7 +378,7 @@ const onDeleteAddress = (addressID: number) => {
                                                 :class="addresses.pinned_address_id === address.id ? 'text-green-500' : 'text-gray-400 hover:text-gray-600 cursor-pointer'"
                                                 fixed-width
                                                 aria-hidden='true'
-                                                v-tooltip="addresses.pinned_address_id === address.id ? trans('Selected as default delivery address') : trans('Select as default delivery address')"
+                                                v-tooltip="addresses.pinned_address_id === address.id ? trans('Selected as delivery address') : trans('Select as delivery address')"
                                             />
 
                                             <FontAwesomeIcon v-if="address.can_edit" @click="() => onEditAddress(address)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
