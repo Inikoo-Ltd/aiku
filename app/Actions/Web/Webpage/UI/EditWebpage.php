@@ -134,14 +134,17 @@ class EditWebpage extends OrgAction
                         ],
                         [
                             'label'  => __('Structured data'),
-                            'icon'   => 'fal fa-browser',
+                            'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
                                 'webpage_type' => [
-                                    'type'     => 'select',
-                                        'label'    => __('Structure data type'),
+                                    'noTitle'  => true,
+                                    'type'     => 'structure_data_website',
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => Arr::get($webpage->seo_data, 'structure_data_type'),
-                                        'required' => false,
+                                        'value'    => [
+                                            "structured_data" =>  Arr::get($webpage->structured_data, 'structured_data') ?? '',
+                                            "structured_data_type" =>  Arr::get($webpage->structured_data_type, 'structured_data_type') ?? '',
+                                        ],
+                                        'required' => true,
                                 ],
                             ]
                         ],
