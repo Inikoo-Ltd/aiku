@@ -1,17 +1,15 @@
-<script setup lang='ts'>
+<script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import DatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { useFormatTime, useDaysLeftFromToday, retinaUseDaysLeftFromToday } from '@/Composables/useFormatTime'
+import { useFormatTime, retinaUseDaysLeftFromToday } from '@/Composables/useFormatTime'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
-
 import Popover from '@/Components/Popover.vue'
 import { PalletDelivery, BoxStats, PalletReturn, PDRNotes } from '@/types/Pallet'
 import Modal from '@/Components/Utils/Modal.vue'
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
-
 import { computed, inject, ref } from 'vue'
 import { capitalize } from '@/Composables/capitalize'
 import { routeType } from "@/types/route"
@@ -20,27 +18,22 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import RetinaBoxNote from "@/Components/Retina/Storage/RetinaBoxNote.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import ModalAddress from '@/Components/Utils/ModalAddress.vue'
+import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
 import Textarea from "primevue/textarea"
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBuilding, faIdCardAlt, faMapMarkerAlt, faPencil, faPenSquare, faCalendarDay } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
-import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
-library.add(faBuilding, faIdCardAlt, faMapMarkerAlt, faPenSquare, faPencil, faCalendarDay)
 
+library.add(faBuilding, faIdCardAlt, faMapMarkerAlt, faPenSquare, faPencil, faCalendarDay)
 
 const props = defineProps<{
     box_stats: BoxStats
     data_pallet: PalletDelivery | PalletReturn
-    updateRoute: {
-        route: routeType
-    }
-	addresses: {}
-	address_update_route: routeType
-    notes_data: {
-        [key: string]: PDRNotes
-    }
+    updateRoute: { route: routeType }
+    addresses: {}
+    address_update_route: routeType
+    notes_data: { [key: string]: PDRNotes }
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -53,7 +46,10 @@ const enabled = ref(props.data_pallet?.is_collection || false)
 const isLoading = ref<string | boolean>(false)
 const textValue = ref(props.box_stats?.collection_notes)
 
-// Computed property to intercept changes via v-model
+// ✅ Auto-select collectionBy based on existing notes
+const collectionBy = ref(props.box_stats?.collection_notes ? 'thirdParty' : 'myself')
+
+// Computed property for switch toggle (Collection switch)
 const computedEnabled = computed({
 	get() {
 		return enabled.value
@@ -63,11 +59,11 @@ const computedEnabled = computed({
 		const address = props.box_stats.fulfilment_customer.address?.address_customer?.value
 
 		if (!newValue) {
-			// Prepare the address data for creating a new record.
+			// If NOT collection, reset to selected address
 			const filterDataAddress = { ...address }
 			delete filterDataAddress.formatted_address
 			delete filterDataAddress.country
-			delete filterDataAddress.id // Remove id to create a new one
+			delete filterDataAddress.id
 
 			router[
 				props.box_stats.fulfilment_customer.address.routes_address.store.method || "post"
@@ -81,7 +77,6 @@ const computedEnabled = computed({
 				},
 				{
 					preserveScroll: true,
-					onFinish: () => {},
 					onSuccess: () => {
 						notify({
 							title: trans("Success"),
@@ -101,8 +96,7 @@ const computedEnabled = computed({
 			try {
 				router.delete(
 					route(props.box_stats.fulfilment_customer.address.routes_address.delete.name, {
-						...props.box_stats.fulfilment_customer.address.routes_address.delete
-							.parameters,
+						...props.box_stats.fulfilment_customer.address.routes_address.delete.parameters,
 					}),
 					{
 						preserveScroll: true,
@@ -126,11 +120,36 @@ const computedEnabled = computed({
 				})
 			}
 		}
-		// Finally, update the ref value.
 		enabled.value = newValue
 	},
 })
 
+// Update collection type (myself or thirdParty)
+function updateCollectionType() {
+	router.patch(
+		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+		{ collection_by: collectionBy.value },
+		{
+			preserveScroll: true,
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Collection type updated successfully"),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to update collection type"),
+					type: "error",
+				})
+			},
+		}
+	)
+}
+
+// Update notes for thirdParty
 function updateCollectionNotes() {
 	router.patch(
 		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
@@ -154,175 +173,125 @@ function updateCollectionNotes() {
 		}
 	)
 }
+
+// Estimated delivery date change
 const onChangeEstimateDate = async (close: Function) => {
-    try {
-        router.patch(
-            route(props.updateRoute.route.name, props.updateRoute.route.parameters),
-            {
-                estimated_delivery_date: props.data_pallet.estimated_delivery_date
-            },
-            {
-                onStart: () => isLoadingSetEstimatedDate.value = true,
-                onError: () => {
-                    notify({
-                        title: "Failed",
-                        text: "Failed to update the Delivery date, try again.",
-                        type: "error",
-                    })
-                },
-                onSuccess: () => {
-                    const index = deliveryListError?.indexOf('estimated_delivery_date');
-                    if (index > -1) {
-                        deliveryListError?.splice(index, 1);
-                    }
-                    close()
-                },
-                onFinish: () => isLoadingSetEstimatedDate.value = false,
-            })
-    } catch (error) {
-        console.log(error)
-        notify({
-            title: "Failed",
-            text: "Failed to update the Delivery date, try again.",
-            type: "error",
-        })
-    }
+	try {
+		router.patch(
+			route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+			{
+				estimated_delivery_date: props.data_pallet.estimated_delivery_date
+			},
+			{
+				onStart: () => isLoadingSetEstimatedDate.value = true,
+				onError: () => {
+					notify({
+						title: "Failed",
+						text: "Failed to update the Delivery date, try again.",
+						type: "error",
+					})
+				},
+				onSuccess: () => {
+					const index = deliveryListError?.indexOf('estimated_delivery_date')
+					if (index > -1) {
+						deliveryListError?.splice(index, 1)
+					}
+					close()
+				},
+				onFinish: () => isLoadingSetEstimatedDate.value = false,
+			}
+		)
+	} catch (error) {
+		console.log(error)
+		notify({
+			title: "Failed",
+			text: "Failed to update the Delivery date, try again.",
+			type: "error",
+		})
+	}
 }
 
+// Disable selecting past dates
 const disableBeforeToday = (date: Date) => {
-    const today = new Date()
-    // Set time to 00:00:00 for comparison purposes
-    today.setHours(0, 0, 0, 0)
-    return date < today
+	const today = new Date()
+	today.setHours(0, 0, 0, 0)
+	return date < today
 }
-// Method: On change estimated date
-// const onChangeEstimateDate = async (close: Function) => {
-//     try {
-//         router.patch(
-//             route(props.updateRoute.route.name, props.updateRoute.route.parameters),
-//             {
-//                 estimated_delivery_date: props.data_pallet.estimated_delivery_date
-//             },
-//             {
-//                 onStart: () => isLoadingSetEstimatedDate.value = true,
-//                 onError: () => {
-//                     notify({
-//                         title: "Failed",
-//                         text: "Failed to update the Delivery date, try again.",
-//                         type: "error",
-//                     })
-//                 },
-//                 onSuccess: () => close(),
-//                 onFinish: () => isLoadingSetEstimatedDate.value = false,
-//             })
-//     } catch (error) {
-//         console.log(error)
-//         notify({
-//             title: "Failed",
-//             text: "Failed to update the Delivery date, try again.",
-//             type: "error",
-//         })
-//     }
-// }
-
-// const disableBeforeToday = (date: Date) => {
-//     const today = new Date()
-//     // Set time to 00:00:00 for comparison purposes
-//     today.setHours(0, 0, 0, 0)
-//     return date < today
-// }
 </script>
 
+
 <template>
-    <div class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
-        <!-- Box: Detail -->
-        <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class=" pb-2 py-5 px-3"
-            :tooltip="trans('Detail')" :label="capitalize(data_pallet.state)" icon="fal fa-truck-couch">
-
-            <!-- Field: Reference -->
-            <div as="a" v-if="box_stats.fulfilment_customer.customer.reference"
-                class="flex items-center w-fit flex-none gap-x-2">
-                <dt v-tooltip="'Company name'" class="flex-none">
-                    <span class="sr-only">Reference</span>
-                    <FontAwesomeIcon icon='fal fa-id-card-alt' size="xs" class='text-gray-400' fixed-width
-                        aria-hidden='true' />
-                </dt>
-                <dd class=" text-gray-500">{{ box_stats.fulfilment_customer.customer.reference }}</dd>
-            </div>
-
-            <!-- Field: Contact name -->
-            <div v-if="box_stats.fulfilment_customer.customer.contact_name"
-                class="flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="'Contact name'" class="flex-none">
-                    <span class="sr-only">Contact name</span>
-                    <FontAwesomeIcon icon='fal fa-user' size="xs" class='text-gray-400' fixed-width
-                        aria-hidden='true' />
-                </dt>
-                <dd class=" text-gray-500">{{ box_stats.fulfilment_customer.customer.contact_name }}</dd>
-            </div>
-
-
-            <!-- Field: Company name -->
-            <div v-if="box_stats.fulfilment_customer.customer.company_name"
-                class="flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="'Company name'" class="flex-none">
-                    <span class="sr-only">Company name</span>
-                    <FontAwesomeIcon icon='fal fa-building' size="xs" class='text-gray-400' fixed-width
-                        aria-hidden='true' />
-                </dt>
-                <dd class=" text-gray-500">{{ box_stats.fulfilment_customer.customer.company_name }}</dd>
-            </div>
+	<div class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
+		<!-- Box: Detail -->
+		<BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 py-5 px-3"
+			:tooltip="trans('Detail')" :label="capitalize(data_pallet.state)" icon="fal fa-truck-couch">
+			<!-- Field: Reference -->
+			<div as="a" v-if="box_stats.fulfilment_customer.customer.reference"
+				class="flex items-center w-fit flex-none gap-x-2">
+				<dt v-tooltip="'Company name'" class="flex-none">
+					<span class="sr-only">Reference</span>
+					<FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+				</dt>
+				<dd class="text-gray-500">{{ box_stats.fulfilment_customer.customer.reference }}</dd>
+			</div>
+			<!-- Field: Contact name -->
+			<div v-if="box_stats.fulfilment_customer.customer.contact_name"
+				class="flex items-center w-full flex-none gap-x-2">
+				<dt v-tooltip="'Contact name'" class="flex-none">
+					<span class="sr-only">Contact name</span>
+					<FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+				</dt>
+				<dd class="text-gray-500">{{ box_stats.fulfilment_customer.customer.contact_name }}</dd>
+			</div>
+			<!-- Field: Company name -->
+			<div v-if="box_stats.fulfilment_customer.customer.company_name"
+				class="flex items-center w-full flex-none gap-x-2">
+				<dt v-tooltip="'Company name'" class="flex-none">
+					<span class="sr-only">Company name</span>
+					<FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+				</dt>
+				<dd class="text-gray-500">{{ box_stats.fulfilment_customer.customer.company_name }}</dd>
+			</div>
+			<!-- Estimated Delivery Date -->
 			<div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
-                <dt class="flex-none">
-                    <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
-                    <FontAwesomeIcon :icon="['fal', 'calendar-day']"  :class='box_stats?.delivery_status?.class'
-                        fixed-width aria-hidden='true' size="xs" />
-                </dt>
-
-                <Popover v-if="data_pallet.state === 'in_process'" position="">
-                    <template #button>
-                        <div v-if="data_pallet?.estimated_delivery_date"
-                            v-tooltip="retinaUseDaysLeftFromToday(data_pallet?.estimated_delivery_date)"
-                            class="group text-sm text-gray-500">
-                            {{ useFormatTime(data_pallet?.estimated_delivery_date) }}
-                            <FontAwesomeIcon icon='fal fa-pencil' size="sm"
-                                class='text-gray-400 group-hover:text-gray-600' fixed-width aria-hidden='true' />
-                        </div>
-
-                        <div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
-                            {{ trans('Set estimated delivery') }}
-                        </div>
-                    </template>
-
-                    <template #content="{ close }">
-                        <DatePicker v-model="data_pallet.estimated_delivery_date"
-                            @update:modelValue="() => onChangeEstimateDate(close)" inline auto-apply
-                            :xdisabled-dates="disableBeforeToday" :enable-time-picker="false" />
-                        
-                        <div v-if="isLoadingSetEstimatedDate" class="absolute inset-0 bg-white/70 flex items-center justify-center">
-                            <LoadingIcon class="text-5xl" />
-                        </div>
-                    </template>
-                </Popover>
-
-                <div v-else>
-                    <dd class="text-sm text-gray-500">{{ data_pallet?.estimated_delivery_date ?
-                        useFormatTime(data_pallet?.estimated_delivery_date) : trans('Not Set') }}</dd>
-                </div>
-
-            </div>
-            <!-- Field: Delivery Address -->
-            <div class="flex flex-col w-full gap-y-2 mb-1">
-				<!-- Top Row: Icon and Switch -->
+				<dt class="flex-none">
+					<span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
+					<FontAwesomeIcon :icon="['fal', 'calendar-day']" :class="box_stats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
+				</dt>
+				<Popover v-if="data_pallet.state === 'in_process'" position="">
+					<template #button>
+						<div v-if="data_pallet?.estimated_delivery_date"
+							v-tooltip="retinaUseDaysLeftFromToday(data_pallet?.estimated_delivery_date)"
+							class="group text-sm text-gray-500">
+							{{ useFormatTime(data_pallet?.estimated_delivery_date) }}
+							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400 group-hover:text-gray-600" fixed-width aria-hidden="true" />
+						</div>
+						<div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
+							{{ trans('Set estimated delivery') }}
+						</div>
+					</template>
+					<template #content="{ close }">
+						<DatePicker v-model="data_pallet.estimated_delivery_date"
+							@update:modelValue="() => onChangeEstimateDate(close)" inline auto-apply
+							:xdisabled-dates="disableBeforeToday" :enable-time-picker="false" />
+						<div v-if="isLoadingSetEstimatedDate" class="absolute inset-0 bg-white/70 flex items-center justify-center">
+							<LoadingIcon class="text-5xl" />
+						</div>
+					</template>
+				</Popover>
+				<div v-else>
+					<dd class="text-sm text-gray-500">
+						{{ data_pallet?.estimated_delivery_date ? useFormatTime(data_pallet?.estimated_delivery_date) : trans('Not Set') }}
+					</dd>
+				</div>
+			</div>
+			<!-- Delivery Address / Collection by Section -->
+			<div class="flex flex-col w-full gap-y-2 mb-1">
+				<!-- Top Row: Icon dan Switch -->
 				<div class="flex items-center gap-x-2">
 					<dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
 						<span class="sr-only">Delivery address</span>
-						<FontAwesomeIcon
-							icon="fal fa-map-marker-alt"
-							size="xs"
-							class="text-gray-400"
-							fixed-width
-							aria-hidden="true" />
+						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
 					</dt>
 					<SwitchGroup as="div" class="flex items-center">
 						<Switch
@@ -339,17 +308,48 @@ const disableBeforeToday = (date: Date) => {
 						</SwitchLabel>
 					</SwitchGroup>
 				</div>
-
-				<!-- Bottom Row: Address Display -->
-				<div
-					v-if="data_pallet.is_collection !== true"
-					class="w-full text-xs text-gray-500">
+				<!-- Bottom Row: Tampilkan sesuai kondisi -->
+				<div v-if="data_pallet.is_collection" class="w-full">
+					<span class="block mb-1">{{ trans("Collection by:") }}</span>
+					<div class="flex space-x-4">
+						<label class="inline-flex items-center">
+							<input
+								type="radio"
+								value="myself"
+								v-model="collectionBy"
+								@change="updateCollectionType"
+								class="form-radio"
+							/>
+							<span class="ml-2">{{ trans("My Self") }}</span>
+						</label>
+						<label class="inline-flex items-center">
+							<input
+								type="radio"
+								value="thirdParty"
+								v-model="collectionBy"
+								@change="updateCollectionType"
+								class="form-radio"
+							/>
+							<span class="ml-2">{{ trans("Third Party") }}</span>
+						</label>
+					</div>
+					<!-- Jika opsi Third Party dipilih, tampilkan textarea untuk catatan -->
+					<div v-if="collectionBy === 'thirdParty'" class="mt-3">
+						<Textarea
+							v-model="textValue"
+							@blur="updateCollectionNotes"
+							autoResize
+							rows="5"
+							class="w-full"
+							cols="30"
+							placeholder="Type additional notes..."
+						/>
+					</div>
+				</div>
+				<div v-else class="w-full text-xs text-gray-500">
 					Send to:
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-						<span
-							v-html="
-                            box_stats.fulfilment_customer?.address?.value?.formatted_address
-							" />
+						<span v-html="box_stats.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
 							@click="() => (isModalAddressCollection = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -357,83 +357,54 @@ const disableBeforeToday = (date: Date) => {
 						</div>
 					</div>
 				</div>
+			</div>
+		</BoxStatPallet>
 
-				<!-- Alternative Display for Collection -->
-				<div v-else class="w-full">
-				Collection by:
-					<Textarea
-						v-model="textValue"
-						@blur="updateCollectionNotes"
-						autoResize
-						rows="5"
-						class="w-full"
-						cols="30"
-						placeholder="typing..." />
+		<!-- Box: Notes -->
+		<BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 pt-2 px-3"
+			:tooltip="trans('Notes')" :percentage="0">
+			<!-- Customer reference -->
+			<div class="mb-1">
+				<PalletEditCustomerReference
+					:dataPalletDelivery="data_pallet"
+					:updateRoute="updateRoute.route"
+					:disabled="data_pallet?.state !== 'in_process' && data_pallet?.state !== 'submitted'"
+				/>
+			</div>
+			<div class="grid gap-y-3 mb-3">
+				<RetinaBoxNote
+					:noteData="notes_data.return"
+					:updateRoute="updateRoute.route"
+				/>
+			</div>
+			<div class="border-t border-gray-300 pt-1">
+				<div class="flex items-center w-full flex-none gap-x-2" :class="box_stats.delivery_state.class">
+					<dt class="flex-none">
+						<span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
+						<FontAwesomeIcon
+							:icon="box_stats.delivery_state.icon"
+							size="xs"
+							fixed-width aria-hidden="true" />
+					</dt>
+					<dd class="">{{ box_stats?.delivery_state?.tooltip }}</dd>
 				</div>
 			</div>
-        </BoxStatPallet>
+		</BoxStatPallet>
 
+		<!-- Box: Order summary -->
+		<BoxStatPallet class="sm:col-span-2 border-t sm:border-t-0 border-gray-300">
+			<section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
+				<h2 id="summary-heading" class="text-lg font-medium">Order summary</h2>
+				<OrderSummary :order_summary="box_stats.order_summary" :currency_code="box_stats?.order_summary?.currency?.data?.code" />
+			</section>
+		</BoxStatPallet>
+	</div>
 
-        <!-- Box: Notes -->
-        <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 pt-2 px-3"
-            :tooltip="trans('Notes')" :percentage="0">
-            <!-- Customer reference -->
-            <div class="mb-1">
-                <PalletEditCustomerReference
-                    :dataPalletDelivery="data_pallet"
-                    :updateRoute="updateRoute.route"
-					:disabled="data_pallet?.state !== 'in_process' && data_pallet?.state !== 'submitted'"
-                />
-            </div>
+	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
+		<ModalAddress :addresses="addresses" :updateRoute="address_update_route" />
+	</Modal>
 
-            <div class="grid gap-y-3 mb-3">
-                <RetinaBoxNote
-                    :noteData="notes_data.return"
-                    :updateRoute="updateRoute.route"
-                />
-
-            </div>
-            
-            <div class="border-t border-gray-300 pt-1">
-                <div class="flex items-center w-full flex-none gap-x-2" 
-                    :class='box_stats.delivery_state.class'>
-                    <dt class="flex-none">
-                        <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
-                        <FontAwesomeIcon
-                            :icon='box_stats.delivery_state.icon'
-                            size="xs"
-                            fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="">{{ box_stats?.delivery_state?.tooltip }}</dd>
-                </div>
-            </div>
-        </BoxStatPallet>
-
-
-        <!-- Box: Order summary -->
-        <BoxStatPallet class="sm:col-span-2 border-t sm:border-t-0 border-gray-300">
-            <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-                <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2>
-
-                <OrderSummary :order_summary="box_stats.order_summary" :currency_code="box_stats?.order_summary?.currency?.data?.code" />
-
-                <!-- <div class="mt-6">
-                    <button type="submit"
-                        class="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">Checkout</button>
-                </div> -->
-            </section>
-        </BoxStatPallet>
-    </div>
-
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <ModalAddress
-            :addresses="addresses"
-            :updateRoute="address_update_route"
-        />
-    </Modal>
-
-    <Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
-		<ModalAddressCollection :addresses="addresses"
-		:updateRoute="address_update_route" />
+	<Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
+		<ModalAddressCollection :addresses="addresses" :updateRoute="address_update_route" />
 	</Modal>
 </template>
