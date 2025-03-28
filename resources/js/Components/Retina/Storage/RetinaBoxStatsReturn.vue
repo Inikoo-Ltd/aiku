@@ -272,7 +272,7 @@ function updateCollectionNotes() {
                             box_stats.fulfilment_customer?.address?.value?.formatted_address
 							" />
 						<div
-							@click="() => (isModalAddress = true)"
+							@click="() => (isModalAddressCollection = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
 							<span>Edit</span>
 						</div>
@@ -354,6 +354,7 @@ function updateCollectionNotes() {
     </Modal>
 
     <Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
-		<ModalAddressCollection :addresses_list="addresses" :addresses="box_stats.fulfilment_customer.address" :updateRoute :is_collection="data_pallet.is_collection" />
+		<ModalAddressCollection :addresses="addresses"
+		:updateRoute="address_update_route" />
 	</Modal>
 </template>
