@@ -126,9 +126,21 @@ const computedEnabled = computed({
 
 // Update collection type (myself or thirdParty)
 function updateCollectionType() {
+	const payload: Record<string, any> = {
+		collection_by: collectionBy.value,
+	}
+
+	// Logic:
+	// - If "myself", clear the notes (set to null)
+	// - If "thirdParty", preserve whatever is in textValue (even empty string)
+	if (collectionBy.value === 'myself') {
+		payload.collection_notes = null
+		textValue.value = null // also clear in frontend
+	}
+
 	router.patch(
 		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
-		{ collection_by: collectionBy.value },
+		payload,
 		{
 			preserveScroll: true,
 			onSuccess: () => {
@@ -148,6 +160,7 @@ function updateCollectionType() {
 		}
 	)
 }
+
 
 // Update notes for thirdParty
 function updateCollectionNotes() {
@@ -308,7 +321,7 @@ const disableBeforeToday = (date: Date) => {
 						</SwitchLabel>
 					</SwitchGroup>
 				</div>
-				<!-- Bottom Row: Tampilkan sesuai kondisi -->
+			
 				<div v-if="data_pallet.is_collection" class="w-full">
 					<span class="block mb-1">{{ trans("Collection by:") }}</span>
 					<div class="flex space-x-4">
@@ -333,7 +346,7 @@ const disableBeforeToday = (date: Date) => {
 							<span class="ml-2">{{ trans("Third Party") }}</span>
 						</label>
 					</div>
-					<!-- Jika opsi Third Party dipilih, tampilkan textarea untuk catatan -->
+					
 					<div v-if="collectionBy === 'thirdParty'" class="mt-3">
 						<Textarea
 							v-model="textValue"
