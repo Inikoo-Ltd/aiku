@@ -1,0 +1,28 @@
+{
+	"@context": "https://schema.org",
+	"@type": "Organization",
+	"url": "https://www.aw-fulfilment.co.uk/",
+	"sameAs": [
+		"https://www.ancientwisdom.biz",
+		"https://www.aw-aromatics.com",
+		"https://www.aw-dropship.com",
+		"https://www.aw-fulfilment.eu",
+		"https://www.awgifts.eu",
+		"https://www.aw-dropship.eu",
+		"https://www.awartisan.eu"
+	],
+	"logo": "https://media.aiku.io/QdYcHDe3W11-zs5hwB_GsdGFeLbCAQZQKlLkFpAJjwE/bG9jYWw6Ly9tZWRpYS9TRy9FQy82MFIzMEMxSDc0UktFQ1NHLzhiNGY2NWMwLnBuZw.avif",
+	"name": "AW Fulfilment",
+	"description": "Put your description with keywords fulfilment in UK",
+	"email": "info@aw-fulfilment.co.uk",
+	"telephone": "+447377188459",
+	"address": {
+		"@type": "PostalAddress",
+		"streetAddress": "Affinity Park, Europa Drive",
+		"addressLocality": "Sheffield",
+		"addressCountry": "United Kingdom",
+		"addressRegion": "South Yorkshire",
+		"postalCode": "S9 1XT"
+	},
+	"vatID": "GB764298589"
+}

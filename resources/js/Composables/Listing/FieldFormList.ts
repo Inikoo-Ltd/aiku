@@ -31,7 +31,7 @@ import Pin from '@/Components/Forms/Fields/Pin.vue'
 import GeneratePassword from '@/Components/Forms/Fields/GeneratePassword.vue'
 import TaxNumber from '@/Components/Forms/Fields/TaxNumber.vue'
 import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
-
+import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 
 
@@ -89,6 +89,7 @@ export const componentsList: {[key: string]: Component} = {
     'pin' : Pin,
     'tax_number' : TaxNumber,
     'editor' : EditorHtml,
+    'structure_data_website' : StructureDataWebsite,
 
     'select_infinite': SelectInfiniteScroll
 }
