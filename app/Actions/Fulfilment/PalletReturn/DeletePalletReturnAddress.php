@@ -23,6 +23,9 @@ class DeletePalletReturnAddress extends OrgAction
             $palletreturn->delivery_address_id = null;
             $palletreturn->is_collection = true;
             $palletreturn->save();
+
+            $palletreturn->refresh();
+
             $address->delete();
         }
 
