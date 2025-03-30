@@ -42,7 +42,7 @@ class ShowRetinaStoredItemAudit extends RetinaAction
     {
         $subNavigation = [];
 
-        $title      = __("'SKUs audit");
+        $title      = __("SKUs audit");
         $icon       = ['fal', 'fa-pallet'];
         $afterTitle = null;
         $iconRight  = null;

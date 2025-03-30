@@ -222,7 +222,7 @@ class IndexLocations extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'max_weight', label: __('weight'), canBeHidden: false, align: 'right');
-            $table->column(key: 'max_volume', label: __("CBM (Cubic's meter)"), canBeHidden: false, align: 'right');
+            $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, align: 'right');
             $table->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, align: 'right');
             $table->column(key: 'tags', label: __('tags'), canBeHidden: false)
                 ->defaultSort('code');

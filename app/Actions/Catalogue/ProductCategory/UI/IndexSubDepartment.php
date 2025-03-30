@@ -143,7 +143,7 @@ class IndexSubDepartment extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Shop' => [
-                            'title' => __("No Sub-departments foundx"),
+                            'title' => __("No Sub-departments found"),
                             'count' => $parent->stats->number_families,
                         ],
                         'ProductCategory' => [

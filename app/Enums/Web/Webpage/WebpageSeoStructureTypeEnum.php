@@ -31,7 +31,7 @@ enum WebpageSeoStructureTypeEnum: string
     public static function labels(): array
     {
         return [
-            'ecommerce' => __('Ecommerce'),
+            'ecommerce' => __('E-commerce'),
             'organisation' => __('Organisation'),
             /* 'sport' => __('Sport'),
             'job' => __('Job'),
