@@ -40,7 +40,6 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
@@ -1228,9 +1227,9 @@ test('UI show list invoices in customer client', function () {
     $customer = createCustomer($shop);
     $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
     $response = get(route('grp.org.shops.show.crm.customers.show.customer-clients.invoices.index', [
-        'organisation' => $this->organisation->slug, 
-        'shop' => $shop->slug, 
-        'customer' => $customer->slug, 
+        'organisation' => $this->organisation->slug,
+        'shop' => $shop->slug,
+        'customer' => $customer->slug,
         'customerClient' => $customerClient->ulid]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {

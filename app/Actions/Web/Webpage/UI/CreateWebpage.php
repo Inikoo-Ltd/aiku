@@ -86,7 +86,7 @@ class CreateWebpage extends OrgAction
                 'formData'    => [
                     'blueprint' => [
 
-                        
+
                         [
                             'title'  => __('Id'),
                             'icon'   => ['fal', 'fa-fingerprint'],

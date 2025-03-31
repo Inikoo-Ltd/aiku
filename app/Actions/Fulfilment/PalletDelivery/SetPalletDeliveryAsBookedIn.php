@@ -36,7 +36,7 @@ class SetPalletDeliveryAsBookedIn extends OrgAction
         $modelData['state']        = PalletDeliveryStateEnum::BOOKED_IN;
 
 
-        if($palletDelivery->pallets) {
+        if ($palletDelivery->pallets) {
             foreach ($palletDelivery->pallets as $pallet) {
                 if ($pallet->state == PalletStateEnum::BOOKED_IN) {
                     UpdatePallet::run($pallet, [

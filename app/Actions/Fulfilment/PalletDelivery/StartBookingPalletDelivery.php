@@ -34,7 +34,7 @@ class StartBookingPalletDelivery extends OrgAction
     {
         $modelData['booking_in_at'] = now();
         $modelData['state']         = PalletDeliveryStateEnum::BOOKING_IN;
-        if($palletDelivery->pallets) {
+        if ($palletDelivery->pallets) {
             foreach ($palletDelivery->pallets as $pallet) {
                 UpdatePallet::run($pallet, [
                     'state'         => PalletStateEnum::BOOKING_IN,

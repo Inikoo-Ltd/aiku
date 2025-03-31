@@ -19,10 +19,10 @@ enum WebpageSeoStructureTypeEnum: string
 
     case ECOMMERCE = 'ecommerce';
     case ORGANISATION = 'organisation';
-  /*   case SPORT = 'sport';
-    case JOB = 'job';
-    case ENTERTAINMENT = 'entertainment'; */
-    case NEWS = 'news';/* 
+    /*   case SPORT = 'sport';
+      case JOB = 'job';
+      case ENTERTAINMENT = 'entertainment'; */
+    case NEWS = 'news';/*
     case FOOD_AND_DRINK = 'food_and_drink';
     case EDUCATION_AND_SCIENCE = 'education_and_science'; */
 

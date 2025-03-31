@@ -47,7 +47,7 @@ class ConfirmPalletDelivery extends OrgAction
         } else {
             $modelData['confirmed_at'] = now();
         }
-        if($palletDelivery->pallets) {
+        if ($palletDelivery->pallets) {
             foreach ($palletDelivery->pallets as $pallet) {
                 UpdatePallet::run($pallet, [
                     'reference' => GetSerialReference::run(
@@ -69,7 +69,7 @@ class ConfirmPalletDelivery extends OrgAction
             $modelData[PalletDeliveryStateEnum::SUBMITTED->value.'_at'] = now();
         }
 
-        if($palletDelivery->pallets) {
+        if ($palletDelivery->pallets) {
             foreach ($palletDelivery->pallets as $pallet) {
                 UpdatePallet::run($pallet, [
                     'state'     => PalletStateEnum::CONFIRMED,

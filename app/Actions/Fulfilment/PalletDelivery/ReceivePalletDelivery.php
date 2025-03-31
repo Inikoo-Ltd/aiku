@@ -50,7 +50,7 @@ class ReceivePalletDelivery extends OrgAction
     {
         $modelData['received_at'] = now();
         $modelData['state']       = PalletDeliveryStateEnum::RECEIVED;
-        if($palletDelivery->pallets) {
+        if ($palletDelivery->pallets) {
             foreach ($palletDelivery->pallets as $pallet) {
                 UpdatePallet::run($pallet, [
                     'state'       => PalletStateEnum::RECEIVED,

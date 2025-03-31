@@ -80,8 +80,7 @@ class DeletePalletReturn extends OrgAction
 
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
 
-            if(!is_null($palletReturn->fulfilmentCustomer->customer->shopifyUser)) 
-            {
+            if (!is_null($palletReturn->fulfilmentCustomer->customer->shopifyUser)) {
                 CancelFulfilmentRequestToShopify::dispatch($palletReturn);
             }
             $fulfilmentCustomer = $palletReturn->fulfilmentCustomer;

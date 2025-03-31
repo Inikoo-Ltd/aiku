@@ -68,7 +68,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $in_process Used for refunds only
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
@@ -79,6 +79,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferComponent> $offerComponents
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read RecurringBillTransaction|null $recurringBillTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds

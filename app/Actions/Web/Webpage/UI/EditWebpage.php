@@ -98,7 +98,7 @@ class EditWebpage extends OrgAction
                                     'label_no_capitalize' => true,
                                     'value'     => $webpage->title,
                                     'required'  => true,
-                                ],    
+                                ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
@@ -108,7 +108,7 @@ class EditWebpage extends OrgAction
                                     ],
                                     'value'     => $webpage->url,
                                     'required'  => true,
-                                ],    
+                                ],
                             ]
                         ],
                         [
@@ -144,7 +144,7 @@ class EditWebpage extends OrgAction
                                         'label'    => __('Meta keywords'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_keywords')
                                 ], */
-                            ],  
+                            ],
                         ],
                         [
                             'label'  => __('Structured data'),
