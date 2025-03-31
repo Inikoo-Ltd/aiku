@@ -648,7 +648,7 @@ test('store invoice category', function () {
     $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
         'name'  => 'Test Inv Cate',
         'state' => InvoiceCategoryStateEnum::ACTIVE,
-        'type'  => InvoiceCategoryTypeEnum::IS_ORGANISATION,
+        'type'  => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
         'currency_id' => $this->organisation->currency_id,
         'priority' => 1
     ]);
