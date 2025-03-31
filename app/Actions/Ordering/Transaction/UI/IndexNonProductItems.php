@@ -14,21 +14,11 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Facades\DB;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexNonProductItems extends OrgAction
 {
-    public static $wrap = null;
-
-    public function handle(Order $order, $prefix = null)
+    public function handle(Order $order, $prefix = null): \Illuminate\Database\Eloquent\Collection
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->where('assets.code', '~*', "\y$value\y")
-                    ->orWhereStartWith('assets.name', $value);
-            });
-        });
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -42,42 +32,44 @@ class IndexNonProductItems extends OrgAction
 
         $query->leftJoin('charges', function ($join) {
             $join->on('transactions.model_id', '=', 'charges.id')
-                    ->where('transactions.model_type', '=', 'Charge');
+                ->where('transactions.model_type', '=', 'Charge');
         });
 
         $query->leftJoin('adjustments', function ($join) {
             $join->on('transactions.model_id', '=', 'adjustments.id')
-                    ->where('transactions.model_type', '=', 'Adjustment');
+                ->where('transactions.model_type', '=', 'Adjustment');
         });
 
         $query->leftJoin('shipping_zones', function ($join) {
             $join->on('transactions.model_id', '=', 'shipping_zones.id')
-                    ->where('transactions.model_type', '=', 'ShippingZone');
+                ->where('transactions.model_type', '=', 'ShippingZone');
         });
 
         $query->defaultSort('transactions.id')
-        ->select([
-            'transactions.id',
-            'transactions.state',
-            'transactions.status',
-            'transactions.quantity_ordered',
-            'transactions.quantity_bonus',
-            'transactions.quantity_dispatched',
-            'transactions.quantity_fail',
-            'transactions.quantity_cancelled',
-            'transactions.gross_amount',
-            'transactions.net_amount',
-            'transactions.created_at',
-            'transactions.model_type',
-            'currencies.code as currency_code',
-            'orders.id as order_id',
-            DB::raw("CASE 
+            ->select([
+                'transactions.id',
+                'transactions.state',
+                'transactions.status',
+                'transactions.quantity_ordered',
+                'transactions.quantity_bonus',
+                'transactions.quantity_dispatched',
+                'transactions.quantity_fail',
+                'transactions.quantity_cancelled',
+                'transactions.gross_amount',
+                'transactions.net_amount',
+                'transactions.created_at',
+                'transactions.model_type',
+                'currencies.code as currency_code',
+                'orders.id as order_id',
+                DB::raw(
+                    "CASE 
                 WHEN transactions.model_type = 'Charge' THEN charges.name
                 WHEN transactions.model_type = 'Adjustment' THEN adjustments.type
                 WHEN transactions.model_type = 'ShippingZone' THEN shipping_zones.name
                 ELSE null
-            END as asset_name")
-        ]);
+            END as asset_name"
+                )
+            ]);
 
         return $query->get();
     }

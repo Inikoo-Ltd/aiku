@@ -35,8 +35,7 @@ class IndexEmailBulkRuns extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('email_bulk_runs.subject', '~*', "\y$value\y")
-                    ->orWhere('email_bulk_runs.data', '=', $value);
+                $query->whereWith('email_bulk_runs.subject', $value);
             });
         });
 
@@ -46,7 +45,7 @@ class IndexEmailBulkRuns extends OrgAction
 
         $queryBuilder = QueryBuilder::for(EmailBulkRun::class);
         $queryBuilder->leftJoin('organisations', 'email_bulk_runs.organisation_id', '=', 'organisations.id')
-        ->leftJoin('shops', 'email_bulk_runs.shop_id', '=', 'shops.id');
+            ->leftJoin('shops', 'email_bulk_runs.shop_id', '=', 'shops.id');
         if ($parent instanceof Outbox) {
             $queryBuilder->where('email_bulk_runs.outbox_id', $parent->id);
         } elseif ($parent instanceof Shop) {
@@ -77,7 +76,6 @@ class IndexEmailBulkRuns extends OrgAction
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
-
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -104,7 +102,6 @@ class IndexEmailBulkRuns extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Comms/Mailshots',
             [
@@ -114,10 +111,10 @@ class IndexEmailBulkRuns extends OrgAction
                 ),
                 'title'       => __('Email Bulk Runs'),
                 'pageHead'    => [
-                    'title'    => __('Email Bulk Runs'),
-                    'icon'     => ['fal', 'fa-raygun'],
+                    'title' => __('Email Bulk Runs'),
+                    'icon'  => ['fal', 'fa-raygun'],
                 ],
-                'data' => EmailBulkRunsResource::collection($mailshots),
+                'data'        => EmailBulkRunsResource::collection($mailshots),
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -187,7 +184,7 @@ class IndexEmailBulkRuns extends OrgAction
         return match ($routeName) {
             'grp.overview.comms-marketing.email-bulk-runs.index', =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,
