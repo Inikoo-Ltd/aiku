@@ -15,6 +15,7 @@ use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\Space;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
 /**
@@ -41,16 +42,19 @@ use Illuminate\Support\Carbon;
  * @property mixed $pallet_delivery_id
  * @property mixed $pallet_return_id
  * @property mixed $fulfilment_transaction_id
+ * @property mixed $data
  */
 class RecurringBillTransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $desc_model = '';
-        $desc_title = '';
+        $desc_model       = '';
+        $desc_title       = '';
         $desc_after_title = '';
-        $desc_route = null;
-        // dump($this);
+        $desc_route       = null;
+
+
+
         if ($this->item_type == 'Pallet') {
             $pallet = Pallet::find($this->item_id);
             if ($pallet) {
@@ -67,34 +71,32 @@ class RecurringBillTransactionsResource extends JsonResource
                     ]
                 ];
             }
-
         } elseif ($this->pallet_delivery_id) {
             $palletDelivery = PalletDelivery::find($this->pallet_delivery_id);
             if ($palletDelivery) {
                 $desc_title = $palletDelivery->reference;
                 $desc_model = __('Pallet Delivery');
                 $desc_route = [
-                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
-                    'parameters'    => [
-                        'organisation'         => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'           => $request->route()->originalParameters()['fulfilment'],
-                        'fulfilmentCustomer'   => $palletDelivery->fulfilmentCustomer->slug,
-                        'palletDelivery'       => $palletDelivery->slug
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
+                    'parameters' => [
+                        'organisation'       => $request->route()->originalParameters()['organisation'],
+                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
+                        'palletDelivery'     => $palletDelivery->slug
                     ]
                 ];
             }
-
         } elseif ($this->pallet_return_id) {
             $palletReturn = PalletReturn::find($this->pallet_return_id);
             if ($palletReturn) {
                 $desc_title = $palletReturn->reference;
                 $desc_model = __('Pallet Return');
                 $desc_route = [
-                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
-                    'parameters'    => [
-                        'organisation'         => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'           => $request->route()->originalParameters()['fulfilment'],
-                        'fulfilmentCustomer'   => $palletReturn->fulfilmentCustomer->slug,
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+                    'parameters' => [
+                        'organisation'       => $request->route()->originalParameters()['organisation'],
+                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
                         'palletReturn'       => $palletReturn->slug
                     ]
                 ];
@@ -105,19 +107,19 @@ class RecurringBillTransactionsResource extends JsonResource
                 $desc_model = __('Space (parking)');
                 $desc_title = $space->reference;
                 $desc_route = [
-                    'name' => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
-                    'parameters'    => [
-                        'organisation'          => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'            => $request->route()->originalParameters()['fulfilment'],
-                        'fulfilmentCustomer'    => $space->fulfilmentCustomer->slug,
-                        'space'                 => $space->slug
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
+                    'parameters' => [
+                        'organisation'       => $request->route()->originalParameters()['organisation'],
+                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'fulfilmentCustomer' => $space->fulfilmentCustomer->slug,
+                        'space'              => $space->slug
                     ]
                 ];
             }
         }
 
         if ($this->start_date) {
-            $desc_after_title .= Carbon::parse($this->start_date)->format('d M Y') . '-';
+            $desc_after_title .= Carbon::parse($this->start_date)->format('d M Y').'-';
         }
         if ($this->end_date) {
             $desc_after_title .= Carbon::parse($this->end_date)->format('d M Y');
@@ -126,16 +128,26 @@ class RecurringBillTransactionsResource extends JsonResource
         }
 
         $unitAbbreviation = Abbreviate::run($this->asset_unit);
-        $editType = null;
+        $editType         = null;
         if ($this->item_type == 'Service') {
-            $service = Service::find($this->item_id);
+            $service  = Service::find($this->item_id);
             $editType = $service->edit_type ?? null;
-            if ($service->is_pallet_handling == true) {
-                $pallet = PalletResource::make(Pallet::find($this->data['pallet_id']));
-                $desc_title = $pallet->reference;
-                $desc_after_title = Carbon::parse($this->data['date'])->format('d M Y');
-                $desc_model = __('Handling');
-                $desc_route = [
+
+            $palletID = Arr::get($this->data, 'pallet_id');
+
+            if ($service->is_pallet_handling and $palletID) {
+
+
+
+                /** @var Pallet $pallet */
+                $pallet           = PalletResource::make(Pallet::find($palletID));
+                $desc_title       = $pallet->reference;
+                $desc_after_title = '';
+                if (Arr::get($this->data, 'date')) {
+                    $desc_after_title = Carbon::parse($this->data['date'])->format('d M Y');
+                }
+                $desc_model       = __('Handling');
+                $desc_route       = [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                     'parameters' => [
                         'organisation'       => $request->route()->originalParameters()['organisation'],
@@ -148,32 +160,32 @@ class RecurringBillTransactionsResource extends JsonResource
         }
 
         return [
-            'id'                 => $this->id,
-            'type'               => $this->item_type,
-            'type_icon'          => $this->typeIcon($this->item_type),
-            'asset_id'           => $this->asset_id,
-            'asset_slug'         => $this->asset_slug,
-            'asset_code'         => $this->asset_code,
-            'asset_price'        => $this->asset_price,
-            'asset_name'         => $this->asset_name,
-            'asset_unit'         => $this->asset_unit,
-            'asset_units'        => $this->asset_units,
-            'currency_code'      => $this->currency_code,
-            'unit_abbreviation'  => $unitAbbreviation,
-            'unit_label'         => $this->asset_unit,
-            'quantity'           => match ($this->item_type) {
+            'id'                        => $this->id,
+            'type'                      => $this->item_type,
+            'type_icon'                 => $this->typeIcon($this->item_type),
+            'asset_id'                  => $this->asset_id,
+            'asset_slug'                => $this->asset_slug,
+            'asset_code'                => $this->asset_code,
+            'asset_price'               => $this->asset_price,
+            'asset_name'                => $this->asset_name,
+            'asset_unit'                => $this->asset_unit,
+            'asset_units'               => $this->asset_units,
+            'currency_code'             => $this->currency_code,
+            'unit_abbreviation'         => $unitAbbreviation,
+            'unit_label'                => $this->asset_unit,
+            'quantity'                  => match ($this->item_type) {
                 'Pallet', 'Space' => $this->temporal_quantity,
                 default => $this->quantity
             },
-            'total'              => $this->net_amount,
-            'discount'           => (int) $this->discount,
-            'edit_type'          => $editType,
+            'total'                     => $this->net_amount,
+            'discount'                  => (int)$this->discount,
+            'edit_type'                 => $editType,
             'fulfilment_transaction_id' => $this->fulfilment_transaction_id,
             // 'description'        => $description,
-            'description'         => [
-                'model' => $desc_model,
-                'title' => $desc_title,
-                'route' => $desc_route,
+            'description'               => [
+                'model'       => $desc_model,
+                'title'       => $desc_title,
+                'route'       => $desc_route,
                 'after_title' => $desc_after_title,
             ]
 
