@@ -346,7 +346,7 @@ const onClickGetStarted = () => {
                                     <span class="text-2xl font-semibold">${{ item.price }}</span>
 
                                     <div class="p-1" style="border-radius: 30px">
-                                        <div class="flex items-center gap-2 justify-center py-1 px-2" style="border-radius: 30px; box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.06)">
+                                        <div class="flex items-center gap-2 justify-center py-1 px-2" style="border-radius: 30px; box-shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.06)">
                                             <span class="font-medium text-sm">{{ item.rating || 0 }}</span>
                                             <!-- <i class="pi pi-star-fill "></i> -->
                                             <FontAwesomeIcon v-if="item.rating > 0" icon='fas fa-star' class='text-yellow-500' fixed-width aria-hidden='true' />

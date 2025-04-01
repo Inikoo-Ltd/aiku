@@ -103,8 +103,8 @@ const currentStateX = ref(false)
     font-size: 0.875rem;
     border: 1px solid transparent;
     background-color: transparent;
-    border-radius: 0px;
-    box-shadow: 0px;
+    border-radius: 0;
+    box-shadow: 0;
     text-align: center;
 }
 

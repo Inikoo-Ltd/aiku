@@ -151,7 +151,7 @@ onMounted(() => {
   cursor: pointer;
   clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
   transition: background 0.3s;
-  box-shadow: 0px 4px 0px #4F46E5; /* Efek agar menyatu dengan border */
+  box-shadow: 0 4px 0px #4F46E5; /* Efek agar menyatu dengan border */
   border: none;
 }
 

@@ -193,7 +193,7 @@ $luigiColor3: #e87928;
 }
 
 .luigi-ac-heromobile .luigi-ac-first-main .luigi-ac-text {
-    padding-top: 0px !important;
+    padding-top: 0 !important;
 }
 
 .luigi-ac-heromobile .luigi-ac-name {
@@ -336,7 +336,7 @@ $luigiColor3: #e87928;
 
 .lb-search .lb-result__action-item {
     width: 100% !important;
-    margin: 0px !important
+    margin: 0 !important
 }
 
 .lb-search-text-color-primary-clickable {

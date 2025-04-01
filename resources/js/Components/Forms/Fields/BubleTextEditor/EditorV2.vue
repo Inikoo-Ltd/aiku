@@ -718,10 +718,10 @@ defineExpose({
 
 .editor-class p {
     display: block;
-    margin-block-start: 0em;
-    margin-block-end: 0em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
     unicode-bidi: isolate;
 }
 
@@ -739,10 +739,10 @@ defineExpose({
 
 :deep(.editor-class p) {
     display: block;
-    margin-block-start: 0em;
-    margin-block-end: 0em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
     unicode-bidi: isolate;
 }
 
@@ -810,7 +810,7 @@ defineExpose({
 }
 
 :deep(.ProseMirror h3) {
-    margin-block-end: 0em;
+    margin-block-end: 0;
 }
 
 /* :deep(.ProseMirror img) {
