@@ -37,7 +37,7 @@ class StoreEmailOngoingRun extends OrgAction
         data_set($modelData, 'code', $outbox->code->value);
 
 
-        $emailOngoingRun = DB::transaction(function () use ($outbox, $modelData) {
+        return DB::transaction(function () use ($outbox, $modelData) {
             /** @var EmailOngoingRun $emailOngoingRun */
             $emailOngoingRun = $outbox->emailOngoingRun()->create($modelData);
             $emailOngoingRun->stats()->create();
@@ -45,8 +45,6 @@ class StoreEmailOngoingRun extends OrgAction
 
             return $emailOngoingRun;
         });
-
-        return $emailOngoingRun;
     }
 
     public function authorize(ActionRequest $request): bool

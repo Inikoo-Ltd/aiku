@@ -12,25 +12,19 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\OrgPaymentServiceProvider;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrgPaymentServiceProviderHydratePaymentAccounts
+class OrgPaymentServiceProviderHydratePaymentAccounts implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private OrgPaymentServiceProvider $orgPaymentServiceProvider;
-
-    public function __construct(OrgPaymentServiceProvider $orgPaymentServiceProvider)
+    public function getJobUniqueId(OrgPaymentServiceProvider $orgPaymentServiceProvider): string
     {
-        $this->orgPaymentServiceProvider = $orgPaymentServiceProvider;
+        return $orgPaymentServiceProvider->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->orgPaymentServiceProvider->id))->dontRelease()];
-    }
 
     public function handle(OrgPaymentServiceProvider $orgPaymentServiceProvider): void
     {
@@ -49,7 +43,6 @@ class OrgPaymentServiceProviderHydratePaymentAccounts
                 }
             )
         );
-
 
 
         $orgPaymentServiceProvider->stats()->update($stats);

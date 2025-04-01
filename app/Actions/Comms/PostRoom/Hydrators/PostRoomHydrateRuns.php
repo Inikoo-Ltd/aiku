@@ -12,25 +12,20 @@ namespace App\Actions\Comms\PostRoom\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Comms\PostRoom;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PostRoomHydrateRuns
+class PostRoomHydrateRuns implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private PostRoom $postRoom;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(PostRoom $postRoom)
+    public function getJobUniqueId(PostRoom $postRoom): string
     {
-        $this->postRoom = $postRoom;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->postRoom->id))->dontRelease()];
+        return $postRoom->id;
     }
 
     public function handle(PostRoom $postRoom): void

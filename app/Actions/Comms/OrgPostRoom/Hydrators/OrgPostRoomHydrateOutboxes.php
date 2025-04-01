@@ -15,24 +15,17 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrgPostRoomHydrateOutboxes
+class OrgPostRoomHydrateOutboxes implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private OrgPostRoom $orgPostRoom;
-
-    public function __construct(OrgPostRoom $orgPostRoom)
+    public function getJobUniqueId(OrgPostRoom $orgPostRoom): string
     {
-        $this->orgPostRoom = $orgPostRoom;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->orgPostRoom->id))->dontRelease()];
+        return $orgPostRoom->id;
     }
 
     public function handle(OrgPostRoom $orgPostRoom): void

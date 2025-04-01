@@ -11,25 +11,21 @@ namespace App\Actions\Comms\PostRoom\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Comms\PostRoom;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PostRoomHydrateIntervals
+class PostRoomHydrateIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private PostRoom $postRoom;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(PostRoom $postRoom)
+    public function getJobUniqueId(PostRoom $postRoom): string
     {
-        $this->postRoom = $postRoom;
+        return $postRoom->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->postRoom->id))->dontRelease()];
-    }
 
     public function handle(PostRoom $postRoom): void
     {
@@ -44,7 +40,7 @@ class PostRoomHydrateIntervals
         $allKeys = [];
         foreach ($metrics as $metric) {
             foreach (array_merge($timeFrames, $timeFramesLastYear) as $frame) {
-                $allKeys[] = "{$metric}_{$frame}";
+                $allKeys[] = "{$metric}_$frame";
             }
         }
 

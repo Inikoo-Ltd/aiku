@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotes;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -52,7 +52,7 @@ class StoreDeliveryNoteItem extends OrgAction
         }
 
         if ($deliveryNoteItem->transaction_id and $deliveryNoteItem->transaction->asset) {
-            AssetHydrateDeliveryNotes::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
+            AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
         }
 
 

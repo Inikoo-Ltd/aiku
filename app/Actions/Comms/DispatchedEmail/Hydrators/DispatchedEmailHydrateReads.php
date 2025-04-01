@@ -19,13 +19,12 @@ class DispatchedEmailHydrateReads implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(DispatchedEmail $dispatchedEmail): string
     {
         return $dispatchedEmail->id;
     }
-
-    public string $jobQueue = 'low-priority';
-
 
     public function handle(DispatchedEmail $dispatchedEmail): void
     {
