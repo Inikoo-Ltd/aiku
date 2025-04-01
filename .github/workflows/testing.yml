@@ -68,4 +68,4 @@ jobs:
           verbose: true
       - name: Upload coverage to Codacy
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh)
+        run: export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}; bash <(curl -Ls https://coverage.codacy.com/get.sh)
