@@ -197,13 +197,6 @@ class ShowRecurringBill extends OrgAction
                         'scope'      => $recurringBill->slug
                     ]
                 ],
-                'physical_good_list_route' => [
-                    'name'       => 'grp.json.fulfilment.recurring-bill.physical-goods.index',
-                    'parameters' => [
-                        'fulfilment' => $recurringBill->fulfilment->slug,
-                        'scope'      => $recurringBill->slug
-                    ]
-                ],
                 'pallet_list_route' => [
                     'name'       => 'grp.json.fulfilment-customer.storing-pallets.index',
                     'parameters' => [
@@ -263,7 +256,7 @@ class ShowRecurringBill extends OrgAction
 
                 [
                     [
-                        'label'       => __('Pallets'),
+                        'label'       => __('Rentals'),
                         'price_base'  => __('Multiple'),
                         'price_total' => $recurringBill->rental_amount
                     ],
