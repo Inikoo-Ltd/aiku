@@ -870,4 +870,5 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(DispatchedEmail::class);
     }
 
+
 }

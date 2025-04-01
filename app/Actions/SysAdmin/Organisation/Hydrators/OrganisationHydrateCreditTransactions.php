@@ -10,22 +10,18 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateCreditTransactions
+class OrganisationHydrateCreditTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
-    private Organisation $organisation;
-    public function __construct(Organisation $organisation)
-    {
-        $this->organisation = $organisation;
-    }
 
-    public function getJobMiddleware(): array
+
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $organisation->id;
     }
 
     public function handle(Organisation $organisation): void
