@@ -5,27 +5,21 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'
-
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-
-
-import { Pallet, PalletDelivery } from '@/types/Pallet'
+import { PalletDelivery } from '@/types/Pallet'
 import { routeType } from "@/types/route"
-
 import { faStickyNote, faCheckCircle as falCheckCircle, faUndo, faArrowToLeft, faTrashAlt } from '@fal'
 import { faCheckCircle } from '@fad'
 import { faPlus, faMinus, faStar } from '@fas'
-import { reactive, ref } from 'vue'
 import { Table as TableTS } from '@/types/Table'
 import TableStoredItemAuditDeltas from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemAuditDeltas.vue'
 import TableEditStoredItemAuditDeltas from '@/Components/Tables/Grp/Org/Fulfilment/TableEditStoredItemAuditDeltas.vue'
-// import QuantityInput from '@/Components/Utils/QuantityInput.vue'
 library.add(faStickyNote, faPlus, faMinus, falCheckCircle, faUndo, faArrowToLeft, faTrashAlt, faCheckCircle, faStar)
 
 const props = defineProps<{
@@ -52,14 +46,7 @@ const props = defineProps<{
         delete: routeType  // Delete stored items
     }
 }>()
-console.log(props)
 
-
-
-
-
-
-const currentStateX = ref(false)
 </script>
 
 <template>

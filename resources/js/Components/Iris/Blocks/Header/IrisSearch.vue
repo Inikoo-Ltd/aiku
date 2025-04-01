@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
-import { router } from '@inertiajs/vue3'
 
 // import 'https://cdn.luigisbox.com/autocomplete.js'  // For autocomplete
 

@@ -18,10 +18,6 @@ import EditorMenu from '@/Components/Pure/Supports/EditorMenu.vue'
 import Placeholder from '@tiptap/extension-placeholder'
 import FontFamily from '@tiptap/extension-font-family'
 import "@/../css/Iris/blockTextContent.css"
-
-
-import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faText, faUndoAlt, faRedoAlt } from '@far'
 import { faHorizontalRule, faQuoteRight, faMarker } from '@fas'

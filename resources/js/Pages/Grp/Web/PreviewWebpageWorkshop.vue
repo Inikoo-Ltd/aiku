@@ -6,16 +6,15 @@
 
 <script setup lang="ts">
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { ref, onMounted, toRaw } from "vue"
+import { ref, onMounted } from "vue"
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faSendBackward, faTrash, faBringForward, faTractor, faTrashAlt  } from "@fas"
+import { faSendBackward, faBringForward, faTrashAlt  } from "@fas"
 import { useConfirm } from "primevue/useconfirm";
 import "@/../css/Iris/editor.css"
-
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { trans } from "laravel-vue-i18n"
 const confirm = useConfirm();

@@ -7,14 +7,12 @@ import InputText from 'primevue/inputtext'
 import SelectButton from 'primevue/selectbutton'
 import DataView from 'primevue/dataview'
 import IconField from 'primevue/iconfield'
-import Rating from 'primevue/rating'
 import { FilterMatchMode } from '@primevue/core/api'
 import { onMounted, ref } from 'vue'
 import { useLocaleStore } from '@/Stores/locale'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
-import axios from 'axios'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -22,12 +20,12 @@ import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
 import { faStar } from '@fas'
 import Select from 'primevue/select'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue'
 import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
 import {capitalize} from "@/Composables/capitalize";
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
+import error from "@/Pages/Iris/Errors/Error.vue";
 
 library.add(faSearch, faThLarge, faListUl, faStar, falStar)
 

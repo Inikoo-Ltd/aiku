@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-// import BoxNote from "@/Components/Pallet/BoxNote.vue"
-// import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'
-
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-
-import { Pallet, PalletDelivery } from '@/types/Pallet'
 import { routeType } from "@/types/route"
-
 import { faStickyNote, faCheck, faCheckCircle as falCheckCircle, faUndo, faArrowToLeft, faTrashAlt, faUndoAlt, faArrowAltToLeft } from '@fal'
 import { faCheckCircle } from '@fad'
 import { faEdit } from '@far'
@@ -18,7 +12,6 @@ import { faPlus, faMinus, faStar, faCheckCircle as fasCheckCircle } from '@fas'
 import { reactive, ref } from 'vue'
 import { Table as TableTS } from '@/types/Table'
 import TableStoredItemAuditDeltas from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemAuditDeltas.vue'
-import TableEditStoredItemAuditDeltas from '@/Components/Tables/Grp/Org/Fulfilment/TableEditStoredItemAuditDeltas.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import DataTable from 'primevue/datatable'
@@ -32,7 +25,6 @@ import CreateStoredItems from '@/Components/CreateStoredItems.vue'
 import StoredItemsProperty from '@/Components/StoredItemsProperty.vue'
 import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'
 
-// import QuantityInput from '@/Components/Utils/QuantityInput.vue'
 library.add(faEdit, faStickyNote, faCheck, faPlus, faMinus, falCheckCircle, faUndo, faArrowToLeft, faTrashAlt, faUndoAlt, faArrowAltToLeft, faCheckCircle, faStar, fasCheckCircle)
 
 const props = defineProps<{

@@ -2,7 +2,6 @@
 import { getStyles } from '@/Composables/styles'
 import { FieldValue } from '@/types/Website/Website/footer1'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import { isObject } from 'lodash-es';
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -13,7 +12,7 @@ import Image from '@/Components/Image.vue'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faArrowSquareLeft, faFacebook, faWhatsapp)
 
-const props = defineProps<{
+defineProps<{
     fieldValue?: FieldValue,
     modelValue: FieldValue
 }>();
