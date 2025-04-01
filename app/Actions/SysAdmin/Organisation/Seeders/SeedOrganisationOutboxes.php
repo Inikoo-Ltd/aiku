@@ -35,11 +35,6 @@ class SeedOrganisationOutboxes
 
                     $orgPostRoom = $postRoom->orgPostRooms()->where('organisation_id', $organisation->id)->first();
 
-                    if (is_null($orgPostRoom)) {
-                        dd($organisation->code);
-                    }
-
-
                     if ($outbox = $organisation->outboxes()->where('code', $case)->first()) {
                         UpdateOutbox::make()->action(
                             $outbox,

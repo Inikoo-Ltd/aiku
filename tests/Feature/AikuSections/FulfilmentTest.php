@@ -3197,8 +3197,7 @@ test('create stored item audit delta', function (StoredItemAudit $storedItemAudi
     expect($storedItemAudit)->toBeInstanceOf(StoredItemAudit::class)
         ->and($storedItemAudit->number_audited_stored_items)->toBe(1)
         ->and($storedItemAuditDelta)->toBeInstanceOf(StoredItemAuditDelta::class)
-        ->and(intval($storedItemAuditDelta->audited_quantity))->toBe(15);
-
+        ->and((int) $storedItemAuditDelta->audited_quantity)->toBe(15);
     return $storedItemAuditDelta;
 })->depends('update stored item audit');
 

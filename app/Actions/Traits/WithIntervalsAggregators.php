@@ -20,12 +20,11 @@ trait WithIntervalsAggregators
         $stats = array_merge($stats, $this->getLastYearIntervalStats($queryBase, $statField, $dateField, $sumField, $intervals));
 
 
-
-        if (is_null($doPreviousPeriods) or in_array('previous_years', $doPreviousPeriods)) {
+        if ($doPreviousPeriods === null or in_array('previous_years', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousYearsIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
 
-        if (is_null($doPreviousPeriods) or in_array('previous_quarters', $doPreviousPeriods)) {
+        if ($doPreviousPeriods === null or in_array('previous_quarters', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousQuartersIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
 
@@ -43,7 +42,7 @@ trait WithIntervalsAggregators
 
 
         foreach (DateIntervalEnum::cases() as $interval) {
-            if (!is_null($intervals) && !in_array($interval, $intervals)) {
+            if ($intervals !== null && !in_array($interval, $intervals)) {
                 continue;
             }
 
@@ -70,7 +69,7 @@ trait WithIntervalsAggregators
                 continue;
             }
 
-            if (!is_null($intervals) && !in_array($interval, $intervals)) {
+            if ($intervals !== null && !in_array($interval, $intervals)) {
                 continue;
             }
 

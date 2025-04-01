@@ -128,13 +128,12 @@ class FetchAuroraCustomer extends FetchAurora
             if (in_array($this->auroraModelData->{'Customer Name'}, ['Ancient Wisdom Marketing Ltd', 'Ancient Wisdom', 'Ancient Wisdom Marketing Ltd.'])) {
                 $AsOrganisation = Organisation::where('slug', 'aw')->first();
             } elseif ($this->auroraModelData->{'Customer Name'} == 'Ancient Wisdom s.r.o.') {
-
                 $AsOrganisation = Organisation::where('slug', 'sk')->first();
             } elseif (in_array($this->auroraModelData->{'Customer Name'}, ['AW Artisan S.L', 'AW Artisan S. L', 'AW-REGALOS SL', 'AW Artisan S.L.'])) {
                 $AsOrganisation = Organisation::where('slug', 'es')->first();
-            } elseif (in_array($this->auroraModelData->{'Customer Name'}, ['AW Aromatics Ltd','AW Aromatics'])) {
+            } elseif (in_array($this->auroraModelData->{'Customer Name'}, ['AW Aromatics Ltd', 'AW Aromatics'])) {
                 $AsOrganisation = Organisation::where('slug', 'aroma')->first();
-            } elseif (in_array($this->auroraModelData->{'Customer Name'}, ['aw China', 'Yiwu Saikun Import And EXPORT CO., Ltd','Yiwu Saikun Import And Export CO., Ltd'])) {
+            } elseif (in_array($this->auroraModelData->{'Customer Name'}, ['aw China', 'Yiwu Saikun Import And EXPORT CO., Ltd', 'Yiwu Saikun Import And Export CO., Ltd'])) {
                 $AsOrganisation = Organisation::where('slug', 'china')->first();
             }
 
@@ -244,7 +243,7 @@ class FetchAuroraCustomer extends FetchAurora
 
     protected function cleanName($name): string
     {
-        if (is_null($name)) {
+        if ($name === null) {
             return '';
         }
 

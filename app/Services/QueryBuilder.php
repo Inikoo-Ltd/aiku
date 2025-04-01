@@ -176,7 +176,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $allowedColumns = array_merge($allowedColumns, ['created_at', 'updated_at']);
         $argumentName   = ($prefix ? $prefix.'_' : '').'between';
 
-        $filters = request()->input($argumentName, []);
+        $filters  = request()->input($argumentName, []);
         $timezone = request()->header('X-Timezone');
 
         foreach ($allowedColumns as $column) {
@@ -195,7 +195,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->toDateTimeString();
 
                     $end = Carbon::createFromFormat('Ymd H:i:s', $end, $timezone)
-                    ->setTimezone('UTC')
+                        ->setTimezone('UTC')
                         ->toDateTimeString();
 
                     $this->whereBetween("$table.$column", [$start, $end]);
@@ -210,12 +210,12 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     public function withPaginator($prefix, int $numberOfRecords = null, $tableName = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $argumentName = ($prefix ? $prefix.'_' : '').'perPage';
-        if (is_null($numberOfRecords) and request()->has($argumentName)) {
+        if ($numberOfRecords === null and request()->has($argumentName)) {
             $numberOfRecords = (int)request()->input($argumentName);
         }
 
-        $userId = auth()->user()->id ?? null;
-        $keyRppCache = $tableName ? "ui_state-user:{$userId};rrp-table:".($prefix ? "{$prefix}." : "")."{$tableName}" : null;
+        $userId      = auth()->user()->id ?? null;
+        $keyRppCache = $tableName ? "ui_state-user:$userId;rrp-table:".($prefix ? "$prefix." : "")."$tableName" : null;
 
         if ($numberOfRecords) {
             $perPage = $numberOfRecords;
@@ -236,7 +236,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
 
         if ($tableName && $userId) {
-            Cache::put($keyRppCache, $perPage, now()->addMonth(6));
+            Cache::put($keyRppCache, $perPage, 60 * 60 * 24 * 180); // 6 months in seconds
         }
 
         return $this->paginate(

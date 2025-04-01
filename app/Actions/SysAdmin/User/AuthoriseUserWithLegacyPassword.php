@@ -18,7 +18,8 @@ class AuthoriseUserWithLegacyPassword
 
     public function handle(User $user, array $credentials): bool
     {
-        if (is_null($plain = $credentials['password'])) {
+        $plain = $credentials['password'] ?? null;
+        if ($plain === null) {
             return false;
         }
 
@@ -31,14 +32,13 @@ class AuthoriseUserWithLegacyPassword
         }
 
 
-
         if (hash('sha256', $plain) == $user->legacy_password) {
             UpdateUser::run(
                 $user,
                 [
-                    'password'        => $plain,
+                    'password' => $plain,
                     'legacy_password' => null,
-                    'auth_type'       => UserAuthTypeEnum::DEFAULT
+                    'auth_type' => UserAuthTypeEnum::DEFAULT
                 ]
             );
 
