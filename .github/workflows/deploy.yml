@@ -63,7 +63,7 @@ jobs:
           tag: ${{ steps.semver.outputs.next }}
           token: ${{ github.token }}
       - name: New Relic Application Deployment Marker
-        uses: newrelic/deployment-marker-action@v2.3.0
+        uses: newrelic/deployment-marker-action@v2.5.1
         with:
           apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
           guid: aiku
