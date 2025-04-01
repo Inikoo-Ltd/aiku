@@ -16,25 +16,18 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Asset;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateDeliveryNotesStats
+class AssetHydrateDeliveryNotesStats implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-    private Asset $asset;
-
-    public function __construct(Asset $asset)
+    public function getJobUniqueId(Asset $asset): string
     {
-        $this->asset = $asset;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->asset->id))->dontRelease()];
+        return $asset->id;
     }
 
     public function handle(Asset $asset): void

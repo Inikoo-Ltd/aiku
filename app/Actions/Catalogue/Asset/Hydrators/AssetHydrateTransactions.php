@@ -15,24 +15,19 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Asset;
 use App\Models\Ordering\Transaction;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateTransactions
+class AssetHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Asset $asset;
+    public string $jobQueue = 'sales';
 
-    public function __construct(Asset $asset)
+    public function getJobUniqueId(Asset $asset): string
     {
-        $this->asset = $asset;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->asset->id))->dontRelease()];
+        return $asset->id;
     }
 
     public function handle(Asset $asset): void

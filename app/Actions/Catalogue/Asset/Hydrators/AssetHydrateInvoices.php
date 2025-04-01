@@ -21,6 +21,8 @@ class AssetHydrateInvoices implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateIntervals;
 
+    public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(Asset $asset): string
     {
         return $asset->id;
