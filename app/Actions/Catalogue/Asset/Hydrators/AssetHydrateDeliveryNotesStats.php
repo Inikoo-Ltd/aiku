@@ -30,6 +30,8 @@ class AssetHydrateDeliveryNotesStats implements ShouldBeUnique
         return $asset->id;
     }
 
+    public string $jobQueue = 'sales';
+
     public function handle(Asset $asset): void
     {
         $deliveryNotes = $asset->transactions()
