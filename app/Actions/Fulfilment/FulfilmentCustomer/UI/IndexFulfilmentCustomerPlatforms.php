@@ -91,7 +91,7 @@ class IndexFulfilmentCustomerPlatforms extends OrgAction
                             'style'   => 'create',
                             'tooltip' => __('New Channel'),
                             'label'   => __('New Channel'),
-                            'key'     => 'newChannel',
+                            'key'     => 'new-channel',
                         ],
                     ],
 
