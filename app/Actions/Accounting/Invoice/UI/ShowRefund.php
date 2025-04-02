@@ -202,7 +202,7 @@ class ShowRefund extends OrgAction
 
 
             'order_summary' => [
-                [
+                array_filter([
                     $refund->shop->fulfilment || $refund->services_amount > 0 ? [
                         'label'       => __('Services'),
                         'price_total' => $refund->services_amount
@@ -217,7 +217,7 @@ class ShowRefund extends OrgAction
                         'label'       => __('Rentals'),
                         'price_total' => $refund->rental_amount
                     ] : [],
-                ],
+                ]),
                 [
                     [
                         'label'       => __('Tax'),
