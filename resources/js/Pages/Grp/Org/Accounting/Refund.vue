@@ -120,7 +120,7 @@ const props = defineProps<{
     group: {}
   }
 }>();
-
+console.log('aaa',props)
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
@@ -219,6 +219,10 @@ const onSubmitPayment = () => {
     } catch (error: unknown) {
         errorPaymentMethod.value = error
     }
+}
+
+const onPayInOnClick = () => {
+    handleTabUpdate('payments')
 }
 
 watch(paymentData, () => {
@@ -357,11 +361,11 @@ watch(paymentData, () => {
           </dd>
         </div>
 
-        <InvoiceRefundPay :invoice_pay :routes="{
+        <InvoiceRefundPay v-if="invoice_refund?.in_process" :invoice_pay :routes="{
           submit_route: invoice_pay.routes.submit_payment,
           fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
           payments : invoice_pay.routes.payments
-        }" />
+        }"  @onPayInOnClick="onPayInOnClick" />
       </div>
     </BoxStatPallet>
 

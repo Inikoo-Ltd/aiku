@@ -360,7 +360,7 @@ console.log(props.invoice_pay.total_need_to_refund_in_payment_method, props.invo
             <!-- Pay in -->
             <div class="border-b border-gray-400">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium secondaryLink" @click="()=>emits('onPayInOnClick')">Pay in</dt>
+                    <dt class="text-sm/6 font-medium secondaryLink" :style="{padding : 0}" @click="()=>emits('onPayInOnClick')">Payed in</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_in))}}
                     </dd>
@@ -368,7 +368,7 @@ console.log(props.invoice_pay.total_need_to_refund_in_payment_method, props.invo
                 <!-- Pay out -->
                 <div v-if="Number(invoice_pay.total_refunds) < 0"
                     class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium ">Pay back</dt>
+                    <dt class="text-sm/6 font-medium">Payed back</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', Number(invoice_pay.total_paid_out))}}
                     </dd>

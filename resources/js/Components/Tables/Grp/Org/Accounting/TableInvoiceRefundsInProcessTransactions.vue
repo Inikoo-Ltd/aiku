@@ -82,19 +82,7 @@ const localeCode = navigator.language
             </template>
 
             <template #cell(action)="{ item, proxyItem }">
-                <!-- <pre>{{ item.data }}</pre> -->
-                <!-- <pre>new: {{ item.new_refund_amount }}</pre>
-                ------<br> -->
-                <!-- <Button
-                    v-if="!item.in_process"
-                    @click="onClickRefund(item.refund_route, item.code)"
-                    :label="trans('Refund')"
-                    icon="fal fa-plus"
-                    type="secondary"
-                    :loading="isLoading.includes(item.code)"
-                /> -->
-                <div class="space-x-2 w-[350px]">
-                    <!-- <Tag v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" :label="locale.currencyFormat(item.currency_code, item.refund_net_amount)" noHoverColor :theme="3" size="sm" /> -->
+                <!-- <div class="space-x-2 w-[350px]">
                     <div v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" class="w-fit font-semibold">
                         {{ locale.currencyFormat(item.currency_code, item.refund_net_amount) }}
                     </div>
@@ -123,13 +111,12 @@ const localeCode = navigator.language
                             :type="get(proxyItem, 'refund_type', null) == 'partial' ? 'gray' : 'tertiary'"
                         />
                     </template>
-                </div>
+                </div> -->
 
-                <!-- {{ item.net_amount }} -->
 
-                <template v-if="(item.refund_net_amount != item.net_amount) ">
-                    <Transition name="slide-to-left">
-                        <div v-show="get(proxyItem, 'refund_type', null) == 'partial' || get(proxyItem, ['refund_net_amount'], 0)" class="w-fit flex items-center gap-x-1 mt-2">
+            
+
+                        <div class="w-fit flex items-center gap-x-1 mt-2">
                             <div>
                                 <InputNumber
                                     :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
@@ -137,7 +124,7 @@ const localeCode = navigator.language
                                     @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
                                     :class="get(proxyItem, ['new_refund_amount'], null) > item.net_amount ? 'errorShake' : ''"
                                     inputClass="width-12"
-                                    :max="Number(item.net_amount) - Number(item.refund_net_amount) - Number(item.total_last_refund)"
+                                    :max="Number(item.net_amount)"
                                     :min="0"
                                     placeholder="0"
                                     mode="currency"
@@ -172,16 +159,8 @@ const localeCode = navigator.language
                             />
                             <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                         </div>
-                    </Transition>
-                    <!-- <pre>{{ proxyItem }}</pre> -->
-                </template>
                 
-                <!-- <ButtonWithLink
-                    v-else
-                    :routeTarget="item.delete_route"
-                    type="delete"
-                /> -->
-                <!-- <pre>{{ props }}</pre> -->
+              
             </template>
         </Table>
     </div>
