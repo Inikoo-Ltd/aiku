@@ -200,20 +200,23 @@ class ShowRefund extends OrgAction
                 'navigation' => $refund->in_process ? RefundInProcessTabsEnum::navigation() : RefundTabsEnum::navigation()
             ],
 
+
             'order_summary' => [
                 [
-                    [
+                    $refund->shop->fulfilment || $refund->services_amount > 0 ? [
                         'label'       => __('Services'),
                         'price_total' => $refund->services_amount
-                    ],
+                    ] : [],
+
                     [
                         'label'       => __('Physical Goods'),
                         'price_total' => $refund->goods_amount
                     ],
-                    [
-                        'label'       => __('Rental'),
+
+                    $refund->shop->fulfilment || $refund->rental_amount > 0 ? [
+                        'label'       => __('Rentals'),
                         'price_total' => $refund->rental_amount
-                    ],
+                    ] : [],
                 ],
                 [
                     [
