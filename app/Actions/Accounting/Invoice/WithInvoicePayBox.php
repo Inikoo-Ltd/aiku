@@ -61,7 +61,7 @@ trait WithInvoicePayBox
 
         if ($totalNeedToPay <= 0) {
             if ($totalNeedToRefund < 0) {
-                $totalNeedToPay = $totalNeedToRefund + $invoice->payment_amount;
+                $totalNeedToPay = $totalNeedToRefund;
 
                 if (abs($totalNeedToPay) > $invoice->payment_amount) {
                     $totalNeedToPay = $invoice->payment_amount * -1;
