@@ -44,7 +44,7 @@ class PayInvoice extends OrgAction
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
 
             // payback refund
-            if ($amount > $needRefund) {
+            if ($needRefund > 0 && $amount > $needRefund) {
                 if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
                     RefundToCredit::make()->action($invoice, [
                         'amount' => $needRefund,
