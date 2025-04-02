@@ -243,6 +243,8 @@ class ShowRefund extends OrgAction
 
         ];
 
+        // dd($refund->in_process);
+
         if ($refund->in_process) {
             $props = array_merge(
                 $props,
