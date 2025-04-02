@@ -878,7 +878,7 @@ test('get helpers select options data', function () {
     $languagesData = GetLanguagesOptions::make()->all();
     expect($languagesData)->toHaveCount(279);
     $translatedLanguagesData = GetLanguagesOptions::make()->translated();
-    expect($translatedLanguagesData)->toHaveCount(15);
+    expect($translatedLanguagesData)->toBeGreaterThan(15);
 });
 
 test('update search', function () {

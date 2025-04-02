@@ -11,28 +11,20 @@ namespace App\Actions\Comms\Outbox\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateIntervals;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use App\Models\Comms\Outbox;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OutboxHydrateIntervals
+class OutboxHydrateIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithHydrateIntervals;
 
-    private Outbox $outbox;
-
-    public function __construct(Outbox $outbox)
+    public function getJobUniqueId(Outbox $outbox): string
     {
-        $this->outbox = $outbox;
+        return $outbox->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->outbox->id))->dontRelease()];
-    }
-
 
     public function handle(Outbox $outbox): void
     {

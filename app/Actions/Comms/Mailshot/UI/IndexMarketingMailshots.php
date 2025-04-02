@@ -40,7 +40,7 @@ class IndexMarketingMailshots extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('mailshots.state', '~*', "\y$value\y")
+                $query->where('mailshots.state', $value)
                 ->orWhereWith('mailshots.subject', $value);
             });
         });

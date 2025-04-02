@@ -99,9 +99,9 @@ class GetRetinaFulfilmentHomeData
             ] : false,
             [
                 'type'    => 'button',
-                'style'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? 'create' : 'gray',
-                'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
-                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Make a new dispatch from your stock') : __('This service is available if you have stock to dispatch'),
+                'style'   => $fulfilmentCustomer->number_pallets_status_storing ? 'create' : 'gray',
+                'disabled' => $fulfilmentCustomer->number_pallets_status_storing ? false : true,
+                'tooltip' => $fulfilmentCustomer->number_pallets_status_storing ? __('Make a new dispatch from your stock') : __('This service is available if you have stock to dispatch'),
                 'label'   => __('New Dispatch'),
                 'route'   => [
                     'method'     => 'post',

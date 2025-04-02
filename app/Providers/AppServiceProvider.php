@@ -122,6 +122,8 @@ class AppServiceProvider extends ServiceProvider
                 'MovementPallet'                => 'App\Models\Fulfilment\MovementPallet',
                 'RentalAgreement'               => 'App\Models\Fulfilment\RentalAgreement',
                 'RecurringBill'                 => 'App\Models\Fulfilment\RecurringBill',
+                'Space'                         => 'App\Models\Fulfilment\Space',
+
 
                 // Goods
                 'Ingredient'                    => 'App\Models\Goods\Ingredient',

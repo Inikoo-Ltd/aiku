@@ -7,14 +7,12 @@ import InputText from 'primevue/inputtext'
 import SelectButton from 'primevue/selectbutton'
 import DataView from 'primevue/dataview'
 import IconField from 'primevue/iconfield'
-import Rating from 'primevue/rating'
 import { FilterMatchMode } from '@primevue/core/api'
 import { onMounted, ref } from 'vue'
 import { useLocaleStore } from '@/Stores/locale'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
-import axios from 'axios'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -22,7 +20,6 @@ import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
 import { faStar } from '@fas'
 import Select from 'primevue/select'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Image from '@/Components/Image.vue'
 import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
 import {capitalize} from "@/Composables/capitalize";
@@ -346,7 +343,7 @@ const onClickGetStarted = () => {
                                     <span class="text-2xl font-semibold">${{ item.price }}</span>
 
                                     <div class="p-1" style="border-radius: 30px">
-                                        <div class="flex items-center gap-2 justify-center py-1 px-2" style="border-radius: 30px; box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.06)">
+                                        <div class="flex items-center gap-2 justify-center py-1 px-2" style="border-radius: 30px; box-shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.06)">
                                             <span class="font-medium text-sm">{{ item.rating || 0 }}</span>
                                             <!-- <i class="pi pi-star-fill "></i> -->
                                             <FontAwesomeIcon v-if="item.rating > 0" icon='fas fa-star' class='text-yellow-500' fixed-width aria-hidden='true' />

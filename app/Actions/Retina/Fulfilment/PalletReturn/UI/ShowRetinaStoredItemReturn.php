@@ -184,7 +184,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('goods return'),
+                'title'       => __('goods out'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -200,7 +200,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'     => __('goods return'),
+                    'model'     => __('goods out'),
                     'actions'   => $actions
                 ],
 
@@ -362,7 +362,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                                 'price_total'   => $palletReturn->net_amount
                             ],
                             [
-                                'label'         => __('Tax').' '.$palletReturn->taxCategory->rate * 100 . '%',
+                                'label'         => __('Tax'),
                                 'information'   => '',
                                 'price_total'   => $palletReturn->tax_amount
                             ],
@@ -373,7 +373,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                                 'price_total'   => $palletReturn->net_amount
                             ],
                             [
-                                'label'         => __('Tax').' '.$palletReturn->taxCategory->rate * 100 . '%',
+                                'label'         => __('Tax'),
                                 'information'   => '',
                                 'price_total'   => $palletReturn->tax_amount
                             ],
@@ -491,7 +491,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('goods returns')
+                            'label' => __('goods out')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

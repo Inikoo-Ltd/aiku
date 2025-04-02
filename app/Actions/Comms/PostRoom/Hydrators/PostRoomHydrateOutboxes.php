@@ -13,26 +13,20 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PostRoomHydrateOutboxes
+class PostRoomHydrateOutboxes implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private PostRoom $postRoom;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(PostRoom $postRoom)
+    public function getJobUniqueId(PostRoom $postRoom): string
     {
-        $this->postRoom = $postRoom;
+        return $postRoom->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->postRoom->id))->dontRelease()];
-    }
-
     public function handle(PostRoom $postRoom): void
     {
         $stats = [

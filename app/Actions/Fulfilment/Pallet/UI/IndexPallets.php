@@ -13,14 +13,12 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
-use App\Http\Resources\Fulfilment\MayaPalletResource;
 use App\Http\Resources\Fulfilment\MayaPalletsResource;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Location;
-use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -79,7 +77,7 @@ class IndexPallets extends OrgAction
 
         if ($parent instanceof Group) {
             $query->where('pallets.group_id', $parent->id);
-        } elseif($parent instanceof Location) {
+        } elseif ($parent instanceof Location) {
             $query->where('pallets.location_id', $parent->id);
         } else {
             $query->where('pallets.fulfilment_id', $parent->id);

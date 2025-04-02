@@ -10,24 +10,20 @@ namespace App\Actions\Catalogue\Asset\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Asset;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateHistoricAssets
+class AssetHydrateHistoricAssets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Asset $asset;
 
-    public function __construct(Asset $asset)
+    public function getJobUniqueId(Asset $asset): string
     {
-        $this->asset = $asset;
+        return $asset->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->asset->id))->dontRelease()];
-    }
+
     public function handle(Asset $asset): void
     {
 

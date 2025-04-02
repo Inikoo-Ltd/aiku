@@ -154,6 +154,7 @@ const onAddMultiplePallet = (data: {route: routeType}, closedPopover: Function) 
             formMultiplePallet.reset('number_pallets','type')
             isLoading.value = false
             const index = deliveryListError.value?.indexOf('number_pallets');
+            handleTabUpdate('goods')
             if (index > -1) {
                 deliveryListError.value?.splice(index, 1);
             }  // Delete the error
@@ -443,7 +444,7 @@ const isModalUploadStoredItemOpen = ref(false)
 
         <!-- Button: Add multiple pallets -->
         <template #button-group-multiple="{ action }">
-            <Popover v-if="currentTab === 'goods'" position="-right-32" class="md:relative h-full" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
+            <Popover  position="-right-32" class="md:relative h-full" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
                 <template #button>
                     <Button
                         :style="action.style"
@@ -501,7 +502,7 @@ const isModalUploadStoredItemOpen = ref(false)
                     </div>
                 </template>
             </Popover>
-            <div v-else></div>
+            <!-- <div v-else></div> -->
         </template>
 
         <!-- Button: Add pallet (single) -->

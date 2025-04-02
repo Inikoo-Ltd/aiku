@@ -22,6 +22,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
@@ -145,6 +146,7 @@ class HydrateOrganisations extends HydrateModel
             //OrganisationHydrateOfferCampaigns::run($organisation);
             //OrganisationHydrateOffers::run($organisation);
             OrganisationHydrateOrderHandling::run($organisation);
+            OrganisationHydrateMailshots::run($organisation);
 
         }
 

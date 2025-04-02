@@ -55,11 +55,9 @@ class StoreInvoice extends OrgAction
      */
     public function handle(Customer|Order|RecurringBill $parent, array $modelData): Invoice
     {
-
         if (!Arr::has($modelData, 'footer')) {
             data_set($modelData, 'footer', $this->shop->invoice_footer);
         }
-
 
 
         if (!Arr::has($modelData, 'reference')) {
@@ -229,15 +227,15 @@ class StoreInvoice extends OrgAction
 
 
         if (!$this->strict) {
-            $rules['reference']          = [
+            $rules['reference']            = [
                 'required',
                 'max:64',
                 'string'
             ];
-            $rules['is_vip']             = ['sometimes', 'boolean'];
-            $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
-
+            $rules['is_vip']               = ['sometimes', 'boolean'];
+            $rules['as_organisation_id']   = ['sometimes', 'nullable', 'integer'];
+            $rules['as_employee_id']       = ['sometimes', 'nullable', 'integer'];
+            $rules['external_invoicer_id'] = ['sometimes', 'nullable', 'integer'];
 
             $rules['invoice_category_id']                = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']                    = ['sometimes', 'required', 'exists:tax_categories,id'];

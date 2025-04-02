@@ -34,16 +34,14 @@ class StartBookingPalletDelivery extends OrgAction
     {
         $modelData['booking_in_at'] = now();
         $modelData['state']         = PalletDeliveryStateEnum::BOOKING_IN;
-
-        foreach ($palletDelivery->pallets as $pallet) {
-            UpdatePallet::run($pallet, [
-                'state'         => PalletStateEnum::BOOKING_IN,
-                'status'        => PalletStatusEnum::RECEIVING,
-                'booking_in_at' => now()
-            ]);
-
-
-
+        if ($palletDelivery->pallets) {
+            foreach ($palletDelivery->pallets as $pallet) {
+                UpdatePallet::run($pallet, [
+                    'state'         => PalletStateEnum::BOOKING_IN,
+                    'status'        => PalletStatusEnum::RECEIVING,
+                    'booking_in_at' => now()
+                ]);
+            }
         }
 
         $palletDelivery = $this->update($palletDelivery, $modelData);

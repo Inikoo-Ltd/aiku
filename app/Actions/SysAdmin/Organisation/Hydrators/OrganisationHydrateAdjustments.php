@@ -12,25 +12,22 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Models\Ordering\Adjustment;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateAdjustments
+class OrganisationHydrateAdjustments implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Organisation $organisation;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(Organisation $organisation)
+
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
+        return $organisation->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
-    }
 
     public function handle(Organisation $organisation): void
     {

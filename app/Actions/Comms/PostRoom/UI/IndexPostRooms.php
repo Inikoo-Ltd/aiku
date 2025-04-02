@@ -29,8 +29,7 @@ class IndexPostRooms extends GrpAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('post_rooms.code', '~*', "\y$value\y")
-                    ->orWhere('post_rooms.data', '=', $value);
+                $query->whereStartWith('post_rooms.code', $value);
             });
         });
 

@@ -70,7 +70,7 @@ trait WithImport
     public function cleanRow(Collection $row): Collection
     {
         return $row->filter(function ($value, $key) {
-            return !(is_null($value) and is_numeric($key));
+            return !($value === null and is_numeric($key));
         });
     }
 

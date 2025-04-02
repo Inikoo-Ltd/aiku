@@ -28,7 +28,7 @@ class IndexTransactions extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('assets.code', '~*', "\y$value\y")
+                $query->whereStartWith('assets.code', $value)
                     ->orWhereStartWith('assets.name', $value);
             });
         });

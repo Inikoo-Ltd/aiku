@@ -8,28 +8,19 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
-use App\Actions\OrgAction;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\Customer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydratePortfolios extends OrgAction
+class CustomerHydratePortfolios implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-
-    protected Customer $customer;
-
-    public function __construct(Customer $customer)
+    public function getJobUniqueId(Customer $customer): string
     {
-        $this->customer = $customer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->customer->id))->dontRelease()];
+        return $customer->id;
     }
 
     public function handle(Customer $customer): void
@@ -38,8 +29,6 @@ class CustomerHydratePortfolios extends OrgAction
             'number_portfolios'         => $customer->portfolios()->count(),
             'number_current_portfolios' => $customer->portfolios()->where('status', true)->count(),
         ];
-
-
 
         $customer->stats->update($stats);
     }

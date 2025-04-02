@@ -19,14 +19,14 @@
     opacity: 0;
 }
 .headlessui-enter-to {
-    transform: translateY(0px);
+    transform: translateY(0);
     opacity: 100;
 }
 .headlessui-leave-active {
     transition: all 0.15s ease-in;
 }
 .headlessui-leave-from {
-    transform: translateY(0px);
+    transform: translateY(0);
     opacity: 100;
 }
 .headlessui-leave-to {

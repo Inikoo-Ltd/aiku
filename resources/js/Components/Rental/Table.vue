@@ -135,7 +135,7 @@ const showAll = () => {
 
             <template #content="{ close: closed }">
                 <div class="w-[200px]">
-                    <div class="text-xs my-2 font-medium">{{ trans('Discount(%)') }}: </div>
+                    <div class="text-xs my-2 font-medium">{{ trans('Discount (%)') }}: </div>
                     <PureInputNumber v-model="bulkDiscInput" autofocus placeholder="1-100"  :maxValue="100"
                         :suffix="true" :minValue="0" @onEnter="() => onBulkDiscount(closed)">
                         <template #suffix>

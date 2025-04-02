@@ -15,11 +15,13 @@ use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateDeliveryNotes implements ShouldBeUnique
+class AssetHydrateDeliveryNotesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateIntervals;
+
+    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(Asset $asset): string
     {

@@ -91,7 +91,6 @@ class IndexRetinaPalletUploads extends RetinaAction
                 ->withEmptyState(
                     [
                             'title'       => __("No upload records found"),
-                            'description' => __("♂️"),
                             'count'       => 0
                         ]
                 )

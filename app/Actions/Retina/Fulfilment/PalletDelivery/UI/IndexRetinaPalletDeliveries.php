@@ -70,6 +70,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
         $queryBuilder = QueryBuilder::for(PalletDelivery::class);
         $queryBuilder->where('pallet_deliveries.fulfilment_customer_id', $fulfilmentCustomer->id);
         $queryBuilder->leftJoin('pallet_delivery_stats', 'pallet_deliveries.id', '=', 'pallet_delivery_stats.pallet_delivery_id');
+        $queryBuilder->leftJoin('currencies', 'pallet_deliveries.currency_id', '=', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'pallet_deliveries.organisation_id', '=', 'pallet_deliveries.id')
         ->leftJoin('fulfilments', 'pallet_deliveries.fulfilment_id', '=', 'fulfilments.id')
         ->leftJoin('shops', 'fulfilments.shop_id', '=', 'shops.id');
@@ -86,18 +87,19 @@ class IndexRetinaPalletDeliveries extends RetinaAction
         $queryBuilder->select(
             'pallet_deliveries.id',
             'pallet_deliveries.reference',
+            'pallet_deliveries.slug',
             'pallet_deliveries.customer_reference',
             'pallet_delivery_stats.number_pallets',
             'pallet_deliveries.estimated_delivery_date',
             'pallet_deliveries.date',
             'pallet_deliveries.state',
             'pallet_deliveries.net_amount',
-            'pallet_deliveries.slug',
             'shops.name as shop_name',
             'shops.slug as shop_slug',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'fulfilments.slug as fulfilment_slug',
+            'currencies.code as currency_code',
         );
 
         return $queryBuilder
@@ -148,7 +150,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             $fulfilmentCustomer->pallets_storage ? [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('New Goods In'),
+                    'label' => __('New Storage or Service'),
                     'fullLoading'   => true,
                     'route' => [
                         'method'     => 'post',

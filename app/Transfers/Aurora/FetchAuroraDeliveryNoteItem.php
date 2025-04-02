@@ -48,11 +48,11 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
                 DeliveryNoteStateEnum::FINALISED => DeliveryNoteItemStateEnum::FINALISED,
                 default => null
             };
-            if (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
+            if ($state === null and $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
                 $state = DeliveryNoteItemStateEnum::OUT_OF_STOCK;
-            } elseif (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
+            } elseif ($state === null and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
                 $state = DeliveryNoteItemStateEnum::CANCELLED;
-            } elseif (is_null($state)) {
+            } elseif ($state === null) {
                 dd($this->auroraModelData, 'XX', $deliveryNote->state);
             }
         } else {

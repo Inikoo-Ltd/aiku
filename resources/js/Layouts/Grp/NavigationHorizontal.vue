@@ -218,7 +218,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 </Transition>
                 
                 <Transition name="spin-to-down">
-                    <FontAwesomeIcon v-if="currentNavigation()?.value.type === 'b2b'" icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Ecommerce')" />
+                    <FontAwesomeIcon v-if="currentNavigation()?.value.type === 'b2b'" icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('E-commerce')" />
                     <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'fulfilment'" icon="fal fa-hand-holding-box" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Fulfilment')" />
                     <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'dropshipping'" icon="fal fa-parachute-box " class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Dropshipping')" />
                     <FontAwesomeIcon v-else-if="currentNavigation()?.type === 'shop'" icon="fal fa-store-alt " class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Shop')" />
