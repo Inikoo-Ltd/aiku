@@ -9,7 +9,7 @@ import { capitalize } from "@/Composables/capitalize"
 const props = defineProps<{
     data:{}
     title: string
-    pageHead: PageHeadingTS
+    pageHead: object
     tabs: {
         current: string
         navigation: {}

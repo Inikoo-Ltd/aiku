@@ -24,6 +24,8 @@ use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\EditFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatform;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatforms;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
@@ -157,6 +159,13 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     Route::prefix('customer-clients')->as('.customer-clients')->group(function () {
         Route::get('', [IndexCustomerClients::class, 'inFulfilmentCustomer'])->name('.index');
         Route::get('{customerClient}', [ShowCustomerClient::class, 'inFulfilmentCustomer'])->name('.show');
+    });
+
+    Route::prefix('platforms')->as('.platforms')->group(function () {
+        Route::get('', IndexFulfilmentCustomerPlatforms::class)->name('.index');
+        Route::prefix('/{platform}')->as('.show')->group(function () {
+            Route::get('', IndexFulfilmentCustomerPlatforms::class);
+        });
     });
 
     Route::get('/stored-item-audits', [IndexStoredItemAudits::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.index');
