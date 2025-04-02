@@ -8,30 +8,12 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
-use App\Actions\Catalogue\HasRentalAgreement;
-use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\GetFulfilmentCustomerShowcase;
-use App\Actions\Fulfilment\RentalAgreementClause\UI\IndexRentalAgreementClauses;
-use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
-use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
-use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
-use App\Actions\Traits\WithWebUserMeta;
-use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
-use App\Http\Resources\CRM\CustomersResource;
-use App\Http\Resources\Fulfilment\RentalAgreementClausesResource;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Mail\DispatchedEmailResource;
-use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\Pallet;
 use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -41,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowFulfilmentCustomerPlatform extends OrgAction
 {
-    use WithFulfilmentShopAuthorisation;
+    use WithFulfilmentCustomerPlatformSubNavigation;
 
     public function handle(ModelHasPlatform $modelHasPlatform): ModelHasPlatform
     {
@@ -58,6 +40,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 
     public function htmlResponse(ModelHasPlatform $modelHasPlatform, ActionRequest $request): Response
     {
+        $fulfilmentCustomer = $modelHasPlatform->model->fulfilmentCustomer;
         $navigation = FulfilmentCustomerPlatformTabsEnum::navigation();
 
         $actions = [];
@@ -76,7 +59,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                         'icon'  => 'fal fa-user',
                     ],
                     'model'         => __('Platform'),
-                    // 'subNavigation' => $this->getFulfilmentCustomerSubNavigation($fulfilmentCustomer, $request),
+                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($modelHasPlatform, $fulfilmentCustomer, $request),
                     'title'         => $modelHasPlatform->platform->name,
                     'afterTitle'    => [
                         'label' => '('.$modelHasPlatform->model->name.')',
