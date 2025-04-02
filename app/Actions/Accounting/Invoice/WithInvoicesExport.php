@@ -57,6 +57,7 @@ trait WithInvoicesExport
             $pdf      = PDF::loadView('invoices.templates.pdf.invoice', [
                 'shop'          => $invoice->shop,
                 'invoice'       => $invoice,
+                'context'      => $invoice->invoice_id ? 'Refund' : 'Invoice',
                 'transactions'  => $transactions,
                 'totalNet'      => $totalNet
             ], [], $config);
