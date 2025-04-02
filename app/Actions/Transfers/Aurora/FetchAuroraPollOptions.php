@@ -31,7 +31,7 @@ class FetchAuroraPollOptions extends FetchAuroraAction
                     $pollOption = UpdatePollOption::make()->action(
                         pollOption: $pollOption,
                         modelData: $pollOptionData['poll_option'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -46,7 +46,7 @@ class FetchAuroraPollOptions extends FetchAuroraAction
                     $pollOption = StorePollOption::make()->action(
                         poll: $pollOptionData['poll'],
                         modelData: $pollOptionData['poll_option'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

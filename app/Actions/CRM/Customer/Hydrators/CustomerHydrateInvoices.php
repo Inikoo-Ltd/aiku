@@ -14,25 +14,18 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateInvoices
+class CustomerHydrateInvoices implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateInvoices;
 
-    private Customer $customer;
-
-    public function __construct(Customer $customer)
+    public function getJobUniqueId(Customer $customer): string
     {
-        $this->customer = $customer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->customer->id))->dontRelease()];
+        return $customer->id;
     }
 
     public function handle(Customer $customer): void

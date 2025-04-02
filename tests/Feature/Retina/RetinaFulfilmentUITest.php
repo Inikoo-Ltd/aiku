@@ -775,7 +775,7 @@ test('show stored item audit', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', "'SKUs audit")
+                        ->where('title', "SKUs audit")
                         ->etc()
             )
             ->has('pallets')

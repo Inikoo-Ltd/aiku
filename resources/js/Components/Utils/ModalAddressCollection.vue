@@ -180,6 +180,8 @@ watch(enabled, async (newValue) => {
 	const addressID = props.addresses?.address_customer?.value.id
 	const address = props.addresses?.address_customer?.value
 	if (!newValue) {
+		console.log('xxxxx', address);
+		
 		const filterDataAdddress = { ...address }
 		delete filterDataAdddress.formatted_address
 		delete filterDataAdddress.country
@@ -204,13 +206,13 @@ watch(enabled, async (newValue) => {
 				onSuccess: () => {
 					notify({
 						title: trans("Success"),
-						text: trans("Successfully create new address."),
+						text: trans("Set the address to selected address."),
 						type: "success",
 					})
 				},
 				onError: () =>
 					notify({
-						title: trans("Failed"),
+						title: trans("Something went wrong"),
 						text: trans("Failed to submit the address, try again"),
 						type: "error",
 					}),
@@ -218,7 +220,7 @@ watch(enabled, async (newValue) => {
 		)
 	} else {
 		try {
-			await router.delete(
+			router.delete(
 				route(props.addresses.routes_address.delete.name, {
 					...props.addresses.routes_address.delete.parameters,
 				}),
@@ -232,13 +234,13 @@ watch(enabled, async (newValue) => {
 			)
 			notify({
 				title: trans("Success"),
-				text: trans("Collection disabled successfully."),
+				text: trans("Set the address to follow collection."),
 				type: "success",
 			})
 		} catch (error) {
 			console.error("Error disabling collection:", error) // Debugging output
 			notify({
-				title: trans("Failed"),
+				title: trans("Something went wrong"),
 				text: trans("Failed to disable collection."),
 				type: "error",
 			})
@@ -257,27 +259,7 @@ watch(enabled, async (newValue) => {
 				{{ trans("Delivery Address ") }}
 			</div>
 		</div>
-
-		<div class="relative transition-all"></div>
-		<div class="flex items-center justify-between space-x-4 p-4 rounded-lg shadow-sm">
-			<SwitchGroup as="div" class="flex items-center">
-				<Switch
-					v-model="enabled"
-					:class="[enabled ? 'bg-indigo-600' : 'bg-gray-200']"
-					class="relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
-					<span
-						aria-hidden="true"
-						:class="[enabled ? 'translate-x-5' : 'translate-x-0']"
-						class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
-				</Switch>
-				<SwitchLabel as="span" class="ml-3 text-sm font-medium text-gray-900">
-					{{ trans("Collection") }}
-				</SwitchLabel>
-			</SwitchGroup>
-		</div>
-
 		<div
-			v-if="!enabled"
 			:key="'edit' + selectedAddress?.id"
 			class="col-span-2 relative py-4 h-fit grid grid-cols-2 gap-x-4">
 			<div
@@ -302,7 +284,6 @@ watch(enabled, async (newValue) => {
 				</div>
 			</div>
 		</div>
-		<div v-else></div>
 	</div>
 </template>
 

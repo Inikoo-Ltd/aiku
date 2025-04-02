@@ -39,7 +39,7 @@ class FetchAuroraMailshots extends FetchAuroraAction
                 $mailshot = UpdateMailshot::make()->action(
                     mailshot: $mailshot,
                     modelData: $mailshotData['mailshot'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -54,7 +54,7 @@ class FetchAuroraMailshots extends FetchAuroraAction
                 $mailshot = StoreMailshot::make()->action(
                     outbox: $mailshotData['outbox'],
                     modelData: $mailshotData['mailshot'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

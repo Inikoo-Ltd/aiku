@@ -9,42 +9,25 @@
 namespace App\Actions\Comms\DispatchedEmail\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Models\Comms\DispatchedEmail;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class DispatchedEmailHydrateEmailTracking
+class DispatchedEmailHydrateEmailTracking implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private DispatchedEmail $dispatchedEmail;
-
     public string $jobQueue = 'low-priority';
 
-    public function __construct(DispatchedEmail $dispatchedEmail)
+    public function getJobUniqueId(DispatchedEmail $dispatchedEmail): string
     {
-        $this->dispatchedEmail = $dispatchedEmail;
+        return $dispatchedEmail->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->dispatchedEmail->id))->dontRelease()];
-    }
-
 
     public function handle(DispatchedEmail $dispatchedEmail): void
     {
         $stats = [
-            'number_clicks' => $dispatchedEmail
-                ->emailTrackingEvents()
-                ->where('type', EmailTrackingEventTypeEnum::CLICKED)
-                ->count(),
-            'number_reads' => $dispatchedEmail
-                ->emailTrackingEvents()
-                ->where('type', EmailTrackingEventTypeEnum::OPENED)
-                ->count(),
             'number_email_tracking_events' => $dispatchedEmail
                 ->emailTrackingEvents()
                 ->count()

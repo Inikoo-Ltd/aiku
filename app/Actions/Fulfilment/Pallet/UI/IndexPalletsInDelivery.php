@@ -97,7 +97,7 @@ class IndexPalletsInDelivery extends OrgAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __('No pallet in this delivery'),
+                'title' => __('No items in this delivery'),
                 'count' => $palletDelivery->stats->number_pallets
             ];
 
@@ -153,7 +153,7 @@ class IndexPalletsInDelivery extends OrgAction
 
 
             if ($palletDelivery->fulfilmentCustomer->items_storage) {
-                $table->column(key: 'stored_items', label: 'Stored Items', canBeHidden: false, searchable: true);
+                $table->column(key: 'stored_items', label: 'SKUs (Stored items)', canBeHidden: false, searchable: true);
             }
 
 

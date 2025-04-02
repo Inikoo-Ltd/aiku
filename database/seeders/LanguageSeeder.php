@@ -33,6 +33,8 @@ class LanguageSeeder extends Seeder
             'sk',
             'sv',
             'zh-Hans',
+            'bg',
+            'uk'
         ];
 
 

@@ -11,25 +11,19 @@ namespace App\Actions\Catalogue\Asset\Hydrators;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Asset;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateSales
+class AssetHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
+    public string $jobQueue = 'sales';
 
-    private Asset $asset;
-
-    public function __construct(Asset $asset)
+    public function getJobUniqueId(Asset $asset): string
     {
-        $this->asset = $asset;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->asset->id))->dontRelease()];
+        return $asset->id;
     }
 
     public function handle(Asset $asset): void

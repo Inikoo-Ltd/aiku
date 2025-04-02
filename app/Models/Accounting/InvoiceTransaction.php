@@ -13,6 +13,7 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferComponent;
+use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
 use App\Models\Helpers\TaxCategory;
@@ -68,7 +69,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $in_process Used for refunds only
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
@@ -79,6 +80,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferComponent> $offerComponents
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read RecurringBillTransaction|null $recurringBillTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read TaxCategory $taxCategory
  * @property-read Transaction|null $transaction
@@ -129,6 +131,11 @@ class InvoiceTransaction extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function recurringBillTransaction(): BelongsTo
+    {
+        return $this->belongsTo(RecurringBillTransaction::class);
     }
 
     public function order(): BelongsTo

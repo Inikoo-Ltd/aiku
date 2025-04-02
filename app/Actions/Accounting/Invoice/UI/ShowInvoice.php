@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexItemizedInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -21,6 +22,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
+use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundsResource;
@@ -246,9 +248,13 @@ class ShowInvoice extends OrgAction
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
 
-                InvoiceTabsEnum::ITEMS->value => $this->tab == InvoiceTabsEnum::ITEMS->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))),
+                InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
+                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
+
+                InvoiceTabsEnum::ITEMIZED->value => $this->tab == InvoiceTabsEnum::ITEMIZED->value ?
+                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
+                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
 
                 InvoiceTabsEnum::EMAIL->value => $this->tab == InvoiceTabsEnum::EMAIL->value ?
                     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))
@@ -264,7 +270,8 @@ class ShowInvoice extends OrgAction
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
             ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: InvoiceTabsEnum::REFUNDS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: InvoiceTabsEnum::EMAIL->value))
-            ->table(IndexInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMS->value));
+            ->table(IndexInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value))
+            ->table(IndexItemizedInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMIZED->value));
     }
 
 
@@ -487,6 +494,18 @@ class ShowInvoice extends OrgAction
                     'parameters' => [
                         'organisation' => $invoice->organisation->slug,
                         'fulfilment'   => $this->parent->slug,
+                        'invoice'      => $invoice->slug
+                    ]
+
+                ]
+            ],
+            'grp.org.shops.show.dashboard.invoices.invoices.show' => [
+                'label' => $invoice->reference,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation' => $invoice->organisation->slug,
+                        'shop'   => $this->parent->slug,
                         'invoice'      => $invoice->slug
                     ]
 

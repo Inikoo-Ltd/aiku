@@ -14,27 +14,21 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\OrgPaymentServiceProvider;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrgPaymentServiceProviderHydratePayments
+class OrgPaymentServiceProviderHydratePayments implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithPaymentAggregators;
 
 
-    private OrgPaymentServiceProvider $orgPaymentServiceProvider;
-
-    public function __construct(OrgPaymentServiceProvider $orgPaymentServiceProvider)
+    public function getJobUniqueId(OrgPaymentServiceProvider $orgPaymentServiceProvider): string
     {
-        $this->orgPaymentServiceProvider = $orgPaymentServiceProvider;
+        return $orgPaymentServiceProvider->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->orgPaymentServiceProvider->id))->dontRelease()];
-    }
 
     public function handle(OrgPaymentServiceProvider $orgPaymentServiceProvider): void
     {

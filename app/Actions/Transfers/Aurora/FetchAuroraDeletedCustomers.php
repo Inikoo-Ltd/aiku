@@ -34,7 +34,7 @@ class FetchAuroraDeletedCustomers extends FetchAuroraAction
                             $customer = UpdateCustomer::make()->action(
                                 customer: $customer,
                                 modelData: $customerData['customer'],
-                                hydratorsDelay: 60,
+                                hydratorsDelay: $this->hydratorsDelay,
                                 strict: false,
                                 audit: false
                             );

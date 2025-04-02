@@ -13,24 +13,19 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateDepartments
+class OrganisationHydrateDepartments implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Organisation $organisation;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $organisation->id;
     }
 
     public function handle(Organisation $organisation): void

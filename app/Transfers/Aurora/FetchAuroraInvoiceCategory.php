@@ -38,6 +38,8 @@ class FetchAuroraInvoiceCategory extends FetchAurora
             case 'store':
                 $type = InvoiceCategoryTypeEnum::SHOP_FALLBACK;
 
+                $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Function Argument'});
+                data_set($settings, 'shop_id', $shop->id);
 
                 break;
             case 'store_type':
@@ -63,6 +65,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
             case 'in_level_type':
                 if (str_contains($this->auroraModelData->{'Invoice Category Function Argument'}, 'Partner')) {
                     $type = InvoiceCategoryTypeEnum::IN_ORGANISATION;
+                    data_set($settings, 'mode', 'any');
                 } elseif (str_contains($this->auroraModelData->{'Invoice Category Function Argument'}, 'VIP')) {
                     $type = InvoiceCategoryTypeEnum::VIP;
                 } else {
@@ -99,6 +102,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
                 } else {
                     dd('A', $this->auroraModelData);
                 }
+                data_set($settings, 'mode', 'in_array');
                 data_set($settings, 'organisation_ids', $organisation_ids);
                 break;
 
@@ -114,7 +118,6 @@ class FetchAuroraInvoiceCategory extends FetchAurora
                 dd('Currency not found', $this->auroraModelData->{'Invoice Category Currency Code'});
             }
         }
-
 
 
         $this->parsedData['invoice_category'] = [

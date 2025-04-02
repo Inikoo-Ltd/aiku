@@ -523,6 +523,14 @@ class IndexInvoices extends OrgAction
 
         return $this->handle(parent: $customer);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $customerClient;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $customer);
+    }
 
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

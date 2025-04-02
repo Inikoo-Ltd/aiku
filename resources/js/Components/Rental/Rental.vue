@@ -246,7 +246,7 @@ onMounted(() => {
 
                 <template #content="{ close: closed }">
                     <div class="w-[350px]">
-                        <div class="text-xs my-2 font-medium">{{ trans('Discount(%)') }}: </div>
+                        <div class="text-xs my-2 font-medium">{{ trans('Discount (%)') }}: </div>
                         <PureInput v-model="bulkDiscInput" autofocus placeholder="1-100" type="number" :maxValue="99"
                             :suffix="true" :minValue="0" @onEnter="() => onBulkDiscount(closed)">
                             <template #suffix>

@@ -17,10 +17,12 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransac
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
@@ -103,6 +105,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOrgPostRooms::run($organisation);
         OrganisationHydrateOutboxes::run($organisation);
         OrganisationHydrateCustomerBalances::run($organisation);
+        OrganisationHydrateDispatchedEmails::run($organisation);
 
 
 
@@ -143,6 +146,7 @@ class HydrateOrganisations extends HydrateModel
             //OrganisationHydrateOfferCampaigns::run($organisation);
             //OrganisationHydrateOffers::run($organisation);
             OrganisationHydrateOrderHandling::run($organisation);
+            OrganisationHydrateMailshots::run($organisation);
 
         }
 

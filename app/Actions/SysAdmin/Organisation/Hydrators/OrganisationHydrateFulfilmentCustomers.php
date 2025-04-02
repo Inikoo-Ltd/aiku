@@ -9,12 +9,19 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateFulfilmentCustomers
+class OrganisationHydrateFulfilmentCustomers implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Organisation $organisation): string
+    {
+        return $organisation->id;
+    }
 
     public function handle(Organisation $organisation): void
     {

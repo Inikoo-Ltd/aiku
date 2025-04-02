@@ -27,6 +27,7 @@ import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import { faCogs, faExclamation, faExclamationTriangle, faLayerGroup } from '@fas'
+import { routeType } from '@/types/route'
 
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
@@ -40,7 +41,8 @@ const props = defineProps<{
     isLoadingDeleteBlock: number | null
 }>()
 
-const selectedTab = ref(0)
+
+const selectedTab = ref(1)
 
 function changeTab(index : Number) {
   selectedTab.value = index
@@ -52,6 +54,7 @@ const emits = defineEmits<{
     (e: 'update', value: Daum): void
     (e: 'order', value: Object): void
     (e: 'setVisible', value: Object): void
+    (e: 'onSaveSiteSettings', value: Object): void
 }>()
 
 const confirm = useConfirm();
@@ -129,7 +132,7 @@ const confirmDelete = (event: Event, data: Daum) => {
 };
 
 const tabs = [
-   /*  { label: 'Settings', icon: faCogs, tooltip : 'Page Setting' },  */
+    { label: 'Settings', icon: faCogs, tooltip : 'Page Setting' }, 
     { label: 'Block', icon: faLayerGroup, tooltip : 'Blocks'}
 ]
 
@@ -152,15 +155,16 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
             </Tab>
         </TabList>
         <TabPanels>
-           <!--  <TabPanel class="w-[400px] p-1">
+            <TabPanel class="w-[400px] p-1">
                 <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
                     <SiteSettings 
                     :webpage="webpage"
                     :webBlockTypes="webBlockTypes" 
+                    @onSaveSiteSettings="(value)=>emits('onSaveSiteSettings',value)"
                 />
                 </div>
                
-            </TabPanel> -->
+            </TabPanel>
             <TabPanel class="w-[400px] p-1">
                 <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
                     <div class="full">

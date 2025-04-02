@@ -77,7 +77,7 @@ class FetchAuroraShops extends FetchAuroraAction
                     $shop = StoreShop::make()->action(
                         organisation: $organisationSource->getOrganisation(),
                         modelData: $shopData['shop'],
-                        hydratorsDelay: 5,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

@@ -15,17 +15,19 @@ use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateProspects
+class OrganisationHydrateProspects implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    public function getJobMiddleware(): array
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        return [(new WithoutOverlapping(1))->dontRelease()];
+        return $organisation->id;
     }
 
     public function handle(Organisation $organisation): void

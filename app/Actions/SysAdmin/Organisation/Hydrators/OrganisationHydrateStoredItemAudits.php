@@ -12,23 +12,19 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Models\Fulfilment\StoredItemAudit;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateStoredItemAudits
+class OrganisationHydrateStoredItemAudits implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Organisation $organisation;
-    public function __construct(Organisation $organisation)
-    {
-        $this->organisation = $organisation;
-    }
+    public string $jobQueue = 'low-priority';
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $organisation->id;
     }
 
     public function handle(Organisation $organisation): void

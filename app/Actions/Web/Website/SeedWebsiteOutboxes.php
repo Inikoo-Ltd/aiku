@@ -25,6 +25,9 @@ class SeedWebsiteOutboxes
     use AsAction;
     use WithOutboxBuilder;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Website $website): void
     {
         foreach (OutboxCodeEnum::cases() as $case) {
@@ -63,6 +66,7 @@ class SeedWebsiteOutboxes
                     );
                 }
 
+
                 $this->setEmailOngoingRuns($outbox, $case, $website);
             }
         }
@@ -70,6 +74,9 @@ class SeedWebsiteOutboxes
 
     public string $commandSignature = 'website:seed_outboxes {website? : The website slug}';
 
+    /**
+     * @throws \Throwable
+     */
     public function asCommand(Command $command): int
     {
         if ($command->argument('website') == null) {

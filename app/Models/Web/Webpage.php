@@ -75,6 +75,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property array<array-key, mixed> $migration_data
+ * @property string|null $canonical_url
+ * @property bool $is_use_canonical_url
+ * @property array<array-key, mixed> $seo_data
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -117,6 +120,7 @@ class Webpage extends Model implements Auditable
         'settings'         => 'array',
         'published_layout' => 'array',
         'migration_data'   => 'array',
+        'seo_data'         => 'array',
         'state'            => WebpageStateEnum::class,
         'sub_type'         => WebpageSubTypeEnum::class,
         'type'             => WebpageTypeEnum::class,
@@ -131,6 +135,7 @@ class Webpage extends Model implements Auditable
         'data'             => '{}',
         'settings'         => '{}',
         'published_layout' => '{}',
+        'seo_data'         => '{}',
         'migration_data'   => '{}'
     ];
 

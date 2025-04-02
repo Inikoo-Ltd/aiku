@@ -59,6 +59,7 @@ import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
 import InputNumber from 'primevue/inputnumber'
+import TableItemizedTransactions from '@/Components/Tables/Grp/Org/Accounting/TableItemizedTransactions.vue'
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue'
 // const locale = useLocaleStore()
@@ -100,7 +101,8 @@ const props = defineProps<{
     order_summary: FieldOrderSummary[][]
     recurring_bill_route: routeType
     invoice: InvoiceResource
-    items: {}
+    grouped: {}
+    itemized: {}
     payments: {}
     email?:{}
     details: {}
@@ -137,7 +139,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        items: TableInvoiceTransactions,
+        grouped: TableInvoiceTransactions,
+        itemized: TableItemizedTransactions,
         payments: TablePayments,
         details: ModelDetails,
         history: ModelChangelog,

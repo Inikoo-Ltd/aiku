@@ -8,8 +8,10 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -30,6 +32,8 @@ class UpdateMailshot extends OrgAction
 
         if ($mailshot->wasChanged('state')) {
             GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
+            OrganisationHydrateMailshots::dispatch($mailshot->organisation)->delay($this->hydratorsDelay);
+            OutboxHydrateMailshots::dispatch($mailshot->outnox)->delay($this->hydratorsDelay);
         }
 
         return $mailshot;

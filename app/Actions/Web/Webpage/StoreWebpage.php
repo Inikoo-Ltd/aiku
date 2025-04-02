@@ -17,6 +17,7 @@ use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -52,6 +53,12 @@ class StoreWebpage extends OrgAction
 
         if (!Arr::exists($modelData, 'sub_type')) {
             $modelData['sub_type'] = WebpageSubTypeEnum::CONTENT;
+        }
+
+        if (Arr::exists($modelData, 'seo_structure_type')) {
+            $modelData['data'] = [
+                'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type')
+            ];
         }
 
         data_set($modelData, 'url', '', overwrite: false);
@@ -171,6 +178,7 @@ class StoreWebpage extends OrgAction
             'model_id'    => ['sometimes', 'integer'],
             'title'       => ['required', 'string'],
             'description' => ['sometimes', 'string'],
+            'seo_structure_type' => ['sometimes', Rule::enum(WebpageSeoStructureTypeEnum::class)],
 
 
         ];

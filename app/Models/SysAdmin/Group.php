@@ -131,7 +131,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read LaravelCollection<int, DispatchedEmail> $DispatchedEmails
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents
@@ -155,6 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\GroupDiscountsStats|null $discountsStats
+ * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\GroupDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, EmailAddress> $emailAddresses
  * @property-read LaravelCollection<int, EmailBulkRun> $emailBulkRuns
@@ -727,7 +727,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(EmailBulkRun::class);
     }
 
-    public function DispatchedEmails(): HasMany
+    public function dispatchedEmails(): HasMany
     {
         return $this->hasMany(DispatchedEmail::class);
     }

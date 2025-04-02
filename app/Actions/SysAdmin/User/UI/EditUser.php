@@ -133,7 +133,7 @@ class EditUser extends OrgAction
                         ],
                     ],
                     "permissions" => [
-                        "label"   => __(" Permissions"),
+                        "label"   => __("Permissions"),
                         "title"   => __("Permissions"),
                         "icon"    => "fa-light fa-user-lock",
                         "current" => false,

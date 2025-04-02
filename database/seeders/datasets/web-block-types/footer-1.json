@@ -5,144 +5,158 @@
 	"name": "footer 1",
 	"component": "footer",
 	"icon": ["fal", "folder"],
-    "data": {
-        "fieldValue": {
-            "columns": {
-                "column_1": {
-                  "types": "links",
-                  "key": "1",
-                  "data": [
-                    {
-                      "id": 1,
-                      "data": [
-                        {
-                          "id": 2,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Contact Us</span></p>"
-                        },
-                        {
-                          "id": 16,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>FAQ</span></p>"
-                        }
-                      ],
-                       "name": "<p><span style='font-size: 16px'>Help</span></p>"
-                    },
-                    {
-                      "id": 5,
-                      "data": [
-                        {
-                          "id": 6,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>About us</span></p>"
-                        },
-                        {
-                          "id": 7,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Business Ethics</span></p>"
-                        }
-                      ],
-                       "name": "<p><span style='font-size: 16px'>Information</span></p>"
-                    }
-                  ],
-                  "name": "Column 1"
-                },
-                "column_2": {
-                  "types": "links",
-                  "key": "2",
-                  "data": [
-                    {
-                      "id": 24,
-                      "data": [
-                        {
-                          "id": 28,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Contact Us</span></p>"
-                        }
-                      ],
-                      "name": "<p><span style='font-size: 16px'>Promo</span></p>"
-                    },
-                    {
-                      "id": 29,
-                      "data": [
-                        {
-                          "id": 30,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Terms &amp; Conditions</span></p>"
-                        },
-                        {
-                          "id": 32,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Cookies Policy</span></p>"
-                        }
-                      ],
-                       "name": "<p><span style='font-size: 16px'>Legal</span></p>"
-                    }
-                  ],
-                  "name": "Column 2"
-                },
-                "column_3": {
-                  "types": "links",
-                  "key": "3",
-                  "data": [
-                    {
-                      "id": 33,
-                      "data": [
-                        {
-                          "id": 34,
-                          "name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Dropshipping</span></p>"
-                        }
-                      ],
-                      "name": "<p><span style='font-size: 16px'>Services</span></p>"
-                    }
-                  ],
-                  "name": "Column 3"
-                },
-                "column_4": {
-                  "types": "sideBar",
-                  "key": "4",
-                  "data": {
-                    "textBox1": "<p style='text-align: center; color: rgb(255,255,255)'>Pantai Lembeng 5 Street, Ketewel, Gianyar, Bali 80582</p>",
-                    "textBox2": "<p style='text-align: center; color: rgb(255,255,255)'>VAT:</p>",
-                    "textBox3": "<p>Business partnership? Contact us now</p>"
-                  },
-                  "name": "Column 4"
-                }
-              },
-            "container": {
-                "properties": {
-                      "text": {
-                        "fontFamily": "Inter, sans-serif"
-                      },
-                      "background": {
-                        "type": "color",
-                        "color": "rgba(20, 20, 20, 1)",
-                        "image": {
-                          "original": null
-                        }
-                      }
-                    }
-            },
-            "copyright": "Copyright © 2024 Company, All rights reserved.",
-            "socialMedia": [
-              {
-                "icon": "fab fa-instagram",
-                "link": "https://www.instagram.com/",
-                "type": "Instagram"
-              },
-              {
-                "icon": "fab fa-pinterest",
-                "link": "https://pinterest.com/",
-                "type": "Pinterest"
-              }
-            ],
-            "paymentData": {
-                "data": []
-              },
-            "whatsapp": {
-                "number": "+1 234 56789",
-                "caption": "Whatsapp",
-                "message": "Hello i want to order"
-            },
-            "phone": {
-                "numbers": ["+1 2345 6789"],
-                "caption": "Monday-Friday 8am-4pm CET"
-            },
-            "email": "example@mail.com",
-            "logo": null
-        }
-    }
+	"data": {
+		"fieldValue": {
+			"columns": {
+				"column_1": {
+					"types": "links",
+					"key": "1",
+					"data": [
+						{
+							"id": 1,
+							"data": [
+								{
+									"id": 2,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Contact Us</span></p>"
+								},
+								{
+									"id": 16,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>FAQ</span></p>"
+								}
+							],
+							"name": "<p><span style='font-size: 16px'>Help</span></p>"
+						},
+						{
+							"id": 5,
+							"data": [
+								{
+									"id": 6,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>About us</span></p>"
+								},
+								{
+									"id": 7,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Business Ethics</span></p>"
+								}
+							],
+							"name": "<p><span style='font-size: 16px'>Information</span></p>"
+						}
+					],
+					"name": "Column 1"
+				},
+				"column_2": {
+					"types": "links",
+					"key": "2",
+					"data": [
+						{
+							"id": 24,
+							"data": [
+								{
+									"id": 28,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Contact Us</span></p>"
+								}
+							],
+							"name": "<p><span style='font-size: 16px'>Promo</span></p>"
+						},
+						{
+							"id": 29,
+							"data": [
+								{
+									"id": 30,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Terms &amp; Conditions</span></p>"
+								},
+								{
+									"id": 32,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Cookies Policy</span></p>"
+								}
+							],
+							"name": "<p><span style='font-size: 16px'>Legal</span></p>"
+						}
+					],
+					"name": "Column 2"
+				},
+				"column_3": {
+					"types": "links",
+					"key": "3",
+					"data": [
+						{
+							"id": 33,
+							"data": [
+								{
+									"id": 34,
+									"name": "<p><span style='font-size: 14px; color: rgb(255, 255, 255)'>Dropshipping</span></p>"
+								}
+							],
+							"name": "<p><span style='font-size: 16px'>Services</span></p>"
+						}
+					],
+					"name": "Column 3"
+				},
+				"column_4": {
+					"types": "sideBar",
+					"key": "4",
+					"data": {
+						"textBox1": "<p style='text-align: center; color: rgb(255,255,255)'>Pantai Lembeng 5 Street, Ketewel, Gianyar, Bali 80582</p>",
+						"textBox2": "<p style='text-align: center; color: rgb(255,255,255)'>VAT:</p>",
+						"textBox3": "<p>Business partnership? Contact us now</p>"
+					},
+					"name": "Column 4"
+				}
+			},
+			"container": {
+				"properties": {
+					"text": {
+						"fontFamily": "Inter, sans-serif"
+					},
+					"background": {
+						"type": "color",
+						"color": "rgba(20, 20, 20, 1)",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			},
+			"copyright": "Copyright © 2024 Company, All rights reserved.",
+			"socialMedia": [
+				{
+					"icon": "fab fa-instagram",
+					"link": "https://www.instagram.com/",
+					"type": "Instagram"
+				},
+				{
+					"icon": "fab fa-pinterest",
+					"link": "https://pinterest.com/",
+					"type": "Pinterest"
+				}
+			],
+			"paymentData": {
+				"data": []
+			},
+			"whatsapp": {
+				"number": "+1 234 56789",
+				"caption": "Whatsapp",
+				"message": "Hello i want to order"
+			},
+			"phone": {
+				"numbers": ["+1 2345 6789"],
+				"caption": "Monday-Friday 8am-4pm CET"
+			},
+			"email": "example@mail.com",
+			"logo": {
+				"source": null,
+				"properties": {
+					"dimension": {
+						"height": {
+							"value": "100",
+							"unit": "px"
+						},
+						"width": {
+							"value": "100",
+							"unit": "%"
+						}
+					}
+				}
+			}
+		}
+	}
 }

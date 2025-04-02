@@ -14,45 +14,49 @@ use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateInvoiceIntervals
+class GroupHydrateInvoiceIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Group $group;
-
-    public function __construct(Group $group)
+    public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->group = $group;
+        $uniqueId = $group->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
-    public function getJobMiddleware(): array
+    public function handle(Group $group, ?array $intervals = null, $doPreviousPeriods = null): void
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
-    }
-
-    public function handle(Group $group): void
-    {
-
         $stats = [];
 
         $queryBase = Invoice::where('in_process', false)->where('group_id', $group->id)->where('type', InvoiceTypeEnum::INVOICE)->selectRaw('count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'invoices_'
+            statField: 'invoices_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('group_id', $group->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw(' count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'refunds_'
+            statField: 'refunds_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 

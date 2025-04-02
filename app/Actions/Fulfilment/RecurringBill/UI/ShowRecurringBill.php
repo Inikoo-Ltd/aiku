@@ -197,13 +197,6 @@ class ShowRecurringBill extends OrgAction
                         'scope'      => $recurringBill->slug
                     ]
                 ],
-                'physical_good_list_route' => [
-                    'name'       => 'grp.json.fulfilment.recurring-bill.physical-goods.index',
-                    'parameters' => [
-                        'fulfilment' => $recurringBill->fulfilment->slug,
-                        'scope'      => $recurringBill->slug
-                    ]
-                ],
                 'pallet_list_route' => [
                     'name'       => 'grp.json.fulfilment-customer.storing-pallets.index',
                     'parameters' => [
@@ -263,7 +256,7 @@ class ShowRecurringBill extends OrgAction
 
                 [
                     [
-                        'label'       => __('Pallets'),
+                        'label'       => __('Rentals'),
                         'price_base'  => __('Multiple'),
                         'price_total' => $recurringBill->rental_amount
                     ],
@@ -409,6 +402,25 @@ class ShowRecurringBill extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.current.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'recurringBill'])
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.fulfilments.show.operations.recurring_bills.former.show' => array_merge(
+                ShowFulfilment::make()->getBreadcrumbs(
+                    Arr::only($routeParameters, ['organisation', 'fulfilment'])
+                ),
+                $headCrumb(
+                    $recurringBill,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.former.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.former.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'recurringBill'])
                         ]
                     ],

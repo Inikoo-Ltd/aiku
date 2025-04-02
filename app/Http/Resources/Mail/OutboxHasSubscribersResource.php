@@ -2,7 +2,7 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 05-03-2025, Bali, Indonesia
+ * Created on: 06-03-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
@@ -10,39 +10,34 @@
 
 namespace App\Http\Resources\Mail;
 
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property string $code
  * @property string $slug
+ * @property string $data
  * @property string $name
- * @property string $price
- * @property string $description
- * @property mixed $type
- * @property mixed $auto_assign_asset
- * @property mixed $auto_assign_asset_type
- * @property mixed $currency_code
- * @property mixed $unit
- * @property mixed $state
- * @property int $quantity
- * @property int $pallet_delivery_id
- * @property mixed $auto_assign_trigger
- * @property mixed $auto_assign_subject
- * @property mixed $auto_assign_subject_type
- * @property bool $auto_assign_status
- * @property mixed $is_auto_assign
- * @property mixed $historic_asset_id
+ * @property OutboxTypeEnum $type
+ * @property mixed $created_at
+ * @property mixed $updated_at
+ * @property int $number_mailshots
+ * @property int $dispatched_emails_lw
+ * @property int $opened_emails_lw
+ * @property int $unsubscribed_lw
+ * @property int $runs
+ *
  */
 class OutboxHasSubscribersResource extends JsonResource
 {
     public function toArray($request): array
     {
-
-        return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'user_email' => $this->user_email,
+        $res = $this->user ? [
+            'username' => $this->user->username,
+            'contact_name' => $this->user->contact_name,
+            'email' => $this->email,
+        ] : [
             'external_email' => $this->external_email,
         ];
+        return $res;
     }
 }

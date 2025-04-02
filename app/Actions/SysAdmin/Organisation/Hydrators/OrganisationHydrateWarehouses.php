@@ -12,24 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateWarehouses
+class OrganisationHydrateWarehouses implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $organisation->id;
     }
 
 

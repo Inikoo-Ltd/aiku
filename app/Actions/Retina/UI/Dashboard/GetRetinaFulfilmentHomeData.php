@@ -88,7 +88,8 @@ class GetRetinaFulfilmentHomeData
             $fulfilmentCustomer->pallets_storage ? [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('New Delivery'),
+                'tooltip' => __('Book goods into stock, rent storage space, buy packaging material etc'),
+                'label' => __('New Storage or Service'),
                 'fullLoading'   => true,
                 'route' => [
                     'method'     => 'post',
@@ -96,6 +97,18 @@ class GetRetinaFulfilmentHomeData
                     'parameters' => []
                 ]
             ] : false,
+            [
+                'type'    => 'button',
+                'style'   => $fulfilmentCustomer->number_pallets_status_storing ? 'create' : 'gray',
+                'disabled' => $fulfilmentCustomer->number_pallets_status_storing ? false : true,
+                'tooltip' => $fulfilmentCustomer->number_pallets_status_storing ? __('Make a new dispatch from your stock') : __('This service is available if you have stock to dispatch'),
+                'label'   => __('New Dispatch'),
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'retina.models.pallet-return.store',
+                    'parameters' => []
+                ]
+            ],
         ];
 
         //        if (!app()->environment('production') && $fulfilmentCustomer->pallets_storage) {

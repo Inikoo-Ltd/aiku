@@ -11,24 +11,17 @@ namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\Customer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateBackInStockReminders
+class CustomerHydrateBackInStockReminders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Customer $customer;
-
-    public function __construct(Customer $customer)
+    public function getJobUniqueId(Customer $customer): string
     {
-        $this->customer = $customer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->customer->id))->dontRelease()];
+        return $customer->id;
     }
 
     public function handle(Customer $customer): void

@@ -31,9 +31,13 @@ class StoreInvoiceTransaction extends OrgAction
     {
         if (Arr::exists($modelData, 'pallet_id')) {
             $palletId = Arr::pull($modelData, 'pallet_id');
+        } else {
+            $palletId = Arr::pull($modelData, 'data.pallet_id');
         }
         if (Arr::exists($modelData, 'handle_date')) {
             $handlingDate = Arr::pull($modelData, 'handle_date');
+        } else {
+            $handlingDate = Arr::pull($modelData, 'data.date');
         }
 
         data_set($modelData, 'date', now(), overwrite: false);
@@ -108,9 +112,10 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        // Todo run this 3 hydrators more clever, hydrate only need intervals, e.g. exclude yesterday or last week
+        //AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        //AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        //AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
     }
@@ -129,6 +134,7 @@ class StoreInvoiceTransaction extends OrgAction
             'pallet_id'       => ['sometimes'],
             'handle_date'     => ['sometimes'],
             'data'            => ['sometimes', 'array'],
+            'recurring_bill_transaction_id' => ['sometimes'],
         ];
 
         if (!$this->strict) {

@@ -6,16 +6,15 @@
 
 <script setup lang="ts">
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { ref, onMounted, toRaw } from "vue"
+import { ref, onMounted } from "vue"
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faSendBackward, faTrash, faBringForward, faTractor, faTrashAlt  } from "@fas"
+import { faSendBackward, faBringForward, faTrashAlt  } from "@fas"
 import { useConfirm } from "primevue/useconfirm";
 import "@/../css/Iris/editor.css"
-
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { trans } from "laravel-vue-i18n"
 const confirm = useConfirm();
@@ -75,7 +74,7 @@ onMounted(() => {
 
 <template>
 	<div class="editor-class">
-		<div class="shadow-xl px-1" :class="layout?.layout === 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
+		<div class="shadow-xl px-1" :class="'container max-w-7xl mx-auto'">
 			<div v-if="webpage">
 				<div v-if="webpage?.layout?.web_blocks?.length">
 					<TransitionGroup tag="div" name="list" class="relative">
@@ -108,9 +107,13 @@ onMounted(() => {
 									</div>
 								</div>
 
-								<component class="w-full" :is="getComponent(activityItem.type)" :webpageData="webpage"
-									:blockData="activityItem" @autoSave="() => updateData(activityItem)"
-									v-model="activityItem.web_block.layout.data.fieldValue" />
+								<component 
+									class="w-full" :is="getComponent(activityItem.type)" 
+									:webpageData="webpage"
+									:blockData="activityItem" 
+									@autoSave="() => updateData(activityItem)"
+									v-model="activityItem.web_block.layout.data.fieldValue" 
+								/>
 							</section>
 						</template>
 					</TransitionGroup>
@@ -147,7 +150,7 @@ onMounted(() => {
   cursor: pointer;
   clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
   transition: background 0.3s;
-  box-shadow: 0px 4px 0px #4F46E5; /* Efek agar menyatu dengan border */
+  box-shadow: 0 4px 0px #4F46E5; /* Efek agar menyatu dengan border */
   border: none;
 }
 

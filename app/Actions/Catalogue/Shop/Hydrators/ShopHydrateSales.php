@@ -11,31 +11,32 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateSales
+class ShopHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->shop = $shop;
+        $uniqueId = $shop->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
-    public function getJobMiddleware(): array
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
-    }
 
-    public function handle(Shop $shop, ?array $intervals = null, $doPreviousIntervals = null): void
-    {
         $stats     = [];
         $queryBase = Invoice::where('in_process', false)->where('shop_id', $shop->id)->selectRaw('sum(net_amount) as  sum_aggregate  ');
         $stats     = $this->getIntervalsData(
@@ -43,7 +44,7 @@ class ShopHydrateSales
             queryBase: $queryBase,
             statField: 'sales_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('shop_id', $shop->id)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
@@ -52,7 +53,7 @@ class ShopHydrateSales
             queryBase: $queryBase,
             statField:'sales_grp_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 
@@ -63,8 +64,9 @@ class ShopHydrateSales
             queryBase: $queryBase,
             statField: 'sales_org_currency_',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
+
 
         $shop->salesIntervals()->update($stats);
     }

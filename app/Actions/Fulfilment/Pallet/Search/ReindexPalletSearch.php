@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\Pallet\Search;
 use App\Actions\HydrateModel;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Support\Collection;
+use Illuminate\Console\Command;
 
 class ReindexPalletSearch extends HydrateModel
 {
@@ -31,5 +32,25 @@ class ReindexPalletSearch extends HydrateModel
     protected function getAllModels(): Collection
     {
         return Pallet::withTrashed()->get();
+    }
+
+    protected function loopAll(Command $command): void
+    {
+        $command->info("Reindex Pallets");
+        $count = Pallet::withTrashed()->count();
+
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat('debug');
+        $bar->start();
+
+        Pallet::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
+            foreach ($models as $model) {
+                $this->handle($model);
+                $bar->advance();
+            }
+        });
+
+        $bar->finish();
+        $command->info("");
     }
 }

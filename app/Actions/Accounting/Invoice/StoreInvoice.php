@@ -8,6 +8,14 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
+use App\Actions\Comms\Email\SendInvoiceEmailToCustomer;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
@@ -141,7 +149,33 @@ class StoreInvoice extends OrgAction
             CustomerHydrateInvoices::dispatch($invoice->customer)->delay($this->hydratorsDelay);
         }
 
-        $this->runInvoiceHydrators($invoice);
+        // todo: Upload Invoices to Google Drive #544
+        //UploadPdfInvoice::run($invoice);
+
+        ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
+        OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+        GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
+
+
+        if ($invoice->invoiceCategory) {
+            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+        }
+
+        ShopHydrateSales::dispatch($invoice->shop)->delay($this->hydratorsDelay);
+        OrganisationHydrateSales::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+        GroupHydrateSales::dispatch($invoice->group)->delay($this->hydratorsDelay);
+
+        ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
+        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+        GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
+
+        InvoiceRecordSearch::dispatch($invoice);
+
+        if ($this->strict) {
+            SendInvoiceEmailToCustomer::dispatch($invoice);
+        }
 
         return $invoice;
     }
@@ -188,15 +222,15 @@ class StoreInvoice extends OrgAction
 
 
         if (!$this->strict) {
-            $rules['reference']          = [
+            $rules['reference']            = [
                 'required',
                 'max:64',
                 'string'
             ];
-            $rules['is_vip']             = ['sometimes', 'boolean'];
-            $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
-
+            $rules['is_vip']               = ['sometimes', 'boolean'];
+            $rules['as_organisation_id']   = ['sometimes', 'nullable', 'integer'];
+            $rules['as_employee_id']       = ['sometimes', 'nullable', 'integer'];
+            $rules['external_invoicer_id'] = ['sometimes', 'nullable', 'integer'];
 
             $rules['invoice_category_id']                = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']                    = ['sometimes', 'required', 'exists:tax_categories,id'];

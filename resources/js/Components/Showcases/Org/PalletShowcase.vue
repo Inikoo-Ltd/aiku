@@ -256,14 +256,8 @@ const generateRouteEditBarcode = () => {
                   <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" />
                 </div>
               </div>
-              <!-- Hover Buttons -->
-               <!-- {{ route('grp.org.fulfilments.show.crm.customers.show.pallets.edit', route().params) }} -->
               <div
                 class="bg-white/50 absolute inset-0 flex items-center gap-3 justify-center opacity-0 group-hover:opacity-100 group-hover:visible transition duration-300">
-                <!-- <Link
-                    >
-                    <Button :icon="faPencil" size="xs" />
-                </Link> -->
                 <ButtonWithLink
                     v-if="generateRouteEditBarcode()"
                     :routeTarget="generateRouteEditBarcode()"
@@ -276,33 +270,6 @@ const generateRouteEditBarcode = () => {
               </div>
             </div>
           </div>
-
-          <!-- Customer Reference -->
-<!--          <div class="relative w-full border  rounded-lg p-4 shadow-sm bg-gray-50 group">
-            <div class="text-sm font-medium text-center mb-2">Customer Reference</div>
-            <div class="relative">
-              <div v-if="props.data.data.customer_reference" class="relative hover:bg-black/30 rounded-lg p-2">
-                <svg id="customerReferenceBarcode" class="mx-auto group-hover:fill-black"></svg>
-              </div>
-              <div v-else
-                class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
-                <div>{{ trans("No customer reference barcode available") }}</div>
-                <div>
-                  <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" />
-                </div>
-              </div>
-
-              &lt;!&ndash; Hover Buttons &ndash;&gt;
-              <div
-                class="absolute inset-0 flex items-center gap-3 justify-center opacity-0 group-hover:opacity-100 group-hover:visible transition duration-300">
-                <Link
-                  :href="route(!route().params.fulfilment ? 'grp.org.warehouses.show.inventory.pallets.current.edit' : 'grp.org.fulfilments.show.crm.customers.show.pallets.edit', { ...route().params })">
-                  <Button :icon="faPencil" size="xs" /></Link>
-                <Button v-if="props.data.data.customer_reference" :icon="faPrint" size="xs" type="white"
-                  @click="() => printBarcodePallet('customerReferenceBarcode', props.data.data.customer_reference)" />
-              </div>
-            </div>
-          </div>-->
         </div>
       </div>
 

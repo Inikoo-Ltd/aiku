@@ -30,6 +30,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
@@ -157,6 +158,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\OrganisationDiscountsStats|null $discountsStats
+ * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\OrganisationDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, Favourite> $favourites
@@ -862,5 +864,11 @@ class Organisation extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(Adjustment::class);
     }
+
+    public function dispatchedEmails(): HasMany
+    {
+        return $this->hasMany(DispatchedEmail::class);
+    }
+
 
 }

@@ -13,13 +13,14 @@ use App\Actions\Comms\OrgPostRoom\UpdateOrgPostRoom;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\WithOrganisationCommand;
 use App\Models\SysAdmin\Organisation;
-use Exception;
-use Throwable;
 
 class SeedOrgPostRooms extends OrgAction
 {
     use WithOrganisationCommand;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Organisation $organisation): void
     {
         foreach ($organisation->group->postRooms as $postRoom) {
@@ -34,21 +35,16 @@ class SeedOrgPostRooms extends OrgAction
                     ]
                 );
             } else {
-                try {
-                    StoreOrgPostRoom::make()->action(
-                        $postRoom,
-                        $organisation,
-                        []
-                    );
-                } catch (Exception|Throwable $e) {
-                    echo $e->getMessage()."\n";
-                }
+                StoreOrgPostRoom::make()->action(
+                    $postRoom,
+                    $organisation,
+                    []
+                );
             }
         }
     }
 
     public string $commandSignature = 'org:seed_org_post_rooms {organisation? : The organisation slug}';
-
 
 
 }

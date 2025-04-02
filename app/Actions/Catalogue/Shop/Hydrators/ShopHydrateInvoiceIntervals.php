@@ -14,30 +14,32 @@ use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateInvoiceIntervals
+class ShopHydrateInvoiceIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->shop = $shop;
+        $uniqueId = $shop->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
-    public function getJobMiddleware(): array
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
-    }
 
-    public function handle(Shop $shop): void
-    {
 
         $stats = [];
 
@@ -45,16 +47,19 @@ class ShopHydrateInvoiceIntervals
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'invoices_'
+            statField: 'invoices_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = Invoice::where('in_process', false)->where('shop_id', $shop->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw(' count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'refunds_'
+            statField: 'refunds_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
-
 
         $shop->orderingIntervals()->update($stats);
     }

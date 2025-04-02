@@ -48,11 +48,11 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
                 DeliveryNoteStateEnum::FINALISED => DeliveryNoteItemStateEnum::FINALISED,
                 default => null
             };
-            if (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
+            if ($state === null and $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
                 $state = DeliveryNoteItemStateEnum::OUT_OF_STOCK;
-            } elseif (is_null($state) and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
+            } elseif ($state === null and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
                 $state = DeliveryNoteItemStateEnum::CANCELLED;
-            } elseif (is_null($state)) {
+            } elseif ($state === null) {
                 dd($this->auroraModelData, 'XX', $deliveryNote->state);
             }
         } else {
@@ -81,6 +81,11 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             $createdAt = $deliveryNote->created_at;
         }
 
+        $weight = $this->auroraModelData->{'Inventory Transaction Weight'};
+        $weight = abs($weight);
+
+
+
         $this->parsedData['delivery_note_item'] = [
             'transaction_id'      => $transactionID,
             'state'               => $state,
@@ -96,7 +101,7 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'org_stock_family_id' => $orgStock?->org_stock_family_id,
             'stock_id'            => $stock ? $stock->id : null,
             'stock_family_id'     => $stock ? $stock->stock_family_id : null,
-            'weight'              => $this->auroraModelData->{'Inventory Transaction Weight'},
+            'weight'              => $weight
 
 
         ];
