@@ -247,21 +247,37 @@ watch(paymentRefund, () => {
 });
 
 const generateRefundRoute = (refundSlug: string) => {
-    return route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', {
-        organisation: route().params?.organisation,
-        fulfilment: route().params?.fulfilment,
-        invoice: props.invoice_pay.invoice_slug,
-        refund: refundSlug
-    })
+    if (params?.fulfilment) {
+        return route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', {
+            organisation: route().params?.organisation,
+            fulfilment: route().params?.fulfilment,
+            invoice: props.invoice_pay.invoice_slug,
+            refund: refundSlug
+        })
+    } else {
+        return route('grp.org.accounting.invoices.show.refunds.show', {
+            organisation: route().params?.organisation,
+            invoice: props.invoice_pay.invoice_slug,
+            refund: refundSlug
+        })
+    }
+
 }
 
 
 const generateInvoinceRoute = () => {
-    return route('grp.org.fulfilments.show.operations.invoices.show', {
+    if(route().params?.fulfilment){
+        return route('grp.org.fulfilments.show.operations.invoices.show', {
         organisation: route().params?.organisation,
         fulfilment: route().params?.fulfilment,
         invoice: props.invoice_pay.invoice_slug,
     })
+    }else{
+        return route('grp.org.accounting.invoices.show', {
+        organisation: route().params?.organisation,
+        invoice: props.invoice_pay.invoice_slug,
+    })
+    }
 }
 
 const totalAmount = computed(() => {
