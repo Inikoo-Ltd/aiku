@@ -87,7 +87,7 @@ trait WithFulfilmentCustomerSubNavigation
 
                 'label'     => __('Channels'),
                 'leftIcon'  => [
-                    'icon'    => 'fal fa-users',
+                    'icon'    => 'fal fa-parachute-box',
                     'tooltip' => __('Channels'),
                 ],
                 'number' => $fulfilmentCustomer->customer->platforms->count()
