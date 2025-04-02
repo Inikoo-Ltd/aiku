@@ -36,6 +36,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
         $netAmount = Arr::get($modelData, 'net_amount', 0) * -1;
         if ($netAmount === 0) {
             $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
+            CalculateInvoiceTotals::run($refund);
             return $invoiceTransaction;
         }
 

@@ -42,34 +42,34 @@ class RefundToInvoice extends OrgAction
         $totalNeedToRefund = $refundsQuery->sum('total_amount') - $refundsQuery->sum('payment_amount');
 
 
-        $limitToPaid = DB::table('invoices')
-            ->where('invoices.id', $invoice->id)
-            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
-            ->where('model_has_payments.model_type', 'Invoice')
-            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
-            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
-            ->when(
-                $type === 'credit',
-                function ($query) {
-                    $query->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
-                },
-                function ($query) {
-                    $query->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
-                }
-            )
-            ->sum('payments.amount');
+        // $limitToPaid = DB::table('invoices')
+        //     ->where('invoices.id', $invoice->id)
+        //     ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+        //     ->where('model_has_payments.model_type', 'Invoice')
+        //     ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+        //     ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
+        //     ->when(
+        //         $type === 'credit',
+        //         function ($query) {
+        //             $query->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
+        //         },
+        //         function ($query) {
+        //             $query->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
+        //         }
+        //     )
+        //     ->sum('payments.amount');
 
         $totalRoundRefund = abs(round($totalRefund, 2));
 
-        if ($totalRoundRefund > abs($limitToPaid)) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'amount' => 'The refund amount exceeds the total paid amount in ' . $type == 'credit' ? 'credit balance' : 'payment method',
-                    ]
-                ]
-            );
-        }
+        // if ($totalRoundRefund > abs($limitToPaid)) {
+        //     throw ValidationException::withMessages(
+        //         [
+        //             'message' => [
+        //                 'amount' => 'The refund amount exceeds the total paid amount in ' . $type == 'credit' ? 'credit balance' : 'payment method',
+        //             ]
+        //         ]
+        //     );
+        // }
 
         if ($totalRoundRefund > abs(round($totalNeedToRefund, 2))) {
             throw ValidationException::withMessages(
