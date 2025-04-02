@@ -46,6 +46,16 @@ class StoreRefundInvoiceTransaction extends OrgAction
         if (abs($netAmount) == $invoiceTransaction->net_amount) {
             $totalTr = 0;
             $netAmount = (abs($netAmount) - abs($totalTrRefunded)) * -1;
+
+            if ($netAmount == 0) {
+                throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'net_amount' => 'This transaction is already fully refunded in other refund',
+                        ]
+                    ]
+                );
+            }
         }
 
 
