@@ -151,16 +151,13 @@ function updateCollectionType() {
 		collection_by: collectionBy.value,
 	}
 
-	// Logic:
-	// - If "myself", clear the notes (set to null)
-	// - If "thirdParty", preserve whatever is in textValue (even empty string)
 	if (collectionBy.value === 'myself') {
 		payload.collection_notes = null
 		textValue.value = null // also clear in frontend
 	}
 
 	router.patch(
-		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+		route(props.updateRoute.name, props.updateRoute.parameters),
 		payload,
 		{
 			preserveScroll: true,
@@ -184,7 +181,7 @@ function updateCollectionType() {
 
 function updateCollectionNotes() {
 	router.patch(
-		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+		route(props.updateRoute.name, props.updateRoute.parameters),
 		{ collection_notes: textValue.value },
 		{
 			preserveScroll: true,
@@ -209,9 +206,9 @@ function updateCollectionNotes() {
 const onChangeEstimateDate = async (close: Function) => {
 	try {
 		router.patch(
-			route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+			route(props.updateRoute.name, props.updateRoute.parameters),
 			{
-				estimated_delivery_date: props.data_pallet.estimated_delivery_date
+				estimated_delivery_date: props.dataPalletReturn.estimated_delivery_date
 			},
 			{
 				onStart: () => isLoadingSetEstimatedDate.value = true,
