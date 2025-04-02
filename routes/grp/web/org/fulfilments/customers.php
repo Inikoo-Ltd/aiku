@@ -29,6 +29,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatform
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\Pallet\DownloadPalletsTemplate;
 use App\Actions\Fulfilment\Pallet\DownloadPalletStoredItemTemplate;
 use App\Actions\Fulfilment\Pallet\PdfPallet;
@@ -163,8 +164,8 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
 
     Route::prefix('platforms')->as('.platforms')->group(function () {
         Route::get('', IndexFulfilmentCustomerPlatforms::class)->name('.index');
-        Route::prefix('/{platform}')->as('.show')->group(function () {
-            Route::get('', IndexFulfilmentCustomerPlatforms::class);
+        Route::prefix('/{modelHasPlatform}')->as('.show')->group(function () {
+            Route::get('', ShowFulfilmentCustomerPlatform::class);
         });
     });
 
