@@ -100,6 +100,7 @@ class UpdatePalletReturn extends OrgAction
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:5000'],
             'address'             => ['sometimes'],
             'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'estimated_delivery_date'   => ['sometimes', 'date'],
             'reference'      => ['sometimes', 'string', 'max:255'],
             'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
