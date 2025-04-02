@@ -361,7 +361,7 @@ watch(paymentData, () => {
           </dd>
         </div>
 
-        <InvoiceRefundPay v-if="invoice_refund?.in_process" :invoice_pay :routes="{
+        <InvoiceRefundPay v-if="!invoice_refund?.in_process" :invoice_pay :routes="{
           submit_route: invoice_pay.routes.submit_payment,
           fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
           payments : invoice_pay.routes.payments
