@@ -9,7 +9,7 @@ import { Head, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, inject, ref, watch } from "vue"
+import { computed, inject, provide, ref, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -217,6 +217,22 @@ const onOpenModalAddPGood = async () => {
         })
     }
     isLoadingData.value = false
+}
+
+const deliveryListError = ref<string[]>([])
+provide('deliveryListError', deliveryListError.value)
+const onClickDisabledSubmit = () => {
+
+    if (!props.data?.data?.estimated_delivery_date) {
+        if (!deliveryListError.value?.includes('estimated_delivery_date')) {
+            deliveryListError.value?.push('estimated_delivery_date');
+        }
+    } else {
+        const index = deliveryListError.value?.indexOf('estimated_delivery_date');
+        if (index > -1) {
+            deliveryListError.value?.splice(index, 1);
+        }
+    }
 }
 
 const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
