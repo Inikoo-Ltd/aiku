@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Ordering\UI\WithOrderingAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
@@ -106,7 +107,7 @@ class IndexDeliveryNotesInOrdering extends OrgAction
         };
 
         return array_merge(
-            ShowGroupOverviewHub::make()->getBreadcrumbs(),
+            ShowShop::make()->getBreadcrumbs($routeParameters),
             $headCrumb(
                 [
                     'name' => $routeName,
