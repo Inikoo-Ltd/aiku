@@ -63,20 +63,28 @@ trait WithInvoicePayBox
             if ($totalNeedToRefund < 0) {
                 $totalNeedToPay = $totalNeedToRefund;
 
-                // payment method
-                if (abs($totalNeedToRefund) > abs($totalPaidRefundInOtherPayment)) {
-                    $totalPaymentAfterRefunded = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
-                    $totalNeedToRefundInPaymentMethod = min($totalPaymentAfterRefunded, abs($totalNeedToPay)) * -1;
+                if (abs($totalNeedToPay) > $invoice->payment_amount) {
+                    $totalNeedToPay = $invoice->payment_amount * -1;
+                }
 
-                } else {
-                    $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
+                // payment method
+                if (abs($totalPaidRefundInOtherPayment) > 0) {
+                    if (abs($totalNeedToRefund) > abs($totalPaidRefundInOtherPayment)) {
+                        $totalPaymentAfterRefunded = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
+                        $totalNeedToRefundInPaymentMethod = min($totalPaymentAfterRefunded, abs($totalNeedToPay)) * -1;
+
+                    } else {
+                        $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
+                    }
                 }
 
                 // credit method
-                if (abs($totalNeedToRefund) > $totalPaidAccount) {
-                    $totalNeedToRefundInCreditMethod = $totalPaidAccount * -1;
-                } else {
-                    $totalNeedToRefundInCreditMethod = $totalNeedToRefund;
+                if ($totalPaidAccount > 0) {
+                    if (abs($totalNeedToRefund) > $totalPaidAccount) {
+                        $totalNeedToRefundInCreditMethod = $totalPaidAccount * -1;
+                    } else {
+                        $totalNeedToRefundInCreditMethod = $totalNeedToRefund;
+                    }
                 }
 
             } else {

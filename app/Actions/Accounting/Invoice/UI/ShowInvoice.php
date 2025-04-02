@@ -185,20 +185,22 @@ class ShowInvoice extends OrgAction
                 ],
 
                 'order_summary' => [
-                    [
-                        [
+                    array_filter([
+                        $invoice->shop->fulfilment || $invoice->services_amount > 0 ? [
                             'label'       => __('Services'),
                             'price_total' => $invoice->services_amount
-                        ],
+                        ] : [],
+
                         [
                             'label'       => __('Physical Goods'),
                             'price_total' => $invoice->goods_amount
                         ],
-                        [
-                            'label'       => __('Rental'),
+
+                        $invoice->shop->fulfilment || $invoice->rental_amount > 0 ? [
+                            'label'       => __('Rentals'),
                             'price_total' => $invoice->rental_amount
-                        ],
-                    ],
+                        ] : [],
+                    ]),
                     [
                         [
                             'label'       => __('Charges'),
