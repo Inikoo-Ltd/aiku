@@ -70,16 +70,30 @@ const localeCode = navigator.language
     <div class="h-min">
         <Table :resource="data" :name="tab">
             <template #cell(net_amount)="{ item }">
-                <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
-                    {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+                <div class="flex flex-col items-end">
+
+                    <!-- Net Amount (yang tersisa setelah refund) -->
+                    <div >
+                        {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+                    </div>
+
+                    <!-- Previous Refund -->
+                    <small v-if="item.total_last_refund" class="text-gray-500 text-xs">
+                        Previous refund: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
+                    </small>
+
+                    <!-- Refundable Amount -->
+                    <small v-if="item.total_last_refund != item.net_amount" class="text-blue-500 text-xs">
+                        Refundable: {{ locale.currencyFormat(item.currency_code, item.net_amount - item.total_last_refund ) }}
+                    </small>
                 </div>
             </template>
-            <template #cell(prev_refund)="{ item }">
+            <!-- <template #cell(prev_refund)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     <Tag v-if="Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
                     <span v-else>-</span>
                 </div>
-            </template>
+            </template> -->
 
             <template #cell(action)="{ item, proxyItem }">
                 <!-- <div class="space-x-2 w-[350px]">
@@ -115,8 +129,8 @@ const localeCode = navigator.language
 
 
             
-
-                        <div class="w-fit flex items-center gap-x-1 mt-2">
+                        <div>
+                            <div v-show="Number(item.total_last_refund) < Number(item.net_amount)"  class="w-fit flex items-center gap-x-1 mt-2">
                             <div>
                                 <InputNumber
                                     :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
@@ -124,14 +138,14 @@ const localeCode = navigator.language
                                     @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
                                     :class="get(proxyItem, ['new_refund_amount'], null) > item.net_amount ? 'errorShake' : ''"
                                     inputClass="width-12"
-                                    :max="Number(item.net_amount)"
+                                    :max="Number(item.net_amount) - Number(item.refund_net_amount) - Number(item.total_last_refund)"
                                     :min="0"
                                     placeholder="0"
                                     mode="currency"
                                     :currency="item.currency_code"
                                     :locale="localeCode"
                                     showButtons buttonLayout="horizontal"
-                                    :step="item.unit_price"
+                                    :step="Number(item.unit_price)"
                                     size="small"
                                 >
                                     <template #decrementicon>
@@ -159,6 +173,22 @@ const localeCode = navigator.language
                             />
                             <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                         </div>
+                        <div class="py-1">
+                            <ButtonWithLink
+                                v-if="Number(item.total_last_refund) < Number(item.net_amount)"
+                                @click="() => proxyItem.new_refund_amount = (item.net_amount - item.total_last_refund)"
+                                :key="item.code"
+                                :label="trans('Refund All')"
+                                size="xxs"
+                                :disabled="proxyItem.new_refund_amount == (item.net_amount - item.total_last_refund)"
+                                :bindToLink="{ preserveScroll: true }"
+                                type="tertiary"
+                                :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
+                            />
+                        </div>
+                            
+                        </div>
+                        
                 
               
             </template>
