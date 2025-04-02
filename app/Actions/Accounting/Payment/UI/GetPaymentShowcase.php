@@ -19,7 +19,7 @@ class GetPaymentShowcase
     public function handle(Payment $payment): array
     {
         $parent = $payment->invoices()->first() ?? $payment->orders()->first();
-        if($parent instanceof Order) {
+        if ($parent instanceof Order) {
             $parentResource = OrderResource::make($parent);
         } elseif ($parent instanceof Invoice) {
             $parentResource = InvoiceResource::make($parent);

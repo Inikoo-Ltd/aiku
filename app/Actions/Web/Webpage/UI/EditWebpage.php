@@ -99,7 +99,7 @@ class EditWebpage extends OrgAction
                                     'value'     => $webpage->title,
                                     'required'  => true,
                                 ],
-                                'url' => [
+                                /* 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
@@ -108,28 +108,30 @@ class EditWebpage extends OrgAction
                                     ],
                                     'value'     => $webpage->url,
                                     'required'  => true,
-                                ],
+
+                                ],     */
                             ]
                         ],
                         [
-                            'label'  => __('Meta'),
+                            'label'  => __('SEO (Settings)'),
                             'icon'   => 'fab fa-google',
                             'fields' => [
-                                /* 'google_search' => [
+                                'google_search' => [
                                     'type'     => 'googleSearch',
                                     'domain'    => $webpage->website->domain . '/',
                                     'value'    => [
                                         'image'         => [    // TODO
                                             'original'  => 'https://socialsharepreview.com/api/image-proxy?url=https%3A%2F%2Fwww.zelolab.com%2Fwp-content%2Fuploads%2F2022%2F12%2Fhow-to-create-and-set-up-a-social-share-preview-image-on-your-website.jpg',
                                         ],
-                                        'seotitle'       => Arr::get($webpage->data, 'seotitle')       ?? '',
-                                        'seodescription' => Arr::get($webpage->data, 'seodescription') ?? '',
-                                        'seourl'         => Arr::get($webpage->data, 'seourl')         ?? '',
-                                        'redirecturl'    => implode(",", $redirectUrlArr) ?? '',
+                                        'meta_title'       => Arr::get($webpage->seo_data, 'meta_title')       ?? '',
+                                        'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
+                                        'url'             =>  $webpage->url,
+                                        'is_use_canonical_url' => $webpage->is_use_canonical_url,
+                                        'canonical_url'     => $webpage->canonical_url,
                                     ],
                                     'noTitle'  => true,
-                                ] */
-                                'meta_title' => [
+                                ],
+                              /*   'meta_title' => [
                                         'type'     => 'input',
                                         'label'    => __('Meta title'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_title')
@@ -138,7 +140,7 @@ class EditWebpage extends OrgAction
                                         'type'     => 'textarea',
                                         'label'    => __('Meta description'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_description')
-                                ],
+                                ], */
                                 /* 'meta_keywords' => [
                                         'type'     => 'textarea',
                                         'label'    => __('Meta keywords'),
@@ -148,14 +150,17 @@ class EditWebpage extends OrgAction
                         ],
                         [
                             'label'  => __('Structured data'),
-                            'icon'   => 'fal fa-browser',
+                            'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
                                 'webpage_type' => [
-                                    'type'     => 'select',
-                                        'label'    => __('Structure data type'),
+                                    'noTitle'  => true,
+                                    'type'     => 'structure_data_website',
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => Arr::get($webpage->seo_data, 'structure_data_type'),
-                                        'required' => false,
+                                        'value'    => [
+                                            "structured_data" =>   Arr::get($webpage->seo_data, 'structured_data') ?? '',
+                                            "structured_data_type" =>  Arr::get($webpage->seo_data, 'structured_data_type') ?? '',
+                                        ],
+                                        'required' => true,
                                 ],
                             ]
                         ],

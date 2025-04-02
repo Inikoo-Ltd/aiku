@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property int $group_id
@@ -183,7 +183,7 @@ class InvoiceTransaction extends Model
         return $this->hasMany(InvoiceTransaction::class, 'invoice_transaction_id');
     }
 
-    public function taxCategory():BelongsTo
+    public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
 
