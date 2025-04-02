@@ -130,8 +130,8 @@ class EditWebpage extends OrgAction
                                         'canonical_url'     => $webpage->canonical_url,
                                     ],
                                     'noTitle'  => true,
-                                ] */
-                                'meta_title' => [
+                                ],
+                              /*   'meta_title' => [
                                         'type'     => 'input',
                                         'label'    => __('Meta title'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_title')
@@ -140,7 +140,7 @@ class EditWebpage extends OrgAction
                                         'type'     => 'textarea',
                                         'label'    => __('Meta description'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_description')
-                                ],
+                                ], */
                                 /* 'meta_keywords' => [
                                         'type'     => 'textarea',
                                         'label'    => __('Meta keywords'),
