@@ -14,6 +14,7 @@ import { PalletReturn, BoxStats } from "@/types/Pallet"
 import { Link, router } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import { trans } from "laravel-vue-i18n"
+import DatePicker from '@vuepic/vue-datepicker'
 
 import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
@@ -22,7 +23,7 @@ import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faPencil, faPenSquare } from "@fal"
+import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
@@ -31,7 +32,8 @@ import Textarea from "primevue/textarea"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import { inject } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-library.add(faQuestionCircle, faPencil, faPenSquare)
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
 
 const props = defineProps<{
 	dataPalletReturn: PalletReturn
