@@ -68,19 +68,23 @@ trait WithInvoicePayBox
                 }
 
                 // payment method
-                if (abs($totalNeedToRefund) > abs($totalPaidRefundInOtherPayment)) {
-                    $totalPaymentAfterRefunded = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
-                    $totalNeedToRefundInPaymentMethod = min($totalPaymentAfterRefunded, abs($totalNeedToPay)) * -1;
+                if (abs($totalPaidRefundInOtherPayment) > 0) {
+                    if (abs($totalNeedToRefund) > abs($totalPaidRefundInOtherPayment)) {
+                        $totalPaymentAfterRefunded = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
+                        $totalNeedToRefundInPaymentMethod = min($totalPaymentAfterRefunded, abs($totalNeedToPay)) * -1;
 
-                } else {
-                    $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
+                    } else {
+                        $totalNeedToRefundInPaymentMethod = $totalNeedToRefund;
+                    }
                 }
 
                 // credit method
-                if (abs($totalNeedToRefund) > $totalPaidAccount) {
-                    $totalNeedToRefundInCreditMethod = $totalPaidAccount * -1;
-                } else {
-                    $totalNeedToRefundInCreditMethod = $totalNeedToRefund;
+                if ($totalPaidAccount > 0) {
+                    if (abs($totalNeedToRefund) > $totalPaidAccount) {
+                        $totalNeedToRefundInCreditMethod = $totalPaidAccount * -1;
+                    } else {
+                        $totalNeedToRefundInCreditMethod = $totalNeedToRefund;
+                    }
                 }
 
             } else {
