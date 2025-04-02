@@ -455,7 +455,7 @@ const isModalUploadFileOpen = ref(false)
                 :style="action.style"
                 :tooltip="xstored_items_count ? '' : action.tooltip"
                 :disabled="
-                    !xstored_items_count  // Need to improve
+                    action.disabled  // Need to improve
                 "   
             />
         </template>

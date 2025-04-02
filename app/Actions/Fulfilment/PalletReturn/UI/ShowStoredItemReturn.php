@@ -82,23 +82,23 @@ class ShowStoredItemReturn extends OrgAction
         unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
         $this->tab = $request->get('tab', array_key_first($navigation));
 
-        $tooltipSubmit = __('Confirm');
-        $isDisabled    = false;
-        if ($palletReturn->pallets()->count() < 1) {
-            $tooltipSubmit = __('Select stored item before submit');
-            $isDisabled    = true;
+       
+        if ($palletReturn->storedItems()->count() < 1) {
+            $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Select stored item before submit');
             // } elseif ($palletReturn->delivery_address_id === null && $palletReturn->collection_address_id === null) {
             //     $tooltipSubmit = __('Select address before submit');
             //     $isDisabled = true;
             // } else {
             // $tooltipSubmit = __('Confirm');
+            $isDisabled    = true;
+        } else {
+            $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Confirm');
+            $isDisabled    = !($palletReturn->estimated_delivery_date);
         }
-
         $buttonSubmit = [
             'type'     => 'button',
             'style'    => 'save',
             'tooltip'  => $tooltipSubmit,
-            // 'label'   => __('Confirm') . ' (' . $palletReturn->storedItems()->count() . ')',
             'key'      => 'submit-stored-items',
             'route'    => [
                 'method'     => 'post',
@@ -110,6 +110,7 @@ class ShowStoredItemReturn extends OrgAction
             ],
             'disabled' => $isDisabled
         ];
+        // dd($buttonSubmit);
         if ($this->canEdit) {
             $actions = $palletReturn->state == PalletReturnStateEnum::IN_PROCESS
                 ? [

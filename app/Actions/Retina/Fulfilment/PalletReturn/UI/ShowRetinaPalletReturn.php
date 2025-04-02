@@ -105,9 +105,10 @@ class ShowRetinaPalletReturn extends RetinaAction
                 $palletReturn->pallets()->count() > 0 ? [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('submit'),
+                    'tooltip' => !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('submit'),
                     'label'   => __('submit'),
                     'key'     => 'action',
+                    'disabled' => !($palletReturn->estimated_delivery_date),
                     'route'   => [
                         'method'     => 'post',
                         'name'       => 'retina.models.pallet-return.submit',

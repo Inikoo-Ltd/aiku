@@ -98,15 +98,14 @@ class ShowPalletReturn extends OrgAction
             unset($navigation[PalletReturnTabsEnum::STORED_ITEMS->value]);
 
 
-            $isDisabled = false;
+            $isDisabled = !($palletReturn->estimated_delivery_date);
             if ($palletReturn->pallets()->count() < 1) {
-                $tooltipSubmit = __('Select pallet before submit');
-                $isDisabled = true;
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Select pallet before submit');
                 // } elseif (!$palletReturn->is_collection && $palletReturn->delivery_address_id === null) {
                 //     $tooltipSubmit = __('Select address before submit');
                 //     $isDisabled = true;
             } else {
-                $tooltipSubmit = __('Submit');
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');
             }
 
             $buttonSubmit = [
@@ -115,6 +114,7 @@ class ShowPalletReturn extends OrgAction
                 'tooltip' => $tooltipSubmit,
                 'label'   => __('Submit') . ' (' . $palletReturn->stats->number_pallets . ')',
                 'key'     => 'submit-pallet',
+                'disabled' => !($palletReturn->estimated_delivery_date),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'grp.models.fulfilment-customer.pallet-return.submit_and_confirm',
