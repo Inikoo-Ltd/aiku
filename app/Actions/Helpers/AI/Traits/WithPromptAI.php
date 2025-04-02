@@ -35,15 +35,20 @@ trait WithPromptAI
         ];
     }
 
-    public function promptAltImageBase64(string $imageData): array
+    public function promptAltImageWithLLPhant(): array
     {
-
         return [
-            ['role' => 'system', 'content' => 'You are an AI that generates alt text for images.'],
-            [
-                'role' => 'user',
-                'content' => 'Describe this image in a short, accessible alt text format. Image data: data:image/jpeg;base64,' . $imageData
-            ]
+            'system' => 'You are an AI specializing in accessibility and SEO-focused alt text generation. ' .
+                'Your responses must be: ' .
+                '- Concise (under 125 characters) ' .
+                '- Descriptive and literal (avoid metaphors or opinions) ' .
+                '- Prioritize key objects, colors, and actions for uniqueness ' .
+                '- If the image is purely decorative, return `alt=""` to meet accessibility best practices.',
+            'user' => 'Generate an SEO-friendly, concise, and descriptive alt text for this image. ' .
+                'Focus on key subjects and distinguishing features within 125 characters. ' .
+                'Avoid generic phrases like "image of" or "picture showing". ' .
+                'Use natural keywords when relevant. ' .
+                'Example: "Gray tabby cat sleeping on a windowsill".'
         ];
     }
 

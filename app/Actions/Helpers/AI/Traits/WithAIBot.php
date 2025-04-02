@@ -185,7 +185,7 @@ trait WithAIBot
             $stream = $response->getBody();
 
             while (!$stream->eof()) {
-                $chunk = $stream->read(512);
+                $chunk = $stream->read(32);
                 echo $chunk;
                 ob_flush();
                 flush();
