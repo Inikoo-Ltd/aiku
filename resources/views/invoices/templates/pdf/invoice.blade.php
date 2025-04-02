@@ -124,7 +124,7 @@
                 </div>
             </td>
 
-            <td style="text-align: right;">{{ __('Invoice Number') }}<br/>
+            <td style="text-align: right;">{{ __($context . ' Number') }}<br/>
                 <b>{{ $invoice->reference }}</b>
             </td>
 
@@ -139,12 +139,12 @@
     <tr>
         <td>
             <h1>
-                {{ __('Invoice') }} {{ $invoice->reference }}
+                {{ __($context) }} {{ $invoice->reference }}
             </h1>
         </td>
         <td style="text-align: right">
             <div>
-                {{ __('Invoice Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
+                {{ __($context . ' Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
             </div>
 
             @if($invoice->tax_liability_at)

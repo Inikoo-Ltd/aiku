@@ -13,6 +13,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Models\Accounting\Invoice;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 trait WithInvoicePayBox
@@ -46,7 +47,14 @@ trait WithInvoicePayBox
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
 
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
-        $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
+
+        $consolidateTotalPayments = Arr::get($invoice->shop->settings, 'consolidate_invoice_to_pay', true);
+
+        if ($consolidateTotalPayments) {
+            $totalNeedToPay = round($invoice->total_amount - ($invoice->payment_amount + abs($totalRefund)), 2);
+        } else {
+            $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
+        }
 
         $totalNeedToRefundInPaymentMethod = 0;
         $totalNeedToRefundInCreditMethod = 0;
