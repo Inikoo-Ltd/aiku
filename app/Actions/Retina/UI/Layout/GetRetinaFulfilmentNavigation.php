@@ -187,6 +187,8 @@ class GetRetinaFulfilmentNavigation
                 ]
             ];*/
 
+            $currentRecurringBill = $webUser->customer?->fulfilmentCustomer?->currentRecurringBill;
+
             $groupNavigation['billing'] = [
                 'label'   => __('billing'),
                 'icon'    => ['fal', 'fa-file-invoice-dollar'],
@@ -196,15 +198,14 @@ class GetRetinaFulfilmentNavigation
                 ],
                 'topMenu' => [
                     'subSections' => [
-                        [
+                        $currentRecurringBill ? [
                             'label' => __('next bill'),
                             'icon'  => ['fal', 'fa-receipt'],
                             'root'  => 'retina.fulfilment.billing.next_recurring_bill',
                             'route' => [
-                                'name' => 'retina.fulfilment.billing.next_recurring_bill',
-
+                                'name' => 'retina.fulfilment.billing.next_recurring_bill'
                             ]
-                        ],
+                        ] : null,
 
                         [
                             'label' => __('invoices'),
