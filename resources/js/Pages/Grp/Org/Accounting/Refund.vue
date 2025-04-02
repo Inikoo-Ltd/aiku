@@ -120,7 +120,6 @@ const props = defineProps<{
     group: {}
   }
 }>();
-console.log('aaa',props)
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 

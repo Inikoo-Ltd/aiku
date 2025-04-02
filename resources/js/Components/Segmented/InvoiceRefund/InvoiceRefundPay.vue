@@ -202,7 +202,7 @@ const onSubmitPaymentRefund = () => {
     } 
 }
 
-const onSubmitRefundToPaymentsMethod = ( data : any, loading = false) => {
+const onSubmitRefundToPaymentsMethod = ( from , data : any ) => {
     let url,finalData
     if (paymentRefund.value.payment_method === 'invoice_payment_method') {
         url = route('grp.models.refund.refund_to_payment_account', {
@@ -210,15 +210,15 @@ const onSubmitRefundToPaymentsMethod = ( data : any, loading = false) => {
             paymentAccount : data.payment_account_slug,
         })
         finalData = {
-            amount : data.refund,
+            amount : from.refund_amount,
             original_payment_id : data.id
         }
 
         router.post(
             url,finalData,
             {
-                onStart: () => loading = false,
-                onFinish: () => loading = false,
+                onStart: () => data.processing = true,
+                onFinish: () => data.processing = false,
                 onSuccess: () => {
                     if(_PureTable.value)_PureTable.value.fetchData()
                     notify({
@@ -615,8 +615,7 @@ console.log(props.invoice_pay.total_need_to_refund_in_payment_method, props.invo
                                             :max="maxRefund(data)"
                                             :min="0"
                                             :currency="invoice_pay.currency_code"
-                                            @refund="(loading) => onSubmitRefundToPaymentsMethod(data, loading)"
-                                            :data="data"
+                                            @refund="(form) => onSubmitRefundToPaymentsMethod(form, data)"
                                         />
                                     <span v-else class="text-gray-400 font-medium italic">Refund Complete</span>
                                 </template>

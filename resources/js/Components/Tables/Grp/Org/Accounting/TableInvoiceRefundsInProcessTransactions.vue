@@ -5,7 +5,7 @@ import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -21,6 +21,8 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import Tag from '@/Components/Tag.vue'
 import { notify } from '@kyvg/vue3-notification'
+import ActionCell from '@/Components/Segmented/InvoiceRefund/ActionCell.vue'
+import { useForm } from "@inertiajs/vue3"; // Import useForm
 library.add(faArrowAltCircleLeft, faSave, falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft)
 
 const props = defineProps<{
@@ -32,21 +34,27 @@ const locale = inject('locale', aikuLocaleStructure)
 
 // Section: update refund amount
 const isLoadingQuantity = ref<number[]>([])
-const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: number) => {
+const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: FormData) => {
+    let tempValue = toRaw(amount.refund_amount)
     router[routeRefund.method || 'post'](
         route(
             routeRefund.name, 
             routeRefund.parameters
         ),
         {
-            net_amount: amount
+            net_amount: amount.refund_amount
         },
         {
             preserveScroll: true,
-            onStart: () => {
-                isLoadingQuantity.value?.push(slugRefund)
+            onStart : () =>{
+                amount.processing = true
+            },
+            onSuccess: () => {
+                amount.defaults()
+                amount.reset();             
             },
             onFinish: () => {
+                amount.processing = false
                 const index = isLoadingQuantity.value.indexOf(slugRefund)
                 if (index > -1) {
                     isLoadingQuantity.value.splice(index, 1)
@@ -73,7 +81,7 @@ const localeCode = navigator.language
                 <div class="flex flex-col items-end">
 
                     <!-- Net Amount (yang tersisa setelah refund) -->
-                    <div >
+                    <div>
                         {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
                     </div>
 
@@ -84,7 +92,7 @@ const localeCode = navigator.language
 
                     <!-- Refundable Amount -->
                     <small v-if="item.total_last_refund != item.net_amount" class="text-blue-500 text-xs">
-                        Refundable: {{ locale.currencyFormat(item.currency_code, item.net_amount - item.total_last_refund ) }}
+                        Refundable: {{ locale.currencyFormat(item.currency_code, item.net_amount - item.refund_net_amount - item.total_last_refund) }}
                     </small>
                 </div>
             </template>
@@ -126,10 +134,7 @@ const localeCode = navigator.language
                         />
                     </template>
                 </div> -->
-
-
-            
-                        <div>
+                <!--  <div>
                             <div v-show="Number(item.total_last_refund) < Number(item.net_amount)"  class="w-fit flex items-center gap-x-1 mt-2">
                             <div>
                                 <InputNumber
@@ -145,7 +150,7 @@ const localeCode = navigator.language
                                     :currency="item.currency_code"
                                     :locale="localeCode"
                                     showButtons buttonLayout="horizontal"
-                                    :step="Number(item.unit_price)"
+                                    :step="item.unit_price"
                                     size="small"
                                 >
                                     <template #decrementicon>
@@ -157,11 +162,9 @@ const localeCode = navigator.language
                                 </InputNumber>
                     
                                 <p v-if="get(proxyItem, ['new_refund_amount'], null) > item.net_amount" class="italic text-red-500 text-xs mt-1">
-                                    <!-- <FontAwesomeIcon icon='fal fa-exclamation-circle' class='' fixed-width aria-hidden='true' /> -->
                                     {{ trans('Refund amount should not over the net amount') }}
                                 </p>
                             </div>
-                            <!-- {{ get(proxyItem, ['new_refund_amount'], null) > item.net_amount }} -->
                             <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
                             <FontAwesomeIcon
                                 v-else-if="proxyItem.new_refund_amount >= 0 ? proxyItem.new_refund_amount !== (proxyItem.refund_net_amount || 0) : false"
@@ -185,12 +188,20 @@ const localeCode = navigator.language
                                 type="tertiary"
                                 :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
                             />
-                        </div>
-                            
-                        </div>
-                        
-                
-              
+                        </div>   
+                        </div> -->
+                <ActionCell 
+                    v-if="Number(item.total_last_refund) < Number(item.net_amount)"
+                    :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
+                    :max="Number(item.net_amount) - Number(item.refund_net_amount) - Number(item.total_last_refund)"
+                    @input="(e) => (set(proxyItem, ['new_refund_amount'], e.value))"
+                    @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" :min="0" placeholder="0"
+                    mode="currency" :currency="item.currency_code"
+                    :step="item.unit_price"
+                    @refund="(form)=> onClickQuantity(item.refund_route, item.rowIndex, form)"
+                >
+                </ActionCell>
+
             </template>
         </Table>
     </div>
