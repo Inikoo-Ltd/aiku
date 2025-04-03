@@ -28,5 +28,24 @@ enum CreditTransactionTypeEnum: string
     case TRANSFER_OUT       = 'transfer_out';
     case REMOVE_FUNDS_OTHER = 'remove_funds_other';
 
+    public function label(): string
+    {
+        return match ($this) {
+            CreditTransactionTypeEnum::TOP_UP => 'Top up',
+            CreditTransactionTypeEnum::PAYMENT => 'Payment',
+            CreditTransactionTypeEnum::ADJUST => 'Adjust',
+            CreditTransactionTypeEnum::CANCEL => 'Cancel',
+            CreditTransactionTypeEnum::RETURN => 'Return',
+            CreditTransactionTypeEnum::PAY_RETURN => 'Pay return',
+            CreditTransactionTypeEnum::ADD_FUNDS_OTHER => 'Add funds (other)',
+            CreditTransactionTypeEnum::COMPENSATION => 'Compensation',
+            CreditTransactionTypeEnum::TRANSFER_IN => 'Transfer in',
+            CreditTransactionTypeEnum::FROM_EXCESS => 'From excess',
+            CreditTransactionTypeEnum::MONEY_BACK => 'Money back',
+            CreditTransactionTypeEnum::TRANSFER_OUT => 'Transfer out',
+            CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER => 'Remove funds (other)',
+        };
+    }
+
 
 }

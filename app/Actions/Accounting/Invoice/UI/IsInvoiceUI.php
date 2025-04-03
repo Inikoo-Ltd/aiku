@@ -142,21 +142,6 @@ trait IsInvoiceUI
                     'reference' => $invoice->reference,
                     'route'     => $this->getRecurringBillRoute($invoice)
                 ],
-                'routes'         => [
-                    'fetch_payment_accounts' => [
-                        'name'       => 'grp.json.shop.payment-accounts',
-                        'parameters' => [
-                            'shop' => $invoice->shop->slug
-                        ]
-                    ],
-                    'submit_payment'         => [
-                        'name'       => 'grp.models.invoice.payment.store',
-                        'parameters' => [
-                            'invoice'  => $invoice->id,
-                        ]
-                    ]
-
-                ],
                 'paid_amount'    => $invoice->payment_amount,
                 'pay_amount'     => round($invoice->total_amount - $invoice->payment_amount, 2)
             ]

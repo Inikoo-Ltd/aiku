@@ -14,7 +14,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class InvoiceRefundResource extends JsonResource
+class RefundResource extends JsonResource
 {
     public static $wrap = null;
 
@@ -28,6 +28,8 @@ class InvoiceRefundResource extends JsonResource
             'reference'           => $invoice->reference,
             'total_amount'        => $invoice->total_amount,
             'net_amount'          => $invoice->net_amount,
+            'payment_amount'          => $invoice->payment_amount,
+            'in_process' => $invoice->in_process,
             'date'                => $invoice->date,
             'type'                => [
                 'label' => $invoice->type->labels()[$invoice->type->value],

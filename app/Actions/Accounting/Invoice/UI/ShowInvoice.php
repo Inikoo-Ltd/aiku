@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexItemizedInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -23,6 +24,8 @@ use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Accounting\RefundResource;
+use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
@@ -37,6 +40,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowInvoice extends OrgAction
 {
     use IsInvoiceUI;
+    use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
 
     private Organisation|Fulfilment|FulfilmentCustomer|Shop $parent;
@@ -82,6 +86,74 @@ class ShowInvoice extends OrgAction
         return $this->handle($invoice);
     }
 
+    /**
+     * Get structured invoice summary for display in the UI.
+     *
+     * NOTE: Used in deleted invoices as well ShowInvoiceDeleted.php
+     *
+     * Returns a multidimensional array with three sections:
+     * 1. Product/service line items (conditionally showing services and rentals)
+     * 2. Additional costs (charges, shipping, insurance, tax)
+     * 3. Total amount
+     *
+     * @param  Invoice  $invoice  The invoice model to generate summary for
+     *
+     * @return array Structured array of invoice summary data for UI rendering
+     */
+    public function getInvoiceSummary(Invoice $invoice): array
+    {
+        return [
+            array_values(
+                array_filter(
+                    [
+                        $invoice->shop->fulfilment || $invoice->services_amount > 0 ? [
+                            'label'       => __('Services'),
+                            'price_total' => $invoice->services_amount
+                        ] : null,
+
+                        [
+                            'label'       => __('Physical Goods'),
+                            'price_total' => $invoice->goods_amount
+                        ],
+
+                        $invoice->shop->fulfilment || $invoice->rental_amount > 0 ? [
+                            'label'       => __('Rentals'),
+                            'price_total' => $invoice->rental_amount
+                        ] : null
+                    ]
+                )
+            ),
+            [
+                [
+                    'label'       => __('Charges'),
+                    // 'information'   => __('Shipping fee to your address using DHL service.'),
+                    'price_total' => $invoice->charges_amount
+                ],
+                [
+                    'label'       => __('Shipping'),
+                    // 'information'   => __('Tax is based on 10% of total order.'),
+                    'price_total' => $invoice->shipping_amount
+                ],
+                [
+                    'label'       => __('Insurance'),
+                    // 'information'   => __('Tax is based on 10% of total order.'),
+                    'price_total' => $invoice->insurance_amount
+                ],
+                [
+                    'label'       => __('Tax'),
+                    'price_total' => $invoice->tax_amount
+                ]
+            ],
+            [
+                [
+                    'label'       => __('Total'),
+                    'price_total' => $invoice->total_amount
+                ],
+            ],
+        ];
+    }
+
+
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
         $subNavigation = [];
@@ -89,44 +161,9 @@ class ShowInvoice extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         }
 
+        $payBoxData = $this->getPayBoxData($invoice);
+
         $actions = [];
-        if (!app()->environment('production')) {
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('create refund'),
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.refund.create',
-                        'parameters' => [
-                            'invoice' => $invoice->id,
-
-                        ],
-                        'body'       => [
-                            'referral_route' => [
-                                'name'       => $request->route()->getName(),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
-                    ],
-                ];
-
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'tertiary',
-                    'label' => __('send invoice'),
-                    'key'   => 'send-invoice',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.invoice.send_invoice',
-                        'parameters' => [
-                            'invoice' => $invoice->id
-                        ]
-                    ]
-                ];
-        }
 
         if ($this->parent instanceof Organisation) {
             $actions[] = [
@@ -148,16 +185,55 @@ class ShowInvoice extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
-
         }
 
-        // dd($invoice->id);
+
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'tertiary',
+                'label' => __('send invoice'),
+                'key'   => 'send-invoice',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.invoice.send_invoice',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+
+        if ($payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('create refund'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.refund.create',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
+
+                        ],
+                        'body'       => [
+                            'referral_route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ],
+                ];
+        }
+
+
 
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
                 'title'       => __('invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $invoice,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -180,49 +256,9 @@ class ShowInvoice extends OrgAction
                     'navigation' => InvoiceTabsEnum::navigation()
                 ],
 
-                'order_summary' => [
-                    [
-                        [
-                            'label'       => __('Services'),
-                            'price_total' => $invoice->services_amount
-                        ],
-                        [
-                            'label'       => __('Physical Goods'),
-                            'price_total' => $invoice->goods_amount
-                        ],
-                        [
-                            'label'       => __('Rental'),
-                            'price_total' => $invoice->rental_amount
-                        ],
-                    ],
-                    [
-                        [
-                            'label'       => __('Charges'),
-                            // 'information'   => __('Shipping fee to your address using DHL service.'),
-                            'price_total' => $invoice->charges_amount
-                        ],
-                        [
-                            'label'       => __('Shipping'),
-                            // 'information'   => __('Tax is based on 10% of total order.'),
-                            'price_total' => $invoice->shipping_amount
-                        ],
-                        [
-                            'label'       => __('Insurance'),
-                            // 'information'   => __('Tax is based on 10% of total order.'),
-                            'price_total' => $invoice->insurance_amount
-                        ],
-                        [
-                            'label'       => __('Tax'),
-                            'price_total' => $invoice->tax_amount
-                        ]
-                    ],
-                    [
-                        [
-                            'label'       => __('Total'),
-                            'price_total' => $invoice->total_amount
-                        ],
-                    ],
-                ],
+                'order_summary' => $this->getInvoiceSummary($invoice),
+
+                ...$payBoxData,
 
                 'exportPdfRoute' => [
                     'name'       => 'grp.org.accounting.invoices.download',
@@ -232,12 +268,16 @@ class ShowInvoice extends OrgAction
                     ]
                 ],
                 'box_stats'      => $this->getBoxStats($invoice),
-
-                'invoice' => InvoiceResource::make($invoice),
-                'outbox'  => [
+                'list_refunds'   => RefundResource::collection($invoice->refunds),
+                'invoice'        => InvoiceResource::make($invoice),
+                'outbox'         => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
+
+                InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
+                    ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
 
                 InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
                     fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
@@ -259,6 +299,7 @@ class ShowInvoice extends OrgAction
 
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
+            ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: InvoiceTabsEnum::REFUNDS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: InvoiceTabsEnum::EMAIL->value))
             ->table(IndexInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value))
             ->table(IndexItemizedInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMIZED->value));
@@ -271,7 +312,7 @@ class ShowInvoice extends OrgAction
     }
 
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
             return [
@@ -294,7 +335,6 @@ class ShowInvoice extends OrgAction
                 ],
             ];
         };
-        $invoice   = Invoice::where('slug', $routeParameters['invoice'])->first();
 
         return match ($routeName) {
             'grp.org.fulfilments.show.operations.invoices.show',
@@ -495,7 +535,7 @@ class ShowInvoice extends OrgAction
                     'name'       => $routeName,
                     'parameters' => [
                         'organisation' => $invoice->organisation->slug,
-                        'shop'   => $this->parent->slug,
+                        'shop'         => $this->parent->slug,
                         'invoice'      => $invoice->slug
                     ]
 

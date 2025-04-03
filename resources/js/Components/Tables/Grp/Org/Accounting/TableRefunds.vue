@@ -7,12 +7,13 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
+import Icon from "@/Components/Icon.vue"
 import { Invoice } from "@/types/invoice"
 import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle } from '@fal'
+import { faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle, faArrowCircleLeft, faSeedling } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle)
+library.add(faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle, faArrowCircleLeft, faSeedling)
 
 
 defineProps<{
@@ -25,7 +26,27 @@ const locale = useLocaleStore();
 console.log(route().current())
 
 function refundRoute(invoice: Invoice) {
+  console.log(route().current())
+
     switch (route().current()) {
+      case 'grp.org.fulfilments.show.operations.invoices.show':
+        return route(
+          'grp.org.fulfilments.show.operations.invoices.show.refunds.show',
+          [
+            route().params["organisation"],
+            route().params["fulfilment"],
+            route().params["invoice"],
+            invoice.slug
+          ])
+      case 'grp.org.fulfilments.show.operations.invoices.show.refunds.index':
+        return route(
+          'grp.org.fulfilments.show.operations.invoices.show.refunds.show',
+          [
+            route().params["organisation"],
+            route().params["fulfilment"],
+            route().params["invoice"],
+            invoice.slug
+          ])
         case 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index':
             return route(
                 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show',
@@ -71,6 +92,10 @@ function refundRoute(invoice: Invoice) {
         </template>
 
     
+        <!-- Column: State -->
+        <template #cell(in_process)="{ item: item }">
+            <Icon :data="item['state_icon']" class="px-1" />
+        </template>
 
         <!-- Column: Date -->
         <template #cell(date)="{ item }">

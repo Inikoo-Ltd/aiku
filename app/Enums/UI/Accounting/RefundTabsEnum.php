@@ -13,13 +13,12 @@ namespace App\Enums\UI\Accounting;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
-enum InvoiceRefundTabsEnum: string
+enum RefundTabsEnum: string
 {
     use EnumHelperTrait;
     use HasTabs;
 
     case ITEMS                  = 'items';
-    case ITEMS_IN_PROCESS                  = 'items_in_process';
     case HISTORY                = 'history';
     case PAYMENTS               = 'payments';
 
@@ -28,29 +27,25 @@ enum InvoiceRefundTabsEnum: string
     {
         return match ($this) {
 
-            InvoiceRefundTabsEnum::PAYMENTS     => [
+            RefundTabsEnum::PAYMENTS     => [
                 'title' => __('Payments'),
                 'type'  => 'icon',
                 'align' => 'right',
                 'icon'  => 'fal fa-credit-card',
             ],
 
-            InvoiceRefundTabsEnum::HISTORY     => [
+            RefundTabsEnum::HISTORY     => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
-            InvoiceRefundTabsEnum::ITEMS       => [
-                'title' => __('Items').' (debug: finalised)',
+            RefundTabsEnum::ITEMS       => [
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
 
-            InvoiceRefundTabsEnum::ITEMS_IN_PROCESS       => [
-                'title' => __('Items').' (debug: in process)',
-                'icon'  => 'fal fa-undo-alt',
-            ],
         };
     }
 }

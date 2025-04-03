@@ -14,13 +14,13 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import { computed, ref } from 'vue'
 import {
   faFileMinus,
-  faHandHoldingUsd
+  faArrowCircleLeft
 } from "@fal";
 import { useTabChange } from '@/Composables/tab-change'
 import { PageHeading as TSPageHeading } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 
-library.add(faFileMinus, faHandHoldingUsd);
+library.add(faFileMinus, faArrowCircleLeft);
 
 const props = defineProps<{
   pageHead: TSPageHeading

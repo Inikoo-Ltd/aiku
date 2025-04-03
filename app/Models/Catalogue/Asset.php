@@ -12,9 +12,11 @@ use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Fulfilment\RecurringBill;
+use App\Models\Fulfilment\Space;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Ordering\Transaction;
@@ -194,6 +196,16 @@ class Asset extends Model implements HasMedia
     public function product(): HasOne
     {
         return $this->hasOne(Product::class);
+    }
+
+    public function charge(): HasOne
+    {
+        return $this->hasOne(Charge::class);
+    }
+
+    public function space(): HasOne
+    {
+        return $this->hasOne(Space::class);
     }
 
     public function recurringBills(): MorphToMany
