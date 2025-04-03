@@ -26,12 +26,10 @@ import ModalApproveConfirmation from '@/Components/Utils/ModalApproveConfirmatio
 
 library.add(faCheck, faTimes, faCheckCircle, faTimesCircle)
 
-defineProps<{
+const props = defineProps<{
   data: {}
   tab?: string
 }>()
-
-
 
 </script>
 

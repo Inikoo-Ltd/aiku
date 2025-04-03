@@ -45,6 +45,8 @@ class IndexCustomerBalanceTransaction extends OrgAction
 
         $queryBuilder->where('customer_id', $customer->id);
 
+        $queryBuilder->leftJoin('currencies', 'currencies.id', 'credit_transactions.currency_id');
+
         return $queryBuilder
             ->defaultSort('-date')
             ->select([
@@ -52,7 +54,8 @@ class IndexCustomerBalanceTransaction extends OrgAction
                 'notes',
                 'date',
                 'amount',
-                'running_amount'
+                'running_amount',
+                'currencies.code as currency_code',
             ])
             ->allowedSorts(['type', 'notes', 'date', 'amount', 'running_amount'])
             // ->allowedFilters([$globalSearch])
@@ -72,7 +75,6 @@ class IndexCustomerBalanceTransaction extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
-                ->withGlobalSearch()
                 ->column(key: 'type', label: __('Transaction type'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true)

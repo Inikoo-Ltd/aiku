@@ -23,7 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $asset_unit
  * @property mixed $percentage_off
  */
-class CustomerBalancesResource extends JsonResource
+class CustomerBalanceTransactionsResource extends JsonResource
 {
     use HasSelfCall;
 
@@ -36,6 +36,7 @@ class CustomerBalancesResource extends JsonResource
             'date' => $this->date,
             'amount' => $this->amount,
             'running_amount' => $this->running_amount,
+            'currency_code' => $this->currency_code,
         ];
     }
 }
