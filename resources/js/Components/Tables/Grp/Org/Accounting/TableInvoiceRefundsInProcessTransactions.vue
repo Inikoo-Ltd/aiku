@@ -226,6 +226,7 @@ const DeleteRefund = (route, index) => {
 
                             <!-- <Button :style="'negative'" :icon="faTrash" @click="" ></Button> -->
                             <FontAwesomeIcon
+                                v-if="_formCell[item.rowIndex]?.form?.refund_amount > 0"
                                 @click="DeleteRefund(item.refund_route, item.rowIndex)"
                                 :icon="faTrashAlt"
                                 class="h-7 w-7 cursor-pointer text-red-500"
