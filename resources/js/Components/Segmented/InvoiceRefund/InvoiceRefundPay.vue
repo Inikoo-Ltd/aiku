@@ -54,7 +54,7 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: 'onPayInOnClick'): void
 }>()
-console.log('dfsdfsfd',props)
+
 
 const locale = inject('locale', aikuLocaleStructure)
 const _PureTable = ref(null)
@@ -201,7 +201,7 @@ const onSubmitPaymentRefund = () => {
     } 
 }
 
-const onSubmitRefundToPaymentsMethod = ( from , data : any ) => {
+const onSubmitRefundToPaymentsMethod = ( form , data : any ) => {
     let url,finalData
     if (paymentRefund.value.payment_method === 'invoice_payment_method') {
         url = route('grp.models.refund.refund_to_payment_account', {
@@ -209,7 +209,7 @@ const onSubmitRefundToPaymentsMethod = ( from , data : any ) => {
             paymentAccount : data.payment_account_slug,
         })
         finalData = {
-            amount : from.refund_amount,
+            amount : form.refund_amount,
             original_payment_id : data.id
         }
 
@@ -227,13 +227,13 @@ const onSubmitRefundToPaymentsMethod = ( from , data : any ) => {
                     })
                 },
                 onError: (error) => {
+                    console.log(error)
                     notify({
                         title: trans("Something went wrong"),
                         text: error.message,
                         type: "error",
                     })
                 },
-                preserveScroll: true,
             }
         )
     } 
@@ -315,7 +315,6 @@ const listPaymentRefund = computed(() => [
     }
 ]);
 
-console.log(props.invoice_pay.total_need_to_refund_in_payment_method, props.invoice_pay.total_need_to_refund_in_credit_method)
 
 </script>
 
