@@ -36,6 +36,11 @@ trait WithFulfilmentCustomerPlatformSubNavigation
 
         $subNavigation[] = [
             'label'     => __('Portfolios'),
+            'route' => [
+                'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.index',
+                'parameters' => $request->route()->originalParameters()
+
+            ],
             'leftIcon'  => [
                 'icon'    => 'fal fa-box',
                 'tooltip' => __('portfolio'),

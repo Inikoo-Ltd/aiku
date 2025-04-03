@@ -25,6 +25,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\EditFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatform;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformPortfolios;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatforms;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
@@ -166,6 +167,10 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
         Route::get('', IndexFulfilmentCustomerPlatforms::class)->name('.index');
         Route::prefix('/{modelHasPlatform}')->as('.show')->group(function () {
             Route::get('', ShowFulfilmentCustomerPlatform::class);
+
+            Route::prefix('/portfolios')->as('.portfolios')->group(function () {
+                Route::get('', IndexFulfilmentCustomerPlatformPortfolios::class)->name('.index');
+            });
         });
     });
 
