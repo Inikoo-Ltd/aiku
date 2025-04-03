@@ -83,7 +83,7 @@ defineExpose({
 		class="custom-paginator"
 		@page="onPage">
 		<template v-for="col in blueprint" :key="col.key">
-			<Column :field="col.key" :style="{ width: '100px' }">
+			<Column :field="col.key">
 				<template #header>
 					<slot :name="`${col.key}-header`">
 						<span class="font-bold">{{ col.header }}</span>

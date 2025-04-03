@@ -35,7 +35,7 @@ class RefundInProcessTransactionsResource extends JsonResource
             'name'                           => $this->name,
             'quantity'                       => (int)$this->quantity,
             'net_amount'                     => $this->net_amount,
-            'max_refundable_amount'          => $this->net_amount,// todo: subtract the previous refunds (in_process=false)
+            'max_refundable_amount'          => max(0, $this->net_amount - $totalLastRefund),
             'currency_code'                  => $this->currency_code,
             'in_process'                     => $this->in_process,
             'unit_price'                     => $this->price,

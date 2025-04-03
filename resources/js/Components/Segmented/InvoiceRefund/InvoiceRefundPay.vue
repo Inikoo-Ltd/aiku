@@ -513,7 +513,7 @@ const listPaymentRefund = computed(() => [
         </Dialog>
 
         <!-- Modal: Pay refund -->
-        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '50vw', position: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
+        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '48vw', position: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
@@ -557,7 +557,7 @@ const listPaymentRefund = computed(() => [
                         <label for="last-name" class="block text-sm font-medium leading-6">
                             {{ trans('Refund amount') }}
                         </label>
-                        <div class="mt-1">
+                        <div class="mt-1 w-1/3">
                             <InputNumber v-model="paymentRefund.payment_amount"
                                 @update:modelValue="(e) => paymentRefund.payment_amount = e"
                                 @input="(e) => paymentRefund.payment_amount = e.value" buttonLayout="horizontal"
@@ -572,10 +572,7 @@ const listPaymentRefund = computed(() => [
                         </div>
 
                         <div class="space-x-1">
-                            <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{
-                                locale.currencyFormat(props.invoice_pay.currency_code || 'gbp', Number(-invoice_pay.total_need_to_pay))
-                              }}
-                            </span>
+                            <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{ locale.currencyFormat(props.invoice_pay.currency_code || 'gbp', Number(-invoice_pay.total_need_to_pay)) }}</span>
                             <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_pay"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
                                 type="tertiary" :label="trans('Refund all')" size="xxs" />
@@ -651,9 +648,9 @@ const listPaymentRefund = computed(() => [
                     </div>
                 </div>
 
-                <div class="mt-6 mb-4 relative">
+                <div class="mt-6 mb-4 relative flex justify-end">
                     <Button v-if="paymentRefund.payment_method == 'credit_balance'" @click="() => onSubmitPaymentRefund()" label="Submit"
-                        :loading="isLoadingPayment" full />
+                        :loading="isLoadingPayment"  />
                     <Transition name="spin-to-down">
                         <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
                             errorPaymentMethod }}</p>
