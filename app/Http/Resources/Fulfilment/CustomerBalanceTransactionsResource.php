@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,9 +30,8 @@ class CustomerBalanceTransactionsResource extends JsonResource
 
     public function toArray($request): array
     {
-
         return [
-            'type' => $this->type,
+            'type' => CreditTransactionTypeEnum::from($this->type)->label(),
             'notes' => $this->notes,
             'date' => $this->date,
             'amount' => $this->amount,
