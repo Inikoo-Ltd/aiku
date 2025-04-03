@@ -45,8 +45,8 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.delivery-notes.index":
             return route(
-                    "grp.org.shops.show.ordering.delivery-notes.index",
-                    [route().params["organisation"], route().params["shop"]])
+                    "grp.org.shops.show.ordering.delivery-notes.show",
+                    [route().params["organisation"], route().params["shop"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.orders.index":
             return route(
                 "grp.org.shops.show.ordering.show.delivery-note.show",
