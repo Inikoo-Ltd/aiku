@@ -17,12 +17,11 @@ enum FulfilmentCustomerPlatformTabsEnum: string
     use HasTabs;
 
     case SHOWCASE      = 'showcase';
-    case AGREED_PRICES = 'agreed_prices';
 
     public function blueprint(): array
     {
         return match ($this) {
-            FulfilmentCustomerTabsEnum::SHOWCASE => [
+            FulfilmentCustomerPlatformTabsEnum::SHOWCASE => [
                 'title' => __('showcase'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],

@@ -46,7 +46,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         $actions = [];
 
         return Inertia::render(
-            'Org/Fulfilment/FulfilmentCustomer',
+            'Org/Fulfilment/FulfilmentCustomerPlatform',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -85,7 +85,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Customers')
+                            'label' => __('Channels')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -119,7 +119,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                             'organisation' => $routeParameters['organisation'],
                             'fulfilment'   => $routeParameters['fulfilment'],
                             'fulfilmentCustomer' => $routeParameters['fulfilmentCustomer'],
-                            'platform'     => $modelHasPlatform->id
+                            'modelHasPlatform'     => $modelHasPlatform->id
                         ]
                     ]
                 ]
