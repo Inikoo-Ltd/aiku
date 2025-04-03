@@ -111,13 +111,6 @@ class EditRedirect extends OrgAction
         return $this->handle($redirect, $request);
     }
 
-    // public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    // {
-    //     return ShowInvoice::make()->getBreadcrumbs(
-    //         routeName: preg_replace('/edit$/', 'show', $routeName),
-    //         routeParameters: $routeParameters,
-    //         suffix: '('.__('Editing').')'
-    //     );
-    // }
+
 
 }

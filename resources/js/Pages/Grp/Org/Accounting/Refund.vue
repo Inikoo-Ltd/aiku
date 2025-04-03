@@ -229,6 +229,9 @@ watch(paymentData, () => {
     errorPaymentMethod.value = null;
   }
 });
+
+
+console.log(props.pageHead)
 </script>
 
 
@@ -258,6 +261,16 @@ watch(paymentData, () => {
         </ModalConfirmationDelete>
       </div>
     </template>
+
+
+    <template #button-finalise-refund="{ action }">
+      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => window.location.reload()">
+            <Button :style="action.style"  :icon="action.icon"
+             :iconRight="action.iconRight" :label="action.label"
+              :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+      </Link>
+    </template>
+
 
 
   </PageHeading>

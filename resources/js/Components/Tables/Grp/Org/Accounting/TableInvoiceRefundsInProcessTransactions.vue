@@ -91,7 +91,7 @@ const localeCode = navigator.language
                     </small>
 
                     <!-- Refundable Amount -->
-                    <small v-if="item.total_last_refund != item.net_amount" class="text-blue-500 text-xs">
+                    <small v-if="item.total_last_refund != item.net_amount && (item.net_amount - item.refund_net_amount - item.total_last_refund) > 0" class="text-blue-500 text-xs">
                         Refundable: {{ locale.currencyFormat(item.currency_code, item.net_amount - item.refund_net_amount - item.total_last_refund) }}
                     </small>
                 </div>
@@ -200,6 +200,18 @@ const localeCode = navigator.language
                     :step="item.unit_price"
                     @refund="(form)=> onClickQuantity(item.refund_route, item.rowIndex, form)"
                 >
+                <template #bottom-button="{form}">
+                            <ButtonWithLink
+                                v-if="Number(item.total_last_refund) < Number(form.refund_amount)"
+                                @click="() => form.refund_amount = (item.net_amount - item.refund_net_amount - item.total_last_refund)"
+                                :key="item.code"
+                                :label="trans('Refund All')"
+                                size="xxs"
+                                :disabled="form.refund_amount >= (item.net_amount - item.refund_net_amount - item.total_last_refund)"
+                                :bindToLink="{ preserveScroll: true }"
+                                type="tertiary"
+                            />
+                </template>
                 </ActionCell>
 
             </template>

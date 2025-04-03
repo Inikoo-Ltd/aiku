@@ -24,6 +24,7 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\UI\Accounting\InvoicesInFulfilmentCustomerTabsEnum;
 use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\RefundsResource;
@@ -62,7 +63,6 @@ class IndexInvoices extends OrgAction
 
     public function handle(Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
     {
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('invoices.reference', $value);
@@ -109,9 +109,9 @@ class IndexInvoices extends OrgAction
                 $join->on('invoices.id', '=', 'model_has_payments.model_id')
                     ->where('model_has_payments.model_type', '=', 'Invoice');
             })
-            ->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id')
-            ->leftJoin('org_payment_service_providers', 'payments.org_payment_service_provider_id', '=', 'org_payment_service_providers.id')
-            ->where('org_payment_service_providers.id', '=', $parent->id);
+                ->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id')
+                ->leftJoin('org_payment_service_providers', 'payments.org_payment_service_provider_id', '=', 'org_payment_service_providers.id')
+                ->where('org_payment_service_providers.id', '=', $parent->id);
         } else {
             abort(422);
         }
@@ -141,7 +141,6 @@ class IndexInvoices extends OrgAction
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
-
 
 
         if ($parent instanceof Shop || $parent instanceof Organisation) {
@@ -232,7 +231,7 @@ class IndexInvoices extends OrgAction
         if ($this->parent instanceof Organisation) {
             return $request->user()->authTo("accounting.{$this->organisation->id}.view");
         } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-            return $request->user()->authTo(["crm.{$this->shop->id}.view","accounting.{$this->shop->organisation_id}.view"]);
+            return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
         } elseif ($this->parent instanceof Shop) {
             //todo think about it
             $permission = $request->user()->authTo("orders.{$this->shop->id}.view");
@@ -301,20 +300,20 @@ class IndexInvoices extends OrgAction
             $afterTitle = [
                 'label' => __('invoices')
             ];
-            $actions[] =
-            [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('Create standalone invoice'),
-                'fullLoading'   => true,
-                'route' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.fulfilment-customer.standalone-invoice.store',
-                    'parameters' => [
-                        'fulfilmentCustomer' => $this->parent->id
+            $actions[]  =
+                [
+                    'type'        => 'button',
+                    'style'       => 'create',
+                    'label'       => __('Create standalone invoice'),
+                    'fullLoading' => true,
+                    'route'       => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.fulfilment-customer.standalone-invoice.store',
+                        'parameters' => [
+                            'fulfilmentCustomer' => $this->parent->id
+                        ]
                     ]
-                ]
-            ];
+                ];
         } elseif ($this->parent instanceof CustomerClient) {
             $iconRight  = $icon;
             $afterTitle = [
@@ -338,10 +337,9 @@ class IndexInvoices extends OrgAction
                 'title' => __('customer')
             ];
         } elseif ($this->parent instanceof InvoiceCategory) {
-            $iconRight  = null;
             $model = __('Invoices');
-            $title      = $this->parent->name;
-            $icon       = [
+            $title = $this->parent->name;
+            $icon  = [
                 'icon'  => ['fal', 'fa-file-invoice-dollar'],
                 'title' => __('invoice category')
             ];
@@ -351,22 +349,38 @@ class IndexInvoices extends OrgAction
         $routeParameters = $request->route()->originalParameters();
 
 
-        if ($this->tab && !app()->environment('production')) {
+        if ($this->parent instanceof CustomerClient || $this->parent instanceof Customer) {
             $data = [
                 'tabs' => [
-                            'current'    => $this->tab,
-                            'navigation' => InvoicesTabsEnum::navigation(),
-                        ],
-                        InvoicesTabsEnum::INVOICES->value => $this->tab == InvoicesTabsEnum::INVOICES->value
-                            ? fn () => InvoicesResource::collection($invoices)
-                            : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
-                        InvoicesTabsEnum::REFUNDS->value => $this->tab == InvoicesTabsEnum::REFUNDS->value
-                            ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
-                            : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
+                    'current'    => $this->tab,
+                    'navigation' => InvoicesTabsEnum::navigation(),
+                ],
 
-                        InvoicesTabsEnum::IN_PROCESS->value => $this->tab == InvoicesTabsEnum::IN_PROCESS->value
-                            ? fn () => InvoicesResource::collection(IndexInvoicesInProcess::run($this->parent, InvoicesTabsEnum::IN_PROCESS->value))
-                            : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoicesInProcess::run($this->parent, InvoicesTabsEnum::IN_PROCESS->value))),
+                InvoicesTabsEnum::INVOICES->value => $this->tab == InvoicesTabsEnum::INVOICES->value
+                    ? fn () => InvoicesResource::collection($invoices)
+                    : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
+                InvoicesTabsEnum::REFUNDS->value  => $this->tab == InvoicesTabsEnum::REFUNDS->value
+                    ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
+
+            ];
+        } elseif ($this->parent instanceof FulfilmentCustomer) {
+            $data = [
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => InvoicesInFulfilmentCustomerTabsEnum::navigation(),
+                ],
+
+                InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value   => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value
+                    ? fn () => InvoicesResource::collection($invoices)
+                    : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
+                InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value    => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value
+                    ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))),
+                InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value
+                    ? fn () => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))),
+
             ];
         } else {
             $data = [
@@ -374,7 +388,9 @@ class IndexInvoices extends OrgAction
             ];
         }
 
-        $inertiaRender =  Inertia::render(
+
+
+        $inertiaRender = Inertia::render(
             'Org/Accounting/Invoices',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -397,14 +413,18 @@ class IndexInvoices extends OrgAction
             ]
         );
 
-        if ($this->tab && !app()->environment('production')) {
+        if ($this->parent instanceof CustomerClient || $this->parent instanceof Customer) {
             $inertiaRender->table($this->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::INVOICES->value))
-                ->table(IndexRefunds::make()->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::REFUNDS->value))
-                ->table(IndexInvoicesInProcess::make()->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::IN_PROCESS->value));
+                ->table(IndexRefunds::make()->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::REFUNDS->value));
+        } elseif ($this->parent instanceof FulfilmentCustomer) {
+            $inertiaRender->table($this->tableStructure(parent: $this->parent, prefix: InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value))
+                ->table(IndexRefunds::make()->tableStructure(parent: $this->parent, prefix: InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
+                ->table(IndexStandaloneInvoicesInProcess::make()->tableStructure(fulfilmentCustomer: $this->parent, prefix: InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value));
         } else {
-            $inertiaRender = $inertiaRender->table($this->tableStructure(parent: $this->parent))
-                                            ->table(IndexInvoicesInProcess::make()->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::IN_PROCESS->value));
+            $inertiaRender = $inertiaRender->table($this->tableStructure(parent: $this->parent));
         }
+
+
         return $inertiaRender;
     }
 
@@ -509,9 +529,8 @@ class IndexInvoices extends OrgAction
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilmentCustomer;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoicesTabsEnum::values());
-
-        return $this->handle($fulfilmentCustomer, InvoicesTabsEnum::INVOICES->value);
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoicesInFulfilmentCustomerTabsEnum::values());
+        return $this->handle($fulfilmentCustomer, InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value);
     }
 
 
@@ -519,10 +538,11 @@ class IndexInvoices extends OrgAction
     public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customer;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(InvoicesTabsEnum::values());
 
-        return $this->handle(parent: $customer);
+        return $this->handle($customer, InvoicesTabsEnum::INVOICES->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
@@ -549,8 +569,6 @@ class IndexInvoices extends OrgAction
                 ]
             ];
         };
-
-
 
 
         return match ($routeName) {
@@ -700,9 +718,7 @@ class IndexInvoices extends OrgAction
 
             'grp.overview.ordering.invoices.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

@@ -18,28 +18,20 @@ enum InvoicesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case INVOICES                  = 'invoices';
-    case REFUNDS                = 'refunds';
-    case IN_PROCESS                = 'in_process';
+    case INVOICES = 'invoices';
+    case REFUNDS = 'refunds';
 
     public function blueprint(): array
     {
         return match ($this) {
-
-            InvoicesTabsEnum::INVOICES     => [
+            InvoicesTabsEnum::INVOICES => [
                 'title' => __('Invoices'),
-                'icon'    => 'fal fa-file-invoice-dollar',
-            ],
-
-            InvoicesTabsEnum::REFUNDS     => [
-                'title' => __('Refunds'),
-                'icon'    => 'fal fa-arrow-circle-left',
-            ],
-
-            InvoicesTabsEnum::IN_PROCESS => [
-                'title' => __('in process'),
                 'icon'  => 'fal fa-file-invoice-dollar',
-                'align' => 'right',
+            ],
+
+            InvoicesTabsEnum::REFUNDS => [
+                'title' => __('Refunds'),
+                'icon'  => 'fal fa-arrow-circle-left',
             ],
         };
     }
