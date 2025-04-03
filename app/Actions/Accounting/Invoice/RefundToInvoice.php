@@ -24,10 +24,13 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 
 class RefundToInvoice extends OrgAction
 {
+    private Invoice $invoice;
+    private PaymentAccount $paymentAccount;
+
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $type        = Arr::get($modelData, 'type_refund', 'payment');
@@ -39,47 +42,6 @@ class RefundToInvoice extends OrgAction
         $refunds = $refundsQuery->sortByDesc('total_amount')->all();
 
         $totalNeedToRefund = $refundsQuery->sum('total_amount') - $refundsQuery->sum('payment_amount');
-
-
-        $totalRoundRefund = abs(round($totalRefund, 2));
-
-        if ($paymentAccount->type!=PaymentAccountTypeEnum::ACCOUNT &&   $invoice->payment_amount > 0 && !Arr::get($modelData, 'is_auto_refund', false)) {
-            $paymentAmountWithInCertainType = DB::table('invoices')
-                ->where('invoices.id', $invoice->id)
-                ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
-                ->where('model_has_payments.model_type', 'Invoice')
-                ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
-                ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
-                ->when(
-                    $type === 'credit',
-                    function ($query) {
-                        $query->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
-                    },
-                    function ($query) {
-                        $query->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
-                    }
-                )
-                ->sum('payments.amount');
-            if ($totalRoundRefund > abs($paymentAmountWithInCertainType)) {
-                throw ValidationException::withMessages(
-                    [
-                        'message' => [
-                            'amount' => 'The refund amount exceeds the total paid amount in '.($type == 'credit' ? 'credit balance' : 'payment method'),
-                        ]
-                    ]
-                );
-            }
-        }
-
-        if ($totalRoundRefund > abs(round($totalNeedToRefund, 2))) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'amount' => 'The refund amount exceeds the total amount that needs to be refunded',
-                    ]
-                ]
-            );
-        }
 
         foreach ($refunds as $refund) {
             if ($totalNeedToRefund >= 0 || $totalRefund >= 0) {
@@ -136,9 +98,54 @@ class RefundToInvoice extends OrgAction
         ];
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        $type = $this->get("type_refund") ?? 'payment';
+        $totalRefund = -abs($this->get("amount"));
+        $totalRoundRefund = abs(round($totalRefund, 2));
+
+        $refundsQuery = $this->invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID);
+        $totalNeedToRefund = $refundsQuery->sum('total_amount') - $refundsQuery->sum('payment_amount');
+
+        if ($this->paymentAccount->type != PaymentAccountTypeEnum::ACCOUNT && $this->invoice->payment_amount > 0 && !$this->get("is_auto_refund", false)) {
+            $paymentAmountWithInCertainType = DB::table('invoices')
+                ->where('invoices.id', $this->invoice->id)
+                ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+                ->where('model_has_payments.model_type', 'Invoice')
+                ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+                ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
+                ->when(
+                    $type === 'credit',
+                    function ($query) {
+                        $query->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
+                    },
+                    function ($query) {
+                        $query->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value);
+                    }
+                )
+                ->sum('payments.amount');
+
+            if ($totalRoundRefund > abs($paymentAmountWithInCertainType)) {
+                $validator->errors()->add(
+                    'amount',
+                    'The refund amount exceeds the total paid amount in ' . ($type == 'credit' ? 'credit balance' : 'payment method')
+                );
+            }
+        }
+
+        if ($totalRoundRefund > abs(round($totalNeedToRefund, 2))) {
+            $validator->errors()->add(
+                'amount',
+                'The refund amount exceeds the total amount that needs to be refunded'
+            );
+        }
+    }
+
     public function action(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $this->asAction = true;
+        $this->invoice = $invoice;
+        $this->paymentAccount = $paymentAccount;
         $this->initialisationFromShop($invoice->shop, $modelData);
 
         return $this->handle($invoice, $paymentAccount, $modelData);
