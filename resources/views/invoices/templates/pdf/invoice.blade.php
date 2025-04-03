@@ -289,7 +289,7 @@
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->net_amount + $invoice->shipping_amount }}</td>
+        <td>{{ $invoice->currency->symbol . number_format($invoice->net_amount + $invoice->shipping_amount, 2, '.', '') }}</td>
     </tr>
 
     <tr>
