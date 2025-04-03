@@ -30,8 +30,7 @@ class RefundToInvoice extends OrgAction
 {
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
-
-        $type = Arr::get($modelData, 'type_refund', 'payment');
+        $type        = Arr::get($modelData, 'type_refund', 'payment');
         $totalRefund = -abs(Arr::get($modelData, 'amount'));
 
 
@@ -42,10 +41,9 @@ class RefundToInvoice extends OrgAction
         $totalNeedToRefund = $refundsQuery->sum('total_amount') - $refundsQuery->sum('payment_amount');
 
 
-
         $totalRoundRefund = abs(round($totalRefund, 2));
 
-        if ($invoice->payment_amount > 0 && !Arr::get($modelData, 'is_auto_refund', false)) {
+        if ($paymentAccount->type!=PaymentAccountTypeEnum::ACCOUNT &&   $invoice->payment_amount > 0 && !Arr::get($modelData, 'is_auto_refund', false)) {
             $paymentAmountWithInCertainType = DB::table('invoices')
                 ->where('invoices.id', $invoice->id)
                 ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
@@ -66,7 +64,7 @@ class RefundToInvoice extends OrgAction
                 throw ValidationException::withMessages(
                     [
                         'message' => [
-                            'amount' => 'The refund amount exceeds the total paid amount in ' . ($type == 'credit' ? 'credit balance' : 'payment method'),
+                            'amount' => 'The refund amount exceeds the total paid amount in '.($type == 'credit' ? 'credit balance' : 'payment method'),
                         ]
                     ]
                 );
@@ -91,10 +89,10 @@ class RefundToInvoice extends OrgAction
             $amountPayPerRefund = max($totalRefund, $refund->total_amount);
 
             $paymentInRefund = StorePayment::make()->action($invoice->customer, $paymentAccount, [
-                'amount' => $amountPayPerRefund,
-                'status' => PaymentStatusEnum::SUCCESS->value,
-                'state' => PaymentStateEnum::COMPLETED->value,
-                'type' => PaymentTypeEnum::REFUND,
+                'amount'              => $amountPayPerRefund,
+                'status'              => PaymentStatusEnum::SUCCESS->value,
+                'state'               => PaymentStateEnum::COMPLETED->value,
+                'type'                => PaymentTypeEnum::REFUND,
                 'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
             ]);
 
@@ -103,46 +101,19 @@ class RefundToInvoice extends OrgAction
 
             AttachPaymentToInvoice::make()->action($invoice, $paymentInRefund, []);
 
-            // if only update the refund invoice and no need payment data for refund invoice
-            // $payStatus             = InvoicePayStatusEnum::UNPAID;
-            // $paymentAt             = null;
-            // $runningPaymentsAmount = 0;
-
-            // if ($payStatus == InvoicePayStatusEnum::UNPAID && abs($amountPayPerRefund) >= abs($invoice->total_amount)) {
-            //     $payStatus = InvoicePayStatusEnum::PAID;
-            //     $paymentAt = now();
-            // }
-
-            // $invoice->update(
-            //     [
-            //         'pay_status'     => $payStatus,
-            //         'paid_at'        => $paymentAt,
-            //         'payment_amount' => $runningPaymentsAmount
-            //     ]
-            // );
 
             if ($type === 'credit') {
                 StoreCreditTransaction::make()->action($invoice->customer, [
                     'amount' => abs($amountPayPerRefund),
-                    'date'  => now(),
-                    'type' => CreditTransactionTypeEnum::MONEY_BACK
+                    'date'   => now(),
+                    'type'   => CreditTransactionTypeEnum::MONEY_BACK
                 ]);
             }
 
             $totalNeedToRefund -= $amountPayPerRefund;
-            $totalRefund -= $amountPayPerRefund;
+            $totalRefund       -= $amountPayPerRefund;
         }
 
-        // $paymentInInvoice = StorePayment::make()->action($invoice->customer, $paymentAccount, [
-        //     'amount' => abs(Arr::get($modelData, 'amount')) * -1,
-        //     'status' => PaymentStatusEnum::SUCCESS->value,
-        //     'state' => PaymentStateEnum::COMPLETED->value,
-        //     'type' => PaymentTypeEnum::REFUND,
-        //     'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
-        // ]);
-
-        // invoice
-        // AttachPaymentToInvoice::make()->action($invoice, $paymentInInvoice, []);
 
         if ($type === 'credit') {
             if ($this->asAction) {
@@ -153,16 +124,15 @@ class RefundToInvoice extends OrgAction
         }
 
         return $invoice;
-
     }
 
     public function rules(): array
     {
         return [
-            'amount'    => ['required', 'numeric'],
-            'type_refund'     => ['required', 'string', 'in:payment,credit'],
+            'amount'              => ['required', 'numeric'],
+            'type_refund'         => ['required', 'string', 'in:payment,credit'],
             'original_payment_id' => ['sometimes', 'nullable', 'exists:payments,id'],
-            'is_auto_refund' => ['sometimes', 'boolean'],
+            'is_auto_refund'      => ['sometimes', 'boolean'],
         ];
     }
 
@@ -170,6 +140,7 @@ class RefundToInvoice extends OrgAction
     {
         $this->asAction = true;
         $this->initialisationFromShop($invoice->shop, $modelData);
+
         return $this->handle($invoice, $paymentAccount, $modelData);
     }
 }

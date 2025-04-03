@@ -24,7 +24,6 @@ import Row from 'primevue/row';
 import Column from 'primevue/column';
 import { useLocaleStore } from "@/Stores/locale"
 import ActionCell from './ActionCell.vue'
-import Currency from '@/Components/Pure/Currency.vue'
 
 library.add(faCheck, faSave, faPlus, faMinus)
 
@@ -307,7 +306,7 @@ const listPaymentRefund = computed(() => [
     {
         label: trans("Refund money to customer's credit balance"),
         value: 'credit_balance',
-        disable : props.invoice_pay.total_need_to_refund_in_credit_method == 0
+        disable : false
     },
     {
         label: trans("Refund money to payment method of the invoice"),
@@ -515,7 +514,7 @@ console.log(props.invoice_pay.total_need_to_refund_in_payment_method, props.invo
         </Dialog>
 
         <!-- Modal: Pay refund -->
-        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '75vw', position: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
+        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '50vw', position: 'relative' }" maximizable modal :draggable="false" :dismissableMask="true">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Refund Payment') }}</h2>
@@ -575,9 +574,10 @@ console.log(props.invoice_pay.total_need_to_refund_in_payment_method, props.invo
 
                         <div class="space-x-1">
                             <span class="text-xxs text-gray-500">{{ trans('Need to refund') }}: {{
-                                locale.currencyFormat(props.invoice_pay.currency_code || 'usd',
-                                Number(-invoice_pay.total_need_to_refund_in_credit_method)) }}</span>
-                            <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_refund_in_credit_method"
+                                locale.currencyFormat(props.invoice_pay.currency_code || 'gbp', Number(-invoice_pay.total_need_to_pay))
+                              }}
+                            </span>
+                            <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_pay"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
                                 type="tertiary" :label="trans('Refund all')" size="xxs" />
                         </div>
