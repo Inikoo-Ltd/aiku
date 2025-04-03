@@ -125,7 +125,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
   const components: Component = {
-    items: TableInvoiceRefundsTransactions,
+    items: TableInvoiceRefundsInProcessTransactions,
     items_in_process: TableInvoiceRefundsInProcessTransactions,
     payments: TablePayments,
     details: ModelDetails,

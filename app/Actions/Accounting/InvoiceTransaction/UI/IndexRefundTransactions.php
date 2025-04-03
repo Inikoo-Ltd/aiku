@@ -13,10 +13,10 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRefundTransactions extends OrgAction
@@ -38,21 +38,23 @@ class IndexRefundTransactions extends OrgAction
 
 
         $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
-        $queryBuilder->where('invoice_id', $refund->id);
+        $queryBuilder->where('invoice_transactions.invoice_id', $refund->id);
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
+        $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.invoice_transaction_id', 'original_invoice_transaction.id');
 
         $queryBuilder->select(
             [
-                'invoice_transactions.id',
-                'invoice_transactions.in_process',
-                'invoice_transactions.historic_asset_id',
+                'original_invoice_transaction.id',
+                'original_invoice_transaction.updated_at',
+                'original_invoice_transaction.in_process',
                 'historic_assets.code',
                 'historic_assets.name',
                 'assets.slug',
-                'invoice_transactions.quantity',
-                'invoice_transactions.net_amount',
-                'invoice_transactions.gross_amount',
+                'assets.price',
+                'original_invoice_transaction.quantity',
+                'original_invoice_transaction.net_amount',
+                DB::raw($refund->id.'  as refund_id'),
 
             ]
         );
@@ -66,9 +68,9 @@ class IndexRefundTransactions extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Invoice $parent, $prefix = null): Closure
+    public function tableStructure(Invoice $invoice, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $parent) {
+        return function (InertiaTable $table) use ($prefix, $invoice) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -86,7 +88,7 @@ class IndexRefundTransactions extends OrgAction
             $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
 
-            if ($parent instanceof Invoice && $parent->type === InvoiceTypeEnum::REFUND && $parent->in_process) {
+            if ($invoice instanceof Invoice && $invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {
                 $table->column(key: 'action', label: __('action'), canBeHidden: false);
             }
 

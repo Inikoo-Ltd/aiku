@@ -161,6 +161,8 @@ class ShowInvoice extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         }
 
+        $payBoxData = $this->getPayBoxData($invoice);
+
         $actions = [];
 
         if ($this->parent instanceof Organisation) {
@@ -201,26 +203,29 @@ class ShowInvoice extends OrgAction
                 ]
             ];
 
-        $actions[] =
-            [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('create refund'),
-                'route' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.refund.create',
-                    'parameters' => [
-                        'invoice' => $invoice->id,
+        if ($payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('create refund'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.refund.create',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
 
-                    ],
-                    'body'       => [
-                        'referral_route' => [
-                            'name'       => $request->route()->getName(),
-                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'body'       => [
+                            'referral_route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
                         ]
-                    ]
-                ],
-            ];
+                    ],
+                ];
+        }
+
 
 
         return Inertia::render(
@@ -253,7 +258,7 @@ class ShowInvoice extends OrgAction
 
                 'order_summary' => $this->getInvoiceSummary($invoice),
 
-                ...$this->getPayBoxData($invoice),
+                ...$payBoxData,
 
                 'exportPdfRoute' => [
                     'name'       => 'grp.org.accounting.invoices.download',
