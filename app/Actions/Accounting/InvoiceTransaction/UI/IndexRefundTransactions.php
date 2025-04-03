@@ -21,7 +21,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRefundTransactions extends OrgAction
 {
-    public function handle(Invoice $refund, $prefix = null): LengthAwarePaginator
+    public function handle(Invoice $refund, Invoice $invoice, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -55,7 +55,7 @@ class IndexRefundTransactions extends OrgAction
                 'original_invoice_transaction.quantity',
                 'original_invoice_transaction.net_amount',
                 DB::raw($refund->id.'  as refund_id'),
-
+                DB::raw("'{$invoice->currency->code}' AS currency_code")
             ]
         );
 
