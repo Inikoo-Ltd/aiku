@@ -31,7 +31,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
-const _formCell = ref([])
+const _formCell = ref({})
 
 // Section: update refund amount
 const isLoadingQuantity = ref<number[]>([])
@@ -73,7 +73,6 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
 }
 
 const setAllRefund = (index, value) => {
-    console.log(_formCell.value[index])
     if (_formCell.value[index])
         _formCell.value[index].form.refund_amount = value
 }
@@ -211,7 +210,7 @@ const DeleteRefund = (route, index) => {
                         <div class="flex items-center gap-3 w-fit">
                             <ActionCell 
                                 v-if="Number(item.total_last_refund) < Number(item.net_amount)"
-                                :ref="(e) => _formCell.push(e)"
+                                :ref="(e) => _formCell[item.rowIndex] = e"
                                 :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
                                 :max="item.max_refundable_amount" 
                                 @input="(e) => set(proxyItem, ['new_refund_amount'], e.value)"
