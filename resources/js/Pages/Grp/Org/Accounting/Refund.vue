@@ -262,13 +262,13 @@ console.log(props.pageHead)
     </template>
 
 
-   <!--  <template #button-finalise-refund="{ action }">
-      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => window.location.reload()">
+    <template #button-finalise-refund="{ action }">
+      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => handleTabUpdate('items')">
             <Button :style="action.style"  :icon="action.icon"
              :iconRight="action.iconRight" :label="action.label"
               :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
       </Link>
-    </template> -->
+    </template>
 
 
 
