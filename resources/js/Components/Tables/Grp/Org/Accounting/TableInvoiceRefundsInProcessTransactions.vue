@@ -86,10 +86,6 @@ const DeleteRefund = (route, index) => {
 
 const itemsInProcessRef = ref(null);
 
-// Provide a reload function to child components
-provide("reloadItems", () => {
-  console.log('sdfsdfsdf')
-});
 
 </script>
 
