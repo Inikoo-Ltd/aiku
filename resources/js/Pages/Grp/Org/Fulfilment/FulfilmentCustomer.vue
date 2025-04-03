@@ -40,7 +40,8 @@ import {
     faFileInvoice,
     faExclamationTriangle, faUsdCircle,
     faParking,
-    faEnvelope
+    faEnvelope,
+    faWallet
 } from '@fal'
 import { notify } from '@kyvg/vue3-notification'
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -52,7 +53,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import TableAttachments from '@/Components/Tables/Grp/Helpers/TableAttachments.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
-library.add(faStickyNote, faEnvelope ,faUser, faNarwhal, faTruckCouch, faPallet, faFileInvoiceDollar, faSignOutAlt, faPaperclip, faPaperPlane, faCheckDouble, faShare, faTruckLoading, faFileInvoice, faExclamationTriangle, faUsdCircle, faParking)
+library.add(faStickyNote, faEnvelope ,faUser, faNarwhal, faWallet, faTruckCouch, faPallet, faFileInvoiceDollar, faSignOutAlt, faPaperclip, faPaperPlane, faCheckDouble, faShare, faTruckLoading, faFileInvoice, faExclamationTriangle, faUsdCircle, faParking)
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
