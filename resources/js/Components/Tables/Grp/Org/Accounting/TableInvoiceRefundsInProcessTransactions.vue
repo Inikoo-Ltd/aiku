@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 
 import Table from '@/Components/Table/Table.vue'
-import { inject } from 'vue'
+import { inject, provide } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
@@ -83,6 +83,13 @@ const DeleteRefund = (route, index) => {
         onClickQuantity(route, route, _formCell.value[index].form)
     }
 }
+
+const itemsInProcessRef = ref(null);
+
+// Provide a reload function to child components
+provide("reloadItems", () => {
+  console.log('sdfsdfsdf')
+});
 
 </script>
 

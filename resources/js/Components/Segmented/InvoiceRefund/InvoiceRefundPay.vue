@@ -13,8 +13,8 @@ import { Link, router } from '@inertiajs/vue3'
 import { watch } from 'vue'
 import InputNumber from 'primevue/inputnumber'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck } from "@far"
-import { faSave, faPlus, faMinus }  from "@fal"
+import { faCheck, faSave } from "@far"
+import {  faPlus, faMinus }  from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import BluePrintTableRefund from '@/Components/Segmented/InvoiceRefund/BlueprintTableRefund'
 import PureTable from '@/Components/Pure/PureTable/PureTable.vue'
@@ -668,7 +668,7 @@ const setRefundAlloutsideAWF = (value, index) =>{
 
                 <div class="mt-6 mb-4 relative flex justify-end">
                     <Button v-if="paymentRefund.payment_method == 'credit_balance'" @click="() => onSubmitPaymentRefund()" label="Submit"
-                        :loading="isLoadingPayment"  />
+                        :loading="isLoadingPayment"  :icon="faSave" />
                     <Transition name="spin-to-down">
                         <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
                             errorPaymentMethod }}</p>
