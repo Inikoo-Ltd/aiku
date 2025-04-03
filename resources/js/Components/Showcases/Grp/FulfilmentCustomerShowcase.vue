@@ -342,35 +342,36 @@ function openRejectedModal(customer: any) {
 
         <!-- Section: Radiobox, Recurring bills balance, Rental agreement-->
         <div v-if="data.status == 'approved'" class="w-full max-w-lg space-y-4 justify-self-end">
-            <div v-if="data.balance.current > 0"
+            <div 
                 class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
                 <div class="w-full flex justify-between items-center">
                     <div class="">
                         <div class="text-base capitalize">
                             {{ trans("balance") }}
                         </div>
-                        <div class="text-xs text-gray-700/60">
-                            {{ useFormatTime(new Date()) }}
+                        <div class="text-gray-700/60 text-sm leading-4 font-normal">
+                           <!--  {{ useFormatTime(new Date()) }} -->
+                           {{ data.balance.credit_transactions }} credit transactions
                         </div>
                     </div>
 
-                    <div class="rounded-md text-indigo-500/50 flex items-center justify-center">
-                        <FontAwesomeIcon icon='fal fa-wallet' class='text-4xl' fixed-width aria-hidden='true' />
-                    </div>
-                </div>
-
-                <div
-                    class="mt-8 fflex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
-                    <!-- In Total -->
-                    <div class="flex flex-col gap-y-1">
+                    <div class="rounded-md text-2xl flex items-center justify-center">
                         <CountUp :endVal="data.balance.current" :duration="1.5" :scrollSpyOnce="true" :options="{
                             formattingFn: (value: number) => locale.currencyFormat(data.currency_code, value)
                         }" />
-                        <div class="text-gray-700/60 text-sm leading-4 font-normal">
-                            {{ data.balance.credit_transactions }} credit transactions
-                        </div>
+                        <!-- <FontAwesomeIcon icon='fal fa-wallet' class='text-4xl' fixed-width aria-hidden='true' /> -->
                     </div>
                 </div>
+
+                <!-- <div
+                    class="mt-8 fflex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
+                    <div class="flex flex-col gap-y-1">
+                      
+                        <div class="text-gray-700/60 text-sm leading-4 font-normal">
+                           
+                        </div>
+                    </div>
+                </div> -->
             </div>
 
             <TabSelector :optionRadio="optionRadio" :radioValue="radioValue" :updateRoute="data.updateRoute" />
