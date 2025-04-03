@@ -26,6 +26,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\EditFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformCustomerClients;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformPortfolios;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatforms;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
@@ -173,8 +174,11 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
                 Route::get('', IndexFulfilmentCustomerPlatformPortfolios::class)->name('.index');
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
-                Route::get('aiku', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.index');
+                Route::get('', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.index');
                 Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+            });
+            Route::prefix('/orders')->as('.orders')->group(function () {
+                Route::get('', IndexFulfilmentCustomerPlatformOrders::class)->name('.index');
             });
         });
     });

@@ -42,13 +42,7 @@ function customerRoute(customer: FulfilmentCustomer) {
                 [customer.ulid]
             )
         default:
-            return route(
-                "grp.org.shops.show.crm.customers.show",
-                [
-                    route().params["organisation"],
-                    route().params["shop"],
-                    customer.slug
-                ])
+            return ''
     }
 }
 </script>
