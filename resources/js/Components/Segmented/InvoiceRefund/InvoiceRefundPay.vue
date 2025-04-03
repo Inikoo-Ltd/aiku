@@ -247,7 +247,7 @@ watch(paymentRefund, () => {
 });
 
 const generateRefundRoute = (refundSlug: string) => {
-    if (params?.fulfilment) {
+    if (route().params?.fulfilment) {
         return route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', {
             organisation: route().params?.organisation,
             fulfilment: route().params?.fulfilment,
