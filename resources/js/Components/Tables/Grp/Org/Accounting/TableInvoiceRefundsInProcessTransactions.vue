@@ -193,7 +193,7 @@ const localeCode = navigator.language
                 <ActionCell 
                     v-if="Number(item.total_last_refund) < Number(item.net_amount)"
                     :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
-                    :max="Number(item.net_amount) - Number(item.refund_net_amount) - Number(item.total_last_refund)"
+                    :max="item.max_refundable_amount"
                     @input="(e) => (set(proxyItem, ['new_refund_amount'], e.value))"
                     @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" :min="0" placeholder="0"
                     mode="currency" :currency="item.currency_code"
