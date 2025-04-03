@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment;
 
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\ModelHasPlatform;
 use Lorisleiva\Actions\ActionRequest;
@@ -47,13 +48,33 @@ trait WithFulfilmentCustomerPlatformSubNavigation
             ],
         ];
         
-        $subNavigation[] = [
-            'label'     => __('Clients'),
-            'leftIcon'  => [
-                'icon'    => 'fal fa-users',
-                'tooltip' => __('clients'),
-            ],
-        ];
+        if($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+            $subNavigation[] = [
+                'label'     => __('Clients'),
+                'route' => [
+                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                    'parameters' => $request->route()->originalParameters()
+    
+                ],
+                'leftIcon'  => [
+                    'icon'    => 'fal fa-users',
+                    'tooltip' => __('clients'),
+                ],
+            ];
+        } else {
+            $subNavigation[] = [
+                'label'     => __('Clients'),
+                'route' => [
+                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                    'parameters' => $request->route()->originalParameters()
+    
+                ],
+                'leftIcon'  => [
+                    'icon'    => 'fal fa-users',
+                    'tooltip' => __('clients'),
+                ],
+            ];
+        }
         $subNavigation[] = [
             'label'     => __('Orders'),
             'leftIcon'  => [
