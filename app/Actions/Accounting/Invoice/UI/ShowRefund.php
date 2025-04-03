@@ -311,6 +311,9 @@ class ShowRefund extends OrgAction
 
     public function getBreadcrumbs(Invoice $refund, string $routeName, array $routeParameters, string $suffix = ''): array
     {
+
+        $originalInvoice = $refund->originalInvoice;
+
         $headCrumb = function (Invoice $refund, array $routeParameters, string $suffix = null, $suffixIndex = '') {
             return [
                 [
@@ -337,7 +340,7 @@ class ShowRefund extends OrgAction
         return match ($routeName) {
             'grp.org.fulfilments.show.operations.invoices.show.refunds.show'
             => array_merge(
-                ShowInvoice::make()->getBreadcrumbs('grp.org.fulfilments.show.operations.invoices.show', Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])),
+                ShowInvoice::make()->getBreadcrumbs($originalInvoice, 'grp.org.fulfilments.show.operations.invoices.show', Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])),
                 $headCrumb(
                     $refund,
                     [
@@ -355,7 +358,7 @@ class ShowRefund extends OrgAction
             ),
             'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show',
             => array_merge(
-                ShowInvoice::make()->getBreadcrumbs('grp.org.fulfilments.show.crm.customers.show.invoices.show', Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'invoice'])),
+                ShowInvoice::make()->getBreadcrumbs($originalInvoice, 'grp.org.fulfilments.show.crm.customers.show.invoices.show', Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'invoice'])),
                 $headCrumb(
                     $refund,
                     [

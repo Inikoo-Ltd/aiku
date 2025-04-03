@@ -12,11 +12,8 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
-use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -27,7 +24,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -104,67 +100,22 @@ class ShowInvoiceDeleted extends OrgAction
         }
 
         $actions = [];
-        // if (!app()->environment('production')) {
-        //     $actions[] =
-        //         [
-        //             'type'  => 'button',
-        //             'style' => 'create',
-        //             'label' => __('create refund'),
-        //             'route' => [
-        //                 'method'     => 'post',
-        //                 'name'       => 'grp.models.refund.create',
-        //                 'parameters' => [
-        //                     'invoice' => $invoice->id,
 
-        //                 ],
-        //                 'body'       => [
-        //                     'referral_route' => [
-        //                         'name'       => $request->route()->getName(),
-        //                         'parameters' => $request->route()->originalParameters()
-        //                     ]
-        //                 ]
-        //             ],
-        //         ];
-
-        //     $actions[] =
-        //         [
-        //             'type'  => 'button',
-        //             'style' => 'tertiary',
-        //             'label' => __('send invoice'),
-        //             'key'   => 'send-invoice',
-        //             'route' => [
-        //                 'method'     => 'post',
-        //                 'name'       => 'grp.models.invoice.send_invoice',
-        //                 'parameters' => [
-        //                     'invoice' => $invoice->id
-        //                 ]
-        //             ]
-        //         ];
-        // }
-
-        // $actions[] = [
-        //     'type'  => 'button',
-        //     'style' => 'edit',
-        //     'label' => __('edit'),
-        //     'route' => [
-        //         'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.edit',
-        //         'parameters' => $request->route()->originalParameters()
-        //     ],
-        // ];
 
         return Inertia::render(
             'Org/Accounting/InvoiceDeleted',
             [
                 'title'       => __('Deleted Invoice'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs' => ShowInvoice::make()->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
-                    $request->route()->originalParameters()
+                    $request->route()->originalParameters(),
+                    __('deleted')
                 ),
-                // 'navigation'  => [
-                //     'previous' => $this->getPrevious($invoice, $request),
-                //     'next'     => $this->getNext($invoice, $request),
-                // ],
+                'navigation'  => [
+                    'previous' => $this->getPrevious($invoice, $request),
+                    'next'     => $this->getNext($invoice, $request),
+                ],
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
                     'model'         => __('Deleted Invoice'),
@@ -180,49 +131,8 @@ class ShowInvoiceDeleted extends OrgAction
                     'navigation' => InvoiceTabsEnum::navigation()
                 ],
 
-                'order_summary' => [
-                    [
-                        [
-                            'label'       => __('Services'),
-                            'price_total' => $invoice->services_amount
-                        ],
-                        [
-                            'label'       => __('Physical Goods'),
-                            'price_total' => $invoice->goods_amount
-                        ],
-                        [
-                            'label'       => __('Rental'),
-                            'price_total' => $invoice->rental_amount
-                        ],
-                    ],
-                    [
-                        [
-                            'label'       => __('Charges'),
-                            // 'information'   => __('Shipping fee to your address using DHL service.'),
-                            'price_total' => $invoice->charges_amount
-                        ],
-                        [
-                            'label'       => __('Shipping'),
-                            // 'information'   => __('Tax is based on 10% of total order.'),
-                            'price_total' => $invoice->shipping_amount
-                        ],
-                        [
-                            'label'       => __('Insurance'),
-                            // 'information'   => __('Tax is based on 10% of total order.'),
-                            'price_total' => $invoice->insurance_amount
-                        ],
-                        [
-                            'label'       => __('Tax'),
-                            'price_total' => $invoice->tax_amount
-                        ]
-                    ],
-                    [
-                        [
-                            'label'       => __('Total'),
-                            'price_total' => $invoice->total_amount
-                        ],
-                    ],
-                ],
+                'order_summary' => ShowInvoice::make()->getInvoiceSummary($invoice),
+
 
                 'exportPdfRoute' => [
                     'name'       => 'grp.org.accounting.invoices.download',
@@ -259,172 +169,6 @@ class ShowInvoiceDeleted extends OrgAction
         return new InvoiceResource($invoice);
     }
 
-
-    public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
-    {
-        $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
-            return [
-                [
-
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Invoices').$suffixIndex,
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $invoice->reference,
-                        ],
-
-                    ],
-                    'suffix'         => $suffix
-
-                ],
-            ];
-        };
-        // $invoice   = Invoice::withTrashed()->where('slug', $routeParameters['invoice'])->first();
-
-        return match ($routeName) {
-            'grp.org.fulfilments.show.operations.invoices.show',
-            => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.all.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-            'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-            => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.all.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('All').')'
-                ),
-            ),
-            'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-            => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.unpaid_invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('Unpaid').')'
-                ),
-            ),
-
-            'grp.org.fulfilments.show.crm.customers.show.invoices.show',
-            => array_merge(
-                ShowFulfilmentCustomer::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'invoice'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-
-            'grp.org.accounting.invoices.all_invoices.show',
-            => array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.accounting.invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.accounting.invoices.all_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('All').')'
-                ),
-            ),
-
-            'grp.org.accounting.invoices.unpaid_invoices.show',
-            => array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.accounting.invoices.unpaid_invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.accounting.invoices.unpaid_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('Unpaid').')'
-                ),
-            ),
-
-            'grp.org.accounting.invoices.show',
-            => array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.accounting.invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.accounting.invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoice'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-
-
-            default => []
-        };
-    }
 
     public function getPrevious(Invoice $invoice, ActionRequest $request): ?array
     {
