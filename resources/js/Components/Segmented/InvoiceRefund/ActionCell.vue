@@ -85,6 +85,7 @@ const toggleEditMode = () => {
       <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
     </slot>
   </div>
+  <slot name="bottom-button" :form="form"></slot>
 </template>
 
 <style scoped></style>
