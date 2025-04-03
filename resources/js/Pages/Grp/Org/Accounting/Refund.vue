@@ -222,6 +222,13 @@ const onSubmitPayment = () => {
 const onPayInOnClick = () => {
     handleTabUpdate('payments')
 }
+const reloadItems = inject("reloadItems");
+const afterRefundAll = () => {
+  if(window.location) window.location.reload()// need work in this
+/*   if (reloadItems) {
+    reloadItems();
+  } */
+}
 
 watch(paymentData, () => {
   if (errorPaymentMethod.value) {
@@ -264,6 +271,14 @@ console.log(props.pageHead)
 
     <template #button-finalise-refund="{ action }">
       <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => handleTabUpdate('items')">
+            <Button :style="action.style"  :icon="action.icon"
+             :iconRight="action.iconRight" :label="action.label"
+              :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+      </Link>
+    </template>
+
+    <template #button-refund-all="{ action }">
+      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => afterRefundAll()">
             <Button :style="action.style"  :icon="action.icon"
              :iconRight="action.iconRight" :label="action.label"
               :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />

@@ -37,16 +37,6 @@ const form = useForm({
   refund_amount: props.modelValue, // Bind the form field to modelValue
 });
 
-// Function to submit refund
-const refundAll = () => {
-  form.refund_amount = props.max;
-  emit("update:modelValue", form.refund_amount);
-};
-
-const toggleEditMode = () => {
-  editMode.value = !editMode.value;
-};
-
 
 defineExpose({
   form
