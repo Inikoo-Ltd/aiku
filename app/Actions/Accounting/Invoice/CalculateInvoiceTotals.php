@@ -1,13 +1,12 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 27-02-2025-09h-11m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 17 Mar 2025 14:55:30 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Accounting\StandaloneFulfilmentInvoice;
+namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
@@ -16,7 +15,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Models\Accounting\Invoice;
 
-class CalculateStandaloneFulfilmentInvoiceTotals extends OrgAction
+class CalculateInvoiceTotals extends OrgAction
 {
     public function handle(Invoice $invoice): Invoice
     {
@@ -25,8 +24,8 @@ class CalculateStandaloneFulfilmentInvoiceTotals extends OrgAction
         $taxRate = $invoice->taxCategory->rate;
 
 
-        $rentalNet    = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space'])->sum('net_amount');
-        $rentalGross  = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space'])->sum('gross_amount');
+        $rentalNet    = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('net_amount');
+        $rentalGross  = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('gross_amount');
         $goodsNet     = $transactions->where('model_type', 'Product')->sum('net_amount');
         $goodsGross   = $transactions->where('model_type', 'Product')->sum('gross_amount');
         $serviceNet   = $transactions->where('model_type', 'Service')->sum('net_amount');

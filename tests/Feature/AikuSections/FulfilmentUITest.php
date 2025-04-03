@@ -98,7 +98,6 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-
     SendPalletDeliveryNotification::shouldRun()
         ->andReturn();
     SendPalletReturnNotification::shouldRun()
@@ -165,7 +164,6 @@ beforeEach(function () {
         $storeData = Pallet::factory()->definition();
         data_set($storeData, 'state', PalletStateEnum::SUBMITTED);
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
-
 
 
         $pallet = StorePallet::make()->action(
@@ -267,7 +265,6 @@ beforeEach(function () {
         data_set($storeData, 'email', 'test@aiku.io');
 
 
-
         $rentalAgreement = StoreRentalAgreement::make()->action(
             $this->customer->fulfilmentCustomer,
             $storeData
@@ -305,11 +302,11 @@ beforeEach(function () {
         $space = StoreSpace::run(
             $this->customer->fulfilmentCustomer,
             [
-                'reference' => 'test',
+                'reference'       => 'test',
                 'exclude_weekend' => false,
-                'start_at' => now(),
-                'end_at' => now()->addDays(10),
-                'rental_id' => $this->rental->id
+                'start_at'        => now(),
+                'end_at'          => now()->addDays(10),
+                'rental_id'       => $this->rental->id
             ]
         );
     }
@@ -368,17 +365,16 @@ test('UI edit fulfilment', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.fulfilment.update')
-                        ->where('parameters', [$this->fulfilment->id])
+                    ->where('name', 'grp.models.fulfilment.update')
+                    ->where('parameters', [$this->fulfilment->id])
             )
             ->has('breadcrumbs', 3);
     });
 });
 
 test('UI show fulfilment shop', function () {
-
     $fulfilment = $this->shop->fulfilment;
-    $response  = get(
+    $response   = get(
         route(
             'grp.org.fulfilments.show.operations.dashboard',
             [
@@ -397,7 +393,6 @@ test('UI show fulfilment shop', function () {
 
 
 test('UI show fulfilment shop customers list', function () {
-
     $fulfilment = $this->shop->fulfilment;
 
     $response = get(
@@ -418,7 +413,6 @@ test('UI show fulfilment shop customers list', function () {
 });
 
 test('UI show fulfilment shop customers pending approval list', function () {
-
     $fulfilment = $this->shop->fulfilment;
 
     $response = get(
@@ -439,7 +433,6 @@ test('UI show fulfilment shop customers pending approval list', function () {
 });
 
 test('UI show fulfilment shop customers reject list', function () {
-
     $fulfilment = $this->shop->fulfilment;
 
     $response = get(
@@ -539,11 +532,10 @@ test('UI show fulfilment customer', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->customer->name)
-                        ->etc()
+                    ->where('title', $this->customer->name)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -557,18 +549,19 @@ test('UI show fulfilment customer web users', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->customer->name)
-                        ->etc()
+                    ->where('title', $this->customer->name)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
 test('UI show fulfilment customer web users (tab requests)', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.web-users.index', [
-        $this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug,
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->customer->fulfilmentCustomer->slug,
         'tab' => 'requests'
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
@@ -579,17 +572,16 @@ test('UI show fulfilment customer web users (tab requests)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->customer->name)
-                        ->etc()
+                    ->where('title', $this->customer->name)
+                    ->etc()
             )
             ->has('tabs')
             ->has('requests');
-
     });
 });
 
 test('UI show fulfilment customer (agreed prices tab)', function () {
-    $response = get('http://app.aiku.test/org/'.$this->organisation->slug.'/fulfilments/'.$this->fulfilment->slug.'/customers/'. $this->customer->fulfilmentCustomer->slug.'?tab=agreed_prices');
+    $response = get('http://app.aiku.test/org/'.$this->organisation->slug.'/fulfilments/'.$this->fulfilment->slug.'/customers/'.$this->customer->fulfilmentCustomer->slug.'?tab=agreed_prices');
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Fulfilment/FulfilmentCustomer')
@@ -598,9 +590,8 @@ test('UI show fulfilment customer (agreed prices tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->etc()
+                    ->etc()
             );
-
     });
 });
 
@@ -609,15 +600,15 @@ test('UI edit fulfilment customer', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.edit', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-        ->component('EditModel')
+            ->component('EditModel')
             ->has('title')
             ->has('formData.blueprint.0.fields', 6)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.fulfilment-customer.update')
-                        ->where('parameters', [$this->customer->fulfilmentCustomer->id])
+                    ->where('name', 'grp.models.fulfilment-customer.update')
+                    ->where('parameters', [$this->customer->fulfilmentCustomer->id])
             )
             ->has('breadcrumbs', 3);
     });
@@ -625,7 +616,7 @@ test('UI edit fulfilment customer', function () {
 
 test('UI index fulfilment invoices all', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response  = get(
+    $response   = get(
         route(
             'grp.org.fulfilments.show.operations.invoices.all.index',
             [
@@ -643,9 +634,9 @@ test('UI index fulfilment invoices all', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Invoices')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
             );
     });
 });
@@ -696,7 +687,7 @@ test('UI show invoice (in Fulfilment Customer)', function () {
 
 test('UI index fulfilment invoices unpaid', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response  = get(
+    $response   = get(
         route(
             'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.index',
             [
@@ -714,9 +705,9 @@ test('UI index fulfilment invoices unpaid', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Invoices')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
             );
     });
 });
@@ -757,9 +748,9 @@ test('UI show fulfilment customer space sub navigation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data')
             ->has('breadcrumbs', 4);
@@ -775,8 +766,8 @@ test('UI show fulfilment customer create space', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', 'new space')
-                ->etc()
+                    ->where('title', 'new space')
+                    ->etc()
             )
             ->has('formData')
             ->has('breadcrumbs', 4);
@@ -792,8 +783,8 @@ test('UI show fulfilment customer edit space', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', 'edit space')
-                ->etc()
+                    ->where('title', 'edit space')
+                    ->etc()
             )
             ->has('formData')
             ->has('breadcrumbs', 5);
@@ -809,8 +800,8 @@ test('UI show fulfilment customer space', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->space->reference)
-                ->etc()
+                    ->where('title', $this->space->reference)
+                    ->etc()
             )
             ->has('tabs')
             ->has('showcase')
@@ -827,8 +818,8 @@ test('UI show fulfilment customer edit invoice', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', 'Edit invoice')
-                ->etc()
+                    ->where('title', 'Edit invoice')
+                    ->etc()
             )
             ->has('formData')
             ->has('breadcrumbs', 4);
@@ -845,13 +836,13 @@ test('UI show fulfilment customer refund', function () {
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Accounting/InvoiceRefund')
+            ->component('Org/Accounting/Refund')
             ->has('title')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->refund->reference)
-                ->etc()
+                    ->where('title', $this->refund->reference)
+                    ->etc()
             )
             ->has('tabs')
             ->has('order_summary')
@@ -871,8 +862,8 @@ test('UI show fulfilment customer stored item', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', 'new SKU')
-                ->etc()
+                    ->where('title', 'new SKU')
+                    ->etc()
             )
             ->has('formData')
             ->has('breadcrumbs', 5);
@@ -888,9 +879,9 @@ test('UI index refund', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', 'Refunds')
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', 'Refunds')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('breadcrumbs', 3);
     });
@@ -905,9 +896,9 @@ test('UI show fulfilment customer pallet sub navigation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('tabs')
             ->has('breadcrumbs', 4);
@@ -923,9 +914,9 @@ test('UI show fulfilment customer delivery sub navigation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('tabs')
             ->has('breadcrumbs', 4);
@@ -941,9 +932,9 @@ test('UI show fulfilment customer pallet return sub navigation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('tabs')
             ->has('breadcrumbs', 4);
@@ -959,9 +950,9 @@ test('UI show fulfilment customer recurring bills sub navigation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data')
             ->has('breadcrumbs', 4);
@@ -977,9 +968,9 @@ test('UI show fulfilment customer invoice sub navigation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('breadcrumbs', 4);
         if (!app()->environment('production')) {
@@ -992,7 +983,9 @@ test('UI show fulfilment customer invoice sub navigation', function () {
 
 test('UI show fulfilment customer invoice sub navigation (tab in process)', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
-        $this->organisation->slug, $this->fulfilment->slug, $this->customer->slug,
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->customer->slug,
         'tab' => InvoicesTabsEnum::IN_PROCESS->value
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
@@ -1002,9 +995,9 @@ test('UI show fulfilment customer invoice sub navigation (tab in process)', func
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->customer->name)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->customer->name)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('breadcrumbs', 4);
         if (!app()->environment('production')) {
@@ -1020,7 +1013,9 @@ test('UI show standalone invoice fulfilment customer', function () {
     $standaloneInvoice = StoreStandaloneFulfilmentInvoice::make()->action($this->customer->fulfilmentCustomer, []);
 
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.invoices.in-process.show', [
-        $this->organisation->slug, $this->fulfilment->slug, $this->customer->slug,
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->customer->slug,
         $standaloneInvoice->slug
     ]));
 
@@ -1031,9 +1026,9 @@ test('UI show standalone invoice fulfilment customer', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $standaloneInvoice->reference)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $standaloneInvoice->reference)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('tabs')
             ->has('order_summary')
@@ -1060,9 +1055,9 @@ test('UI show recurring bills in fulfilment customer', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', $this->recurringBill->slug)
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', $this->recurringBill->slug)
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('breadcrumbs', 4);
     });
@@ -1082,9 +1077,9 @@ test('UI Index pallets', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1102,9 +1097,9 @@ test('UI Index damaged pallets', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Damaged pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Damaged pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1122,9 +1117,9 @@ test('UI Index lost pallets', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Lost pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Lost pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1142,9 +1137,9 @@ test('UI Index returned pallets', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Returned pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Returned pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1160,11 +1155,10 @@ test('UI show pallet', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->pallet->reference)
-                        ->etc()
+                    ->where('title', $this->pallet->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1184,8 +1178,8 @@ test('UI show pallet in fulfilment customer', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->pallet->reference)
-                        ->etc()
+                    ->where('title', $this->pallet->reference)
+                    ->etc()
             )
             ->has('tabs');
     });
@@ -1201,11 +1195,10 @@ test('UI show pallet (Stored Items Tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->pallet->reference)
-                        ->etc()
+                    ->where('title', $this->pallet->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1221,8 +1214,8 @@ test('UI edit pallet', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.pallet.update')
-                        ->where('parameters', [$this->pallet->id])
+                    ->where('name', 'grp.models.pallet.update')
+                    ->where('parameters', [$this->pallet->id])
             )
             ->has('breadcrumbs', 3);
     });
@@ -1240,9 +1233,9 @@ test('UI Index damaged pallets in warehouse', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Damaged pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Damaged pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1260,9 +1253,9 @@ test('UI Index returned pallets in warehouse', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Returned pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Returned pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1280,9 +1273,9 @@ test('UI Index pallets in warehouse', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Pallets in warehouse')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Pallets in warehouse')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1300,9 +1293,9 @@ test('UI Index lost pallets in warehouse', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Lost pallets')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Lost pallets')
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1323,10 +1316,10 @@ test('UI Index pallet deliveries', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'fulfilment deliveries')
-                        ->has('subNavigation')
-                        ->has('actions')
-                        ->etc()
+                    ->where('title', 'fulfilment deliveries')
+                    ->has('subNavigation')
+                    ->has('actions')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1343,11 +1336,10 @@ test('UI show pallet delivery', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1362,8 +1354,8 @@ test('UI edit pallet delivery', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Edit Pallet Delivery')
-                        ->etc()
+                    ->where('title', 'Edit Pallet Delivery')
+                    ->etc()
             )
             ->has('formData');
     });
@@ -1379,11 +1371,10 @@ test('UI show pallet delivery (Services Tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1397,11 +1388,10 @@ test('UI show pallet delivery (Physical goods Tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1412,9 +1402,9 @@ test('UI show pallet delivery (confirmed)', function () {
     StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
-        'type' => PalletTypeEnum::PALLET,
-        'customer_reference' => 'SASASasas'
-    ]
+            'type'               => PalletTypeEnum::PALLET,
+            'customer_reference' => 'A001BB'
+        ]
     );
 
     $palletDelivery = SubmitAndConfirmPalletDelivery::make()->action($palletDelivery);
@@ -1429,13 +1419,12 @@ test('UI show pallet delivery (confirmed)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('data')
             ->has('tabs');
-
     });
 
     return $palletDelivery;
@@ -1445,10 +1434,10 @@ test('UI show pallet delivery (received)', function (PalletDelivery $palletDeliv
     StoreRental::make()->action(
         $palletDelivery->fulfilment->shop,
         [
-            'price' => 100,
-            'unit'  => RentalUnitEnum::WEEK->value,
-            'code'  => 'R00002',
-            'name'  => 'Rental Asset B',
+            'price'                  => 100,
+            'unit'                   => RentalUnitEnum::WEEK->value,
+            'code'                   => 'R00002',
+            'name'                   => 'Rental Asset B',
             'auto_assign_asset'      => 'Pallet',
             'auto_assign_asset_type' => PalletTypeEnum::PALLET->value
         ]
@@ -1466,8 +1455,8 @@ test('UI show pallet delivery (received)', function (PalletDelivery $palletDeliv
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('data')
@@ -1478,7 +1467,7 @@ test('UI show pallet delivery (received)', function (PalletDelivery $palletDeliv
 })->depends('UI show pallet delivery (confirmed)');
 
 test('UI show pallet delivery (booking in)', function (PalletDelivery $palletDelivery) {
-    $palletDelivery =  StartBookingPalletDelivery::make()->action($palletDelivery);
+    $palletDelivery = StartBookingPalletDelivery::make()->action($palletDelivery);
     $palletDelivery->refresh();
     $location = $this->warehouse->locations()->first();
 
@@ -1495,8 +1484,8 @@ test('UI show pallet delivery (booking in)', function (PalletDelivery $palletDel
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('data')
@@ -1507,7 +1496,7 @@ test('UI show pallet delivery (booking in)', function (PalletDelivery $palletDel
 })->depends('UI show pallet delivery (received)');
 
 test('UI show pallet delivery (booked in)', function (PalletDelivery $palletDelivery) {
-    $palletDelivery =  SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
+    $palletDelivery = SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
     $palletDelivery->refresh();
 
     $response = get(route('grp.org.fulfilments.show.operations.pallet-deliveries.show', [$this->organisation->slug, $this->fulfilment->slug, $palletDelivery->slug]));
@@ -1519,8 +1508,8 @@ test('UI show pallet delivery (booked in)', function (PalletDelivery $palletDeli
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->palletDelivery->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('data')
@@ -1545,10 +1534,10 @@ test('UI Index pallet returns', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'returns')
-                        ->has('subNavigation')
-                        ->has('actions')
-                        ->etc()
+                    ->where('title', 'returns')
+                    ->has('subNavigation')
+                    ->has('actions')
+                    ->etc()
             )
             ->has('data');
     });
@@ -1564,11 +1553,10 @@ test('UI show pallet return', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1593,11 +1581,10 @@ test('UI show pallet return (physical goods tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1611,18 +1598,17 @@ test('UI show pallet return (services tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
 test('UI show pallet return (confirmed)', function () {
-    $palletReturn = $this->palletReturn;
+    $palletReturn       = $this->palletReturn;
     $fulfilmentCustomer = $this->customer->fulfilmentCustomer;
-    $pallet = $fulfilmentCustomer->pallets()->where('status', PalletStatusEnum::STORING)->first();
+    $pallet             = $fulfilmentCustomer->pallets()->where('status', PalletStatusEnum::STORING)->first();
     AttachPalletToReturn::make()->action(
         $palletReturn,
         $pallet,
@@ -1639,11 +1625,10 @@ test('UI show pallet return (confirmed)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 
     return $palletReturn;
@@ -1662,11 +1647,10 @@ test('UI show pallet return (picking)', function (PalletReturn $palletReturn) {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 
     return $palletReturn;
@@ -1685,11 +1669,10 @@ test('UI show pallet return (picked)', function (PalletReturn $palletReturn) {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 
     return $palletReturn;
@@ -1708,11 +1691,10 @@ test('UI show pallet return (dispatched)', function (PalletReturn $palletReturn)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 
     return $palletReturn;
@@ -1745,18 +1727,16 @@ test('UI show pallet return with stored items', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
 // Rental
 
 test('UI show rental', function () {
-
     $response = get(route('grp.org.fulfilments.show.catalogue.rentals.show', [$this->organisation->slug, $this->fulfilment->slug, $this->rental->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1766,11 +1746,10 @@ test('UI show rental', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->rental->code)
-                        ->etc()
+                    ->where('title', $this->rental->code)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1785,10 +1764,10 @@ test('UI edit rental', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.rentals.update')
-                        ->where('parameters', [
-                                'rental'       => $this->rental->id
-                        ])
+                    ->where('name', 'grp.models.rentals.update')
+                    ->where('parameters', [
+                        'rental' => $this->rental->id
+                    ])
             )
             ->has('breadcrumbs', 4);
     });
@@ -1833,8 +1812,8 @@ test('UI edit rental agreement', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.rental-agreement.update')
-                        ->where('parameters', ['rentalAgreement' => $this->rentalAgreement->id])
+                    ->where('name', 'grp.models.rental-agreement.update')
+                    ->where('parameters', ['rentalAgreement' => $this->rentalAgreement->id])
             )
             ->has('breadcrumbs', 4);
     });
@@ -1853,19 +1832,17 @@ test('UI billables dashboard', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'billables dashboard')
-                        ->etc()
+                    ->where('title', 'billables dashboard')
+                    ->etc()
             )
             ->has('tabs');
-
     });
-})->todo('permissions issue');
+})->todo();//permissions issue
 
 
 // Service
 
 test('UI show service', function () {
-
     $response = get(route('grp.org.fulfilments.show.catalogue.services.show', [$this->organisation->slug, $this->fulfilment->slug, $this->service->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1875,11 +1852,10 @@ test('UI show service', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->service->code)
-                        ->etc()
+                    ->where('title', $this->service->code)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1894,9 +1870,9 @@ test('UI edit service', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.services.update')
-                        ->where('parameters', [
-                            'service'       => $this->service->id
+                    ->where('name', 'grp.models.services.update')
+                    ->where('parameters', [
+                        'service' => $this->service->id
                     ])
             )
             ->has('breadcrumbs', 4);
@@ -1924,11 +1900,10 @@ test('UI show physical goods', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->product->code)
-                        ->etc()
+                    ->where('title', $this->product->code)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -1943,8 +1918,8 @@ test('UI edit physical goods', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.product.update')
-                        ->where('parameters', $this->product->id) //wrong route
+                    ->where('name', 'grp.models.product.update')
+                    ->where('parameters', $this->product->id) //wrong route
             )
             ->has('breadcrumbs', 4);
     });
@@ -1972,8 +1947,8 @@ test('UI Index stored items', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->has('subNavigation')
-                        ->etc()
+                    ->has('subNavigation')
+                    ->etc()
             );
     });
 });
@@ -1989,11 +1964,10 @@ test('UI show stored item', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->storedItem->slug)
-                        ->etc()
+                    ->where('title', $this->storedItem->slug)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -2008,8 +1982,8 @@ test('UI edit stored item', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.stored-items.update')
-                        ->where('parameters', $this->storedItem->id) //wrong route
+                    ->where('name', 'grp.models.stored-items.update')
+                    ->where('parameters', $this->storedItem->id) //wrong route
             )
             ->has('breadcrumbs', 4);
     });
@@ -2025,9 +1999,9 @@ test('UI Index Recurring Bills', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'recurring bills')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'recurring bills')
+                    ->has('subNavigation')
+                    ->etc()
             );
     });
 });
@@ -2043,15 +2017,14 @@ test('UI show Recurring Bill', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->recurringBill->slug)
-                        ->etc()
+                    ->where('title', $this->recurringBill->slug)
+                    ->etc()
             )
             ->has('timeline_rb')
             ->has('consolidateRoute')
             ->has('status_rb')
             ->has('box_stats')
             ->has('tabs');
-
     });
 });
 
@@ -2107,7 +2080,7 @@ test('UI show Recurring Bill in operation (former)', function () {
 test('UI get section route fulfilment catalogue index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.catalogue.index', [
         'organisation' => $this->organisation->slug,
-        'fulfilment' => $this->fulfilment->slug
+        'fulfilment'   => $this->fulfilment->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2118,7 +2091,7 @@ test('UI get section route fulfilment catalogue index', function () {
 test('UI get section route fulfilment operations dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.operations.dashboard', [
         'organisation' => $this->organisation->slug,
-        'fulfilment' => $this->fulfilment->slug
+        'fulfilment'   => $this->fulfilment->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2129,7 +2102,7 @@ test('UI get section route fulfilment operations dashboard', function () {
 test('UI get section route fulfilment web index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.web.websites.index', [
         'organisation' => $this->organisation->slug,
-        'fulfilment' => $this->fulfilment->slug
+        'fulfilment'   => $this->fulfilment->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2140,7 +2113,7 @@ test('UI get section route fulfilment web index', function () {
 test('UI get section route fulfilment crm index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.crm.customers.index', [
         'organisation' => $this->organisation->slug,
-        'fulfilment' => $this->fulfilment->slug
+        'fulfilment'   => $this->fulfilment->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2151,7 +2124,7 @@ test('UI get section route fulfilment crm index', function () {
 test('UI get section route fulfilment settings edit', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.settings.edit', [
         'organisation' => $this->organisation->slug,
-        'fulfilment' => $this->fulfilment->slug
+        'fulfilment'   => $this->fulfilment->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2186,9 +2159,9 @@ test('UI show stored item audit', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', "Customer's SKUs audit")
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', "Customer's SKUs audit")
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('breadcrumbs', 4);
     });
@@ -2223,9 +2196,9 @@ test('UI create stored item audit for pallet (first time)', function () {
     ]), []);
 
     $storedItemAudit = StoredItemAudit::where('scope_id', $pallet->id)
-    ->where('scope_type', 'Pallet')
-    ->where('state', StoredItemAuditStateEnum::IN_PROCESS)
-    ->first();
+        ->where('scope_type', 'Pallet')
+        ->where('state', StoredItemAuditStateEnum::IN_PROCESS)
+        ->first();
 
     expect($storedItemAudit)->not()->toBeNull();
 
@@ -2241,6 +2214,7 @@ test('UI create stored item audit for pallet (first time)', function () {
 });
 
 test('UI create stored item audit for pallet (already created)', function (StoredItemAudit $storedItemAudit) {
+    /** @var Pallet $pallet */
     $pallet = $storedItemAudit->scope;
 
     $this->withoutExceptionHandling();
@@ -2272,7 +2246,7 @@ test('UI create stored item audit for pallet (already created)', function (Store
 
 // ui stored item audit
 test('UI show stored item audit for pallet', function () {
-    $pallet = Pallet::where('state', PalletStateEnum::STORING)->where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
+    $pallet      = Pallet::where('state', PalletStateEnum::STORING)->where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
     $palletAudit = StoreStoredItemAuditFromPallet::make()->action($pallet, []);
 
     $this->withoutExceptionHandling();
@@ -2290,9 +2264,9 @@ test('UI show stored item audit for pallet', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where('title', "Audit")
-                ->has('subNavigation')
-                ->etc()
+                    ->where('title', "Audit")
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has('breadcrumbs', 5);
     });
