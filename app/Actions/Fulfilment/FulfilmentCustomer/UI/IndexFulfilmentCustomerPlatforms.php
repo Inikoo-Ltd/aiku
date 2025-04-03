@@ -51,7 +51,7 @@ class IndexFulfilmentCustomerPlatforms extends OrgAction
 
         return $query
             ->defaultSort('model_has_platforms.id')
-            ->select(['platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
+            ->select(['model_has_platforms.id as model_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
