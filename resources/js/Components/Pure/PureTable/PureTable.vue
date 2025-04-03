@@ -82,20 +82,22 @@ defineExpose({
 		paginatorPosition="bottom"
 		class="custom-paginator"
 		@page="onPage">
-		<template v-for="col in blueprint" :key="col.key">
+		
+		<template v-for="(col, index) in blueprint" :key="col.key">
 			<Column :field="col.key">
 				<template #header>
-					<slot :name="`${col.key}-header`">
+					<slot :name="`${col.key}-header`" :index="index">
 						<span class="font-bold">{{ col.header }}</span>
 					</slot>
 				</template>
 				<template #body="slotProps">
-					<slot :name="col.key" :data="slotProps.data">
+					<slot :name="col.key" :data="slotProps.data" :index="slotProps.index">
 						<span class="p-2">{{ slotProps.data[col.key] }}</span>
 					</slot>
 				</template>
 			</Column>
 		</template>
+
 		<slot name="footer" :data="data"></slot>
 	</DataTable>
 </template>

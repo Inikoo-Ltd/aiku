@@ -55,7 +55,7 @@ const emits = defineEmits<{
     (e: 'onPayInOnClick'): void
 }>()
 
-
+const _formCell = ref({})
 const locale = inject('locale', aikuLocaleStructure)
 const _PureTable = ref(null)
 const errorInvoicePayment = ref({
@@ -220,6 +220,9 @@ const onSubmitRefundToPaymentsMethod = ( form , data : any ) => {
                 onFinish: () => data.processing = false,
                 onSuccess: () => {
                     if(_PureTable.value)_PureTable.value.fetchData()
+                    if(props.invoice_pay.total_need_to_refund_in_payment_method == 0){
+                        isOpenModalRefund.value = false
+                    }
                     notify({
                         title: trans("Success"),
                         text: "Successfully add payment invoice",
@@ -314,6 +317,11 @@ const listPaymentRefund = computed(() => [
         disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) >= 0
     }
 ]);
+
+const setRefundAlloutsideAWF = (value, index) =>{
+    if (_formCell.value[index])
+        _formCell.value[index].form.refund_amount = -value
+}
 
 
 </script>
@@ -606,10 +614,17 @@ const listPaymentRefund = computed(() => [
                                 class="w-full"
                             >
                                 <!-- Amount Column -->
-                                <template #amount="{ data }">
+                                <template #amount="{ data, index }">
                                     <div class="text-gray-700 font-medium">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.amount) }}
                                     </div>
+                                    <button
+                                        v-if="data.amount > -props.invoice_pay.total_need_to_refund_in_payment_method && props.invoice_pay.total_need_to_refund_in_payment_method !=0 "
+                                        @click="()=>setRefundAlloutsideAWF(props.invoice_pay.total_need_to_refund_in_payment_method,index)"
+                                        :disabled="false"
+                                        class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                                        Pay {{ locale.currencyFormat(invoice_pay.currency_code || 'usd', props.invoice_pay.total_need_to_refund_in_payment_method) }}
+                                    </button>
                                 </template>
 
                                 <!-- Refunded Column -->
@@ -620,10 +635,13 @@ const listPaymentRefund = computed(() => [
                                 </template>
 
                                 <!-- Refund Column -->
-                                <template #refund="{ data }">
+                                <template #refund="{ data, index }">
                                         <ActionCell 
+                                            :ref="(e) => _formCell[index] = e"
                                             v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"
                                             v-model="data.refund" 
+                                            @input="(e) => data.amount = e.value"
+                                            @update:model-value="(e) => data.amount = e" 
                                             :max="maxRefund(data)"
                                             :min="0"
                                             :currency="invoice_pay.currency_code"

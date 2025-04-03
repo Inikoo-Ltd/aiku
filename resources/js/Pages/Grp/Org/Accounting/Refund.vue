@@ -262,21 +262,21 @@ console.log(props.pageHead)
     </template>
 
 
-    <template #button-finalise-refund="{ action }">
+   <!--  <template #button-finalise-refund="{ action }">
       <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => window.location.reload()">
             <Button :style="action.style"  :icon="action.icon"
              :iconRight="action.iconRight" :label="action.label"
               :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
       </Link>
-    </template>
+    </template> -->
 
 
 
   </PageHeading>
 
-  <div class="grid grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
+  <div class="grid grid-cols-8 divide-x divide-gray-300 border-b border-gray-200">
     <!-- Box: Customer -->
-    <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
+    <BoxStatPallet class="col-span-2 py-2 px-3" icon="fal fa-user">
 
       <!-- Field: Registration Number -->
       <Link as="a" v-if="box_stats?.customer.reference"
@@ -360,7 +360,7 @@ console.log(props.pageHead)
     </BoxStatPallet>
 
     <!-- Section: Detail (2nd box) -->
-    <BoxStatPallet class="py-2 px-3">
+    <BoxStatPallet class="col-span-3 py-2 px-3 ">
       <div class="mt-1">
 
         <div v-tooltip="trans('Refund created')" class="flex items-center w-fit flex-none gap-x-2">
@@ -381,7 +381,7 @@ console.log(props.pageHead)
     </BoxStatPallet>
 
     <!-- Section: Order Summary -->
-    <BoxStatPallet class="col-start-3 col-span-2 py-2 px-3">
+    <BoxStatPallet class="col-span-3 py-2 px-3">
       <OrderSummary :order_summary :currency_code="invoice_refund.currency_code" />
     </BoxStatPallet>
 
