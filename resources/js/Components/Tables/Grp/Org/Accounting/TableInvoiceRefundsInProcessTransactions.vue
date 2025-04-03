@@ -13,7 +13,7 @@ import InputNumber from 'primevue/inputnumber'
 import { get, set } from 'lodash-es'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSave as falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft } from '@fal'
+import { faSave as falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft, faTrash, faTrashAlt } from '@fal'
 import { faSave } from '@fad'
 import { faArrowAltCircleLeft } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -31,6 +31,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+const _formCell = ref([])
 
 // Section: update refund amount
 const isLoadingQuantity = ref<number[]>([])
@@ -71,13 +72,25 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
     )
 }
 
-const localeCode = navigator.language
+const setAllRefund = (index, value) => {
+    console.log(_formCell.value[index])
+    if (_formCell.value[index])
+        _formCell.value[index].form.refund_amount = value
+}
+
+const DeleteRefund = (route, index) => {
+    if (_formCell.value[index]) {
+        _formCell.value[index].form.refund_amount = 0
+        onClickQuantity(route, route, _formCell.value[index].form)
+    }
+}
+
 </script>
 
 <template>
     <div class="h-min">
         <Table :resource="data" :name="tab">
-            <template #cell(net_amount)="{ item }">
+            <template #cell(net_amount)="{ item}">
                 <div class="flex flex-col items-end">
 
                     <!-- Net Amount (yang tersisa setelah refund) -->
@@ -91,9 +104,13 @@ const localeCode = navigator.language
                     </small>
 
                     <!-- Refundable Amount -->
-                    <small v-if="item.total_last_refund != item.net_amount && (item.net_amount - item.refund_net_amount - item.total_last_refund) > 0" class="text-blue-500 text-xs">
-                        Refundable: {{ locale.currencyFormat(item.currency_code, item.net_amount - item.refund_net_amount - item.total_last_refund) }}
-                    </small>
+                    <button
+                        v-if="item.total_last_refund != item.net_amount && item.net_amount - item.refund_net_amount - item.total_last_refund > 0"
+                        @click="()=>setAllRefund(item.rowIndex, item.max_refundable_amount)"
+                        :disabled="item.net_amount - item.refund_net_amount - item.total_last_refund <= 0"
+                        class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                        Refundable: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
+                    </button>
                 </div>
             </template>
             <!-- <template #cell(prev_refund)="{ item }">
@@ -190,29 +207,32 @@ const localeCode = navigator.language
                             />
                         </div>   
                         </div> -->
-                <ActionCell 
-                    v-if="Number(item.total_last_refund) < Number(item.net_amount)"
-                    :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
-                    :max="item.max_refundable_amount"
-                    @input="(e) => (set(proxyItem, ['new_refund_amount'], e.value))"
-                    @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" :min="0" placeholder="0"
-                    mode="currency" :currency="item.currency_code"
-                    :step="item.original_item_net_price"
-                    @refund="(form)=> onClickQuantity(item.refund_route, item.rowIndex, form)"
-                >
-               <!--  <template #bottom-button="{form}">
-                            <ButtonWithLink
-                                v-if="Number(item.total_last_refund) < Number(form.refund_amount)"
-                                @click="() => form.refund_amount = (item.net_amount - item.refund_net_amount - item.total_last_refund)"
-                                :key="item.code"
-                                :label="trans('Refund All')"
-                                size="xxs"
-                                :disabled="form.refund_amount >= (item.net_amount - item.refund_net_amount - item.total_last_refund)"
-                                :bindToLink="{ preserveScroll: true }"
-                                type="tertiary"
+                
+                        <div class="flex items-center gap-3 w-fit">
+                            <ActionCell 
+                                v-if="Number(item.total_last_refund) < Number(item.net_amount)"
+                                :ref="(e) => _formCell.push(e)"
+                                :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
+                                :max="item.max_refundable_amount" 
+                                @input="(e) => set(proxyItem, ['new_refund_amount'], e.value)"
+                                @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" 
+                                :min="0" 
+                                placeholder="0"
+                                mode="currency" 
+                                :currency="item.currency_code" 
+                                :step="item.original_item_net_price"
+                                @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
                             />
-                </template> -->
-                </ActionCell>
+
+                            <!-- <Button :style="'negative'" :icon="faTrash" @click="" ></Button> -->
+                            <FontAwesomeIcon
+                                v-if="_formCell[item.rowIndex]?.form?.refund_amount > 0"
+                                @click="DeleteRefund(item.refund_route, item.rowIndex)"
+                                :icon="faTrashAlt"
+                                class="h-7 w-7 cursor-pointer text-red-500"
+                                aria-hidden="true"
+                            />
+                        </div>
             </template>
         </Table>
     </div>
