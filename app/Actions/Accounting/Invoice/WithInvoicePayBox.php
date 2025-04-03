@@ -43,7 +43,7 @@ trait WithInvoicePayBox
 
 
         $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
-        $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
+
         // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
 
         $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
@@ -51,8 +51,10 @@ trait WithInvoicePayBox
         $consolidateTotalPayments = Arr::get($invoice->shop->settings, 'consolidate_invoice_to_pay', true);
 
         if ($consolidateTotalPayments) {
-            $totalNeedToPay = round($invoice->total_amount - ($invoice->payment_amount + abs($totalRefund)), 2);
+            $totalPaidIn = $invoice->payment_amount;
+            $totalNeedToPay = round($invoice->total_amount - abs($totalNeedToRefund), 2) - $invoice->payment_amount;
         } else {
+            $totalPaidIn = $invoice->payment_amount + abs($refundsPayOut);
             $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
         }
 
@@ -67,10 +69,12 @@ trait WithInvoicePayBox
                     $totalNeedToPay = $invoice->payment_amount * -1;
                 }
 
+                $paidAllPayment = $invoice->payment_amount + abs($refundsPayOut);
+
                 // payment method
-                if (abs($totalPaidRefundInOtherPayment) > 0) {
+                if (abs($paidAllPayment - $totalPaidAccount) > 0) {
                     if (abs($totalNeedToRefund) > abs($totalPaidRefundInOtherPayment)) {
-                        $totalPaymentAfterRefunded = ($totalPaidIn - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
+                        $totalPaymentAfterRefunded = ($paidAllPayment - $totalPaidAccount) - abs($totalPaidRefundInOtherPayment);
                         $totalNeedToRefundInPaymentMethod = min($totalPaymentAfterRefunded, abs($totalNeedToPay)) * -1;
 
                     } else {

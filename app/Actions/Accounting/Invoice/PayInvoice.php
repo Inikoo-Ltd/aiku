@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -32,30 +33,42 @@ class PayInvoice extends OrgAction
         if ($consolidateTotalPayments) {
             $amount = Arr::get($modelData, 'amount');
             $totalRefund = abs($invoice->refunds->sum('total_amount'));
-            $needRefund = $totalRefund - abs($invoice->refunds->sum('payment_amount'));
 
             $calculateAmountInvoice = $amount + $totalRefund;
             if ($calculateAmountInvoice >= $invoice->total_amount) {
                 $modelData['amount'] = $calculateAmountInvoice;
             }
 
+
             $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
 
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
 
-            // payback refund
-            if ($needRefund > 0 && $amount > $needRefund) {
+            $invoice->refresh();
+
+            $refundsQuery = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID);
+
+            $needRefund = ($refundsQuery->sum('total_amount') - $refundsQuery->sum('payment_amount')) * -1;
+
+            if ($needRefund > 0) {
+                $amountRefund = min($needRefund, $invoice->payment_amount);
+
                 if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
-                    RefundToCredit::make()->action($invoice, [
-                        'amount' => $needRefund,
+                    RefundToInvoice::make()->action($invoice, $paymentAccount, [
+                        'amount' => $amountRefund,
+                        'type_refund' => 'credit',
+                        'is_auto_refund' => true,
                     ]);
                 } else {
-                    RefundToPaymentAccount::make()->action($invoice, $paymentAccount, [
-                        'amount' => $needRefund,
+                    RefundToInvoice::make()->action($invoice, $paymentAccount, [
+                        'amount' => $amountRefund,
                         'original_payment_id' => $payment->id,
+                        'type_refund' => 'payment',
+                        'is_auto_refund' => true,
                     ]);
                 }
             }
+
         } else {
             $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
 

@@ -45,7 +45,7 @@ class RefundToInvoice extends OrgAction
 
         $totalRoundRefund = abs(round($totalRefund, 2));
 
-        if ($invoice->payment_amount > 0) {
+        if ($invoice->payment_amount > 0 && !Arr::get($modelData, 'is_auto_refund', false)) {
             $paymentAmountWithInCertainType = DB::table('invoices')
                 ->where('invoices.id', $invoice->id)
                 ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
@@ -62,7 +62,6 @@ class RefundToInvoice extends OrgAction
                     }
                 )
                 ->sum('payments.amount');
-
             if ($totalRoundRefund > abs($paymentAmountWithInCertainType)) {
                 throw ValidationException::withMessages(
                     [
@@ -163,6 +162,7 @@ class RefundToInvoice extends OrgAction
             'amount'    => ['required', 'numeric'],
             'type_refund'     => ['required', 'string', 'in:payment,credit'],
             'original_payment_id' => ['sometimes', 'nullable', 'exists:payments,id'],
+            'is_auto_refund' => ['sometimes', 'boolean'],
         ];
     }
 
