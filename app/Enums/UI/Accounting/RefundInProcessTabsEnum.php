@@ -28,13 +28,12 @@ enum RefundInProcessTabsEnum: string
     {
         return match ($this) {
             RefundInProcessTabsEnum::ITEMS => [
-                'align' => 'right',
-                'title' => __('Preview'),
+                'title' => __('Transactions to be refunded (only)'),
                 'icon'  => 'fal fa-star-half-alt',
             ],
 
             RefundInProcessTabsEnum::ITEMS_IN_PROCESS => [
-                'title' => __('Invoice transactions'),
+                'title' => __('All Original Invoice transactions'),
                 'icon'  => 'fal fa-bars',
             ],
 
