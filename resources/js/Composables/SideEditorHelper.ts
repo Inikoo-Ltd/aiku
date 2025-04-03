@@ -25,6 +25,7 @@ import TextProperty from '@/Components/Workshop/Properties/TextProperty.vue'
 import ImagesArray from '@/Components/CMS/Fields/ImagesArray.vue'
 import cardsProperty from '@/Components/CMS/Fields/CardArray.vue'
 import InputNumberCss from '@/Components/CMS/Fields/InputNumberCss.vue'
+import JustifyContent from '@/Components/CMS/Fields/JustifyContent.vue'
 
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
@@ -58,7 +59,8 @@ export const getComponent = (componentName: string) => {
         "arrayPhone":ArrayPhone,
         "textProperty": TextProperty,
         "images-property" : ImagesArray,
-        "numberCss" : InputNumberCss
+        "numberCss" : InputNumberCss,
+        "justify-content" : JustifyContent
     }
     
     return components[componentName] ?? NotFoundComponents
