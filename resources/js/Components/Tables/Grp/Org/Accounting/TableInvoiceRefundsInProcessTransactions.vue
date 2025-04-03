@@ -197,7 +197,7 @@ const localeCode = navigator.language
                     @input="(e) => (set(proxyItem, ['new_refund_amount'], e.value))"
                     @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" :min="0" placeholder="0"
                     mode="currency" :currency="item.currency_code"
-                    :step="item.unit_price"
+                    :step="item.original_item_net_price"
                     @refund="(form)=> onClickQuantity(item.refund_route, item.rowIndex, form)"
                 >
                 <template #bottom-button="{form}">
@@ -213,7 +213,7 @@ const localeCode = navigator.language
                             />
                 </template>
                 </ActionCell>
-
+<!--                <pre>{{item}}</pre>-->
             </template>
         </Table>
     </div>
