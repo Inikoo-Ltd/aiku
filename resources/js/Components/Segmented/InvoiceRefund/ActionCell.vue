@@ -46,6 +46,11 @@ const refundAll = () => {
 const toggleEditMode = () => {
   editMode.value = !editMode.value;
 };
+
+
+defineExpose({
+  form
+})
 </script>
 
 <template>

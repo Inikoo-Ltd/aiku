@@ -5,19 +5,23 @@ export const blueprintTable = [
     }, */
     {
         header : 'Payment Account',
-        key : 'payment_account_name'
+        key : 'payment_account_name',
+        width : "100px",
     },
     {
         header : 'Amount',
-         key : 'amount'
+        key : 'amount',
+        width : "100px",
     },
     {
         header : 'Refunded',
-        key : 'refunded'
+        key : 'refunded',
+        width : "100px",
     },
     {
         header : 'Refund',
-        key : 'refund'
+        key : 'refund',
+        width : "100px",
     },
 ]
 
