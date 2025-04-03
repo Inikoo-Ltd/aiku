@@ -38,12 +38,12 @@ const locale = useLocaleStore();
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(amount)="{ item: customer }">
 			<div class="text-gray-500">
-				{{ useLocaleStore().currencyFormat(customer.currency_code, customer.sales_all) }}
+				{{ useLocaleStore().currencyFormat(customer.currency_code, customer.amount) }}
 			</div>
 		</template>
 		<template #cell(running_amount)="{ item: customer }">
 			<div class="text-gray-500">
-				{{ useLocaleStore().currencyFormat(customer.currency_code, customer.sales_all) }}
+				{{ useLocaleStore().currencyFormat(customer.currency_code, customer.running_amount) }}
 			</div>
 		</template>
 		<template #cell(date)="{ item: customer }">
