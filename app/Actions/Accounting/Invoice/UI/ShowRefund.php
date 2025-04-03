@@ -250,8 +250,8 @@ class ShowRefund extends OrgAction
                 $props,
                 [
                     RefundInProcessTabsEnum::ITEMS->value => $this->tab == RefundInProcessTabsEnum::ITEMS->value ?
-                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
+                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
 
 
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?

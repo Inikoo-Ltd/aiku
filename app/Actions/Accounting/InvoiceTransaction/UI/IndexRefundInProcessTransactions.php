@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -34,34 +35,37 @@ class IndexRefundInProcessTransactions extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
-        $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
-        $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
-        // $queryBuilder->leftJoin('invoice_transactions as invoice_transaction_refund', 'invoice_transactions.id', 'invoice_transaction_refund.invoice_transaction_id');
 
+        $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id')
+            ->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
 
+        $commonSelect = [
+            'historic_assets.code',
+            'historic_assets.name',
+            'assets.slug',
+            'assets.price',
+            DB::raw($refund->id.' as refund_id'),
+            DB::raw("'{$invoice->currency->code}' AS currency_code")
+        ];
 
-        $queryBuilder->select(
-            [
-                'invoice_transactions.id',
-                'invoice_transactions.updated_at',
-                'invoice_transactions.in_process',
-                'historic_assets.code',
-                'historic_assets.name',
-                'assets.slug',
-                'assets.price',
-                'quantity',
-                'net_amount',
-                DB::raw($refund->id.'  as refund_id'),
-
-            ]
-        );
-
-
-
-        $queryBuilder->where('invoice_transactions.invoice_id', $invoice->id)
-            ->addSelect(
-                DB::raw("'{$invoice->currency->code}' AS currency_code")
-            );
+        if (RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value === $prefix) {
+            $queryBuilder->select(array_merge([
+            'invoice_transactions.id',
+            'invoice_transactions.updated_at',
+            'invoice_transactions.in_process',
+            'quantity',
+            'net_amount',
+            ], $commonSelect))->where('invoice_transactions.invoice_id', $invoice->id);
+        } else {
+            $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.invoice_transaction_id', 'original_invoice_transaction.id')
+            ->select(array_merge([
+                'original_invoice_transaction.id',
+                'original_invoice_transaction.updated_at',
+                'original_invoice_transaction.in_process',
+                'original_invoice_transaction.quantity',
+                'original_invoice_transaction.net_amount',
+            ], $commonSelect))->where('invoice_transactions.invoice_id', $refund->id);
+        }
 
 
         $queryBuilder->defaultSort('code');
