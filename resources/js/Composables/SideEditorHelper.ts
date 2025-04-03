@@ -24,6 +24,7 @@ import Overview from '@/Components/CMS/Fields/Overview.vue'
 import TextProperty from '@/Components/Workshop/Properties/TextProperty.vue'
 import ImagesArray from '@/Components/CMS/Fields/ImagesArray.vue'
 import cardsProperty from '@/Components/CMS/Fields/CardArray.vue'
+import InputNumberCss from '@/Components/CMS/Fields/InputNumberCss.vue'
 
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
@@ -56,7 +57,8 @@ export const getComponent = (componentName: string) => {
         "script": Script,
         "arrayPhone":ArrayPhone,
         "textProperty": TextProperty,
-        "images-property" : ImagesArray
+        "images-property" : ImagesArray,
+        "numberCss" : InputNumberCss
     }
     
     return components[componentName] ?? NotFoundComponents

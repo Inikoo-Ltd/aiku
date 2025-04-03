@@ -50,8 +50,9 @@ export const getStyles = (properties: any) => {
             `${properties.border.rounded.bottomleft.value}${properties.border.rounded.unit}` : null,
         borderTopLeftRadius: properties?.border?.rounded?.topleft?.value != null && properties?.border?.rounded?.unit ? 
             `${properties.border.rounded.topleft.value}${properties.border.rounded.unit}` : null,
+        gap : properties?.gap?.value != null && properties?.gap?.unit ? 
+             (properties.gap.value + properties.gap.unit) : null,
     };
-
     return Object.fromEntries(Object.entries(styles).filter(([_, value]) => value !== null));
 };
 

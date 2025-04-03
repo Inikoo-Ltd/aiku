@@ -15,6 +15,11 @@ export default {
             type: "background",
           },
           {
+            key: ["gap"],
+            label:"Gap",
+            type: "numberCss",
+          },
+          {
             key: ["padding"],
             label:"Padding",
             type: "padding",
