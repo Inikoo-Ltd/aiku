@@ -24,7 +24,7 @@ use App\Actions\Traits\WithWebUserMeta;
 use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
 use App\Http\Resources\CRM\CustomersResource;
-use App\Http\Resources\Fulfilment\CustomerBalancesResource;
+use App\Http\Resources\Fulfilment\CustomerBalanceTransactionsResource;
 use App\Http\Resources\Fulfilment\RentalAgreementClausesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -210,8 +210,8 @@ class ShowFulfilmentCustomer extends OrgAction
 
 
                 FulfilmentCustomerTabsEnum::BALANCE->value => $this->tab == FulfilmentCustomerTabsEnum::BALANCE->value ?
-                    fn () => CustomerBalancesResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))
-                    : Inertia::lazy(fn () => CustomerBalancesResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))),
+                    fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))
+                    : Inertia::lazy(fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))),
 
                 FulfilmentCustomerTabsEnum::EMAIL->value => $this->tab == FulfilmentCustomerTabsEnum::EMAIL->value ?
                     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))
@@ -231,6 +231,7 @@ class ShowFulfilmentCustomer extends OrgAction
             ->table(IndexRentalAgreementClauses::make()->tableStructure(prefix: FulfilmentCustomerTabsEnum::AGREED_PRICES->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($fulfilmentCustomer, prefix: FulfilmentCustomerTabsEnum::EMAIL->value))
             ->table(IndexHistory::make()->tableStructure(prefix: FulfilmentCustomerTabsEnum::HISTORY->value))
+            ->table(IndexCustomerBalanceTransaction::make()->tableStructure($fulfilmentCustomer->customer, prefix: FulfilmentCustomerTabsEnum::BALANCE->value))
             ->table(IndexAttachments::make()->tableStructure(FulfilmentCustomerTabsEnum::ATTACHMENTS->value));
     }
 
