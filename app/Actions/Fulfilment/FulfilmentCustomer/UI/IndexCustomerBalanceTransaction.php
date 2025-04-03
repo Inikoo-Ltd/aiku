@@ -77,9 +77,9 @@ class IndexCustomerBalanceTransaction extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->column(key: 'type', label: __('Transaction type'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'running_amount', label: __('Running balance'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'running_amount', label: __('Running balance'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 
