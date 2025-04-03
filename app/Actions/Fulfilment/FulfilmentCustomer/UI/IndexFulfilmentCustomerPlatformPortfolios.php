@@ -99,7 +99,7 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
         ];
 
         return Inertia::render(
-            'Org/Fulfilment/FulfilmentCustomerPlatforms',
+            'Org/Fulfilment/FulfilmentCustomerPlatformPortfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->modelHasPlatform,

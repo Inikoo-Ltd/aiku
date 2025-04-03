@@ -23,7 +23,6 @@ function platformRoute(platform: {}) {
 
 </script>
 <template>
-    xx
      <Table :resource="data" >
         <template #cell(code)="{ item: platform }">
             <Link :href="platformRoute(platform)" class="primaryLink">
