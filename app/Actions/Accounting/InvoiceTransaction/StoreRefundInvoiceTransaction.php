@@ -36,7 +36,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
         $netAmount = Arr::get($modelData, 'net_amount', 0) * -1;
         if ($netAmount === 0) {
             $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
-            CalculateInvoiceTotals::run($refund);
+            if (!$isRefundAll) {
+                CalculateInvoiceTotals::run($refund);
+            }
             return $invoiceTransaction;
         }
 
@@ -48,13 +50,10 @@ class StoreRefundInvoiceTransaction extends OrgAction
             $netAmount = (abs($netAmount) - abs($totalTrRefunded)) * -1;
 
             if ($netAmount == 0) {
-                throw ValidationException::withMessages(
-                    [
-                        'message' => [
-                            'net_amount' => 'This transaction is already fully refunded in other refund',
-                        ]
-                    ]
-                );
+                if (!$isRefundAll) {
+                    CalculateInvoiceTotals::run($refund);
+                }
+                return $invoiceTransaction;
             }
         }
 
