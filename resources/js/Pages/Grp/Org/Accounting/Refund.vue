@@ -176,7 +176,6 @@ const isOpenModalPayment = ref(false);
 const isLoadingPayment = ref(false);
 const errorPaymentMethod = ref<null | unknown>(null);
 const onSubmitPayment = () => {
-
     let url
     if (paymentData.value.payment_method === 'credit_balance') {
         url = route('grp.models.refund.refund_to_credit', {

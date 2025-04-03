@@ -200,7 +200,7 @@ const localeCode = navigator.language
                     :step="item.original_item_net_price"
                     @refund="(form)=> onClickQuantity(item.refund_route, item.rowIndex, form)"
                 >
-                <template #bottom-button="{form}">
+               <!--  <template #bottom-button="{form}">
                             <ButtonWithLink
                                 v-if="Number(item.total_last_refund) < Number(form.refund_amount)"
                                 @click="() => form.refund_amount = (item.net_amount - item.refund_net_amount - item.total_last_refund)"
@@ -211,9 +211,8 @@ const localeCode = navigator.language
                                 :bindToLink="{ preserveScroll: true }"
                                 type="tertiary"
                             />
-                </template>
+                </template> -->
                 </ActionCell>
-<!--                <pre>{{item}}</pre>-->
             </template>
         </Table>
     </div>
