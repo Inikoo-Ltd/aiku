@@ -185,7 +185,7 @@ const onDeleteAddress = (addressID: number) => {
     <pre>home {{ addresses.home_address_id }}</pre> -->
         <div class="flex justify-between border-b border-gray-300">
             <div class="text-2xl font-bold text-center mb-2 flex gap-x-2">
-                {{ trans('Address management') }}
+                {{ trans('Delivery Address management') }}
 
                 <div class="relative">
                     <Transition name="slide-to-right">
