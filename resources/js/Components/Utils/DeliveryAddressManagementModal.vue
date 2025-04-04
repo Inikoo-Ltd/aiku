@@ -13,6 +13,7 @@ import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCh
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useTruncate } from '@/Composables/useTruncate'
+import { faThumbtack as faThumbtackSolid } from "@fas";
 library.add(faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, faThumbtack)
 
 const props = defineProps<{
@@ -325,8 +326,11 @@ const onDeleteAddress = (addressID: number) => {
                                     <!-- Action: Pin, edit, delete -->
                                     <div class="flex items-center">
                                         <LoadingIcon v-if="isLoading == 'onPinned' + homeAddress?.id" class="px-0.5"/>
-                                        <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1" @click="() => onPinnedAddress(homeAddress.id)" icon='fal fa-thumbtack' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-500' : 'text-gray-700 hover:text-gray-600'" fixed-width aria-hidden='true'
-                                                         v-tooltip="trans('default delivery address')" />
+                                        <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1" @click="() => onPinnedAddress(homeAddress.id)"  class='px-0.5 py-1 cursor-pointer'
+                                                         :icon="addresses.pinned_address_id === homeAddress?.id ?  faThumbtackSolid: faThumbtack"
+                                                         :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-500' : 'text-gray-700 hover:text-gray-600'" fixed-width aria-hidden='true'
+                                                         v-tooltip="(addresses.pinned_address_id === homeAddress?.id ? trans('Current default delivery address') :trans('Select as default delivery address'))"
+                                        />
                                         <FontAwesomeIcon @click="() => onEditAddress(homeAddress)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
                                     </div>
                                 </div>
@@ -374,12 +378,14 @@ const onDeleteAddress = (addressID: number) => {
                                             <LoadingIcon v-if="isLoading === 'onPinned' + address.id" class="px-0.5"/>
                                             <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1"
                                                 @click="() => addresses.pinned_address_id === address.id ? false : onPinnedAddress(address.id)"
-                                                icon='fal fa-thumbtack'
-                                                class='px-0.5 py-1'
+                                                             :icon="addresses.pinned_address_id === address.id ?  faThumbtackSolid: faThumbtack"
+
+                                                class='px-0.5 py-1 cursor-pointer'
                                                 :class="addresses.pinned_address_id === address.id ? 'text-green-500' : 'text-gray-700 hover:text-gray-600 cursor-pointer'"
                                                 fixed-width
                                                 aria-hidden='true'
-                                                v-tooltip="addresses.pinned_address_id === address.id ? trans('Selected as delivery address') : trans('Select as delivery address')"
+                                                             v-tooltip="(addresses.pinned_address_id === address.id ? trans('Current default delivery address') :trans('Select as default delivery address'))"
+
                                             />
 
                                             <FontAwesomeIcon v-if="address.can_edit" @click="() => onEditAddress(address)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
