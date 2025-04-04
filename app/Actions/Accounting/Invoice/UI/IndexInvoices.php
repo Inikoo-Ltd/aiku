@@ -547,9 +547,9 @@ class IndexInvoices extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerClient;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(InvoicesTabsEnum::values());
 
-        return $this->handle(parent: $customer);
+        return $this->handle(parent: $customer, prefix: InvoicesTabsEnum::INVOICES->value);
     }
 
 

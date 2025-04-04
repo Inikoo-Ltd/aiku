@@ -23,6 +23,8 @@ class GetPaymentShowcase
             $parentResource = OrderResource::make($parent);
         } elseif ($parent instanceof Invoice) {
             $parentResource = InvoiceResource::make($parent);
+        } else {
+            $parentResource = null;
         }
         return [
             'parent_type' => class_basename($parent),
