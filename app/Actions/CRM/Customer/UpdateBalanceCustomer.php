@@ -19,7 +19,6 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
-use App\Rules\Phone;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -103,26 +102,23 @@ class UpdateBalanceCustomer extends OrgAction
     /**
      * @throws \Throwable
      */
-    // public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Customer
-    // {
-    //     if (!$audit) {
-    //         Customer::disableAuditing();
-    //     }
-    //     $this->asAction       = true;
-    //     $this->hydratorsDelay = $hydratorsDelay;
-    //     $this->strict         = $strict;
-    //     $this->initialisationFromShop($shop, $modelData);
+    public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Customer
+    {
+        $this->asAction       = true;
+        $this->hydratorsDelay = $hydratorsDelay;
+        $this->strict         = $strict;
+        $this->initialisationFromShop($customer->shop, $modelData);
 
-    //     return $this->handle($shop, $this->validatedData);
-    // }
+        return $this->handle($customer, $this->validatedData);
+    }
 
     // public string $commandSignature = 'customer:create {shop} {--contact_name=} {--company_name=} {--email=} {--phone=}  {--contact_website=} {--country=} ';
 
     /**
      * @throws \Throwable
      */
-    public function asCommand(Command $command): void
-    {
+    // public function asCommand(Command $command): void
+    // {
 
-    }
+    // }
 }
