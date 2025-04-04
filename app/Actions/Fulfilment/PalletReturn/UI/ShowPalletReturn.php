@@ -600,6 +600,7 @@ class ShowPalletReturn extends OrgAction
                         'customer' => $palletReturn->fulfilmentCustomer->customer_id
                     ]
                 ],
+                'address_modal_title'=>__('Delivery address for').' '.$palletReturn->reference,
                 'addresses'   => [
                     'isCannotSelect'                => true,
                     'address_list'                  => $addressCollection,
