@@ -12,7 +12,6 @@ namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Actions\OrgAction;
-use Illuminate\Http\JsonResponse;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Vision\ImageSource;
 use LLPhant\Chat\Vision\VisionMessage;
@@ -45,7 +44,7 @@ class AskBotVision extends OrgAction
 
             $response = $chat->generateChat($messages);
 
-            return JsonResponse::create([
+            return response()->json([
                 'content' => $response,
             ]);
         }
@@ -95,22 +94,13 @@ class AskBotVision extends OrgAction
 
 
 
-    // public $commandSignature = 'ask:botvision {url} {--prompt=default}';
+    public $commandSignature = 'ask:botvision {url}';
 
-    // public function asCommand($command): void
-    // {
-    //     $urlOrBase64Image = $command->argument('url');
-    //     $prompt = $command->option('prompt');
+    public function asCommand($command): void
+    {
+        $urlOrBase64Image = $command->argument('url');
 
-    //     if ($prompt == 'alt') {
-    //         $this->promptAltImageWithLLPhant();
-    //     }
+        dd($this->handle($urlOrBase64Image, 'alt'));
 
-    //     if (config('askbot-laravel.ai_provider') == 'openai') {
-    //         $this->handle($urlOrBase64Image, $prompt);
-    //     } else {
-    //         $this->error('AI provider not supported');
-    //     }
-
-    // }
+    }
 }
