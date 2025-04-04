@@ -25,7 +25,7 @@ import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
+import ModalAddressCollection from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"

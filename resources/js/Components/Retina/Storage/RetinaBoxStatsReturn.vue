@@ -18,7 +18,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import RetinaBoxNote from "@/Components/Retina/Storage/RetinaBoxNote.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import ModalAddress from '@/Components/Utils/ModalAddress.vue'
-import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
+import ModalAddressCollection from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBuilding, faIdCardAlt, faMapMarkerAlt, faPencil, faPenSquare, faCalendarDay } from '@fal'

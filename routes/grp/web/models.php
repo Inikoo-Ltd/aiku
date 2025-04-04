@@ -621,7 +621,7 @@ Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.upd
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
-    Route::post('address', AddDeliveryAddressToCustomer::class)->name('address.store');
+    Route::post('delivery-address', AddDeliveryAddressToCustomer::class)->name('address.store');
     Route::patch('address/update', UpdateCustomerAddress::class)->name('address.update');
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
