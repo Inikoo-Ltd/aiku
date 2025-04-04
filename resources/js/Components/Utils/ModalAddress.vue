@@ -307,7 +307,7 @@ const onDeleteAddress = (addressID: number) => {
                                         </div>
 
                                         <div class="relative">
-                                            <Transition name="spin-to-right">
+                                      <!--       <Transition name="spin-to-right">
                                                 <FontAwesomeIcon v-if="addresses.current_selected_address_id == homeAddress?.id" icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
                                                 <Button
                                                     v-else-if="!addresses.isCannotSelect"
@@ -318,7 +318,7 @@ const onDeleteAddress = (addressID: number) => {
                                                     :loading="isSelectAddressLoading == homeAddress?.id"
                                                     v-tooltip="'Apply to this section only'"
                                                 />
-                                            </Transition>
+                                            </Transition> -->
                                         </div>
                                     </div>
 
@@ -355,7 +355,7 @@ const onDeleteAddress = (addressID: number) => {
                                                 ({{ trans('No label') }})
                                             </div>
                                             <div class="relative">
-                                                <Transition name="spin-to-right">
+                                              <!--   <Transition name="spin-to-right">
                                                     <FontAwesomeIcon v-if="addresses.current_selected_address_id == address.id" icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
                                                     <Button
                                                         v-else-if="!addresses.isCannotSelect"
@@ -366,14 +366,14 @@ const onDeleteAddress = (addressID: number) => {
                                                         :loading="isSelectAddressLoading == address.id"
                                                         v-tooltip="'Apply to this section only'"
                                                     />
-                                                </Transition>
+                                                </Transition> -->
                                             </div>
                                         </div>
                                         <div class="flex items-center">
                                             <LoadingIcon v-if="isLoading === 'onPinned' + address.id" class="px-0.5"/>
                                             <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1"
                                                 @click="() => addresses.pinned_address_id === address.id ? false : onPinnedAddress(address.id)"
-                                                icon='fal fa-truck'
+                                                icon='fal fa-thumbtack'
                                                 class='px-0.5 py-1'
                                                 :class="addresses.pinned_address_id === address.id ? 'text-green-500' : 'text-gray-400 hover:text-gray-600 cursor-pointer'"
                                                 fixed-width
