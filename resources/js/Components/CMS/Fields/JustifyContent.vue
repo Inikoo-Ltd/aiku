@@ -1,39 +1,39 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref } from 'vue'
 import SelectButton from 'primevue/selectbutton';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faAlignCenter, faAlignLeft, faAlignRight } from '@fal';
 
-
-const model = defineModel<typeof localModel>({
-    required: true,
-})
-
-const localModel = {}
-
-
+const model = defineModel<string>({ required: true })
 
 const options = [
-    { icon: faAlignLeft, value: 'Left' },
-    { icon: faAlignCenter, value: 'Right' },
-    { icon: faAlignRight, value: 'Center' },
-  /*   { icon: 'pi pi-align-justify', value: 'Justify' } */
+    { icon: faAlignLeft, value: 'left', label: 'Left' },
+    { icon: faAlignCenter, value: 'center', label: 'Center', },
+    { icon: faAlignRight, value: 'right', label: 'Right', },
 ]
-
-onMounted(async () => {
-    
-})
 
 </script>
 
 <template>
-    <div >
-        <SelectButton v-model="model" :options="options" optionLabel="value" dataKey="value" aria-labelledby="custom">
+    <div>
+        <SelectButton 
+            v-model="model" 
+            :options="options" 
+            optionLabel="label" 
+            optionValue="value" 
+            dataKey="value" 
+            aria-labelledby="custom"
+            class="w-full flex"
+        >
             <template #option="slotProps">
-               <FontAwesomeIcon :icon="slotProps.option.icon" />
+                <div class="w-full flex justify-center">
+                    <FontAwesomeIcon :icon="slotProps.option.icon" />
+                </div>
             </template>
         </SelectButton>
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
+

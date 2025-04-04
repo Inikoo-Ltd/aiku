@@ -1,9 +1,12 @@
+import JustifyContent from "@/Components/CMS/Fields/JustifyContent.vue";
+
 export const getStyles = (properties: any) => {
     if (!properties || typeof properties !== 'object') {
         // If properties are missing or not an object, return null
         return null;
     }
 
+    console.log(properties)
     const styles = {
         height: properties?.dimension?.height?.value  ? properties?.dimension?.height?.value  + properties?.dimension?.height?.unit : null,
         width: properties?.dimension?.width?.value ? properties?.dimension?.width?.value + properties?.dimension?.width?.unit : null,
@@ -52,6 +55,7 @@ export const getStyles = (properties: any) => {
             `${properties.border.rounded.topleft.value}${properties.border.rounded.unit}` : null,
         gap : properties?.gap?.value != null && properties?.gap?.unit ? 
              (properties.gap.value + properties.gap.unit) : null,
+        justifyContent : properties?.justifyContent || null,
     };
     return Object.fromEntries(Object.entries(styles).filter(([_, value]) => value !== null));
 };
