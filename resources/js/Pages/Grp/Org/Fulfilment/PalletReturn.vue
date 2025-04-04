@@ -77,7 +77,7 @@ const props = defineProps<{
         dropshipping: boolean
     }
     addresses?: {}
-    
+    address_modal_title: string
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
     box_stats: BoxStats
@@ -483,7 +483,7 @@ const isModalUploadFileOpen = ref(false)
 
     <!-- Section: Box Stats -->
     <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute"  :addresses
-    :address_update_route />
+    :address_update_route :address_modal_title/>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component 
