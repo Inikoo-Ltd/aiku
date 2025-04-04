@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
+use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
@@ -102,7 +103,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         $fulfilmentCustomer = $modelHasPlatform->model->fulfilmentCustomer;
 
         return array_merge(
-            IndexFulfilmentCustomerPlatforms::make()->getBreadcrumbs(
+            ShowFulfilmentCustomer::make()->getBreadcrumbs(
                 $routeParameters
             ),
             $headCrumb(

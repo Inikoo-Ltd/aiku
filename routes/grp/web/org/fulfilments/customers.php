@@ -172,13 +172,16 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
 
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
                 Route::get('', IndexFulfilmentCustomerPlatformPortfolios::class)->name('.index');
+                Route::get('/{storedItem}', [ShowStoredItem::class, 'inPlatformInFulfilmentCustomer'])->name('.show')->withoutScopedBindings();
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.index');
+                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.show');
                 Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
                 Route::get('', IndexFulfilmentCustomerPlatformOrders::class)->name('.index');
+                Route::get('/{palletReturn}', [ShowStoredItemReturn::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
             });
         });
     });

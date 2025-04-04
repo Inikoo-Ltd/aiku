@@ -12,18 +12,22 @@ const props = defineProps<{
     data: TableTS,
 }>()
 
-/* function platformRoute(platform: {}) {
+function orderRoute(order: {}) {
     switch (route().current()) {
-         case "grp.org.fulfilments.show.crm.customers.show.platforms.index":
+         case "grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index":
             return route(
-               "grp.org.fulfilments.show.crm.customers.show.platforms.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.model_has_platform_id])
+               "grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show",
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["modelHasPlatform"],  order.slug])
     }
-} */
+}
 
 </script>
 <template>
      <Table :resource="data" >
-       
+        <template #cell(reference)="{ item: order }">
+            <Link :href="orderRoute(order)" class="primaryLink">
+                {{ order["reference"] }}
+            </Link>
+        </template>
     </Table>
 </template>

@@ -9,6 +9,9 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformCustomerClients;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
+use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
@@ -22,6 +25,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Arr;
 use Inertia\Inertia;
@@ -35,8 +39,9 @@ class ShowCustomerClient extends OrgAction
     use WithCustomerSubNavigation;
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
+    use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private Customer|FulfilmentCustomer $parent;
+    private Customer|FulfilmentCustomer|ModelHasPlatform $parent;
 
     public function handle(CustomerClient $customerClient): CustomerClient
     {
@@ -55,6 +60,15 @@ class ShowCustomerClient extends OrgAction
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
         $this->parent = $fulfilmentCustomer;
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
+
+        return $this->handle($customerClient);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    {
+        $this->parent = $modelHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
@@ -79,6 +93,8 @@ class ShowCustomerClient extends OrgAction
             $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
+        } elseif ($this->parent instanceof ModelHasPlatform) {
+            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
         }
 
         return Inertia::render(
@@ -285,6 +301,27 @@ class ShowCustomerClient extends OrgAction
                     $suffix
                 )
             ),
+
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show'
+            => array_merge(
+                (new ShowFulfilmentCustomerPlatform())->getBreadcrumbs($this->parent, $routeParameters),
+                $headCrumb(
+                    $customerClient,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -324,6 +361,13 @@ class ShowCustomerClient extends OrgAction
                 ]
             ],
             'grp.org.fulfilments.show.crm.customers.show.customer-clients.show' => [
+                'label' => $customerClient->name,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => request()->route()->originalParameters()
+                ]
+            ],
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,

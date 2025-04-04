@@ -249,6 +249,10 @@ class IndexCustomerClients extends OrgAction
             ];
         };
 
+        if(isset($routeParameters['modelHasPlatform'])){
+            $modelHasPlatform = ModelHasPlatform::find($routeParameters['modelHasPlatform'])->first();
+        }
+
         return match ($routeName) {
             'grp.org.shops.show.crm.customers.show.customer-clients.index' =>
             array_merge(
@@ -275,10 +279,11 @@ class IndexCustomerClients extends OrgAction
                     ]
                 )
             ),
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index' =>
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show' =>
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs(
-                    $this->parent,
+                    $modelHasPlatform,
                     $routeParameters
                 ),
                 $headCrumb(

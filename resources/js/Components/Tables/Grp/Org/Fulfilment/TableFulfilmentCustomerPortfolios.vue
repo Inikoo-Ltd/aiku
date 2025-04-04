@@ -12,21 +12,21 @@ const props = defineProps<{
     data: TableTS,
 }>()
 
-function platformRoute(platform: {}) {
+function portfolioRoute(portfolio: {}) {
     switch (route().current()) {
-         case "grp.org.fulfilments.show.crm.customers.show.platforms.index":
+         case "grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.index":
             return route(
-               "grp.org.fulfilments.show.crm.customers.show.platforms.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.model_has_platform_id])
+               "grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.show",
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"],  route().params["modelHasPlatform"],  portfolio.slug])
     }
 }
 
 </script>
 <template>
      <Table :resource="data" >
-        <template #cell(code)="{ item: platform }">
-            <Link :href="platformRoute(platform)" class="primaryLink">
-                {{ platform["code"] }}
+        <template #cell(reference)="{ item: portfolio }">
+            <Link :href="portfolioRoute(portfolio)" class="primaryLink">
+                {{ portfolio["reference"] }}
             </Link>
         </template>
     </Table>
