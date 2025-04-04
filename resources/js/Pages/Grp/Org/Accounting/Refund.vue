@@ -122,7 +122,7 @@ const props = defineProps<{
 }>();
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
-
+const _refComponents = ref({})
 const component = computed(() => {
   const components: Component = {
     items: TableInvoiceRefundsInProcessTransactions,
@@ -222,13 +222,14 @@ const onSubmitPayment = () => {
 const onPayInOnClick = () => {
     handleTabUpdate('payments')
 }
-const reloadItems = inject("reloadItems");
+
+
 const afterRefundAll = () => {
-  if(window.location) window.location.reload()// need work in this
-/*   if (reloadItems) {
-    reloadItems();
-  } */
+  if(_refComponents.value.items_in_process){
+    _refComponents.value.items_in_process.reloadForm()
+  }
 }
+
 
 watch(paymentData, () => {
   if (errorPaymentMethod.value) {
@@ -419,7 +420,7 @@ console.log(props.pageHead)
   </div>
 
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+  <component :is="component" :data="props[currentTab]" :tab="currentTab" :ref="(e) => _refComponents[currentTab] = e"/>
 
   <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
     <div class="isolate bg-white px-6 lg:px-8">
