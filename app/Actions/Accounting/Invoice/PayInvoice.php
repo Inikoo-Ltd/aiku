@@ -34,9 +34,9 @@ class PayInvoice extends OrgAction
             $amount = Arr::get($modelData, 'amount');
             $totalRefund = abs($invoice->refunds->sum('total_amount'));
 
-            $calculateAmountInvoice = $amount + $totalRefund;
+            $calculateAmountInvoice = $amount + $invoice->payment_amount + $totalRefund;
             if ($calculateAmountInvoice >= $invoice->total_amount) {
-                $modelData['amount'] = $calculateAmountInvoice;
+                $modelData['amount'] = $calculateAmountInvoice - $invoice->payment_amount;
             }
 
 
