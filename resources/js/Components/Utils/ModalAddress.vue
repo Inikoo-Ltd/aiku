@@ -326,7 +326,7 @@ const onDeleteAddress = (addressID: number) => {
                                     <!-- Action: Pin, edit, delete -->
                                     <div class="flex items-center">
                                         <LoadingIcon v-if="isLoading == 'onPinned' + homeAddress?.id" class="px-0.5"/>
-                                        <FontAwesomeIcon  @click="() => onPinnedAddress(homeAddress.id)" icon='far fa-thumbtack' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-700' : 'text-gray-700 hover:text-red-500'" fixed-width aria-hidden='true' v-tooltip="trans(' default delivery address')" />
+                                        <FontAwesomeIcon  @click="() => onPinnedAddress(homeAddress.id)" icon='far fa-thumbtack' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-800' : 'text-gray-500 hover:text-red-500'" fixed-width aria-hidden='true' v-tooltip="trans(' default delivery address')" />
                                         <FontAwesomeIcon @click="() => onEditAddress(homeAddress)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
                                     </div>
                                 </div>
@@ -376,7 +376,7 @@ const onDeleteAddress = (addressID: number) => {
                                                 @click="() => addresses.pinned_address_id === address.id ? false : onPinnedAddress(address.id)"
                                                 icon='far fa-thumbtack'
                                                 class='px-0.5 py-1'
-                                                :class="addresses.pinned_address_id === address.id ? 'text-green-800' : 'text-gray-700 hover:text-gray-600 cursor-pointer'"
+                                                :class="addresses.pinned_address_id === address.id ? 'text-green-800' : 'text-gray-500 hover:text-gray-600 cursor-pointer'"
                                                 fixed-width
                                                 aria-hidden='true'
                                                 v-tooltip="addresses.pinned_address_id === address.id ? trans('Selected as default delivery address') : trans('Select as default delivery address')"
