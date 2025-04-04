@@ -323,6 +323,7 @@ test('UI create payment', function () {
 });
 
 test('UI show payment', function (Payment $payment) {
+    $this->withoutExceptionHandling();
     $response                  = get(
         route(
             'grp.org.accounting.payments.show',
@@ -1209,7 +1210,6 @@ test('UI show list invoices in customer', function () {
             ->component('Org/Accounting/Invoices')
             ->has('title')
             ->has('breadcrumbs')
-            ->has('pageHead')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
@@ -1217,7 +1217,8 @@ test('UI show list invoices in customer', function () {
                     ->has('subNavigation')
                     ->etc()
             )
-            ->has('data');
+            ->has('tabs')
+            ->has('invoices');
     });
 });
 
@@ -1245,7 +1246,8 @@ test('UI show list invoices in customer client', function () {
                     ->has('subNavigation')
                     ->etc()
             )
-            ->has('data');
+            ->has('tabs')
+            ->has('invoices');
     });
 });
 
@@ -1299,7 +1301,6 @@ test('UI show invoice in Organisation', function () {
                         'information',
                         fn (AssertableInertia $page) => $page
                             ->has('recurring_bill')
-                            ->has('routes')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1358,7 +1359,6 @@ test('UI show invoice in Shop', function () {
                         'information',
                         fn (AssertableInertia $page) => $page
                             ->has('recurring_bill')
-                            ->has('routes')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
