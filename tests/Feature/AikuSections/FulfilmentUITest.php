@@ -62,7 +62,7 @@ use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
-use App\Enums\UI\Accounting\InvoicesTabsEnum;
+use App\Enums\UI\Accounting\InvoicesInFulfilmentCustomerTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentAssetsTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentsTabsEnum;
 use App\Enums\UI\Fulfilment\PhysicalGoodsTabsEnum;
@@ -846,10 +846,14 @@ test('UI show fulfilment customer refund', function () {
             )
             ->has('tabs')
             ->has('order_summary')
-            ->has('exportPdfRoute')
             ->has('box_stats')
             ->has('invoice_refund')
             ->has('breadcrumbs', 5);
+        if (!$this->refund->in_process) {
+            $page->has('exportPdfRoute');
+        } else {
+            $page->missing('exportPdfRoute');
+        }
     });
 });
 
@@ -986,7 +990,7 @@ test('UI show fulfilment customer invoice sub navigation (tab in process)', func
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->slug,
-        'tab' => InvoicesTabsEnum::IN_PROCESS->value
+        'tab' => InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1001,7 +1005,7 @@ test('UI show fulfilment customer invoice sub navigation (tab in process)', func
             )
             ->has('breadcrumbs', 4);
         if (!app()->environment('production')) {
-            $page->has(InvoicesTabsEnum::IN_PROCESS->value);
+            $page->has(InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value);
             $page->has('tabs');
         } else {
             $page->has('data');
