@@ -324,7 +324,7 @@ const onDeleteAddress = (addressID: number) => {
                                     <!-- Action: Pin, edit, delete -->
                                     <div class="flex items-center">
                                         <LoadingIcon v-if="isLoading == 'onPinned' + homeAddress?.id" class="px-0.5"/>
-                                        <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1" @click="() => onPinnedAddress(homeAddress.id)" icon='fal fa-truck' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('Select as default delivery address')" />
+                                        <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1" @click="() => onPinnedAddress(homeAddress.id)" icon='fal fa-thumbtack' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('Select as default delivery address')" />
                                         <FontAwesomeIcon @click="() => onEditAddress(homeAddress)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
                                     </div>
                                 </div>
@@ -346,7 +346,7 @@ const onDeleteAddress = (addressID: number) => {
                                         :class="addresses.current_selected_address_id == address.id ? 'bg-green-50' : 'bg-gray-100'"
                                     >
                                         <div class="flex gap-x-1 items-center relative">
-                                            <FontAwesomeIcon v-if="false && addresses.selected_delivery_addresses_id?.includes(address.id)" :icon=faThumbtack class='px-0.5 py-1 cursor-pointer' :class="addresses.selected_delivery_addresses_id.includes(address.id) ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('This address is already selected')" />
+                                            <FontAwesomeIcon v-if="false && addresses.selected_delivery_addresses_id?.includes(address.id)" icon='fal fa-truck-couch' class='px-0.5 py-1 cursor-pointer' :class="addresses.selected_delivery_addresses_id.includes(address.id) ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('This address is already selected')" />
                                             <div v-if="address.label" class="font-semibold text-sm whitespace-nowrap">
                                                 {{ useTruncate(address.label, 14) }}
                                             </div>
