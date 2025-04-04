@@ -611,11 +611,18 @@ class ShowPalletReturn extends OrgAction
                     'current_selected_address_id'    => $palletReturn->delivery_address_id,
                     'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
                     'routes_list'                    => [
-                        'pinned_route'                   => [
+                        'switch_route'                   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.pallet-return.address.switch',
                             'parameters' => [
                                 'palletReturn' => $palletReturn->id
+                            ]
+                        ],
+                        'pinned_route'                   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.customer.delivery-address.update',
+                            'parameters' => [
+                                'customer' => $palletReturn->fulfilmentCustomer->customer_id
                             ]
                         ],
                         'delete_route'  => [
