@@ -86,6 +86,25 @@ const DeleteRefund = (route, index) => {
 
 const itemsInProcessRef = ref(null);
 
+const reloadForm = () => {
+    if (_formCell.value) {
+        for (const item in _formCell.value) {
+            if (_formCell.value[item].form) {
+                _formCell.value[item].form.refund_amount = props.data.data[item].max_refundable_amount
+                _formCell.value[item].form.defaults();
+                _formCell.value[item].form.reset();
+            }
+        }
+    }
+};
+
+
+
+
+defineExpose({
+    reloadForm
+})
+
 
 </script>
 

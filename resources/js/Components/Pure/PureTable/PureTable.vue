@@ -62,8 +62,8 @@ const onPage = (event: { page: number; rows: number }) => {
 onMounted(() => fetchData(meta.value.current_page, meta.value.per_page, true))
 
 defineExpose({
-  data,
-  fetchData
+	data,
+	fetchData
 })
 </script>
 
@@ -71,20 +71,12 @@ defineExpose({
 	<!-- Slot Header -->
 	<slot name="header"></slot>
 
-	<DataTable
-		:value="data"
-		v-bind="tableProps"
-		:paginator="meta.last_page != 1"
-		:rows="meta.per_page"
-		:totalRecords="meta.total"
-		lazy
-		:loading="loading"
-		paginatorPosition="bottom"
-		class="custom-paginator"
+	<DataTable :value="data" v-bind="tableProps" :paginator="meta.last_page != 1" :rows="meta.per_page"
+		:totalRecords="meta.total" lazy :loading="loading" paginatorPosition="bottom" class="custom-paginator"
 		@page="onPage">
-		
+
 		<template v-for="(col, index) in blueprint" :key="col.key">
-			<Column :field="col.key">
+			<Column :field="col.key" :style="{ width: col.width || 'auto' }">
 				<template #header>
 					<slot :name="`${col.key}-header`" :index="index">
 						<span class="font-bold">{{ col.header }}</span>
@@ -97,6 +89,7 @@ defineExpose({
 				</template>
 			</Column>
 		</template>
+
 
 		<slot name="footer" :data="data"></slot>
 	</DataTable>
