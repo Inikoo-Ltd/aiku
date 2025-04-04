@@ -345,10 +345,10 @@ function openRejectedModal(customer: any) {
 															.formatted_address
 													" />
 
-												<!-- <div @click="() => isModalAddress = true"
+												 <div @click="() => isModalAddress = true"
                                                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                                         <span>{{ trans('Edit') }}</span>
-                                                    </div> -->
+                                                    </div>
 											</div>
 										</dd>
 									</div>
