@@ -55,7 +55,7 @@ defineExpose({
         :currency="props.currency"
         :maxFractionDigits="2"
         mode="currency"
-        inputClass="width-12"
+        :input-style="{ width : '100px'}"
         :step="step"
       >
         <template #decrementicon>
