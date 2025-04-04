@@ -151,17 +151,10 @@ class FetchAction implements ShouldBeUnique
 
     public function recordError($organisationSource, $e, $modelData, $modelType = null, $errorOn = null): void
     {
-        if (!$organisationSource) {
-            print ">>> $modelType $errorOn\n";
-            dd($e->getMessage());
-        }
+
 
         $this->number_errors++;
 
-        if (!$organisationSource->fetch) {
-            print ">>> $modelType $errorOn\n";
-            dd($e->getMessage());
-        }
 
         UpdateFetch::run($organisationSource->fetch, ['number_errors' => $this->number_errors]);
         $organisationSource->fetch->records()->create([

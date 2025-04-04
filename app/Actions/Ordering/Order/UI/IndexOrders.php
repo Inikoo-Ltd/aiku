@@ -188,7 +188,6 @@ class IndexOrders extends OrgAction
                 'organisations.name as organisation_name', 'organisations.slug as organisation_slug',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->distinct('orders.id')
             ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])

@@ -28,19 +28,23 @@ class StoreShipment extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
     {
+        data_set($modelData, 'group_id', $deliveryNote->group_id);
+        data_set($modelData, 'organisation_id', $deliveryNote->organisation_id);
+        data_set($modelData, 'shop_id', $deliveryNote->shop_id);
+
 
         $modelData = array_merge(
             $modelData,
             [
-                'group_id'        => $deliveryNote->group_id,
+                'group_id' => $deliveryNote->group_id,
                 'organisation_id' => $deliveryNote->organisation_id,
-                'shop_id'         => $deliveryNote->shop_id,
-                'customer_id'     => $deliveryNote->customer_id,
+                'shop_id' => $deliveryNote->shop_id,
+                'customer_id' => $deliveryNote->customer_id,
             ]
         );
 
         /** @var Shipment $shipment */
-        $shipment                = match($shipper->api_shipper) {
+        $shipment = match ($shipper->api_shipper) {
             'apc-gb' => ApcGbCallShipperApi::run($deliveryNote, $shipper),
             'dpd-gb' => DpdGbCallShipperApi::run($deliveryNote, $shipper),
             'dpd-sk' => DpdSkCallShipperApi::run($deliveryNote, $shipper),
@@ -62,13 +66,14 @@ class StoreShipment extends OrgAction
     public function rules(): array
     {
         return [
-            'reference' => ['required',  'max:64', 'string']
+            'reference' => ['required', 'max:64', 'string']
         ];
     }
 
     public function action(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
     {
         $this->initialisation($deliveryNote->organisation, $modelData);
+
         return $this->handle($deliveryNote, $shipper, $this->validatedData);
     }
 }

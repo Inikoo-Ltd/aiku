@@ -24,11 +24,15 @@ class AttachPaymentToInvoice extends OrgAction
         $toPay = $invoice->total_amount - $invoice->payment_amount;
 
         $amountToCredit = 0;
-        if ($paymentAmount > $toPay) {
-            $amount = $toPay;
-            $amountToCredit = $paymentAmount - $toPay;
-        } else {
-            $amount = $paymentAmount;
+        $amount = $paymentAmount;
+
+        if (!$invoice->invoice_id) {
+            if ($paymentAmount > $toPay) {
+                $amount = $toPay;
+                $amountToCredit = $paymentAmount - $toPay;
+            } else {
+                $amount = $paymentAmount;
+            }
         }
 
         $invoice->payments()->attach($payment, [

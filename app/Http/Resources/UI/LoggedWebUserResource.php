@@ -26,7 +26,7 @@ class LoggedWebUserResource extends JsonResource
         if ($webUser->customer->is_fulfilment) {
             $fulfilmentCustomer = $webUser->customer->fulfilmentCustomer;
             if ($fulfilmentCustomer) {
-                $fulfilmentActive = $webUser->customer->status == CustomerStatusEnum::APPROVED &&  !is_null($fulfilmentCustomer->rentalAgreement);
+                $fulfilmentActive = $webUser->customer->status == CustomerStatusEnum::APPROVED && $fulfilmentCustomer->rentalAgreement !== null;
             }
         }
 

@@ -16,6 +16,7 @@ enum PaymentTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
+    case SHOWCASE          = 'showcase';
     case DATA          = 'data';
     case HISTORY_NOTES = 'history_notes';
 
@@ -34,6 +35,10 @@ enum PaymentTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            PaymentTabsEnum::SHOWCASE => [
+                'title' => __('showcase'),
+                'icon'  => 'fas fa-info-circle',
             ],
         };
     }

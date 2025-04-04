@@ -10,15 +10,11 @@
 namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\InvoiceTransaction;
-use Illuminate\Validation\Validator;
-use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRefundInProcessInvoiceTransaction extends OrgAction
 {
-    use WithActionUpdate;
+    use WithDeleteRefundInProcessTransaction;
 
     public function handle(InvoiceTransaction $invoiceTransaction): void
     {
@@ -26,40 +22,5 @@ class DeleteRefundInProcessInvoiceTransaction extends OrgAction
     }
 
 
-    public function afterValidator(Validator $validator, ActionRequest $request): void
-    {
-
-        if ($this->asAction) {
-            return;
-        }
-
-        $invoiceTransaction = $request->route()->parameter('invoiceTransaction');
-
-        if ($invoiceTransaction->invoice->type != InvoiceTypeEnum::REFUND) {
-            $validator->errors()->add('invoiceTransaction', 'Transaction is not a refund');
-        }
-
-        if (!$invoiceTransaction->invoice->in_process) {
-            $validator->errors()->add('invoiceTransaction', 'Refund is not in process');
-        }
-    }
-
-
-    public function asController(InvoiceTransaction $invoiceTransaction, ActionRequest $actionRequest): void
-    {
-        $this->initialisationFromShop($invoiceTransaction->shop, $actionRequest);
-
-        $this->handle($invoiceTransaction);
-    }
-
-
-    public function action(InvoiceTransaction $invoiceTransaction): void
-    {
-        $this->asAction = true;
-        $this->initialisationFromShop($invoiceTransaction->shop, []);
-
-
-        $this->handle($invoiceTransaction);
-    }
 
 }

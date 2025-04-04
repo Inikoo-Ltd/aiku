@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 25-03-2025-14h-45m
@@ -8,28 +9,19 @@
 
 namespace App\Actions\Fulfilment\Pallet\UI;
 
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Actions\Traits\Authorisations\WithWarehouseManagementAuthorisation;
-use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
-use App\Http\Resources\Fulfilment\MayaPalletResource;
 use App\Http\Resources\Fulfilment\MayaPalletsResource;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 

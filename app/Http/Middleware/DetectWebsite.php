@@ -17,10 +17,8 @@ class DetectWebsite
 {
     public function handle(Request $request, Closure $next): Response
     {
-
         $website = DetectWebsiteFromDomain::run($request->getHost());
-        if (is_null($website)) {
-
+        if ($website === null) {
             abort(404, 'Not found');
         }
 
@@ -31,9 +29,6 @@ class DetectWebsite
 
         return $next($request);
     }
-
-
-
 
 
 }

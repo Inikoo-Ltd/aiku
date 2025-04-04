@@ -67,7 +67,7 @@ class IndexProspectQueries extends InertiaAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('queries.name', '~*', "\y$value\y");
+                $query->whereAnyWordStartWith('queries.name', $value);
             });
         });
 
@@ -79,7 +79,6 @@ class IndexProspectQueries extends InertiaAction
             ->where('model', 'Prospect');
 
 
-        /** @noinspection PhpUndefinedMethodInspection */
         return $query
             ->defaultSort('queries.name')
             ->allowedSorts(['name'])
@@ -128,9 +127,9 @@ class IndexProspectQueries extends InertiaAction
                 ),
                 'title'       => __('prospect lists'),
                 'pageHead'    => [
-                    'title'            => __('prospect lists'),
-                    'subNavigation'    => $subNavigation,
-                    'actions'          => [
+                    'title'         => __('prospect lists'),
+                    'subNavigation' => $subNavigation,
+                    'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',

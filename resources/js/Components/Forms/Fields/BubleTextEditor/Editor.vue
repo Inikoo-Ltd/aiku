@@ -268,8 +268,8 @@ defineExpose({
         font-size: 2em;
         margin-block-start: 0.67em;
         margin-block-end: 0.67em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -279,8 +279,8 @@ defineExpose({
         font-size: 1.5em;
         margin-block-start: 0.83em;
         margin-block-end: 0.83em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -290,8 +290,8 @@ defineExpose({
         font-size: 1.17em;
         margin-block-start: 1em;
         margin-block-end: 1em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -322,7 +322,7 @@ section {
         border-bottom-left-radius: 0.5rem;
         border-bottom-right-radius: 0.5rem;
         border: solid 2px #D1D5DB;
-        border-top: 0px;
+        border-top: 0;
     }
 }
 

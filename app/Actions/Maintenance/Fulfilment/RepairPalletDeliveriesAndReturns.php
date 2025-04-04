@@ -183,7 +183,7 @@ class RepairPalletDeliveriesAndReturns
 
             if (!$palletReturn) {
                 print 'Pallet: '.$pallet->id.' dont have pallet return!!'."\n";
-                dd($pallet);
+                // dd($pallet);
                 continue;
             }
 

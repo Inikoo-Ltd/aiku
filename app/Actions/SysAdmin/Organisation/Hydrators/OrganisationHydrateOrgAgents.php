@@ -9,23 +9,16 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateOrgAgents
+class OrganisationHydrateOrgAgents implements ShouldBeUnique
 {
     use AsAction;
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $organisation->id;
     }
 
 

@@ -40,7 +40,8 @@ import {
     faFileInvoice,
     faExclamationTriangle, faUsdCircle,
     faParking,
-    faEnvelope
+    faEnvelope,
+    faWallet
 } from '@fal'
 import { notify } from '@kyvg/vue3-notification'
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -52,7 +53,8 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import TableAttachments from '@/Components/Tables/Grp/Helpers/TableAttachments.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
-library.add(faStickyNote, faEnvelope ,faUser, faNarwhal, faTruckCouch, faPallet, faFileInvoiceDollar, faSignOutAlt, faPaperclip, faPaperPlane, faCheckDouble, faShare, faTruckLoading, faFileInvoice, faExclamationTriangle, faUsdCircle, faParking)
+import TableCustomerBalanceTransactions from '@/Components/Tables/Grp/Org/Fulfilment/TableCustomerBalanceTransactions.vue'
+library.add(faStickyNote, faEnvelope ,faUser, faNarwhal, faWallet, faTruckCouch, faPallet, faFileInvoiceDollar, faSignOutAlt, faPaperclip, faPaperPlane, faCheckDouble, faShare, faTruckLoading, faFileInvoice, faExclamationTriangle, faUsdCircle, faParking)
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -68,6 +70,7 @@ const props = defineProps<{
     note:{},
     history:{},
     email?:{},
+    balance?:{},
     attachments: {}
     attachmentRoutes: {
         attachRoute: routeType
@@ -91,7 +94,8 @@ const component = computed(() => {
         note:TableHistoryNotes,
         attachments : TableAttachments,
         webhook:TableRentalAgreementClauses,
-        email: TableDispatchedEmails
+        email: TableDispatchedEmails,
+        balance: TableCustomerBalanceTransactions,
     }
 
     return components[currentTab.value]

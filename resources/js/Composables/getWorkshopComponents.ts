@@ -29,7 +29,7 @@ import TextColumn from '@/Components/CMS/Webpage/TextColumn/TextColumnWorkshop.v
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentWorkshop.vue'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentWorkshop.vue' 
 import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Topbar3FulfilemntWorkshop.vue'
-
+import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 
 
@@ -63,7 +63,8 @@ export const getComponent = (componentName: string) => {
         'top-bar-1-fulfilment': Topbar1Fulfilment,
         'top-bar-2-fulfilment': Topbar2Fulfilment,
         'top-bar-3-fulfilment': Topbar3Fulfilment,
-        'pricing': Pricing
+        'pricing': Pricing,
+        'button' : Button
     }
     return components[componentName] ?? NotFoundComponents
 }

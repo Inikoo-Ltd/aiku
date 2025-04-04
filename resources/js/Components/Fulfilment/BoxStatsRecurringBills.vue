@@ -1,18 +1,12 @@
 <script setup lang='ts'>
-import JsBarcode from 'jsbarcode'
-import { inject, onMounted, ref } from 'vue'
-import DatePicker from '@vuepic/vue-datepicker'
-import { useFormatTime, useDaysLeftFromToday } from '@/Composables/useFormatTime'
-import { PalletDelivery, BoxStats } from '@/types/Pallet'
+import { inject} from 'vue'
+import { BoxStats } from '@/types/Pallet'
 import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
-import Popover from '@/Components/Popover.vue'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3'
 
-import { notify } from '@kyvg/vue3-notification'
-import { routeType } from '@/types/route'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -38,18 +32,6 @@ const props = defineProps<{
         <BoxStatPallet class="py-1 sm:py-2 px-4" :label="'dataPalletDelivery.customer_name'" icon="fal fa-user">
             
             <div class="space-y-1">
-                <!-- Field: Reference -->
-                <!-- <Link as="a" v-if="boxStats.customer.data.customer.reference"
-                    :href="route().params.organisation && route('grp.org.fulfilments.show.crm.customers.show', [route().params.organisation, boxStats.customer.data.fulfilment.slug, boxStats.customer.data.slug])"
-                    class="flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                    <dt v-tooltip="'Company name'" class="flex-none">
-                        <span class="sr-only">Reference</span>
-                        <FontAwesomeIcon icon='fal fa-id-card-alt' size="xs" class='text-gray-400' fixed-width
-                            aria-hidden='true' />
-                    </dt>
-                    <dd class="text-base text-gray-500">{{ boxStats.customer.data.customer.reference }}</dd>
-                </Link>     -->            
-                <!-- Field: Contact name -->
                 <div v-if="boxStats.customer.data.customer.contact_name && layout?.app?.name != 'retina'"
                     class="flex items-center w-full flex-none gap-x-2">
                     <dt v-tooltip="'Contact name'" class="flex-none">
@@ -116,12 +98,6 @@ const props = defineProps<{
                     <dd class="text-gray-500 text-base font-medium tabular-nums">{{ locale.number(boxStats.stats.number_stored_items) }} <span class="text-gray-400 font-normal">{{ boxStats.stats.number_stored_items > 1 ? trans('Stored items') : trans('Stored item') }}</span></dd>
                 </div>
 
-                <!-- <div v-tooltip="trans('Count of physical goods')" class="w-fit flex items-center gap-x-3">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-cube' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="text-gray-500 text-base font-medium tabular-nums">{{ boxStats.stats.number_physical_goods }} <span class="text-gray-400 font-normal">{{ boxStats.stats.number_pallets > 1 ? trans('Physical goods') : trans('Physical good') }}</span></dd>
-                </div> -->
             </div>
         </BoxStatPallet>
 
@@ -129,14 +105,9 @@ const props = defineProps<{
         <!-- Box: Order summary -->
         <BoxStatPallet class="sm:col-span-2 border-t sm:border-t-0 border-gray-300">
             <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-                <!-- <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2> -->
 
                 <OrderSummary :order_summary="boxStats.order_summary" :currency_code="props.currency?.data?.code" />
 
-                <!-- <div class="mt-6">
-                    <button type="submit"
-                        class="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">Checkout</button>
-                </div> -->
             </section>
         </BoxStatPallet>
     </div>

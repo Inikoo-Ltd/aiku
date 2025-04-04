@@ -46,7 +46,6 @@ class PublishWebsiteProductTemplate extends OrgAction
             ]);
         }
 
-        /** @var Snapshot $snapshot */
         $snapshot = StoreWebsiteSnapshot::run(
             $website,
             [
@@ -81,7 +80,7 @@ class PublishWebsiteProductTemplate extends OrgAction
     {
         return [
             'comment' => ['sometimes', 'required', 'string', 'max:1024'],
-            'data' => ['required']
+            'data'    => ['required']
         ];
     }
 
@@ -117,17 +116,14 @@ class PublishWebsiteProductTemplate extends OrgAction
                 $website = Website::where("slug", $command->argument("website"))->firstOrFail();
             } catch (Exception) {
                 $command->error("Website not found");
-                exit();
+
+                return 1;
             }
             $this->action($website, [
                 'comment' => "test",
-                'data' => 'template'
+                'data'    => 'template'
             ]);
-            // $command->line("Website ".$website->slug." web blocks fetched");
-
         }
-
-
 
         return 0;
     }

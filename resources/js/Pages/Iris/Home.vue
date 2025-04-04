@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { inject, ref, onMounted } from 'vue'
 import { faCheck, faPlus, faMinus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Head } from '@inertiajs/vue3'
@@ -14,10 +14,11 @@ import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
-  head: {
-    title: string,
-    description: string,
-    keywords: string,
+  meta: {
+    meta_title: string,
+    meta_description: string,
+    image: string,
+    structured_data: JSON
   },
   data: any,
   header: any,
@@ -30,31 +31,36 @@ const layout = inject('layout', {})
 const isPreviewLoggedIn = ref(layout.iris.user_auth)
 
 const showWebpage = (activityItem) => {
-    if (activityItem?.web_block?.layout && activityItem.show) {
-        if (isPreviewLoggedIn.value && activityItem.visibility.in) return true
-        else return !isPreviewLoggedIn.value && activityItem.visibility.out;
-    } else return false
+  if (activityItem?.web_block?.layout && activityItem.show) {
+    if (isPreviewLoggedIn.value && activityItem.visibility.in) return true
+    else return !isPreviewLoggedIn.value && activityItem.visibility.out;
+  } else return false
 }
+
+
+onMounted(() => {
+  const script = document.createElement('script')
+  script.type = 'application/ld+json'
+  script.textContent = JSON.stringify(props.meta.structured_data)
+  document.head.appendChild(script)
+})
 
 </script>
 
 <template>
+
   <Head>
-    <title>{{head.title}}</title>
-    <meta name="description" content="head.description">
-    <meta name="keywords" content="head.keywords">
+    <title>{{ meta.meta_title }}</title>
+    <meta name="description" :content="meta.meta_description">
   </Head>
 
   <div class="bg-white">
     <template v-if="props.blocks?.web_blocks?.length">
       <div v-for="(activityItem, activityItemIdx) in props.blocks.web_blocks" :key="'block' + activityItem.id"
         class="w-full">
-        <component
-            v-if="showWebpage(activityItem)"
-            :is="getIrisComponent(activityItem.type)"
-            :theme="data.published_layout.theme"
-            :key="activityItemIdx"
-            :fieldValue="activityItem.web_block.layout.data.fieldValue" />
+        <component v-if="showWebpage(activityItem)" :is="getIrisComponent(activityItem.type)"
+          :theme="data.published_layout.theme" :key="activityItemIdx"
+          :fieldValue="activityItem.web_block.layout.data.fieldValue" />
       </div>
     </template>
 
@@ -63,4 +69,3 @@ const showWebpage = (activityItem) => {
     </div>
   </div>
 </template>
-

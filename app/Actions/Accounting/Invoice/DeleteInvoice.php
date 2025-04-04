@@ -16,6 +16,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
+use Exception;
+use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -62,4 +64,37 @@ class DeleteInvoice extends OrgAction
 
         return $this->handle($invoice, $this->validatedData);
     }
+
+    public string $commandSignature = 'invoice:delete {slug} {--deleted_note= : Reason for deletion} {--deleted_by= : User who deleted the invoice}';
+
+
+    public function asCommand(Command $command): int
+    {
+        $this->asAction = true;
+
+        try {
+            /** @var Invoice $invoice */
+            $invoice = Invoice::where('slug', $command->argument('slug'))->firstOrFail();
+        } catch (Exception $e) {
+            $command->error($e->getMessage());
+
+            return 1;
+        }
+
+
+        $modelData = [];
+
+        if ($command->option('deleted_note')) {
+            $modelData['deleted_note'] = $command->option('deleted_note');
+        }
+        if ($command->option('deleted_by')) {
+            $modelData['deleted_by'] = $command->option('deleted_by');
+        }
+
+        $this->action($invoice, $modelData);
+
+        return 0;
+    }
+
+
 }

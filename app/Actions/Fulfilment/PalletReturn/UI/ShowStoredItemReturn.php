@@ -82,7 +82,7 @@ class ShowStoredItemReturn extends OrgAction
         unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
         $this->tab = $request->get('tab', array_key_first($navigation));
 
-       
+
         if ($palletReturn->storedItems()->count() < 1) {
             $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Select stored item before submit');
             // } elseif ($palletReturn->delivery_address_id === null && $palletReturn->collection_address_id === null) {
@@ -593,7 +593,7 @@ class ShowStoredItemReturn extends OrgAction
                                 'price_total' => $palletReturn->net_amount
                             ],
                             [
-                                'label'       => __('Tax').' '.$palletReturn->taxCategory->rate * 100 .'%',
+                                'label'       => __('Tax'),
                                 'information' => '',
                                 'price_total' => $palletReturn->tax_amount
                             ],
@@ -605,7 +605,7 @@ class ShowStoredItemReturn extends OrgAction
                                 'price_total' => $palletReturn->net_amount
                             ],
                             [
-                                'label'       => __('Tax').' '.$palletReturn->taxCategory->rate * 100 .'%',
+                                'label'       => __('Tax'),
                                 'information' => '',
                                 'price_total' => $palletReturn->tax_amount
                             ],

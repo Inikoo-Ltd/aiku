@@ -20,8 +20,6 @@ class SetPalletRental extends OrgAction
 {
     use WithActionUpdate;
 
-    private Pallet $pallet;
-
     public function handle(Pallet $pallet, array $modelData): Pallet
     {
 

@@ -10,6 +10,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesDeleted;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
+use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
@@ -111,7 +112,10 @@ Route::prefix('invoices')->as('invoices')->group(function () {
     Route::get('/paid-invoices', [IndexInvoices::class, 'paidInFulfilment'])->name('.paid_invoices.index');
     Route::get('/refunds', [IndexRefunds::class,'inFulfilment'])->name('.refunds.index');
 
-    Route::get('/{invoice}', [ShowInvoice::class, 'inFulfilment'])->name('.show'); // need check in retina
+    Route::get('/{invoice}', [ShowInvoice::class, 'inFulfilment'])->name('.show');
+    Route::get('/{invoice}/refunds', [IndexRefunds::class, 'inFulfilmentInvoice'])->name('.show.refunds.index');
+    Route::get('/{invoice}/refunds/{refund}', [ShowRefund::class, 'inFulfilmentInvoice'])->name('.show.refunds.show');
+
     // Route::get('/all/{invoice}', [ShowInvoice::class, 'inFulfilment'])->name('.all_invoices.show');
     // Route::get('/unpaid/{invoice}', [ShowInvoice::class, 'inFulfilment'])->name('.unpaid_invoices.show');
 

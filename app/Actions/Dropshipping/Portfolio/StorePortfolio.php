@@ -8,8 +8,8 @@
 
 namespace App\Actions\Dropshipping\Portfolio;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
-use App\Actions\Dropshipping\Portfolio\Hydrators\ShopHydratePortfolios;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;

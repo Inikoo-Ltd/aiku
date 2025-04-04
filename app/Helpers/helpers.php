@@ -23,7 +23,7 @@ if (!function_exists('natural_language_join')) {
         $last             = array_pop($list);
 
         if ($list) {
-            return implode(', ', $list) . $oxford_separator . $conjunction . ' ' . $last;
+            return implode(', ', $list).$oxford_separator.$conjunction.' '.$last;
         }
 
         return $last;
@@ -50,7 +50,7 @@ if (!function_exists('percentage')) {
                 $locale_info['thousands_sep']
             ).$percentageSign;
         } else {
-            $per = is_null($errorMessage) ? percentage(0, 1) : $errorMessage;
+            $per = $errorMessage === null ? percentage(0, 1) : $errorMessage;
         }
 
         return $per;

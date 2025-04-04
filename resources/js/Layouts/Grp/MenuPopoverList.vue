@@ -49,7 +49,7 @@ const layout = inject('layout', layoutStructure)
                             <div v-show="!imageSkeleton[idxSH]" class="skeleton w-5 h-5"/>
                         </div> -->
                         <div class="font-semibold">{{ showare.label }}</div>
-                        <FontAwesomeIcon v-if="showare.type === 'b2b'" icon='fal fa-fax' class='text-sm text-gray-400' v-tooltip="trans('Ecommerce')" aria-hidden='true' />
+                        <FontAwesomeIcon v-if="showare.type === 'b2b'" icon='fal fa-fax' class='text-sm text-gray-400' v-tooltip="trans('E-commerce')" aria-hidden='true' />
                         <FontAwesomeIcon v-if="showare.type === 'dropshipping'" icon='fal fa-parachute-box' class='text-sm text-gray-400' v-tooltip="trans('Dropshipping')" aria-hidden='true' />
                         <FontAwesomeIcon v-if="showare.type === 'fulfilment'" icon='fal fa-hand-holding-box' class='text-sm text-gray-400' v-tooltip="trans('Fulfilment')" aria-hidden='true' />
                 </MenuItem>

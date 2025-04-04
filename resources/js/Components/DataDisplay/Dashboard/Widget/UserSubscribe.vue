@@ -90,7 +90,7 @@ const deleteWidgetItem = (item: any, index: number) => {
 		preserveScroll: true,
 		onSuccess: () => {
 			notify({
-				title: trans("Succes"),
+				title: trans("Success"),
 				text: trans("Successful Delete"),
 				type: "success",
 			})
@@ -135,7 +135,7 @@ const saveChanges = () => {
 			widgetItems.value = page.props.showcase.outbox_subscribe.data
 			
 			notify({
-				title: trans("Succes"),
+				title: trans("Success"),
 				text: trans("Successfully attach"),
 				type: "success",
 			})

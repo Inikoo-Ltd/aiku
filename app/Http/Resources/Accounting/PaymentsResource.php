@@ -30,6 +30,8 @@ class PaymentsResource extends JsonResource
         return array(
             'id'         => $this->id,
             'status'     => $this->status,
+            'type'      => $this->type,
+            'payment_account_name' => $this->payment_account_name,
             'state_icon' => $this->status->stateIcon()[$this->status->value],
             'date'       => $this->date,
             'reference'  => $this->reference,

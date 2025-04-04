@@ -53,6 +53,9 @@ use Illuminate\Support\Facades\Auth;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property int $number_email_tracking_events
+ * @property int|null $post_room_id
+ * @property int|null $org_post_room_id
+ * @property int|null $mailshot_id
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
  * @property-read \App\Models\Comms\EmailCopy|null $emailCopy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailTrackingEvent> $emailTrackingEvents

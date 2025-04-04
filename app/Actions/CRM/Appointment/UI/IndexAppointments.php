@@ -40,15 +40,13 @@ class IndexAppointments extends InertiaAction
     }
 
 
-
-    /** @noinspection PhpUndefinedMethodInspection */
     public function handle(Shop|Customer|Employee|Guest $parent, $prefix = null): LengthAwarePaginator
     {
         $this->parent = $parent;
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('customers.name', '~*', "\y$value\y")
+                $query->whereAnyWordStartWith('customers.name', $value)
                     ->orWhereStartWith('customers.email', $value)
                     ->orWhere('customers.reference', '=', $value);
             });
@@ -62,10 +60,10 @@ class IndexAppointments extends InertiaAction
 
         foreach ($this->elementGroups as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
-                prefix: $prefix,
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
+                engine: $elementGroup['engine'],
+                prefix: $prefix
             );
         }
 
@@ -92,7 +90,7 @@ class IndexAppointments extends InertiaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             $table
@@ -123,6 +121,7 @@ class IndexAppointments extends InertiaAction
     public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
         return $this->handle($shop);
     }
 

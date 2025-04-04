@@ -13,26 +13,18 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\Employee;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateEmployees
+class OrganisationHydrateEmployees implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
+        return $organisation->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
-    }
-
 
     public function handle(Organisation $organisation): void
     {
