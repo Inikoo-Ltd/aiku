@@ -427,7 +427,7 @@ class ShowOrder extends OrgAction
                     ],
                     'pinned_address_id'              => $order->customer->delivery_address_id,
                     'home_address_id'                => $order->customer->address_id,
-                    'current_selected_address_id'    => $order->customer->delivery_address_id,
+                    'current_selected_address_id'    => $order->delivery_address_id,
                     'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
                     'routes_list'                    => [
                         'pinned_route'                   => [
