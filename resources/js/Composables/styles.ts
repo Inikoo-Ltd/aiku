@@ -6,7 +6,6 @@ export const getStyles = (properties: any) => {
         return null;
     }
 
-    console.log(properties)
     const styles = {
         height: properties?.dimension?.height?.value  ? properties?.dimension?.height?.value  + properties?.dimension?.height?.unit : null,
         width: properties?.dimension?.width?.value ? properties?.dimension?.width?.value + properties?.dimension?.width?.unit : null,
@@ -58,12 +57,10 @@ export const getStyles = (properties: any) => {
         justifyContent : properties?.justifyContent || null,
         boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor),
     };
-    console.log('sdsd',getBoxShadowFromParts(properties.shadow))
     return Object.fromEntries(Object.entries(styles).filter(([_, value]) => value !== null));
 };
 
 export const getBoxShadowFromParts = (shadowObj: any, color : String) => {
-    console.log('ffff',color)
     if(shadowObj){
         let final = []
         for (const item in shadowObj) {
