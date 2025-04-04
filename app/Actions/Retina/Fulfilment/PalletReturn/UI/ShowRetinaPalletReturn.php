@@ -158,7 +158,7 @@ class ShowRetinaPalletReturn extends RetinaAction
             ], $actions);
         }
 
-        
+
         $addresses = $palletReturn->fulfilmentCustomer->customer->addresses;
 
         $processedAddresses = $addresses->map(function ($address) {

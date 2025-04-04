@@ -73,7 +73,7 @@ Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'with
 Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(function () {
     Route::post('attachment/attach', [AttachRetinaAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachRetinaAttachmentFromModel::class, 'inPalletReturn'])->name('attachment.detach')->withoutScopedBindings();
-    
+
     Route::post('address', AddRetinaAddressToPalletReturn::class)->name('address.store');
     Route::patch('address/switch', SwitchRetinaPalletReturnDeliveryAddress::class)->name('address.switch');
     Route::patch('address/update', UpdateRetinaPalletReturnDeliveryAddress::class)->name('address.update');

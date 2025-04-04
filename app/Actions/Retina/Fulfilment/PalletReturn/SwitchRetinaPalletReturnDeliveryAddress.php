@@ -35,6 +35,6 @@ class SwitchRetinaPalletReturnDeliveryAddress extends RetinaAction
     {
         $this->initialisation($request);
 
-         $this->handle($palletReturn, $this->validatedData);
+        $this->handle($palletReturn, $this->validatedData);
     }
 }
