@@ -9,11 +9,12 @@ import { trans } from 'laravel-vue-i18n'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch } from '@fal'
+import {  faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch } from '@fal'
 import { faCheckCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useTruncate } from '@/Composables/useTruncate'
+import { faThumbtack } from '@far'
 library.add(faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle)
 
 const props = defineProps<{
@@ -320,7 +321,7 @@ const onDeleteAddress = (addressID: number) => {
                                     <!-- Action: Pin, edit, delete -->
                                     <div class="flex items-center">
                                         <LoadingIcon v-if="isLoading == 'onPinned' + homeAddress?.id" class="px-0.5"/>
-                                        <FontAwesomeIcon  @click="() => onPinnedAddress(homeAddress.id)" icon='fal fa-thumbtack' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('Select as default delivery address')" />
+                                        <FontAwesomeIcon  @click="() => onPinnedAddress(homeAddress.id)" icon='far fa-thumbtack' class='px-0.5 py-1 cursor-pointer' :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-800' : 'text-gray-500 hover:text-red-500'" fixed-width aria-hidden='true' v-tooltip="trans(' default delivery address')" />
                                         <FontAwesomeIcon @click="() => onEditAddress(homeAddress)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
                                     </div>
                                 </div>
@@ -368,9 +369,9 @@ const onDeleteAddress = (addressID: number) => {
                                             <LoadingIcon v-if="isLoading === 'onPinned' + address.id" class="px-0.5"/>
                                             <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1"
                                                 @click="() => addresses.pinned_address_id === address.id ? false : onPinnedAddress(address.id)"
-                                                icon='fal fa-thumbtack'
+                                                icon='far fa-thumbtack'
                                                 class='px-0.5 py-1'
-                                                :class="addresses.pinned_address_id === address.id ? 'text-green-500' : 'text-gray-400 hover:text-gray-600 cursor-pointer'"
+                                                :class="addresses.pinned_address_id === address.id ? 'text-green-800' : 'text-gray-500 hover:text-gray-600 cursor-pointer'"
                                                 fixed-width
                                                 aria-hidden='true'
                                                 v-tooltip="addresses.pinned_address_id === address.id ? trans('Selected as default delivery address') : trans('Select as default delivery address')"
