@@ -2,7 +2,6 @@
 import { getStyles } from '@/Composables/styles'
 import { FieldValue } from '@/types/Website/Website/footer1'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import { isObject } from 'lodash-es';
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -13,7 +12,7 @@ import Image from '@/Components/Image.vue'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faArrowSquareLeft, faFacebook, faWhatsapp)
 
-const props = defineProps<{
+defineProps<{
     fieldValue?: FieldValue,
     modelValue: FieldValue
 }>();
@@ -98,7 +97,7 @@ const props = defineProps<{
 
                                         <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
                                             <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
-                                                style="margin-top: 0px">
+                                                style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -156,7 +155,7 @@ const props = defineProps<{
 
                                         <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
                                             <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
-                                                style="margin-top: 0px">
+                                                style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -213,7 +212,7 @@ const props = defineProps<{
 
                                         <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
                                             <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
-                                                style="margin-top: 0px">
+                                                style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -257,7 +256,7 @@ const props = defineProps<{
         <div
             class="mt-8 w-full border-0 border-t border-solid border-gray-700 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8">
             <div class="grid gap-y-2 text-center md:text-left">
-                <h2 style="margin-bottom: 0px; font-size: inherit; font-weight: inherit"
+                <h2 style="margin-bottom: 0; font-size: inherit; font-weight: inherit"
                     class="hidden text-center tracking-wider">
                     <div v-html="modelValue?.columns.column_4.data.textBox4"></div>
                 </h2>

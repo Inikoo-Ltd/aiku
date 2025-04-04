@@ -48,9 +48,9 @@ class DeletePalletReturn extends OrgAction
                 $palletIds = $palletReturn->pallets->pluck('id')->toArray();
                 foreach ($palletReturn->pallets as $pallet) {
                     UpdatePallet::run($pallet, [
-                        'state'                => PalletStateEnum::STORING,
-                        'status'               => PalletStatusEnum::STORING,
-                        'pallet_return_id'     => null,
+                        'state'                   => PalletStateEnum::STORING,
+                        'status'                  => PalletStatusEnum::STORING,
+                        'pallet_return_id'        => null,
                         'requested_for_return_at' => null
                     ]);
                 }
@@ -80,11 +80,9 @@ class DeletePalletReturn extends OrgAction
 
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
 
-            if(!is_null($palletReturn->fulfilmentCustomer->customer->shopifyUser)) 
-            {
+            if ($palletReturn->fulfilmentCustomer->customer->shopifyUser !== null) {
                 CancelFulfilmentRequestToShopify::dispatch($palletReturn);
             }
-            $fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
 
             $palletReturn->delete();
             $fulfilmentCustomer->refresh();

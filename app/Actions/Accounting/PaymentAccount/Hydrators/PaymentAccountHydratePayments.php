@@ -14,31 +14,23 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PaymentAccountHydratePayments
+class PaymentAccountHydratePayments implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithPaymentAggregators;
 
-
-    private PaymentAccount $paymentAccount;
-
-    public function __construct(PaymentAccount $paymentAccount)
+    public function getJobUniqueId(PaymentAccount $paymentAccount): string
     {
-        $this->paymentAccount = $paymentAccount;
+        return $paymentAccount->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->paymentAccount->id))->dontRelease()];
-    }
 
     public function handle(PaymentAccount $paymentAccount): void
     {
-
         $stats = array_merge(
             [
                 'number_payments' => $paymentAccount->payments()->count()
@@ -46,7 +38,6 @@ class PaymentAccountHydratePayments
             $this->paidAmounts($paymentAccount, 'org_amount'),
             $this->paidAmounts($paymentAccount, 'grp_amount'),
         );
-
 
 
         $stats = array_merge(

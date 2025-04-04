@@ -23,7 +23,7 @@ class OrganisationHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(Organisation $organisation): string
     {

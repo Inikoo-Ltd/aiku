@@ -17,7 +17,7 @@ trait WithAuroraCleaners
 
     public function clearTextWithHtml($string): string
     {
-        if (is_null($string)) {
+        if ($string === null) {
             return '';
         }
 
@@ -51,7 +51,6 @@ trait WithAuroraCleaners
 
         $reference = preg_replace('/_+/', '_', $reference);
         $reference = preg_replace('/-+/', '-', $reference);
-
 
 
         /** @noinspection PhpDuplicateArrayKeysInspection */
@@ -258,6 +257,7 @@ trait WithAuroraCleaners
         $code = preg_replace('/3\/2/', '3x2', $code);
         $code = preg_replace('/\//', '-', $code);
         $code = preg_replace('/\+/', 'plus', $code);
+
         return $code;
     }
 

@@ -722,7 +722,8 @@ class ShowPalletReturn extends OrgAction
                                 'price_total'   => $palletReturn->net_amount
                             ],
                             [
-                                'label'         => __('Tax').' '.$palletReturn->taxCategory->rate * 100 . '%',
+                                'label'         => __('Tax'),
+                                // .' '.$palletReturn->taxCategory->rate * 100 . '%',
                                 'information'   => '',
                                 'price_total'   => $palletReturn->tax_amount
                             ],
@@ -733,7 +734,7 @@ class ShowPalletReturn extends OrgAction
                                 'price_total'   => $palletReturn->net_amount
                             ],
                             [
-                                'label'         => __('Tax').' '.$palletReturn->taxCategory->rate * 100 . '%',
+                                'label'         => __('Tax'),
                                 'information'   => '',
                                 'price_total'   => $palletReturn->tax_amount
                             ],

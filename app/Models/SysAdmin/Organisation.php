@@ -158,6 +158,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\OrganisationDiscountsStats|null $discountsStats
+ * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\OrganisationDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, Favourite> $favourites
@@ -868,5 +869,6 @@ class Organisation extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(DispatchedEmail::class);
     }
+
 
 }

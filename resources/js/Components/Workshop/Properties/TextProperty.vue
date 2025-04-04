@@ -43,7 +43,7 @@ const fontFamilies = [...useFontFamilyList];
     <div class="flex flex-col pt-1 pb-3">
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
-                <div class="text-xs">{{ trans('Color') }}</div>
+                <div class="text-xs">{{ trans('Text Color') }}</div>
                 <ColorPicker
                     :color="get(localModel, 'color', 'rgba(0, 0, 0, 1)')"
                     @changeColor="(newColor)=> (set(localModel, 'color', `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a}`), onSaveWorkshopFromId(side_editor_block_id, 'textPorperty'))"

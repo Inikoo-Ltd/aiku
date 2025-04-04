@@ -12,9 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\OrgAction;
-use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
-use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -31,13 +29,11 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItems extends OrgAction
 {
-    private DeliveryNote $parent;
-
     public function handle(DeliveryNote $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('org_stocks.code', '~*', "\y$value\y")
+                $query->whereStartWith('org_stocks.code', $value)
                     ->orWhereStartWith('org_stocks.name', $value);
             });
         });
@@ -63,7 +59,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name'
             ])
-            ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state' ])
+            ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -104,7 +100,6 @@ class IndexDeliveryNoteItems extends OrgAction
     }
 
 
-
     public function jsonResponse(LengthAwarePaginator $deliveryNoteItems): AnonymousResourceCollection
     {
         return DeliveryNoteItemsResource::collection($deliveryNoteItems);
@@ -113,16 +108,16 @@ class IndexDeliveryNoteItems extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $deliveryNoteItems, ActionRequest $request): Response
     {
-
-        $title = __('Delivery Note Items');
-        $model = __('delivery note items');
-        $icon  = [
+        $title      = __('Delivery Note Items');
+        $model      = __('delivery note items');
+        $icon       = [
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('delivery note items')
         ];
         $afterTitle = null;
-        $iconRight = null;
-        $actions   = null;
+        $iconRight  = null;
+        $actions    = null;
+
         return Inertia::render(
             'Ordering/Orders',
             [
@@ -132,33 +127,20 @@ class IndexDeliveryNoteItems extends OrgAction
                 ),
                 'title'       => __('orders'),
                 'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'actions'       => $actions
+                    'title'      => $title,
+                    'icon'       => $icon,
+                    'model'      => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight'  => $iconRight,
+                    'actions'    => $actions
                 ],
                 'data'        => DeliveryNoteItemsResource::collection($deliveryNoteItems),
-
-                // 'tabs'        => [
-                //     'current'    => $this->tab,
-                //     'navigation' => OrdersTabsEnum::navigation(),
-                // ],
-
-                // OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
-                //     fn () => OrdersResource::collection($orders)
-                //     : Inertia::lazy(fn () => OrdersResource::collection($orders)),
-
-
             ]
         );
-        // ->table($this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, DeliveryNote $deliveryNote, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $deliveryNote;
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle(parent: $deliveryNote);

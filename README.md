@@ -1,6 +1,8 @@
 
 [![Backend Tests](https://github.com/inikoo/aiku/actions/workflows/testing.yml/badge.svg?branch=main)](https://github.com/inikoo/aiku/actions/workflows/testing.yml)
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/0b5334200ff14749b5fce8288e545abb)](https://app.codacy.com/gh/Inikoo-Ltd/aiku/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Inikoo-Ltd_aiku&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Inikoo-Ltd_aiku)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Inikoo-Ltd_aiku&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Inikoo-Ltd_aiku)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Inikoo-Ltd_aiku&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Inikoo-Ltd_aiku)

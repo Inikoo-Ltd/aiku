@@ -20,13 +20,13 @@ class AuthoriseWebUserWithLegacyPassword
 
     public function handle(WebUser $webUser, array $credentials): bool
     {
-
-        $legacyPassword =  Arr::get($webUser->data, 'legacy_password');
+        $legacyPassword = Arr::get($webUser->data, 'legacy_password');
         if (!$legacyPassword) {
             return false;
         }
 
-        if (is_null($plain = $credentials['password'])) {
+        $plain = $credentials['password'] ?? null;
+        if ($plain === null) {
             return false;
         }
 
@@ -43,11 +43,11 @@ class AuthoriseWebUserWithLegacyPassword
             $webUser = UpdateWebUser::run(
                 $webUser,
                 [
-                    'password'        => $plain,
-                    'auth_type'       => UserAuthTypeEnum::DEFAULT
+                    'password' => $plain,
+                    'auth_type' => UserAuthTypeEnum::DEFAULT
                 ]
             );
-            $data = $webUser->data;
+            $data    = $webUser->data;
             Arr::forget($data, 'legacy_password');
             $webUser->data = $data;
             $webUser->save();

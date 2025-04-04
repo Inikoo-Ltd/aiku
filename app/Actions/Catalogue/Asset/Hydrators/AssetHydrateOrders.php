@@ -21,6 +21,8 @@ class AssetHydrateOrders implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateIntervals;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(Asset $asset): string
     {
         return $asset->id;

@@ -14,15 +14,6 @@ use Illuminate\Support\Str;
 
 class Image
 {
-    public const DEFAULT_RESIZE = 'fit';
-    /**
-     * north (top edge)
-     */
-    public const DEFAULT_GRAVITY = 'no';
-    public const MAX_ENLARGE     = 5;
-    public const MIN_ENLARGE     = 0;
-
-
     protected ?string $sizeProcessOption = null;
 
     protected ?array $resize = null;
@@ -30,8 +21,6 @@ class Image
     protected int $width = 0;
 
     protected int $height = 0;
-    protected string $gravity;
-    protected int $enlarge;
 
     protected ?string $extension = null;
 
@@ -57,26 +46,6 @@ class Image
         return $this->sizeProcessOption;
     }
 
-    public function makePreset(string $path, string $preset, $extension = null): static
-    {
-        $this->setOriginalPictureUrl($path)
-            ->setPreset($preset)
-            ->extension($extension);
-
-        return $this;
-    }
-
-    public function getPreset(): ?string
-    {
-        return $this->preset;
-    }
-
-    public function setPreset($preset): static
-    {
-        $this->preset = $preset;
-
-        return $this;
-    }
 
     public function resize($width = null, $height = null, $type = null, $enlarge = null, $extend = null): static
     {
@@ -91,15 +60,15 @@ class Image
 
         ];
 
-        if (!is_null($type) && Arr::get(['fit', 'fill', 'fill-down', 'force', 'auto'], $type)) {
+        if ($type !== null && Arr::get(['fit', 'fill', 'fill-down', 'force', 'auto'], $type)) {
             $this->resize['type'] = $type;
         }
 
-        if (!is_null($width)) {
+        if ($width !== null) {
             $this->width           = $this->parseDimension($width);
             $this->resize['width'] = $this->width;
         }
-        if (!is_null($height)) {
+        if ($height !== null) {
             $this->height           = $this->parseDimension($height);
             $this->resize['height'] = $this->height;
         }
@@ -133,7 +102,7 @@ class Image
 
     public function setWidth(?int $width = 1): static
     {
-        if (is_null($width)) {
+        if ($width === null) {
             return $this;
         }
 
@@ -157,24 +126,6 @@ class Image
     {
         return $this->height;
     }
-
-
-    public function setGravity(string $argument1 = null): static
-    {
-        $argument1     = Str::lower($argument1);
-        $this->gravity = (!in_array($argument1, config('img-proxy.gravity_values')))
-            ? self::DEFAULT_GRAVITY
-            : $argument1;
-
-        return $this;
-    }
-
-
-    public function getGravity(): string
-    {
-        return $this->gravity;
-    }
-
 
     public function extension($extension): static
     {

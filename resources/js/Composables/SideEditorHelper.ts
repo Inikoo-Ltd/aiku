@@ -24,10 +24,15 @@ import Overview from '@/Components/CMS/Fields/Overview.vue'
 import TextProperty from '@/Components/Workshop/Properties/TextProperty.vue'
 import ImagesArray from '@/Components/CMS/Fields/ImagesArray.vue'
 import cardsProperty from '@/Components/CMS/Fields/CardArray.vue'
+import InputNumberCss from '@/Components/CMS/Fields/InputNumberCss.vue'
+import JustifyContent from '@/Components/CMS/Fields/JustifyContent.vue'
+import Shadow from '@/Components/CMS/Fields/Shadow.vue'
 
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import TextHeader from '@/Components/CMS/Fields/TextHeader.vue'
+import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
+import ColorProperty from '@/Components/Workshop/Properties/ColorProperty.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -56,7 +61,11 @@ export const getComponent = (componentName: string) => {
         "script": Script,
         "arrayPhone":ArrayPhone,
         "textProperty": TextProperty,
-        "images-property" : ImagesArray
+        "images-property" : ImagesArray,
+        "numberCss" : InputNumberCss,
+        "justify-content" : JustifyContent,
+        "shadow" : Shadow,
+        "color" : ColorProperty,
     }
     
     return components[componentName] ?? NotFoundComponents

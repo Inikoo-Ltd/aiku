@@ -1,10 +1,12 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 25-03-2025-14h-33m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
+
 namespace App\Http\Resources\Fulfilment;
 
 use Illuminate\Http\Resources\Json\JsonResource;

@@ -9,6 +9,10 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\Invoice\RefundToCredit;
+use App\Actions\Accounting\Invoice\StoreRefund;
+use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
+use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\StoreStandaloneFulfilmentInvoice;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\DeleteStandaloneFulfilmentInvoiceTransaction;
@@ -86,8 +90,11 @@ use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\SysAdmin\User\StoreUser;
 use App\Actions\Traits\WithGetRecurringBillEndDate;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Billables\Rental\RentalTypeEnum;
 use App\Enums\Billables\Rental\RentalUnitEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
@@ -3197,8 +3204,7 @@ test('create stored item audit delta', function (StoredItemAudit $storedItemAudi
     expect($storedItemAudit)->toBeInstanceOf(StoredItemAudit::class)
         ->and($storedItemAudit->number_audited_stored_items)->toBe(1)
         ->and($storedItemAuditDelta)->toBeInstanceOf(StoredItemAuditDelta::class)
-        ->and(intval($storedItemAuditDelta->audited_quantity))->toBe(15);
-
+        ->and((int) $storedItemAuditDelta->audited_quantity)->toBe(15);
     return $storedItemAuditDelta;
 })->depends('update stored item audit');
 
@@ -3356,6 +3362,86 @@ test('complete standalone invoice', function (Invoice $invoice) {
 
     return $invoice;
 })->depends('delete standalone invoice transaction');
+
+// partial refund
+test('create partial refund', function () {
+
+    $invoice = Invoice::where('pay_status', InvoicePayStatusEnum::PAID)->first();
+    $refund = StoreRefund::make()->action($invoice, []);
+
+    expect($refund)->toBeInstanceOf(Invoice::class)
+        ->and($refund->in_process)->toBeTrue()
+        ->and($refund->invoice_id)->toBe($invoice->id)
+        ->and($refund->type)->toBe(InvoiceTypeEnum::REFUND);
+
+    return [$invoice, $refund];
+});
+
+test('store partial refund transaction', function (array $data) {
+    [$invoice, $refund] = $data;
+    $invoiceTransaction = $invoice->invoiceTransactions()->first();
+    $refundTransaction = StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
+        'net_amount' => $invoiceTransaction->net_amount / 2,
+    ]);
+
+    $refund->refresh();
+
+    expect($refund)->toBeInstanceOf(Invoice::class)
+        ->and($refund->in_process)->toBeTrue()
+        ->and($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class)
+        ->and($refundTransaction->in_process)->toBeTrue()
+        ->and(floatval($refundTransaction->net_amount))->toBe(($invoiceTransaction->net_amount / 2) * -1);
+
+    return $refundTransaction;
+})->depends('create partial refund');
+
+test('finalise refund', function (array $data, InvoiceTransaction $refundTransaction) {
+    [$invoice, $refund] = $data;
+
+    FinaliseRefund::make()->action($refund, []);
+
+    $refund->refresh();
+    $invoice->refresh();
+
+    $refundTransaction->refresh();
+
+    expect($refund)->toBeInstanceOf(Invoice::class)
+        ->and($refund->in_process)->toBeFalse()
+        ->and($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class)
+        ->and($refundTransaction->in_process)->toBeFalse();
+
+    return [$invoice, $refund];
+
+})->depends('create partial refund', 'store partial refund transaction');
+
+
+// refund to credit balance
+test('refund to credit balance', function (array $data) {
+    /** @var Invoice $invoice */
+    /** @var Invoice $refund */
+    [$invoice, $refund] = $data;
+
+    $invoice = RefundToCredit::make()->action($invoice, [
+        'amount' => $refund->total_amount
+    ]);
+
+    $invoice->refresh();
+    $refund->refresh();
+
+    $refundPayment = $refund->payments->first();
+    $refundPaymentInvoice = $invoice->payments->where('type', PaymentTypeEnum::REFUND)->first();
+
+    expect($refund)->toBeInstanceOf(Invoice::class)
+        ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($refund->payments->count())->toBe(1)
+        ->and($refundPayment->amount)->toBe($refund->total_amount)
+        ->and($refundPaymentInvoice->amount)->toBe($refund->total_amount)
+        ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
+        ->and($refundPayment->status)->toBe(PaymentStatusEnum::SUCCESS)
+        ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED);
+
+})->depends('finalise refund');
+
 
 test('store audit for pallet 6th customer', function () {
 

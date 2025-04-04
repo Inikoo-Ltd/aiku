@@ -27,10 +27,10 @@ class GroupHydrateInvoiceIntervals implements ShouldBeUnique
     public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         $uniqueId = $group->id;
-        if (!is_null($intervals)) {
+        if ($intervals !== null) {
             $uniqueId .= '-'.implode('-', $intervals);
         }
-        if (!is_null($doPreviousPeriods)) {
+        if ($doPreviousPeriods !== null) {
             $uniqueId .= '-'.implode('-', $doPreviousPeriods);
         }
 

@@ -25,7 +25,7 @@ enum ProspectFailStatusEnum: string
     public static function labels(): array
     {
         return [
-            'no_applicable'  => __('NA'),
+            'no_applicable'  => __('N/A'),
             'not_interested' => __('Not interested'),
             'unsubscribed'   => __('Unsubscribed'),
             'invalid'        => __('Invalid'),
@@ -38,7 +38,7 @@ enum ProspectFailStatusEnum: string
         return [
             'no_applicable' => [
 
-                'tooltip' => __('NA'),
+                'tooltip' => __('N/A'),
                 'icon'    => 'fal fa-location-slash',
 
 

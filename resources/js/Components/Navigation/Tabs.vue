@@ -111,7 +111,7 @@ const tabIconClass = function (isCurrent: boolean, type: string | undefined, ali
                         >
                             <FontAwesomeIcon v-if="tabLoading === tabSlug" icon="fad fa-spinner-third" class="animate-spin h-5 w-5" aria-hidden="true"/>
                             <FontAwesomeIcon v-else-if="tab.icon" :icon="tab.icon" class="h-5 w-5" aria-hidden="true"/>
-                            <span v-if="tab.type!=='icon'" class="capitalize">{{ tab.title }}</span>
+                            <span v-if="tab.type!=='icon'" class="capitalize whitespace-nowrap">{{ tab.title }}</span>
 
                             <FontAwesomeIcon v-if="tab.indicator" icon='fas fa-circle' class='animate-ping absolute top-3 -right-1 text-blue-500 text-[6px]' fixed-width aria-hidden='true' />
                             <FontAwesomeIcon v-if="tab.indicator" icon='fas fa-circle' class='absolute top-3 -right-1 text-blue-500 text-[6px]' fixed-width aria-hidden='true' />

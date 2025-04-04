@@ -53,10 +53,12 @@ class ShowHome
         return Inertia::render(
             'Home',
             [
-                'head' => [
+                /* 'head' => [
                     'title' => $webpage?->title,
                     'description' => $webpage?->description,
-                ],
+                    'seo' => $webpage?->data,
+                ], */
+                'meta' => $webpage?->seo_data,
                 'blocks' => $webPageLayout ,
                 'data' => $website,
             ]

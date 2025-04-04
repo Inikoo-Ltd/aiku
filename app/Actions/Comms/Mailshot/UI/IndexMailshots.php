@@ -38,8 +38,7 @@ class IndexMailshots extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('mailshots.state', '~*', "\y$value\y")
-                    ->orWhere('mailshots.data', '=', $value);
+                $query->whereAnyWordStartWith('mailshots.subject', $value);
             });
         });
 
@@ -83,7 +82,6 @@ class IndexMailshots extends OrgAction
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
-
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -107,7 +105,6 @@ class IndexMailshots extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Comms/Mailshots',
             [
@@ -118,20 +115,20 @@ class IndexMailshots extends OrgAction
                 ),
                 'title'       => __('mailshots'),
                 'pageHead'    => [
-                    'title'    => __('mailshots'),
-                    'actions'  => [
+                    'title'   => __('mailshots'),
+                    'actions' => [
                         [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'label'   => __('mailshot'),
-                            'route'   => [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('mailshot'),
+                            'route' => [
                                 'name'       => 'grp.org.shops.show.marketing.mailshots.create',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
                     ],
                 ],
-                'data' => MailshotResource::collection($mailshots),
+                'data'        => MailshotResource::collection($mailshots),
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -140,6 +137,7 @@ class IndexMailshots extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+
         return $this->handle($organisation);
     }
 
@@ -151,25 +149,4 @@ class IndexMailshots extends OrgAction
         return $this->handle($organisation);
     }
 
-    /** @noinspection PhpUnused */
-    public function inOutbox(Outbox $outbox, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($request);
-        return $this->handle($outbox);
-    }
-
-    /** @noinspection PhpUnused */
-    public function inPostRoomInShop(PostRoom $postRoom, Outbox $outbox, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($request);
-        return $this->handle($outbox);
-    }
-
-
-    /** @noinspection PhpUnused */
-    public function inOutboxInShop(Outbox $outbox, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($request);
-        return $this->handle($outbox);
-    }
 }

@@ -15,25 +15,20 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Asset;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateInvoicesStats
+class AssetHydrateInvoicesStats implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-    private Asset $asset;
+    public string $jobQueue = 'sales';
 
-    public function __construct(Asset $asset)
+    public function getJobUniqueId(Asset $asset): string
     {
-        $this->asset = $asset;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->asset->id))->dontRelease()];
+        return $asset->id;
     }
 
     public function handle(Asset $asset): void

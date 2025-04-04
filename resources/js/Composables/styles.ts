@@ -1,9 +1,12 @@
+import JustifyContent from "@/Components/CMS/Fields/JustifyContent.vue";
+
 export const getStyles = (properties: any) => {
     if (!properties || typeof properties !== 'object') {
         // If properties are missing or not an object, return null
         return null;
     }
 
+    console.log(properties)
     const styles = {
         height: properties?.dimension?.height?.value  ? properties?.dimension?.height?.value  + properties?.dimension?.height?.unit : null,
         width: properties?.dimension?.width?.value ? properties?.dimension?.width?.value + properties?.dimension?.width?.unit : null,
@@ -50,8 +53,29 @@ export const getStyles = (properties: any) => {
             `${properties.border.rounded.bottomleft.value}${properties.border.rounded.unit}` : null,
         borderTopLeftRadius: properties?.border?.rounded?.topleft?.value != null && properties?.border?.rounded?.unit ? 
             `${properties.border.rounded.topleft.value}${properties.border.rounded.unit}` : null,
+        gap : properties?.gap?.value != null && properties?.gap?.unit ? 
+             (properties.gap.value + properties.gap.unit) : null,
+        justifyContent : properties?.justifyContent || null,
+        boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor),
     };
-
+    console.log('sdsd',getBoxShadowFromParts(properties.shadow))
     return Object.fromEntries(Object.entries(styles).filter(([_, value]) => value !== null));
 };
 
+export const getBoxShadowFromParts = (shadowObj: any, color : String) => {
+    console.log('ffff',color)
+    if(shadowObj){
+        let final = []
+        for (const item in shadowObj) {
+            if(item != 'unit'){
+                final.push(`${shadowObj[item].value}${shadowObj.unit}`)
+            }
+        }
+        let data =  final.join(' ')
+        if(color) return data + " " + color
+        else return data
+
+    }return null
+   
+  };
+  

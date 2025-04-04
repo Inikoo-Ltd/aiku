@@ -24,10 +24,10 @@ class ShopHydrateSales implements ShouldBeUnique
     public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         $uniqueId = $shop->id;
-        if (!is_null($intervals)) {
+        if ($intervals !== null) {
             $uniqueId .= '-'.implode('-', $intervals);
         }
-        if (!is_null($doPreviousPeriods)) {
+        if ($doPreviousPeriods !== null) {
             $uniqueId .= '-'.implode('-', $doPreviousPeriods);
         }
 

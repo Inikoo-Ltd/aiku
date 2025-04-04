@@ -19,6 +19,7 @@ class AssetHydrateSales implements ShouldBeUnique
     use AsAction;
     use WithIntervalsAggregators;
 
+    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(Asset $asset): string
     {

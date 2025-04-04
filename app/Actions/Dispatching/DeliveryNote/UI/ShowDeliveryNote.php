@@ -56,6 +56,9 @@ class ShowDeliveryNote extends OrgAction
         } elseif ($this->parent instanceof Customer) {
             $this->canEdit      = $request->user()->authTo("orders.{$this->shop->id}.edit");
             return $request->user()->authTo("orders.{$this->shop->id}.view");
+        } elseif ($this->parent instanceof Shop) {
+            $this->canEdit      = $request->user()->authTo("orders.{$this->shop->id}.edit");
+            return $request->user()->authTo("orders.{$this->shop->id}.view");
         }
         $this->canEdit      = $request->user()->authTo("dispatching.{$this->warehouse->id}.edit");
         return $request->user()->authTo("dispatching.{$this->warehouse->id}.view");
@@ -89,6 +92,13 @@ class ShowDeliveryNote extends OrgAction
     public function inOrderInShop(Organisation $organisation, Shop $shop, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->parent = $order;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+        return $this->handle($deliveryNote);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderingInShop(Organisation $organisation, Shop $shop, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
         return $this->handle($deliveryNote);
     }
@@ -387,18 +397,18 @@ class ShowDeliveryNote extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.org.shops.show.ordering.show.delivery-note.show',
+            'grp.org.shops.show.ordering.delivery-notes.show',
             => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $deliveryNote,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.ordering.orders.index',
+                            'name'       => 'grp.org.shops.show.ordering.delivery-notes.index',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'shop'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.ordering.show.delivery-note.show',
+                            'name'       => 'grp.org.shops.show.ordering.delivery-notes.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'deliveryNote'])
                         ]
                     ],
@@ -506,7 +516,7 @@ class ShowDeliveryNote extends OrgAction
 
                 ]
             ],
-            'grp.org.shops.show.ordering.show.delivery-note.show' => [
+            'grp.org.shops.show.ordering.delivery-notes.show' => [
                 'label' => $deliveryNote->reference,
                 'route' => [
                     'name'      => $routeName,

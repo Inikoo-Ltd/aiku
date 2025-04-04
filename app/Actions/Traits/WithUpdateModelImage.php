@@ -36,10 +36,7 @@ trait WithUpdateModelImage
         $checksum = md5_file($imagePath);
 
 
-        if (!$extension) {
-            $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
-        }
-
+        $extension = $extension ?? Str::afterLast($imagePath, '.');
 
         if ($model->getMedia($collection, ['checksum' => $checksum])->count() == 0) {
             $model->update([$field => null]);

@@ -54,7 +54,6 @@ class CreateRefund extends OrgAction
      */
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
-
         $this->initialisationFromShop($invoice->shop, $request);
 
         if (Arr::has($this->validatedData, 'referral_route')) {

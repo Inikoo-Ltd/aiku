@@ -35,7 +35,7 @@ Route::middleware(["auth"])->group(function () {
                 echo "<td>".$value->methods()[0]."</td>";
                 echo "<td>".$value->uri()."</td>";
                 echo "<td>".$value->getName()."</td>";
-                echo "<td>".preg_replace('/([^\\\\]+)$/', '<span style="background: #c790ff; padding: 0px 2px">$1</span>', $value->getActionName())."</td>";
+                echo "<td>".preg_replace('/([^\\\\]+)$/', '<span style="background: #c790ff; padding: 0 2px">$1</span>', $value->getActionName())."</td>";
                 echo "</tr>";
                 $i++;
             }

@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Fulfilment\Pallet\UI\IndexPallets;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInLocation;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;

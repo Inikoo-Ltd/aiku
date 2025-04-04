@@ -31,7 +31,7 @@ class IUnique implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (is_null($this->column)) {
+        if ($this->column === null) {
             $this->column = $attribute;
         }
 
@@ -41,7 +41,6 @@ class IUnique implements ValidationRule
 
         if (!blank($this->extraConditions)) {
             foreach ($this->extraConditions as $columnCollection) {
-
                 if (!isset($columnCollection['column'])) {
                     continue;
                 }

@@ -91,6 +91,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $recurring_bill_id
  * @property int|null $shopify_user_id
  * @property int|null $platform_id
+ * @property string|null $collection_notes
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses

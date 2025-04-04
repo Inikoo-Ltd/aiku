@@ -47,7 +47,6 @@ class UpdateInvoice extends OrgAction
         data_forget($modelData, 'billing_address');
 
 
-
         $invoice = $this->update($invoice, $modelData, ['data']);
 
         if ($billingAddressData) {
@@ -124,16 +123,17 @@ class UpdateInvoice extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['currency_id']     = ['sometimes', 'required', 'exists:currencies,id'];
-            $rules['net_amount']      = ['sometimes', 'required', 'numeric'];
-            $rules['total_amount']    = ['sometimes', 'required', 'numeric'];
-            $rules['gross_amount']    = ['sometimes', 'required', 'numeric'];
-            $rules['rental_amount']   = ['sometimes', 'required', 'numeric'];
-            $rules['goods_amount']    = ['sometimes', 'required', 'numeric'];
-            $rules['services_amount'] = ['sometimes', 'required', 'numeric'];
-            $rules['tax_amount']      = ['sometimes', 'required', 'numeric'];
-            $rules['footer']          = ['sometimes', 'string'];
-            $rules['data']            = ['sometimes', 'array'];
+            $rules['external_invoicer_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['currency_id']          = ['sometimes', 'required', 'exists:currencies,id'];
+            $rules['net_amount']           = ['sometimes', 'required', 'numeric'];
+            $rules['total_amount']         = ['sometimes', 'required', 'numeric'];
+            $rules['gross_amount']         = ['sometimes', 'required', 'numeric'];
+            $rules['rental_amount']        = ['sometimes', 'required', 'numeric'];
+            $rules['goods_amount']         = ['sometimes', 'required', 'numeric'];
+            $rules['services_amount']      = ['sometimes', 'required', 'numeric'];
+            $rules['tax_amount']           = ['sometimes', 'required', 'numeric'];
+            $rules['footer']               = ['sometimes', 'string'];
+            $rules['data']                 = ['sometimes', 'array'];
 
 
             $rules['is_vip']                             = ['sometimes', 'boolean'];

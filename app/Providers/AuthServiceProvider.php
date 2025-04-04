@@ -27,25 +27,23 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Auth::viaRequest('websockets-auth', function () {
-
             $id = Session::get('login_web_'.sha1('Illuminate\Auth\SessionGuard'));
-            if (!is_null($id)) {
+            if ($id !== null) {
                 return User::find($id);
             }
 
             $id = Session::get('login_retina_'.sha1('Illuminate\Auth\SessionGuard'));
 
-            if (!is_null($id)) {
+            if ($id !== null) {
                 return WebUser::find($id);
             }
 
             $id = Session::get('login_pupil_'.sha1('Illuminate\Auth\SessionGuard'));
-            if (!is_null($id)) {
+            if ($id !== null) {
                 return ShopifyUser::find($id);
             }
 
             return false;
         });
-
     }
 }

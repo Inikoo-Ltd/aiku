@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowRetinaCurrentRecurringBill extends RetinaAction
 {
-    public function asController(RecurringBill $recurringBill, ActionRequest $request): RecurringBill
+    public function asController(ActionRequest $request): RecurringBill
     {
         $this->initialisation($request)->withTab(RecurringBillTabsEnum::values());
         $currentRecurringBill = $this->customer->fulfilmentCustomer->currentRecurringBill;

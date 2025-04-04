@@ -10,26 +10,20 @@ namespace App\Actions\Comms\Mailshot\Hydrators;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\Mailshot;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MailshotHydrateCumulativeDispatchedEmails
+class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
 
-    private Mailshot $mailshot;
 
     public string $jobQueue = 'low-priority';
 
-    public function __construct(Mailshot $mailshot)
+    public function getJobUniqueId(Mailshot $mailshot): string
     {
-        $this->mailshot = $mailshot;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->mailshot->id))->dontRelease()];
+        return $mailshot->id;
     }
 
 

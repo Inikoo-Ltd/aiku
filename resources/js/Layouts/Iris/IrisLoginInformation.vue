@@ -61,7 +61,7 @@ const onClickLogin = () => {
 
         <div class="action_buttons" style="display: flex; justify-content: flex-end; column-gap: 45px; grid-column: span 5 / span 5">
             <template v-if="isLoggedIn">
-                <a href="#" class="space-x-1.5" style="margin-left: 0px;">
+                <a href="#" class="space-x-1.5" style="margin-left: 0;">
                     <!-- <i class="far fa-flip-horizontal fa-sign-out" title="Log out" aria-hidden="true"></i> -->
                     <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width
                         aria-hidden='true' />

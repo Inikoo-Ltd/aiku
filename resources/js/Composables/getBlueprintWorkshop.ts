@@ -28,6 +28,7 @@ import TextColumn from '@/Components/CMS/Webpage/TextColumn/Blueprint'
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Blueprint'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Blueprint'
 import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Blueprint'
+import Button from '@/Components/CMS/Webpage/Button/Blueprint'
 
 export const getBlueprint = (componentName: string) => {
     const components: Component = {
@@ -59,6 +60,7 @@ export const getBlueprint = (componentName: string) => {
         'top-bar-1-fulfilment': Topbar1Fulfilment.blueprint,
         'top-bar-2-fulfilment': Topbar2Fulfilment.blueprint,
         'top-bar-3-fulfilment': Topbar3Fulfilment.blueprint,
+        'button' : Button.blueprint
     }
     return components[componentName] ?? []
 }

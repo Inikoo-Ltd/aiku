@@ -12,6 +12,7 @@ use App\Actions\Catalogue\HasRentalAgreement;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\GetFulfilmentCustomerShowcase;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexCustomerBalanceTransaction;
 use App\Actions\Fulfilment\RentalAgreementClause\UI\IndexRentalAgreementClauses;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
@@ -23,6 +24,7 @@ use App\Actions\Traits\WithWebUserMeta;
 use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Fulfilment\CustomerBalanceTransactionsResource;
 use App\Http\Resources\Fulfilment\RentalAgreementClausesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -207,6 +209,10 @@ class ShowFulfilmentCustomer extends OrgAction
                     : Inertia::lazy(fn () => RentalAgreementClausesResource::collection(IndexRentalAgreementClauses::run($fulfilmentCustomer, FulfilmentCustomerTabsEnum::AGREED_PRICES->value))),
 
 
+                FulfilmentCustomerTabsEnum::BALANCE->value => $this->tab == FulfilmentCustomerTabsEnum::BALANCE->value ?
+                    fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))
+                    : Inertia::lazy(fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))),
+
                 FulfilmentCustomerTabsEnum::EMAIL->value => $this->tab == FulfilmentCustomerTabsEnum::EMAIL->value ?
                     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))
                     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))),
@@ -225,6 +231,7 @@ class ShowFulfilmentCustomer extends OrgAction
             ->table(IndexRentalAgreementClauses::make()->tableStructure(prefix: FulfilmentCustomerTabsEnum::AGREED_PRICES->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($fulfilmentCustomer, prefix: FulfilmentCustomerTabsEnum::EMAIL->value))
             ->table(IndexHistory::make()->tableStructure(prefix: FulfilmentCustomerTabsEnum::HISTORY->value))
+            ->table(IndexCustomerBalanceTransaction::make()->tableStructure($fulfilmentCustomer->customer, prefix: FulfilmentCustomerTabsEnum::BALANCE->value))
             ->table(IndexAttachments::make()->tableStructure(FulfilmentCustomerTabsEnum::ATTACHMENTS->value));
     }
 

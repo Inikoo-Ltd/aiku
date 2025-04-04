@@ -45,7 +45,7 @@ class PalletDeliveriesResource extends JsonResource
             'shop_slug'                  => $this->shop_slug,
             'fulfilment_slug'            => $this->fulfilment_slug,
             'amount'                     => $this->net_amount,
-
+            'currency_code'              => $this->currency_code,
             'receiveRoute'               => [
                 'name'       => 'grp.models.pallet-delivery.received',
                 'parameters' => $this->id,

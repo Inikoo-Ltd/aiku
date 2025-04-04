@@ -34,11 +34,14 @@ function paymentsRoute(payment: Payment) {
 			<div>
 				<template v-if="payment.reference">
 					<Link :href="paymentsRoute(payment)" class="primaryLink">
-						{{ payment["reference"] }}
+						{{ payment["reference"] }} - {{ `${payment['id']}` }}
 					</Link>
 				</template>
 				<template v-else>
-					<span class="text-gray-500 italic" style="opacity: 0.7">No reference</span>
+					<!-- <span class="text-gray-500 italic" style="opacity: 0.7">No reference</span> -->
+                    <Link :href="paymentsRoute(payment)" class="primaryLink">
+						{{ payment["reference"] }} {{ `${payment['id']}` }}
+					</Link>
 				</template>
 			</div>
 		</template>
@@ -47,6 +50,9 @@ function paymentsRoute(payment: Payment) {
 		</template>
 		<template #cell(amount)="{ item: item }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.amount)  }}</div>
+        </template>
+		<template #cell(refunded)="{ item: item }">
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.refunded)  }}</div>
         </template>
 		<template #cell(date)="{ item }">
 			<div class="text-gray-500 text-right">

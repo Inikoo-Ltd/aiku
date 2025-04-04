@@ -12,24 +12,18 @@ namespace App\Actions\Comms\Outbox\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Comms\Outbox;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OutboxHydrateSubscribers
+class OutboxHydrateSubscribers implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Outbox $outbox;
 
-    public function __construct(Outbox $outbox)
+    public function getJobUniqueId(Outbox $outbox): string
     {
-        $this->outbox = $outbox;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->outbox->id))->dontRelease()];
+        return $outbox->id;
     }
 
 

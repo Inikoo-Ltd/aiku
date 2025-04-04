@@ -10,23 +10,20 @@ namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateCreditTransactions
+class CustomerHydrateCreditTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
-    private Customer $customer;
-    public function __construct(Customer $customer)
-    {
-        $this->customer = $customer;
-    }
 
-    public function getJobMiddleware(): array
+
+    public function getJobUniqueId(Customer $customer): string
     {
-        return [(new WithoutOverlapping($this->customer->id))->dontRelease()];
+        return $customer->id;
     }
 
     public function handle(Customer $customer): void
@@ -37,8 +34,10 @@ class CustomerHydrateCreditTransactions
 
         $balance            = 0;
         $creditTransactions = $customer->creditTransactions()
-        ->orderBy('date', 'asc')
+        ->orderBy('date')
         ->get();
+
+        /** @var CreditTransaction $creditTransaction */
         foreach ($creditTransactions as $creditTransaction) {
             $balance += $creditTransaction->amount;
             $this->update($creditTransaction, [
