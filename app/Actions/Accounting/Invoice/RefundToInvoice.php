@@ -24,6 +24,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 
 class RefundToInvoice extends OrgAction
@@ -126,17 +127,23 @@ class RefundToInvoice extends OrgAction
                 ->sum('payments.amount');
 
             if ($totalRoundRefund > abs($paymentAmountWithInCertainType)) {
-                $validator->errors()->add(
-                    'amount',
-                    'The refund amount exceeds the total paid amount in ' . ($type == 'credit' ? 'credit balance' : 'payment method')
+                throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'amount' => 'The refund amount exceeds the total paid amount in ' . ($type == 'credit' ? 'credit balance' : 'payment method'),
+                        ]
+                    ]
                 );
             }
         }
 
         if ($totalRoundRefund > abs(round($totalNeedToRefund, 2))) {
-            $validator->errors()->add(
-                'amount',
-                'The refund amount exceeds the total amount that needs to be refunded'
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'amount' => 'The refund amount exceeds the total amount that needs to be refunded',
+                    ]
+                ]
             );
         }
     }

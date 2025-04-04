@@ -32,11 +32,11 @@ class PayInvoice extends OrgAction
         $consolidateTotalPayments = Arr::get($invoice->shop->settings, 'consolidate_invoice_to_pay', true);
         if ($consolidateTotalPayments) {
             $amount = Arr::get($modelData, 'amount');
-            $totalRefund = abs($invoice->refunds->sum('total_amount'));
+            $totalRefund = abs($invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount'));
 
-            $calculateAmountInvoice = $amount + $totalRefund;
+            $calculateAmountInvoice = $amount + $invoice->payment_amount + $totalRefund;
             if ($calculateAmountInvoice >= $invoice->total_amount) {
-                $modelData['amount'] = $calculateAmountInvoice;
+                $modelData['amount'] = $calculateAmountInvoice - $invoice->payment_amount;
             }
 
 
@@ -55,13 +55,13 @@ class PayInvoice extends OrgAction
 
                 if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
                     RefundToInvoice::make()->action($invoice, $paymentAccount, [
-                        'amount' => $amountRefund,
+                        'amount' => abs($amountRefund),
                         'type_refund' => 'credit',
                         'is_auto_refund' => true,
                     ]);
                 } else {
                     RefundToInvoice::make()->action($invoice, $paymentAccount, [
-                        'amount' => $amountRefund,
+                        'amount' => abs($amountRefund),
                         'original_payment_id' => $payment->id,
                         'type_refund' => 'payment',
                         'is_auto_refund' => true,

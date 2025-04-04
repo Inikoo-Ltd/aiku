@@ -19,12 +19,16 @@ use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\Validator;
 
 class StoreRefundInvoiceTransaction extends OrgAction
 {
     use WithFixedAddressActions;
     use WithOrderExchanges;
     use WithNoStrictRules;
+
+    private InvoiceTransaction $invoiceTransaction;
+    private Invoice $refund;
 
     /**
      * @throws \Throwable
@@ -43,10 +47,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
         }
 
         $totalTrRefunded = $invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
-        $totalTr = $invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
 
         if (abs($netAmount) == $invoiceTransaction->net_amount) {
-            $totalTr = 0;
             $netAmount = (abs($netAmount) - abs($totalTrRefunded)) * -1;
 
             if ($netAmount == 0) {
@@ -55,17 +57,6 @@ class StoreRefundInvoiceTransaction extends OrgAction
                 }
                 return $invoiceTransaction;
             }
-        }
-
-
-        if ($totalTr < 0) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'net_amount' => 'Refund amount exceeds or already refunded in other refund',
-                    ]
-                ]
-            );
         }
 
         $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
@@ -130,11 +121,35 @@ class StoreRefundInvoiceTransaction extends OrgAction
         ];
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        $totalTrRefunded = $this->invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
+
+        $netAmount = $this->get('net_amount', 0) * -1;
+        $totalTr = $this->invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
+
+        if (abs($netAmount) == $this->invoiceTransaction->net_amount) {
+            $totalTr = 0;
+        }
+
+        if ($totalTr < 0) {
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'net_amount' => 'Refund amount exceeds or already refunded in other refund',
+                    ]
+                ]
+            );
+        }
+    }
+
     /**
      * @throws \Throwable
      */
     public function asController(Invoice $refund, InvoiceTransaction $invoiceTransaction, ActionRequest $request): void
     {
+        $this->invoiceTransaction = $invoiceTransaction;
+        $this->refund = $refund;
         $this->initialisationFromShop($invoiceTransaction->shop, $request);
         $this->handle($refund, $invoiceTransaction, $this->validatedData);
     }
@@ -144,6 +159,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function action(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        $this->invoiceTransaction = $invoiceTransaction;
+        $this->refund = $refund;
         $this->initialisationFromShop($invoiceTransaction->shop, $modelData);
 
         return $this->handle($refund, $invoiceTransaction, $this->validatedData);
