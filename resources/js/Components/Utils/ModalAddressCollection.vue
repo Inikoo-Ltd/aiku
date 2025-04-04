@@ -10,11 +10,10 @@ import { Address, AddressManagement } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch } from '@fal'
-import { faCheckCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useTruncate } from '@/Composables/useTruncate'
-library.add(faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle)
+library.add(faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, faThumbtack)
 
 const props = defineProps<{
     updateRoute: routeType
@@ -347,7 +346,7 @@ const onDeleteAddress = (addressID: number) => {
                                         :class="addresses.current_selected_address_id == address.id ? 'bg-green-50' : 'bg-gray-100'"
                                     >
                                         <div class="flex gap-x-1 items-center relative">
-                                            <FontAwesomeIcon v-if="false && addresses.selected_delivery_addresses_id?.includes(address.id)" icon='fal fa-truck-couch' class='px-0.5 py-1 cursor-pointer' :class="addresses.selected_delivery_addresses_id.includes(address.id) ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('This address is already selected')" />
+                                            <FontAwesomeIcon v-if="false && addresses.selected_delivery_addresses_id?.includes(address.id)" :icon=faThumbtack class='px-0.5 py-1 cursor-pointer' :class="addresses.selected_delivery_addresses_id.includes(address.id) ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('This address is already selected')" />
                                             <div v-if="address.label" class="font-semibold text-sm whitespace-nowrap">
                                                 {{ useTruncate(address.label, 14) }}
                                             </div>
