@@ -36,6 +36,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
 
 const props = defineProps<{
+  address_modal_title: string
 	dataPalletReturn: PalletReturn
 	boxStats: BoxStats
 	updateRoute: routeType
@@ -549,9 +550,9 @@ const disableBeforeToday = (date: Date) => {
 	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
 		<ModalAddress :addresses="boxStats.fulfilment_customer.address" :updateRoute />
 	</Modal>
-
 	<Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
 		<ModalAddressCollection
+    :address_modal_title="address_modal_title"
 		:addresses="addresses"
 		:updateRoute="address_update_route" />
 	</Modal>

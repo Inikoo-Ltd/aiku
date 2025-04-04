@@ -483,7 +483,7 @@ const isModalUploadFileOpen = ref(false)
 
     <!-- Section: Box Stats -->
     <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute"  :addresses
-    :address_update_route :address_modal_title/>
+    :address_update_route :address_modal_title="address_modal_title"/>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component 
