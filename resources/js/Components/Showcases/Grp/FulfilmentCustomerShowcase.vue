@@ -45,6 +45,7 @@ import { RuleType } from "v-calendar/dist/types/src/utils/date/rules.js"
 import { faCheck, faTimes } from "@fas"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import { id } from "date-fns/locale"
+import ModalBalance from "@/Components/Utils/ModalBalance.vue"
 library.add(
 	faWallet,
 	faLink,
@@ -180,8 +181,16 @@ const sendUpdateInformation = () => {
 }
 
 const isModalUploadOpen = ref(false)
+const isModalBalanceOpen = ref(false)
+const balanceModalType = ref("")
+
 const customerID = ref()
 const customerName = ref()
+
+function openModalBalance(type: string) {
+	balanceModalType.value = type
+	isModalBalanceOpen.value = true
+}
 
 function openRejectedModal(customer: any) {
 	customerID.value = customer.id
@@ -436,24 +445,22 @@ function openRejectedModal(customer: any) {
 						</div>
 						<!-- Icon Row -->
 						<div class="flex items-center">
-							<button
-						
-								aria-label="Increase Balance"
-								class="focus:outline-none">
+							<button aria-label="Increase Balance" class="focus:outline-none">
 								<FontAwesomeIcon
+									@click="openModalBalance('increase')"
 									:icon="faArrowAltFromBottom"
 									class="text-base"
+									tooltip="Increase Balance"
 									fixed-width
 									aria-hidden="true" />
 							</button>
 							<span class="mx-2 text-gray-400">|</span>
-							<button
-					
-								aria-label="Decrease Balance"
-								class="focus:outline-none">
+							<button aria-label="Decrease Balance" class="focus:outline-none">
 								<FontAwesomeIcon
+									@click="openModalBalance('decrease')"
 									:icon="faArrowAltFromTop"
 									class="text-base"
+									tooltip="Decrease Balance"
 									fixed-width
 									aria-hidden="true" />
 							</button>
@@ -637,4 +644,6 @@ function openRejectedModal(customer: any) {
 		v-model="isModalUploadOpen"
 		:customerID="customerID"
 		:customerName="customerName" />
+
+	<ModalBalance v-model="isModalBalanceOpen" :type="balanceModalType" />
 </template>
