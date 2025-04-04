@@ -302,7 +302,7 @@ const onDeleteAddress = (addressID: number) => {
                                 <!-- {{ homeAddresses.id }} -->
                                     <div class="flex gap-x-1 items-center relative">
                                         <div class="font-semibold text-sm whitespace-nowrap">
-                                            <FontAwesomeIcon icon='fal fa-house' class='' fixed-width aria-hidden='true' />
+                                            <FontAwesomeIcon icon='fal fa-house' class='' v-tooltip="'Contact Address'" fixed-width aria-hidden='true' />
                                         </div>
 
                                         <div class="relative">
