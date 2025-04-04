@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import ColorSchemeWorkshopWebsite from '@/Components/CMS/Website/Layout/ColorSchemeWorkshopWebsite.vue'
 import { routeType } from '@/types/route'
