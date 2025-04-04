@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 27-03-2025-13h-50m
@@ -9,12 +10,9 @@
 namespace App\Actions\Retina\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class SwitchRetinaPalletReturnDeliveryAddress extends RetinaAction
@@ -28,17 +26,15 @@ class SwitchRetinaPalletReturnDeliveryAddress extends RetinaAction
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'delivery_address_id'         => ['sometimes', 'nullable', 'exists:addresses,id'],
         ];
-
-        return $rules;
     }
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request)
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+         $this->handle($palletReturn, $this->validatedData);
     }
 }
