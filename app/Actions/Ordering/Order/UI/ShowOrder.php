@@ -253,7 +253,7 @@ class ShowOrder extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $finalTimeline = $this->getOrderTimeline();
+        $finalTimeline = $this->getOrderTimeline($order);
 
         $addresses = $order->customer->addresses;
 
