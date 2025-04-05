@@ -54,6 +54,7 @@ class PalletReturnResource extends JsonResource
             'type_label'            => $palletReturn->type->labels()[$palletReturn->type->value],
             'type_icon'             => $palletReturn->type->stateIcon()[$palletReturn->type->value],
             'timeline'              => $finalTimeline,
+            'estimated_delivery_date' => $palletReturn->estimated_delivery_date,
 
             'number_ordered_items'  => $orderedItems,
             'number_picked_items'   => $pickedItems,

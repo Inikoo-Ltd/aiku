@@ -60,13 +60,13 @@ class UpdatePalletReturn extends OrgAction
                 unset($addressData['can_delete']);
                 $updatedAddress     = UpdateAddress::run(Address::find(Arr::get($addressData, 'id')), $addressData);
                 $pivotData['label'] = $label;
-                $palletReturn->addresses()->updateExistingPivot(
+                $palletReturn->fulfilmentCustomer->customer->addresses()->updateExistingPivot(
                     $updatedAddress->id,
                     $pivotData
                 );
             } else {
                 $this->addAddressToModelFromArray(
-                    $palletReturn,
+                    $palletReturn->fulfilmentCustomer->customer,
                     $addressData,
                     'delivery',
                     false,
@@ -100,6 +100,7 @@ class UpdatePalletReturn extends OrgAction
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:5000'],
             'address'             => ['sometimes'],
             'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'estimated_delivery_date'   => ['sometimes', 'date'],
             'reference'      => ['sometimes', 'string', 'max:255'],
             'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],

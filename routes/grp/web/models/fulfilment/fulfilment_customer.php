@@ -7,10 +7,7 @@
  */
 
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\StoreStandaloneFulfilmentInvoice;
-use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
-use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\WebUser\StoreWebUser;
-use App\Actions\Fulfilment\FulfilmentCustomer\AddDeliveryAddressToFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\Fulfilment\Pallet\DeletePalletInDelivery;
 use App\Actions\Fulfilment\PalletDelivery\Pdf\PdfPalletDelivery;
@@ -37,13 +34,8 @@ Route::name('fulfilment-customer.')->prefix('fulfilment-customer/{fulfilmentCust
 
     // pallet return
     Route::post('pallet-return', StorePalletReturn::class)->name('pallet-return.store');
-    Route::post('pallet-return-stored-items', [StorePalletReturn::class,'withStoredItems'])->name('pallet-return-stored-items.store');
+    Route::post('pallet-return-stored-items', [StorePalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');
     Route::post('', [StoreWebUser::class, 'inFulfilmentCustomer'])->name('web-user.store');
-
-
-    Route::post('address', AddDeliveryAddressToFulfilmentCustomer::class)->name('address.store');
-    Route::delete('address/{address:id}/delete', DeleteCustomerDeliveryAddress::class)->name('delivery-address.delete')->withoutScopedBindings();
-    Route::patch('address/update', [UpdateCustomerAddress::class, 'fromFulfilmentCustomer'])->name('address.update');
 
     Route::prefix('pallet-return/{palletReturn:id}')->name('pallet-return.')->group(function () {
         Route::prefix('stored-item/{palletReturnItem:id}')->group(function () {
@@ -65,6 +57,4 @@ Route::name('fulfilment-customer.')->prefix('fulfilment-customer/{fulfilmentCust
     Route::prefix('standalone-invoice')->name('standalone-invoice.')->group(function () {
         Route::post('/', StoreStandaloneFulfilmentInvoice::class)->name('store');
     });
-
-
 });

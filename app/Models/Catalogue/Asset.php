@@ -62,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property ProductUnitRelationshipType $unit_relationship_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
+ * @property-read Charge|null $charge
  * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
@@ -80,6 +81,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\AssetSalesIntervals|null $salesIntervals
  * @property-read Service|null $service
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Space|null $space
  * @property-read \App\Models\Catalogue\AssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\AssetTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions

@@ -34,6 +34,7 @@ use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -81,23 +82,23 @@ class ShowStoredItemReturn extends OrgAction
         unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
         $this->tab = $request->get('tab', array_key_first($navigation));
 
-        $tooltipSubmit = __('Confirm');
-        $isDisabled    = false;
-        if ($palletReturn->pallets()->count() < 1) {
-            $tooltipSubmit = __('Select stored item before submit');
-            $isDisabled    = true;
+
+        if ($palletReturn->storedItems()->count() < 1) {
+            $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Select stored item before submit');
             // } elseif ($palletReturn->delivery_address_id === null && $palletReturn->collection_address_id === null) {
             //     $tooltipSubmit = __('Select address before submit');
             //     $isDisabled = true;
             // } else {
             // $tooltipSubmit = __('Confirm');
+            $isDisabled    = true;
+        } else {
+            $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Confirm');
+            $isDisabled    = !($palletReturn->estimated_delivery_date);
         }
-
         $buttonSubmit = [
             'type'     => 'button',
             'style'    => 'save',
             'tooltip'  => $tooltipSubmit,
-            // 'label'   => __('Confirm') . ' (' . $palletReturn->storedItems()->count() . ')',
             'key'      => 'submit-stored-items',
             'route'    => [
                 'method'     => 'post',
@@ -109,6 +110,7 @@ class ShowStoredItemReturn extends OrgAction
             ],
             'disabled' => $isDisabled
         ];
+        // dd($buttonSubmit);
         if ($this->canEdit) {
             $actions = $palletReturn->state == PalletReturnStateEnum::IN_PROCESS
                 ? [
@@ -335,6 +337,40 @@ class ShowStoredItemReturn extends OrgAction
             ];
         }
 
+        $addresses = $palletReturn->fulfilmentCustomer->customer->addresses;
+
+        $processedAddresses = $addresses->map(function ($address) {
+            if (!DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {
+                return $address->setAttribute('can_delete', false)
+                    ->setAttribute('can_edit', true);
+            }
+
+
+            return $address->setAttribute('can_delete', true)
+                ->setAttribute('can_edit', true);
+        });
+
+        $customerAddressId         = $palletReturn->fulfilmentCustomer->customer->address->id;
+        $customerDeliveryAddressId = $palletReturn->fulfilmentCustomer->customer->deliveryAddress->id;
+        $palletReturnDeliveryAddressIds   = PalletReturn::where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)
+            ->pluck('delivery_address_id')
+            ->unique()
+            ->toArray();
+
+        $forbiddenAddressIds = array_merge(
+            $palletReturnDeliveryAddressIds,
+            [$customerAddressId, $customerDeliveryAddressId]
+        );
+
+        $processedAddresses->each(function ($address) use ($forbiddenAddressIds) {
+            if (in_array($address->id, $forbiddenAddressIds, true)) {
+                $address->setAttribute('can_delete', false)
+                    ->setAttribute('can_edit', true);
+            }
+        });
+
+        $addressCollection = AddressResource::collection($processedAddresses);
+
         // dd($palletReturn->deliveryAddress);
         return Inertia::render(
             'Org/Fulfilment/PalletReturn',
@@ -422,6 +458,54 @@ class ShowStoredItemReturn extends OrgAction
                     'navigation' => $navigation
                 ],
                 'data'       => PalletReturnResource::make($palletReturn),
+                'address_update_route'  => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer.address.update',
+                    'parameters' => [
+                        'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                    ]
+                ],
+                'addresses'   => [
+                    'isCannotSelect'                => true,
+                    'address_list'                  => $addressCollection,
+                    'options'                       => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ],
+                    'pinned_address_id'              => $palletReturn->fulfilmentCustomer->customer->delivery_address_id,
+                    'home_address_id'                => $palletReturn->fulfilmentCustomer->customer->address_id,
+                    'current_selected_address_id'    => $palletReturn->delivery_address_id,
+                    'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
+                    'routes_list'                    => [
+                        'switch_route'                   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.pallet-return.address.switch',
+                            'parameters' => [
+                                'palletReturn' => $palletReturn->id
+                            ]
+                        ],
+                        'pinned_route'                   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.customer.delivery-address.update',
+                            'parameters' => [
+                                'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                            ]
+                        ],
+                        'delete_route'  => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.customer.delivery-address.delete',
+                            'parameters' => [
+                                'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                            ]
+                        ],
+                        'store_route' => [
+                            'method'      => 'post',
+                            'name'        => 'grp.models.customer.address.store',
+                            'parameters'  => [
+                                'customer' => $palletReturn->fulfilmentCustomer->customer_id
+                            ]
+                        ]
+                    ]
+                ],
                 'box_stats'  => [
                     'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'recurring_bill'      => $recurringBillData,

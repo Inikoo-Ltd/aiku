@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Rules\ValidAddress;
@@ -25,17 +26,13 @@ class AddDeliveryAddressToCustomer extends OrgAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
-
-
-        $customer = $this->addAddressToModelFromArray(
+        return $this->addAddressToModelFromArray(
             model: $customer,
             addressData: $modelData['delivery_address'],
             scope: 'delivery',
             updateLocation: false,
-            updateAddressField:false
+            updateAddressField: false
         );
-
-        return $customer;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -44,16 +41,23 @@ class AddDeliveryAddressToCustomer extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            $fulfilment = $this->shop->fulfilment;
+
+            return $request->user()->authTo([
+                "fulfilment-shop.$fulfilment->id.edit",
+                "supervisor-fulfilment-shop.".$fulfilment->id,
+            ]);
+        } else {
+            return $request->user()->authTo("crm.{$this->shop->id}.edit");
+        }
     }
 
     public function rules(): array
     {
-        $rules = [
-            'delivery_address'         => ['required', new ValidAddress()],
+        return [
+            'delivery_address' => ['required', new ValidAddress()],
         ];
-
-        return $rules;
     }
 
 

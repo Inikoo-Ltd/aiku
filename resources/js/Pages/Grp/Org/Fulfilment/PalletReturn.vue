@@ -76,13 +76,15 @@ const props = defineProps<{
         items_storage: boolean
         dropshipping: boolean
     }
-    
+    addresses?: {}
+    address_modal_title: string
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
     box_stats: BoxStats
     notes_data: PDRNotes[]
     route_check_stored_items : routeType
     routeStorePallet : routeType
+    address_update_route: routeType
 
     option_attach_file?: {
 		name: string
@@ -453,7 +455,7 @@ const isModalUploadFileOpen = ref(false)
                 :style="action.style"
                 :tooltip="xstored_items_count ? '' : action.tooltip"
                 :disabled="
-                    !xstored_items_count  // Need to improve
+                    action.disabled  // Need to improve
                 "   
             />
         </template>
@@ -480,7 +482,8 @@ const isModalUploadFileOpen = ref(false)
     </div>
 
     <!-- Section: Box Stats -->
-    <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute" />
+    <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute"  :addresses
+    :address_update_route :address_modal_title="address_modal_title"/>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component 

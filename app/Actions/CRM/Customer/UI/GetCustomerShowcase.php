@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
@@ -22,29 +23,55 @@ class GetCustomerShowcase
 
     public function handle(Customer $customer): array
     {
+        $addresses                = [];
+        $addressUpdateRoute       = [];
+        $canOpenAddressManagement = false;
+        if ($customer->shop->type != ShopTypeEnum::DROPSHIPPING) {
+            $canOpenAddressManagement = true;
+            $addresses                = $this->getAddresses($customer);
+            $addressUpdateRoute       = [
+                'method'     => 'patch',
+                'name'       => 'grp.models.customer.address.update',
+                'parameters' => [
+                    'customer' => $customer->id
+                ]
+            ];
+        }
+
+
+        return [
+            'customer' => CustomersResource::make($customer)->getArray(),
+
+            'can_open_address_management' => $canOpenAddressManagement,
+            'address_update_route'        => $addressUpdateRoute,
+            'addresses'                   => $addresses
+
+
+        ];
+    }
+
+    public function getAddresses(Customer $customer): array
+    {
         $addresses = $customer->addresses;
 
         $processedAddresses = $addresses->map(function ($address) {
-
-
             if (!DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {
-
                 return $address->setAttribute('can_delete', false)
                     ->setAttribute('can_edit', true);
             }
 
 
             return $address->setAttribute('can_delete', true)
-                            ->setAttribute('can_edit', true);
+                ->setAttribute('can_edit', true);
         });
 
         $customerAddressId         = $customer->address->id;
         $customerDeliveryAddressId = $customer->deliveryAddress->id;
         if ($customer->fulfilmentCustomer) {
             $palletReturnDeliveryAddressIds = PalletReturn::where('fulfilment_customer_id', $customer->fulfilmentCustomer->id)
-                                                        ->pluck('delivery_address_id')
-                                                        ->unique()
-                                                        ->toArray();
+                ->pluck('delivery_address_id')
+                ->unique()
+                ->toArray();
         } else {
             $palletReturnDeliveryAddressIds = [];
         }
@@ -57,56 +84,46 @@ class GetCustomerShowcase
         $processedAddresses->each(function ($address) use ($forbiddenAddressIds) {
             if (in_array($address->id, $forbiddenAddressIds, true)) {
                 $address->setAttribute('can_delete', false)
-                        ->setAttribute('can_edit', true);
+                    ->setAttribute('can_edit', true);
             }
         });
 
         $addressCollection = AddressResource::collection($processedAddresses);
+
         return [
-            'customer'              => CustomersResource::make($customer)->getArray(),
-            'address_update_route'  => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.customer.address.update',
-                'parameters' => [
-                    'customer' => $customer->id
-                ]
+            'isCannotSelect'                 => true,
+            'address_list'                   => $addressCollection,
+            'options'                        => [
+                'countriesAddressData' => GetAddressData::run()
             ],
-            'addresses'     => [
-                'isCannotSelect'                => true,
-                'address_list'                  => $addressCollection,
-                'options'                       => [
-                    'countriesAddressData' => GetAddressData::run()
+            'pinned_address_id'              => $customer->delivery_address_id,
+            'home_address_id'                => $customer->address_id,
+            'current_selected_address_id'    => $customer->delivery_address_id,
+            'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
+            'routes_list'                    => [
+                'pinned_route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.customer.delivery-address.update',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
                 ],
-                'pinned_address_id'              => $customer->delivery_address_id,
-                'home_address_id'                => $customer->address_id,
-                'current_selected_address_id'    => $customer->delivery_address_id,
-                'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
-                'routes_list'                    => [
-                    'pinned_route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.customer.delivery-address.update',
-                        'parameters' => [
-                            'customer' => $customer->id
-                        ]
-                    ],
-                    'delete_route'   => [
-                        'method'     => 'delete',
-                        'name'       => 'grp.models.customer.delivery-address.delete',
-                        'parameters' => [
-                            'customer' => $customer->id
-                        ]
-                    ],
-                    'store_route'     => [
-                        'method'      => 'post',
-                        'name'        => 'grp.models.customer.address.store',
-                        'parameters'  => [
-                            'customer' => $customer->id
-                        ]
+                'delete_route' => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.customer.delivery-address.delete',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
+                ],
+                'store_route'  => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.customer.address.store',
+                    'parameters' => [
+                        'customer' => $customer->id
                     ]
                 ]
-            ],
-
-
+            ]
         ];
     }
+
 }

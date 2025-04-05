@@ -40,7 +40,8 @@ class AddRetinaAddressToPalletReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'delivery_address' => ['sometimes', new ValidAddress()],
+            // 'delivery_address' => ['sometimes', new ValidAddress()],
+            'delivery_address_id' => ['required', 'exists:addresses,id'],
         ];
     }
 

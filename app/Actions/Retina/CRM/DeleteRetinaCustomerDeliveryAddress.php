@@ -34,14 +34,14 @@ class DeleteRetinaCustomerDeliveryAddress extends RetinaAction
 
     }
 
-    public function asController(Customer $customer, Address $address, ActionRequest $request): Customer
+    public function asController(Customer $customer, Address $address, ActionRequest $request): void
     {
         $this->address = $address;
         $customer      = $request->user()->customer;
 
         $this->initialisation($request);
 
-        return $this->handle($customer, $address);
+        $this->handle($customer, $address);
     }
 
     public function action(Customer $customer, Address $address): Customer

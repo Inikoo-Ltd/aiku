@@ -9,7 +9,7 @@ import { Head, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, inject, ref, watch } from "vue"
+import { computed, inject, provide, ref, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -108,14 +108,14 @@ const props = defineProps<{
     stored_items?: {}
     services?: {}
     service_list_route: routeType
-
+    addresses?: {}
     physical_goods?: {}
     physical_good_list_route: routeType
     stored_item_list_route : routeType
     stored_items_add_route : routeType
     routeStorePallet : routeType
     route_check_stored_items : routeType
-
+    address_update_route: routeType
     option_attach_file?: {
 		name: string
 		code: string
@@ -217,6 +217,22 @@ const onOpenModalAddPGood = async () => {
         })
     }
     isLoadingData.value = false
+}
+
+const deliveryListError = ref<string[]>([])
+provide('deliveryListError', deliveryListError.value)
+const onClickDisabledSubmit = () => {
+
+    if (!props.data?.data?.estimated_delivery_date) {
+        if (!deliveryListError.value?.includes('estimated_delivery_date')) {
+            deliveryListError.value?.push('estimated_delivery_date');
+        }
+    } else {
+        const index = deliveryListError.value?.indexOf('estimated_delivery_date');
+        if (index > -1) {
+            deliveryListError.value?.splice(index, 1);
+        }
+    }
 }
 
 const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
@@ -544,6 +560,8 @@ const openModalAddPallet = ref(false)
         :box_stats
         :updateRoute
         :notes_data
+        :addresses
+        :address_update_route
     />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"  />

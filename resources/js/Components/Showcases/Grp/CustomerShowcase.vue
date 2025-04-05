@@ -38,8 +38,9 @@ interface CustomerDropshipping {
     state: string
 }
 
-const props = defineProps<{
+defineProps<{
     data: {
+        can_open_address_management: boolean
         addresses: AddressManagement
         address_update_route: routeType
         customer: CustomerDropshipping
@@ -145,7 +146,7 @@ const isModalAddress = ref(false)
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                     <span class="" v-html="data?.customer?.address.formatted_address" />
 
-                                    <div @click="() => isModalAddress = true"
+                                    <div v-if="data.can_open_address_management"  @click="() => isModalAddress = true"
                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <!-- <FontAwesomeIcon icon='fal fa-pencil' size="sm" class='mr-1' fixed-width aria-hidden='true' /> -->
                                         <span>{{ trans('Edit') }}</span>

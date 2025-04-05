@@ -14,25 +14,34 @@ import { PalletReturn, BoxStats } from "@/types/Pallet"
 import { Link, router } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import { trans } from "laravel-vue-i18n"
+import DatePicker from '@vuepic/vue-datepicker'
 
 import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
+import Popover from '@/Components/Popover.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faPencil, faPenSquare } from "@fal"
+import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import ModalAddressCollection from "@/Components/Utils/ModalAddressCollection.vue"
+import ModalAddressCollection from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"
-library.add(faQuestionCircle, faPencil, faPenSquare)
+import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
+import { inject } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
 
 const props = defineProps<{
+  address_modal_title: string
 	dataPalletReturn: PalletReturn
 	boxStats: BoxStats
 	updateRoute: routeType
+	addresses: {}
+	address_update_route: routeType
 }>()
 console.log(props.boxStats, "asd")
 
@@ -45,12 +54,19 @@ onMounted(() => {
 	})
 })
 
+const layout = inject('layout', layoutStructure)
+const deliveryListError = inject('deliveryListError', [])
+
 // Method: Create new address
 const isModalAddress = ref(false)
 const isModalAddressCollection = ref(false)
 const enabled = ref(props.dataPalletReturn?.is_collection || false)
 const isLoading = ref<string | boolean>(false)
 const textValue = ref(props.boxStats?.collection_notes)
+const isLoadingSetEstimatedDate = ref<string | boolean>(false)
+
+// ✅ Auto-select collectionBy based on existing notes
+const collectionBy = ref(props.boxStats?.collection_notes ? 'thirdParty' : 'myself')
 
 // Computed property to intercept changes via v-model
 const computedEnabled = computed({
@@ -76,7 +92,7 @@ const computedEnabled = computed({
 					props.boxStats.fulfilment_customer.address.routes_address.store.parameters
 				),
 				{
-					delivery_address: filterDataAddress,
+					delivery_address_id: props.addresses?.current_selected_address_id || props.addresses?.pinned_address_id || props.addresses?.home_address_id,
 				},
 				{
 					preserveScroll: true,
@@ -130,6 +146,40 @@ const computedEnabled = computed({
 	},
 })
 
+// Update collection type (myself or thirdParty)
+function updateCollectionType() {
+	const payload: Record<string, any> = {
+		collection_by: collectionBy.value,
+	}
+
+	if (collectionBy.value === 'myself') {
+		payload.collection_notes = null
+		textValue.value = null // also clear in frontend
+	}
+
+	router.patch(
+		route(props.updateRoute.name, props.updateRoute.parameters),
+		payload,
+		{
+			preserveScroll: true,
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Collection type updated successfully"),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to update collection type"),
+					type: "error",
+				})
+			},
+		}
+	)
+}
+
 function updateCollectionNotes() {
 	router.patch(
 		route(props.updateRoute.name, props.updateRoute.parameters),
@@ -152,6 +202,49 @@ function updateCollectionNotes() {
 			},
 		}
 	)
+}
+
+const onChangeEstimateDate = async (close: Function) => {
+	try {
+		router.patch(
+			route(props.updateRoute.name, props.updateRoute.parameters),
+			{
+				estimated_delivery_date: props.dataPalletReturn.estimated_delivery_date
+			},
+			{
+				onStart: () => isLoadingSetEstimatedDate.value = true,
+				onError: () => {
+					notify({
+						title: "Failed",
+						text: "Failed to update the Delivery date, try again.",
+						type: "error",
+					})
+				},
+				onSuccess: () => {
+					const index = deliveryListError?.indexOf('estimated_delivery_date')
+					if (index > -1) {
+						deliveryListError?.splice(index, 1)
+					}
+					close()
+				},
+				onFinish: () => isLoadingSetEstimatedDate.value = false,
+			}
+		)
+	} catch (error) {
+		console.log(error)
+		notify({
+			title: "Failed",
+			text: "Failed to update the Delivery date, try again.",
+			type: "error",
+		})
+	}
+}
+
+// Disable selecting past dates
+const disableBeforeToday = (date: Date) => {
+	const today = new Date()
+	today.setHours(0, 0, 0, 0)
+	return date < today
 }
 </script>
 
@@ -253,17 +346,45 @@ function updateCollectionNotes() {
 			</div>
 
 			<!-- Field: Delivery Address -->
+			<div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
+				<dt class="flex-none">
+					<span class="sr-only">{{ boxStats.delivery_state.tooltip }}</span>
+					<FontAwesomeIcon :icon="['fal', 'calendar-day']" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
+				</dt>
+				<Popover v-if="dataPalletReturn.state === 'in_process'" position="">
+					<template #button>
+						<div v-if="dataPalletReturn?.estimated_delivery_date"
+							v-tooltip="retinaUseDaysLeftFromToday(dataPalletReturn?.estimated_delivery_date)"
+							class="group text-sm text-gray-500">
+							{{ useFormatTime(dataPalletReturn?.estimated_delivery_date) }}
+							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400 group-hover:text-gray-600" fixed-width aria-hidden="true" />
+						</div>
+						<div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
+							{{ trans('Set estimated delivery') }}
+						</div>
+					</template>
+					<template #content="{ close }">
+						<DatePicker v-model="dataPalletReturn.estimated_delivery_date"
+							@update:modelValue="() => onChangeEstimateDate(close)" inline auto-apply
+							:xdisabled-dates="disableBeforeToday" :enable-time-picker="false" />
+						<div v-if="isLoadingSetEstimatedDate" class="absolute inset-0 bg-white/70 flex items-center justify-center">
+							<LoadingIcon class="text-5xl" />
+						</div>
+					</template>
+				</Popover>
+				<div v-else>
+					<dd class="text-sm text-gray-500">
+						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('Not Set') }}
+					</dd>
+				</div>
+			</div>
+			<!-- Delivery Address / Collection by Section -->
 			<div class="flex flex-col w-full gap-y-2 mb-1">
-				<!-- Top Row: Icon and Switch -->
+				<!-- Top Row: Icon dan Switch -->
 				<div class="flex items-center gap-x-2">
 					<dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
 						<span class="sr-only">Delivery address</span>
-						<FontAwesomeIcon
-							icon="fal fa-map-marker-alt"
-							size="xs"
-							class="text-gray-400"
-							fixed-width
-							aria-hidden="true" />
+						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
 					</dt>
 					<SwitchGroup as="div" class="flex items-center">
 						<Switch
@@ -280,34 +401,54 @@ function updateCollectionNotes() {
 						</SwitchLabel>
 					</SwitchGroup>
 				</div>
-
-				<!-- Bottom Row: Address Display -->
-				<div
-					v-if="dataPalletReturn.is_collection !== true"
-					class="w-full text-xs text-gray-500">
+			
+				<div v-if="dataPalletReturn.is_collection" class="w-full">
+					<span class="block mb-1">{{ trans("Collection by:") }}</span>
+					<div class="flex space-x-4">
+						<label class="inline-flex items-center">
+							<input
+								type="radio"
+								value="myself"
+								v-model="collectionBy"
+								@change="updateCollectionType"
+								class="form-radio"
+							/>
+							<span class="ml-2">{{ trans("My Self") }}</span>
+						</label>
+						<label class="inline-flex items-center">
+							<input
+								type="radio"
+								value="thirdParty"
+								v-model="collectionBy"
+								@change="updateCollectionType"
+								class="form-radio"
+							/>
+							<span class="ml-2">{{ trans("Third Party") }}</span>
+						</label>
+					</div>
+					
+					<div v-if="collectionBy === 'thirdParty'" class="mt-3">
+						<Textarea
+							v-model="textValue"
+							@blur="updateCollectionNotes"
+							autoResize
+							rows="5"
+							class="w-full"
+							cols="30"
+							placeholder="Type additional notes..."
+						/>
+					</div>
+				</div>
+				<div v-else class="w-full text-xs text-gray-500">
+					Send to:
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-						<span
-							v-html="
-								boxStats.fulfilment_customer?.address?.value?.formatted_address
-							" />
+						<span v-html="boxStats.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
 							@click="() => (isModalAddressCollection = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-							<span>Edit</span>
+							<span>Choose Other Address</span>
 						</div>
 					</div>
-				</div>
-
-				<!-- Alternative Display for Collection -->
-				<div v-else class="w-full">
-					<Textarea
-						v-model="textValue"
-						@blur="updateCollectionNotes"
-						autoResize
-						rows="5"
-						class="w-full"
-						cols="30"
-						placeholder="typing..." />
 				</div>
 			</div>
 		</BoxStatPallet>
@@ -409,12 +550,11 @@ function updateCollectionNotes() {
 	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
 		<ModalAddress :addresses="boxStats.fulfilment_customer.address" :updateRoute />
 	</Modal>
-
 	<Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
 		<ModalAddressCollection
-			:addresses="boxStats.fulfilment_customer.address"
-			:updateRoute
-			:is_collection="dataPalletReturn.is_collection" />
+    :address_modal_title="address_modal_title"
+		:addresses="addresses"
+		:updateRoute="address_update_route" />
 	</Modal>
 </template>
 
