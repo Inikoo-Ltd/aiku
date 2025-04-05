@@ -107,7 +107,7 @@ class ShippingZoneSchema extends Model implements Auditable
         return 'slug';
     }
 
-    public function shippingZone(): HasMany
+    public function shippingZones(): HasMany
     {
         return $this->hasMany(ShippingZone::class);
     }
