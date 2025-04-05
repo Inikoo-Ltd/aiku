@@ -93,6 +93,7 @@ class ShowOrder extends OrgAction
         return $this->handle($order);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPurge(Organisation $organisation, Shop $shop, Purge $purge, Order $order, ActionRequest $request): Order
     {
         $this->parent = $purge;
@@ -103,7 +104,7 @@ class ShowOrder extends OrgAction
     }
 
 
-    public function htmlResponse(Order $order, ActionRequest $request): Response
+    public function getOrderTimeline(Order $order): array
     {
         $timeline = [];
         foreach (OrderStateEnum::cases() as $state) {
@@ -125,7 +126,7 @@ class ShowOrder extends OrgAction
             ];
         }
 
-        $finalTimeline = Arr::except(
+        return Arr::except(
             $timeline,
             [
                 $order->state->value == OrderStateEnum::CANCELLED->value
@@ -133,6 +134,126 @@ class ShowOrder extends OrgAction
                     : OrderStateEnum::CANCELLED->value
             ]
         );
+    }
+
+    public function getOrderNotes(Order $order): array
+    {
+        return [
+            "note_list" => [
+                [
+                    "label"    => __("Customer"),
+                    "note"     => $order->customer_notes ?? '',
+                    "editable" => false,
+                    "bgColor"  => "#FF7DBD",
+                    "field"    => "customer_notes"
+                ],
+                [
+                    "label"    => __("Public"),
+                    "note"     => $order->public_notes ?? '',
+                    "editable" => true,
+                    "bgColor"  => "#94DB84",
+                    "field"    => "public_notes"
+                ],
+                [
+                    "label"    => __("Private"),
+                    "note"     => $order->internal_notes ?? '',
+                    "editable" => true,
+                    "bgColor"  => "#FCF4A3",
+                    "field"    => "internal_notes"
+                ]
+            ]
+        ];
+    }
+
+    public function getOrderBoxStats(Order $order): array
+    {
+
+        $payAmount   = $order->total_amount - $order->payment_amount;
+        $roundedDiff = round($payAmount, 2);
+
+        $estWeight = ($order->estimated_weight ?? 0) / 1000;
+
+        return [
+            'customer' => array_merge(
+                CustomerResource::make($order->customer)->getArray(),
+                [
+                    'addresses' => [
+                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
+                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
+                    ],
+                ]
+            ),
+            'products' => [
+                'payment'          => [
+                    'routes'       => [
+                        'fetch_payment_accounts' => [
+                            'name'       => 'grp.json.shop.payment-accounts',
+                            'parameters' => [
+                                'shop' => $order->shop->slug
+                            ]
+                        ],
+                        'submit_payment'         => [
+                            'name'       => 'grp.models.order.payment.store',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+
+                    ],
+                    'total_amount' => (float)$order->total_amount,
+                    'paid_amount'  => (float)$order->payment_amount,
+                    'pay_amount'   => $roundedDiff,
+                ],
+                'estimated_weight' => $estWeight
+            ],
+
+            'order_summary' => [
+                [
+                    [
+                        'label'       => 'Items',
+                        'quantity'    => $order->stats->number_transactions,
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->net_amount
+                    ],
+                ],
+                [
+                    [
+                        'label'       => 'Charges',
+                        'information' => '',
+                        'price_total' => '0'
+                    ],
+                    [
+                        'label'       => 'Shipping',
+                        'information' => '',
+                        'price_total' => '0'
+                    ]
+                ],
+                [
+                    [
+                        'label'       => 'Net',
+                        'information' => '',
+                        'price_total' => $order->net_amount
+                    ],
+                    [
+                        'label'       => 'Tax 20%',
+                        'information' => '',
+                        'price_total' => $order->tax_amount
+                    ]
+                ],
+                [
+                    [
+                        'label'       => 'Total',
+                        'price_total' => $order->total_amount
+                    ]
+                ],
+                'currency' => CurrencyResource::make($order->currency),
+            ],
+        ];
+    }
+
+    public function htmlResponse(Order $order, ActionRequest $request): Response
+    {
+        $finalTimeline = $this->getOrderTimeline();
 
         $addresses = $order->customer->addresses;
 
@@ -166,12 +287,8 @@ class ShowOrder extends OrgAction
             }
         });
 
-        $addressCollection = AddressResource::collection($processedAddresses);
 
-        $payAmount   = $order->total_amount - $order->payment_amount;
-        $roundedDiff = round($payAmount, 2);
 
-        $estWeight = ($order->estimated_weight ?? 0) / 1000;
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
@@ -297,32 +414,31 @@ class ShowOrder extends OrgAction
         $deliveryNoteResource = null;
         if ($order->deliveryNotes()->first()) {
             $deliveryNoteRoute = [
-                    'deliveryNoteRoute' => [
-                        'name'        => 'grp.org.shops.show.ordering.orders.show.delivery-note',
-                        'parameters'  => array_merge($request->route()->originalParameters(), [
-                            'deliveryNote' => $order->deliveryNotes()->first()->slug
-                        ])
-                        ],
-                    'deliveryNotePdfRoute' => [
-                        'name' => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
-                        'parameters' => [
-                            'organisation' =>  $order->organisation->slug,
-                            'warehouse' => $order->deliveryNotes->first()->warehouse->slug,
-                            'deliveryNote' => $order->deliveryNotes()->first()->slug,
-                        ],
-                    ]
+                'deliveryNoteRoute'    => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
+                    'parameters' => array_merge($request->route()->originalParameters(), [
+                        'deliveryNote' => $order->deliveryNotes()->first()->slug
+                    ])
+                ],
+                'deliveryNotePdfRoute' => [
+                    'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'warehouse'    => $order->deliveryNotes->first()->warehouse->slug,
+                        'deliveryNote' => $order->deliveryNotes()->first()->slug,
+                    ],
+                ]
             ];
 
             $deliveryNoteResource = DeliveryNotesResource::make($order->deliveryNotes()->first());
-
         }
 
-        $customerAddressId              = $order->customer->address->id;
-        $customerDeliveryAddressId      = $order->customer->deliveryAddress->id;
-        $orderDeliveryAddressIds = Order::where('customer_id', $order->customer_id)
-                                            ->pluck('delivery_address_id')
-                                            ->unique()
-                                            ->toArray();
+        $customerAddressId         = $order->customer->address->id;
+        $customerDeliveryAddressId = $order->customer->deliveryAddress->id;
+        $orderDeliveryAddressIds   = Order::where('customer_id', $order->customer_id)
+            ->pluck('delivery_address_id')
+            ->unique()
+            ->toArray();
 
         $forbiddenAddressIds = array_merge(
             $orderDeliveryAddressIds,
@@ -332,7 +448,7 @@ class ShowOrder extends OrgAction
         $processedAddresses->each(function ($address) use ($forbiddenAddressIds) {
             if (in_array($address->id, $forbiddenAddressIds, true)) {
                 $address->setAttribute('can_delete', false)
-                        ->setAttribute('can_edit', true);
+                    ->setAttribute('can_edit', true);
             }
         });
 
@@ -379,50 +495,22 @@ class ShowOrder extends OrgAction
                             'order' => $order->slug
                         ]
                     ],
-                    'delivery_note' => $deliveryNoteRoute
+                    'delivery_note'    => $deliveryNoteRoute
                 ],
-                // 'alert'   => [  // TODO
-                //     'status'        => 'danger',
-                //     'title'         => 'Dummy Alert from BE',
-                //     'description'   => 'Dummy description'
-                // ],
-                'notes'       => [
-                    "note_list" => [
-                        [
-                            "label"    => __("Customer"),
-                            "note"     => $order->customer_notes ?? '',
-                            "editable" => false,
-                            "bgColor"  => "#FF7DBD",
-                            "field"    => "customer_notes"
-                        ],
-                        [
-                            "label"    => __("Public"),
-                            "note"     => $order->public_notes ?? '',
-                            "editable" => true,
-                            "bgColor"  => "#94DB84",
-                            "field"    => "public_notes"
-                        ],
-                        [
-                            "label"    => __("Private"),
-                            "note"     => $order->internal_notes ?? '',
-                            "editable" => true,
-                            "bgColor"  => "#FCF4A3",
-                            "field"    => "internal_notes"
-                        ]
-                    ]
-                ],
-                'timelines'   => $finalTimeline,
-                'address_update_route'  => [
+
+                'notes'                => $this->getOrderNotes($order),
+                'timelines'            => $finalTimeline,
+                'address_update_route' => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.customer.address.update',
                     'parameters' => [
                         'customer' => $order->customer_id
                     ]
                 ],
-                'addresses'   => [
-                    'isCannotSelect'                => true,
-                    'address_list'                  => $addressCollection,
-                    'options'                       => [
+                'addresses'            => [
+                    'isCannotSelect'                 => true,
+                    'address_list'                   => $addressCollection,
+                    'options'                        => [
                         'countriesAddressData' => GetAddressData::run()
                     ],
                     'pinned_address_id'              => $order->customer->delivery_address_id,
@@ -430,143 +518,67 @@ class ShowOrder extends OrgAction
                     'current_selected_address_id'    => $order->customer->delivery_address_id,
                     'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
                     'routes_list'                    => [
-                        'pinned_route'                   => [
+                        'pinned_route' => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.customer.delivery-address.update',
                             'parameters' => [
                                 'customer' => $order->customer_id
                             ]
                         ],
-                        'delete_route'  => [
+                        'delete_route' => [
                             'method'     => 'delete',
                             'name'       => 'grp.models.customer.delivery-address.delete',
                             'parameters' => [
                                 'customer' => $order->customer_id
                             ]
                         ],
-                        'store_route' => [
-                            'method'      => 'post',
-                            'name'        => 'grp.models.customer.address.store',
-                            'parameters'  => [
+                        'store_route'  => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.customer.address.store',
+                            'parameters' => [
                                 'customer' => $order->customer_id
                             ]
                         ]
                     ]
                 ],
 
-                'box_stats'      => [
-                    'customer'      => array_merge(
-                        CustomerResource::make($order->customer)->getArray(),
-                        [
-                            'addresses' => [
-                                'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
-                                'billing'  => AddressResource::make($order->billingAddress ?? new Address())
-                            ],
-                        ]
-                    ),
-                    'products'      => [
-                        'payment'          => [
-                            'routes'       => [
-                                'fetch_payment_accounts' => [
-                                    'name'       => 'grp.json.shop.payment-accounts',
-                                    'parameters' => [
-                                        'shop' => $order->shop->slug
-                                    ]
-                                ],
-                                'submit_payment'         => [
-                                    'name'       => 'grp.models.order.payment.store',
-                                    'parameters' => [
-                                        'order'    => $order->id]
-                                ]
-
-                            ],
-                            'total_amount' => (float) $order->total_amount,
-                            'paid_amount'  => (float) $order->payment_amount,
-                            'pay_amount'   => $roundedDiff,
-                        ],
-                        'estimated_weight' => $estWeight
-                    ],
-
-                    'order_summary' => [
-                        [
-                            [
-                                'label'       => 'Items',
-                                'quantity'    => $order->stats->number_transactions,
-                                'price_base'  => 'Multiple',
-                                'price_total' => $order->net_amount
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Charges',
-                                'information' => '',
-                                'price_total' => '0'
-                            ],
-                            [
-                                'label'       => 'Shipping',
-                                'information' => '',
-                                'price_total' => '0'
-                            ]
-                        ],
-                        [
-                            [
-                                'label'       => 'Net',
-                                'information' => '',
-                                'price_total' => $order->net_amount
-                            ],
-                            [
-                                'label'       => 'Tax 20%',
-                                'information' => '',
-                                'price_total' => $order->tax_amount
-                            ]
-                        ],
-                        [
-                            [
-                                'label'       => 'Total',
-                                'price_total' => $order->total_amount
-                            ]
-                        ],
-                        'currency' => CurrencyResource::make($order->currency),
-                    ],
-                ],
-                'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'           => OrderResource::make($order),
-                'delivery_note'  => $deliveryNoteResource,
+                'box_stats'     => $this->getOrderBoxStats($order),
+                'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
+                'data'          => OrderResource::make($order),
+                'delivery_note' => $deliveryNoteResource,
 
                 'attachmentRoutes' => [
                     'attachRoute' => [
-                        'name' => 'grp.models.order.attachment.attach',
+                        'name'       => 'grp.models.order.attachment.attach',
                         'parameters' => [
                             'order' => $order->id,
                         ]
                     ],
                     'detachRoute' => [
-                        'name' => 'grp.models.order.attachment.detach',
+                        'name'       => 'grp.models.order.attachment.detach',
                         'parameters' => [
                             'order' => $order->id,
                         ],
-                        'method' => 'delete'
+                        'method'     => 'delete'
                     ]
                 ],
-                // 'nonProductItems' => $nonProductItems,
-                // 'showcase'=> GetOrderShowcase::run($order),
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
-                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                     fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                     : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
+                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
-                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
-                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                     : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
+                    fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
-                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
-                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
             ]
         )
@@ -577,17 +589,23 @@ class ShowOrder extends OrgAction
                     prefix: OrderTabsEnum::TRANSACTIONS->value
                 )
             )
-            ->table(IndexInvoices::make()->tableStructure(
-                parent: $order,
-                prefix: OrderTabsEnum::INVOICES->value
-            ))
-            ->table(IndexAttachments::make()->tableStructure(
-                prefix: OrderTabsEnum::ATTACHMENTS->value
-            ))
-            ->table(IndexDeliveryNotes::make()->tableStructure(
-                parent: $order,
-                prefix: OrderTabsEnum::DELIVERY_NOTES->value
-            ));
+            ->table(
+                IndexInvoices::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::INVOICES->value
+                )
+            )
+            ->table(
+                IndexAttachments::make()->tableStructure(
+                    prefix: OrderTabsEnum::ATTACHMENTS->value
+                )
+            )
+            ->table(
+                IndexDeliveryNotes::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::DELIVERY_NOTES->value
+                )
+            );
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -757,10 +775,10 @@ class ShowOrder extends OrgAction
                         'shop'         => $order->shop->slug,
                         'customer'     => $this->parent->slug,
                         'order'        => $order->slug
-                        ]
+                    ]
 
-                        ]
-                    ],
+                ]
+            ],
             'grp.org.shops.show.ordering.purges.order' => [
                 'label' => $order->reference,
                 'route' => [

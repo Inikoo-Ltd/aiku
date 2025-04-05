@@ -13,6 +13,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\RetinaAction;
@@ -24,7 +25,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,34 +55,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $timeline = [];
-        foreach (OrderStateEnum::cases() as $state) {
-            if ($state === OrderStateEnum::CREATING) {
-                $timestamp = $order->created_at;
-            } else {
-                $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
-            }
 
-            // If all possible values are null, set the timestamp to null explicitly
-            $timestamp = $timestamp ?: null;
 
-            $timeline[$state->value] = [
-                'label'     => $state->labels()[$state->value],
-                'tooltip'   => $state->labels()[$state->value],
-                'key'       => $state->value,
-                /* 'icon'    => $palletDelivery->state->stateIcon()[$state->value]['icon'], */
-                'timestamp' => $timestamp
-            ];
-        }
-
-        $finalTimeline = Arr::except(
-            $timeline,
-            [
-                $order->state->value == OrderStateEnum::CANCELLED->value
-                    ? OrderStateEnum::DISPATCHED->value
-                    : OrderStateEnum::CANCELLED->value
-            ]
-        );
+        $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
 
         $addresses = $order->customer->addresses;
 
@@ -126,6 +101,8 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $actions = [];
+
+
         if ($this->canEdit) {
             $actions = match ($order->state) {
                 OrderStateEnum::CREATING => [
