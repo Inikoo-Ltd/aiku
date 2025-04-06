@@ -21,21 +21,20 @@ class SwitchPalletReturnDeliveryAddress extends OrgAction
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         if (isset($modelData['delivery_address_id'])) {
-            $palletReturn->delivery_address_id = $modelData['delivery_address_id'];
+            $palletReturn->delivery_address_id                               = $modelData['delivery_address_id'];
             $palletReturn->fulfilmentCustomer->customer->delivery_address_id = $modelData['delivery_address_id'];
             $palletReturn->fulfilmentCustomer->customer->save();
             $palletReturn->save();
         }
+
         return $palletReturn;
     }
 
     public function rules(): array
     {
-        $rules = [
-            'delivery_address_id'         => ['sometimes', 'nullable', 'exists:addresses,id'],
+        return [
+            'delivery_address_id' => ['sometimes', 'nullable', 'exists:addresses,id'],
         ];
-
-        return $rules;
     }
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn

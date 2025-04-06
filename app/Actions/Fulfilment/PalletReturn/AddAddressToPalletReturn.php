@@ -16,7 +16,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\Helpers\Address;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,17 +25,9 @@ class AddAddressToPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
-        // $addressData = $modelData['delivery_address'];
-        // data_set($addressData, 'group_id', $palletReturn->group_id);
-        // $add = Address::create($addressData);
-        // $palletReturn->refresh();
-        // $palletReturn->update([
-        //     'delivery_address_id' => $add->id,
-        //     'is_collection' => false
-        // ]);
         $palletReturn->update([
             'delivery_address_id' => Arr::pull($modelData, 'delivery_address_id'),
-            'is_collection' => false
+            'is_collection'       => false
         ]);
         PalletReturnRecordSearch::dispatch($palletReturn);
 

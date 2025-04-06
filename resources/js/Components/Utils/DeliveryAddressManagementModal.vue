@@ -7,7 +7,6 @@ import { ref } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -121,7 +120,6 @@ const onSelectAddress = (selectedAddress: Address) => {
             onFinish: () => isSelectAddressLoading.value = false
         }
     )
-    // props.addresses.value = selectedAddress
 }
 
 const isLoading = ref<string | boolean>(false)
@@ -148,7 +146,6 @@ const onPinnedAddress = (addressID: number) => {
 }
 // Method: Delete address
 const onDeleteAddress = (addressID: number) => {
-    // console.log('vvcxvcxvcx', props.addressesList.delete_route.method, route(props.addressesList.delete_route.name, props.addressesList.delete_route.parameters))
     router.delete(
         route(props.addresses.routes_list.delete_route.name, {
             ...props.addresses.routes_list.delete_route.parameters,
@@ -174,9 +171,6 @@ const onDeleteAddress = (addressID: number) => {
 
 <template>
     <div class="h-[600px] px-2 py-1 overflow-auto">
-    <!-- <pre>current selected {{ addresses.current_selected_address_id }}</pre>
-    <pre>pinned address {{ addresses.pinned_address_id }}</pre>
-    <pre>home {{ addresses.home_address_id }}</pre> -->
         <div class="flex justify-between border-b border-gray-300">
             <div class="text-2xl font-bold text-center mb-2 flex gap-x-2">
                 {{ address_modal_title }}
@@ -197,7 +191,6 @@ const onDeleteAddress = (addressID: number) => {
         </div>
 
         <div class="relative transition-all">
-            <!-- <Transition name="v"> -->
                 <div v-if="isCreateNewAddress" class="mx-auto max-w-96 py-4">
                     <div class="mb-2">{{ trans('Create new address')}} </div>
                     <div class="border border-gray-300 rounded-lg relative p-3 ">
@@ -215,11 +208,6 @@ const onDeleteAddress = (addressID: number) => {
                                 :disabled="!selectedAddress?.country_id"
                             />
                         </div>
-                        <!-- <Transition>
-                                <div class="absolute inset-0 bg-black/30 text-white text-lg rounded-md grid place-content-center">
-                                    Not editable
-                                </div>
-                            </Transition> -->
                     </div>
                 </div>
 
