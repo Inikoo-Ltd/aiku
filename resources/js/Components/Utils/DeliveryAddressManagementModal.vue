@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import PureAddress from '@/Components/Pure/PureAddress.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { ref } from 'vue'
 import { routeType } from '@/types/route'
@@ -23,26 +23,22 @@ const props = defineProps<{
     address_modal_title?: string
 }>()
 
-// const emits = defineEmits<{
-//     (e: 'setModal', value: boolean): void
-// }>()
-// console.log('address list', props.addresses.address_list)
+
 const homeAddress = props.addresses.address_list?.data.find(address => address.id === props.addresses.home_address_id)
 
 
 // Method: Create new address
 const isSubmitAddressLoading = ref(false)
 const onSubmitNewAddress = async (address: Address) => {
-    // console.log(props.addresses.value)
-    const filterDataAdddress = {...address}
-    delete filterDataAdddress.formatted_address
-    delete filterDataAdddress.country
-    delete filterDataAdddress.id  // Remove id cuz create new one
+    const filterDataAddress = {...address}
+    delete filterDataAddress.formatted_address
+    delete filterDataAddress.country
+    delete filterDataAddress.id  // Remove id cuz create new one
 
     router[props.addresses.routes_list.store_route.method || 'post'](
         route(props.addresses.routes_list.store_route.name, props.addresses.routes_list.store_route.parameters),
         {
-            delivery_address: filterDataAdddress
+            delivery_address: filterDataAddress
         },
         {
             preserveScroll: true,
@@ -50,8 +46,6 @@ const onSubmitNewAddress = async (address: Address) => {
             onFinish: () => {
                 isSubmitAddressLoading.value = false,
                 isCreateNewAddress.value = false
-                // isModalAddress.value = false
-                // emits('setModal', false)
             },
             onSuccess: () => {
                 notify({
@@ -80,16 +74,15 @@ const onEditAddress = (address: Address) => {
     selectedAddress.value = {...address}
 }
 const onSubmitEditAddress = (address: Address) => {
-    // console.log(props.addresses.value)
-    const filterDataAdddress = {...address}
-    delete filterDataAdddress.formatted_address
-    delete filterDataAdddress.country
-    delete filterDataAdddress.country_code
+    const filterDataAddress = {...address}
+    delete filterDataAddress.formatted_address
+    delete filterDataAddress.country
+    delete filterDataAddress.country_code
 
     router.patch(
         route(props.updateRoute.name, props.updateRoute.parameters),
         {
-            [props.keyPayloadEdit || 'address']: filterDataAdddress
+            [props.keyPayloadEdit || 'address']: filterDataAddress
         },
         {
             preserveScroll: true,
@@ -97,7 +90,6 @@ const onSubmitEditAddress = (address: Address) => {
             onFinish: () => {
                 isSubmitAddressLoading.value = false
                 isCreateNewAddress.value = false
-                // isModalAddress.value = false
             },
             onSuccess: () => {
                 notify({
