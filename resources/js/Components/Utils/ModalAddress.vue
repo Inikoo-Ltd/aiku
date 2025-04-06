@@ -196,7 +196,6 @@ const onDeleteAddress = (addressID: number) => {
     </div>
 
     <div class="relative transition-all">
-      <!-- <Transition name="v"> -->
       <div v-if="isCreateNewAddress" class="mx-auto max-w-96 py-4">
         <div class="mb-2">{{ trans("Create new address") }}</div>
         <div class="border border-gray-300 rounded-lg relative p-3 ">

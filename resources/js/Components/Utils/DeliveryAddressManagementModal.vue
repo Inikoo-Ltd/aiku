@@ -43,8 +43,8 @@ const onSubmitNewAddress = async (address: Address) => {
             preserveScroll: true,
             onStart: () => isSubmitAddressLoading.value = true,
             onFinish: () => {
-                isSubmitAddressLoading.value = false,
-                isCreateNewAddress.value = false
+              isSubmitAddressLoading.value = false;
+                isCreateNewAddress.value = false;
             },
             onSuccess: () => {
                 notify({
@@ -288,18 +288,6 @@ const onDeleteAddress = (addressID: number) => {
                                         </div>
 
                                         <div class="relative">
-                                        <!--     <Transition name="spin-to-right">
-                                                <FontAwesomeIcon v-if="addresses.current_selected_address_id == homeAddress?.id" icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
-                                                <Button
-                                                   
-                                                    @click="() => onSelectAddress(homeAddress)"
-                                                    :label="isSelectAddressLoading == homeAddress?.id ? '' : 'Use this'"
-                                                    size="xxs"
-                                                    type="tertiary"
-                                                    :loading="isSelectAddressLoading == homeAddress?.id"
-                                                    v-tooltip="'Apply to this section only'"
-                                                />
-                                            </Transition> -->
                                         </div>
                                     </div>
 
@@ -340,18 +328,6 @@ const onDeleteAddress = (addressID: number) => {
                                                 ({{ trans('No label') }})
                                             </div>
                                             <div class="relative">
-                                                <!-- <Transition name="spin-to-right">
-                                                    <FontAwesomeIcon v-if="addresses.current_selected_address_id == address.id" icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
-                                                    <Button
-                                                        v-else-if="!addresses.isCannotSelect"
-                                                        @click="() => onSelectAddress(address)"
-                                                        :label="isSelectAddressLoading == address.id ? '' : 'Use this'"
-                                                        size="xxs"
-                                                        type="tertiary"
-                                                        :loading="isSelectAddressLoading == address.id"
-                                                        v-tooltip="'Apply to this section only'"
-                                                    />
-                                                </Transition> -->
                                             </div>
                                         </div>
                                         <div class="flex items-center">
@@ -386,10 +362,7 @@ const onDeleteAddress = (addressID: number) => {
                         {{ trans('No address history found') }}
                     </div>
                 </div>
-            <!-- </Transition> -->
         </div>
 
     </div>
 </template>
-
-<style scoped></style>
