@@ -72,8 +72,8 @@ const props = defineProps<{
         items_storage: boolean
         dropshipping: boolean
     }
-
-
+    addresses?: {}
+    address_modal_title: string
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
     box_stats: BoxStats
