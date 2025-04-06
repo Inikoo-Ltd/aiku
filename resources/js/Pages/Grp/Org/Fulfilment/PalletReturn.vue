@@ -72,8 +72,7 @@ const props = defineProps<{
         items_storage: boolean
         dropshipping: boolean
     }
-    addresses?: {}
-    address_modal_title: string
+
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
     box_stats: BoxStats
@@ -98,7 +97,7 @@ const props = defineProps<{
 
 
 const locale = inject('locale', aikuLocaleStructure)
-const xstored_items_count = ref(props.stored_items_count || 0)
+const parsed_stored_items_count = ref(props.stored_items_count || 0)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -182,7 +181,7 @@ const onSubmitAddService = (data: Action, closedPopover: Function) => {
 
 // Tabs: Physical Goods
 const onOpenModalAddPGood = async () => {
-    isLoadingData.value = 'addPGood'
+    isLoadingData.value = 'addPhysicalGood'
     try {
         const xxx = await axios.get(
             route(props.physical_good_list_route.name, props.physical_good_list_route.parameters)
@@ -199,9 +198,9 @@ const onOpenModalAddPGood = async () => {
 }
 
 const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
-  formAddPhysicalGood.historic_asset_id = dataPGoodList.value.filter(pgood => pgood.id == formAddPhysicalGood.outer_id)[0].historic_asset_id
+  formAddPhysicalGood.historic_asset_id = dataPGoodList.value.filter(physical_good => physical_good.id == formAddPhysicalGood.outer_id)[0].historic_asset_id
 
-    isLoadingButton.value = 'addPGood'
+    isLoadingButton.value = 'addPhysicalGood'
     formAddPhysicalGood.post(
         route( data.route?.name, data.route?.parameters ),
         {
@@ -427,7 +426,7 @@ const isModalUploadFileOpen = ref(false)
                             <div class="flex justify-end mt-3">
                                 <Button
                                     :style="'save'"
-                                    :loading="isLoadingButton == 'addPGood'"
+                                    :loading="isLoadingButton == 'addPhysicalGood'"
                                     :disabled="!formAddPhysicalGood.outer_id || !(formAddPhysicalGood.quantity > 0)"
                                     :label="'save'"
                                     full
@@ -435,8 +434,8 @@ const isModalUploadFileOpen = ref(false)
                                 />
                             </div>
 
-                            <!-- Loading: fetching pgood list -->
-                            <div v-if="isLoadingData === 'addPGood'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                            <!-- Loading: fetching physical_good list -->
+                            <div v-if="isLoadingData === 'addPhysicalGood'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
                                 <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-5xl' fixed-width aria-hidden='true' />
                             </div>
                         </div>
@@ -449,11 +448,11 @@ const isModalUploadFileOpen = ref(false)
         <template #button-submit-stored-items="{ action }">
             <ButtonWithLink
                 :routeTarget="action.route"
-                :label="`${trans('Submit')} (${xstored_items_count})`"
+                :label="`${trans('Submit')} (${parsed_stored_items_count})`"
                 :icon="action.icon"
                 :iconRight="action.iconRight"
                 :style="action.style"
-                :tooltip="xstored_items_count ? '' : action.tooltip"
+                :tooltip="parsed_stored_items_count ? '' : action.tooltip"
                 :disabled="
                     action.disabled  // Need to improve
                 "   
@@ -498,7 +497,7 @@ const isModalUploadFileOpen = ref(false)
         :route_checkmark="currentTab == 'pallets' ? routeStorePallet : route_check_stored_items" 
         :palletReturn="data?.data"
         :detachRoute="attachmentRoutes?.detachRoute"
-        @isStoredItemAdded="(e: boolean) => (console.log(e), e ? xstored_items_count++ : xstored_items_count--)"
+        @isStoredItemAdded="(e: boolean) => (console.log(e), e ? parsed_stored_items_count++ : parsed_stored_items_count--)"
     >
         <template #button-empty-state-attachments="{ action }">
             <Button
