@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\PalletDelivery\UI;
 
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInDelivery;
 use App\Actions\Fulfilment\UI\Catalogue\Rentals\IndexFulfilmentRentals;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
@@ -898,29 +899,7 @@ class ShowPalletDelivery extends OrgAction
                         // 'total_price'                  => $palletDelivery->stats->total_price
                     ]
                 ],
-                'notes_data' => [
-                    [
-                        'label'    => __('Customer'),
-                        'note'     => $palletDelivery->customer_notes ?? '',
-                        'editable' => false,
-                        'bgColor'  => 'blue',
-                        'field'    => 'customer_notes'
-                    ],
-                    [
-                        'label'    => __('Public'),
-                        'note'     => $palletDelivery->public_notes ?? '',
-                        'editable' => true,
-                        'bgColor'  => 'pink',
-                        'field'    => 'public_notes'
-                    ],
-                    [
-                        'label'    => __('Private'),
-                        'note'     => $palletDelivery->internal_notes ?? '',
-                        'editable' => true,
-                        'bgColor'  => 'purple',
-                        'field'    => 'internal_notes'
-                    ],
-                ],
+                'notes_data'         => GetNotesData::run(model: $palletDelivery),
 
                 'option_attach_file' => [
                     [

@@ -15,14 +15,10 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import TablePalletReturn from "@/Components/PalletReturn/tablePalletReturn.vue"
 import TablePalletReturnPallets from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletReturnPallets.vue"
 import { routeType } from '@/types/route'
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import palletReturnDescriptor from "@/Components/PalletReturn/Descriptor/PalletReturn"
-import Tag from "@/Components/Tag.vue"
 import { BoxStats, PDRNotes, PalletReturn, UploadPallet } from '@/types/Pallet'
 import BoxStatsPalletReturn from '@/Pages/Grp/Org/Fulfilment/Return/BoxStatsPalletReturn.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
@@ -31,7 +27,6 @@ import { trans } from "laravel-vue-i18n"
 import TableStoredItemReturnStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemReturnStoredItems.vue"
 import { get } from "lodash"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Popover from "@/Components/Popover.vue"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import { Action } from "@/types/Action"
@@ -48,6 +43,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { AddressManagement } from "@/types/PureComponent/Address";
 library.add(faIdCardAlt, faUser, faPaperclip, faBuilding, faEnvelope, faPhone, faMapMarkerAlt, faNarwhal, faUndo, faUndoAlt )
 
 const props = defineProps<{
@@ -76,15 +72,22 @@ const props = defineProps<{
         items_storage: boolean
         dropshipping: boolean
     }
-    addresses?: {}
-    address_modal_title: string
+
+
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
     box_stats: BoxStats
     notes_data: PDRNotes[]
     route_check_stored_items : routeType
     routeStorePallet : routeType
-    address_update_route: routeType
+
+
+    address_management:{
+      updateRoute: routeType
+      addresses: AddressManagement
+      address_update_route: routeType,
+      address_modal_title: string
+    }
 
     option_attach_file?: {
 		name: string
@@ -482,8 +485,10 @@ const isModalUploadFileOpen = ref(false)
     </div>
 
     <!-- Section: Box Stats -->
-    <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute"  :addresses
-    :address_update_route :address_modal_title="address_modal_title"/>
+    <BoxStatsPalletReturn :dataPalletReturn="data.data"
+                          :boxStats="box_stats"
+                          :address_management
+    />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component 

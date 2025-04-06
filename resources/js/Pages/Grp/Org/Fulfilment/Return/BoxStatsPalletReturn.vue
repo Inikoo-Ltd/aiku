@@ -6,44 +6,44 @@
 
 <script setup lang="ts">
 import JsBarcode from "jsbarcode"
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import ModalAddress from "@/Components/Utils/ModalAddress.vue"
-
 import { PalletReturn, BoxStats } from "@/types/Pallet"
 import { Link, router } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import { trans } from "laravel-vue-i18n"
 import DatePicker from '@vuepic/vue-datepicker'
-
 import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import ModalAddressCollection from "@/Components/Utils/DeliveryAddressManagementModal.vue"
+import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import { inject } from "vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { AddressManagement } from "@/types/PureComponent/Address";
 library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
 
 const props = defineProps<{
-  address_modal_title: string
+
 	dataPalletReturn: PalletReturn
 	boxStats: BoxStats
-	updateRoute: routeType
-	addresses: {}
-	address_update_route: routeType
+  address_management:{
+    updateRoute: routeType
+    addresses: AddressManagement
+    address_update_route: routeType
+    address_modal_title: string
+  },
+
 }>()
-console.log(props.boxStats, "asd")
 
 onMounted(() => {
 	JsBarcode("#palletReturnBarcode", route().v().params.palletReturn, {
@@ -54,12 +54,11 @@ onMounted(() => {
 	})
 })
 
-const layout = inject('layout', layoutStructure)
 const deliveryListError = inject('deliveryListError', [])
 
 // Method: Create new address
 const isModalAddress = ref(false)
-const isModalAddressCollection = ref(false)
+const isDeliveryAddressManagementModal = ref(false)
 const enabled = ref(props.dataPalletReturn?.is_collection || false)
 const isLoading = ref<string | boolean>(false)
 const textValue = ref(props.boxStats?.collection_notes)
@@ -92,7 +91,7 @@ const computedEnabled = computed({
 					props.boxStats.fulfilment_customer.address.routes_address.store.parameters
 				),
 				{
-					delivery_address_id: props.addresses?.current_selected_address_id || props.addresses?.pinned_address_id || props.addresses?.home_address_id,
+					delivery_address_id: props.address_management.addresses?.current_selected_address_id || props.address_management.addresses?.pinned_address_id || props.address_management.addresses?.home_address_id,
 				},
 				{
 					preserveScroll: true,
@@ -158,7 +157,7 @@ function updateCollectionType() {
 	}
 
 	router.patch(
-		route(props.updateRoute.name, props.updateRoute.parameters),
+		route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
 		payload,
 		{
 			preserveScroll: true,
@@ -182,7 +181,7 @@ function updateCollectionType() {
 
 function updateCollectionNotes() {
 	router.patch(
-		route(props.updateRoute.name, props.updateRoute.parameters),
+		route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
 		{ collection_notes: textValue.value },
 		{
 			preserveScroll: true,
@@ -207,7 +206,7 @@ function updateCollectionNotes() {
 const onChangeEstimateDate = async (close: Function) => {
 	try {
 		router.patch(
-			route(props.updateRoute.name, props.updateRoute.parameters),
+			route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
 			{
 				estimated_delivery_date: props.dataPalletReturn.estimated_delivery_date
 			},
@@ -444,7 +443,7 @@ const disableBeforeToday = (date: Date) => {
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
 						<span v-html="boxStats.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
-							@click="() => (isModalAddressCollection = true)"
+							@click="() => (isDeliveryAddressManagementModal = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
 							<span>Choose Other Address</span>
 						</div>
@@ -460,7 +459,10 @@ const disableBeforeToday = (date: Date) => {
 			icon="fal fa-truck-couch">
 			<!-- Customer reference -->
 			<div class="mb-1">
-				<PalletEditCustomerReference :dataPalletDelivery="dataPalletReturn" :updateRoute />
+				<PalletEditCustomerReference
+          :dataPalletDelivery="dataPalletReturn"
+          :updateRoute="address_management.updateRoute"
+        />
 				<!-- :disabled="dataPalletReturn?.state !== 'in_process' && dataPalletReturn?.state !== 'submit'"-->
 			</div>
 
@@ -489,33 +491,6 @@ const disableBeforeToday = (date: Date) => {
 				</div>
 			</div>
 
-			<!-- Section: Pallets, Services, Physical Goods -->
-			<!-- <div class="border-t border-gray-300 mt-2 pt-2 space-y-0.5">
-                <div v-tooltip="trans('Count of pallets')" class="w-fit flex items-center gap-x-3">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-pallet' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="text-gray-500 text-sm font-medium tabular-nums">{{ dataPalletReturn.number_pallets }} <span class="text-gray-400 font-normal">{{ dataPalletReturn.number_pallets > 1 ? trans('Pallets') : trans('Pallet') }}</span></dd>
-                </div>
-                <div v-tooltip="trans('Count of stored items')" class="w-fit flex items-center gap-x-3">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-cube' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="text-gray-500 text-sm font-medium tabular-nums">{{ dataPalletReturn.number_stored_items }} <span class="text-gray-400 font-normal">{{ dataPalletReturn.number_pallets > 1 ? trans('Stored items') : trans('Stored item') }}</span></dd>
-                </div>
-                <div v-tooltip="trans('Count of services')" class="w-fit flex items-center gap-x-3">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-concierge-bell' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="text-gray-500 text-sm font-medium tabular-nums">{{ dataPalletReturn.number_services }} <span class="text-gray-400 font-normal">{{ dataPalletReturn.number_pallets > 1 ? trans('Services') : trans('Service') }}</span></dd>
-                </div>
-                <div v-tooltip="trans('Count of physical goods')" class="w-fit flex items-center gap-x-3">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-cube' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="text-gray-500 text-sm font-medium tabular-nums">{{ dataPalletReturn.number_physical_goods }} <span class="text-gray-400 font-normal">{{ dataPalletReturn.number_pallets > 1 ? trans('Physical goods') : trans('Physical good') }}</span></dd>
-                </div>
-            </div> -->
 		</BoxStatPallet>
 
 		<!-- Box: Order summary -->
@@ -548,13 +523,17 @@ const disableBeforeToday = (date: Date) => {
 	</div>
 
 	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-		<ModalAddress :addresses="boxStats.fulfilment_customer.address" :updateRoute />
+		<ModalAddress
+      :addresses="boxStats.fulfilment_customer.address"
+      :updateRoute="address_management.updateRoute"
+    />
 	</Modal>
-	<Modal :isOpen="isModalAddressCollection" @onClose="() => (isModalAddressCollection = false)">
-		<ModalAddressCollection
-    :address_modal_title="address_modal_title"
-		:addresses="addresses"
-		:updateRoute="address_update_route" />
+	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)">
+		<DeliveryAddressManagementModal
+    :address_modal_title="address_management.address_modal_title"
+		:addresses="address_management.addresses"
+		:updateRoute="address_management.address_update_route"
+    />
 	</Modal>
 </template>
 
