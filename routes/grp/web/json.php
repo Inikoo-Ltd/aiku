@@ -61,7 +61,6 @@ Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name(
 
 
 Route::get('shop/{shop}/catalogue/collection/{scope}/products', GetProducts::class)->name('shop.catalogue.collection.products');
-Route::get('shop/{shop}/catalogue/order/{order}/products', GetOrderProducts::class)->name('shop.catalogue.order.products');
 Route::get('shop/{shop}/catalogue/{scope}/departments', GetDepartments::class)->name('shop.catalogue.departments');
 Route::get('shop/{shop}/catalogue/{scope}/families', GetFamilies::class)->name('shop.catalogue.families');
 Route::get('shop/{shop}/catalogue/{scope}/collections', GetCollections::class)->name('shop.catalogue.collections');
@@ -75,3 +74,5 @@ Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-suppli
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 
 Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliveryUploads::class)->name('pallet_delivery.recent_uploads');
+
+Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');

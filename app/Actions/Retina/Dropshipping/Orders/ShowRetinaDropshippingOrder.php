@@ -295,10 +295,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         // ]
                     ],
                     'products_list'    => [
-                        // 'name'       => 'grp.json.shop.catalogue.order.products',
+                        // 'name'       => 'grp.json.order.products',
                         // 'parameters' => [
-                        //     'shop'  => $order->shop->slug,
-                        //     'order' => $order->slug
+                        //     'order' => $order->id
                         // ]
                     ],
                     'delivery_note' => $deliveryNoteRoute
