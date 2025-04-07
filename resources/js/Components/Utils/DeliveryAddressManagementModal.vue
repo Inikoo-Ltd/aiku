@@ -287,6 +287,8 @@ const onDeleteAddress = (addressID: number) => {
             <!-- Section: Address Home -->
             <div v-if="homeAddress" class="overflow-hidden relative text-xs ring-1 ring-gray-300 rounded-lg h-full transition-all">
               <div class="flex justify-between border-b border-gray-300 px-3 py-2"
+              :class="addresses.current_selected_address_id == homeAddress?.id ? 'bg-green-100' : 'bg-gray-100'"
+
               >
                 <!-- {{ homeAddresses.id }} -->
                 <div class="flex gap-x-1 items-center relative">
@@ -336,6 +338,7 @@ const onDeleteAddress = (addressID: number) => {
               >
                 <!-- {{ address.id }} -->
                 <div class="flex justify-between border-b border-gray-300 px-3 py-2"
+                :class="addresses.current_selected_address_id == address.id ? 'bg-green-100' : 'bg-gray-100'"
 
                 >
                   <div class="flex gap-x-1 items-center relative">
