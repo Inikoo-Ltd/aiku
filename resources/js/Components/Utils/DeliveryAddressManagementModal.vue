@@ -100,6 +100,7 @@ const onSubmitEditAddress = (address: Address) => {
                 isSubmitAddressLoading.value = false
                 isCreateNewAddress.value = false
                 // isModalAddress.value = false
+                isEditAddress.value = false
             },
             onSuccess: () => {
                 notify({
@@ -333,9 +334,9 @@ const onDeleteAddress = (addressID: number) => {
                                     <div class="flex items-center">
                                         <LoadingIcon v-if="isLoading == 'onPinned' + homeAddress?.id" class="px-0.5"/>
                                         <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1" @click="() => onPinnedAddress(homeAddress.id)"  class='px-0.5 py-1 cursor-pointer'
-                                                         :icon="addresses.pinned_address_id === homeAddress?.id ?  faThumbtackSolid: faThumbtack"
-                                                         :class="addresses.pinned_address_id === homeAddress?.id ? 'text-green-500' : 'text-gray-700 hover:text-gray-600'" fixed-width aria-hidden='true'
-                                                         v-tooltip="(addresses.pinned_address_id === homeAddress?.id ? trans('Current default delivery address') :trans('Select as default delivery address'))"
+                                                         :icon="addresses.pinned_address_id ?  faThumbtackSolid: faThumbtack"
+                                                         :class="addresses.pinned_address_id  ? 'text-green-700' : 'text-gray-700 hover:text-gray-600'" fixed-width aria-hidden='true'
+                                                         v-tooltip="(addresses.pinned_address_id  ? trans('Current default delivery address') :trans('Select as default delivery address'))"
                                         />
                                         <FontAwesomeIcon @click="() => onEditAddress(homeAddress)" icon='fal fa-pencil' class='px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Edit this address')" />
                                     </div>
@@ -383,14 +384,14 @@ const onDeleteAddress = (addressID: number) => {
                                         <div class="flex items-center">
                                             <LoadingIcon v-if="isLoading === 'onPinned' + address.id" class="px-0.5"/>
                                             <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1"
-                                                @click="() => addresses.pinned_address_id === address.id ? false : onPinnedAddress(address.id)"
-                                                             :icon="addresses.pinned_address_id === address.id ?  faThumbtackSolid: faThumbtack"
+                                                @click="() => addresses.pinned_address_id ? false : onPinnedAddress(address.id)"
+                                                             :icon="addresses.pinned_address_id ?  faThumbtackSolid: faThumbtack"
 
                                                 class='px-0.5 py-1 cursor-pointer'
-                                                :class="addresses.pinned_address_id === address.id ? 'text-green-500' : 'text-gray-700 hover:text-gray-600 cursor-pointer'"
+                                                :class="addresses.pinned_address_id ? 'text-green-700' : 'text-gray-700 hover:text-gray-600 cursor-pointer'"
                                                 fixed-width
                                                 aria-hidden='true'
-                                                             v-tooltip="(addresses.pinned_address_id === address.id ? trans('Current default delivery address') :trans('Select as default delivery address'))"
+                                                             v-tooltip="(addresses.pinned_address_id ? trans('Current default delivery address') :trans('Select as default delivery address'))"
 
                                             />
 
@@ -401,7 +402,7 @@ const onDeleteAddress = (addressID: number) => {
                                                 <FontAwesomeIcon v-else @click="() => onDeleteAddress(address.id)" icon='fal fa-trash-alt' class='px-0.5 py-1 text-gray-400 hover:text-red-500 cursor-pointer' fixed-width aria-hidden='true' v-tooltip="trans('Delete this address')" />
                                             </template>
                                         </div>
-                                    </div>
+                                    </div> 
                                     <div v-html="address.formatted_address" class="px-3 py-2"></div>
                                 </div>
                             </TransitionGroup>
