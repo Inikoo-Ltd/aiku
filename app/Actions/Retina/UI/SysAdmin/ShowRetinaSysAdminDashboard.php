@@ -8,6 +8,8 @@
 
 namespace App\Actions\Retina\UI\SysAdmin;
 
+use App\Actions\CRM\Customer\UI\GetCustomerAddressManagement;
+use App\Actions\Retina\SysAdmin\GetRetinaCustomerAddressManagement;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use Inertia\Inertia;
@@ -57,6 +59,7 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
 
                 ],
                 'customer'     => CustomersResource::make($this->fulfilmentCustomer->customer)->resolve(),
+                'address_management' => GetRetinaCustomerAddressManagement::run(customer:$this->fulfilmentCustomer->customer),
 
                 'stats'       => [
                     [

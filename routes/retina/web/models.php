@@ -52,6 +52,7 @@ use App\Actions\Retina\Media\DetachRetinaAttachmentFromModel;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use App\Actions\Retina\Shopify\HandleRetinaApiDeleteProductFromShopify;
 use App\Actions\Retina\Shopify\StoreRetinaProductShopify;
+use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToCustomer;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToFulfilmentCustomer;
 use App\Actions\Retina\SysAdmin\DeleteRetinaWebUser;
 use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
@@ -125,7 +126,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::patch('update', UpdateRetinaCustomer::class)->name('update');
 
     Route::patch('address/update', UpdateRetinaCustomerAddress::class)->name('address.update');
-    Route::post('delivery-address/store', AddRetinaDeliveryAddressToFulfilmentCustomer::class)->name('delivery-address.store');
+    Route::post('delivery-address/store', AddRetinaDeliveryAddressToCustomer::class)->name('delivery-address.store');
     Route::patch('delivery-address/update', UpdateRetinaCustomerDeliveryAddress::class)->name('delivery-address.update');
     Route::delete('delivery-address/{address:id}/delete', DeleteRetinaCustomerDeliveryAddress::class)->name('delivery-address.delete');
 });
