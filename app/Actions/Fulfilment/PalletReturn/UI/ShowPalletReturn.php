@@ -87,20 +87,13 @@ class ShowPalletReturn extends OrgAction
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             unset($navigation[PalletReturnTabsEnum::STORED_ITEMS->value]);
-
-
-
         } else {
             unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
             $this->tab = $request->get('tab', array_key_first($navigation));
-
         }
 
 
-
-
         $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit);
-
 
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
@@ -129,8 +122,8 @@ class ShowPalletReturn extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($palletReturn, $request),
-                    'next'     => $this->getNext($palletReturn, $request),
+                    'previous' => $this->getPrevious($this->parent, $palletReturn, $request),
+                    'next'     => $this->getNext($this->parent, $palletReturn, $request),
                 ],
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
@@ -415,40 +408,40 @@ class ShowPalletReturn extends OrgAction
         };
     }
 
-    public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getPrevious(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-        if ($this->parent instanceof FulfilmentCustomer) {
-            $previous = PalletReturn::where('fulfilment_customer_id', $this->parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
-        } elseif ($this->parent instanceof Fulfilment) {
-            $previous = PalletReturn::where('fulfilment_id', $this->parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
+        if ($parent instanceof FulfilmentCustomer) {
+            $previous = PalletReturn::where('fulfilment_customer_id', $parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
+        } elseif ($parent instanceof Fulfilment) {
+            $previous = PalletReturn::where('fulfilment_id', $parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
         } else {
             $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
         }
 
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($parent, $previous, $request->route()->getName());
     }
 
-    public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getNext(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-        if ($this->parent instanceof FulfilmentCustomer) {
-            $next = PalletReturn::where('fulfilment_customer_id', $this->parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
-        } elseif ($this->parent instanceof Fulfilment) {
-            $next = PalletReturn::where('fulfilment_id', $this->parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
+        if ($parent instanceof FulfilmentCustomer) {
+            $next = PalletReturn::where('fulfilment_customer_id', $parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
+        } elseif ($parent instanceof Fulfilment) {
+            $next = PalletReturn::where('fulfilment_id', $parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
         } else {
             $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
         }
 
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getNavigation($parent, $next, $request->route()->getName());
     }
 
-    private function getNavigation(?PalletReturn $palletReturn, string $routeName): ?array
+    private function getNavigation(Warehouse|FulfilmentCustomer|Fulfilment $parent, ?PalletReturn $palletReturn, string $routeName): ?array
     {
         if (!$palletReturn) {
             return null;
         }
 
 
-        return match (class_basename($this->parent)) {
+        return match (class_basename($parent)) {
             'Warehouse' => [
                 'label' => $palletReturn->reference,
                 'route' => [

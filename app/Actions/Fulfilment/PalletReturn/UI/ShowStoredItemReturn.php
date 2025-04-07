@@ -94,8 +94,8 @@ class ShowStoredItemReturn extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => ShowPalletReturn::make()->getPrevious($palletReturn, $request),
-                    'next'     => ShowPalletReturn::make()->getNext($palletReturn, $request),
+                    'previous' => ShowPalletReturn::make()->getPrevious($this->parent, $palletReturn, $request),
+                    'next'     => ShowPalletReturn::make()->getNext($this->parent, $palletReturn, $request),
                 ],
                 'pageHead'    => [
                     // 'container' => $container,
