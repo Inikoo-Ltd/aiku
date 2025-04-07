@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
+use App\Actions\CRM\Customer\UI\GetCustomerAddressManagement;
 use App\Actions\CRM\Customer\UI\GetCustomerShowcase;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
@@ -62,6 +63,11 @@ class GetFulfilmentCustomerShowcase
             ],
             'status'                => $fulfilmentCustomer->customer->status,
             'additional_data'       => $fulfilmentCustomer->data,
+
+
+            'address_management' => GetCustomerAddressManagement::run(customer: $fulfilmentCustomer->customer),
+
+            //todo this will go to GetCustomerAddressManagement
             'address_update_route'  => [
                 'method'     => 'patch',
                 'name'       => 'grp.models.fulfilment-customer.address.update',
@@ -70,6 +76,8 @@ class GetFulfilmentCustomerShowcase
                 ]
             ],
             'addresses'   => GetCustomerShowcase::make()->getAddresses($fulfilmentCustomer->customer),
+            //================
+
 
             'currency_code' => $fulfilmentCustomer->customer->shop->currency->code,
             'balance'       => [
