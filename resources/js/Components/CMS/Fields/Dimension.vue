@@ -13,8 +13,6 @@ const model = defineModel<typeof defaultModel>({
     default: () => ({ height: { value: null, unit: 'px' }, width: { value: null, unit: '%' } })
 })
 
-// Pastikan model tidak null atau undefined
-const normalizedModel = computed(() => model.value ?? defaultModel)
 
 onMounted(() => {
     if (!model.value) {
