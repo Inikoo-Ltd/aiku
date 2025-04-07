@@ -138,9 +138,55 @@ class ShowOrganisationDashboard extends OrgAction
 
         $orderingHandling = $organisation->orderHandlingStats;
         $currencyCode = $organisation->currency->code;
+        $crmStats = $organisation->crmStats;
         $dashboard['widgets']['components'] = array_merge(
             $dashboard['widgets']['components'],
             [
+                $this->getWidget(
+                    data: [
+                        'value'       => $crmStats->number_customers,
+                        'description' => __('Total Customer'),
+                        'type'        => 'number',
+                        /*  'route'       => [
+                             'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
+                             'parameters' => [
+                                 'organisation' => $fulfilment->organisation->slug,
+                                 'fulfilment'   => $fulfilment->slug,
+                                 'deliveries_elements[state]' => 'submitted'
+                             ]
+                         ] */
+                    ],
+                ),
+                $this->getWidget(
+                    data: [
+                        'value'       => $crmStats->number_customers_state_active,
+                        'description' => __('Active Customer'),
+                        'type'        => 'number',
+                        /*  'route'       => [
+                             'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
+                             'parameters' => [
+                                 'organisation' => $fulfilment->organisation->slug,
+                                 'fulfilment'   => $fulfilment->slug,
+                                 'deliveries_elements[state]' => 'submitted'
+                             ]
+                         ] */
+                    ],
+                ),
+                $this->getWidget(
+                    data: [
+                        'value'       => $crmStats->number_customers_trade_state_many,
+                        'description' => __('Customers With Orders'),
+                        'type'        => 'number',
+                         /* 'route'       => [
+                             'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
+                             'parameters' => [
+                                 'organisation' => $fulfilment->organisation->slug,
+                                 'fulfilment'   => $fulfilment->slug,
+                                 'deliveries_elements[state]' => 'submitted'
+                             ]
+                         ] */
+                    ],
+                ),
                 !app()->environment('production') ?
                 $this->getWidget(
                     data: [
@@ -149,7 +195,7 @@ class ShowOrganisationDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'label' => $orderingHandling->number_orders_state_creating,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
@@ -158,12 +204,11 @@ class ShowOrganisationDashboard extends OrgAction
                                 ]
                             ],
                             [
-                                'tab_slug' => 'submitted_unpaid',
-                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'label' => $orderingHandling->orders_state_creating_amount_org_currency,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_org_currency"},
+                                    'label' => $orderingHandling->{"orders_state_creating_amount_org_currency"},
                                     'type' => 'currency'
                                 ]
                             ]
