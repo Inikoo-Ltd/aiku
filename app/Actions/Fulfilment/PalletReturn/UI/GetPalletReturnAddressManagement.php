@@ -81,28 +81,28 @@ class GetPalletReturnAddressManagement
                 'routes_list'                    => [
                     'switch_route' => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.pallet-return.address.switch',
+                        'name'       => $forRetina ? 'retina.models.pallet-return.address.switch' : 'grp.models.pallet-return.address.switch',
                         'parameters' => [
                             'palletReturn' => $palletReturn->id
                         ]
                     ],
                     'pinned_route' => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.customer.delivery-address.update',
+                        'name'       => $forRetina ? 'retina.models.customer.delivery-address.update' : 'grp.models.customer.delivery-address.update',
                         'parameters' => [
                             'customer' => $palletReturn->fulfilmentCustomer->customer_id
                         ]
                     ],
                     'delete_route' => [
                         'method'     => 'delete',
-                        'name'       => 'grp.models.customer.delivery-address.delete',
+                        'name'       => $forRetina ? 'retina.models.customer.delivery-address.delete' : 'grp.models.customer.delivery-address.delete',
                         'parameters' => [
                             'customer' => $palletReturn->fulfilmentCustomer->customer_id
                         ]
                     ],
                     'store_route'  => [
                         'method'     => 'post',
-                        'name'       => 'grp.models.customer.address.store',
+                        'name'       => $forRetina ? 'retina.models.customer.delivery-address.store' : 'grp.models.customer.address.store',
                         'parameters' => [
                             'customer' => $palletReturn->fulfilmentCustomer->customer_id
                         ]
