@@ -97,6 +97,12 @@ class GetFulfilmentCustomerShowcase
                     'customer' => $fulfilmentCustomer->customer_id
                 ]
             ],
+            'updateBalanceRoute' => [
+                'name'       => 'grp.models.customer_balance.update',
+                'parameters' => [
+                    'customer' => $fulfilmentCustomer->customer_id
+                ]
+            ],
         ];
     }
 

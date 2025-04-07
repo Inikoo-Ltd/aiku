@@ -185,21 +185,20 @@ class ShowGroupDashboard extends OrgAction
                         'type' => 'double_number',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'label' => $orderingHandling->number_orders_state_creating,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_grp_currency"},
+                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_org_currency"},
                                     'type' => 'currency'
                                 ]
                             ],
                             [
-                                'tab_slug' => 'submitted_unpaid',
-                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'label' => $orderingHandling->orders_state_creating_amount_grp_currency,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_grp_currency"},
+                                    'label' => $orderingHandling->{"orders_state_creating_amount_grp_currency"},
                                     'type' => 'currency'
                                 ]
                             ]
