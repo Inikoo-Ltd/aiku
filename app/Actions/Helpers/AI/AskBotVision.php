@@ -12,6 +12,7 @@ namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Actions\OrgAction;
+use Illuminate\Support\Facades\File;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Vision\ImageSource;
 use LLPhant\Chat\Vision\VisionMessage;
@@ -55,8 +56,10 @@ class AskBotVision extends OrgAction
 
     public function asController(ActionRequest $request)
     {
-        if (!$request->input('url')) {
-            $urlOrBase64Image = $request->input('image_base64');
+        $image = $request->file('image');
+        $urlOrBase64Image = '';
+        if ($image && $image->isValid()) {
+            $urlOrBase64Image = base64_encode(file_get_contents($image->getRealPath()));
         } else {
             $urlOrBase64Image = $request->input('url');
         }
@@ -69,7 +72,7 @@ class AskBotVision extends OrgAction
     {
         return [
             'url'   => ['required_without:image', 'url'],
-            'image_base64' => ['required_without:url', 'string'],
+            'image' => ['required_without:url', File::image()->max(20 * 1024) ],
             'prompt' => ['required', 'in:default,alt'],
         ];
     }
