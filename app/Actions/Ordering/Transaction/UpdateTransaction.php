@@ -25,7 +25,7 @@ class UpdateTransaction extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(Transaction $transaction, array $modelData): Transaction
+    public function handle(Transaction $transaction, array $modelData): Transaction|bool
     {
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
             if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
@@ -94,7 +94,7 @@ class UpdateTransaction extends OrgAction
         return $rules;
     }
 
-    public function action(Transaction $transaction, array $modelData, bool $strict = true): Transaction
+    public function action(Transaction $transaction, array $modelData, bool $strict = true): Transaction|bool
     {
         $this->strict = $strict;
         $this->initialisationFromShop($transaction->shop, $modelData);
