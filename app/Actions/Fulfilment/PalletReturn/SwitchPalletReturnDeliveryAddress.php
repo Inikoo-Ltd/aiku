@@ -22,8 +22,6 @@ class SwitchPalletReturnDeliveryAddress extends OrgAction
     {
         if (isset($modelData['delivery_address_id'])) {
             $palletReturn->delivery_address_id                               = $modelData['delivery_address_id'];
-            $palletReturn->fulfilmentCustomer->customer->delivery_address_id = $modelData['delivery_address_id'];
-            $palletReturn->fulfilmentCustomer->customer->save();
             $palletReturn->save();
         }
 
