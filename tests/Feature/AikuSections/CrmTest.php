@@ -19,6 +19,7 @@ use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
@@ -45,6 +46,7 @@ use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -55,6 +57,7 @@ use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -1103,3 +1106,46 @@ test('UI Index polls', function () {
 test('inventory  hydrator', function () {
     $this->artisan('hydrate -s crm')->assertExitCode(0);
 });
+
+// update balance
+test('add balance customer', function (Customer $customer) {
+    $creditTransaction = UpdateBalanceCustomer::make()->action(
+        $customer,
+        [
+            'amount' => 100,
+            'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER->value,
+            'notes' => 'test',
+        ]
+    );
+    $customer->refresh();
+
+    expect($customer)->toBeInstanceOf(Customer::class)
+        ->and((int)$customer->balance)->toBe(100);
+
+    expect($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
+        ->and((int)$creditTransaction->amount)->toBe(100)
+        ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::ADD_FUNDS_OTHER)
+        ->and($creditTransaction->notes)->toBe('test');
+
+    return $customer;
+})->depends('create customer');
+
+test('windraw balance customer', function (Customer $customer) {
+    $creditTransaction = UpdateBalanceCustomer::make()->action(
+        $customer,
+        [
+            'amount' => 100,
+            'type'   => CreditTransactionTypeEnum::MONEY_BACK->value,
+        ]
+    );
+    $customer->refresh();
+
+    expect($customer)->toBeInstanceOf(Customer::class)
+        ->and((int)$customer->balance)->toBe(0);
+
+    expect($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
+        ->and((int)$creditTransaction->amount)->toBe(-100)
+        ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::MONEY_BACK);
+
+    return $customer;
+})->depends('add balance customer');
