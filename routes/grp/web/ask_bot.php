@@ -12,5 +12,6 @@ use App\Actions\Helpers\AI\AskBot;
 use App\Actions\Helpers\AI\AskBotVision;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', AskBot::class)->name('index');
 Route::post('/vision', AskBotVision::class)->name('vision.index');
+Route::get('/', AskBot::class)->name('index');
+

@@ -11,6 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
 import { cloneDeep } from "lodash-es"
+import { router } from "@inertiajs/vue3"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
 
@@ -27,6 +28,20 @@ const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const addedFiles = ref<File[]>([])
 
+const setAlt = (formData) => {
+    router.post(route("grp.ask-bot.vision.index"), 
+        { image: formData,
+          prompt : 'what is the correct alt for this image?'
+        }, 
+        {
+            onSuccess: (e) => {
+               console.log(e)
+            },
+        }
+    );
+}
+
+
 const handleUpload = async () => {
     try {
         const formData = new FormData()
@@ -41,6 +56,7 @@ const handleUpload = async () => {
         const updatedModelValue = { ...props.modelValue, ...cloneDeep(response.data.data[0].source) }
         emits("update:modelValue", updatedModelValue)
         emits("autoSave")
+        setAlt(formData)
         addedFiles.value = []
     } catch (error) {
         console.log(error)
