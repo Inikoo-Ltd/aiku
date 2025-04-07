@@ -3,7 +3,7 @@ import PureAddress from "@/Components/Pure/PureAddress.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { routeType } from "@/types/route";
 import { trans } from "laravel-vue-i18n";
 import { Address, AddressManagement } from "@/types/PureComponent/Address";
@@ -23,8 +23,11 @@ const props = defineProps<{
 }>();
 
 
-const homeAddress = props.addresses.address_list?.data.find(address => address.id === props.addresses.home_address_id);
-
+const homeAddress = computed(() => {
+    return props.addresses.address_list?.data.find(
+        address => address.id === props.addresses.home_address_id
+    )
+})
 
 const isSubmitAddressLoading = ref(false);
 const onSubmitNewAddress = async (address: Address) => {

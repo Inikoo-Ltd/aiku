@@ -3,7 +3,7 @@ import PureAddress from '@/Components/Pure/PureAddress.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
@@ -28,9 +28,11 @@ const props = defineProps<{
 //     (e: 'setModal', value: boolean): void
 // }>()
 // console.log('address list', props.addresses.address_list)
-const homeAddress = props.addresses.address_list?.data.find(address => address.id === props.addresses.home_address_id)
-
-console.log(props.addresses, 'home address', homeAddress);
+const homeAddress = computed(() => {
+    return props.addresses.address_list?.data.find(
+        address => address.id === props.addresses.home_address_id
+    )
+})
 
 // Method: Create new address
 const isSubmitAddressLoading = ref(false)
@@ -320,13 +322,7 @@ const onDeleteAddress = (addressID: number) => {
                                                 type="tertiary"
                                                 :loading="isSelectAddressLoading == homeAddress?.id"/>
                                             </Transition>
-                                              <!--   v-if="addresses.current_selected_address_id != homeAddress?.id" -->
-                                          <!--   <Button
-                                                @click="() => onSelectAddress(homeAddress)"
-                                                :label="isSelectAddressLoading == homeAddress?.id ? '' : 'Use this'"
-                                                size="xxs"
-                                                type="tertiary"
-                                                :loading="isSelectAddressLoading == homeAddress?.id"/> -->
+                                            
                                         </div>
                                     </div>
 
