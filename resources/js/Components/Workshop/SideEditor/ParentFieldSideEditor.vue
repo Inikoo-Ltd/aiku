@@ -39,6 +39,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor')
 }
 
+
 </script>
 
 <template>
@@ -58,7 +59,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                         :modelValue="getFormValue(modelValue, blueprint.key)"
                         :key="blueprint.key "
                         :uploadImageRoute="uploadImageRoute" 
-                        @update:modelValue="newValue => onPropertyUpdate(blueprint.key, newValue)"
+                        @update:modelValue="(newValue,fieldKeys) => onPropertyUpdate(fieldKeys ? fieldKeys : blueprint.key, newValue)"
                     />
                 </template>
 
@@ -72,11 +73,12 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
                     </div>
                     <component 
                         :is="getComponent(blueprint.type)" 
-                        :key="blueprint.key "
+                        :key="blueprint.key"
+                        :content="modelValue"
                         :modelValue="getFormValue(modelValue, blueprint.key)"
                         :uploadRoutes="uploadImageRoute" 
-                        v-bind="blueprint?.props_data" 
-                        @update:modelValue="newValue => onPropertyUpdate(blueprint.key, newValue)"
+                        v-bind="blueprint?.props_data"
+                        @update:modelValue="(newValue,fieldKeys) => onPropertyUpdate(fieldKeys ? fieldKeys : blueprint.key, newValue)"
                     />
                 </template>
             </div>
@@ -88,9 +90,9 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
             <ChildFieldSideEditor
                 :blueprint="blueprint.replaceForm"
                 :modelValue="getFormValue(modelValue, blueprint.key)"
-                :key="blueprint.key "
+                :key="blueprint.key"
                 :uploadImageRoute="uploadImageRoute" 
-                @update:modelValue="newValue => onPropertyUpdate(blueprint.key, newValue)"
+                @update:modelValue="(newValue,fieldKeys) => onPropertyUpdate(fieldKeys ? fieldKeys : blueprint.key, newValue)"
             />
         </template>
 
@@ -109,13 +111,12 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
             </div>
             <component 
                 :is="getComponent(blueprint.type)" 
-                :key="blueprint.key "
+                :key="blueprint.key"
                 :uploadRoutes="uploadImageRoute" 
-                v-bind="blueprint?.props_data" 
+                v-bind="blueprint?.props_data"
+                :content="modelValue"
                 :modelValue="getFormValue(modelValue, blueprint.key)"
-                @update:modelValue="newValue => {
-                    onPropertyUpdate(blueprint.key, newValue)
-                }"
+               @update:modelValue="(newValue,fieldKeys) => onPropertyUpdate(fieldKeys ? fieldKeys : blueprint.key, newValue)"
             />
         </template>
     </div>

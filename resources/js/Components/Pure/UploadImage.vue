@@ -15,14 +15,13 @@ import { router } from "@inertiajs/vue3"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
 
-const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string }>()
+const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string, content?: any }>()
 const emits = defineEmits<{
     (e: "update:modelValue", value: any): void
     (e: "onUpload", value: Files[]): void
     (e: "autoSave"): void
 }>()
 
-console.log("UploadImage component loaded",props.modelValue)
 
 const isOpenGalleryImages = ref(false)
 const isDragging = ref(false)
@@ -42,7 +41,7 @@ const setAlt = async (imageFile) => {
         });
 
         console.log("Alt text request successful:", response.data);
-        return response.data; // optional: return data if needed
+        emits("update:modelValue",  response.data.content,['alt'])
 
     } catch (error) {
         console.error("Alt text request failed:", error);
