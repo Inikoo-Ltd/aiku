@@ -131,16 +131,17 @@ class GetPalletReturnActions
     public function getPalletReturnConfirmedActions(PalletReturn $palletReturn): array
     {
         $actions = [];
+
+
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $actions = array_merge(
-                $actions,
+            $actions[] =
                 [
                     'type'    => 'button',
                     'style'   => 'negative',
-                    'tooltip' => __('In Process'),
-                    'label'   => __('In Process'),
+                    'label'   => '',
+                    'tooltip' => __('Send return back to In Process'),
                     'key'     => 'in process',
-                    'icon'    => 'fal fa-undo',
+                    'icon'    => 'fal fa-arrow-alt-left',
                     'route'   => [
                         'method'     => 'post',
                         'name'       => 'grp.models.pallet-return.revert-to-in-process',
@@ -148,18 +149,18 @@ class GetPalletReturnActions
                             'palletReturn' => $palletReturn->id
                         ]
                     ]
-                ]
-            );
+                ];
         }
 
-        return array_merge(
-            $actions,
+
+        $actions[] =
             [
                 'type'    => 'button',
                 'style'   => 'save',
                 'tooltip' => __('Start picking'),
                 'label'   => __('start picking'),
                 'key'     => 'start picking',
+                'icon'    => 'fal fa-arrow-alt-right',
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'grp.models.fulfilment-customer.pallet-return.picking',
@@ -170,8 +171,9 @@ class GetPalletReturnActions
                         'palletReturn'       => $palletReturn->id
                     ]
                 ]
-            ]
-        );
+            ];
+
+        return $actions;
     }
 
     public function getPalletReturnPickingActions(PalletReturn $palletReturn): array
@@ -179,8 +181,7 @@ class GetPalletReturnActions
         $actions = [];
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $actions = array_merge(
-                $actions,
+            $actions[]=
                 [
                     'type'    => 'button',
                     'style'   => 'save',
@@ -197,8 +198,8 @@ class GetPalletReturnActions
                             'palletReturn'       => $palletReturn->id
                         ]
                     ]
-                ]
-            );
+                ];
+
         }
         //else{
         //todo , Kirin if this will not be implemented remove it and delete the action/route
@@ -246,9 +247,8 @@ class GetPalletReturnActions
 
     public function addServicesActions(PalletReturn $palletReturn, array $actions): array
     {
-        if ($palletReturn->recurringBill->status == RecurringBillStatusEnum::CURRENT) {
-            $actions = array_merge(
-                $actions,
+        if ($palletReturn->recurringBill && $palletReturn->recurringBill->status == RecurringBillStatusEnum::CURRENT) {
+            $actions[] =
                 [
                     'type'   => 'buttonGroup',
                     'key'    => 'upload-add',
@@ -257,7 +257,7 @@ class GetPalletReturnActions
                             'type'    => 'button',
                             'style'   => 'secondary',
                             'icon'    => 'fal fa-plus',
-                            'label'   => __('add service'),
+                            'label'   => __('service'),
                             'key'     => 'add-service',
                             'tooltip' => __('Add single service'),
                             'route'   => [
@@ -272,7 +272,7 @@ class GetPalletReturnActions
                             'style'   => 'secondary',
                             'icon'    => 'fal fa-plus',
                             'key'     => 'add-physical-good',
-                            'label'   => __('add physical good'),
+                            'label'   => __('physical good'),
                             'tooltip' => __('Add physical good'),
                             'route'   => [
                                 'name'       => 'grp.models.pallet-return.transaction.store',
@@ -282,8 +282,7 @@ class GetPalletReturnActions
                             ]
                         ],
                     ]
-                ]
-            );
+                ];
         }
 
         return $actions;
@@ -299,7 +298,8 @@ class GetPalletReturnActions
                 [
                     'type'    => 'button',
                     'style'   => 'delete',
-                    'tooltip' => __('delete'),
+                    'label'   => '',
+                    'tooltip' => __('delete return'),
                     'key'     => 'delete_return',
                     'route'   => [
                         'method'     => 'patch',

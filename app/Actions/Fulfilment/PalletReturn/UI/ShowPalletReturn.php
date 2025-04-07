@@ -102,6 +102,7 @@ class ShowPalletReturn extends OrgAction
         $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit);
 
 
+
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
                 'label' => '('.__("Customer's SKUs").')'

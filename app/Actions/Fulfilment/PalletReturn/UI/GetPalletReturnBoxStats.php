@@ -102,7 +102,7 @@ class GetPalletReturnBoxStats
         ];
     }
 
-    public function getRecurringBillData(PalletReturn $palletReturn, FulfilmentCustomer|Fulfilment $parent): array
+    public function getRecurringBillData(PalletReturn $palletReturn, FulfilmentCustomer|Fulfilment $parent): ?array
     {
         $recurringBillData = null;
         if ($palletReturn->recurringBill) {
