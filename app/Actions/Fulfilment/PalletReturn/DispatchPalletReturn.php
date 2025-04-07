@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
+use App\Actions\Comms\Email\SendPalletReturnDispatchedNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\DispatchFulfilmentOrderShopify;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
@@ -87,6 +88,7 @@ class DispatchPalletReturn extends OrgAction
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
         SendPalletReturnNotification::run($palletReturn);
         PalletReturnRecordSearch::dispatch($palletReturn);
+        SendPalletReturnDispatchedNotification::dispatch($palletReturn->fulfilmentCustomer->customer);
 
         return $palletReturn;
     }

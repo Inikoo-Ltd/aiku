@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\PalletDelivery;
 
 use App\Actions\Catalogue\HasRentalAgreement;
+use App\Actions\Comms\Email\SendPalletDeliveryProcessedNotification;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
@@ -77,6 +78,7 @@ class StorePalletDelivery extends OrgAction
 
 
         SendPalletDeliveryNotification::dispatch($palletDelivery);
+        SendPalletDeliveryProcessedNotification::dispatch($palletDelivery->fulfilmentCustomer->customer);
 
         return $palletDelivery;
     }
