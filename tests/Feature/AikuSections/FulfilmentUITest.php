@@ -595,6 +595,31 @@ test('UI show fulfilment customer (agreed prices tab)', function () {
     });
 });
 
+test('UI show fulfilment customer (tab balance)', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->customer->fulfilmentCustomer->slug,
+        'tab' => 'balance'
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Fulfilment/FulfilmentCustomer')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->customer->name)
+                    ->etc()
+            )
+            ->has('tabs')
+            ->has('balance');
+    });
+});
+
+
 
 test('UI edit fulfilment customer', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.edit', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->slug]));
