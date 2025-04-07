@@ -9,7 +9,7 @@ import { trans } from "laravel-vue-i18n";
 import { Address, AddressManagement } from "@/types/PureComponent/Address";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheckCircle as faCheckCircleSolid } from "@fas";
-import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle } from "@fal";
+import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, fal } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { useTruncate } from "@/Composables/useTruncate";
@@ -339,9 +339,6 @@ const onDeleteAddress = (addressID: number) => {
 
                 >
                   <div class="flex gap-x-1 items-center relative">
-                    <FontAwesomeIcon
-                      v-if="addresses.current_selected_address_id == address.id" icon="fal fa-truck" class="px-0.5 py-1 cursor-pointer"
-                                     v-tooltip="trans('This address is already selected')" />
                     <div v-if="address.label" class="font-semibold text-sm whitespace-nowrap">
                       {{ useTruncate(address.label, 14) }}
                     </div>
@@ -350,9 +347,13 @@ const onDeleteAddress = (addressID: number) => {
                     </div>
                     <div class="relative">
                       <Transition name="spin-to-right">
-                        <!--  <FontAwesomeIcon v-if="addresses.current_selected_address_id == address.id" icon='fal fa-truck' class='text-green-500' fixed-width aria-hidden='true' /> -->
+                        <FontAwesomeIcon
+                          v-if="addresses.current_selected_address_id == address.id"
+                          :icon="faCheckCircleSolid"
+                          class="text-green-500" fixed-width aria-hidden="true"
+                        />
                         <Button
-                          v-if="addresses.current_selected_address_id !== address.id"
+                          v-else
                           @click="() => onSelectAddress(address)"
                           :label="isSelectAddressLoading == address.id ? '' : 'Use this'"
                           size="xxs"
