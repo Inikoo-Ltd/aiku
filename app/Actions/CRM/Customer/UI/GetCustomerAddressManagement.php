@@ -70,7 +70,7 @@ class GetCustomerAddressManagement
                 ->unique()
                 ->toArray();
         } else {
-            $palletReturnDeliveryAddressIds = Order::where('customer', $customer->id)
+            $palletReturnDeliveryAddressIds = Order::where('customer_id', $customer->id)
             ->pluck('delivery_address_id')
             ->unique()
             ->toArray();;
