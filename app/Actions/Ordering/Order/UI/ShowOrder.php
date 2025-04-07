@@ -208,6 +208,20 @@ class ShowOrder extends OrgAction
                                 ]
                             ]
                         ] : [],
+                        [
+                            'type'    => 'button',
+                            'style'   => 'delete',
+                            'tooltip' => __('cancel'),
+                            'label'   => __('cancel'),
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.state.cancelled',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ],
                 ],
                 OrderStateEnum::SUBMITTED => [
                     [
@@ -223,7 +237,21 @@ class ShowOrder extends OrgAction
                                 'order' => $order->id
                             ]
                         ]
-                    ]
+                    ],
+                    [
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'tooltip' => __('cancel'),
+                        'label'   => __('cancel'),
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.cancelled',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+                    ],
                 ],
                 OrderStateEnum::IN_WAREHOUSE => [
                     [
