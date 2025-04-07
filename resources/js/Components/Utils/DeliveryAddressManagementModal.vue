@@ -3,7 +3,7 @@ import PureAddress from '@/Components/Pure/PureAddress.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
@@ -28,9 +28,11 @@ const props = defineProps<{
 //     (e: 'setModal', value: boolean): void
 // }>()
 // console.log('address list', props.addresses.address_list)
-const homeAddress = props.addresses.address_list?.data.find(address => address.id === props.addresses.home_address_id)
-
-console.log(props.addresses, 'home address', homeAddress);
+const homeAddress = computed(() => {
+    return props.addresses.address_list?.data.find(
+        address => address.id === props.addresses.home_address_id
+    )
+})
 
 // Method: Create new address
 const isSubmitAddressLoading = ref(false)
@@ -285,7 +287,7 @@ const onDeleteAddress = (addressID: number) => {
                         <div class="mt-6 flex justify-center">
                             <Button
                                 @click="() => onSubmitEditAddress(selectedAddress)"
-                                label="Edit address"
+                                :label="trans('Save')"
                                 :loading="isSubmitAddressLoading"
                                 full
                             />
@@ -320,13 +322,7 @@ const onDeleteAddress = (addressID: number) => {
                                                 type="tertiary"
                                                 :loading="isSelectAddressLoading == homeAddress?.id"/>
                                             </Transition>
-                                              <!--   v-if="addresses.current_selected_address_id != homeAddress?.id" -->
-                                          <!--   <Button
-                                                @click="() => onSelectAddress(homeAddress)"
-                                                :label="isSelectAddressLoading == homeAddress?.id ? '' : 'Use this'"
-                                                size="xxs"
-                                                type="tertiary"
-                                                :loading="isSelectAddressLoading == homeAddress?.id"/> -->
+                                            
                                         </div>
                                     </div>
 
@@ -356,7 +352,7 @@ const onDeleteAddress = (addressID: number) => {
                                 >
                                 <!-- {{ address.id }} -->
                                     <div class="flex justify-between border-b border-gray-300 px-3 py-2"
-                                        :class="addresses.current_selected_address_id == address.id ? 'bg-green-50' : 'bg-gray-100'"
+                                       
                                     >
                                         <div class="flex gap-x-1 items-center relative">
                                             <FontAwesomeIcon v-if="addresses.current_selected_address_id == address.id" icon='fal fa-truck' class='px-0.5 py-1 cursor-pointer' :class="addresses.selected_delivery_addresses_id.includes(address.id) ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'" fixed-width aria-hidden='true' v-tooltip="trans('This address is already selected')" />

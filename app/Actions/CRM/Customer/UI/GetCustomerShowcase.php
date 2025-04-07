@@ -42,6 +42,9 @@ class GetCustomerShowcase
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
 
+            'address_management' => GetCustomerAddressManagement::run(customer:$customer),
+
+            //todo this will go to GetCustomerAddressManagement
             'can_open_address_management' => $canOpenAddressManagement,
             'address_update_route'        => $addressUpdateRoute,
             'addresses'                   => $addresses

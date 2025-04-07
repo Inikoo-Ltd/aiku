@@ -645,5 +645,5 @@ function openRejectedModal(customer: any) {
 		:customerID="customerID"
 		:customerName="customerName" />
 
-	<ModalBalance v-model="isModalBalanceOpen" :type="balanceModalType" />
+	<!-- <ModalBalance v-model="isModalBalanceOpen" :type="balanceModalType" /> -->
 </template>
