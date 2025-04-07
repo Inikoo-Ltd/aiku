@@ -17,7 +17,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import RetinaBoxNote from "@/Components/Retina/Storage/RetinaBoxNote.vue";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
-import ModalAddress from "@/Components/Utils/ModalAddress.vue";
+import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue";
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue";
 import Textarea from "primevue/textarea";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -418,7 +418,7 @@ const disableBeforeToday = (date: Date) => {
   </div>
 
   <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-    <ModalAddress
+    <CustomerAddressManagementModal
       :addresses="box_stats.fulfilment_customer.address"
       :updateRoute="address_management.updateRoute"
     />

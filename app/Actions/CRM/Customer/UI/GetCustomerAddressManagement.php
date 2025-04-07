@@ -23,12 +23,10 @@ class GetCustomerAddressManagement
 
     public function handle(Customer $customer): array
     {
-        $addresses                = [];
         $addressUpdateRoute       = [];
         $canOpenAddressManagement = false;
         if ($customer->shop->type != ShopTypeEnum::DROPSHIPPING) {
             $canOpenAddressManagement = true;
-            $addresses                = $this->getAddresses($customer);
             $addressUpdateRoute       = [
                 'method'     => 'patch',
                 'name'       => 'grp.models.customer.address.update',
@@ -38,13 +36,12 @@ class GetCustomerAddressManagement
             ];
         }
 
-        $address_management = [
+
+        return [
             'can_open_address_management' => $canOpenAddressManagement,
             'address_update_route'        => $addressUpdateRoute,
-            'addresses'                   => $addresses
+            'addresses'                   => $this->getAddresses($customer)
         ];
-
-        return $address_management;
     }
 
     public function getAddresses(Customer $customer): array
@@ -71,9 +68,9 @@ class GetCustomerAddressManagement
                 ->toArray();
         } else {
             $palletReturnDeliveryAddressIds = Order::where('customer_id', $customer->id)
-            ->pluck('delivery_address_id')
-            ->unique()
-            ->toArray();;
+                ->pluck('delivery_address_id')
+                ->unique()
+                ->toArray();
         }
 
         $forbiddenAddressIds = array_merge(
