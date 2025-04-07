@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
@@ -30,6 +31,7 @@ class HydrateProducts
 
     public function handle(Product $product): void
     {
+        ProductHydrateForSale::run($product);
         ProductHydrateProductVariants::run($product);
         ProductHydrateCustomersWhoFavourited::run($product);
         ProductHydrateCustomersWhoFavouritedInCategories::run($product);

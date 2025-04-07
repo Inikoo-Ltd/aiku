@@ -292,123 +292,7 @@ class ShowOrder extends OrgAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $actions = [];
-        if ($this->canEdit) {
-            $actions = match ($order->state) {
-                OrderStateEnum::CREATING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'icon'    => 'fal fa-plus',
-                        'key'     => 'add-products',
-                        'label'   => __('add products'),
-                        'tooltip' => __('Add products'),
-                        'route'   => [
-                            'name'       => 'grp.models.order.transaction.store',
-                            'parameters' => [
-                                'order' => $order->id,
-                            ]
-                        ]
-                    ],
-                    ($order->transactions()->count() > 0) ?
-                        [
-                            'type'    => 'button',
-                            'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
-                            'key'     => 'action',
-                            'route'   => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.order.state.submitted',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
-                            ]
-                        ] : [],
-                ],
-                OrderStateEnum::SUBMITTED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Send to Warehouse'),
-                        'label'   => __('send to warehouse'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.in-warehouse',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::IN_WAREHOUSE => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Handle'),
-                        'label'   => __('Handle'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.handling',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::HANDLING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Pack'),
-                        'label'   => __('Pack'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.packed',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::PACKED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Finalize'),
-                        'label'   => __('Finalize'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.finalized',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::FINALISED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Dispatch'),
-                        'label'   => __('Dispatch'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.dispatched',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
-                default => []
-            };
-        }
+        $actions = GetOrderActions::run($order, $this->canEdit);
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
@@ -489,10 +373,9 @@ class ShowOrder extends OrgAction
                         ]
                     ],
                     'products_list'    => [
-                        'name'       => 'grp.json.shop.catalogue.order.products',
+                        'name'       => 'grp.json.order.products',
                         'parameters' => [
-                            'shop'  => $order->shop->slug,
-                            'order' => $order->slug
+                            'order' => $order->id
                         ]
                     ],
                     'delivery_note'    => $deliveryNoteRoute
@@ -500,6 +383,7 @@ class ShowOrder extends OrgAction
 
                 'notes'                => $this->getOrderNotes($order),
                 'timelines'            => $finalTimeline,
+
                 'address_update_route' => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.customer.address.update',
@@ -541,7 +425,6 @@ class ShowOrder extends OrgAction
                         ]
                     ]
                 ],
-
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'          => OrderResource::make($order),

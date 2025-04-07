@@ -16,6 +16,7 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
@@ -84,14 +85,14 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+        ) = createShop();
 
     $this->group = $this->organisation->group;
 
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -162,6 +163,56 @@ test('create order', function () {
     return $order;
 });
 
+test('get order products', function (Order $order) {
+    // Create a transaction if needed (may not be necessary if order already has products)
+    $order->transactions->first()
+        ?: StoreTransaction::make()->action(
+        $order,
+        $this->product->historicAsset,
+        Transaction::factory()->definition()
+    );
+
+    $order->refresh();
+
+    // Test the GetOrderProducts action
+    $result = GetOrderProducts::make()->handle($order);
+
+    expect($result)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+        ->and($result->count())->toBeGreaterThanOrEqual(1);
+
+    // Test that the product data is correctly retrieved
+    $products = $result->items();
+    expect($products)->toBeArray()
+        ->and(count($products))->toBeGreaterThanOrEqual(1);
+
+    // Verify the first product data
+    $firstProduct = $products[0];
+    expect($firstProduct->id)->toBe(1)->and($firstProduct->transaction_id)->toBe(1);
+
+    // Test the JSON response
+    if (method_exists(GetOrderProducts::class, 'jsonResponse')) {
+        $jsonResponse = GetOrderProducts::make()->jsonResponse($result);
+        expect($jsonResponse)->toBeInstanceOf(\Illuminate\Http\Resources\Json\AnonymousResourceCollection::class);
+    }
+
+    return $order;
+})->depends('create order');
+
+
+test('delete previous transaction', function (Order $order) {
+    $transaction = $order->transactions()->first();
+    UpdateTransaction::make()->action(
+        $transaction,
+        ['quantity_ordered' => 0]
+    );
+    $order->refresh();
+    expect($order->transactions()->count())->toBe(0)
+        ->and($order->stats->number_transactions)->toBe(0)
+        ->and($order->stats->number_transactions_at_submission)->toBe(0);
+
+    return $order;
+})->depends('get order products');
+
 
 test('create transaction', function ($order) {
     $transactionData = Transaction::factory()->definition();
@@ -171,12 +222,13 @@ test('create transaction', function ($order) {
 
     $order->refresh();
 
+
     expect($transaction)->toBeInstanceOf(Transaction::class)
         ->and($transaction->order->stats->number_transactions_at_submission)->toBe(1)
         ->and($order->stats->number_transactions)->toBe(1);
 
     return $transaction;
-})->depends('create order');
+})->depends('delete previous transaction');
 
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
@@ -450,7 +502,7 @@ test('update invoice transaction', function (Invoice $invoice) {
 })->depends('create invoice from order');
 
 test('delete invoice transaction', function (InvoiceTransaction $invoiceTransaction) {
-    $invoice        = $invoiceTransaction->invoice;
+    $invoice = $invoiceTransaction->invoice;
     DeleteRefundInProcessInvoiceTransaction::make()->action($invoiceTransaction);
     $invoice->refresh();
     expect($invoice)->toBeInstanceOf(Invoice::class)
@@ -535,7 +587,7 @@ test('update purge order', function (Purge $purge) {
 test('delete transaction', function (Order $order) {
     $transaction = $order->transactions->first();
 
-    DeleteTransaction::make()->action($order, $transaction);
+    DeleteTransaction::make()->action($transaction);
     $order->refresh();
 
     expect($order->transactions()->count())->toBe(0);
@@ -553,7 +605,7 @@ test('UI create asset shipping', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'new schema')
                     ->etc()
             )
@@ -572,7 +624,7 @@ test('UI show asset shipping', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $shippingZoneSchema->name)
                     ->etc()
             )
@@ -592,7 +644,7 @@ test('UI edit asset shipping', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $shippingZoneSchema->name)
                     ->etc()
             )
@@ -611,7 +663,7 @@ test('UI show ordering backlog', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'orders backlog')
                     ->etc()
             );
@@ -629,7 +681,7 @@ test('UI index ordering purges', function () {
             ->has('data')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'Purges')
                     ->etc()
             );
@@ -644,7 +696,7 @@ test('UI create ordering purge', function () {
             ->component('CreateModel')
             ->where('title', 'new purge')
             ->has('breadcrumbs', 4)
-            ->has('formData', fn ($page) => $page
+            ->has('formData', fn($page) => $page
                 ->where('route', [
                     'name'       => 'grp.models.purge.store',
                     'parameters' => [
@@ -654,7 +706,7 @@ test('UI create ordering purge', function () {
                 ->etc())
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'new purge')
                     ->etc()
             );
@@ -670,7 +722,7 @@ test('UI edit ordering purge', function () {
             ->component('EditModel')
             ->where('title', 'Purge')
             ->has('breadcrumbs', 3)
-            ->has('formData', fn ($page) => $page
+            ->has('formData', fn($page) => $page
                 ->where('args', [
                     'updateRoute' => [
                         'name'       => 'grp.models.purge.update',
@@ -681,7 +733,7 @@ test('UI edit ordering purge', function () {
                 ->etc())
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $purge->scheduled_at->toISOString())
                     ->etc()
             );
@@ -729,5 +781,5 @@ test('test reset intervals', function () {
     $this->artisan('intervals:reset-month')->assertExitCode(0);
     $this->artisan('intervals:reset-quarter')->assertExitCode(0);
     $this->artisan('intervals:reset-year')->assertExitCode(0);
-
 });
+

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import DimensionProperty from '@/Components/Workshop/Properties/DimensionProperty.vue'
+import { onMounted } from 'vue'
 import InputNumberCssProperty from '@/Components/Workshop/Properties/InputNumberCssProperty.vue'
 
 // Default model jika tidak ada nilai yang diberikan
@@ -15,10 +14,6 @@ const model = defineModel<typeof defaultModel>({
 onMounted(() => {
     if (!model.value) {
         model.value = { ...defaultModel }
-    } else {
-        if (!model.value) {
-            model.value = { ...defaultModel }
-        }
     }
 })
 </script>
