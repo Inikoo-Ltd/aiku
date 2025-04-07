@@ -287,7 +287,7 @@ const onDeleteAddress = (addressID: number) => {
                         <div class="mt-6 flex justify-center">
                             <Button
                                 @click="() => onSubmitEditAddress(selectedAddress)"
-                                label="Edit address"
+                                :label="trans('Save')"
                                 :loading="isSubmitAddressLoading"
                                 full
                             />
