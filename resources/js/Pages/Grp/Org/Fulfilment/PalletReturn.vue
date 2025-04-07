@@ -82,6 +82,7 @@ const props = defineProps<{
 
 
     address_management:{
+      can_open_address_management: boolean
       updateRoute: routeType
       addresses: AddressManagement
       address_update_route: routeType,

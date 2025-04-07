@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerAddressManagement;
-use App\Actions\CRM\Customer\UI\GetCustomerShowcase;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
@@ -31,18 +30,18 @@ class GetFulfilmentCustomerShowcase
 
         if ($fulfilmentCustomer->currentRecurringBill) {
             $recurringBillData = [
-                'route'      => [
-                    'name'             => 'grp.org.fulfilments.show.crm.customers.show.recurring_bills.show',
-                    'parameters'       => [
+                'route'         => [
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.recurring_bills.show',
+                    'parameters' => [
                         'organisation'       => $fulfilmentCustomer->organisation->slug,
                         'fulfilment'         => $fulfilmentCustomer->fulfilment->slug,
                         'fulfilmentCustomer' => $fulfilmentCustomer->slug,
                         'recurringBill'      => $fulfilmentCustomer->currentRecurringBill->slug,
-                        ]
-                    ],
+                    ]
+                ],
                 'label'         => 'Recurring Bills',
                 'start_date'    => $fulfilmentCustomer->currentRecurringBill->start_date ?? '',
-                'end_date'      => $fulfilmentCustomer->currentRecurringBill->end_date   ?? '',
+                'end_date'      => $fulfilmentCustomer->currentRecurringBill->end_date ?? '',
                 'total'         => $fulfilmentCustomer->currentRecurringBill->total_amount ?? '',
                 'currency_code' => $fulfilmentCustomer->currentRecurringBill->currency->code ?? '',
                 'status'        => $fulfilmentCustomer->currentRecurringBill->status ?? ''
@@ -52,42 +51,42 @@ class GetFulfilmentCustomerShowcase
 
         /** @noinspection HttpUrlsUsage */
         return [
-            'fulfilment_customer'          => FulfilmentCustomerResource::make($fulfilmentCustomer)->getArray(),
-            'rental_agreement'             => [
-                'updated_at'                    => $fulfilmentCustomer->rentalAgreement->updated_at ?? null,
-                'stats'                         => $fulfilmentCustomer->rentalAgreement ? RentalAgreementResource::make($fulfilmentCustomer->rentalAgreement) : false,
-                'createRoute'                   => [
+            'fulfilment_customer' => FulfilmentCustomerResource::make($fulfilmentCustomer)->getArray(),
+            'rental_agreement'    => [
+                'updated_at'  => $fulfilmentCustomer->rentalAgreement->updated_at ?? null,
+                'stats'       => $fulfilmentCustomer->rentalAgreement ? RentalAgreementResource::make($fulfilmentCustomer->rentalAgreement) : false,
+                'createRoute' => [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.rental-agreement.create',
                     'parameters' => array_values($request->route()->originalParameters())
                 ],
             ],
-            'status'                => $fulfilmentCustomer->customer->status,
-            'additional_data'       => $fulfilmentCustomer->data,
+            'status'              => $fulfilmentCustomer->customer->status,
+            'additional_data'     => $fulfilmentCustomer->data,
 
             'address_management' => GetCustomerAddressManagement::run(customer: $fulfilmentCustomer->customer),
 
-            'currency_code' => $fulfilmentCustomer->customer->shop->currency->code,
-            'balance'       => [
-                'current'               => $fulfilmentCustomer->customer->balance,
-                'credit_transactions'   => $fulfilmentCustomer->customer->stats->number_credit_transactions
+            'currency_code'  => $fulfilmentCustomer->customer->shop->currency->code,
+            'balance'        => [
+                'current'             => $fulfilmentCustomer->customer->balance,
+                'credit_transactions' => $fulfilmentCustomer->customer->stats->number_credit_transactions
             ],
-            'recurring_bill'               => $recurringBillData,
-            'updateRoute'                  => [
+            'recurring_bill' => $recurringBillData,
+            'updateRoute'    => [
                 'name'       => 'grp.models.fulfilment-customer.update',
                 'parameters' => [$fulfilmentCustomer->id]
             ],
-            'stats'               => $this->getFulfilmentCustomerStats($fulfilmentCustomer),
+            'stats'          => $this->getFulfilmentCustomerStats($fulfilmentCustomer),
 
-            'webhook'               => [
-                'webhook_access_key'    => $fulfilmentCustomer->webhook_access_key,
-                'domain'                => (app()->environment('local') ? 'http://' : 'https://') . $irisDomain.'/webhooks/',
-                'route'                 => [
+            'webhook'            => [
+                'webhook_access_key' => $fulfilmentCustomer->webhook_access_key,
+                'domain'             => (app()->environment('local') ? 'http://' : 'https://').$irisDomain.'/webhooks/',
+                'route'              => [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.webhook.fetch',
                     'parameters' => array_values($request->route()->originalParameters())
                 ],
             ],
-            'approveRoute' => [
-                'name' => 'grp.models.customer.approve',
+            'approveRoute'       => [
+                'name'       => 'grp.models.customer.approve',
                 'parameters' => [
                     'customer' => $fulfilmentCustomer->customer_id
                 ]
@@ -152,8 +151,8 @@ class GetFulfilmentCustomerShowcase
         }
 
         $stats['invoice'] = [
-            'label'       => __('Invoice'),
-            'count'       => $fulfilmentCustomer->customer->stats->number_invoices,
+            'label' => __('Invoice'),
+            'count' => $fulfilmentCustomer->customer->stats->number_invoices,
             // 'tooltip'     => __('Pallets in warehouse'),
             // 'description' => __('in warehouse'),
         ];

@@ -8,7 +8,7 @@
 import JsBarcode from "jsbarcode"
 import { computed, onMounted, ref } from "vue"
 import { capitalize } from "@/Composables/capitalize"
-import ModalAddress from "@/Components/Utils/ModalAddress.vue"
+import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
 import { Link, router } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
@@ -523,7 +523,7 @@ const disableBeforeToday = (date: Date) => {
 	</div>
 
 	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-		<ModalAddress
+		<CustomerAddressManagementModal
       :addresses="boxStats.fulfilment_customer.address"
       :updateRoute="address_management.updateRoute"
     />

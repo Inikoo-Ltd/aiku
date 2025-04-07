@@ -48,8 +48,6 @@ const onSubmitNewAddress = async (address: Address) => {
       onFinish: () => {
         isSubmitAddressLoading.value = false,
           isCreateNewAddress.value = false;
-        // isModalAddress.value = false
-        // emits('setModal', false)
       },
       onSuccess: () => {
         notify({
@@ -176,9 +174,11 @@ const onDeleteAddress = (addressID: number) => {
 };
 
 
+
 </script>
 
 <template>
+
   <div class="h-[600px] px-2 py-1 overflow-auto">
     <div class="flex justify-between border-b border-gray-300">
       <div class="text-2xl font-bold text-center mb-2 flex gap-x-2">
@@ -386,7 +386,6 @@ const onDeleteAddress = (addressID: number) => {
           {{ trans("No address history found") }}
         </div>
       </div>
-      <!-- </Transition> -->
     </div>
 
   </div>
