@@ -28,17 +28,22 @@ const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const addedFiles = ref<File[]>([])
 
-const setAlt = (formData) => {
-    router.post(route("grp.ask-bot.vision.index"), 
-        { image: formData,
-          prompt : 'what is the correct alt for this image?'
-        }, 
-        {
-            onSuccess: (e) => {
-               console.log(e)
-            },
+const setAlt = (imageFile) => {
+    const payload = new FormData();
+    payload.append('image', imageFile);
+    payload.append('prompt', 'what is the correct alt for this image?');
+
+    router.post(route("grp.ask-bot.vision.index"), payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        onSuccess: (e) => {
+            console.log("Alt text request successful:", e);
+        },
+        onError: (err) => {
+            console.error("Alt text request failed:", err);
         }
-    );
+    });
 }
 
 
@@ -56,7 +61,9 @@ const handleUpload = async () => {
         const updatedModelValue = { ...props.modelValue, ...cloneDeep(response.data.data[0].source) }
         emits("update:modelValue", updatedModelValue)
         emits("autoSave")
-        setAlt(formData)
+        if (addedFiles.value.length > 0) {
+            setAlt(addedFiles.value[0]);
+        }
         addedFiles.value = []
     } catch (error) {
         console.log(error)
