@@ -64,20 +64,7 @@ class GetFulfilmentCustomerShowcase
             'status'                => $fulfilmentCustomer->customer->status,
             'additional_data'       => $fulfilmentCustomer->data,
 
-
             'address_management' => GetCustomerAddressManagement::run(customer: $fulfilmentCustomer->customer),
-
-            //todo this will go to GetCustomerAddressManagement
-            'address_update_route'  => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.fulfilment-customer.address.update',
-                'parameters' => [
-                    'fulfilmentCustomer' => $fulfilmentCustomer->id
-                ]
-            ],
-            'addresses'   => GetCustomerShowcase::make()->getAddresses($fulfilmentCustomer->customer),
-            //================
-
 
             'currency_code' => $fulfilmentCustomer->customer->shop->currency->code,
             'balance'       => [
