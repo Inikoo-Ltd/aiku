@@ -445,7 +445,7 @@ const disableBeforeToday = (date: Date) => {
 						<div
 							@click="() => (isDeliveryAddressManagementModal = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-							<span>Choose Other Address</span>
+              <span>{{trans('Edit')}}</span>
 						</div>
 					</div>
 				</div>
