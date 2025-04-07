@@ -530,7 +530,7 @@ const disableBeforeToday = (date: Date) => {
 	</Modal>
 	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)">
 		<DeliveryAddressManagementModal
-    :address_modal_title="address_management.address_modal_title"
+    	:address_modal_title="address_management.address_modal_title"
 		:addresses="address_management.addresses"
 		:updateRoute="address_management.address_update_route"
     />

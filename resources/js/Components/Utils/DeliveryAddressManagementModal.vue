@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import PureAddress from '@/Components/Pure/PureAddress.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { ref } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
+
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useTruncate } from '@/Composables/useTruncate'
 import { faThumbtack as faThumbtackSolid } from "@fas";
+import { add } from 'lodash'
 library.add(faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, faThumbtack)
 
 const props = defineProps<{
@@ -22,29 +24,36 @@ const props = defineProps<{
     address_modal_title?: string
 }>()
 
-
+// const emits = defineEmits<{
+//     (e: 'setModal', value: boolean): void
+// }>()
+// console.log('address list', props.addresses.address_list)
 const homeAddress = props.addresses.address_list?.data.find(address => address.id === props.addresses.home_address_id)
 
+console.log(props.addresses, 'home address', homeAddress);
 
 // Method: Create new address
 const isSubmitAddressLoading = ref(false)
 const onSubmitNewAddress = async (address: Address) => {
-    const filterDataAddress = {...address}
-    delete filterDataAddress.formatted_address
-    delete filterDataAddress.country
-    delete filterDataAddress.id  // Remove id cuz create new one
+    // console.log(props.addresses.value)
+    const filterDataAdddress = {...address}
+    delete filterDataAdddress.formatted_address
+    delete filterDataAdddress.country
+    delete filterDataAdddress.id  // Remove id cuz create new one
 
     router[props.addresses.routes_list.store_route.method || 'post'](
         route(props.addresses.routes_list.store_route.name, props.addresses.routes_list.store_route.parameters),
         {
-            delivery_address: filterDataAddress
+            delivery_address: filterDataAdddress
         },
         {
             preserveScroll: true,
             onStart: () => isSubmitAddressLoading.value = true,
             onFinish: () => {
-              isSubmitAddressLoading.value = false;
-                isCreateNewAddress.value = false;
+                isSubmitAddressLoading.value = false,
+                isCreateNewAddress.value = false
+                // isModalAddress.value = false
+                // emits('setModal', false)
             },
             onSuccess: () => {
                 notify({
@@ -73,15 +82,16 @@ const onEditAddress = (address: Address) => {
     selectedAddress.value = {...address}
 }
 const onSubmitEditAddress = (address: Address) => {
-    const filterDataAddress = {...address}
-    delete filterDataAddress.formatted_address
-    delete filterDataAddress.country
-    delete filterDataAddress.country_code
+    // console.log(props.addresses.value)
+    const filterDataAdddress = {...address}
+    delete filterDataAdddress.formatted_address
+    delete filterDataAdddress.country
+    delete filterDataAdddress.country_code
 
     router.patch(
         route(props.updateRoute.name, props.updateRoute.parameters),
         {
-            [props.keyPayloadEdit || 'address']: filterDataAddress
+            [props.keyPayloadEdit || 'address']: filterDataAdddress
         },
         {
             preserveScroll: true,
@@ -89,6 +99,7 @@ const onSubmitEditAddress = (address: Address) => {
             onFinish: () => {
                 isSubmitAddressLoading.value = false
                 isCreateNewAddress.value = false
+                // isModalAddress.value = false
             },
             onSuccess: () => {
                 notify({
@@ -111,7 +122,7 @@ const isCreateNewAddress = ref(false)
 const isSelectAddressLoading = ref<number | boolean | null | undefined>(false)
 const onSelectAddress = (selectedAddress: Address) => {
     router.patch(
-        route(props.updateRoute.name, props.updateRoute.parameters),
+        route(props.addresses.routes_list.switch_route.name, props.addresses.routes_list.switch_route.parameters),
         {
             delivery_address_id: selectedAddress.id
         },
@@ -120,6 +131,7 @@ const onSelectAddress = (selectedAddress: Address) => {
             onFinish: () => isSelectAddressLoading.value = false
         }
     )
+    // props.addresses.value = selectedAddress
 }
 
 const isLoading = ref<string | boolean>(false)
@@ -146,6 +158,7 @@ const onPinnedAddress = (addressID: number) => {
 }
 // Method: Delete address
 const onDeleteAddress = (addressID: number) => {
+    // console.log('vvcxvcxvcx', props.addressesList.delete_route.method, route(props.addressesList.delete_route.name, props.addressesList.delete_route.parameters))
     router.delete(
         route(props.addresses.routes_list.delete_route.name, {
             ...props.addresses.routes_list.delete_route.parameters,
@@ -171,6 +184,9 @@ const onDeleteAddress = (addressID: number) => {
 
 <template>
     <div class="h-[600px] px-2 py-1 overflow-auto">
+    <!-- <pre>current selected {{ addresses.current_selected_address_id }}</pre>
+    <pre>pinned address {{ addresses.pinned_address_id }}</pre>
+    <pre>home {{ addresses.home_address_id }}</pre> -->
         <div class="flex justify-between border-b border-gray-300">
             <div class="text-2xl font-bold text-center mb-2 flex gap-x-2">
                 {{ address_modal_title }}
@@ -191,6 +207,7 @@ const onDeleteAddress = (addressID: number) => {
         </div>
 
         <div class="relative transition-all">
+            <!-- <Transition name="v"> -->
                 <div v-if="isCreateNewAddress" class="mx-auto max-w-96 py-4">
                     <div class="mb-2">{{ trans('Create new address')}} </div>
                     <div class="border border-gray-300 rounded-lg relative p-3 ">
@@ -208,6 +225,11 @@ const onDeleteAddress = (addressID: number) => {
                                 :disabled="!selectedAddress?.country_id"
                             />
                         </div>
+                        <!-- <Transition>
+                                <div class="absolute inset-0 bg-black/30 text-white text-lg rounded-md grid place-content-center">
+                                    Not editable
+                                </div>
+                            </Transition> -->
                     </div>
                 </div>
 
@@ -279,7 +301,6 @@ const onDeleteAddress = (addressID: number) => {
                             <!-- Section: Address Home -->
                             <div v-if="homeAddress" class="overflow-hidden relative text-xs ring-1 ring-gray-300 rounded-lg h-full transition-all">
                                 <div class="flex justify-between border-b border-gray-300 px-3 py-2"
-                                    :class="addresses.current_selected_address_id == homeAddress?.id ? 'bg-green-50' : 'bg-gray-100'"
                                 >
                                 <!-- {{ homeAddresses.id }} -->
                                     <div class="flex gap-x-1 items-center relative">
@@ -288,6 +309,23 @@ const onDeleteAddress = (addressID: number) => {
                                         </div>
 
                                         <div class="relative">
+                                            <Transition name="spin-to-right">
+                                                <FontAwesomeIcon v-if="addresses.current_selected_address_id == homeAddress?.id" icon='fal fa-truck' class='text-green-500' fixed-width aria-hidden='true' />
+                                                <Button
+                                                v-else
+                                                @click="() => onSelectAddress(homeAddress)"
+                                                :label="isSelectAddressLoading == homeAddress?.id ? '' : 'Use this'"
+                                                size="xxs"
+                                                type="tertiary"
+                                                :loading="isSelectAddressLoading == homeAddress?.id"/>
+                                            </Transition>
+                                              <!--   v-if="addresses.current_selected_address_id != homeAddress?.id" -->
+                                          <!--   <Button
+                                                @click="() => onSelectAddress(homeAddress)"
+                                                :label="isSelectAddressLoading == homeAddress?.id ? '' : 'Use this'"
+                                                size="xxs"
+                                                type="tertiary"
+                                                :loading="isSelectAddressLoading == homeAddress?.id"/> -->
                                         </div>
                                     </div>
 
@@ -328,6 +366,18 @@ const onDeleteAddress = (addressID: number) => {
                                                 ({{ trans('No label') }})
                                             </div>
                                             <div class="relative">
+                                                <Transition name="spin-to-right">
+                                                    <FontAwesomeIcon v-if="addresses.current_selected_address_id == address.id" icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
+                                                    <Button
+                                                        v-else
+                                                        @click="() => onSelectAddress(address)"
+                                                        :label="isSelectAddressLoading == address.id ? '' : 'Use this'"
+                                                        size="xxs"
+                                                        type="tertiary"
+                                                        :loading="isSelectAddressLoading == address.id"
+                                                        v-tooltip="'Apply to this section only'"
+                                                    />
+                                                </Transition>
                                             </div>
                                         </div>
                                         <div class="flex items-center">
@@ -362,7 +412,10 @@ const onDeleteAddress = (addressID: number) => {
                         {{ trans('No address history found') }}
                     </div>
                 </div>
+            <!-- </Transition> -->
         </div>
 
     </div>
 </template>
+
+<style scoped></style>
