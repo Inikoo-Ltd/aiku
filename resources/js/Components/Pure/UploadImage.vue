@@ -22,29 +22,32 @@ const emits = defineEmits<{
     (e: "autoSave"): void
 }>()
 
+console.log("UploadImage component loaded",props.modelValue)
 
 const isOpenGalleryImages = ref(false)
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const addedFiles = ref<File[]>([])
 
-const setAlt = (imageFile) => {
+const setAlt = async (imageFile) => {
     const payload = new FormData();
     payload.append('image', imageFile);
-    payload.append('prompt', 'what is the correct alt for this image?');
+    payload.append('prompt', 'alt');
 
-    router.post(route("grp.ask-bot.vision.index"), payload, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-        onSuccess: (e) => {
-            console.log("Alt text request successful:", e);
-        },
-        onError: (err) => {
-            console.error("Alt text request failed:", err);
-        }
-    });
-}
+    try {
+        const response = await axios.post(route("grp.ask-bot.vision.index"), payload, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        console.log("Alt text request successful:", response.data);
+        return response.data; // optional: return data if needed
+
+    } catch (error) {
+        console.error("Alt text request failed:", error);
+    }
+};
 
 
 const handleUpload = async () => {
