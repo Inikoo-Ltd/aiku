@@ -11,17 +11,19 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
-use App\Actions\OrgAction;
-use Illuminate\Support\Facades\File;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Vision\ImageSource;
 use LLPhant\Chat\Vision\VisionMessage;
 use LLPhant\OpenAIConfig;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsController;
+use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class AskBotVision extends OrgAction
+class AskBotVision
 {
+    use AsAction;
+    use WithAttributes;
     use AsController;
     use WithPromptAI;
 
@@ -56,7 +58,10 @@ class AskBotVision extends OrgAction
 
     public function asController(ActionRequest $request)
     {
-        $image = $request->file('image');
+        $this->fillFromRequest($request);
+        $modelData = $this->validateAttributes();
+
+        $image = $modelData['image'] ?? null;
         $urlOrBase64Image = '';
         if ($image && $image->isValid()) {
             $urlOrBase64Image = base64_encode(file_get_contents($image->getRealPath()));
@@ -64,15 +69,14 @@ class AskBotVision extends OrgAction
             $urlOrBase64Image = $request->input('url');
         }
 
-        return $this->handle($urlOrBase64Image, $request->input('prompt'));
+        return $this->handle($urlOrBase64Image, $modelData['prompt']);
     }
-
 
     public function rules(): array
     {
         return [
             'url'   => ['required_without:image', 'url'],
-            'image' => ['required_without:url', File::image()->max(20 * 1024) ],
+            'image' => ['required_without:url', "mimes:jpg,png,jpeg", "max:10240"],
             'prompt' => ['required', 'in:default,alt'],
         ];
     }
