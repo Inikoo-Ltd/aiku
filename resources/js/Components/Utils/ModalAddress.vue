@@ -20,6 +20,7 @@ const props = defineProps<{
   updateRoute: routeType
   addresses: AddressManagement
   keyPayloadEdit?: string
+  address_modal_title?: string
 }>();
 
 
@@ -119,7 +120,7 @@ const isCreateNewAddress = ref(false);
 const isSelectAddressLoading = ref<number | boolean | null | undefined>(false);
 const onSelectAddress = (selectedAddress: Address) => {
   router.patch(
-    route(props.updateRoute.name, props.updateRoute.parameters),
+    route(props.addresses.routes_list.switch_route.name, props.addresses.routes_list.switch_route.parameters),
     {
       delivery_address_id: selectedAddress.id
     },
@@ -181,7 +182,7 @@ const onDeleteAddress = (addressID: number) => {
   <div class="h-[600px] px-2 py-1 overflow-auto">
     <div class="flex justify-between border-b border-gray-300">
       <div class="text-2xl font-bold text-center mb-2 flex gap-x-2">
-        {{ trans("Address management") }}
+        {{ address_modal_title || trans("Address management") }}
 
         <div class="relative">
           <Transition name="slide-to-right">
@@ -223,8 +224,8 @@ const onDeleteAddress = (addressID: number) => {
       <div v-else-if="isEditAddress" :key="'edit' + selectedAddress?.id" class="col-span-2 relative py-4 h-fit grid grid-cols-2 gap-x-4">
         <div class="overflow-hidden relative text-xs rounded-lg h-fit transition-all"
              :class="[
-                            selectedAddress?.id ? 'border border-gray-300 ring-2 ring-offset-4 ring-indigo-500' : 'ring-1 ring-gray-300'
-                        ]"
+                  selectedAddress?.id ? 'border border-gray-300 ring-2 ring-offset-4 ring-indigo-500' : 'ring-1 ring-gray-300'
+              ]"
         >
           <div class="flex justify-between border-b border-gray-300 px-3 py-2">
             <div class="flex gap-x-1 items-center relative">
@@ -343,6 +344,15 @@ const onDeleteAddress = (addressID: number) => {
                       ({{ trans("No label") }})
                     </div>
                     <div class="relative">
+                      <Button
+                        v-if="addresses.current_selected_address_id !== address.id"
+                            @click="() => onSelectAddress(address)"
+                            :label="isSelectAddressLoading == address.id ? '' : 'Use this'"
+                            size="xxs"
+                            type="tertiary"
+                            :loading="isSelectAddressLoading == address.id"
+                            v-tooltip="'Apply to this section only'"
+                        />
                     </div>
                   </div>
                   <div class="flex items-center">
