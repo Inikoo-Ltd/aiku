@@ -208,6 +208,20 @@ class ShowOrder extends OrgAction
                                 ]
                             ]
                         ] : [],
+                        [
+                            'type'    => 'button',
+                            'style'   => 'delete',
+                            'tooltip' => __('cancel'),
+                            'label'   => __('cancel'),
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.state.cancelled',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ],
                 ],
                 OrderStateEnum::SUBMITTED => [
                     [
@@ -223,7 +237,21 @@ class ShowOrder extends OrgAction
                                 'order' => $order->id
                             ]
                         ]
-                    ]
+                    ],
+                    [
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'tooltip' => __('cancel'),
+                        'label'   => __('cancel'),
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.cancelled',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+                    ],
                 ],
                 OrderStateEnum::IN_WAREHOUSE => [
                     [
@@ -427,7 +455,7 @@ class ShowOrder extends OrgAction
                     ],
                     'pinned_address_id'              => $order->customer->delivery_address_id,
                     'home_address_id'                => $order->customer->address_id,
-                    'current_selected_address_id'    => $order->customer->delivery_address_id,
+                    'current_selected_address_id'    => $order->delivery_address_id,
                     'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
                     'routes_list'                    => [
                         'switch_route' => [
