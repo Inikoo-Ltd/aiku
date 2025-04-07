@@ -430,6 +430,13 @@ class ShowOrder extends OrgAction
                     'current_selected_address_id'    => $order->customer->delivery_address_id,
                     'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
                     'routes_list'                    => [
+                        'switch_route' => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.address.switch',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ],
                         'pinned_route'                   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.customer.delivery-address.update',
