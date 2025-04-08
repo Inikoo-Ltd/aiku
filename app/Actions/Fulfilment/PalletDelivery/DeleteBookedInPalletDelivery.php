@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\PalletDelivery;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
+use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
@@ -39,7 +40,16 @@ class DeleteBookedInPalletDelivery extends OrgAction
         if(strtolower(trim($modelData['delete_confirmation'] ?? '')) === strtolower($palletDelivery->reference)) 
         {   
             $palletDelivery->pallets()->delete();
-            $palletDelivery->transactions()->delete();
+
+            foreach($palletDelivery->transactions as $transaction){
+                $recurringBillTransaction = $transaction->recurringBillTransaction;
+    
+                $transaction->delete();
+        
+                if ($recurringBillTransaction) {
+                    DeleteRecurringBillTransaction::make()->action($recurringBillTransaction);
+                }
+            }
 
             $this->update($palletDelivery, [
                 'delete_comment' => Arr::get($modelData, 'delete_comment')
