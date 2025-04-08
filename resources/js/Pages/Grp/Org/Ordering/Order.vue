@@ -51,6 +51,7 @@ import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
+
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -70,6 +71,7 @@ import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
+import DeliveryAddressManagementModal from '@/Components/Utils/DeliveryAddressManagementModal.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 
@@ -107,7 +109,13 @@ const props = defineProps<{
     }
 
     upload_spreadsheet: UploadPallet
-
+    address_management:{
+      can_open_address_management: boolean
+      updateRoute: routeType
+      addresses: AddressManagement
+      address_update_route: routeType,
+      address_modal_title: string
+    }
     box_stats: {
         customer: {
             reference: string
@@ -652,8 +660,9 @@ const openModal = (action :any) => {
 	<ModalProductList v-model="isModaProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <CustomerAddressManagementModal
-            :addresses="addresses"
+        <DeliveryAddressManagementModal
+            :address_modal_title="address_management.address_modal_title"
+		    :addresses="address_management.addresses"
             :updateRoute="address_update_route"
             keyPayloadEdit="delivery_address"
         />
