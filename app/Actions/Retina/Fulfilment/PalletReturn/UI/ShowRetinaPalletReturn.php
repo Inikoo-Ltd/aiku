@@ -362,20 +362,34 @@ class ShowRetinaPalletReturn extends RetinaAction
         };
     }
 
-    public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getPrevious(PalletReturn $palletReturn, ActionRequest $request, bool $storedItems = false) : ?array
     {
-        $previous = PalletReturn::where('id', '<', $palletReturn->id)
-            ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id)
-            ->orderBy('id', 'desc')->first();
+        $query = PalletReturn::where('id', '<', $palletReturn->id)
+        ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);
+
+        if ($storedItems) {
+            $query->where('type', PalletReturnTypeEnum::STORED_ITEM);
+        } else {
+            $query->where('type', PalletReturnTypeEnum::PALLET);
+        }
+
+        $previous = $query->orderBy('id', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getNext(PalletReturn $palletReturn, ActionRequest $request, bool $storedItems = false): ?array
     {
-        $next = PalletReturn::where('id', '>', $palletReturn->id)
-            ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id)
-            ->orderBy('id')->first();
+        $query = PalletReturn::where('id', '>', $palletReturn->id)
+        ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);
+
+        if ($storedItems) {
+            $query->where('type', PalletReturnTypeEnum::STORED_ITEM);
+        } else {
+            $query->where('type', PalletReturnTypeEnum::PALLET);
+        }
+
+        $next = $query->orderBy('id')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
