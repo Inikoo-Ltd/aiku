@@ -54,7 +54,6 @@ class UpdateCustomerAddress extends OrgAction
         } else {
             return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
         }
-        return false;
     }
 
     public function asController(Customer $customer, ActionRequest $request): void
@@ -65,13 +64,6 @@ class UpdateCustomerAddress extends OrgAction
         $this->handle($customer, $this->validatedData);
     }
 
-    public function fromFulfilmentCustomer(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): void
-    {
-        $this->scope = $fulfilmentCustomer;
-        $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
-
-        $this->handle($fulfilmentCustomer->customer, $this->validatedData);
-    }
 
     public function action(Customer $customer, $modelData): void
     {
