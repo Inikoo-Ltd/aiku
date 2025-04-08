@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\Invoice\StrictDeleteInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteRefundInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\ForceDeleteRefundInProcessInvoiceTransaction;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::patch('update', UpdateInvoice::class)->name('update');
+    Route::patch('delete', StrictDeleteInvoice::class)->name('delete');
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();
 
     Route::post('send-invoice', SendInvoiceEmailToCustomer::class)->name('send_invoice');
