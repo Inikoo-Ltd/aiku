@@ -30,6 +30,7 @@ const props = defineProps<{
 		placeholder?: string
 	}
 	data?: any
+	invoice?: any
 }>()
 
 const emits = defineEmits<{
@@ -162,7 +163,7 @@ const onClickDelete = () => {
 										<template v-if="!showConfirmationInput">
 											<!-- Initial Information Step -->
 											<DialogTitle as="h3" class="text-base font-semibold mb-2" >
-												{{trans("Delete")}} {{  data.reference }}
+												{{trans("Delete")}} {{  data?.reference || invoice?.reference}}
 											</DialogTitle>
 											<div
 												class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">
@@ -181,7 +182,7 @@ const onClickDelete = () => {
 												<ul class="list-disc list-inside space-y-2">
 													<li>
 														This will permanently delete the
-														<strong>{{ data.reference }}</strong>
+														<strong>{{ data?.reference || invoice?.reference }}</strong>
 														 All these items will be
 														<strong>permanently deleted</strong>.
 													</li>
@@ -213,7 +214,7 @@ const onClickDelete = () => {
 											</DialogTitle>
 											<p class="text-sm text-gray-700 mb-4">
 												Please type delivery reference
-												<strong>{{data.reference}}</strong> to confirm deletion.
+												<strong>{{data?.reference || invoice?.reference}}</strong> to confirm deletion.
 											</p>
 											<!-- Input field for confirmation (you can also use a regular input if desired) -->
 											<PureTextarea
@@ -232,7 +233,7 @@ const onClickDelete = () => {
 													type="tertiary"
 													:label="trans('Delete')"
 													:disabled="
-														messageDelete.trim() !== data.reference
+														messageDelete.trim() == data?.reference || messageDelete.trim() == invoice?.reference
 													"
 													@click="onClickDelete" />
 											</div>
