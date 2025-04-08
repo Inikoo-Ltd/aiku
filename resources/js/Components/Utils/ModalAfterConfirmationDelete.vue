@@ -161,8 +161,8 @@ const onClickDelete = () => {
 										<!-- Conditional Rendering: initial info or confirmation input view -->
 										<template v-if="!showConfirmationInput">
 											<!-- Initial Information Step -->
-											<DialogTitle as="h3" class="text-base font-semibold">
-												{{ title || trans("Delete") }}
+											<DialogTitle as="h3" class="text-base font-semibold mb-2" >
+												{{trans("Delete")}} {{  data.reference }}
 											</DialogTitle>
 											<div
 												class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">
@@ -209,10 +209,10 @@ const onClickDelete = () => {
 										<template v-else>
 											<!-- Confirmation Input Step -->
 											<DialogTitle as="h3" class="text-base font-semibold">
-												{{ trans("Confirm Delete Repository") }}
+												{{ trans("Confirm Delete") }}
 											</DialogTitle>
 											<p class="text-sm text-gray-700 mb-4">
-												Please type delevery reference
+												Please type delivery reference
 												<strong>{{data.reference}}</strong> to confirm deletion.
 											</p>
 											<!-- Input field for confirmation (you can also use a regular input if desired) -->
@@ -220,7 +220,7 @@ const onClickDelete = () => {
 												v-model="messageDelete"
 												:placeholder="
 													(props.message && props.message.placeholder) ||
-													trans('Type repository name here')
+													trans('Type here...')
 												"
 												class="mb-4" />
 											<div class="flex justify-end space-x-3">
@@ -230,7 +230,7 @@ const onClickDelete = () => {
 													@click="showConfirmationInput = false" />
 												<Button
 													type="tertiary"
-													:label="trans('Delete Repository')"
+													:label="trans('Delete')"
 													:disabled="
 														messageDelete.trim() !== data.reference
 													"
