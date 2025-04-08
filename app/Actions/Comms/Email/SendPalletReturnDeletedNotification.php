@@ -2,7 +2,7 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 05-03-2025, Bali, Indonesia
+ * Created on: 08-04-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
@@ -20,10 +20,10 @@ use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\Email;
-use App\Models\CRM\Customer;
+use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 
-class SendNewCustomerNotification extends OrgAction
+class SendPalletReturnDeletedNotification extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -31,12 +31,13 @@ class SendNewCustomerNotification extends OrgAction
 
     private Email $email;
 
-    public function handle(Customer $customer): void
+    public function handle(PalletReturn $palletReturn): void
     {
         /** @var Outbox $outbox */
-        $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::NEW_CUSTOMER->value)->first();
+        $outbox = $palletReturn->fulfilment->shop->outboxes()->where('code', OutboxCodeEnum::PALLET_RETURN_DELETED->value)->first();
 
-        $subscribedUsers = $outbox->subscribedUsers;
+        $customer = $palletReturn->fulfilmentCustomer->customer;
+        $subscribedUsers = $outbox->subscribedUsers ?? [];
         foreach ($subscribedUsers as $subscribedUser) {
             if ($subscribedUser->user) {
                 $recipient = $subscribedUser->user;
@@ -65,33 +66,33 @@ class SendNewCustomerNotification extends OrgAction
                 '',
                 additionalData: [
                     'customer_name' => $customer->name,
-                    'customer_email' => $customer->email,
-                    'customer_shop' => $customer->shop->name,
-                    'customer_organisation' => $customer->organisation->name,
-                    'customer_url' => $customer->shop->fulfilment ? route('grp.org.fulfilments.show.crm.customers.show', [
-                        $customer->organisation->slug,
-                        $customer->shop->fulfilment->slug,
-                        $customer->fulfilmentCustomer->slug
-                    ]) : route('grp.org.shops.show.crm.customers.show', [
-                        $customer->organisation->slug,
-                        $customer->shop->slug,
-                        $customer->slug
+                    'pallet_reference' => $palletReturn->reference,
+                    'date' => $palletReturn->deleted_at->format('F jS, Y'),
+                    'pallet_link' => route('grp.org.fulfilments.show.operations.pallet-returns.show', [ // TODO: add show deleted pallet return
+                        $palletReturn->organisation->slug,
+                        $palletReturn->fulfilment->slug,
+                        $palletReturn->slug
                     ]),
-                    'customer_register_date' => $customer->created_at->format('F jS, Y')
+                    'customer_link' => route('grp.org.fulfilments.show.crm.customers.show', [
+                        $palletReturn->organisation->slug,
+                        $palletReturn->fulfilment->slug,
+                        $palletReturn->fulfilmentCustomer->slug
+                    ]),
                 ]
             );
         }
 
     }
 
-    public string $commandSignature = 'xxxx';
+    // public string $commandSignature = 'xxx';
 
-    public function asCommand($command)
-    {
-        $pallet = Customer::withTrashed()->find(182402);
+    // public function asCommand($command){
+    //     $pallet = PalletReturn::withTrashed()->find(1);
 
-        $this->handle($pallet);
-    }
+
+    //     $this->handle($pallet);
+    // }
+
 
 
 
