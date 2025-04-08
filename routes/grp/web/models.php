@@ -103,6 +103,7 @@ use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
+use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturnItem\NotPickedPalletFromReturn;
@@ -419,6 +420,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('pick-all-with-stored-items', PickedPalletReturnWithStoredItems::class)->name('pick_all_with_stored_items');
     Route::post('address', AddAddressToPalletReturn::class)->name('address.store');
+    Route::patch('address/switch', SwitchPalletReturnDeliveryAddress::class)->name('address.switch');
     Route::patch('address/update', UpdatePalletReturnDeliveryAddress::class)->name('address.update');
     Route::delete('address/delete', DeletePalletReturnAddress::class)->name('address.delete');
 
@@ -621,7 +623,7 @@ Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.upd
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
-    Route::post('address', AddDeliveryAddressToCustomer::class)->name('address.store');
+    Route::post('delivery-address', AddDeliveryAddressToCustomer::class)->name('address.store');
     Route::patch('address/update', UpdateCustomerAddress::class)->name('address.update');
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');

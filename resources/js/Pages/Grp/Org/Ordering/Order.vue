@@ -50,7 +50,8 @@ import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import ModalAddress from '@/Components/Utils/ModalAddress.vue'
+import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
+
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -70,6 +71,7 @@ import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
+import DeliveryAddressManagementModal from '@/Components/Utils/DeliveryAddressManagementModal.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 
@@ -107,7 +109,13 @@ const props = defineProps<{
     }
 
     upload_spreadsheet: UploadPallet
-
+    address_management:{
+      can_open_address_management: boolean
+      updateRoute: routeType
+      addresses: AddressManagement
+      address_update_route: routeType,
+      address_modal_title: string
+    }
     box_stats: {
         customer: {
             reference: string
@@ -548,8 +556,12 @@ const openModal = (action :any) => {
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
-                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-                    v-html="box_stats?.customer.addresses.delivery.formatted_address">
+                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                    <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                    <div @click="() => isModalAddress = true"
+                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                        <span>{{ trans('Edit') }}</span>
+                    </div>
                 </dd>
             </div>
 
@@ -648,8 +660,9 @@ const openModal = (action :any) => {
 	<ModalProductList v-model="isModaProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <ModalAddress
-            :addresses="addresses"
+        <DeliveryAddressManagementModal
+            :address_modal_title="address_management.address_modal_title"
+		    :addresses="address_management.addresses"
             :updateRoute="address_update_route"
             keyPayloadEdit="delivery_address"
         />
