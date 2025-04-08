@@ -332,7 +332,7 @@ class ShowPalletDelivery extends OrgAction
                         'style'   => 'delete',
                         'tooltip' => __('delete'),
                         'label'   => __('delete'),
-                        'key'     => 'delete_delivery',
+                        'key'     => 'delete_booked_in',
                         'ask_why' => true,
                         'route'   => [
                             'method'     => 'delete',
@@ -429,7 +429,7 @@ class ShowPalletDelivery extends OrgAction
                         'style'   => 'delete',
                         'tooltip' => __('delete'),
                         'label'   => __('delete'),
-                        'key'     => 'delete_delivery',
+                        'key'     => 'delete_booked_in',
                         'ask_why' => true,
                         'route'   => [
                             'method'     => 'delete',
@@ -495,7 +495,7 @@ class ShowPalletDelivery extends OrgAction
                         'style'   => 'delete',
                         'tooltip' => __('delete'),
                         'label'   => __('delete'),
-                        'key'     => 'delete_delivery',
+                        'key'     => 'delete_booked_in',
                         'ask_why' => true,
                         'route'   => [
                             'method'     => 'delete',

@@ -51,10 +51,6 @@ class DeleteBookedInPalletDelivery extends OrgAction
                 }
             }
 
-            $this->update($palletDelivery, [
-                'delete_comment' => Arr::get($modelData, 'delete_comment')
-            ]);
-
             $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
 
             $fulfilmentCustomer->customer->auditEvent    = 'delete';
@@ -65,7 +61,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
             ];
 
             $fulfilmentCustomer->customer->auditCustomNew = [
-                'delivery' => __("The delivery has been deleted due to: $palletDelivery->delete_comment.")
+                'delivery' => __("The delivery has been deleted.")
             ];
 
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
@@ -85,7 +81,6 @@ class DeleteBookedInPalletDelivery extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_comment' => ['sometimes', 'required'],
             'delete_confirmation' => ['required']
         ];
     }
@@ -96,7 +91,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
             return true;
         }
 
-        return false;
+        return true;
     }
 
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): void
