@@ -108,7 +108,13 @@ const props = defineProps<{
     stored_items?: {}
     services?: {}
     service_list_route: routeType
-    addresses?: {}
+    address_management:{
+      can_open_address_management: boolean
+      updateRoute: routeType
+      addresses: AddressManagement
+      address_update_route: routeType,
+      address_modal_title: string
+    }
     physical_goods?: {}
     physical_good_list_route: routeType
     stored_item_list_route : routeType
@@ -560,7 +566,7 @@ const openModalAddPallet = ref(false)
         :box_stats
         :updateRoute
         :notes_data
-        :addresses
+        :address_management
         :address_update_route
     />
 
