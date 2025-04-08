@@ -48,6 +48,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import HelpArticles from '@/Components/Utils/HelpArticles.vue'
+import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
 
 library.add(faUser, faTruckCouch, faPallet, faPlus, faFilePdf, faIdCardAlt, faPaperclip, faEnvelope, faPhone,faExclamationTriangle, faConciergeBell, faCube, faCalendarDay, faPencil, faUndoAlt)
 
@@ -365,7 +366,7 @@ const isModalUploadFileOpen = ref(false)
         <!-- Button: delete Delivery -->
         <template #button-delete-delivery="{ action }">
             <div>
-                <ModalConfirmationDelete
+                <ModalAfterConfirmationDelete
                     :routeDelete="action.route"
                     isFullLoading
                     isWithMessage
@@ -383,7 +384,7 @@ const isModalUploadFileOpen = ref(false)
                         />
 
                     </template>
-                </ModalConfirmationDelete>
+                </ModalAfterConfirmationDelete>
             </div>
         </template>
 
