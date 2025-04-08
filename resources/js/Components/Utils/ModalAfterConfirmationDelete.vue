@@ -232,9 +232,7 @@ const onClickDelete = () => {
 												<Button
 													type="tertiary"
 													:label="trans('Delete')"
-													:disabled="
-														messageDelete.trim() == data?.reference || messageDelete.trim() == invoice?.reference
-													"
+													
 													@click="onClickDelete" />
 											</div>
 										</template>
