@@ -84,7 +84,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         'all_items_returned' => $palletStoredItem->pallet->palletStoredItems->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED),
                         'is_pallet_returned' => $palletStoredItem->pallet->status == PalletStatusEnum::RETURNED,
 
-                        'syncRoute' =>match (request()->routeIs('retina.*')) { 
+                        'syncRoute' => match (request()->routeIs('retina.*')) {
                             true => [
                                 'name'       => 'retina.models.pallet-return.stored_item.attach',
                                 'parameters' => [

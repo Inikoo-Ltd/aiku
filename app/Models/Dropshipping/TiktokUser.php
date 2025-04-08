@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Tiktok\Traits\WithTiktokApiServices;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\PlatformHasClient;
+use App\Models\TiktokUserHasOrder;
 use App\Models\TiktokUserHasProduct;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\InCustomer;
@@ -113,5 +114,10 @@ class TiktokUser extends Model
     public function products(): HasMany
     {
         return $this->hasMany(TiktokUserHasProduct::class, 'tiktok_user_id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(TiktokUserHasOrder::class, 'tiktok_user_id');
     }
 }

@@ -15,7 +15,7 @@ use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ShopifyFulfilmentReasonEnum;
-use App\Enums\Dropshipping\ShopifyFulfilmentStateEnum;
+use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Country;
@@ -97,12 +97,12 @@ class StoreFulfilmentFromShopify extends OrgAction
             ];
 
             if ($allComplete) {
-                $status = ShopifyFulfilmentStateEnum::OPEN;
+                $status = ChannelFulfilmentStateEnum::OPEN;
                 $reasons = [];
             } elseif ($someComplete) {
-                $status = ShopifyFulfilmentStateEnum::HOLD;
+                $status = ChannelFulfilmentStateEnum::HOLD;
             } else {
-                $status = ShopifyFulfilmentStateEnum::INCOMPLETE;
+                $status = ChannelFulfilmentStateEnum::INCOMPLETE;
             }
 
             StoreStoredItemsToReturn::make()->action($palletReturn, [
@@ -117,9 +117,9 @@ class StoreFulfilmentFromShopify extends OrgAction
                 ...$reasons
             ]);
 
-            if ($shopifyOrder && $status === ShopifyFulfilmentStateEnum::HOLD) {
+            if ($shopifyOrder && $status === ChannelFulfilmentStateEnum::HOLD) {
                 HoldFulfilmentOrderShopify::run($shopifyOrder, $shopifyUser);
-            } elseif ($shopifyOrder && $status === ShopifyFulfilmentStateEnum::OPEN) {
+            } elseif ($shopifyOrder && $status === ChannelFulfilmentStateEnum::OPEN) {
                 SubmitAndConfirmPalletReturn::make()->action($palletReturn);
             } else {
                 CancelPalletReturn::make()->action($palletReturn->fulfilmentCustomer, $palletReturn);
