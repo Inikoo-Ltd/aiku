@@ -39,6 +39,11 @@ enum OutboxCodeEnum: string
     case RENTAL_AGREEMENT = 'rental_agreement';
     case PALLET_DELIVERY_PROCESSED = 'pallet_delivery_processed';
     case PALLET_RETURN_DISPATCHED = 'pallet_return_dispatched';
+    case NEW_PALLET_RETURN_FROM_CUSTOMER = 'new_pallet_return_from_customer';
+    case NEW_PALLET_DELIVERY_FROM_CUSTOMER = 'new_pallet_delivery_from_customer';
+    case PALLET_DELIVERY_DELETED = 'pallet_delivery_deleted';
+    case PALLET_RETURN_DELETED = 'pallet_return_deleted';
+    case PALLET_DELETED = 'pallet_deleted';
     case INVITE = 'invite';
     case TEST = 'test';
 
@@ -74,6 +79,11 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER => OutboxTypeEnum::MARKETING_NOTIFICATION,
             OutboxCodeEnum::TEST => OutboxTypeEnum::TEST,
 
+            OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
+            OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER,
+            OutboxCodeEnum::PALLET_DELIVERY_DELETED,
+            OutboxCodeEnum::PALLET_RETURN_DELETED,
+            OutboxCodeEnum::PALLET_DELETED,
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
@@ -113,6 +123,11 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => 'Pallet return dispatched',
             OutboxCodeEnum::INVITE => 'Invite',
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => 'Send invoice to customer',
+            OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER => 'New pallet return from customer',
+            OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER => 'New pallet delivery from customer',
+            OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
+            OutboxCodeEnum::PALLET_RETURN_DELETED => 'Pallet return deleted',
+            OutboxCodeEnum::PALLET_DELETED => 'Pallet deleted',
         };
     }
 
