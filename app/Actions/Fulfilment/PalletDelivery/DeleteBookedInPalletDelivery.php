@@ -36,7 +36,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
 
     public function handle(PalletDelivery $palletDelivery, array $modelData = []): void
     {
-        if(strtolower(trim($modelData['delete_confirmation'] ?? '')) === 'delete') 
+        if(strtolower(trim($modelData['delete_confirmation'] ?? '')) === strtolower($palletDelivery->reference)) 
         {   
             $palletDelivery->pallets()->delete();
             $palletDelivery->transactions()->delete();

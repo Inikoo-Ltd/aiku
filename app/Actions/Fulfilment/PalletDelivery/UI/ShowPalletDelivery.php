@@ -329,6 +329,21 @@ class ShowPalletDelivery extends OrgAction
                 PalletDeliveryStateEnum::RECEIVED => [
                     [
                         'type'    => 'button',
+                        'style'   => 'delete',
+                        'tooltip' => __('delete'),
+                        'label'   => __('delete'),
+                        'key'     => 'delete_delivery',
+                        'ask_why' => true,
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                            'parameters' => [
+                                'palletDelivery' => $palletDelivery->id
+                            ]
+                        ]
+                    ],
+                    [
+                        'type'    => 'button',
                         'style'   => 'edit',
                         'tooltip' => __('Edit'),
                         'key'     => 'action',
@@ -409,6 +424,21 @@ class ShowPalletDelivery extends OrgAction
                     ],
                 ],
                 PalletDeliveryStateEnum::BOOKING_IN => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'tooltip' => __('delete'),
+                        'label'   => __('delete'),
+                        'key'     => 'delete_delivery',
+                        'ask_why' => true,
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                            'parameters' => [
+                                'palletDelivery' => $palletDelivery->id
+                            ]
+                        ]
+                    ],
                     [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',
