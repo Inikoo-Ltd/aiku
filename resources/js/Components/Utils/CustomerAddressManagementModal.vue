@@ -296,6 +296,13 @@ const onDeleteAddress = (addressID: number) => {
                     <Transition name="spin-to-right">
                       <div class="font-semibold text-sm whitespace-nowrap">
                         <FontAwesomeIcon v-if="addresses.current_selected_address_id == homeAddress?.id" icon="fal fa-truck" fixed-width aria-hidden="true" />
+                       <!--  <Button
+                        v-else
+                        @click="() => onSelectAddress(homeAddress)"
+                        :label="isSelectAddressLoading == homeAddress?.id ? '' : 'Use this'"
+                        size="xxs"
+                        type="tertiary"
+                        :loading="isSelectAddressLoading == homeAddress?.id" /> -->
                       </div>
                     </Transition>
                   </div>
@@ -343,9 +350,9 @@ const onDeleteAddress = (addressID: number) => {
                     <div v-else class="text-xs italic whitespace-nowrap text-gray-400">
                       ({{ trans("No label") }})
                     </div>
-                    <div class="relative">
+                 <!--    <div class="relative">
                       <Button
-                        v-if="addresses.current_selected_address_id !== address.id"
+                        v-if="addresses.current_selected_address_id === address.id"
                             @click="() => onSelectAddress(address)"
                             :label="isSelectAddressLoading == address.id ? '' : 'Use this'"
                             size="xxs"
@@ -353,7 +360,7 @@ const onDeleteAddress = (addressID: number) => {
                             :loading="isSelectAddressLoading == address.id"
                             v-tooltip="'Apply to this section only'"
                         />
-                    </div>
+                    </div> -->
                   </div>
                   <div class="flex items-center">
                     <LoadingIcon v-if="isLoading === 'onPinned' + address.id" class="px-0.5" />

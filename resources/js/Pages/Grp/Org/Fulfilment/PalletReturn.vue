@@ -38,13 +38,13 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue";
 import { Table as TableTS } from "@/types/Table";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBuilding, faEnvelope, faIdCardAlt, faMapMarkerAlt, faNarwhal, faPaperclip, faPhone, faUndo, faUndoAlt, faUser } from "@fal";
+import { faBuilding, faEnvelope, faIdCardAlt, faMapMarkerAlt, faNarwhal, faPaperclip, faPhone, faUndo, faUndoAlt, faUser, faArrowAltRight, faArrowAltLeft } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { AddressManagement } from "@/types/PureComponent/Address";
 
-library.add(faIdCardAlt, faUser, faPaperclip, faBuilding, faEnvelope, faPhone, faMapMarkerAlt, faNarwhal, faUndo, faUndoAlt )
+library.add(faIdCardAlt, faUser, faPaperclip, faBuilding, faEnvelope, faPhone, faMapMarkerAlt, faNarwhal, faUndo, faUndoAlt, faArrowAltRight, faArrowAltLeft)
 
 const props = defineProps<{
     title: string

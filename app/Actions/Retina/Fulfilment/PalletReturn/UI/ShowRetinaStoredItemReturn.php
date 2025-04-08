@@ -76,8 +76,8 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => ShowRetinaPalletReturn::make()->getPrevious($palletReturn, $request),
-                    'next'     => ShowRetinaPalletReturn::make()->getNext($palletReturn, $request),
+                    'previous' => ShowRetinaPalletReturn::make()->getPrevious($palletReturn, $request, true),
+                    'next'     => ShowRetinaPalletReturn::make()->getNext($palletReturn, $request, true),
                 ],
                 'pageHead'    => [
                     'title'      => $palletReturn->reference,
