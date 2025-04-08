@@ -35,7 +35,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
 
     private bool $action = false;
 
-    public function handle(PalletDelivery $palletDelivery, array $modelData = []): void
+    public function handle(PalletDelivery $palletDelivery, array $modelData = []): FulfilmentCustomer
     {
         if(strtolower(trim($modelData['delete_confirmation'] ?? '')) === strtolower($palletDelivery->reference)) 
         {   
@@ -73,9 +73,20 @@ class DeleteBookedInPalletDelivery extends OrgAction
             $fulfilmentCustomer->refresh();
             FulfilmentCustomerHydratePalletDeliveries::dispatch($fulfilmentCustomer);
             FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
+
+            return $fulfilmentCustomer;
         } else {
             abort(419);
         }
+    }
+
+    public function htmlResponse(FulfilmentCustomer $fulfilmentCustomer): RedirectResponse
+    {
+        return Redirect::route('grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.index', [
+            'organisation' => $fulfilmentCustomer->organisation->slug,
+            'fulfilment' => $fulfilmentCustomer->fulfilment->slug,
+            'fulfilmentCustomer' => $fulfilmentCustomer->slug
+        ]);
     }
 
     public function rules(): array
@@ -94,11 +105,11 @@ class DeleteBookedInPalletDelivery extends OrgAction
         return true;
     }
 
-    public function asController(PalletDelivery $palletDelivery, ActionRequest $request): void
+    public function asController(PalletDelivery $palletDelivery, ActionRequest $request): FulfilmentCustomer
     {
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);
 
-        $this->handle($palletDelivery, $this->validatedData);
+        return $this->handle($palletDelivery, $this->validatedData);
     }
 
     public function action(PalletDelivery $palletDelivery, $modelData): void
