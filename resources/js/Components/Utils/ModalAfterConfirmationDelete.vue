@@ -57,15 +57,17 @@ const onClickDelete = () => {
 	if (!props.routeDelete?.name) return
 
 	const selectedMethod = props.routeDelete?.method || "delete"
-	const body =
-		selectedMethod !== "delete"
-			? {
-					[props.keyMessage || "delete_confirmation"]: messageDelete.value,
-			  }
-			: undefined
+
+	// Build the payload regardless of the method
+	const payload = {
+		["delete_confirmation"]: messageDelete.value,
+	}
+
 
 	if (selectedMethod === "delete") {
+		// For delete requests, pass the payload inside the 'data' property.
 		router.delete(route(props.routeDelete.name, props.routeDelete.parameters), {
+			data: payload,
 			onStart: () => {
 				isLoadingdelete.value = true
 			},
@@ -82,21 +84,26 @@ const onClickDelete = () => {
 			},
 		})
 	} else {
-		router[selectedMethod](route(props.routeDelete.name, props.routeDelete.parameters), body, {
-			onStart: () => {
-				isLoadingdelete.value = true
-			},
-			onSuccess: () => {
-				isOpenModal.value = false
-				showConfirmationInput.value = false
-				messageDelete.value = ""
-			},
-			onFinish: () => {
-				if (!props.isFullLoading) {
-					isLoadingdelete.value = false
-				}
-			},
-		})
+		// For other methods, pass the payload as the second parameter.
+		router[selectedMethod](
+			route(props.routeDelete.name, props.routeDelete.parameters),
+			payload,
+			{
+				onStart: () => {
+					isLoadingdelete.value = true
+				},
+				onSuccess: () => {
+					isOpenModal.value = false
+					showConfirmationInput.value = false
+					messageDelete.value = ""
+				},
+				onFinish: () => {
+					if (!props.isFullLoading) {
+						isLoadingdelete.value = false
+					}
+				},
+			}
+		)
 	}
 }
 </script>
