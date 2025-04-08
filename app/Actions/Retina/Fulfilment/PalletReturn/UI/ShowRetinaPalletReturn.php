@@ -365,7 +365,7 @@ class ShowRetinaPalletReturn extends RetinaAction
     public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
         $previous = PalletReturn::where('id', '<', $palletReturn->id)
-            ->where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)
+            ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id)
             ->orderBy('id', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
@@ -374,7 +374,7 @@ class ShowRetinaPalletReturn extends RetinaAction
     public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
         $next = PalletReturn::where('id', '>', $palletReturn->id)
-            ->where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)
+            ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id)
             ->orderBy('id')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
@@ -387,20 +387,7 @@ class ShowRetinaPalletReturn extends RetinaAction
         }
 
 
-        return match (class_basename($this->parent)) {
-            'Warehouse' => [
-                'label' => $palletReturn->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $palletReturn->organisation->slug,
-                        'warehouse'    => $palletReturn->warehouse->slug,
-                        'palletReturn' => $palletReturn->slug
-                    ]
-
-                ]
-            ],
-            'FulfilmentCustomer' => [
+        return [
                 'label' => $palletReturn->slug,
                 'route' => [
                     'name'       => $routeName,
@@ -412,8 +399,6 @@ class ShowRetinaPalletReturn extends RetinaAction
                     ]
 
                 ]
-            ],
-            default => []
-        };
+            ];
     }
 }
