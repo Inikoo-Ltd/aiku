@@ -77,6 +77,8 @@ trait WithSendBulkEmails
             'customer-url' => Arr::get($additionalData, 'customer_url'),
             'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
 
+            'invoice-reference' => Arr::get($additionalData, 'invoice_reference'),
+            'invoice-link' => Arr::get($additionalData, 'invoice_link'),
             'customer-link' => Arr::get($additionalData, 'customer_link'),
             'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
