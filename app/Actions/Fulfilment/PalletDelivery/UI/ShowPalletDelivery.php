@@ -329,9 +329,9 @@ class ShowPalletDelivery extends OrgAction
                 PalletDeliveryStateEnum::RECEIVED => [
                     [
                         'type'    => 'button',
-                        'style'   => 'delete',
+                        'style'   => 'red',
                         'tooltip' => __('delete'),
-                        'label'   => __('delete'),
+                        'icon'    => 'fal fa-trash',
                         'key'     => 'delete_booked_in',
                         'ask_why' => true,
                         'route'   => [
@@ -426,9 +426,9 @@ class ShowPalletDelivery extends OrgAction
                 PalletDeliveryStateEnum::BOOKING_IN => [
                     [
                         'type'    => 'button',
-                        'style'   => 'delete',
+                        'style'   => 'red',
                         'tooltip' => __('delete'),
-                        'label'   => __('delete'),
+                        'icon'    => 'fal fa-trash',
                         'key'     => 'delete_booked_in',
                         'ask_why' => true,
                         'route'   => [
@@ -492,9 +492,9 @@ class ShowPalletDelivery extends OrgAction
                 PalletDeliveryStateEnum::BOOKED_IN => [
                     [
                         'type'    => 'button',
-                        'style'   => 'delete',
+                        'style'   => 'red',
                         'tooltip' => __('delete'),
-                        'label'   => __('delete'),
+                        'icon'    => 'fal fa-trash',
                         'key'     => 'delete_booked_in',
                         'ask_why' => true,
                         'route'   => [
@@ -552,9 +552,9 @@ class ShowPalletDelivery extends OrgAction
                 $actions = array_merge([
                     [
                         'type'    => 'button',
-                        'style'   => 'delete',
+                        'style'   => 'red',
                         'tooltip' => __('delete'),
-                        'label'   => __('delete'),
+                        'icon'    => 'fal fa-trash',
                         'key'     => 'delete_delivery',
                         'ask_why' => true,
                         'route'   => [
