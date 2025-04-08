@@ -27,6 +27,7 @@ import cardsProperty from '@/Components/CMS/Fields/CardArray.vue'
 import InputNumberCss from '@/Components/CMS/Fields/InputNumberCss.vue'
 import JustifyContent from '@/Components/CMS/Fields/JustifyContent.vue'
 import Shadow from '@/Components/CMS/Fields/Shadow.vue'
+import ColumnComponentPicker from '@/Components/CMS/Fields/ColumnComponentPicker.vue'
 
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
@@ -66,6 +67,7 @@ export const getComponent = (componentName: string) => {
         "justify-content" : JustifyContent,
         "shadow" : Shadow,
         "color" : ColorProperty,
+        "column-layout" : ColumnComponentPicker,
     }
     
     return components[componentName] ?? NotFoundComponents
