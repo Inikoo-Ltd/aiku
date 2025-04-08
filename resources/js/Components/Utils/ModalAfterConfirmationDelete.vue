@@ -29,6 +29,7 @@ const props = defineProps<{
 	message?: {
 		placeholder?: string
 	}
+	data?: any
 }>()
 
 const emits = defineEmits<{
@@ -110,7 +111,6 @@ const onClickDelete = () => {
 
 <template>
 	<div>
-		<!-- Trigger Slot -->
 		<slot
 			name="default"
 			:isOpenModal="isOpenModal"
@@ -175,15 +175,14 @@ const onClickDelete = () => {
 													read this!
 												</p>
 											</div>
+
 											<!-- Description with bullet points -->
 											<div class="text-sm text-gray-700 mb-6">
 												<ul class="list-disc list-inside space-y-2">
 													<li>
 														This will permanently delete the
-														<strong>Pallet BlaBla</strong> repository,
-														wiki, issues, comments, packages, secrets,
-														workflow runs, and remove all collaborator
-														associations. All these items will be
+														<strong>{{ data.reference }}</strong>
+														 All these items will be
 														<strong>permanently deleted</strong>.
 													</li>
 													<li>
@@ -214,7 +213,7 @@ const onClickDelete = () => {
 											</DialogTitle>
 											<p class="text-sm text-gray-700 mb-4">
 												Please type delevery reference
-												<strong>Pallet BlaBla</strong> to confirm deletion.
+												<strong>{{data.reference}}</strong> to confirm deletion.
 											</p>
 											<!-- Input field for confirmation (you can also use a regular input if desired) -->
 											<PureTextarea
@@ -233,7 +232,7 @@ const onClickDelete = () => {
 													type="tertiary"
 													:label="trans('Delete Repository')"
 													:disabled="
-														messageDelete.trim() !== 'Pallet BlaBla'
+														messageDelete.trim() !== data.reference
 													"
 													@click="onClickDelete" />
 											</div>
