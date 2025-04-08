@@ -8,11 +8,12 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Order;
 
-use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatform;
+use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ShopifyFulfilmentReasonEnum;
@@ -32,11 +33,15 @@ class StoreTiktokOrder extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithGeneratedTiktokAddress;
 
     public function handle(TiktokUser $tiktokUser, array $attributes)
     {
-        $tiktokOrders = [];
-        $orderState = match (Arr::get($attributes, 'status')) {
+        $tiktokOrders = $attributes;
+        $address = Arr::get($tiktokOrders, 'recipient_address');
+        data_set($address, 'email', Arr::get($tiktokOrders, 'buyer_email'));
+
+        $orderState = match (Arr::get($tiktokOrders, 'status')) {
             'AWAITING_SHIPMENT' => OrderStateEnum::SUBMITTED->value,
             'CANCEL' => OrderStateEnum::CANCELLED->value,
             'DELIVERED', 'COMPLETED' => OrderStateEnum::FINALISED->value
@@ -44,12 +49,11 @@ class StoreTiktokOrder extends RetinaAction
 
         /** @var CustomerClient $customerClient */
         $customerClient = $tiktokUser->customer->clients()->where('email', Arr::get($attributes, 'buyer_email'))->first();
+        $address = $this->getAddressAttributes($address);
 
-        if (!$customerClient) {
-            $attributes = $this->getAttributes($tiktokUser->customer, Arr::get($tiktokOrders, 'recipient_address'));
-
-            $customerClient = StoreCustomerClient::make()->action($customerClient->customer, $attributes);
-        }
+        $customerClient = StoreRetinaClientFromPlatform::run($tiktokUser, $address, [
+            'id' => Arr::get($tiktokOrders, 'user_id')
+        ], $customerClient);
 
         data_set($tiktokOrders, 'customer_client_id', $customerClient->id);
         data_set($tiktokOrders, 'state', $orderState);

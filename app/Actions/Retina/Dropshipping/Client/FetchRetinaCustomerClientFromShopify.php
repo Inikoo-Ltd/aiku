@@ -8,8 +8,6 @@
 
 namespace App\Actions\Retina\Dropshipping\Client;
 
-use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
-use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
 use App\Models\CRM\Customer;
@@ -44,23 +42,7 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
                     data_set($attributes, 'address', $shopifyUser->customer?->deliveryAddress?->toArray());
                 }
 
-                if (!$existsClient) {
-                    $customerClient = StoreCustomerClient::make()->action($this->parent, $attributes);
-
-                    AttachRetinaPlatformCustomerClient::run($shopifyUser->customer, $shopifyUser, [
-                        'customer_client_id' => $customerClient->id,
-                        'platform_customer_client_id' => Arr::get($customer, 'id')
-                    ]);
-                } else {
-                    if (!$shopifyUser->clients()->where('customer_client_id', $existsClient->id)->exists()) {
-                        AttachRetinaPlatformCustomerClient::run($shopifyUser->customer, $shopifyUser, [
-                            'customer_client_id' => $existsClient->id,
-                            'platform_customer_client_id' => Arr::get($customer, 'id')
-                        ]);
-                    }
-
-                    UpdateCustomerClient::run($existsClient, Arr::except($attributes, 'address'));
-                }
+                StoreRetinaClientFromPlatform::run($shopifyUser, $address, $customer, $existsClient);
             }
         }
     }

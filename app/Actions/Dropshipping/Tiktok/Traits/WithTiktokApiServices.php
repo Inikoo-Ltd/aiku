@@ -130,4 +130,13 @@ trait WithTiktokApiServices
             'content-type' => 'application/json'
         ], true, $params);
     }
+
+    public function getProducts(array $params): array
+    {
+        $path = '/order/202309/orders';
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ], true, $params);
+    }
 }

@@ -78,7 +78,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('pallet-return-item-upload', ImportRetinaPalletReturnItem::class)->name('pallet-return-item.upload');
     Route::post('stored-item', StoreRetinaStoredItemsToReturn::class)->name('stored_item.store');
-    
+
     Route::post('pallet', AttachRetinaPalletsToReturn::class)->name('pallet.store'); //No longer used (free to delete) but idk
     Route::patch('update', UpdateRetinaPalletReturn::class)->name('update');
     Route::post('submit', SubmitRetinaPalletReturn::class)->name('submit');
@@ -141,6 +141,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
+    Route::get('tiktok/{tiktokUser:id}/sync-products', GetApiProductsFromShopify::class)->name('tiktok.product.sync')->withoutScopedBindings();
 });
 
 Route::name('web-users.')->prefix('web-users')->group(function () {

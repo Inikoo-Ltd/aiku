@@ -30,7 +30,6 @@ class HandleOrderIncomingTiktok
 
         $payload = Arr::get($modelData, 'data');
         $orderId = Arr::get($payload, 'order_id');
-        $orderStatus = Arr::get($payload, 'order_status');
 
         foreach ($tiktokUsers as $tiktokUser) {
             $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
