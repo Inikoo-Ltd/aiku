@@ -85,6 +85,7 @@ use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Fulfilment\PalletDelivery\CancelPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
+use App\Actions\Fulfilment\PalletDelivery\DeleteBookedInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\DeletePalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDeliveryWithStoredItems;
@@ -396,6 +397,7 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
     Route::post('received', ReceivePalletDelivery::class)->name('received');
     Route::post('booking', StartBookingPalletDelivery::class)->name('booking');
     Route::post('booked-in', SetPalletDeliveryAsBookedIn::class)->name('booked-in');
+    Route::delete('booked-in-delete', DeleteBookedInPalletDelivery::class)->name('booked-in-delete');
 
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPalletDelivery'])->name('attachment.detach')->withoutScopedBindings();

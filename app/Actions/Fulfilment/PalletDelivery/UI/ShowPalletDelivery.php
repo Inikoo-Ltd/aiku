@@ -460,6 +460,21 @@ class ShowPalletDelivery extends OrgAction
                     ] : null,
                 ],
                 PalletDeliveryStateEnum::BOOKED_IN => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'tooltip' => __('delete'),
+                        'label'   => __('delete'),
+                        'key'     => 'delete_delivery',
+                        'ask_why' => true,
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                            'parameters' => [
+                                'palletDelivery' => $palletDelivery->id
+                            ]
+                        ]
+                    ],
                     $palletDelivery->recurringBill->status == RecurringBillStatusEnum::CURRENT ? [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',
