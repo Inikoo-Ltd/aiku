@@ -81,8 +81,8 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         'pallet_id'                  => $palletStoredItem->pallet_id,
                         'state'                      => $palletReturnItem->state ?? null,
                         'pallet_return_item_id'      => $palletReturnItem->id ?? null,
-                        'all_items_returned' => $palletStoredItem->pallet->palletStoredItems->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED),
-                        'is_pallet_returned' => $palletStoredItem->pallet->status == PalletStatusEnum::RETURNED,
+                        'all_items_returned' => $palletStoredItem->pallet?->palletStoredItems?->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED),
+                        'is_pallet_returned' => $palletStoredItem->pallet?->status == PalletStatusEnum::RETURNED,
 
                         'syncRoute' => match (request()->routeIs('retina.*')) {
                             true => [
