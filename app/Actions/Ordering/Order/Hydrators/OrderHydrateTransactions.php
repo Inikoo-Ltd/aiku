@@ -14,24 +14,19 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrderHydrateTransactions
+class OrderHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Order $order;
 
-    public function __construct(Order $order)
+    public function getJobUniqueId(Order $order): string
     {
-        $this->order = $order;
+        return $order->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->order->id))->dontRelease()];
-    }
     public function handle(Order $order): void
     {
 

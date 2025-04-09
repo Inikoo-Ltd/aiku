@@ -9,6 +9,7 @@
 namespace App\Models\Dispatching;
 
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
@@ -51,6 +52,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
+ * @property DeliveryNoteItemSalesTypeEnum|null $sales_type
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
@@ -73,6 +75,7 @@ class DeliveryNoteItem extends Model
     protected $casts = [
         'data'   => 'array',
         'state'  => DeliveryNoteItemStateEnum::class,
+        'sales_type' => DeliveryNoteItemSalesTypeEnum::class
     ];
 
     protected $attributes = [

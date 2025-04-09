@@ -23,7 +23,6 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,7 +30,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaPalletReturn extends RetinaAction
 {
-    private FulfilmentCustomer $parent;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
@@ -51,7 +49,6 @@ class ShowRetinaPalletReturn extends RetinaAction
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
-        $this->parent = $request->user()->customer->fulfilmentCustomer;
         $this->initialisation($request)->withTab(RetinaPalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
