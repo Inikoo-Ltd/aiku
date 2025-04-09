@@ -208,6 +208,17 @@ class ShowInvoiceDeleted extends OrgAction
 
                 ]
             ],
+            'grp.org.accounting.deleted_invoices.show' => [
+                'label' => $invoice->reference,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation' => $invoice->organisation->slug,
+                        'invoiceId'      => $invoice->slug
+                    ]
+
+                ]
+            ],
             'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
             'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
             'grp.org.fulfilments.show.operations.invoices.show' => [
