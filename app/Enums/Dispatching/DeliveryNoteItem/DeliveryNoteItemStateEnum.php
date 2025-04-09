@@ -128,21 +128,21 @@ enum DeliveryNoteItemStateEnum: string
             ],
             'out_of_stock'     => [
                 'tooltip' => __('Out of Stock'),
-                'icon'    => 'fal fa-times',
+                'icon'    => 'fal fa-empty-set',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
                 'app'     => [
-                    'name' => 'times',
+                    'name' => 'empty-set',
                     'type' => 'font-awesome-5'
                 ]
             ],
             'no_dispatched'    => [
                 'tooltip' => __('No Dispatched'),
-                'icon'    => 'fal fa-times',
+                'icon'    => 'fal fa-exclamation-triangle',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
                 'app'     => [
-                    'name' => 'times',
+                    'name' => 'exclamation-triangle',
                     'type' => 'font-awesome-5'
                 ]
             ]

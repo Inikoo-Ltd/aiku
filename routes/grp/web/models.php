@@ -71,6 +71,7 @@ use App\Actions\Fulfilment\Pallet\AttachPalletsToReturn;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\DeletePallet;
+use App\Actions\Fulfilment\Pallet\DeleteStoredPallet;
 use App\Actions\Fulfilment\Pallet\ImportPalletReturnItem;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
 use App\Actions\Fulfilment\Pallet\SetPalletAsLost;
@@ -86,6 +87,7 @@ use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Fulfilment\PalletDelivery\CancelPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
+use App\Actions\Fulfilment\PalletDelivery\DeleteBookedInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\DeletePalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDeliveryWithStoredItems;
@@ -103,6 +105,7 @@ use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
+use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturnItem\NotPickedPalletFromReturn;
@@ -398,6 +401,7 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
     Route::post('received', ReceivePalletDelivery::class)->name('received');
     Route::post('booking', StartBookingPalletDelivery::class)->name('booking');
     Route::post('booked-in', SetPalletDeliveryAsBookedIn::class)->name('booked-in');
+    Route::delete('booked-in-delete', DeleteBookedInPalletDelivery::class)->name('booked-in-delete');
 
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPalletDelivery'])->name('attachment.detach')->withoutScopedBindings();
@@ -419,6 +423,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('pick-all-with-stored-items', PickedPalletReturnWithStoredItems::class)->name('pick_all_with_stored_items');
     Route::post('address', AddAddressToPalletReturn::class)->name('address.store');
+    Route::patch('address/switch', SwitchPalletReturnDeliveryAddress::class)->name('address.switch');
     Route::patch('address/update', UpdatePalletReturnDeliveryAddress::class)->name('address.update');
     Route::delete('address/delete', DeletePalletReturnAddress::class)->name('address.delete');
 
@@ -455,6 +460,7 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
 
     Route::patch('pallet-return-item', SyncPalletReturnItem::class)->name('pallet-return-item.sync');
 
+    Route::delete('stored/delete', DeleteStoredPallet::class)->name('stored.delete');
     Route::post('stored-items', SyncStoredItemToPallet::class)->name('stored-items.update');
     Route::post('stored-items/audit/{storedItemAudit:id}', SyncStoredItemToPalletAudit::class)->name('stored-items.audit')->withoutScopedBindings();
     Route::delete('stored-items/reset', ResetAuditStoredItemToPallet::class)->name('stored-items.audit.reset');
@@ -621,7 +627,7 @@ Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.upd
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
-    Route::post('address', AddDeliveryAddressToCustomer::class)->name('address.store');
+    Route::post('delivery-address', AddDeliveryAddressToCustomer::class)->name('address.store');
     Route::patch('address/update', UpdateCustomerAddress::class)->name('address.update');
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');

@@ -122,7 +122,7 @@ function createAdminGuest(Group $group): Guest
                     )
                 );
         } catch (Exception|Throwable) {
-           //
+            //
         }
     }
 

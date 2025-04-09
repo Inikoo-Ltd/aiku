@@ -71,6 +71,10 @@ class HydrateModels extends HydrateModel
             $this->hydrateHr($command);
         }
 
+        if ($this->checkIfCanHydrate(['dispatching','dis'], $command)) {
+            $this->hydrateDispatching($command);
+        }
+
         if ($this->checkIfCanHydrate(['accounting'], $command)) {
             $this->hydrateAccounting($command);
         }
@@ -90,6 +94,12 @@ class HydrateModels extends HydrateModel
         return 0;
     }
 
+
+    protected function hydrateDispatching(Command $command): void
+    {
+        $command->info('Dispatching 🚛️');
+        $command->call('hydrate:delivery_notes');
+    }
 
     protected function hydrateGoods(Command $command): void
     {

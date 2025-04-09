@@ -78,6 +78,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_outboxes_type_send_invoice_to_customer
  * @property int $number_dispatched_emails_state_delay
+ * @property int $number_outboxes_type_new_pallet_return_from_customer
+ * @property int $number_outboxes_type_new_pallet_delivery_from_customer
+ * @property int $number_outboxes_type_pallet_delivery_deleted
+ * @property int $number_outboxes_type_pallet_return_deleted
+ * @property int $number_outboxes_type_pallet_deleted
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
  * @method static Builder<static>|PostRoomStats newModelQuery()
  * @method static Builder<static>|PostRoomStats newQuery()

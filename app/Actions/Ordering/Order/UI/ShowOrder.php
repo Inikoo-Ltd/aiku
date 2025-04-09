@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
@@ -42,7 +41,6 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Purge;
-use Illuminate\Support\Facades\DB;
 
 class ShowOrder extends OrgAction
 {
@@ -255,41 +253,6 @@ class ShowOrder extends OrgAction
     {
         $finalTimeline = $this->getOrderTimeline($order);
 
-        $addresses = $order->customer->addresses;
-
-        $processedAddresses = $addresses->map(function ($address) {
-            if (!DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {
-                return $address->setAttribute('can_delete', false)
-                    ->setAttribute('can_edit', true);
-            }
-
-
-            return $address->setAttribute('can_delete', true)
-                ->setAttribute('can_edit', true);
-        });
-
-        $customerAddressId         = $order->customer->address->id;
-        $customerDeliveryAddressId = $order->customer->deliveryAddress->id;
-        $orderDeliveryAddressIds   = Order::where('customer_id', $order->customer_id)
-            ->pluck('delivery_address_id')
-            ->unique()
-            ->toArray();
-
-        $forbiddenAddressIds = array_merge(
-            $orderDeliveryAddressIds,
-            [$customerAddressId, $customerDeliveryAddressId]
-        );
-
-        $processedAddresses->each(function ($address) use ($forbiddenAddressIds) {
-            if (in_array($address->id, $forbiddenAddressIds, true)) {
-                $address->setAttribute('can_delete', false)
-                    ->setAttribute('can_edit', true);
-            }
-        });
-
-
-
-
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $actions = GetOrderActions::run($order, $this->canEdit);
@@ -316,28 +279,6 @@ class ShowOrder extends OrgAction
 
             $deliveryNoteResource = DeliveryNotesResource::make($order->deliveryNotes()->first());
         }
-
-        $customerAddressId         = $order->customer->address->id;
-        $customerDeliveryAddressId = $order->customer->deliveryAddress->id;
-        $orderDeliveryAddressIds   = Order::where('customer_id', $order->customer_id)
-            ->pluck('delivery_address_id')
-            ->unique()
-            ->toArray();
-
-        $forbiddenAddressIds = array_merge(
-            $orderDeliveryAddressIds,
-            [$customerAddressId, $customerDeliveryAddressId]
-        );
-
-        $processedAddresses->each(function ($address) use ($forbiddenAddressIds) {
-            if (in_array($address->id, $forbiddenAddressIds, true)) {
-                $address->setAttribute('can_delete', false)
-                    ->setAttribute('can_edit', true);
-            }
-        });
-
-        $addressCollection = AddressResource::collection($processedAddresses);
-
         return Inertia::render(
             'Org/Ordering/Order',
             [
@@ -384,47 +325,8 @@ class ShowOrder extends OrgAction
                 'notes'                => $this->getOrderNotes($order),
                 'timelines'            => $finalTimeline,
 
-                'address_update_route' => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.customer.address.update',
-                    'parameters' => [
-                        'customer' => $order->customer_id
-                    ]
-                ],
-                'addresses'            => [
-                    'isCannotSelect'                 => true,
-                    'address_list'                   => $addressCollection,
-                    'options'                        => [
-                        'countriesAddressData' => GetAddressData::run()
-                    ],
-                    'pinned_address_id'              => $order->customer->delivery_address_id,
-                    'home_address_id'                => $order->customer->address_id,
-                    'current_selected_address_id'    => $order->customer->delivery_address_id,
-                    'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
-                    'routes_list'                    => [
-                        'pinned_route' => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.customer.delivery-address.update',
-                            'parameters' => [
-                                'customer' => $order->customer_id
-                            ]
-                        ],
-                        'delete_route' => [
-                            'method'     => 'delete',
-                            'name'       => 'grp.models.customer.delivery-address.delete',
-                            'parameters' => [
-                                'customer' => $order->customer_id
-                            ]
-                        ],
-                        'store_route'  => [
-                            'method'     => 'post',
-                            'name'       => 'grp.models.customer.address.store',
-                            'parameters' => [
-                                'customer' => $order->customer_id
-                            ]
-                        ]
-                    ]
-                ],
+                'address_management' => GetOrderAddressManagement::run(order: $order),
+
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'          => OrderResource::make($order),

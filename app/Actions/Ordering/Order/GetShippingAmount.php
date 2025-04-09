@@ -61,40 +61,40 @@ class GetShippingAmount
     }
 
 
-//    public string $commandSignature = 'order:get-shipping-amount {order? : The ID of the order}';
-//
-//    public function commandProcess(Command $command, Order $order): void
-//    {
-//        list($shippingZone, $shippingAmount) = $this->handle($order);
-//
-//        $command->info('Shipping: '.$shippingAmount.' '.$shippingZone?->name);
-//
-//
-//    }
-//
-//    public function asCommand(Command $command): int
-//    {
-//        if ($command->argument('order')) {
-//            $orderId = $command->argument('order');
-//            $order   = Order::findOrFail($orderId);
-//            $this->commandProcess($command, $order);
-//        } else {
-//            $count = 0;
-//            $command->info('Processing all orders in chunks of 1000...');
-//
-//            Order::chunk(1000, function ($orders) use ($command, &$count) {
-//                foreach ($orders as $order) {
-//                    $this->commandProcess($command, $order);
-//                    $count++;
-//                }
-//                $command->info("Processed $count orders so far...");
-//            });
-//
-//            $command->info("Completed processing all $count orders.");
-//        }
-//
-//
-//        return 0;
-//    }
+    //    public string $commandSignature = 'order:get-shipping-amount {order? : The ID of the order}';
+    //
+    //    public function commandProcess(Command $command, Order $order): void
+    //    {
+    //        list($shippingZone, $shippingAmount) = $this->handle($order);
+    //
+    //        $command->info('Shipping: '.$shippingAmount.' '.$shippingZone?->name);
+    //
+    //
+    //    }
+    //
+    //    public function asCommand(Command $command): int
+    //    {
+    //        if ($command->argument('order')) {
+    //            $orderId = $command->argument('order');
+    //            $order   = Order::findOrFail($orderId);
+    //            $this->commandProcess($command, $order);
+    //        } else {
+    //            $count = 0;
+    //            $command->info('Processing all orders in chunks of 1000...');
+    //
+    //            Order::chunk(1000, function ($orders) use ($command, &$count) {
+    //                foreach ($orders as $order) {
+    //                    $this->commandProcess($command, $order);
+    //                    $count++;
+    //                }
+    //                $command->info("Processed $count orders so far...");
+    //            });
+    //
+    //            $command->info("Completed processing all $count orders.");
+    //        }
+    //
+    //
+    //        return 0;
+    //    }
 
 }

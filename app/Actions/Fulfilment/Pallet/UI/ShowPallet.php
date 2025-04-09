@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
@@ -128,6 +129,24 @@ class ShowPallet extends OrgAction
         if ($this->pallet->customer_reference) {
             $afterTitle = [
                 'label' => '('.$this->pallet->customer_reference.')'
+            ];
+        }
+
+        if ($pallet->state == PalletStateEnum::STORING) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'red_outline',
+                'tooltip' => __('delete'),
+                'icon'    => 'fal fa-trash-alt',
+                'key'     => 'delete_booked_in',
+                'ask_why' => true,
+                'route'   => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.pallet.stored.delete',
+                    'parameters' => [
+                        'pallet' => $pallet->id
+                    ]
+                ]
             ];
         }
 
