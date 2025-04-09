@@ -10,13 +10,17 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\ShopifyUserHasFulfilment;
+use App\Models\TiktokUserHasOrder;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -27,7 +31,10 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $parent, $prefix = null): LengthAwarePaginator
+    private ShopifyUser|TiktokUser $scope;
+    private Customer|FulfilmentCustomer $parent;
+
+    public function handle(ShopifyUser|Customer|TiktokUser $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -40,9 +47,14 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(ShopifyUserHasFulfilment::class);
+        $query = QueryBuilder::for($this->scope instanceof ShopifyUser ? ShopifyUserHasFulfilment::class : TiktokUserHasOrder::class);
 
-        $query->where('shopify_user_has_fulfilments.shopify_user_id', $parent->id);
+        if ($this->scope instanceof ShopifyUser) {
+            $query->where('shopify_user_has_fulfilments.shopify_user_id', $parent->id);
+        } else {
+            $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
+        }
+
         $query->with('model');
         $query->defaultSort('id');
 
@@ -75,9 +87,19 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
     {
         $this->initialisation($request);
 
-        $shopifyUser = $request->user()->customer->shopifyUser;
+        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
+            $this->scope = $request->user()->customer->shopifyUser;
+        } else {
+            $this->scope = $request->user()->customer->tiktokUser;
+        }
 
-        return $this->handle($shopifyUser);
+        if ($fulfilmentCustomer = $this->scope->customer->fulfilmentCustomer) {
+            $this->parent = $fulfilmentCustomer;
+        } else {
+            $this->parent = $this->scope->customer;
+        }
+
+        return $this->handle($this->scope);
     }
 
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
@@ -132,7 +154,15 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             // $table->column(key: 'model', label: __('model'), canBeHidden: false, searchable: true);
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
-            $table->column(key: 'shopify_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
+
+            if ($this->scope instanceof ShopifyUser) {
+                $table->column(key: 'shopify_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
+            }
+
+            if ($this->scope instanceof TiktokUser) {
+                $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
+            }
+
             // $table->column(key: 'client_name', label: __('client'), canBeHidden: false, searchable: true);
             $table->column(key: 'reason_notes', label: __('reason message'), canBeHidden: false, searchable: true);
             // $table->column(key: 'actions', label: __('actions'), canBeHidden: false, searchable: true);

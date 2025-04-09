@@ -10,7 +10,7 @@ namespace App\Enums\Dropshipping;
 
 use App\Enums\EnumHelperTrait;
 
-enum ShopifyFulfilmentStateEnum: string
+enum ChannelFulfilmentStateEnum: string
 {
     use EnumHelperTrait;
 

@@ -211,7 +211,8 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                                         'platform' => $this->platform->slug
                                     ]
                                 ]
-                            ]
+                            ],
+                            default => []
                         },
                     ],
 

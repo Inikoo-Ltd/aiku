@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
@@ -18,6 +19,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
@@ -29,9 +31,9 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexRetinaDropshippingPortfolio extends RetinaAction
 {
     protected FulfilmentCustomer|Customer $parent;
-    protected ShopifyUser|Customer $scope;
+    protected ShopifyUser|Customer|TiktokUser $scope;
 
-    public function handle(ShopifyUser|Customer $scope, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|TiktokUser|Customer $scope, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
 
@@ -39,6 +41,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $customer = $scope->customer;
             $query->where('customer_id', $customer->id);
             $query->where('type', PortfolioTypeEnum::SHOPIFY);
+        } elseif ($scope instanceof TiktokUser) {
+            $customer = $scope->customer;
+            $query->where('customer_id', $customer->id);
+            $query->where('type', PortfolioTypeEnum::TIKTOK);
         } elseif ($scope instanceof Customer) {
             $customer = $scope;
             $query->where('customer_id', $scope->id);
@@ -83,18 +89,21 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
     public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $shopifyUser = $request->user()->customer->shopifyUser;
-        $this->shopifyUser = $shopifyUser;
-
-        if ($fulfilmentCustomer = $shopifyUser->customer->fulfilmentCustomer) {
-            $this->parent = $fulfilmentCustomer;
-        } else {
-            $this->parent = $shopifyUser->customer;
-        }
-
         $this->initialisation($request);
 
-        return $this->handle($shopifyUser);
+        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
+            $this->scope = $request->user()->customer->shopifyUser;
+        } else {
+            $this->scope = $request->user()->customer->tiktokUser;
+        }
+
+        if ($fulfilmentCustomer = $this->scope->customer->fulfilmentCustomer) {
+            $this->parent = $fulfilmentCustomer;
+        } else {
+            $this->parent = $this->scope->customer;
+        }
+
+        return $this->handle($this->scope);
     }
 
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
@@ -116,14 +125,25 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                     'title' => __('My Portfolio'),
                     'icon' => 'fal fa-cube',
                     'actions' => [
-                        $this->customer->fulfilmentCustomer ? [
+                        $this->customer->is_fulfilment && ($this->scope instanceof ShopifyUser) ? [
                             'type' => 'button',
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
                                 'name' => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
-                                    'shopifyUser' => $this->shopifyUser->id
+                                    'shopifyUser' => $this->scope->id
+                                ]
+                            ]
+                        ] : [],
+                        $this->customer->is_fulfilment && ($this->scope instanceof TiktokUser) ? [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => 'Sync Items',
+                            'route' => [
+                                'name' => 'retina.models.dropshipping.tiktok.product.sync',
+                                'parameters' => [
+                                    'tiktokUser' => $this->scope->id
                                 ]
                             ]
                         ] : [],
@@ -157,11 +177,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                 ]);
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-
-            if ($this->parent instanceof Customer) {
-                $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
+            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
             // $table->column(key: 'tags', label: __('tags'), canBeHidden: false);

@@ -14,7 +14,7 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\ShopifyFulfilmentStateEnum;
+use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
@@ -70,7 +70,7 @@ class StoreOrderFromShopify extends OrgAction
             'model_id' => $order->id,
             'shopify_order_id' => Arr::get($modelData, 'order_id'),
             'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
-            'state' => ShopifyFulfilmentStateEnum::OPEN,
+            'state' => ChannelFulfilmentStateEnum::OPEN,
             'customer_client_id' => $customerClient->id
         ]);
     }

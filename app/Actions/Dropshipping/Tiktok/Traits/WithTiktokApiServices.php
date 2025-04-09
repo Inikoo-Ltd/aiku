@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 trait WithTiktokApiServices
 {
+    public string $version = '202309';
+
     public function generateSignature($path, $params, $appSecret, $body): string
     {
         ksort($params);
@@ -97,7 +99,7 @@ trait WithTiktokApiServices
 
     public function getAuthorizedShop(): array
     {
-        $path = '/authorization/202309/shops';
+        $path = '/authorization/'.$this->version.'/shops';
 
         return $this->makeApiRequest('GET', $path, [], false, [
             'content-type' => 'application/json'
@@ -106,7 +108,7 @@ trait WithTiktokApiServices
 
     public function uploadProductImageToTiktok(array $productData): array
     {
-        $path = '/product/202309/images/upload';
+        $path = '/product/'.$this->version.'/images/upload';
 
         return $this->makeApiRequest('POST', $path, $productData, false, [
             'content-type' => 'multipart/form-data'
@@ -115,7 +117,7 @@ trait WithTiktokApiServices
 
     public function uploadProductToTiktok(array $productData): array
     {
-        $path = '/product/202309/products';
+        $path = '/product/'.$this->version.'/products';
 
         return $this->makeApiRequest('POST', $path, $productData, true, [
             'content-type' => 'application/json'
@@ -124,9 +126,18 @@ trait WithTiktokApiServices
 
     public function getOrders(array $params): array
     {
-        $path = '/order/202309/orders';
+        $path = '/order/'.$this->version.'/orders';
 
         return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ], true, $params);
+    }
+
+    public function getProducts(array $productData, array $params): array
+    {
+        $path = '/product/'.$this->version.'/products/search';
+
+        return $this->makeApiRequest('POST', $path, $productData, true, [
             'content-type' => 'application/json'
         ], true, $params);
     }
