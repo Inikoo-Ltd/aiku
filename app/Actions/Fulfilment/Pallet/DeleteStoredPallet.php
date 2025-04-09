@@ -15,105 +15,128 @@ use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrat
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
+use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydratePallets;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopSupervisorAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\RecurringBillTransaction;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
-use OwenIt\Auditing\Events\AuditCustom;
 
 class DeleteStoredPallet extends OrgAction
 {
     use WithActionUpdate;
+    use WithFulfilmentShopSupervisorAuthorisation;
 
     private Pallet $pallet;
 
-    public function handle(Pallet $pallet, array $modelData): FulfilmentCustomer
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Pallet $pallet, $quiet = false): Pallet
     {
-        $fulfilmentCustomer = $pallet->fulfilmentCustomer;
-
-        DB::transaction(function () use ($pallet, $fulfilmentCustomer) {
+        $recurringBillTransactionDeleted = DB::transaction(function () use ($pallet) {
+            $recurringBillTransactionDeleted = false;
             if ($pallet->currentRecurringBill) {
                 $transaction = RecurringBillTransaction::where('item_type', 'Pallet')->where('item_id', $pallet->id)->first();
                 if ($transaction) {
                     DeleteRecurringBillTransaction::make()->action($transaction);
                     CalculateRecurringBillTotals::make()->action($pallet->currentRecurringBill);
+                    $recurringBillTransactionDeleted = true;
                 }
-                $pallet->currentRecurringBill->auditEvent    = 'delete';
-                $pallet->currentRecurringBill->isCustomEvent = true;
-                $pallet->currentRecurringBill->auditCustomOld = [
-                    'pallet' => $pallet->reference
-                ];
-                $pallet->currentRecurringBill->auditCustomNew = [
-                    'pallet' => __("The pallet :ref has been deleted.", ['ref' => $pallet->reference])
-                ];
-                Event::dispatch(AuditCustom::class, [$pallet->currentRecurringBill]);
             }
 
-            $fulfilmentCustomer->customer->auditEvent    = 'delete';
-            $fulfilmentCustomer->customer->isCustomEvent = true;
-            $fulfilmentCustomer->customer->auditCustomOld = [
-                'pallet' => $pallet->reference
-            ];
-            $fulfilmentCustomer->customer->auditCustomNew = [
-                'pallet' => __("The pallet :ref has been deleted.", ['ref' => $pallet->reference])
-            ];
-            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
-
-            SendPalletDeletedNotification::dispatch($pallet);
-
             $pallet->delete();
+
+            return $recurringBillTransactionDeleted;
         });
 
+
+        $fulfilmentCustomer = $pallet->fulfilmentCustomer;
         $fulfilmentCustomer->refresh();
+
+
+        if ($recurringBillTransactionDeleted) {
+            StoreDeletePalletHistory::run($pallet, $pallet->currentRecurringBill);
+        }
+        StoreDeletePalletHistory::run($pallet, $pallet->fulfilmentCustomer->customer);
+        if (!$quiet) {
+            SendPalletDeletedNotification::dispatch($pallet);
+        }
+
+
         FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
         FulfilmentHydratePallets::dispatch($fulfilmentCustomer->fulfilment);
-        WarehouseHydratePallets::dispatch($fulfilmentCustomer->warehouse);
-        if ($pallet->location && $pallet->location->warehouseArea) {
-            WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea);
+        foreach ($fulfilmentCustomer->fulfilment->warehouses as $warehouse) {
+            WarehouseHydratePallets::dispatch($warehouse);
+        }
+
+        if ($pallet->location) {
+            LocationHydratePallets::dispatch($pallet->location);
+            if ($pallet->location->warehouseArea) {
+                WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea);
+            }
         }
         PalletRecordSearch::dispatch($pallet);
 
-        return $fulfilmentCustomer;
+
+        return $pallet;
     }
 
     public function rules(): array
     {
         return [
-            // 'deleted_note' => ['required', 'string', 'max:4000'],
-            'delete_confirmation'   => ['sometimes'],
+            'delete_confirmation' => ['sometimes'],
         ];
     }
 
-    public function afterValidator()
+    public function afterValidator(Validator $validator): void
     {
         if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->pallet->reference) && $this->pallet->state == PalletStateEnum::STORING) {
-            abort(419);
+            $validator->errors()->add('delete_confirmation', 'Incorrect confirmation, please write the delivery reference to confirm.'.' '.$this->pallet->reference);
         }
     }
 
-    public function asController(Pallet $pallet, ActionRequest $request): FulfilmentCustomer
+
+    /**
+     * @throws \Throwable
+     */
+    public function action(Pallet $pallet, bool $quiet = true): Pallet
+    {
+        $this->pallet   = $pallet;
+        $this->asAction = true;
+        $this->initialisationFromFulfilment($pallet->fulfilment, []);
+
+        return $this->handle($pallet, $quiet);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->pallet = $pallet;
         $this->initialisationFromFulfilment($pallet->fulfilment, $request);
 
-        return $this->handle($pallet, $this->validatedData);
+        return $this->handle($pallet);
     }
 
-    public function htmlResponse(FulfilmentCustomer $fulfilmentCustomer): RedirectResponse
+    public function htmlResponse(Pallet $pallet): RedirectResponse
     {
+        $fulfilmentCustomer = $pallet->fulfilmentCustomer;
+
         return Redirect::route('grp.org.fulfilments.show.crm.customers.show.pallets.index', [
-            'organisation' => $fulfilmentCustomer->organisation->slug,
-            'fulfilment' => $fulfilmentCustomer->fulfilment->slug,
+            'organisation'       => $fulfilmentCustomer->organisation->slug,
+            'fulfilment'         => $fulfilmentCustomer->fulfilment->slug,
             'fulfilmentCustomer' => $fulfilmentCustomer->slug
         ]);
     }
+
 }

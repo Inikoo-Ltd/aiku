@@ -181,15 +181,12 @@ const onClickDelete = () => {
 											<div class="text-sm text-gray-700 mb-6">
 												<ul class="list-disc list-inside space-y-2">
 													<li>
-														This will permanently delete the
-														<strong>{{ data?.reference || invoice?.reference }}</strong>
-														 All these items will be
-														<strong>permanently deleted</strong>.
+														This will permanently delete the <strong>{{ data?.reference || invoice?.reference }}</strong>
+
 													</li>
 													<li>
-														This will not change your billing plan. If
-														you want to downgrade, you can do so in your
-														Billing Settings.
+                            All these items (pallets and customer SKUs) <strong>stored in the warehouse</strong> will be
+                            <strong>permanently deleted</strong>.
 													</li>
 												</ul>
 											</div>
