@@ -16,6 +16,7 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -31,9 +32,9 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexRetinaDropshippingPortfolio extends RetinaAction
 {
     protected FulfilmentCustomer|Customer $parent;
-    protected ShopifyUser|Customer|TiktokUser $scope;
+    protected ShopifyUser|Customer|TiktokUser|WebUser $scope;
 
-    public function handle(ShopifyUser|TiktokUser|Customer $scope, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|TiktokUser|Customer|WebUser $scope, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
 
@@ -45,6 +46,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $customer = $scope->customer;
             $query->where('customer_id', $customer->id);
             $query->where('type', PortfolioTypeEnum::TIKTOK);
+        } elseif ($scope instanceof WebUser) {
+            $customer = $scope->customer;
+            $query->where('customer_id', $scope->customer->id);
+            $query->where('type', PortfolioTypeEnum::MANUAL);
         } elseif ($scope instanceof Customer) {
             $customer = $scope;
             $query->where('customer_id', $scope->id);
@@ -93,8 +98,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
         if ($platform->type === PlatformTypeEnum::SHOPIFY) {
             $this->scope = $request->user()->customer->shopifyUser;
-        } else {
+        } elseif ($platform->type === PlatformTypeEnum::TIKTOK) {
             $this->scope = $request->user()->customer->tiktokUser;
+        } else {
+            $this->scope = $request->user();
         }
 
         if ($fulfilmentCustomer = $this->scope->customer->fulfilmentCustomer) {
