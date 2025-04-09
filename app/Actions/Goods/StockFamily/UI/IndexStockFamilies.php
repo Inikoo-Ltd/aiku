@@ -107,6 +107,8 @@ class IndexStockFamilies extends GrpAction
 
         $queryBuilder = QueryBuilder::for(StockFamily::class);
         $queryBuilder->where('stock_families.group_id', $group->id);
+        $queryBuilder->leftJoin('stock_family_stats', 'stock_family_stats.stock_family_id', 'stock_families.id');
+        $queryBuilder->leftJoin('stock_family_intervals', 'stock_family_intervals.stock_family_id', 'stock_families.id');
 
 
         if ($this->bucket == 'active') {
@@ -128,17 +130,6 @@ class IndexStockFamilies extends GrpAction
             }
         }
 
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
-        }
-        */
-
         return $queryBuilder
             ->defaultSort('code')
             ->select([
@@ -146,9 +137,10 @@ class IndexStockFamilies extends GrpAction
                 'code',
                 'stock_families.id as id',
                 'name',
-                'number_current_stocks'
+                'number_current_stocks',
+                'stock_family_intervals.*'
+
             ])
-            ->leftJoin('stock_family_stats', 'stock_family_stats.stock_family_id', 'stock_families.id')
             ->allowedSorts(['code', 'name', 'number_current_stocks'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -196,7 +188,9 @@ class IndexStockFamilies extends GrpAction
                 )
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_current_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
+                ->column(key: 'revenue', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true)
+
                 ->defaultSort('code');
         };
     }
