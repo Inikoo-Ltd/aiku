@@ -28,13 +28,16 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Support\Facades\Event;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -45,7 +48,7 @@ class DeleteStoredPallet extends OrgAction
 
     private Pallet $pallet;
 
-    public function handle(Pallet $pallet, array $modelData): Pallet
+    public function handle(Pallet $pallet, array $modelData): FulfilmentCustomer
     {
         $fulfilmentCustomer = $pallet->fulfilmentCustomer;
 
@@ -91,7 +94,7 @@ class DeleteStoredPallet extends OrgAction
         }
         PalletRecordSearch::dispatch($pallet);
 
-        return $pallet;
+        return $fulfilmentCustomer;
     }
 
     public function rules(): array
@@ -109,11 +112,20 @@ class DeleteStoredPallet extends OrgAction
         }
     }
 
-    public function asController(Pallet $pallet, ActionRequest $request): Pallet
+    public function asController(Pallet $pallet, ActionRequest $request): FulfilmentCustomer
     {
         $this->pallet = $pallet;
         $this->initialisationFromFulfilment($pallet->fulfilment, $request);
 
         return $this->handle($pallet, $this->validatedData);
+    }
+
+    public function htmlResponse(FulfilmentCustomer $fulfilmentCustomer): RedirectResponse
+    {
+        return Redirect::route('grp.org.fulfilments.show.crm.customers.show.pallets.index', [
+            'organisation' => $fulfilmentCustomer->organisation->slug,
+            'fulfilment' => $fulfilmentCustomer->fulfilment->slug,
+            'fulfilmentCustomer' => $fulfilmentCustomer->slug
+        ]);
     }
 }

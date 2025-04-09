@@ -31,7 +31,7 @@ class DeleteInProcessInvoice extends OrgAction
 
     private Invoice $invoice;
 
-    public function handle(Invoice $invoice, array $modelData): Invoice
+    public function handle(Invoice $invoice, array $modelData): void
     {
         $customer = $invoice->customer;
         $invoiceCategory = $invoice->invoiceCategory;
@@ -65,67 +65,32 @@ class DeleteInProcessInvoice extends OrgAction
         if ($invoiceCategory) {
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
-        }
-
-        return $invoice;
+        }       
     }
-
+    
     public function rules(): array
     {
         return [
-            'deleted_note' => ['required', 'string', 'max:4000'],
+            // 'deleted_note' => ['required', 'string', 'max:4000'],
             'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
 
-    public function asController(Invoice $invoice, ActionRequest $request): Invoice
+    public function asController(Invoice $invoice, ActionRequest $request): void
     {
         $this->invoice = $invoice;
-        $this->set('user_id', $request->user()->id);
+        $this->set('deleted_by', $request->user()->id);
         $this->initialisationFromShop($invoice->shop, $request);
 
-        return $this->handle($invoice, $this->validatedData);
+        $this->handle($invoice, $this->validatedData);
     }
 
 
-    public function action(Invoice $invoice, array $modelData): Invoice
+    public function action(Invoice $invoice, array $modelData): void
     {
         $this->invoice = $invoice;
         $this->initialisationFromShop($invoice->shop, $modelData);
 
-        return $this->handle($invoice, $this->validatedData);
+        $this->handle($invoice, $this->validatedData);
     }
-
-    public string $commandSignature = 'invoice:delete {slug} {--deleted_note= : Reason for deletion} {--deleted_by= : User who deleted the invoice}';
-
-
-    public function asCommand(Command $command): int
-    {
-        $this->asAction = true;
-
-        try {
-            /** @var Invoice $invoice */
-            $invoice = Invoice::where('slug', $command->argument('slug'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-
-        $modelData = [];
-
-        if ($command->option('deleted_note')) {
-            $modelData['deleted_note'] = $command->option('deleted_note');
-        }
-        if ($command->option('deleted_by')) {
-            $modelData['deleted_by'] = $command->option('deleted_by');
-        }
-
-        $this->action($invoice, $modelData);
-
-        return 0;
-    }
-
-
 }
