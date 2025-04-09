@@ -30,6 +30,7 @@ import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2
 import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Blueprint'
 import Button from '@/Components/CMS/Webpage/Button/Blueprint'
 import ColumnLayout2Blueprint from '@/Components/CMS/Webpage/Column/Blueprint'
+import DisclosureBlueprint from '@/Components/CMS/Webpage/Disclosure/Blueprint'
 
 export const getBlueprint = (componentName: string) => {
     const components: Component = {
@@ -62,7 +63,8 @@ export const getBlueprint = (componentName: string) => {
         'top-bar-2-fulfilment': Topbar2Fulfilment.blueprint,
         'top-bar-3-fulfilment': Topbar3Fulfilment.blueprint,
         'button' : Button.blueprint,
-        'column-layout-2': ColumnLayout2Blueprint.blueprint
+        'column-layout-2': ColumnLayout2Blueprint.blueprint,
+        'disclosure': DisclosureBlueprint.blueprint,
     }
     return components[componentName] ?? []
 }

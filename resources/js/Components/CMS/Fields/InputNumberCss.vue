@@ -1,27 +1,37 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed } from 'vue'
 import InputNumberCssProperty from '@/Components/Workshop/Properties/InputNumberCssProperty.vue'
 
-// Default model jika tidak ada nilai yang diberikan
-const defaultModel =  { value: null, unit: 'px' }
+// Define the expected shape
+type CssProperty = {
+  value: number | null
+  unit: string
+}
 
-// Menggunakan defineModel untuk dua arah binding
-const model = defineModel<typeof defaultModel>({
-    default: () => ({ value: null, unit: 'px' })
+// Default structure
+const defaultModel: CssProperty = { value: null, unit: 'px' }
+
+// Accepting model from parent — might be undefined or partial
+const rawModel = defineModel<Partial<CssProperty>>({
+  default: () => ({})
 })
 
-
-onMounted(() => {
-    if (!model.value) {
-        model.value = { ...defaultModel }
+// Normalizing the model
+const normalizedModel = computed<CssProperty>({
+  get() {
+    return {
+      value: rawModel.value?.value ?? null,
+      unit: rawModel.value?.unit ?? 'px',
     }
+  },
+  set(val) {
+    rawModel.value = val
+  }
 })
 </script>
 
 <template>
-    <div>
-        <InputNumberCssProperty v-model="model" />
-    </div>
+  <div>
+    <InputNumberCssProperty v-model="normalizedModel" />
+  </div>
 </template>
-
-<style scoped></style>

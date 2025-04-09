@@ -29,6 +29,7 @@ import Topbar2FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Top
 import Topbar3FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Topbar3FulfilmentIris.vue"
 import ButtonIris from '@/Components/CMS/Webpage/Button/ButtonIris.vue'
 import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
+import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 
@@ -60,7 +61,8 @@ const components: Record<string, Component> = {
     'top-bar-2-fulfilment': Topbar2FulfilmentIris,
     'top-bar-3-fulfilment': Topbar3FulfilmentIris,
     'button' : ButtonIris,
-    'column-layout-2': ColumnIris
+    'column-layout-2': ColumnIris,
+    'disclosure': DisclosureIris
 }
 
 
