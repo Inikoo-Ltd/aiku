@@ -49,8 +49,6 @@ class StockFamilyHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        dd($stats);
-
         $stockFamily->salesIntervals()->update($stats);
     }
 
