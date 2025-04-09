@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\PalletDelivery;
 
+use App\Actions\Comms\Email\SendPalletDeliveryDeletedNotification;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 
 class DeleteBookedInPalletDelivery extends OrgAction
 {
@@ -34,50 +36,58 @@ class DeleteBookedInPalletDelivery extends OrgAction
     use WithActionUpdate;
 
     private bool $action = false;
+    private PalletDelivery $palletDelivery;
 
     public function handle(PalletDelivery $palletDelivery, array $modelData = []): FulfilmentCustomer
     {
-        if(strtolower(trim($modelData['delete_confirmation'] ?? '')) === strtolower($palletDelivery->reference)) 
-        {   
-            $palletDelivery->pallets()->delete();
+        $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
 
-            foreach($palletDelivery->transactions as $transaction){
-                $recurringBillTransaction = $transaction->recurringBillTransaction;
-    
-                $transaction->delete();
+            DB::transaction(function () use ($palletDelivery, $fulfilmentCustomer) {
+                $palletDelivery->pallets()->delete();
+
+                foreach($palletDelivery->transactions as $transaction){
+                    $recurringBillTransaction = $transaction->recurringBillTransaction;
         
-                if ($recurringBillTransaction) {
-                    DeleteRecurringBillTransaction::make()->action($recurringBillTransaction);
+                    $transaction->delete();
+            
+                    if ($recurringBillTransaction) {
+                        DeleteRecurringBillTransaction::make()->action($recurringBillTransaction);
+                    }
                 }
-            }
 
-            $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
+                $fulfilmentCustomer->customer->auditEvent    = 'delete';
+                $fulfilmentCustomer->customer->isCustomEvent = true;
+                $fulfilmentCustomer->customer->auditCustomOld = [
+                    'delivery' => $palletDelivery->reference
+                ];
+                $fulfilmentCustomer->customer->auditCustomNew = [
+                    'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
+                ];
+                Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
 
-            $fulfilmentCustomer->customer->auditEvent    = 'delete';
-            $fulfilmentCustomer->customer->isCustomEvent = true;
 
-            $fulfilmentCustomer->customer->auditCustomOld = [
-                'delivery' => $palletDelivery->reference
-            ];
+                if($palletDelivery->recurringBill)
+                {
+                    $palletDelivery->recurringBill->auditEvent    = 'delete';
+                    $palletDelivery->recurringBill->isCustomEvent = true;
+                    $palletDelivery->recurringBill->auditCustomOld = [
+                        'delivery' => $palletDelivery->reference
+                    ];
+                    $palletDelivery->recurringBill->auditCustomNew = [
+                        'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
+                    ];
+                    Event::dispatch(AuditCustom::class, [$palletDelivery->recurringBill]);
+                }
 
-            $fulfilmentCustomer->customer->auditCustomNew = [
-                'delivery' => __("The delivery has been deleted.")
-            ];
+                SendPalletDeliveryDeletedNotification::dispatch($palletDelivery);
+                $palletDelivery->delete();
+            });
 
-            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+        $fulfilmentCustomer->refresh();
+        FulfilmentCustomerHydratePalletDeliveries::dispatch($fulfilmentCustomer);
+        FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
 
-            $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
-
-            $palletDelivery->delete();
-
-            $fulfilmentCustomer->refresh();
-            FulfilmentCustomerHydratePalletDeliveries::dispatch($fulfilmentCustomer);
-            FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
-
-            return $fulfilmentCustomer;
-        } else {
-            abort(419);
-        }
+        return $fulfilmentCustomer;
     }
 
     public function htmlResponse(FulfilmentCustomer $fulfilmentCustomer): RedirectResponse
@@ -92,7 +102,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_confirmation' => ['required']
+            'delete_confirmation' => ['sometimes']
         ];
     }
 
@@ -105,8 +115,16 @@ class DeleteBookedInPalletDelivery extends OrgAction
         return true;
     }
 
+    public function afterValidator()
+    {
+        if(strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->palletDelivery->reference)) {
+            abort(419);
+        }
+    }
+
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): FulfilmentCustomer
     {
+        $this->palletDelivery = $palletDelivery;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);
 
         return $this->handle($palletDelivery, $this->validatedData);
@@ -115,6 +133,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
     public function action(PalletDelivery $palletDelivery, $modelData): void
     {
         $this->action = true;
+        $this->palletDelivery = $palletDelivery;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $modelData);
 
         $this->handle($palletDelivery, $this->validatedData);

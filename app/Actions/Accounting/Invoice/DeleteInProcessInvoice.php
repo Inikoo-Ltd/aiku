@@ -1,10 +1,10 @@
 <?php
-
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 25 Mar 2023 01:37:38 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 09-04-2025-13h-10m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
 namespace App\Actions\Accounting\Invoice;
 
@@ -25,7 +25,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
-class DeleteInvoice extends OrgAction
+class DeleteInProcessInvoice extends OrgAction
 {
     use WithActionUpdate;
 
@@ -56,7 +56,7 @@ class DeleteInvoice extends OrgAction
                 });
 
         $customer->refresh();
-
+        
         CustomerHydrateInvoices::dispatch($customer);
         ShopHydrateInvoices::dispatch($customer->shop);
         OrganisationHydrateInvoices::dispatch($customer->organisation);
@@ -74,16 +74,8 @@ class DeleteInvoice extends OrgAction
     {
         return [
             'deleted_note' => ['required', 'string', 'max:4000'],
-            'delete_confirmation'   => ['sometimes'],
             'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
-    }
-
-    public function afterValidator()
-    {
-        if(strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->invoice->reference)) {
-            abort(419);
-        }
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice

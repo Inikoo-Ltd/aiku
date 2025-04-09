@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
+use App\Actions\Comms\Email\SendPalletDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
@@ -17,6 +18,8 @@ use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydrateTransactions;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
+use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
+use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydratePallets;
 use App\Actions\OrgAction;
@@ -26,51 +29,89 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Pallet;
+use App\Models\Fulfilment\RecurringBillTransaction;
+use Illuminate\Support\Facades\Event;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class DeleteStoredPallet extends OrgAction
 {
     use WithActionUpdate;
 
+    private Pallet $pallet;
+
     public function handle(Pallet $pallet, array $modelData): Pallet
     {
-        $deleteConfirmation = Arr::pull($modelData, 'delete_confirmation');
         $fulfilmentCustomer = $pallet->fulfilmentCustomer;
-        if(strtolower(trim($deleteConfirmation ?? '')) === strtolower($pallet->reference) && $pallet->state == PalletStateEnum::STORING){
-            $pallet->delete();
 
-            $fulfilmentCustomer->refresh();
-            FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
-            FulfilmentHydratePallets::dispatch($fulfilmentCustomer->fulfilment);
-            WarehouseHydratePallets::dispatch($fulfilmentCustomer->warehouse);
-            if ($pallet->location && $pallet->location->warehouseArea) {
-                WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea);
+        DB::transaction(function () use ($pallet, $fulfilmentCustomer) {
+            if($pallet->currentRecurringBill) {
+                $transaction = RecurringBillTransaction::where('item_type', 'Pallet')->where('item_id', $pallet->id)->first();
+                if($transaction) {
+                    DeleteRecurringBillTransaction::make()->action($transaction);
+                    CalculateRecurringBillTotals::make()->action($pallet->currentRecurringBill);
+                }
+                $pallet->currentRecurringBill->auditEvent    = 'delete';
+                $pallet->currentRecurringBill->isCustomEvent = true;
+                $pallet->currentRecurringBill->auditCustomOld = [
+                    'pallet' => $pallet->reference
+                ];
+                $pallet->currentRecurringBill->auditCustomNew = [
+                    'pallet' => __("The pallet :ref has been deleted.", ['ref' => $pallet->reference])
+                ];
+                Event::dispatch(AuditCustom::class, [$pallet->currentRecurringBill]);
             }
-            PalletRecordSearch::dispatch($pallet);
-            return $pallet;
-        } else {
-            abort(419);
-        }
 
-        return $invoice;
+            $fulfilmentCustomer->customer->auditEvent    = 'delete';
+            $fulfilmentCustomer->customer->isCustomEvent = true;
+            $fulfilmentCustomer->customer->auditCustomOld = [
+                'pallet' => $pallet->reference
+            ];
+            $fulfilmentCustomer->customer->auditCustomNew = [
+                'pallet' => __("The pallet :ref has been deleted.", ['ref' => $pallet->reference])
+            ];
+            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+
+            SendPalletDeletedNotification::dispatch($pallet);
+            
+            $pallet->delete();
+        });
+
+        $fulfilmentCustomer->refresh();
+        FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
+        FulfilmentHydratePallets::dispatch($fulfilmentCustomer->fulfilment);
+        WarehouseHydratePallets::dispatch($fulfilmentCustomer->warehouse);
+        if ($pallet->location && $pallet->location->warehouseArea) {
+            WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea);
+        }
+        PalletRecordSearch::dispatch($pallet);
+
+        return $pallet;
     }
 
     public function rules(): array
     {
         return [
             // 'deleted_note' => ['required', 'string', 'max:4000'],
-            'delete_confirmation'   => ['required'],
-            'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'delete_confirmation'   => ['sometimes'],
         ];
+    }
+
+    public function afterValidator()
+    {
+        if(strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->pallet->reference) && $this->pallet->state == PalletStateEnum::STORING) {
+            abort(419);
+        }
     }
 
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
-        $this->set('deleted_by', $request->user()->id);
+        $this->pallet = $pallet;
         $this->initialisationFromFulfilment($pallet->fulfilment, $request);
 
         return $this->handle($pallet, $this->validatedData);
