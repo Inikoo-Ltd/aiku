@@ -1,0 +1,89 @@
+{
+	"slug": "disclosure",
+	"code": "disclosure",
+	"name": "disclosure",
+	"scope": "webpage",
+	"icon": ["fal", "rectangle-wide"],
+	"data": {
+		"fieldValue": {
+			"value": [
+				{
+					"label": "What's the best thing about Switzerland?",
+					"description": "I don't know, but the flag is a big plus. Lorem ipsum dolor sit amet consectetur adipisicing elit. Quas cupiditate laboriosam fugiat."
+				}
+			],
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "#FFFFF",
+						"image": {
+							"original": null
+						}
+					},
+					"padding": {
+						"unit": "px",
+						"top": {
+							"value": 25
+						},
+						"left": {
+							"value": 25
+						},
+						"right": {
+							"value": 25
+						},
+						"bottom": {
+							"value": 25
+						}
+					},
+					"margin": {
+						"unit": "px",
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"border": {
+						"color": "#000000",
+						"unit": "px",
+						"rounded": {
+							"unit": "px",
+							"topright": {
+								"value": 0
+							},
+							"topleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							}
+						},
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					}
+				}
+			}
+		}
+	}
+}

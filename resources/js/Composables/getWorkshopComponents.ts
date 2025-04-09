@@ -32,6 +32,7 @@ import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3
 import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
+import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -66,7 +67,8 @@ export const getComponent = (componentName: string) => {
         'top-bar-3-fulfilment': Topbar3Fulfilment,
         'pricing': Pricing,
         'button' : Button,
-        'column-layout-2': ColumnWorkshop
+        'column-layout-2': ColumnWorkshop,
+        'disclosure': DisclosureWorkshop,
     }
     return components[componentName] ?? NotFoundComponents
 }
