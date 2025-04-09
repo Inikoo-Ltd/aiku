@@ -28,6 +28,7 @@ use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\Email;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\WebUser;
@@ -189,7 +190,13 @@ test('test post room hydrator', function ($shop) {
 
 
 test('test send email reset password', function () {
-    StoreWebsite::make()->action($this->shop, Website::factory()->definition());
+
+
+    StoreWebsite::make()->action($this->shop, [
+        'code' => 'test1',
+        'name' => 'Test Website',
+        'domain'  => 'https://test.com',
+    ]);
 
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
 
@@ -206,6 +213,7 @@ test('test send email reset password', function () {
         'snapshot_first_commit' => true,
     ], strict: false);
 
+    expect($email)->toBeInstanceOf(Email::class);
 
     $dispatchedEmail = SendResetPasswordEmail::run($webUser, [
         'url' => 'https://test.com'

@@ -13,26 +13,28 @@ namespace App\Actions\Accounting\InvoiceCategory\Hydrators;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class InvoiceCategoryHydrateSales
+class InvoiceCategoryHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private InvoiceCategory $invoiceCategory;
 
-    public function __construct(InvoiceCategory $invoiceCategory)
+    public function getJobUniqueId(InvoiceCategory $invoiceCategory, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->invoiceCategory = $invoiceCategory;
-    }
+        $uniqueId = $invoiceCategory->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->invoiceCategory->id))->dontRelease()];
+        return $uniqueId;
     }
 
     public function handle(InvoiceCategory $invoiceCategory, ?array $intervals = null, $doPreviousPeriods = null): void

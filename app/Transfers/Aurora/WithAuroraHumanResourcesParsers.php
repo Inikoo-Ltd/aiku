@@ -96,7 +96,7 @@ trait WithAuroraHumanResourcesParsers
         $jobPositionCodes = [];
 
         $staffGroups = $this->auroraModelData->staff_groups;
-        $staffGroups = is_null($staffGroups) ? '' : $staffGroups;
+        $staffGroups = $staffGroups === null ? '' : $staffGroups;
 
         foreach (explode(',', $staffGroups) as $sourceStaffGroups) {
             $jobPositionCode = $this->parseStaffGroups(
@@ -116,8 +116,7 @@ trait WithAuroraHumanResourcesParsers
         }
 
         $staffPositions = $this->auroraModelData->staff_positions;
-        $staffPositions = is_null($staffPositions) ? '' : $staffPositions;
-
+        $staffPositions = $staffPositions === null ? '' : $staffPositions;
         foreach (explode(',', $staffPositions) as $sourceStaffPosition) {
             $jobPositionCode = $this->parseJobPosition(
                 isSupervisor: $this->auroraModelData->{'Staff Is Supervisor'} == 'Yes',

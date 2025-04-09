@@ -93,7 +93,7 @@ const props = defineProps<{
         message: string
     }
 
-    pallets?: Table
+    goods?: Table
     stored_items?: Table
 
     services?: Table
@@ -126,7 +126,7 @@ const formAddPhysicalGood = useForm({ outer_id: '', quantity: 1, historic_asset_
 
 const component = computed(() => {
     const components: Component = {
-        pallets: RetinaTablePalletDeliveryPallets,
+        goods: RetinaTablePalletDeliveryPallets,
         stored_items: TableStoredItems,
         services: TableFulfilmentTransactions,
         physical_goods: TableFulfilmentTransactions,
@@ -154,6 +154,7 @@ const onAddMultiplePallet = (data: {route: routeType}, closedPopover: Function) 
             formMultiplePallet.reset('number_pallets','type')
             isLoading.value = false
             const index = deliveryListError.value?.indexOf('number_pallets');
+            handleTabUpdate('goods')
             if (index > -1) {
                 deliveryListError.value?.splice(index, 1);
             }  // Delete the error
@@ -191,7 +192,7 @@ const onAddPallet = (data: {route: routeType}, closedPopover: Function) => {
             closedPopover()
             formAddPallet.reset('notes', 'customer_reference','type')
             isLoading.value = false
-            handleTabUpdate('pallets')
+            handleTabUpdate('goods')
             const index = deliveryListError.value?.indexOf('number_pallets');
             if (index > -1) {
                 deliveryListError.value?.splice(index, 1);
@@ -331,8 +332,8 @@ watch(() => props.data, (newValue) => {
 }, { deep: true })
 
 const typePallet = [
+    { label : 'Carton', value : 'box'}, 
     { label : 'Pallet', value : 'pallet'}, 
-    { label : 'Box', value : 'box'}, 
     { label : 'Oversize', value : 'oversize'}
 ]
 
@@ -365,6 +366,10 @@ const onClickDisabledSubmit = () => {
 
 const isModalUploadFileOpen = ref(false)
 
+const palletLabel = computed(() => {
+  const selected = typePallet.find(item => item.value === formMultiplePallet.type)
+  return selected ? selected.label : 'pallets'
+})
 
 // Section: Upload spreadsheet
 const isModalUploadPallet = ref(false)
@@ -382,7 +387,7 @@ const isModalUploadStoredItemOpen = ref(false)
                 <div>
                     <MenuButton class="">
                         <Button
-                            v-if="currentTab === 'pallets'"
+                            v-if="currentTab === 'goods'"
                             :label="action.label"
                             :style="action.style"
                             :icon="action.icon"
@@ -397,7 +402,7 @@ const isModalUploadStoredItemOpen = ref(false)
                     <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
                         <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload pallet") }}
+                            {{ trans("Upload goods") }}
                         </div>
                         <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
@@ -439,14 +444,14 @@ const isModalUploadStoredItemOpen = ref(false)
 
         <!-- Button: Add multiple pallets -->
         <template #button-group-multiple="{ action }">
-            <Popover v-if="currentTab === 'pallets'" position="-right-32" class="md:relative h-full" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
+            <Popover  position="-right-32" class="md:relative h-full" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
                 <template #button>
                     <Button
                         :style="action.style"
                         :icon="action.icon"
                         :iconRight="action.iconRight"
                         :key="`ActionButton${action.label}${action.style}`"
-                        :tooltip="trans('Add multiple pallets')"
+                        :tooltip="trans('Add multiple items')"
                         class="rounded-none border-none"
                     />
                 </template>
@@ -469,7 +474,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                 </div>
                             </div>
                         </div>
-                        <span class="text-xs px-1 my-2">Number of pallets : </span>
+                        <span class="text-xs px-1 my-2">Number of {{ palletLabel }} : </span>
                         <div>
                             <PureInput
                                 v-model="formMultiplePallet.number_pallets"
@@ -497,17 +502,17 @@ const isModalUploadStoredItemOpen = ref(false)
                     </div>
                 </template>
             </Popover>
-            <div v-else></div>
+            <!-- <div v-else></div> -->
         </template>
 
         <!-- Button: Add pallet (single) -->
-        <template #button-group-pallet="{ action }">
+        <template #button-group-storage="{ action }">
             <div v-if="currentTab !== 'cccccccpallets'" class="md:relative" :class="deliveryListError.includes('number_pallets') ? 'errorShake' : ''">
                 <Popover>
                     <template #button>
                         <Button :style="action.style" :label="action.label" :icon="action.icon"
                             :key="`ActionButton${action.label}${action.style}`"
-                            :tooltip="action.tooltip"
+                            :tooltip="trans('Add single item')"
                             class="rounded-l-none rounded-r-none border-none " />
                     </template>
 

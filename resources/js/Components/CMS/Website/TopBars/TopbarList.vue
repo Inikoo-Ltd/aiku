@@ -86,7 +86,7 @@ const props = withDefaults(defineProps<{
                     </template>
 
                     <div v-else class="text-center col-span-2 md:col-span-3 lg:col-span-4 text-gray-400">
-                        {{ trans('There is no Topbar available.') }}
+                        {{ trans('There is no Top bar available.') }}
                     </div>
                 </TransitionGroup>
             </section>

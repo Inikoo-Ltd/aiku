@@ -60,8 +60,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $sales_channel_id
  * @property InvoiceTypeEnum $type
  * @property int $currency_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
  * @property string $goods_amount
  * @property string $services_amount
@@ -76,7 +76,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $tax_amount
  * @property string $total_amount
  * @property string $payment_amount
- * @property string|null $date
+ * @property \Illuminate\Support\Carbon|null $date
  * @property \Illuminate\Support\Carbon|null $tax_liability_at
  * @property \Illuminate\Support\Carbon|null $paid_at
  * @property array<array-key, mixed> $payment_data
@@ -98,11 +98,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $deleted_note
  * @property int|null $deleted_by
  * @property bool $deleted_from_deleted_invoice_fetch This is used to prevent the invoice from being fetched and updated again in FetchAuroraDeletedInvoices
+ * @property int|null $external_invoicer_id
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Currency $currency
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read Collection<int, Address> $fixedAddresses
  * @property-read Group $group
@@ -145,10 +146,13 @@ class Invoice extends Model implements Auditable
         'pay_status'       => InvoicePayStatusEnum::class,
         'data'             => 'array',
         'payment_data'     => 'array',
+        'date'             => 'datetime',
         'paid_at'          => 'datetime',
         'tax_liability_at' => 'datetime',
         'fetched_at'       => 'datetime',
         'last_fetched_at'  => 'datetime',
+        'grp_exchange'     => 'decimal:4',
+        'org_exchange'     => 'decimal:4',
     ];
 
     protected $attributes = [

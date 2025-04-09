@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\Fulfilment\PalletReturn\UI;
 
-use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Helpers\Country\UI\GetAddressData;
@@ -17,7 +16,7 @@ use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
+use App\Enums\UI\Fulfilment\RetinaPalletReturnTabsEnum;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemsUIResource;
@@ -56,26 +55,20 @@ class ShowRetinaPalletReturn extends RetinaAction
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->parent = $request->user()->customer->fulfilmentCustomer;
-        $this->initialisation($request)->withTab(PalletReturnTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaPalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
     }
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
     {
-        $navigation = PalletReturnTabsEnum::navigation($palletReturn);
+        $navigation = RetinaPalletReturnTabsEnum::navigation($palletReturn);
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            unset($navigation[PalletReturnTabsEnum::STORED_ITEMS->value]);
+            unset($navigation[RetinaPalletReturnTabsEnum::STORED_ITEMS->value]);
         } else {
-            unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
+            unset($navigation[RetinaPalletReturnTabsEnum::GOODS->value]);
         }
-
-        // if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-        //     $this->tab = PalletReturnTabsEnum::PALLETS->value;
-        // } else {
-        //     $this->tab = PalletReturnTabsEnum::STORED_ITEMS->value;
-        // }
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
@@ -83,7 +76,7 @@ class ShowRetinaPalletReturn extends RetinaAction
             ];
         } else {
             $afterTitle = [
-                'label' => '('.__('Whole pallets').')'
+                'label' => '('.__('Whole goods').')'
             ];
         }
 
@@ -166,7 +159,7 @@ class ShowRetinaPalletReturn extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('pallet return'),
+                'title'       => __('goods return'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -182,7 +175,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'      => __('pallet return'),
+                    'model'      => __('goods out'),
                     'actions'    => $actions
                 ],
 
@@ -235,7 +228,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                
+
 
                 'upload_pallet' => [
                     'title' => [
@@ -317,6 +310,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'navigation' => $navigation
                 ],
                 'box_stats'  => [
+                    'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'fulfilment_customer' => array_merge(
                         FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                         [
@@ -404,7 +398,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                                 'price_total' => $palletReturn->net_amount
                             ],
                             [
-                                'label'       => __('Tax').' '.$palletReturn->taxCategory->rate * 100 .'%',
+                                'label'       => __('Tax'),
                                 'information' => '',
                                 'price_total' => $palletReturn->tax_amount
                             ],
@@ -416,7 +410,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                                 'price_total' => $palletReturn->net_amount
                             ],
                             [
-                                'label'       => __('Tax').' '.$palletReturn->taxCategory->rate * 100 .'%',
+                                'label'       => __('Tax'),
                                 'information' => '',
                                 'price_total' => $palletReturn->tax_amount
                             ],
@@ -489,39 +483,39 @@ class ShowRetinaPalletReturn extends RetinaAction
                 ],
                 'data'               => PalletReturnResource::make($palletReturn),
 
-                PalletReturnTabsEnum::PALLETS->value => $this->tab == PalletReturnTabsEnum::PALLETS->value ?
-                    fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))),
+                RetinaPalletReturnTabsEnum::GOODS->value => $this->tab == RetinaPalletReturnTabsEnum::GOODS->value ?
+                    fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))),
 
-                PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, PalletReturnTabsEnum::SERVICES->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, PalletReturnTabsEnum::SERVICES->value))),
+                RetinaPalletReturnTabsEnum::SERVICES->value => $this->tab == RetinaPalletReturnTabsEnum::SERVICES->value ?
+                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))
+                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))),
 
-                PalletReturnTabsEnum::PHYSICAL_GOODS->value => $this->tab == PalletReturnTabsEnum::PHYSICAL_GOODS->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, PalletReturnTabsEnum::PHYSICAL_GOODS->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, PalletReturnTabsEnum::PHYSICAL_GOODS->value))),
+                RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value => $this->tab == RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value ?
+                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value))
+                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value))),
 
-                PalletReturnTabsEnum::ATTACHMENTS->value => $this->tab == PalletReturnTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, PalletReturnTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, PalletReturnTabsEnum::ATTACHMENTS->value))),
+                RetinaPalletReturnTabsEnum::ATTACHMENTS->value => $this->tab == RetinaPalletReturnTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, RetinaPalletReturnTabsEnum::ATTACHMENTS->value))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, RetinaPalletReturnTabsEnum::ATTACHMENTS->value))),
             ]
         )->table(
-            IndexPalletsInReturnPalletWholePallets::make()->tableStructure(
+            IndexRetinaPalletsInReturnPalletWholePallets::make()->tableStructure(
                 $palletReturn,
                 request: $request,
-                prefix: PalletReturnTabsEnum::PALLETS->value
+                prefix: RetinaPalletReturnTabsEnum::GOODS->value
             )
         )->table(
             IndexServiceInPalletReturn::make()->tableStructure(
                 $palletReturn,
-                prefix: PalletReturnTabsEnum::SERVICES->value
+                prefix: RetinaPalletReturnTabsEnum::SERVICES->value
             )
         )->table(
             IndexPhysicalGoodInPalletReturn::make()->tableStructure(
                 $palletReturn,
-                prefix: PalletReturnTabsEnum::PHYSICAL_GOODS->value
+                prefix: RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value
             )
-        )->table(IndexAttachments::make()->tableStructure(PalletReturnTabsEnum::ATTACHMENTS->value));
+        )->table(IndexAttachments::make()->tableStructure(RetinaPalletReturnTabsEnum::ATTACHMENTS->value));
     }
 
 
@@ -539,7 +533,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('pallet returns')
+                            'label' => __('goods out')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

@@ -133,7 +133,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                                 'address' => $deliveryAddress,
                                 'type'    => 'delivery'
                             ],
-                            hydratorsDelay: 300,
+                            hydratorsDelay: $this->hydratorsDelay,
                             audit: false
                         );
                     } else {
@@ -153,7 +153,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                             'address' => $billingAddress,
                             'type'    => 'billing'
                         ],
-                        hydratorsDelay: 300,
+                        hydratorsDelay: $this->hydratorsDelay,
                         audit: false
                     );
                 } else {
@@ -164,7 +164,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                 $order = UpdateOrder::make()->action(
                     order: $order,
                     modelData: $orderData['order'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

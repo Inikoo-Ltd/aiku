@@ -12,28 +12,29 @@ use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateSales
+class OrganisationHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->organisation = $organisation;
+        $uniqueId = $organisation->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
-    }
 
     public function handle(Organisation $organisation, ?array $intervals = null, $doPreviousPeriods = null): void
     {
@@ -47,7 +48,7 @@ class OrganisationHydrateSales
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField:'sales_grp_currency_',
+            statField: 'sales_grp_currency_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
@@ -56,7 +57,7 @@ class OrganisationHydrateSales
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField:'sales_org_currency_',
+            statField: 'sales_org_currency_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );

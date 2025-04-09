@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\FulfilmentCustomer;
 
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\Search\FulfilmentCustomerRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
@@ -29,10 +28,6 @@ class AddDeliveryAddressToFulfilmentCustomer extends OrgAction
 
         AddDeliveryAddressToCustomer::make()->action($fulfilmentCustomer->customer, $modelData);
         $fulfilmentCustomer->refresh();
-
-        FulfilmentCustomerRecordSearch::dispatch($fulfilmentCustomer);
-
-
 
         return $fulfilmentCustomer;
     }

@@ -59,11 +59,11 @@ trait HasStockLocationsFetch
             }
 
 
-            $type            = LocationStockTypeEnum::STORING->value;
+            $type = LocationStockTypeEnum::STORING->value;
             if ($modelData->{'Can Pick'} == 'Yes') {
-                $type            = LocationStockTypeEnum::PICKING->value;
+                $type = LocationStockTypeEnum::PICKING->value;
             }
-            $pickingPriority = is_null($pickingPriority) ? 1 : $pickingPriority + 1;
+            $pickingPriority = $pickingPriority === null ? 1 : $pickingPriority + 1;
 
 
             $stockLocations[$location->id] = [

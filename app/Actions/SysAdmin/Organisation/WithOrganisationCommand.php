@@ -14,6 +14,9 @@ use Illuminate\Console\Command;
 
 trait WithOrganisationCommand
 {
+    /**
+     * @throws \Throwable
+     */
     public function asCommand(Command $command): int
     {
         if ($command->argument('organisation') == null) {

@@ -1,10 +1,10 @@
   <script setup lang="ts">
-  import { Head } from '@inertiajs/vue3'
+  import { Head, usePage } from '@inertiajs/vue3'
   
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import { Link } from '@inertiajs/vue3'
   
-  import { computed, inject, ref, watch } from "vue"
+  import { computed, inject, ref, watch, watchEffect } from "vue"
   import type { Component } from "vue"
   import { useTabChange } from "@/Composables/tab-change"
   import ModelDetails from "@/Components/ModelDetails.vue"
@@ -22,9 +22,9 @@
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
   import { library } from '@fortawesome/fontawesome-svg-core'
   import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt } from '@fal'
-  import { faClock, faFileInvoice, faFilePdf } from '@fas'
+  import { faClock, faFileExcel, faFileInvoice, faFilePdf } from '@fas'
   import { faCheck } from '@far'
-  library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt)
+  library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel)
   
 
   
@@ -36,6 +36,7 @@
 
   import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.vue'
   const locale = inject('locale', aikuLocaleStructure)
   
   
@@ -71,10 +72,12 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
           }
       }
       exportPdfRoute: routeType
+      exportTransactionsRoute: routeType
       order_summary: FieldOrderSummary[][]
       recurring_bill_route: routeType
       invoice: InvoiceResource
-      items: {}
+      grouped: {}
+      itemized: {}
       payments: {}
       details: {}
       history: {}
@@ -87,7 +90,8 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
   
   const component = computed(() => {
       const components: Component = {
-          items: TableInvoiceTransactions,
+          grouped: TableInvoiceTransactions,
+          itemized: RetinaTableItemizedTransactions,
           payments: TablePayments,
           details: ModelDetails,
           history: TableHistories,
@@ -96,7 +100,14 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
       return components[currentTab.value]
   })
   
-  
+  const urlPage = ref(location)
+const cleanedSearchUrl = ref(location.search ? location.search.slice(1) : '')
+
+watchEffect(() => {
+    urlPage.value = location
+    cleanedSearchUrl.value = location.search ? location.search.slice(1) : ''
+    usePage().url  // to trigger watchEffect on filter table changed
+})
 
   
 
@@ -112,6 +123,15 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
               <a v-if="exportPdfRoute?.name" :href="route(exportPdfRoute.name, exportPdfRoute.parameters)" target="_blank"
                   class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
                   <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
+              </a>
+              <a v-if="exportTransactionsRoute?.name" :href="
+              exportTransactionsRoute
+                        ? `${route(exportTransactionsRoute.name, exportTransactionsRoute.parameters)}?type=xlsx`
+                        : `${urlPage.origin}${urlPage.pathname}/export?type=xlsx&${cleanedSearchUrl}`
+                "
+                 target="_blank"
+                  class="mt-4  sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
+                  <Button label="Excel" icon="fas fa-file-excel" type="tertiary" />
               </a>
           </template>
       </PageHeading>

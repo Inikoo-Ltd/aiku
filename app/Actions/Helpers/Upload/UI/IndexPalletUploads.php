@@ -97,7 +97,6 @@ class IndexPalletUploads
                 ->withEmptyState(
                     [
                             'title'       => __("No upload records found"),
-                            'description' => __("♂️"),
                             'count'       => 0
                         ]
                 )

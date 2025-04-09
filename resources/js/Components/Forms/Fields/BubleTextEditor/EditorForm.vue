@@ -230,8 +230,8 @@ watch(() => props.modelValue, (newValue, oldValue) => {
         font-size: 2em;
         margin-block-start: 0.67em;
         margin-block-end: 0.67em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -241,8 +241,8 @@ watch(() => props.modelValue, (newValue, oldValue) => {
         font-size: 1.5em;
         margin-block-start: 0.83em;
         margin-block-end: 0.83em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -252,8 +252,8 @@ watch(() => props.modelValue, (newValue, oldValue) => {
         font-size: 1.17em;
         margin-block-start: 1em;
         margin-block-end: 1em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -276,7 +276,7 @@ watch(() => props.modelValue, (newValue, oldValue) => {
         border-bottom-left-radius: 0.5rem;
         border-bottom-right-radius: 0.5rem;
         border: solid 2px #D1D5DB;
-        border-top: 0px;
+        border-top: 0;
     }
 }
 

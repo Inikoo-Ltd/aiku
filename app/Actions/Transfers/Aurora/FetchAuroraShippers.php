@@ -31,7 +31,7 @@ class FetchAuroraShippers extends FetchAuroraAction
                 $shipper = UpdateShipper::make()->action(
                     shipper:   $shipper,
                     modelData: $shipperData['shipper'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -41,7 +41,7 @@ class FetchAuroraShippers extends FetchAuroraAction
                     $shipper = StoreShipper::make()->action(
                         organisation: $organisationSource->getOrganisation(),
                         modelData: $shipperData['shipper'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

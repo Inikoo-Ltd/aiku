@@ -5,7 +5,7 @@ import Home from '@/src/screens/Home';
 import InventoryStackScreen from '@/src/screens/routes/InventoryStackScreen';
 import GoodsInStackScreen from '@/src/screens/routes/GoodsInStackScreen';
 import GoodsOutStackScreen from '@/src/screens/routes/GoodsOutStackScreen';
-import LocationStackScreen from '@/src/screens/routes/LocationStackScreen';
+import LocationsStackScreen from '@/src/screens/routes/LocationsStackScreen';
 
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
@@ -70,7 +70,7 @@ const fulfilmentMenu = (fulfilment,warehouse) => {
                 `fulfilment.${warehouse?.id}`,
                 `supervisor-fulfilment-shop.${warehouse?.id}`
             ],
-            component: LocationStackScreen,
+            component: LocationsStackScreen,
             options: {
                 drawerIcon: ({ color }) => (
                     <FontAwesomeIcon icon={faPalletAlt} size={22} color={color} />

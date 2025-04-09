@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
+use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInLocation;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemPallets;
@@ -14,6 +14,8 @@ use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInWarehouse;
 use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
+use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
+use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPallet;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
@@ -21,9 +23,15 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::get('{orgStock:id}', ShowOrgStock::class)->name('show')->withoutScopedBindings();
 });
 
+Route::prefix('locations')->as('locations.')->group(function () {
+    Route::get('{location:id}/pallets', IndexPalletsInLocation::class)->name('pallets.index');
+});
+
 Route::prefix('pallets')->as('pallets.')->group(function () {
     Route::get('/', IndexPalletsInWarehouse::class)->name('index');
     Route::get('{pallet:id}', ShowPallet::class)->name('show');
+    Route::get('{pallet:id}/stored-item-audits/create', [CreateStoredItemAuditFromPallet::class, 'inWarehouse'])->name('show.stored-item-audit.create')->withoutScopedBindings();
+    Route::get('{pallet:id}/stored-item-audit/{storedItemAudit:id}', [ShowStoredItemAuditForPallet::class, 'inWarehouse'])->name('show.stored-item-audit.show')->withoutScopedBindings();
 });
 
 Route::prefix('stored-items')->as('stored-items.')->group(function () {

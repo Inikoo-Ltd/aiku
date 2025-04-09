@@ -24,7 +24,7 @@ class CleanUserCaches
 
     public function handle(User $user, array $patterns = null): void
     {
-        if (is_null($patterns)) {
+        if ($patterns === null) {
             $patterns = ['auth-user:'.$user->id.';*'];
         }
 

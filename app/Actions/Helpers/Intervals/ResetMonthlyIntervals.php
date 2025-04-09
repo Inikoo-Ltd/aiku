@@ -8,15 +8,7 @@
 
 namespace App\Actions\Helpers\Intervals;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
 use App\Enums\DateIntervals\DateIntervalEnum;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ResetMonthlyIntervals
 {

@@ -34,7 +34,7 @@ class FetchAuroraStockFamilies extends FetchAuroraAction
             return UpdateStockFamily::make()->action(
                 stockFamily: $stockFamily,
                 modelData: $stockFamilyData['stock_family'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );
@@ -48,7 +48,7 @@ class FetchAuroraStockFamilies extends FetchAuroraAction
             $stockFamily = StoreStockFamily::make()->action(
                 group: $organisationSource->getOrganisation()->group,
                 modelData: $stockFamilyData['stock_family'],
-                hydratorsDelay: 60,
+                hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
                 audit: false
             );

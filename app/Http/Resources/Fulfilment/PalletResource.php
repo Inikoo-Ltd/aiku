@@ -75,7 +75,7 @@ class PalletResource extends JsonResource
             'status_icon'           => $pallet->status->statusIcon()[$pallet->status->value],
             'items'                 => StoredItemResource::collection($this->storedItems ?? []),
             'timeline'              => $timeline,
-            'audit'                 => (bool) $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()
+            'audit'                 => $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()?->id
         ];
     }
 }

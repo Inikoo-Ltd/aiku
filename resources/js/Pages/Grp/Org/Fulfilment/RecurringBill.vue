@@ -6,7 +6,7 @@ import DatePicker from "@vuepic/vue-datepicker"
 
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { computed, defineAsyncComponent, inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { Component } from 'vue'
 import Popover from '@/Components/Popover.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
@@ -21,13 +21,8 @@ import StartEndDate from '@/Components/Utils/StartEndDate.vue'
 import RecurringBillTransactions from '@/Pages/Grp/Org/Fulfilment/RecurringBillTransactions.vue'
 import BoxStatsRecurringBills from '@/Components/Fulfilment/BoxStatsRecurringBills.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { compareAsc } from 'date-fns'
 import { routeType } from '@/types/route'
-import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue"
 import axios from 'axios'
-
-// import TablePallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePallets.vue'
-// import type { Timeline } from '@/types/Timeline'
 import { useDaysLeftFromToday, useFormatTime } from '@/Composables/useFormatTime'
 import { BoxStats } from '@/types/Pallet'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
@@ -48,8 +43,6 @@ const props = defineProps<{
     title: string,
     pageHead: TSPageHeading
     tabs: TSTabs
-    // showcase: {}
-    // pallets: {}
     transactions: {}
     pallet_deliveries: {}
     pallet_returns: {}
@@ -84,7 +77,6 @@ const component = computed(() => {
         history: TableHistories,
         pallet_deliveries: TablePalletDeliveries,
         pallet_returns: TablePalletReturns,
-        // pallets: TablePallets
     }
 
     return components[currentTab.value]
@@ -377,10 +369,6 @@ const isLoading = ref(false)
         </template>
     </PageHeading>
 
-    <!-- Section: Timeline -->
-    <!-- <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
-        <Timeline :options="timeline_rb" :slidesPerView="6" />
-    </div> -->
 
     <div class="py-4 px-3">
         <div class="grid sm:grid-cols-2 sm:divide-x divide-gray-500/30 gap-y-6 h-full w-full rounded-md px-4 py-2"

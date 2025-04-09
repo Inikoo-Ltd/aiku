@@ -393,11 +393,11 @@ return [
     */
 
     'webhooks' => [
-        [
+/*        [
             'topic' => 'app/uninstalled',
             'address' => config('app.url') . '/webhooks/shopify-user/app-uninstalled',
             'format' => 'json',
-        ],
+        ],*/
         /*
             [
                 'topic' => env('SHOPIFY_WEBHOOK_1_TOPIC', 'ORDERS_CREATE'),

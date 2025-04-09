@@ -24,6 +24,7 @@ library.add(faPlus)
 const props = defineProps<{
     data: {}
     tab?: string
+    location?: string
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -147,9 +148,14 @@ function orderRoute(palletReturn: PalletDelivery) {
                 {{ palletReturn['reference'] }}
             </Link>
 
-            <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
-            </Link>
+            <div v-else-if="palletReturn.type === 'stored_item'">
+                <Link v-if="location !== 'pupil'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                    {{ palletReturn['reference'] }}
+                </Link>
+                <div v-else>
+                    {{ palletReturn['reference'] }}
+                </div>
+            </div>
 
             <Link v-else-if="palletReturn.model === 'Order'" :href="orderRoute(palletReturn)" class="primaryLink">
                 {{ palletReturn['reference'] }}

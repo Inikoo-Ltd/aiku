@@ -38,9 +38,11 @@ class SetClausesInFulfilmentTransaction extends OrgAction
         }
 
         $net = $fulfilmentTransaction->asset->price * $fulfilmentTransaction->quantity;
+        $gross = $fulfilmentTransaction->asset->price * $fulfilmentTransaction->quantity;
         $net -= $net                                * $percentageOff;
 
         data_set($modelData, 'net_amount', $net);
+        data_set($modelData, 'gross_amount', $gross);
         data_set($modelData, 'grp_net_amount', $net * $fulfilmentTransaction->grp_exchange);
         data_set($modelData, 'org_net_amount', $net * $fulfilmentTransaction->org_exchange);
 

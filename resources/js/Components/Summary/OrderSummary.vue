@@ -1,5 +1,4 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 import { FieldOrderSummary } from '@/types/Pallet'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -33,7 +32,6 @@ const locale = inject('locale', aikuLocaleStructure)
                     <Transition name="spin-to-down">
                         <dd :key="fieldSummary.quantity" class="justify-self-end">{{ typeof fieldSummary.quantity === 'number' ? locale.number(fieldSummary.quantity) : null}}</dd>
                     </Transition>
-                    <!-- <dd class="col-span-2 place-self-end">{{ fieldSummary.price_base }}</dd> -->
                     <div class="relative col-span-4 justify-self-end font-medium overflow-hidden">
                         <Transition name="spin-to-right">
                             <dd :key="fieldSummary.price_total" class="" :class="fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : ''">
@@ -45,6 +43,5 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
         </template>
 
-        <!-- <pre>{{ order_summary }}</pre> -->
     </dl>
 </template>

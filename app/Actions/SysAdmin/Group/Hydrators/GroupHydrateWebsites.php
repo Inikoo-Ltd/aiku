@@ -21,6 +21,13 @@ class GroupHydrateWebsites implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Group $group): string
+    {
+        return $group->id;
+    }
+
     public function handle(Group $group): void
     {
         $stats = [

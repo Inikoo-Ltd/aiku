@@ -12,26 +12,20 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class EmailBulkRunHydrateDispatchedEmails
+class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private EmailBulkRun $emailBulkRun;
 
     public string $jobQueue = 'low-priority';
 
-    public function __construct(EmailBulkRun $emailBulkRun)
+    public function getJobUniqueId(EmailBulkRun $emailBulkRun): string
     {
-        $this->emailBulkRun = $emailBulkRun;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->emailBulkRun->id))->dontRelease()];
+        return $emailBulkRun->id;
     }
 
 

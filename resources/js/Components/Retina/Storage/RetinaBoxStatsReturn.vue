@@ -10,8 +10,9 @@ import { router } from '@inertiajs/vue3'
 import Popover from '@/Components/Popover.vue'
 import { PalletDelivery, BoxStats, PalletReturn, PDRNotes } from '@/types/Pallet'
 import Modal from '@/Components/Utils/Modal.vue'
+import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { capitalize } from '@/Composables/capitalize'
 import { routeType } from "@/types/route"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -19,6 +20,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import RetinaBoxNote from "@/Components/Retina/Storage/RetinaBoxNote.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import ModalAddress from '@/Components/Utils/ModalAddress.vue'
+import Textarea from "primevue/textarea"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBuilding, faIdCardAlt, faMapMarkerAlt, faPenSquare } from '@fal'
@@ -44,7 +46,111 @@ const layout = inject('layout', layoutStructure)
 
 const isModalAddress = ref(false)
 const isModalAddressCollection = ref(false)
-console.log('fff', props.box_stats)
+const enabled = ref(props.data_pallet?.is_collection || false)
+const isLoading = ref<string | boolean>(false)
+const textValue = ref(props.box_stats?.collection_notes)
+
+// Computed property to intercept changes via v-model
+const computedEnabled = computed({
+	get() {
+		return enabled.value
+	},
+	set(newValue: boolean) {
+		const addressID = props.box_stats.fulfilment_customer.address?.address_customer?.value.id
+		const address = props.box_stats.fulfilment_customer.address?.address_customer?.value
+
+		if (!newValue) {
+			// Prepare the address data for creating a new record.
+			const filterDataAddress = { ...address }
+			delete filterDataAddress.formatted_address
+			delete filterDataAddress.country
+			delete filterDataAddress.id // Remove id to create a new one
+
+			router[
+				props.box_stats.fulfilment_customer.address.routes_address.store.method || "post"
+			](
+				route(
+					props.box_stats.fulfilment_customer.address.routes_address.store.name,
+					props.box_stats.fulfilment_customer.address.routes_address.store.parameters
+				),
+				{
+					delivery_address: filterDataAddress,
+				},
+				{
+					preserveScroll: true,
+					onFinish: () => {},
+					onSuccess: () => {
+						notify({
+							title: trans("Success"),
+							text: trans("Set the address to selected address."),
+							type: "success",
+						})
+					},
+					onError: () =>
+						notify({
+							title: trans("Something went wrong"),
+							text: trans("Failed to submit the address, try again"),
+							type: "error",
+						}),
+				}
+			)
+		} else {
+			try {
+				router.delete(
+					route(props.box_stats.fulfilment_customer.address.routes_address.delete.name, {
+						...props.box_stats.fulfilment_customer.address.routes_address.delete
+							.parameters,
+					}),
+					{
+						preserveScroll: true,
+						onStart: () => (isLoading.value = "onDelete" + addressID),
+						onFinish: () => {
+							isLoading.value = false
+						},
+					}
+				)
+				notify({
+					title: trans("Success"),
+					text: trans("Set the address to follow collection."),
+					type: "success",
+				})
+			} catch (error) {
+				console.error("Error disabling collection:", error)
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to disable collection."),
+					type: "error",
+				})
+			}
+		}
+		// Finally, update the ref value.
+		enabled.value = newValue
+	},
+})
+
+function updateCollectionNotes() {
+	router.patch(
+		route(props.updateRoute.route.name, props.updateRoute.route.parameters),
+		{ collection_notes: textValue.value },
+		{
+			preserveScroll: true,
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Text updated successfully"),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to update text"),
+					type: "error",
+				})
+			},
+		}
+	)
+}
 
 // Method: On change estimated date
 // const onChangeEstimateDate = async (close: Function) => {
@@ -125,38 +231,63 @@ console.log('fff', props.box_stats)
             </div>
             
             <!-- Field: Delivery Address -->
-            <div class="flex items-start w-full flex-none gap-x-2 mb-1">
-                <dt v-tooltip="`Pallet Return's address`" class="flex-none">
-                    <span class="sr-only">Delivery address</span>
-                    <FontAwesomeIcon icon='fal fa-map-marker-alt' size="xs" class='text-gray-400' fixed-width
-                        aria-hidden='true' />
-                </dt>
-
-                <dd v-if="data_pallet.is_collection !== true" class=" w-full text-xs text-gray-500">
-                    <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                        <span class="" v-html="box_stats.fulfilment_customer.address.value.formatted_address" />
-
-                        <div @click="() => isModalAddressCollection = true"
-                            class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                            <span>Edit</span>
-                        </div>
-                    </div>
-                </dd>
-                <div v-else>
-					<span>For collection </span>
-					<span @click="() => (isModalAddressCollection = true)">
+            <div class="flex flex-col w-full gap-y-2 mb-1">
+				<!-- Top Row: Icon and Switch -->
+				<div class="flex items-center gap-x-2">
+					<dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
+						<span class="sr-only">Delivery address</span>
 						<FontAwesomeIcon
-							icon="fal fa-pen-square"
-							size="lg"
-							class="text-gray-400 cursor-pointer"
+							icon="fal fa-map-marker-alt"
+							size="xs"
+							class="text-gray-400"
 							fixed-width
 							aria-hidden="true" />
-					</span>
+					</dt>
+					<SwitchGroup as="div" class="flex items-center">
+						<Switch
+							v-model="computedEnabled"
+							:class="[computedEnabled ? 'bg-indigo-600' : 'bg-gray-200']"
+							class="relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+							<span
+								aria-hidden="true"
+								:class="[computedEnabled ? 'translate-x-5' : 'translate-x-0']"
+								class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
+						</Switch>
+						<SwitchLabel as="span" class="ml-3 text-sm font-medium text-gray-900">
+							{{ trans("Collection") }}
+						</SwitchLabel>
+					</SwitchGroup>
 				</div>
-                <!-- <div v-else @click="() => isModalAddress = true" class="leading-6  inline whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                    Setup delivery address
-                </div> -->
-            </div>
+
+				<!-- Bottom Row: Address Display -->
+				<div
+					v-if="data_pallet.is_collection !== true"
+					class="w-full text-xs text-gray-500">
+					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+						<span
+							v-html="
+                            box_stats.fulfilment_customer?.address?.value?.formatted_address
+							" />
+						<div
+							@click="() => (isModalAddressCollection = true)"
+							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+							<span>Edit</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Alternative Display for Collection -->
+				<div v-else class="w-full">
+					<Textarea
+						v-model="textValue"
+						@blur="updateCollectionNotes"
+						autoResize
+						rows="5"
+						class="w-full"
+						cols="30"
+						placeholder="typing..." />
+				</div>
+			</div>
         </BoxStatPallet>
 
 

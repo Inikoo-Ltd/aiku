@@ -13,25 +13,21 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateInvoices
+class GroupHydrateInvoices implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateInvoices;
 
-    private Group $group;
 
-    public function __construct(Group $group)
-    {
-        $this->group = $group;
-    }
+    public string $jobQueue = 'sales';
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Group $group): string
     {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
     public function handle(Group $group): void

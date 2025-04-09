@@ -16,7 +16,6 @@ use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
@@ -38,9 +37,9 @@ class AttachPalletToReturnFromImport extends OrgAction
         ->first();
 
         if (!$pallet) {
-        throw ValidationException::withMessages([
-            'message' => ['reference' => 'pallet does not exist'],
-        ]);
+            throw ValidationException::withMessages([
+                'message' => ['reference' => 'pallet does not exist'],
+            ]);
         }
 
         $this->attach($palletReturn, $pallet);
@@ -103,9 +102,9 @@ class AttachPalletToReturnFromImport extends OrgAction
         ->first();
 
         if (!$pallet) {
-        throw ValidationException::withMessages([
-            'message' => ['reference' => 'pallet does not exist'],
-        ]);
+            throw ValidationException::withMessages([
+                'message' => ['reference' => 'pallet does not exist'],
+            ]);
         }
 
         if ($pallet && $this->parent->pallets()->where('pallet_id', $pallet->id)->exists()) {

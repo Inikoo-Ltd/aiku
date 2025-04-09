@@ -15,6 +15,8 @@ use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
+use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\StorePallet;
@@ -46,12 +48,17 @@ use App\Enums\Billables\Rental\RentalUnitEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
+use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
@@ -66,6 +73,8 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\Outbox;
+use App\Models\Comms\PostRoom;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
@@ -134,6 +143,22 @@ beforeEach(function () {
     $this->website = createWebsite($this->shop);
 
     $this->customer = createCustomer($this->shop);
+
+    $postRoom = PostRoom::where('code', PostRoomCodeEnum::MARKETING_NOTIFICATION)->first();
+
+    $orgPostRoom = StoreOrgPostRoom::make()->action($postRoom, $this->organisation, []);
+
+    $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
+
+    if (!$marketingOutbox) {
+        $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $this->shop, [
+            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type' => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
+            'state' => OutboxStateEnum::ACTIVE,
+            'name' => 'invoice outbox'
+        ]);
+    }
+
 
     $pallet = Pallet::first();
     if (!$pallet) {
@@ -625,6 +650,50 @@ test('UI index fulfilment invoices all', function () {
     });
 });
 
+test('UI show invoice (in Operation)', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.operations.invoices.show', [$this->organisation->slug, $this->fulfilment->slug, $this->invoice->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $this->invoice->reference)
+                        ->etc()
+            )
+            ->has('box_stats')
+            ->has('order_summary')
+            ->has('exportPdfRoute')
+            ->has('tabs');
+
+    });
+});
+
+test('UI show invoice (in Fulfilment Customer)', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.crm.customers.show.invoices.show', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug, $this->invoice->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $this->invoice->reference)
+                        ->etc()
+            )
+            ->has('box_stats')
+            ->has('order_summary')
+            ->has('exportPdfRoute')
+            ->has('tabs');
+
+    });
+});
+
 test('UI index fulfilment invoices unpaid', function () {
     $fulfilment = $this->shop->fulfilment;
     $response  = get(
@@ -642,6 +711,33 @@ test('UI index fulfilment invoices unpaid', function () {
             ->has('data')
             ->has('pageHead')
             ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', 'Invoices')
+                        ->has('subNavigation')
+                        ->etc()
+            );
+    });
+});
+
+test('UI index fulfilment invoices paid', function () {
+    $fulfilment = $this->shop->fulfilment;
+    $response  = get(
+        route(
+            'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',
+            [
+                $this->organisation->slug,
+                $fulfilment->slug
+            ]
+        )
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoices')
+            ->has('data')
+            ->has('pageHead')
+            ->has('breadcrumbs')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
@@ -1948,6 +2044,54 @@ test('UI show Recurring Bill', function () {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                         ->where('title', $this->recurringBill->slug)
+                        ->etc()
+            )
+            ->has('timeline_rb')
+            ->has('consolidateRoute')
+            ->has('status_rb')
+            ->has('box_stats')
+            ->has('tabs');
+
+    });
+});
+
+test('UI show Recurring Bill in operation (current)', function () {
+    $this->withoutExceptionHandling();
+    $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::CURRENT)->first();
+    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
+        $page
+            ->component('Org/Fulfilment/RecurringBill')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $recurringBill->slug)
+                        ->etc()
+            )
+            ->has('timeline_rb')
+            ->has('consolidateRoute')
+            ->has('status_rb')
+            ->has('box_stats')
+            ->has('tabs');
+
+    });
+});
+
+test('UI show Recurring Bill in operation (former)', function () {
+    $this->withoutExceptionHandling();
+    $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::FORMER)->first();
+    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.former.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
+        $page
+            ->component('Org/Fulfilment/RecurringBill')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                        ->where('title', $recurringBill->slug)
                         ->etc()
             )
             ->has('timeline_rb')

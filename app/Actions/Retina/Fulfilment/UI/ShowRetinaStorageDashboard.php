@@ -47,20 +47,47 @@ class ShowRetinaStorageDashboard extends RetinaAction
                 'percentage_off' => $percentageOff
             ];
         }
+        $routeActions = [];
 
-        $routeActions = [
-            $fulfilmentCustomer->pallets_storage ? [
+        if ($fulfilmentCustomer->pallets_storage) {
+            $routeActions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('New Delivery'),
+                'tooltip' => __('Book goods into stock, rent storage space, buy packaging material etc'),
+                'label' => __('New Storage or Service'),
                 'fullLoading'   => true,
                 'route' => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-delivery.store',
                     'parameters' => []
                 ]
-            ] : false,
+            ];
+        }
+        $routeActions[] = [
+            'type'    => 'button',
+            'style'   => $fulfilmentCustomer->number_pallets_status_storing ? 'create' : 'gray',
+            'disabled' => $fulfilmentCustomer->number_pallets_status_storing ? false : true,
+            'tooltip' => $fulfilmentCustomer->number_pallets_status_storing ? __('Make a new dispatch from your stock') : __('This service is available if you have stock to dispatch'),
+            'label'   => __('New Dispatch'),
+            'route'   => [
+                'method'     => 'post',
+                'name'       => 'retina.models.pallet-return.store',
+                'parameters' => []
+            ]
         ];
+        // $routeActions = [
+        //     $fulfilmentCustomer->pallets_storage ? [
+        //         'type'  => 'button',
+        //         'style' => 'create',
+        //         'label' => __('New Goods Delivery'),
+        //         'fullLoading'   => true,
+        //         'route' => [
+        //             'method'     => 'post',
+        //             'name'       => 'retina.models.pallet-delivery.store',
+        //             'parameters' => []
+        //         ]
+        //     ] : false,
+        // ];
 
         //        if (!app()->environment('production') && $fulfilmentCustomer->pallets_storage) {
         //            $routeActions = array_merge($routeActions, [
@@ -117,7 +144,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         $stats = [];
 
         $stats['pallets'] = [
-            'label'         => __('Pallets'),
+            'label'         => __('Goods'),
             'count'         => $fulfilmentCustomer->number_pallets_status_storing,
             'description'   => __('in warehouse'),
             'route'         => [
@@ -135,7 +162,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
 
         $stats['pallet_deliveries'] = [
-            'label' => __('Pallet Deliveries'),
+            'label' => __('Goods In'),
             'count' => $fulfilmentCustomer->number_pallet_deliveries,
             'route' => [
                 'name' => 'retina.fulfilment.storage.pallet_deliveries.index'
@@ -151,7 +178,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
         }
 
         $stats['pallet_returns'] = [
-            'label' => __('Pallet Returns'),
+            'label' => __('Goods Out'),
             'count' => $fulfilmentCustomer->number_pallet_returns,
             'route' => [
                 'name' => 'retina.fulfilment.storage.pallet_returns.index'

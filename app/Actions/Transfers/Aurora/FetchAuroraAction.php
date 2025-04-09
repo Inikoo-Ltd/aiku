@@ -19,6 +19,8 @@ class FetchAuroraAction extends FetchAction
 {
     use WithAuroraOrganisationsArgument;
 
+    public string $jobQueue = 'aurora';
+
 
     protected function preProcessCommand(Command $command): void
     {

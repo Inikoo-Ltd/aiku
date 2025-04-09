@@ -12,26 +12,21 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OutboxHydrateEmails
+class OutboxHydrateEmails implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Outbox $outbox;
 
-    public function __construct(Outbox $outbox)
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Outbox $outbox): string
     {
-        $this->outbox = $outbox;
+        return $outbox->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->outbox->id))->dontRelease()];
-    }
-
 
     public function handle(Outbox $outbox): void
     {

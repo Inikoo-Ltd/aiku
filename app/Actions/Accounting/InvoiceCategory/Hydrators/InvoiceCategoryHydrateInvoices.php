@@ -13,26 +13,20 @@ namespace App\Actions\Accounting\InvoiceCategory\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateInvoices;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Accounting\InvoiceCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class InvoiceCategoryHydrateInvoices
+class InvoiceCategoryHydrateInvoices implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateInvoices;
 
+    public string $jobQueue = 'urgent';
 
-    private InvoiceCategory $invoiceCategory;
-
-    public function __construct(InvoiceCategory $invoiceCategory)
+    public function getJobUniqueId(InvoiceCategory $invoiceCategory): string
     {
-        $this->invoiceCategory = $invoiceCategory;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->invoiceCategory->id))->dontRelease()];
+        return $invoiceCategory->id;
     }
 
     public function handle(InvoiceCategory $invoiceCategory): void

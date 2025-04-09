@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
-/* import type DataTable from "@/models/table" */
 import Select from 'primevue/select'
 import { useFontFamilyList } from '@/Composables/useFont'
-
 import TiptapToolbarButton from "@/Components/Forms/Fields/BubleTextEditor/TiptapToolbarButton.vue"
 import TiptapToolbarGroup from "@/Components/Forms/Fields/BubleTextEditor/TiptapToolbarGroup.vue"
 import Paragraph from "@tiptap/extension-paragraph"
@@ -39,12 +37,10 @@ import { Color } from '@tiptap/extension-color'
 import FontSize from 'tiptap-extension-font-size'
 import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
-import PureColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
-import ColorPicker from 'primevue/colorpicker';
 import suggestion from './Variables/suggestion'
+import ImageResize from 'tiptap-extension-resize-image';
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
-
 import {
     faUndo,
     faRedo,
@@ -58,7 +54,6 @@ import {
     faUnderline,
     faStrikethrough,
     faImage,
-    faVideo,
     faMinus,
     faList,
     faListOl,
@@ -67,11 +62,9 @@ import {
     faAlignRight,
     faFileVideo,
     faPaintBrushAlt,
-    faText,
     faTextSize,
     faDraftingCompass,
     faExternalLink,
-    faTimesCircle,
 } from "@far"
 import { faEraser, faTint } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -83,7 +76,6 @@ import TiptapTableDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapT
 import TiptapImageDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapImageDialog.vue"
 import { Plugin } from "prosemirror-state"
 import Variabel from "./Variables/Variables"
-import CustomLink from "./CustomLink/CustomLink.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
@@ -136,6 +128,7 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
+        ImageResize,
         History,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...", // Fallback to default placeholder
@@ -716,10 +709,10 @@ defineExpose({
 
 .editor-class p {
     display: block;
-    margin-block-start: 0em;
-    margin-block-end: 0em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
     unicode-bidi: isolate;
 }
 
@@ -737,10 +730,10 @@ defineExpose({
 
 :deep(.editor-class p) {
     display: block;
-    margin-block-start: 0em;
-    margin-block-end: 0em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
     unicode-bidi: isolate;
 }
 
@@ -808,12 +801,12 @@ defineExpose({
 }
 
 :deep(.ProseMirror h3) {
-    margin-block-end: 0em;
+    margin-block-end: 0;
 }
 
-:deep(.ProseMirror img) {
+/* :deep(.ProseMirror img) {
     @apply mr-6 w-full max-w-[480px] max-h-[320px] object-contain object-center;
-}
+} */
 
 :deep(.ProseMirror img.ProseMirror-selectednode),
 :deep(.ProseMirror div[data-youtube-video]) {

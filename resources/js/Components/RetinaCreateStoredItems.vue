@@ -14,9 +14,8 @@
   import { routeType } from "@/types/route"
   import { ref } from 'vue'
   import Tag from '@/Components/Tag.vue'
-  
   import { library } from "@fortawesome/fontawesome-svg-core"
-  import { faPlus, faChevronDown, faTimes, faMinus, faSparkles, faRampLoading } from "@fas"
+  import { faPlus, faChevronDown, faTimes, faMinus, faSparkles } from "@fas"
   import { faTrashAlt, faExclamationTriangle } from "@far"
   import { faAsterisk } from "@fas"
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -381,8 +380,8 @@
       border: 1px solid transparent;
       border-bottom: 1px solid rgb(192, 192, 192);
       background-color: transparent;
-      border-radius: 0px;
-      box-shadow: 0px;
+      border-radius: 0;
+      box-shadow: 0;
       text-align: center;
   }
   

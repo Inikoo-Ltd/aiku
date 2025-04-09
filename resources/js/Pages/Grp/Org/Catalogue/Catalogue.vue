@@ -301,7 +301,7 @@ const isLoadingMeta = ref<string | null>(null)
   width: 100%;
 }
 .example-2 .inner {
-  margin: 0px;
+  margin: 0;
 }
 .example-2::before {
   content: "";

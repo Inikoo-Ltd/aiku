@@ -13,34 +13,27 @@ namespace App\Actions\Comms\OrgPostRoom\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Comms\OrgPostRoom;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrgPostRoomHydrateIntervals
+class OrgPostRoomHydrateIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithIntervalsAggregators;
 
-    private OrgPostRoom $orgPostRoom;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(OrgPostRoom $orgPostRoom)
+    public function getJobUniqueId(OrgPostRoom $orgPostRoom): string
     {
-        $this->orgPostRoom = $orgPostRoom;
+        return $orgPostRoom->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->orgPostRoom->id))->dontRelease()];
-    }
 
     public function handle(OrgPostRoom $orgPostRoom): void
     {
-        $stats = [];
-
-
         // direct from sources
+        //  $stats = [];
         //        $queryBase = DB::table('dispatched_emails')->leftJoin('outboxes', 'dispatched_emails.outbox_id', '=', 'outboxes.id')
         //            ->where('outboxes.org_post_room_id', $orgPostRoom->id)
         //            ->whereNotNull('dispatched_emails.sent_at')
@@ -79,7 +72,7 @@ class OrgPostRoomHydrateIntervals
         $allKeys = [];
         foreach ($metrics as $metric) {
             foreach (array_merge($timeFrames, $timeFramesLastYear) as $frame) {
-                $allKeys[] = "{$metric}_{$frame}";
+                $allKeys[] = "{$metric}_$frame";
             }
         }
 

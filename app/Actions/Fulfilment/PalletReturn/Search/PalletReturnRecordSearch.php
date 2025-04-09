@@ -29,15 +29,6 @@ class PalletReturnRecordSearch
         }
 
         $result = [
-            'route'     => [
-                'name'          => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
-                'parameters'    => [
-                    'organisation'           => $palletReturn->organisation->slug,
-                    'fulfilment'             => $palletReturn->fulfilment->slug,
-                    'fulfilmentCustomer'     => $palletReturn->fulfilmentCustomer->slug,
-                    'palletReturn'           => $palletReturn->slug
-                ]
-            ],
             'description' => [
                 'label'   => $palletReturn->warehouse->name
             ],
@@ -80,19 +71,36 @@ class PalletReturnRecordSearch
                 'fulfilment_slug'   => $palletReturn->fulfilment->slug,
                 'sections'          => ['fulfilment'],
                 'haystack_tier_1'   => $palletReturn->reference,
-                'result'            => $result,
+                'result'            => array_merge([
+                    'route'     => [
+                        'name'          => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+                        'parameters'    => [
+                            'organisation'           => $palletReturn->organisation->slug,
+                            'fulfilment'             => $palletReturn->fulfilment->slug,
+                            'fulfilmentCustomer'     => $palletReturn->fulfilmentCustomer->slug,
+                            'palletReturn'           => $palletReturn->slug
+                        ]
+                    ],
+                ], $result),
                 'keyword'           => $palletReturn->slug
             ]
         );
 
-        $palletReturn->universalSearch()->updateOrCreate(
+        $palletReturn->retinaSearch()->updateOrCreate(
             [],
             [
                 'group_id'            => $palletReturn->group_id,
                 'organisation_id'     => $palletReturn->organisation_id,
                 'customer_id'         => $palletReturn->fulfilmentCustomer->customer_id,
                 'haystack_tier_1'     => $palletReturn->reference,
-                'result'              => $result,
+                'result'              => array_merge([
+                    'route'     => [
+                        'name'          => 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
+                        'parameters'    => [
+                            'palletReturn'           => $palletReturn->slug
+                        ]
+                    ],
+                ], $result),
                 'keyword'             => $palletReturn->slug,
                 'keyword_2'           => $palletReturn->reference
             ]

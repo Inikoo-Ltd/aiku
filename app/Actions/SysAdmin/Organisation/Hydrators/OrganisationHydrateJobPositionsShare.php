@@ -11,24 +11,17 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 use App\Actions\Traits\WithNormalise;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateJobPositionsShare
+class OrganisationHydrateJobPositionsShare implements ShouldBeUnique
 {
     use AsAction;
     use WithNormalise;
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        $this->organisation = $organisation;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
+        return $organisation->id;
     }
 
 

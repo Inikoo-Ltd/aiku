@@ -15,7 +15,11 @@ enum OutboxMergeTagsEnum: string
     use EnumHelperTrait;
 
     case USERNAME = 'Username';
+    case CUSTOMER_SHOP = 'Customer Shop';
     case CUSTOMER_NAME = 'Customer Name';
+    case CUSTOMER_URL = 'Customer Url';
+    case CUSTOMER_EMAIL = 'Customer Email';
+    case CUSTOMER_REGISTER_DATE = 'Customer Register Date';
     case INVOICE_URL = 'Invoice_Url';
     case RESET_PASSWORD_URL = 'Reset_Password_URL';
     case UNSUBSCRIBE = 'Unsubscribe';
@@ -43,6 +47,26 @@ enum OutboxMergeTagsEnum: string
             [
                 'name' => __('Unsubscribe'),
                 'value' => '[Unsubscribe]'
+            ],
+            [
+                'name' => __('Customer Shop'),
+                'value' => '[Customer Shop]'
+            ],
+            [
+                'name' => __('Customer Name'),
+                'value' => '[Customer Name]'
+            ],
+            [
+                'name' => __('Customer Url'),
+                'value' => '[Customer Url]'
+            ],
+            [
+                'name' => __('Customer Email'),
+                'value' => '[Customer Email]'
+            ],
+            [
+                'name' => __('Customer Register Date'),
+                'value' => '[Customer Register Date]'
             ],
             [
                 'name' => __('Rejected Notes'),

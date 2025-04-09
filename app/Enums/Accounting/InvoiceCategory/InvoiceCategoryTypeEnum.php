@@ -20,7 +20,6 @@ enum InvoiceCategoryTypeEnum: string
     case IN_COUNTRY = 'in_country';
     case NOT_IN_COUNTRY = 'not_in_country';
     case IN_ORGANISATION = 'in_organisation';
-    case IS_ORGANISATION = 'is_organisation';
     case VIP = 'vip';
     case EXTERNAL_INVOICER = 'external_invoicer';
     case IN_SALES_CHANNEL = 'in_sales_channel';
@@ -33,7 +32,6 @@ enum InvoiceCategoryTypeEnum: string
             'in_country'           => __('In country'),
             'not_in_country'    => __('Not in country'),
             'in_organisation'   => __('In organisation'),
-            'is_organisation'   => __('Is organisation'),
             'vip'               => __('VIP'),
             'external_invoicer' => __('External invoicer'),
             'in_sales_channel'  => __('In sales channel'),

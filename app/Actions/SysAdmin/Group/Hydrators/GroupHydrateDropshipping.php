@@ -10,23 +10,18 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateDropshipping
+class GroupHydrateDropshipping implements ShouldBeUnique
 {
     use AsAction;
 
-    private Group $group;
+    public string $jobQueue = 'low-priority';
 
-    public function __construct(Group $group)
+    public function getJobUniqueId(Group $group): string
     {
-        $this->group = $group;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
+        return $group->id;
     }
 
     public function handle(Group $group): void

@@ -60,6 +60,7 @@ use Inspector\Laravel\Middleware\InspectorOctaneMiddleware;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
 
 class Kernel extends HttpKernel
 {
@@ -92,7 +93,6 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
         ],
 
         'han' => [
@@ -100,14 +100,12 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SetHanAsAppScope::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
         ],
 
         'maya' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
         ],
 
         'api' => [
@@ -127,7 +125,6 @@ class Kernel extends HttpKernel
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
         ],
         'web_errors' => [
             EncryptCookies::class,
@@ -147,7 +144,6 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleAikuPublicInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
         ],
         'iris'        => [
             DetectWebsite::class,
@@ -178,6 +174,7 @@ class Kernel extends HttpKernel
             InspectorOctaneMiddleware::class
         ],
         'pupil'      => [
+            VerifyShopify::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -186,8 +183,7 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandlePupilInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            SameSiteSession::class,
-            InspectorOctaneMiddleware::class
+//            SameSiteSession::class,
         ],
 
         'cornea'      => [

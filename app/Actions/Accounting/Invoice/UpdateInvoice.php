@@ -46,6 +46,7 @@ class UpdateInvoice extends OrgAction
         $billingAddressData = Arr::get($modelData, 'billing_address');
         data_forget($modelData, 'billing_address');
 
+
         $invoice = $this->update($invoice, $modelData, ['data']);
 
         if ($billingAddressData) {
@@ -60,27 +61,30 @@ class UpdateInvoice extends OrgAction
         }
 
 
-        if ($invoice->invoiceCategory) {
-            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+        $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (count($changes) > 0) {
+            if ($invoice->invoiceCategory) {
+                InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+                InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+                InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            }
+
+            ShopHydrateSales::dispatch($invoice->shop)->delay($this->hydratorsDelay);
+            ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
+            ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
+
+
+            OrganisationHydrateSales::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+            OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+            OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+
+            GroupHydrateSales::dispatch($invoice->group)->delay($this->hydratorsDelay);
+            GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
+            GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
+
+            InvoiceRecordSearch::dispatch($invoice);
         }
-
-        ShopHydrateSales::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-
-
-        OrganisationHydrateSales::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-
-        GroupHydrateSales::dispatch($invoice->group)->delay($this->hydratorsDelay);
-        GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
-        GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
-
-        InvoiceRecordSearch::dispatch($invoice);
-
 
         return $invoice;
     }
@@ -119,16 +123,17 @@ class UpdateInvoice extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['currency_id']     = ['sometimes', 'required', 'exists:currencies,id'];
-            $rules['net_amount']      = ['sometimes', 'required', 'numeric'];
-            $rules['total_amount']    = ['sometimes', 'required', 'numeric'];
-            $rules['gross_amount']    = ['sometimes', 'required', 'numeric'];
-            $rules['rental_amount']   = ['sometimes', 'required', 'numeric'];
-            $rules['goods_amount']    = ['sometimes', 'required', 'numeric'];
-            $rules['services_amount'] = ['sometimes', 'required', 'numeric'];
-            $rules['tax_amount']      = ['sometimes', 'required', 'numeric'];
-            $rules['footer']          = ['sometimes', 'string'];
-            $rules['data']            = ['sometimes', 'array'];
+            $rules['external_invoicer_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['currency_id']          = ['sometimes', 'required', 'exists:currencies,id'];
+            $rules['net_amount']           = ['sometimes', 'required', 'numeric'];
+            $rules['total_amount']         = ['sometimes', 'required', 'numeric'];
+            $rules['gross_amount']         = ['sometimes', 'required', 'numeric'];
+            $rules['rental_amount']        = ['sometimes', 'required', 'numeric'];
+            $rules['goods_amount']         = ['sometimes', 'required', 'numeric'];
+            $rules['services_amount']      = ['sometimes', 'required', 'numeric'];
+            $rules['tax_amount']           = ['sometimes', 'required', 'numeric'];
+            $rules['footer']               = ['sometimes', 'string'];
+            $rules['data']                 = ['sometimes', 'array'];
 
 
             $rules['is_vip']                             = ['sometimes', 'boolean'];

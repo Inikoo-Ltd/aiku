@@ -558,6 +558,7 @@ class ShowPalletReturn extends OrgAction
                 ],
                 'data'             => PalletReturnResource::make($palletReturn),
                 'box_stats'        => [
+                    'collection_notes'  => $palletReturn->collection_notes ?? '',
                     'recurring_bill'      => $recurringBillData,
                     'fulfilment_customer'          => array_merge(
                         FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
@@ -644,7 +645,8 @@ class ShowPalletReturn extends OrgAction
                                 'price_total'   => $palletReturn->net_amount
                             ],
                             [
-                                'label'         => __('Tax').' '.$palletReturn->taxCategory->rate * 100 . '%',
+                                'label'         => __('Tax'),
+                                // .' '.$palletReturn->taxCategory->rate * 100 . '%',
                                 'information'   => '',
                                 'price_total'   => $palletReturn->tax_amount
                             ],
@@ -655,7 +657,7 @@ class ShowPalletReturn extends OrgAction
                                 'price_total'   => $palletReturn->net_amount
                             ],
                             [
-                                'label'         => __('Tax').' '.$palletReturn->taxCategory->rate * 100 . '%',
+                                'label'         => __('Tax'),
                                 'information'   => '',
                                 'price_total'   => $palletReturn->tax_amount
                             ],

@@ -12,24 +12,20 @@ namespace App\Actions\Catalogue\Asset\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateIntervals;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Asset;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateOrders
+class AssetHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateIntervals;
-    private Asset $asset;
 
-    public function __construct(Asset $asset)
-    {
-        $this->asset = $asset;
-    }
+    public string $jobQueue = 'sales';
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Asset $asset): string
     {
-        return [(new WithoutOverlapping($this->asset->id))->dontRelease()];
+        return $asset->id;
     }
 
     public function handle(Asset $asset): void
@@ -60,7 +56,7 @@ class AssetHydrateOrders
                     ->unique('id');
             }
 
-            $stats["orders_{$key}"] = $orders->count();
+            $stats["orders_$key"] = $orders->count();
         }
 
 

@@ -11,10 +11,9 @@ namespace App\Http\Resources\Ordering;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property int $employee_id
  * @property string $contact_name
  * @property string $alias
- * @property int $user_id
+ * @property mixed $id
  *
  */
 class PickersResource extends JsonResource
@@ -22,11 +21,9 @@ class PickersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                      => $this->id,
-            'contact_name'            => $this->contact_name,
-            'alias'                   => $this->alias,
-            // 'user_id'                 => $this->user_id,
-            // 'disabled'                => is_null($this->user_id)
+            'id'           => $this->id,
+            'contact_name' => $this->contact_name,
+            'alias'        => $this->alias,
         ];
     }
 }

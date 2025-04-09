@@ -47,8 +47,7 @@ class CreateStoredItemAuditFromPallet extends OrgAction
 
     public function htmlResponse(StoredItemAudit $storedItemAudit, ActionRequest $request): RedirectResponse
     {
-        if($this->parent instanceof Warehouse)
-        {
+        if ($this->parent instanceof Warehouse) {
             return Redirect::route('grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.show', [
                 $storedItemAudit->organisation->slug,
                 $storedItemAudit->warehouse->slug,

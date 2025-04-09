@@ -54,9 +54,9 @@ class AttachCustomerToPlatform extends OrgAction
         return $this->handle($customer, $platform, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Customer $customer, Platform $platform, ActionRequest $request): void
+    public function asController(Customer $customer, Platform $platform, ActionRequest $request): void
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($customer->organisation, $request);
         $this->handle($customer, $platform, $this->validatedData);
     }
 }

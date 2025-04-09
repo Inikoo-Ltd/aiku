@@ -35,7 +35,7 @@ class FetchAuroraStockDeliveryItems
                     $stockDeliveryItem = UpdateStockDeliveryItem::make()->action(
                         stockDeliveryItem: $stockDeliveryItem,
                         modelData: $transactionData['stock_delivery_item'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: 5,
                         strict: false,
                     );
                 } catch (Exception $e) {
@@ -50,7 +50,7 @@ class FetchAuroraStockDeliveryItems
                         historicSupplierProduct: $transactionData['historic_supplier_product'],
                         orgStock: $transactionData['org_stock'],
                         modelData: $transactionData['stock_delivery_item'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: 5,
                         strict: false
                     );
 

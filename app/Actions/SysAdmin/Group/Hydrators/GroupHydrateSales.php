@@ -11,29 +11,31 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Group;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateSales
+class GroupHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Group $group;
-
-    public function __construct(Group $group)
+    public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->group = $group;
+        $uniqueId = $group->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->group->id))->dontRelease()];
-    }
 
-    public function handle(Group $group, ?array $intervals = null, $doPreviousPeriods = null): void
+    public function handle(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $stats = [];
 

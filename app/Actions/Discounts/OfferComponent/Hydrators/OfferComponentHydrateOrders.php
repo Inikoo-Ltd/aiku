@@ -11,24 +11,17 @@ namespace App\Actions\Discounts\OfferComponent\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Discounts\OfferComponent;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OfferComponentHydrateOrders
+class OfferComponentHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private OfferComponent $offerComponent;
-
-    public function __construct(OfferComponent $offerComponent)
+    public function getJobUniqueId(OfferComponent $offerComponent): string
     {
-        $this->offerComponent = $offerComponent;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->offerComponent->id))->dontRelease()];
+        return $offerComponent->id;
     }
 
     public function handle(OfferComponent $offerComponent): void

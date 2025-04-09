@@ -23,19 +23,53 @@ const model = defineModel()
 
 const blueprint = [
     {
-        key: ["link"],
-        label: "Link",
-        type: "link",
-    },
+		key: ["button"],
+		replaceForm: [
+			{
+				key: ["link"],
+				label: "Link Button",
+				type: "link",
+			},
+			{
+				key: ["text"],
+				label: "Text Button",
+				type: "text",
+			},
+			{
+				key: ["container", "properties", "text"],
+				type: "textProperty",
+			},
+			{
+				key: ["container", "properties", "background"],
+				label: "Background Button",
+				type: "background",
+			},
+			{
+				key: ["container", "properties", "margin"],
+				label: "Margin Button",
+				type: "margin",
+			},
+			{
+				key: ["container", "properties", "padding"],
+				label: "Padding Button",
+				type: "padding",
+			},
+			{
+				key: ["container", "properties", "border"],
+				label: "Border Button",
+				type: "border",
+			},
+		],
+	},
     {
         key: ["name"],
         label: "Title",
         type: "text",
     },
     {
-        key: ["description"],
-        label: "Description",
-        type: "textProperty",
+        key: ["background"],
+        label: "Background Image Card",
+        type: "background",
     },
     {
         key: ["priceMonthly"],

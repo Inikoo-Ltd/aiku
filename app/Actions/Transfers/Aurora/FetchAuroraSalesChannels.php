@@ -47,7 +47,7 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
                 UpdateSalesChannel::make()->action(
                     salesChannel: $salesChannel,
                     modelData: $seededSalesChannelData,
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -67,7 +67,7 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
                 UpdateSalesChannel::make()->action(
                     salesChannel: $salesChannel,
                     modelData: $seededSalesChannelData,
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -78,7 +78,7 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
                 UpdateSalesChannel::make()->action(
                     salesChannel: $salesChannel,
                     modelData: $salesChannelsData['sales_channel'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -87,7 +87,7 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
                 $salesChannel = StoreSalesChannel::make()->action(
                     group: $group,
                     modelData: $salesChannelsData['sales_channel'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

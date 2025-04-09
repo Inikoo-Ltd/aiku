@@ -154,9 +154,9 @@ class ShowPalletDelivery extends OrgAction
                                 'type'    => 'button',
                                 'style'   => 'secondary',
                                 'icon'    => 'fal fa-plus',
-                                'label'   => __('add pallet'),
+                                'label'   => __('add storage'),
                                 'key'     => 'add-pallet',
-                                'tooltip' => __('Add single pallet'),
+                                'tooltip' => __('Add carton, pallet, or oversize goods'),
                                 'route'   => [
                                     'name'       => 'grp.models.pallet-delivery.pallet.store',
                                     'parameters' => [

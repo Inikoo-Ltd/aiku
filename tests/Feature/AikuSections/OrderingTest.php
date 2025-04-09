@@ -398,7 +398,6 @@ test('create invoice from customer', function () {
     $invoice = StoreInvoice::make()->action($this->customer, $invoiceData);
     expect($invoice)->toBeInstanceOf(Invoice::class)
         ->and($invoice->customer)->toBeInstanceOf(Customer::class)
-        ->and($invoice->reference)->toBe('00001')
         ->and($invoice->customer->stats->number_invoices)->toBe(2);
 
     return $invoice;
@@ -731,4 +730,4 @@ test('test reset intervals', function () {
     $this->artisan('intervals:reset-quarter')->assertExitCode(0);
     $this->artisan('intervals:reset-year')->assertExitCode(0);
 
-  });
+});

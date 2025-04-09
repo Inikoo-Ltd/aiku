@@ -36,6 +36,7 @@ class FetchAuroraEmailTrackingEvents extends FetchAuroraAction
                     $emailTrackingEvent = UpdateEmailTrackingEvent::make()->action(
                         emailTrackingEvent: $emailTrackingEvent,
                         modelData: $emailTrackingEventData['emailTrackingEvent'],
+                        hydratorsDelay: 120,
                         strict: false,
                     );
                 } catch (Exception $e) {
@@ -48,6 +49,7 @@ class FetchAuroraEmailTrackingEvents extends FetchAuroraAction
                     $emailTrackingEvent = StoreEmailTrackingEvent::make()->action(
                         dispatchedEmail: $emailTrackingEventData['dispatchedEmail'],
                         modelData: $emailTrackingEventData['emailTrackingEvent'],
+                        hydratorsDelay: 120,
                         strict: false,
                     );
 

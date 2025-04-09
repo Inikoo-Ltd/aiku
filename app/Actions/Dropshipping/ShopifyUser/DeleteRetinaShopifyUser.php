@@ -40,7 +40,9 @@ class DeleteRetinaShopifyUser extends OrgAction
             'status' => false
         ]);
 
-        DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        if ($shopifyUser->customer) {
+            DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        }
 
         $shopifyUser->delete();
     }
@@ -64,10 +66,8 @@ class DeleteRetinaShopifyUser extends OrgAction
         $this->handle($customer->shopifyUser);
     }
 
-    public function inWebhook(ActionRequest $request): void
+    public function inWebhook(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
-        $shopifyUser = ShopifyUser::where('name', $request->input('domain'))->first();
-
         $this->handle($shopifyUser);
     }
 }
