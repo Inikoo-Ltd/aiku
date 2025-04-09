@@ -8,8 +8,8 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
-use App\Actions\Dispatching\DeliveryNoteItem\HydrateDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
@@ -94,7 +94,7 @@ class SendOrderToWarehouse extends OrgAction
             }
         }
 
-        HydrateDeliveryNoteItems::run($deliveryNote);
+        DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         UpdateOrder::make()->action($order, $modelData);
 
 
