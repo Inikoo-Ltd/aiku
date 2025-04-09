@@ -362,7 +362,7 @@ class ShowRetinaPalletReturn extends RetinaAction
         };
     }
 
-    public function getPrevious(PalletReturn $palletReturn, ActionRequest $request, bool $storedItems = false) : ?array
+    public function getPrevious(PalletReturn $palletReturn, ActionRequest $request, bool $storedItems = false): ?array
     {
         $query = PalletReturn::where('id', '<', $palletReturn->id)
         ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);

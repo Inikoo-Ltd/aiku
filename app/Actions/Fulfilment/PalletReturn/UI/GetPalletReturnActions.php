@@ -181,7 +181,7 @@ class GetPalletReturnActions
         $actions = [];
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $actions[]=
+            $actions[] =
                 [
                     'type'    => 'button',
                     'style'   => 'save',

@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
@@ -42,7 +41,6 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Purge;
-use Illuminate\Support\Facades\DB;
 
 class ShowOrder extends OrgAction
 {

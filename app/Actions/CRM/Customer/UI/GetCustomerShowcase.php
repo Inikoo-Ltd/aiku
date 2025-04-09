@@ -8,13 +8,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\CustomersResource;
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
-use App\Models\Fulfilment\PalletReturn;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetCustomerShowcase

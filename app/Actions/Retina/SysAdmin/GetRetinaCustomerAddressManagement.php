@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 07-04-2025-14h-44m
@@ -73,7 +74,8 @@ class GetRetinaCustomerAddressManagement
             $palletReturnDeliveryAddressIds = Order::where('customer_id', $customer->id)
             ->pluck('delivery_address_id')
             ->unique()
-            ->toArray();;
+            ->toArray();
+            ;
         }
 
         $forbiddenAddressIds = array_merge(
