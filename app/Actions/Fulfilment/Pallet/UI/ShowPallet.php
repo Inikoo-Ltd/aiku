@@ -132,7 +132,7 @@ class ShowPallet extends OrgAction
             ];
         }
 
-        if($pallet->state == PalletStateEnum::STORING){
+        if ($pallet->state == PalletStateEnum::STORING) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'red_outline',

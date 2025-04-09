@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-04-2025-16h-00m
@@ -8,37 +9,24 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Comms\Email\SendPalletDeletedNotification;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
-use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
-use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydrateTransactions;
-use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
 use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydratePallets;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Support\Facades\Event;
-use Exception;
-use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -53,9 +41,9 @@ class DeleteStoredPallet extends OrgAction
         $fulfilmentCustomer = $pallet->fulfilmentCustomer;
 
         DB::transaction(function () use ($pallet, $fulfilmentCustomer) {
-            if($pallet->currentRecurringBill) {
+            if ($pallet->currentRecurringBill) {
                 $transaction = RecurringBillTransaction::where('item_type', 'Pallet')->where('item_id', $pallet->id)->first();
-                if($transaction) {
+                if ($transaction) {
                     DeleteRecurringBillTransaction::make()->action($transaction);
                     CalculateRecurringBillTotals::make()->action($pallet->currentRecurringBill);
                 }
@@ -81,7 +69,7 @@ class DeleteStoredPallet extends OrgAction
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
 
             SendPalletDeletedNotification::dispatch($pallet);
-            
+
             $pallet->delete();
         });
 
@@ -107,7 +95,7 @@ class DeleteStoredPallet extends OrgAction
 
     public function afterValidator()
     {
-        if(strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->pallet->reference) && $this->pallet->state == PalletStateEnum::STORING) {
+        if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->pallet->reference) && $this->pallet->state == PalletStateEnum::STORING) {
             abort(419);
         }
     }

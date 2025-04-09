@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-04-2025-11h-58m
@@ -14,12 +15,8 @@ use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrat
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
-use App\Models\CRM\Customer;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
-use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -42,46 +39,45 @@ class DeleteBookedInPalletDelivery extends OrgAction
     {
         $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
 
-            DB::transaction(function () use ($palletDelivery, $fulfilmentCustomer) {
-                $palletDelivery->pallets()->delete();
+        DB::transaction(function () use ($palletDelivery, $fulfilmentCustomer) {
+            $palletDelivery->pallets()->delete();
 
-                foreach($palletDelivery->transactions as $transaction){
-                    $recurringBillTransaction = $transaction->recurringBillTransaction;
-        
-                    $transaction->delete();
-            
-                    if ($recurringBillTransaction) {
-                        DeleteRecurringBillTransaction::make()->action($recurringBillTransaction);
-                    }
+            foreach ($palletDelivery->transactions as $transaction) {
+                $recurringBillTransaction = $transaction->recurringBillTransaction;
+
+                $transaction->delete();
+
+                if ($recurringBillTransaction) {
+                    DeleteRecurringBillTransaction::make()->action($recurringBillTransaction);
                 }
+            }
 
-                $fulfilmentCustomer->customer->auditEvent    = 'delete';
-                $fulfilmentCustomer->customer->isCustomEvent = true;
-                $fulfilmentCustomer->customer->auditCustomOld = [
+            $fulfilmentCustomer->customer->auditEvent    = 'delete';
+            $fulfilmentCustomer->customer->isCustomEvent = true;
+            $fulfilmentCustomer->customer->auditCustomOld = [
+                'delivery' => $palletDelivery->reference
+            ];
+            $fulfilmentCustomer->customer->auditCustomNew = [
+                'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
+            ];
+            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+
+
+            if ($palletDelivery->recurringBill) {
+                $palletDelivery->recurringBill->auditEvent    = 'delete';
+                $palletDelivery->recurringBill->isCustomEvent = true;
+                $palletDelivery->recurringBill->auditCustomOld = [
                     'delivery' => $palletDelivery->reference
                 ];
-                $fulfilmentCustomer->customer->auditCustomNew = [
+                $palletDelivery->recurringBill->auditCustomNew = [
                     'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
                 ];
-                Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+                Event::dispatch(AuditCustom::class, [$palletDelivery->recurringBill]);
+            }
 
-
-                if($palletDelivery->recurringBill)
-                {
-                    $palletDelivery->recurringBill->auditEvent    = 'delete';
-                    $palletDelivery->recurringBill->isCustomEvent = true;
-                    $palletDelivery->recurringBill->auditCustomOld = [
-                        'delivery' => $palletDelivery->reference
-                    ];
-                    $palletDelivery->recurringBill->auditCustomNew = [
-                        'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
-                    ];
-                    Event::dispatch(AuditCustom::class, [$palletDelivery->recurringBill]);
-                }
-
-                SendPalletDeliveryDeletedNotification::dispatch($palletDelivery);
-                $palletDelivery->delete();
-            });
+            SendPalletDeliveryDeletedNotification::dispatch($palletDelivery);
+            $palletDelivery->delete();
+        });
 
         $fulfilmentCustomer->refresh();
         FulfilmentCustomerHydratePalletDeliveries::dispatch($fulfilmentCustomer);
@@ -117,7 +113,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
 
     public function afterValidator()
     {
-        if(strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->palletDelivery->reference)) {
+        if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->palletDelivery->reference)) {
             abort(419);
         }
     }

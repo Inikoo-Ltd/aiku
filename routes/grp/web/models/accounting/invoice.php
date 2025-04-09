@@ -9,7 +9,6 @@
 use App\Actions\Accounting\Invoice\DeleteInProcessInvoice;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\PayInvoice;
-use App\Actions\Accounting\Invoice\StrictDeleteInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteRefundInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\ForceDeleteRefundInProcessInvoiceTransaction;

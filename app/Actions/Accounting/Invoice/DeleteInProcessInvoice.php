@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-04-2025-13h-10m
@@ -17,8 +18,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
-use Exception;
-use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
@@ -37,26 +36,26 @@ class DeleteInProcessInvoice extends OrgAction
         $invoiceCategory = $invoice->invoiceCategory;
 
         $invoice = DB::transaction(function () use ($invoice, $modelData) {
-                    $invoice = $this->update($invoice, $modelData);
-                    $invoice->invoiceTransactions()->delete();
-            
-                    $invoice->customer->auditEvent    = 'delete';
-                    $invoice->customer->isCustomEvent = true;
-                    $invoice->customer->auditCustomOld = [
-                        'invoice' => $invoice->reference
-                    ];
-                    $invoice->customer->auditCustomNew = [
-                        'invoice' => __("The invoice :ref has been deleted.", ['ref' => $invoice->reference])
-                    ];
-                    Event::dispatch(AuditCustom::class, [$invoice->customer]);
+            $invoice = $this->update($invoice, $modelData);
+            $invoice->invoiceTransactions()->delete();
 
-                    SendInvoiceDeletedNotification::dispatch($invoice);
-            
-                    $invoice->delete();
-                });
+            $invoice->customer->auditEvent    = 'delete';
+            $invoice->customer->isCustomEvent = true;
+            $invoice->customer->auditCustomOld = [
+                'invoice' => $invoice->reference
+            ];
+            $invoice->customer->auditCustomNew = [
+                'invoice' => __("The invoice :ref has been deleted.", ['ref' => $invoice->reference])
+            ];
+            Event::dispatch(AuditCustom::class, [$invoice->customer]);
+
+            SendInvoiceDeletedNotification::dispatch($invoice);
+
+            $invoice->delete();
+        });
 
         $customer->refresh();
-        
+
         CustomerHydrateInvoices::dispatch($customer);
         ShopHydrateInvoices::dispatch($customer->shop);
         OrganisationHydrateInvoices::dispatch($customer->organisation);
@@ -65,9 +64,9 @@ class DeleteInProcessInvoice extends OrgAction
         if ($invoiceCategory) {
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
-        }       
+        }
     }
-    
+
     public function rules(): array
     {
         return [

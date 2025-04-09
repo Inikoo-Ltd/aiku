@@ -37,23 +37,23 @@ class DeleteInvoice extends OrgAction
         $invoiceCategory = $invoice->invoiceCategory;
 
         $invoice = DB::transaction(function () use ($invoice, $modelData) {
-                    $invoice = $this->update($invoice, $modelData);
-                    $invoice->invoiceTransactions()->delete();
-            
-                    $invoice->customer->auditEvent    = 'delete';
-                    $invoice->customer->isCustomEvent = true;
-                    $invoice->customer->auditCustomOld = [
-                        'invoice' => $invoice->reference
-                    ];
-                    $invoice->customer->auditCustomNew = [
-                        'invoice' => __("The invoice :ref has been deleted.", ['ref' => $invoice->reference])
-                    ];
-                    Event::dispatch(AuditCustom::class, [$invoice->customer]);
+            $invoice = $this->update($invoice, $modelData);
+            $invoice->invoiceTransactions()->delete();
 
-                    SendInvoiceDeletedNotification::dispatch($invoice);
-            
-                    $invoice->delete();
-                });
+            $invoice->customer->auditEvent    = 'delete';
+            $invoice->customer->isCustomEvent = true;
+            $invoice->customer->auditCustomOld = [
+                'invoice' => $invoice->reference
+            ];
+            $invoice->customer->auditCustomNew = [
+                'invoice' => __("The invoice :ref has been deleted.", ['ref' => $invoice->reference])
+            ];
+            Event::dispatch(AuditCustom::class, [$invoice->customer]);
+
+            SendInvoiceDeletedNotification::dispatch($invoice);
+
+            $invoice->delete();
+        });
 
         $customer->refresh();
 
@@ -81,7 +81,7 @@ class DeleteInvoice extends OrgAction
 
     public function afterValidator()
     {
-        if(strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->invoice->reference)) {
+        if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->invoice->reference)) {
             abort(419);
         }
     }
