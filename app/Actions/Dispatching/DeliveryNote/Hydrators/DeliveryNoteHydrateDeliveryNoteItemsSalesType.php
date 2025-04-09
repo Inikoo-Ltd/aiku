@@ -79,7 +79,7 @@ class DeliveryNoteHydrateDeliveryNoteItemsSalesType implements ShouldBeUnique
         $command->info($command->getName());
 
 
-        $query = DB::table('delivery_notes')->select('id')->orderBy('date','desc');
+        $query = DB::table('delivery_notes')->select('id')->orderBy('date', 'desc');
 
         if ($command->hasOption('shop') && $command->option('shop')) {
             $shop = Shop::where('slug', $command->option('shop'))->first();

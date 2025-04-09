@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress;
+use App\Actions\Dispatching\DeliveryNoteItem\HydrateDeliveryNoteItems;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Helpers\Address\UpdateAddress;
@@ -144,6 +145,8 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             FetchAuroraDeliveryNoteItems::run($organisationSource, $auroraData->{'Inventory Transaction Key'}, $deliveryNote);
         }
         $deliveryNote->deliveryNoteItems()->whereIn('id', array_keys($transactionsToDelete))->delete();
+
+        HydrateDeliveryNoteItems::run($deliveryNote);
 
         DB::connection('aurora')->table('Delivery Note Dimension')
             ->where('Delivery Note Key', $sourceData[1])
