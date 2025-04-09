@@ -329,6 +329,21 @@ class ShowPalletDelivery extends OrgAction
                 PalletDeliveryStateEnum::RECEIVED => [
                     [
                         'type'    => 'button',
+                        'style'   => 'red_outline',
+                        'tooltip' => __('delete'),
+                        'icon'    => 'fal fa-trash-alt',
+                        'key'     => 'delete_booked_in',
+                        'ask_why' => true,
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                            'parameters' => [
+                                'palletDelivery' => $palletDelivery->id
+                            ]
+                        ]
+                    ],
+                    [
+                        'type'    => 'button',
                         'style'   => 'edit',
                         'tooltip' => __('Edit'),
                         'key'     => 'action',
@@ -410,6 +425,21 @@ class ShowPalletDelivery extends OrgAction
                 ],
                 PalletDeliveryStateEnum::BOOKING_IN => [
                     [
+                        'type'    => 'button',
+                        'style'   => 'red_outline',
+                        'tooltip' => __('delete'),
+                        'icon'    => 'fal fa-trash-alt',
+                        'key'     => 'delete_booked_in',
+                        'ask_why' => true,
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                            'parameters' => [
+                                'palletDelivery' => $palletDelivery->id
+                            ]
+                        ]
+                    ],
+                    [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',
                         'button' => [
@@ -460,6 +490,21 @@ class ShowPalletDelivery extends OrgAction
                     ] : null,
                 ],
                 PalletDeliveryStateEnum::BOOKED_IN => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'red_outline',
+                        'tooltip' => __('delete'),
+                        'icon'    => 'fal fa-trash-alt',
+                        'key'     => 'delete_booked_in',
+                        'ask_why' => true,
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                            'parameters' => [
+                                'palletDelivery' => $palletDelivery->id
+                            ]
+                        ]
+                    ],
                     $palletDelivery->recurringBill->status == RecurringBillStatusEnum::CURRENT ? [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',
@@ -507,9 +552,9 @@ class ShowPalletDelivery extends OrgAction
                 $actions = array_merge([
                     [
                         'type'    => 'button',
-                        'style'   => 'delete',
+                        'style'   => 'red_outline',
                         'tooltip' => __('delete'),
-                        'label'   => __('delete'),
+                        'icon'    => 'fal fa-trash-alt',
                         'key'     => 'delete_delivery',
                         'ask_why' => true,
                         'route'   => [
