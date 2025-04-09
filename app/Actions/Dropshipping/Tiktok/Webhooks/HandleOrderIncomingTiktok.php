@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Tiktok\Order\StoreTiktokOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -25,20 +26,22 @@ class HandleOrderIncomingTiktok
 
     public function handle(array $modelData)
     {
-        $shopId = Arr::get($modelData, 'shop_id');
-        $tiktokUsers = TiktokUser::where('data->authorized_shop->id', $shopId)->get();
+        DB::transaction(function () use ($modelData) {
+            $shopId = Arr::get($modelData, 'shop_id');
+            $tiktokUsers = TiktokUser::where('data->authorized_shop->id', $shopId)->get();
 
-        $payload = Arr::get($modelData, 'data');
-        $orderId = Arr::get($payload, 'order_id');
+            $payload = Arr::get($modelData, 'data');
+            $orderId = Arr::get($payload, 'order_id');
 
-        foreach ($tiktokUsers as $tiktokUser) {
-            $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
-            foreach (Arr::get($orders, 'data.orders') as $order) {
-                if (Arr::get($order, 'status') === 'AWAITING_SHIPMENT') {
-                    StoreTiktokOrder::run($tiktokUser, $order);
+            foreach ($tiktokUsers as $tiktokUser) {
+                $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
+                foreach (Arr::get($orders, 'data.orders') as $order) {
+                    if (Arr::get($order, 'status') === 'AWAITING_SHIPMENT') {
+                        StoreTiktokOrder::run($tiktokUser, $order);
+                    }
                 }
             }
-        }
+        });
     }
 
     public function asController(ActionRequest $request): void

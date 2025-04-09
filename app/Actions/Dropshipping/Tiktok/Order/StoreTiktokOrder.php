@@ -77,11 +77,11 @@ class StoreTiktokOrder extends RetinaAction
                 }
 
                 $storedItems[$tiktokUserHasProduct->portfolio->item_id] = [
-                    'quantity' => $lineItem['quantity']
+                    'quantity' => Arr::get($lineItem, 'quantity', 1)
                 ];
 
                 $itemQuantity = (int) $tiktokUserHasProduct->portfolio->item->total_quantity;
-                $requiredQuantity = $lineItem['quantity'];
+                $requiredQuantity = Arr::get($lineItem, 'quantity', 1);
 
                 if ($itemQuantity >= $requiredQuantity) {
                     $someComplete = true;
@@ -112,14 +112,18 @@ class StoreTiktokOrder extends RetinaAction
                 'stored_items' => $storedItems
             ]);
 
-            data_set($tiktokOrders, 'state', $status);
+            $tiktokUser->orders()->create([
+                'orderable_type' => $palletReturn->getMorphClass(),
+                'orderable_id' => $palletReturn->id,
+                'state' => $status,
+                'tiktok_order_id' => Arr::get($attributes, 'id'),
+                'customer_client_id' => $customerClient->id
+            ]);
         } else {
             $order = StoreOrder::make()->action();
             foreach (Arr::get($attributes, 'line_items') as $lineItem) {
                 StoreTransaction::run($order, []);
             }
         }
-
-        return $tiktokUser->orders()->create($attributes);
     }
 }

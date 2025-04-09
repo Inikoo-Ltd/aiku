@@ -30,6 +30,7 @@ class RetinaDropshippingFulfilmentOrdersResources extends JsonResource
         return [
             'id' => $this->id,
             'shopify_order_id' => $this->shopify_order_id,
+            'tiktok_order_id' => $this->tiktok_order_id,
             'shopify_fulfilment_id' => $this->shopify_fulfilment_id,
             'reference' => $this->model->reference,
             'model' => class_basename($this->model),
