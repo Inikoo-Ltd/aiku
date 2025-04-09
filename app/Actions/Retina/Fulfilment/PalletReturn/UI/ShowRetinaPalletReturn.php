@@ -30,7 +30,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaPalletReturn extends RetinaAction
 {
-
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
         return $palletReturn;
