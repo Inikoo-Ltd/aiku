@@ -10,8 +10,8 @@ import { Icon } from "@/types/Utils/Icon"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import Timeline from "primevue/timeline"
+import PureInput from "../Pure/PureInput.vue"
 
 library.add(faTimes, faExclamationTriangle, faAsterisk)
 
@@ -217,7 +217,7 @@ const onClickDelete = () => {
 												<strong>{{data?.reference || invoice?.reference}}</strong> to confirm deletion.
 											</p>
 											<!-- Input field for confirmation (you can also use a regular input if desired) -->
-											<PureTextarea
+											<PureInput
 												v-model="messageDelete"
 												:placeholder="
 													(props.message && props.message.placeholder) ||
