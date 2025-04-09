@@ -45,7 +45,7 @@ const component = computed(() => {
 </script>
 
 <template>
-  <Head :title="capitalize(title)"/>
+  <!-- <Head :title="capitalize(title)"/> -->
   <PageHeading :data="pageHead"/>
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
   <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab]"></component>
