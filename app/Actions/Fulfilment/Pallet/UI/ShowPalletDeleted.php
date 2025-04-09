@@ -66,43 +66,12 @@ class ShowDeletedPallet extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, ActionRequest $request): Pallet
+    public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, $palletSlug, ActionRequest $request): Pallet
     {
-        $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletTabsEnum::values());
-
-        return $this->handle($pallet);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inLocation(Organisation $organisation, Warehouse $warehouse, Location $location, Pallet $pallet, ActionRequest $request): Pallet
-    {
-        $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletTabsEnum::values());
-
-        return $this->handle($pallet);
-    }
-
-    public function asController(Organisation $organisation, Warehouse $warehouse, Fulfilment $fulfilment, Pallet $pallet, ActionRequest $request): Pallet
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(PalletTabsEnum::values());
-
-        return $this->handle($pallet);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Pallet $pallet, ActionRequest $request): Pallet
-    {
-        $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PalletTabsEnum::values());
-
-        return $this->handle($pallet);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, PalletDelivery $palletDelivery, Pallet $pallet, ActionRequest $request): Pallet
-    {
+        $pallet = Pallet::onlyTrashed()->where('slug', $palletSlug)->first();
+        if (!$pallet) {
+            abort(404);
+        }
         $this->parent = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PalletTabsEnum::values());
 
@@ -125,7 +94,6 @@ class ShowDeletedPallet extends OrgAction
         $title      = $this->pallet->reference;
         $iconRight  = $pallet->status->statusIcon()[$pallet->status->value];
         $afterTitle = [];
-        $actions    = [];
         if ($this->pallet->customer_reference) {
             $afterTitle = [
                 'label' => '('.$this->pallet->customer_reference.')'
@@ -138,51 +106,7 @@ class ShowDeletedPallet extends OrgAction
                 'tooltip' => __('Customer')
             ];
             $model               = $this->parent->customer->name;
-            $openStoredItemAudit = $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first();
-
-            if (!app()->environment('production')) {
-                if ($openStoredItemAudit) {
-                    $actions[] = [
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'tooltip' => __("Continue pallet's SKUs audit"),
-                        'label'   => __("Continue pallet's SKUs audit"),
-                        'route'   => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.stored-item-audits.show',
-                            'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
-                        ]
-                    ];
-                } else {
-                    $actions[] = [
-                        'type'    => 'button',
-                        'tooltip' => __("Start pallet's SKUs audit"),
-                        'label'   => __("Start pallet's SKUs audit"),
-                        'route'   => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.stored-item-audits.create',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ];
-                }
-
-            }
-            if ($pallet->palletStoredItems->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED) && $pallet->status != PalletStatusEnum::RETURNED) {
-                $actions[] = [
-                    'type'    => 'button',
-                    'tooltip' => __("Return Pallet"),
-                    'label'   => __("Return Pallet"),
-                    'key'     => 'return-pallet',
-                    'route'   => [
-                        'name'       => 'grp.models.pallet.return',
-                        'parameters' => [
-                            'pallet' => $pallet->id
-                        ],
-                        'method'     => 'patch'
-                    ]
-                ];
-            }
         }
-
-
 
         $subNavigation = [];
         $navigation    = PalletTabsEnum::navigation($pallet);
@@ -193,71 +117,6 @@ class ShowDeletedPallet extends OrgAction
 
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        }
-
-        $routeName = null;
-        if ($this->parent instanceof Warehouse) {
-            $routeName = 'grp.org.warehouses.show.inventory.pallets.current.edit';
-            $openStoredItemAudit = $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first();
-
-            if (!app()->environment('production')) {
-                if ($openStoredItemAudit) {
-                    $actions[] = [
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'tooltip' => __("Continue pallet's SKUs audit"),
-                        'label'   => __("Continue pallet's SKUs audit"),
-                        'route'   => [
-                            'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.show',
-                            'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
-                        ]
-                    ];
-                } else {
-                    $actions[] = [
-                        'type'    => 'button',
-                        'tooltip' => __("Start pallet's SKUs audit"),
-                        'label'   => __("Start pallet's SKUs audit"),
-                        'route'   => [
-                            'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.create',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ];
-                }
-
-            }
-        } elseif ($this->parent instanceof Fulfilment) {
-            $routeName = 'grp.org.fulfilments.show.operations.pallets.current.edit';
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $routeName = 'grp.org.fulfilments.show.crm.customers.show.pallets.edit';
-        }
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'edit',
-            'tooltip' => __('edit pallet'),
-            'route'   => [
-                'name'       => $routeName,
-                'parameters' => array_values(request()->route()->originalParameters())
-            ]
-        ];
-
-        if ($this->parent instanceof FulfilmentCustomer) {
-            $actions[] = [
-                'type'   => 'button',
-                'style'  => 'tertiary',
-                'label'  => 'PDF Label',
-                'target' => '_blank',
-                'icon'   => 'fal fa-file-pdf',
-                'key'    => 'action',
-                'route'  => [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.export',
-                    'parameters' => [
-                        ...array_values(request()->route()->originalParameters()),
-                        [
-                            'type' => 'pdf'
-                        ]
-                    ],
-                ]
-            ];
         }
 
         $storedItemsList = array_map(function ($palletStoredItem) {
@@ -277,10 +136,6 @@ class ShowDeletedPallet extends OrgAction
                     $this->parent,
                     request()->route()->originalParameters()
                 ),
-                'navigation'                    => [
-                    'previous' => $this->getPrevious($pallet, $request),
-                    'next'     => $this->getNext($pallet, $request),
-                ],
                 'pageHead'                      => [
                     'icon'          => $icon,
                     'title'         => $title,
@@ -289,7 +144,6 @@ class ShowDeletedPallet extends OrgAction
                     'noCapitalise'  => true,
                     'afterTitle'    => $afterTitle,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
                 ],
                 'tabs'                          => [
                     'current'    => $this->tab,
@@ -383,13 +237,13 @@ class ShowDeletedPallet extends OrgAction
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallets.current.show',
+                                'name'       => 'grp.org.fulfilments.show.operations.pallets.deleted.show',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
                             'label' => $pallet->reference,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix'         =>  __('Pallets'),
                 ],
             ]
         );
@@ -412,94 +266,15 @@ class ShowDeletedPallet extends OrgAction
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.deleted.show',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
                             'label' => $pallet->reference,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix'         => __('Pallets'),
                 ],
             ]
         );
-    }
-
-    public function getPrevious(Pallet $pallet, ActionRequest $request): ?array
-    {
-        $previous = Pallet::where('id', '<', $pallet->id)
-            ->where('fulfilment_customer_id', $this->parent->id)
-            ->whereNotNull('slug')->orderBy('id', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(Pallet $pallet, ActionRequest $request): ?array
-    {
-        $next = Pallet::where('id', '>', $pallet->id)
-            ->where('fulfilment_customer_id', $this->parent->id)
-            ->whereNotNull('slug')->orderBy('id')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Pallet $pallet, string $routeName): ?array
-    {
-        if (!$pallet) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.org.fulfilments.show.crm.customers.show.pallets.show' => [
-                'label' => $pallet->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'       => $pallet->organisation->slug,
-                        'fulfilment'         => $pallet->fulfilment->slug,
-                        'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-                        'pallet'             => $pallet->slug
-                    ]
-                ]
-            ],
-            'grp.org.warehouses.show.inventory.pallets.current.show' => [
-                'label' => $pallet->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $pallet->organisation->slug,
-                        'warehouse'    => $pallet->warehouse->slug,
-                        'pallet'       => $pallet->slug
-                    ]
-                ]
-            ],
-
-            'grp.org.fulfilments.show.operations.pallets.current.show' => [
-                'label' => $pallet->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $pallet->organisation->slug,
-                        'fulfilment'   => $pallet->fulfilment->slug,
-                        'pallet'       => $pallet->slug
-                    ]
-
-                ]
-            ],
-
-            // 'grp.org.fulfilments.show.crm.customers.show.invoices.show'=> [
-            //     'label'=> $invoice->reference,
-            //     'route'=> [
-            //         'name'      => $routeName,
-            //         'parameters'=> [
-            //             'organisation'       => $invoice->organisation->slug,
-            //             'fulfilment'         => $this->parent->slug,
-            //             'fulfilmentCustomer' => $this->parent->slug,
-            //             'invoice'            => $invoice->slug
-            //         ]
-
-            //     ]
-            // ],
-            default => null,
-        };
     }
 }
