@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\DeleteInProcessInvoice;
+use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Invoice\StrictDeleteInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
@@ -20,7 +22,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::patch('update', UpdateInvoice::class)->name('update');
-    Route::patch('delete', StrictDeleteInvoice::class)->name('delete');
+    Route::delete('delete', DeleteInvoice::class)->name('delete');
+    Route::delete('in-process/delete', DeleteInProcessInvoice::class)->name('in-process.delete');
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();
 
     Route::post('send-invoice', SendInvoiceEmailToCustomer::class)->name('send_invoice');
