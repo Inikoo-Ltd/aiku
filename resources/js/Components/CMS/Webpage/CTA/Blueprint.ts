@@ -161,7 +161,6 @@ export default {
 			replaceForm: [
 				{
 					key: ["background"],
-					useIn : ["desktop", "tablet", "mobile"],
 					label :"Background",
 					type: "background",
 					
@@ -182,20 +181,17 @@ export default {
 				},
 				{
 					key: ["border"],
-					useIn : ["desktop", "tablet", "mobile"],
 					label : "Border",
 					type: "border",
 					
 				},
 				{
                     key: ["shadow"],
-					useIn : ["desktop", "tablet", "mobile"],
                     label : "Shadow",
                     type: "shadow",
                 },
                 {
                     key: ["shadowColor"],
-					useIn : ["desktop", "tablet", "mobile"],
                     label : "Shadow Color",
                     type: "color",
                 },

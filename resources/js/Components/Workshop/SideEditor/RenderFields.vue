@@ -31,25 +31,20 @@ const emits = defineEmits<{
   (e: 'update:modelValue', key: string | string[], value: any): void
 }>()
 
-// Inject screen context (default desktop)
-const currentView = inject('currentView', ref('desktop'))
+const currentView = ref('desktop')
 
-// READ: Handle responsive-aware value with fallback to legacy (flat string)
 const valueForField = computed(() => {
   const rawVal = get(modelValue.value, props.blueprint.key)
   const useIn = props.blueprint.useIn
 
-  // Kalau useIn kosong atau bukan array, artinya tidak butuh responsive view
   if (!Array.isArray(useIn) || useIn.length === 0) {
     return rawVal
   }
 
-  // Kalau value bukan object (legacy atau input awal), langsung pakai saja
   if (!isPlainObject(rawVal)) {
     return rawVal
   }
 
-  // Kalau ada, ambil berdasarkan currentView → fallback ke desktop → kosong string
   return rawVal?.[currentView.value!] ?? rawVal?.desktop ?? rawVal
 })
 
@@ -79,8 +74,6 @@ const onPropertyUpdate = (newVal: any) => {
 
   emits('update:modelValue', rawKey, updatedValue)
 }
-
-
 
 
 </script>
