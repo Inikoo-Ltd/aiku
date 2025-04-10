@@ -27,6 +27,7 @@ use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,9 +41,9 @@ class DeleteStoredPallet extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Pallet $pallet, $quiet = false): Pallet
+    public function handle(Pallet $pallet, $quiet = false, array $modelData): Pallet
     {
-        $recurringBillTransactionDeleted = DB::transaction(function () use ($pallet) {
+        $recurringBillTransactionDeleted = DB::transaction(function () use ($pallet, $modelData) {
             $recurringBillTransactionDeleted = false;
             if ($pallet->currentRecurringBill) {
                 $transaction = RecurringBillTransaction::where('item_type', 'Pallet')->where('item_id', $pallet->id)->first();
@@ -53,6 +54,7 @@ class DeleteStoredPallet extends OrgAction
                 }
             }
 
+            $pallet = $this->update($pallet, $modelData);
             $pallet->delete();
 
             return $recurringBillTransactionDeleted;
@@ -93,28 +95,26 @@ class DeleteStoredPallet extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_confirmation' => ['sometimes'],
+            'deleted_note' => ['required', 'string', 'max:4000'],
+            'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
 
-    public function afterValidator(Validator $validator): void
+    public function prepareForValidation(ActionRequest $request)
     {
-        if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->pallet->reference) && $this->pallet->state == PalletStateEnum::STORING) {
-            $validator->errors()->add('delete_confirmation', 'Incorrect confirmation, please write the delivery reference to confirm.'.' '.$this->pallet->reference);
-        }
+        $this->set('deleted_by', $request->user()->id);
     }
-
 
     /**
      * @throws \Throwable
      */
-    public function action(Pallet $pallet, bool $quiet = true): Pallet
+    public function action(Pallet $pallet, bool $quiet = true, array $modelData): Pallet
     {
         $this->pallet   = $pallet;
         $this->asAction = true;
         $this->initialisationFromFulfilment($pallet->fulfilment, []);
 
-        return $this->handle($pallet, $quiet);
+        return $this->handle($pallet, $quiet, $modelData);
     }
 
     /**
@@ -125,7 +125,7 @@ class DeleteStoredPallet extends OrgAction
         $this->pallet = $pallet;
         $this->initialisationFromFulfilment($pallet->fulfilment, $request);
 
-        return $this->handle($pallet);
+        return $this->handle(pallet: $pallet, modelData: $this->validatedData);
     }
 
     public function htmlResponse(Pallet $pallet): RedirectResponse

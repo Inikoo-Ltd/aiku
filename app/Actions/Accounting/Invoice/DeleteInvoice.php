@@ -74,22 +74,18 @@ class DeleteInvoice extends OrgAction
     {
         return [
             'deleted_note' => ['required', 'string', 'max:4000'],
-            'delete_confirmation'   => ['sometimes'],
             'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
 
-    public function afterValidator()
+    public function prepareForValidation(ActionRequest $request)
     {
-        if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->invoice->reference)) {
-            abort(419);
-        }
+        $this->set('deleted_by', $request->user()->id);
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->invoice = $invoice;
-        $this->set('user_id', $request->user()->id);
         $this->initialisationFromShop($invoice->shop, $request);
 
         return $this->handle($invoice, $this->validatedData);
