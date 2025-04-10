@@ -362,7 +362,7 @@ class GetPalletDeliveryActions
                 'key'     => 'delete_booked_in',
                 'ask_why' => true,
                 'route'   => [
-                    'method'     => 'Delete',
+                    'method'     => 'delete',
                     'name'       => 'grp.models.pallet-delivery.booked-in-delete',
                     'parameters' => [
                         'palletDelivery' => $palletDelivery->id
@@ -381,7 +381,7 @@ class GetPalletDeliveryActions
             'key'     => 'delete_booked_in',
             'ask_why' => true,
             'route'   => [
-                'method'     => 'Delete',
+                'method'     => 'delete',
                 'name'       => 'grp.models.pallet-delivery.booked-in-delete',
                 'parameters' => [
                     'palletDelivery' => $palletDelivery->id
