@@ -108,7 +108,7 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <strong>Pallet Reference:</strong> <a href="[Pallet Link]" style="color: #3498DB; text-decoration: none;">[Pallet Reference]</a><br/>
+                    <strong>Pallet Delivery Reference:</strong> <a href="[Pallet Link]" style="color: #3498DB; text-decoration: none;">[Pallet Reference]</a><br/>
                     <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br/>
                     <strong>Deletion Date:</strong> [Deletion Date]
                   </td>
