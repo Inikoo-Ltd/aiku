@@ -67,7 +67,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
                     ]); // this will delete recurring bill transactions
                 }
             }
-
+    
             foreach($palletDelivery->transactions as $transaction)
             {
                 DeleteFulfilmentTransaction::make()->action($transaction);
@@ -79,7 +79,6 @@ class DeleteBookedInPalletDelivery extends OrgAction
 
             $palletDelivery->delete();
 
-
             $fulfilmentCustomer->customer->auditEvent     = 'delete';
             $fulfilmentCustomer->customer->isCustomEvent  = true;
             $fulfilmentCustomer->customer->auditCustomOld = [
@@ -89,9 +88,6 @@ class DeleteBookedInPalletDelivery extends OrgAction
                 'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
             ];
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
-
-
-
         });
 
         StoreDeletePalletDeliveryHistory::run($palletDelivery, $palletDelivery->fulfilmentCustomer->customer);

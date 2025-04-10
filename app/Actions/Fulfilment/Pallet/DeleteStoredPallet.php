@@ -56,10 +56,9 @@ class DeleteStoredPallet extends OrgAction
 
             $pallet = $this->update($pallet, $modelData);
             $pallet->delete();
-
+            
             return $recurringBillTransactionDeleted;
         });
-
 
         $fulfilmentCustomer = $pallet->fulfilmentCustomer;
         $fulfilmentCustomer->refresh();
@@ -112,7 +111,7 @@ class DeleteStoredPallet extends OrgAction
     {
         $this->pallet   = $pallet;
         $this->asAction = true;
-        $this->initialisationFromFulfilment($pallet->fulfilment, []);
+        $this->initialisationFromFulfilment($pallet->fulfilment, $modelData);
 
         return $this->handle($pallet, $quiet, $modelData);
     }
