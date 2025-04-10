@@ -73,7 +73,7 @@ const onClickDelete = () => {
 	const selectedMethod = props.routeDelete?.method || "delete"
 	// Build the payload regardless of the method
 	const payload = {
-		["delete_confirmation"]: messageDelete.value,
+	/* 	["delete_confirmation"]: messageDelete.value, */
 		["deleted_note"]: confirmationRead.value,
 	}
 
