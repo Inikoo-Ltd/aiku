@@ -14,10 +14,12 @@ use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrat
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\Pallet\DeletePallet;
 use App\Actions\Fulfilment\Pallet\DeleteStoredPallet;
+use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopSupervisorAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Support\Facades\Event;
@@ -56,12 +58,22 @@ class DeleteBookedInPalletDelivery extends OrgAction
                     PalletStatusEnum::RECEIVING,
                     PalletStatusEnum::NOT_RECEIVED
                 ])) {
-                    DeletePallet::run($pallet, $recurringBill);  // this will NOT delete recurring bill transactions
+                    DeletePallet::run($pallet);  // this will NOT delete recurring bill transactions
                 } else {
                     DeleteStoredPallet::make()->action(pallet:$pallet, modelData: [
                         'deleted_note' => 'Pallet Delivery deleted due to: ' . $modelData['delete_comment'],
                         'deleted_by'   => $modelData['deleted_by']
                     ]); // this will delete recurring bill transactions
+                }
+            }
+
+            if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT) {
+                foreach($palletDelivery->transactions as $transaction)
+                {
+                    if($transaction->recurringBillTransaction)
+                    {
+                        DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction);
+                    }
                 }
             }
 
