@@ -11,9 +11,9 @@ import TableOutboxes from "@/Components/Tables/TableOutboxes.vue";
 import { capitalize } from "@/Composables/capitalize"
 
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume } from "@fal";
+import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars } from "@fal";
 
-library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume);
+library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars);
 
 
 const props = defineProps<{
