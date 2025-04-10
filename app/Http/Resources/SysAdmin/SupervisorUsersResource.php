@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-04-2025-10h-43m
@@ -8,9 +9,6 @@
 
 namespace App\Http\Resources\SysAdmin;
 
-use App\Http\Resources\HumanResources\EmployeeResource;
-use App\Http\Resources\SysAdmin\Group\GroupResource;
-use App\Http\Resources\SysAdmin\Organisation\UserOrganisationResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;

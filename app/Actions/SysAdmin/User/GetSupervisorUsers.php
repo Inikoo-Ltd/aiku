@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-04-2025-10h-30m
@@ -9,23 +10,14 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\CRM\PortfolioResource;
 use App\Http\Resources\SysAdmin\SupervisorUsersResource;
-use App\Http\Resources\SysAdmin\UsersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
-use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -54,8 +46,7 @@ class GetSupervisorUsers extends OrgAction
 
         $permission = null;
 
-        if($scope instanceof Fulfilment)
-        {
+        if ($scope instanceof Fulfilment) {
             $permission = Permission::where('name', "supervisor-fulfilment-shop.".$scope->id)->first();
         }
 

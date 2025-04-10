@@ -40,9 +40,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $quantity_picked
  * @property string|null $quantity_packed
  * @property string|null $quantity_dispatched
- * @property string $revenue_amount
- * @property string $org_revenue_amount
- * @property string $grp_revenue_amount
+ * @property numeric $revenue_amount
+ * @property numeric $org_revenue_amount
+ * @property numeric $grp_revenue_amount
  * @property string|null $profit_amount
  * @property string|null $org_profit_amount
  * @property string|null $grp_profit_amount
