@@ -12,6 +12,7 @@ use App\Actions\Comms\Email\SendPalletReturnDeletedNotification;
 use App\Actions\Dropshipping\Shopify\Order\CancelFulfilmentRequestToShopify;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
+use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\RecurringBill\DeleteRecurringBill;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
@@ -70,14 +71,12 @@ class DeleteDispatchedPalletReturn extends OrgAction
                     $palletReturn->storedItems()->detach($storedItemIds);
                 }
 
-                if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT)
+                foreach($palletReturn->transactions as $transaction)
                 {
-                    foreach($palletReturn->transactions as $transaction)
+                    DeleteFulfilmentTransaction::make()->action($transaction);
+                    if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction)
                     {
-                        if($transaction->recurringBillTransaction)
-                        {
-                            DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction); //delete recurring bill transaction
-                        }
+                        DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction); //delete recurring bill transaction
                     }
                 }
     

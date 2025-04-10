@@ -12,6 +12,7 @@ namespace App\Actions\Fulfilment\PalletDelivery;
 use App\Actions\Comms\Email\SendPalletDeliveryDeletedNotification;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
+use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
 use App\Actions\Fulfilment\Pallet\DeletePallet;
 use App\Actions\Fulfilment\Pallet\DeleteStoredPallet;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
@@ -67,13 +68,12 @@ class DeleteBookedInPalletDelivery extends OrgAction
                 }
             }
 
-            if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT) {
-                foreach($palletDelivery->transactions as $transaction)
+            foreach($palletDelivery->transactions as $transaction)
+            {
+                DeleteFulfilmentTransaction::make()->action($transaction);
+                if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction)
                 {
-                    if($transaction->recurringBillTransaction)
-                    {
-                        DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction);
-                    }
+                    DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction);
                 }
             }
 
