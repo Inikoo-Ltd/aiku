@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\OrgAction;
@@ -39,6 +40,9 @@ class SendOrderToWarehouse extends OrgAction
         $this->authorisationType = 'update';
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order, array $modelData): DeliveryNote
     {
         data_set($modelData, 'state', OrderStateEnum::IN_WAREHOUSE);
@@ -90,7 +94,7 @@ class SendOrderToWarehouse extends OrgAction
             }
         }
 
-
+        DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         UpdateOrder::make()->action($order, $modelData);
 
 
@@ -133,6 +137,9 @@ class SendOrderToWarehouse extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Order $order, array $modelData): DeliveryNote
     {
         $this->asAction = true;
@@ -143,6 +150,9 @@ class SendOrderToWarehouse extends OrgAction
         return $this->handle($order, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Order $order, ActionRequest $request): DeliveryNote
     {
         $this->order = $order;
