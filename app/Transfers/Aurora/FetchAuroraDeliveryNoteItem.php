@@ -28,18 +28,20 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
 
         $transaction = $this->parseTransaction($auroraTransaction);
 
-        $this->parsedData['type'] = $this->auroraModelData->{'Inventory Transaction Type'};
+        $type = $this->auroraModelData->{'Inventory Transaction Type'};
+
+        $this->parsedData['type'] = $type;
 
 
-        if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
+        if ($type == 'Sale') {
             $state = DeliveryNoteItemStateEnum::DISPATCHED;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'No Dispatched') {
+        } elseif ($type == 'No Dispatched') {
             $state = DeliveryNoteItemStateEnum::OUT_OF_STOCK;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'FailSale') {
+        } elseif ($type == 'FailSale') {
             $state = DeliveryNoteItemStateEnum::CANCELLED;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock' or $this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
+        } elseif ($type == 'Restock' || $type == 'Adjust') {
             return;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Order In Process') {
+        } elseif ($type == 'Order In Process') {
             $state = match ($deliveryNote->state) {
                 DeliveryNoteStateEnum::UNASSIGNED => DeliveryNoteItemStateEnum::UNASSIGNED,
                 DeliveryNoteStateEnum::QUEUED => DeliveryNoteItemStateEnum::QUEUED,
@@ -48,9 +50,9 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
                 DeliveryNoteStateEnum::FINALISED => DeliveryNoteItemStateEnum::FINALISED,
                 default => null
             };
-            if ($state === null and $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
+            if ($state === null && $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
                 $state = DeliveryNoteItemStateEnum::OUT_OF_STOCK;
-            } elseif ($state === null and $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
+            } elseif ($state === null && $deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
                 $state = DeliveryNoteItemStateEnum::CANCELLED;
             } elseif ($state === null) {
                 dd($this->auroraModelData, 'XX', $deliveryNote->state);
@@ -85,7 +87,6 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
         $weight = abs($weight);
 
 
-
         $this->parsedData['delivery_note_item'] = [
             'transaction_id'      => $transactionID,
             'state'               => $state,
@@ -101,7 +102,20 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'org_stock_family_id' => $orgStock?->org_stock_family_id,
             'stock_id'            => $stock ? $stock->id : null,
             'stock_family_id'     => $stock ? $stock->stock_family_id : null,
-            'weight'              => $weight
+            'weight'              => $weight,
+
+            'date'                => $deliveryNote->date,
+            'queued_at'           => $deliveryNote->queued_at,
+            'handling_at'         => $deliveryNote->handling_at,
+            'handling_blocked_at' => $deliveryNote->handling_blocked_at,
+            'packed_at'           => $deliveryNote->packed_at,
+            'finalised_at'        => $deliveryNote->finalised_at,
+            'dispatched_at'       => $deliveryNote->dispatched_at,
+            'cancelled_at'        => $deliveryNote->cancelled_at,
+            'start_picking'       => $deliveryNote->start_picking,
+            'end_picking'         => $deliveryNote->end_picking,
+            'start_packing'       => $deliveryNote->start_packing,
+            'end_packing'         => $deliveryNote->end_packing,
 
 
         ];
