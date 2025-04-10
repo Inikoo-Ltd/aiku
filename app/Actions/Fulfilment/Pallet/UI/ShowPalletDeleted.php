@@ -36,7 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * @property Pallet $pallet
  */
-class ShowDeletedPallet extends OrgAction
+class ShowPalletDeleted extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
 
