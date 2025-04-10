@@ -346,11 +346,34 @@ class GetPalletDeliveryActions
     protected function bookedInDelete(PalletDelivery $palletDelivery): array
     {
         if (!$this->isSupervisor) {
-            return [];
+            return [
+                'supervisor' => false,
+                'supervisors_route' => [
+                    'method'     => 'get',
+                    'name'       => 'grp.json.fulfilment.supervisors.index',
+                    'parameters' => [
+                        'fulfilment' => $palletDelivery->fulfilment->slug
+                    ]
+                ],
+                'type'    => 'button',
+                'style'   => 'red_outline',
+                'tooltip' => __('Delete'),
+                'icon'    => $this->deleteIcon,
+                'key'     => 'delete_booked_in',
+                'ask_why' => true,
+                'route'   => [
+                    'method'     => 'Delete',
+                    'name'       => 'grp.models.pallet-delivery.booked-in-delete',
+                    'parameters' => [
+                        'palletDelivery' => $palletDelivery->id
+                    ]
+                ]
+            ];
         }
 
 
         return [
+            'supervisor' => true,
             'type'    => 'button',
             'style'   => 'red_outline',
             'tooltip' => __('Delete'),
