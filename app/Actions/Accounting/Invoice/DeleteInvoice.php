@@ -36,7 +36,7 @@ class DeleteInvoice extends OrgAction
         $customer = $invoice->customer;
         $invoiceCategory = $invoice->invoiceCategory;
 
-        $invoice = DB::transaction(function () use ($invoice, $modelData) {
+        DB::transaction(function () use ($invoice, $modelData) {
             $invoice = $this->update($invoice, $modelData);
             $invoice->invoiceTransactions()->delete();
 
@@ -54,6 +54,8 @@ class DeleteInvoice extends OrgAction
 
             $invoice->delete();
         });
+
+        $invoice = Invoice::withTrashed()->find($invoice->id);
 
         $customer->refresh();
 
@@ -80,7 +82,9 @@ class DeleteInvoice extends OrgAction
 
     public function prepareForValidation(ActionRequest $request)
     {
-        $this->set('deleted_by', $request->user()->id);
+        if(!$this->asAction) {
+            $this->set('deleted_by', $request->user()->id);
+        }
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
@@ -95,6 +99,7 @@ class DeleteInvoice extends OrgAction
     public function action(Invoice $invoice, array $modelData): Invoice
     {
         $this->invoice = $invoice;
+        $this->asAction = true;
         $this->initialisationFromShop($invoice->shop, $modelData);
 
         return $this->handle($invoice, $this->validatedData);
