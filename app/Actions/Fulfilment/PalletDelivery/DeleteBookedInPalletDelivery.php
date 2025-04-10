@@ -61,7 +61,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
                 ])) {
                     DeletePallet::run($pallet);  // this will NOT delete recurring bill transactions
                 } else {
-                    DeleteStoredPallet::make()->action(pallet:$pallet, modelData: [
+                    DeleteStoredPallet::make()->action(pallet:$pallet, quiet: true, modelData: [
                         'deleted_note' => 'Pallet Delivery deleted due to: ' . $modelData['deleted_note'],
                         'deleted_by'   => $modelData['deleted_by']
                     ]); // this will delete recurring bill transactions
