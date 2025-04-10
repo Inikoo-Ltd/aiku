@@ -28,6 +28,7 @@ use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallet
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Tag\GetTagOptions;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 
 Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/users', [GetOutboxUsers::class, 'inFulfilment'])->name('fulfilment.outbox.users.index');
+
+Route::get('fulfilment/{fulfilment}/supervisors', [GetSupervisorUsers::class, 'inFulfilment'])->name('fulfilment.supervisors.index');
 
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/services', [GetFulfilmentServices::class, 'inPalletDelivery'])->name('fulfilment.delivery.services.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/services', [GetFulfilmentServices::class, 'inPalletReturn'])->name('fulfilment.return.services.index');

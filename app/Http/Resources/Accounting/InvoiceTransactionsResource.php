@@ -38,7 +38,7 @@ class InvoiceTransactionsResource extends JsonResource
                 return null;
             }
 
-            $fulfilment = $shop->fulfilment;
+            $fulfilment = $shop->fulfilment ?? null;
             if (!$fulfilment) {
                 return match ($type) {
                     'Product' => [

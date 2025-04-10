@@ -30,12 +30,12 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faDraftingCompass, faEnvelope, faArrowCircleLeft } from '@fal'
+import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faDraftingCompass, faEnvelope, faArrowCircleLeft, faTrashAlt } from '@fal'
 import { faClock, faFileInvoice, faFilePdf } from '@fas'
 import { faCheck } from '@far'
 import { usePage } from '@inertiajs/vue3';
 
-library.add(faCheck, faEnvelope ,faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faDraftingCompass, faArrowCircleLeft)
+library.add(faCheck, faEnvelope ,faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faDraftingCompass, faArrowCircleLeft, faTrashAlt)
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -62,6 +62,7 @@ import InputNumber from 'primevue/inputnumber'
 import TableItemizedTransactions from '@/Components/Tables/Grp/Org/Accounting/TableItemizedTransactions.vue'
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue'
+import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
 // const locale = useLocaleStore()
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -199,6 +200,31 @@ const generateRefundRoute = (refundSlug: string) => {
                 :key="`ActionButton${action.label}${action.style}`"
                 :tooltip="action.tooltip"
             />
+        </template>
+
+        <template #button-delete-booked-in="{ action }">
+            <div>
+                <ModalAfterConfirmationDelete
+                    :routeDelete="action.route"
+                    :invoice="invoice"
+                    isFullLoading
+                    isWithMessage
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+
+                        <Button
+                            @click="() => changeModel()"
+                            :style="action.style"
+                            :label="action.label"
+                            :icon="action.icon"
+                            :iconRight="action.iconRight"
+                            :key="`ActionButton${action.label}${action.style}`"
+                            :tooltip="action.tooltip"
+                        />
+
+                    </template>
+                </ModalAfterConfirmationDelete>
+            </div>
         </template>
     </PageHeading>
 

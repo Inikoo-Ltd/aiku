@@ -56,7 +56,7 @@ trait WithSendBulkEmails
 
         if ($dispatchedEmail->recipient instanceof WebUser) {
             $customerName = $dispatchedEmail->recipient->customer->name;
-        } elseif ($dispatchedEmail->recipient instanceof OutBoxHasSubscriber) {
+        } elseif ($dispatchedEmail->recipient instanceof OutBoxHasSubscriber || $dispatchedEmail->recipient instanceof User) {
             $customerName = Arr::get($additionalData, 'customer_name');
         } else {
             $customerName = $dispatchedEmail->recipient->name;
@@ -76,6 +76,15 @@ trait WithSendBulkEmails
             'customer-email' => Arr::get($additionalData, 'customer_email'),
             'customer-url' => Arr::get($additionalData, 'customer_url'),
             'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
+
+            'invoice-reference' => Arr::get($additionalData, 'invoice_reference'),
+            'invoice-link' => Arr::get($additionalData, 'invoice_link'),
+            'customer-link' => Arr::get($additionalData, 'customer_link'),
+            'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
+            'pallet-link' => Arr::get($additionalData, 'pallet_link'),
+            'deletion-date' => Arr::get($additionalData, 'date'),
+            'delivered-date' => Arr::get($additionalData, 'date'),
+            'returned-date' => Arr::get($additionalData, 'date'),
             default => $originalPlaceholder,
         };
     }

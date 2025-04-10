@@ -86,6 +86,23 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
 
         $actions = [];
 
+        $actions[] =
+        [
+            'type'    => 'button',
+            'style'   => 'red_outline',
+            'tooltip' => __('delete'),
+            'icon'    => 'fal fa-trash-alt',
+            'key'     => 'delete_booked_in',
+            'ask_why' => true,
+            'route'   => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.invoice.in-process.delete',
+                'parameters' => [
+                    'invoice' => $invoice->id
+                ]
+            ]
+        ];
+
         $actions[] = [
             'type'    => 'button',
             'style'   => 'secondary',

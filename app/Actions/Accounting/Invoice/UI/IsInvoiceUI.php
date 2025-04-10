@@ -32,6 +32,11 @@ trait IsInvoiceUI
             //todo think about it
             return false;
         } elseif ($this->parent instanceof Fulfilment) {
+
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-fulfilment-shop.".$this->fulfilment->id
+            ]);
+
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->fulfilment->id}.view",
@@ -39,6 +44,10 @@ trait IsInvoiceUI
                 ]
             );
         } elseif ($this->parent instanceof FulfilmentCustomer) {
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-fulfilment-shop.".$this->fulfilment->id
+            ]);
+
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->fulfilment->id}.view",
