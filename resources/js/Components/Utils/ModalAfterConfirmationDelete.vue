@@ -74,7 +74,7 @@ const onClickDelete = () => {
 	// Build the payload regardless of the method
 	const payload = {
 		["delete_confirmation"]: messageDelete.value,
-		["delete_reason"]: confirmationRead.value,
+		["deleted_note"]: confirmationRead.value,
 	}
 
 	if (selectedMethod === "delete") {
