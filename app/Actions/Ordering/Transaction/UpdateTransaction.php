@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
@@ -24,8 +25,9 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateTransaction extends OrgAction
 {
     use WithActionUpdate;
+    use WithNoStrictRules;
 
-    public function handle(Transaction $transaction, array $modelData): Transaction|bool
+    public function handle(Transaction $transaction, array $modelData): Transaction
     {
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
             if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
@@ -34,7 +36,7 @@ class UpdateTransaction extends OrgAction
 
             $historicAsset = $transaction->historicAsset;
             $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            // todo deal with discounts
+            // here we are going to  deal with discounts 15/09/24
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
 
             data_set($modelData, 'gross_amount', $gross);
@@ -65,7 +67,6 @@ class UpdateTransaction extends OrgAction
             'quantity_dispatched' => $qtyRule,
             'quantity_fail'       => $qtyRule,
             'quantity_cancelled'  => ['sometimes', 'sometimes', 'numeric', 'min:0'],
-            'source_id'           => ['sometimes', 'string'],
             'state'               => ['sometimes', Rule::enum(TransactionStateEnum::class)],
             'status'              => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
             'fail_status'         => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
@@ -81,20 +82,20 @@ class UpdateTransaction extends OrgAction
         ];
 
         if (!$this->strict) {
+            $rules = $this->noStrictStoreRules($rules);
+
             $rules['model_type']        = ['sometimes', 'required', 'string'];
             $rules['model_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['asset_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['historic_asset_id'] = ['sometimes', 'nullable', 'integer'];
-
-            $rules['in_warehouse_at'] = ['sometimes', 'required', 'date'];
-            $rules['created_at']      = ['sometimes', 'required', 'date'];
-            $rules['last_fetched_at'] = ['sometimes', 'required', 'date'];
+            $rules['in_warehouse_at']   = ['sometimes', 'required', 'date'];
+            $rules                      = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
     }
 
-    public function action(Transaction $transaction, array $modelData, bool $strict = true): Transaction|bool
+    public function action(Transaction $transaction, array $modelData, bool $strict = true): Transaction
     {
         $this->strict = $strict;
         $this->initialisationFromShop($transaction->shop, $modelData);

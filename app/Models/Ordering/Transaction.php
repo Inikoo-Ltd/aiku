@@ -170,6 +170,16 @@ class Transaction extends Model
         return $this->belongsTo(HistoricAsset::class);
     }
 
+    /**
+     * Get the historic asset relationship including trashed records.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function historicAssetWithTrashed(): BelongsTo
+    {
+        return $this->belongsTo(HistoricAsset::class)->withTrashed();
+    }
+
     public function feedbacks(): MorphToMany
     {
         return $this->morphToMany(Feedback::class, 'model', 'model_has_feedbacks');

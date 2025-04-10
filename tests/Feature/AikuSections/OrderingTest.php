@@ -11,7 +11,7 @@
 use App\Actions\Accounting\Invoice\Search\ReindexInvoiceSearch;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
-use App\Actions\Accounting\InvoiceTransaction\DeleteRefundInProcessInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Analytics\GetSectionRoute;
@@ -369,9 +369,16 @@ test('create transaction from shipping', function (Order $order) {
 })->depends('create order');
 
 test('update transaction', function ($transaction) {
-    $order = UpdateTransaction::make()->action($transaction, Transaction::factory()->definition());
+    $transaction = UpdateTransaction::make()->action(
+        $transaction,
+        [
+            'quantity_ordered' => $transaction->quantity_ordered + 1,
+        ]
+    );
 
-    $this->assertModelExists($order);
+    expect($transaction)->toBeInstanceOf(Transaction::class);
+
+
 })->depends('create transaction');
 
 
@@ -503,7 +510,7 @@ test('update invoice transaction', function (Invoice $invoice) {
 
 test('delete invoice transaction', function (InvoiceTransaction $invoiceTransaction) {
     $invoice = $invoiceTransaction->invoice;
-    DeleteRefundInProcessInvoiceTransaction::make()->action($invoiceTransaction);
+    DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
     $invoice->refresh();
     expect($invoice)->toBeInstanceOf(Invoice::class)
         ->and($invoice->stats->number_invoice_transactions)->toBe(0);

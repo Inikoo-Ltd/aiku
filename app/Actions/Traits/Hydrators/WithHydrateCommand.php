@@ -29,11 +29,17 @@ trait WithHydrateCommand
 
     protected function getOrganisationsIds(Command $command): array
     {
-        return Organisation::query()->whereIn('type', [OrganisationTypeEnum::SHOP->value, OrganisationTypeEnum::DIGITAL_AGENCY->value])
-            ->when($command->argument('organisations'), function ($query) use ($command) {
-                $query->whereIn('slug', $command->argument('organisations'));
-            })
-            ->get()->pluck('id')->toArray();
+        $query = Organisation::query()->whereIn('type', [OrganisationTypeEnum::SHOP->value, OrganisationTypeEnum::DIGITAL_AGENCY->value]);
+
+        $organisationSlugs = $command->argument('organisations');
+        if (is_string($organisationSlugs)) {
+            $organisationSlugs = [$organisationSlugs];
+        }
+        if (count($organisationSlugs) > 0) {
+            $query->whereIn('slug', $organisationSlugs);
+        }
+
+        return $query->get()->pluck('id')->toArray();
     }
 
     public function asCommand(Command $command): int

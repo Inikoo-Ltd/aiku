@@ -79,5 +79,14 @@ enum DateIntervalEnum: string
         };
     }
 
+    public static function allExceptHistorical(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
+        ));
+    }
+
+
 
 }

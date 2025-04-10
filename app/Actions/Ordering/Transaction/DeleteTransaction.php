@@ -22,7 +22,7 @@ class DeleteTransaction extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(Transaction $transaction): bool
+    public function handle(Transaction $transaction): Transaction
     {
         $transaction->delete();
 
@@ -38,17 +38,17 @@ class DeleteTransaction extends OrgAction
 
         OrderRecordSearch::dispatch($order);
 
-        return true;
+        return $transaction;
     }
 
-    public function action(Transaction $transaction): bool
+    public function action(Transaction $transaction): Transaction
     {
         $this->initialisationFromShop($transaction->shop, []);
 
         return $this->handle($transaction);
     }
 
-    public function asController(Transaction $transaction, ActionRequest $request): bool
+    public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
         $this->initialisationFromShop($transaction->shop, $request);
 

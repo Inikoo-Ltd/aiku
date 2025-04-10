@@ -22,13 +22,14 @@ class RefundAllInvoiceTransactions extends OrgAction
      */
     public function handle(Invoice $refund): Invoice
     {
-        $invoice = $refund->originalInvoice;
+        /** @var Invoice $originalInvoice */
+        $originalInvoice = $refund->originalInvoice;
 
 
         $totalTrRefund = $refund->invoiceTransactions()->sum('net_amount');
-        $totalTr = $invoice->invoiceTransactions()->sum('net_amount') - abs($totalTrRefund);
+        $totalTr = $originalInvoice->invoiceTransactions()->sum('net_amount') - abs($totalTrRefund);
         if ($totalTr > 0) {
-            $transactions = $invoice->invoiceTransactions->where('net_amount', '>', 0);
+            $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0);
             $tasks = [];
             foreach ($transactions->chunk(100) as $chunkedTransactions) {
                 foreach ($chunkedTransactions as $transaction) {
@@ -56,6 +57,9 @@ class RefundAllInvoiceTransactions extends OrgAction
         $this->handle($refund);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Invoice $refund): Invoice
     {
         $this->initialisationFromShop($refund->shop, []);

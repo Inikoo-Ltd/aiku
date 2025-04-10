@@ -12,7 +12,7 @@ namespace App\Actions\Accounting\InvoiceTransaction;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
 
-class DeleteRefundInProcessInvoiceTransaction extends OrgAction
+class DeleteInProcessInvoiceTransaction extends OrgAction
 {
     use WithDeleteRefundInProcessTransaction;
 
