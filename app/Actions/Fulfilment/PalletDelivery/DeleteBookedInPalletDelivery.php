@@ -24,7 +24,6 @@ use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Support\Facades\Redirect;
@@ -67,12 +66,10 @@ class DeleteBookedInPalletDelivery extends OrgAction
                     ]); // this will delete recurring bill transactions
                 }
             }
-    
-            foreach($palletDelivery->transactions as $transaction)
-            {
+
+            foreach ($palletDelivery->transactions as $transaction) {
                 DeleteFulfilmentTransaction::make()->action($transaction);
-                if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction)
-                {
+                if ($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction) {
                     DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction);
                 }
             }

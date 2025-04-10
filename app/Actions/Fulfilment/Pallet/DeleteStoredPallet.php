@@ -21,14 +21,12 @@ use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydratePallets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopSupervisorAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteStoredPallet extends OrgAction
@@ -56,7 +54,7 @@ class DeleteStoredPallet extends OrgAction
 
             $pallet = $this->update($pallet, $modelData);
             $pallet->delete();
-            
+
             return $recurringBillTransactionDeleted;
         });
 

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-04-2025-09h-44m
@@ -14,7 +15,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrat
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
-use App\Actions\Fulfilment\RecurringBill\DeleteRecurringBill;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,7 +26,6 @@ use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -71,32 +70,30 @@ class DeleteDispatchedPalletReturn extends OrgAction
                     $palletReturn->storedItems()->detach($storedItemIds);
                 }
 
-                foreach($palletReturn->transactions as $transaction)
-                {
+                foreach ($palletReturn->transactions as $transaction) {
                     DeleteFulfilmentTransaction::make()->action($transaction);
-                    if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction)
-                    {
+                    if ($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction) {
                         DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction); //delete recurring bill transaction
                     }
                 }
-    
+
                 $this->update($palletReturn, $modelData);
-    
-                
-    
+
+
+
                 $fulfilmentCustomer->customer->auditEvent    = 'delete';
                 $fulfilmentCustomer->customer->isCustomEvent = true;
-    
+
                 $fulfilmentCustomer->customer->auditCustomOld = [
                     'return' => $palletReturn->reference
                 ];
-    
+
                 $fulfilmentCustomer->customer->auditCustomNew = [
                     'return' => __("The return has been deleted due to: $palletReturn->delete_comment.")
                 ];
-    
+
                 Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
-    
+
                 if ($palletReturn->fulfilmentCustomer->customer->shopifyUser !== null) {
                     CancelFulfilmentRequestToShopify::dispatch($palletReturn);
                 }
@@ -109,7 +106,7 @@ class DeleteDispatchedPalletReturn extends OrgAction
 
         StoreDeletePalletReturnHistory::run($palletReturn, $fulfilmentCustomer->customer);
         SendPalletReturnDeletedNotification::dispatch($palletReturn);
-        
+
         $fulfilmentCustomer->refresh();
         FulfilmentCustomerHydratePalletReturns::dispatch($fulfilmentCustomer);
         FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
