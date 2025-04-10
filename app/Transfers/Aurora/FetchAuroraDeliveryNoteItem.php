@@ -8,6 +8,7 @@
 
 namespace App\Transfers\Aurora;
 
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -87,6 +88,12 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
         $weight = abs($weight);
 
 
+        $revenueAmount = $this->auroraModelData->{'Amount In'};
+
+        $revenueAmountOrgCurrency   = $revenueAmount * GetHistoricCurrencyExchange::run($deliveryNote->shop->currency, $deliveryNote->organisation->currency, $deliveryNote->date);
+        $revenueAmountGroupCurrency = $revenueAmount * GetHistoricCurrencyExchange::run($deliveryNote->shop->currency, $deliveryNote->group->currency, $deliveryNote->date);
+
+
         $this->parsedData['delivery_note_item'] = [
             'transaction_id'      => $transactionID,
             'state'               => $state,
@@ -103,7 +110,6 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'stock_id'            => $stock ? $stock->id : null,
             'stock_family_id'     => $stock ? $stock->stock_family_id : null,
             'weight'              => $weight,
-
             'date'                => $deliveryNote->date,
             'queued_at'           => $deliveryNote->queued_at,
             'handling_at'         => $deliveryNote->handling_at,
@@ -116,9 +122,16 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'end_picking'         => $deliveryNote->end_picking,
             'start_packing'       => $deliveryNote->start_packing,
             'end_packing'         => $deliveryNote->end_packing,
-
-
+            'revenue_amount'      => $revenueAmount,
+            'org_revenue_amount'  => $revenueAmountOrgCurrency,
+            'grp_revenue_amount'  => $revenueAmountGroupCurrency,
         ];
+
+        if ($transaction) {
+            $this->parsedData['delivery_note_item']['order_id']    = $transaction->order_id;
+            $this->parsedData['delivery_note_item']['customer_id'] = $transaction->customer_id;
+            $this->parsedData['delivery_note_item']['invoice_id']  = $transaction->invoice_id;
+        }
     }
 
     public function fetchDeliveryNoteTransaction(int $id, DeliveryNote $deliveryNote): ?array

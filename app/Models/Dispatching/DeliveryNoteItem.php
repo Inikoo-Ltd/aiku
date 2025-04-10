@@ -65,6 +65,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $end_picking
  * @property string|null $start_packing
  * @property string|null $end_packing
+ * @property int|null $customer_id
+ * @property int|null $order_id
+ * @property int|null $invoice_id
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
@@ -100,6 +103,10 @@ class DeliveryNoteItem extends Model
         'cancelled_at'       => 'datetime',
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
+
+        'revenue_amount'     => 'decimal:2',
+        'org_revenue_amount' => 'decimal:2',
+        'grp_revenue_amount' => 'decimal:2',
     ];
 
     protected $attributes = [

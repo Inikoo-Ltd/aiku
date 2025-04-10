@@ -49,6 +49,15 @@ trait WithDeliveryNoteItemNoStrictRules
         $rules['start_packing']       = ['sometimes', 'nullable', 'date'];
         $rules['end_packing']         = ['sometimes', 'nullable', 'date'];
 
+        $rules['order_id']    = ['sometimes', 'nullable', 'integer'];
+        $rules['customer_id'] = ['sometimes', 'nullable', 'integer'];
+        $rules['invoice_id']  = ['sometimes', 'nullable', 'integer'];
+
+        $rules['revenue_amount']     = ['sometimes', 'nullable', 'numeric'];
+        $rules['org_revenue_amount'] = ['sometimes', 'nullable', 'numeric'];
+        $rules['grp_revenue_amount'] = ['sometimes', 'nullable', 'numeric'];
+
+
         return $rules;
     }
 }
