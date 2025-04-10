@@ -24,6 +24,8 @@ import TableStoredItemsInWarehouse from '@/Components/Tables/Grp/Org/Fulfilment/
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from 'laravel-vue-i18n'
+import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
+import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
 
 library.add(faFragile, faNarwhal, faExchange)
 
@@ -82,6 +84,56 @@ const component = computed(() => {
                 </template>
             </ModalConfirmation>
         </template>
+
+        <template #button-delete-booked-in="{ action }">
+            <div>
+                <template v-if="action.supervisor">
+                <ModalAfterConfirmationDelete
+                    :routeDelete="action.route"
+                    :data="pallet?.data"
+                    isFullLoading
+                    isWithMessage
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+
+                        <Button
+                            @click="() => changeModel()"
+                            :style="action.style"
+                            :label="action.label"
+                            :icon="action.icon"
+                            :iconRight="action.iconRight"
+                            :key="`ActionButton${action.label}${action.style}`"
+                            :tooltip="action.tooltip"
+                        />
+
+                    </template>
+                </ModalAfterConfirmationDelete>
+                </template>
+                <template v-else>
+                    <ModalSupervisorList
+                    :routeDelete="action.route"
+                    :routeSupervisor="action.supervisors_route"
+                    isFullLoading
+                    isWithMessage
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+
+                        <Button
+                            @click="() => changeModel()"
+                            :style="action.style"
+                            :label="action.label"
+                            :icon="action.icon"
+                            :iconRight="action.iconRight"
+                            :key="`ActionButton${action.label}${action.style}`"
+                            :tooltip="action.tooltip"
+                        />
+
+                    </template>
+                    </ModalSupervisorList>
+                </template>
+            </div>
+        </template>
+
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :list_stored_items></component>

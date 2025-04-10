@@ -63,6 +63,7 @@ import TableItemizedTransactions from '@/Components/Tables/Grp/Org/Accounting/Ta
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue'
 import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
+import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
 // const locale = useLocaleStore()
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -204,6 +205,7 @@ const generateRefundRoute = (refundSlug: string) => {
 
         <template #button-delete-booked-in="{ action }">
             <div>
+                <template v-if="action.supervisor">
                 <ModalAfterConfirmationDelete
                     :routeDelete="action.route"
                     :invoice="invoice"
@@ -224,6 +226,29 @@ const generateRefundRoute = (refundSlug: string) => {
 
                     </template>
                 </ModalAfterConfirmationDelete>
+            </template>
+            <template v-else>
+                    <ModalSupervisorList
+                    :routeDelete="action.route"
+                    :routeSupervisor="action.supervisors_route"
+                    isFullLoading
+                    isWithMessage
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+
+                        <Button
+                            @click="() => changeModel()"
+                            :style="action.style"
+                            :label="action.label"
+                            :icon="action.icon"
+                            :iconRight="action.iconRight"
+                            :key="`ActionButton${action.label}${action.style}`"
+                            :tooltip="action.tooltip"
+                        />
+
+                    </template>
+                    </ModalSupervisorList>
+                </template>
             </div>
         </template>
     </PageHeading>
