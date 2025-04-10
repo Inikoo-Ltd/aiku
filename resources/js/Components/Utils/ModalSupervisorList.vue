@@ -168,8 +168,7 @@ const onConfirm = () => {
 													icon="fal fa-exclamation-triangle" />
 											</div>
 											<p class="text-sm text-yellow-800 font-medium">
-												you not available on this, only superviors can doing
-												this
+												You do not have the necessary permissions to perform this action. Kindly contact your supervisor for authorization.
 											</p>
 										</div>
 										<template v-if="isLoadingSupervisors">
