@@ -39,7 +39,7 @@ class DeleteStoredPallet extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Pallet $pallet, $quiet = false, array $modelData): Pallet
+    public function handle(Pallet $pallet, array $modelData, $quiet = false): Pallet
     {
         $recurringBillTransactionDeleted = DB::transaction(function () use ($pallet, $modelData) {
             $recurringBillTransactionDeleted = false;
@@ -97,7 +97,7 @@ class DeleteStoredPallet extends OrgAction
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request)
+    public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('deleted_by', $request->user()->id);
     }
@@ -105,13 +105,13 @@ class DeleteStoredPallet extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Pallet $pallet, bool $quiet = true, array $modelData): Pallet
+    public function action(Pallet $pallet, array $modelData, bool $quiet = true): Pallet
     {
         $this->pallet   = $pallet;
         $this->asAction = true;
         $this->initialisationFromFulfilment($pallet->fulfilment, $modelData);
 
-        return $this->handle($pallet, $quiet, $modelData);
+        return $this->handle($pallet, $modelData, $quiet);
     }
 
     /**
