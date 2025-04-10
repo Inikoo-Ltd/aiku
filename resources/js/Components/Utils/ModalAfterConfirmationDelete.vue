@@ -76,7 +76,6 @@ const onClickDelete = () => {
 	/* 	["delete_confirmation"]: messageDelete.value, */
 		["deleted_note"]: confirmationRead.value,
 	}
-
 	if (selectedMethod === "delete") {
 		router.delete(route(props.routeDelete.name, props.routeDelete.parameters), {
 			data: payload,
@@ -84,6 +83,7 @@ const onClickDelete = () => {
 				isLoadingdelete.value = true
 			},
 			onSuccess: () => {
+				
 				// Close modal and reset state after deletion
 				resetModal()
 				isOpenModal.value = false
@@ -127,7 +127,7 @@ const onClickDelete = () => {
 			:isLoadingdelete="isLoadingdelete" />
 
 		<TransitionRoot as="template" :show="isOpenModal">
-			<Dialog class="relative z-20" @close="() => { resetModal(); isOpenModal.value = false }">
+			<Dialog class="relative z-20" @click="closeModal">
 				<TransitionChild
 					as="template"
 					enter="ease-out duration-150"

@@ -49,6 +49,7 @@ import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import HelpArticles from '@/Components/Utils/HelpArticles.vue'
 import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
+import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
 
 library.add(faUser, faTruckCouch, faPallet, faPlus, faFilePdf, faIdCardAlt, faPaperclip, faEnvelope, faPhone,faExclamationTriangle, faConciergeBell, faCube, faCalendarDay, faPencil, faUndoAlt, faTrashAlt)
 
@@ -390,6 +391,7 @@ const isModalUploadFileOpen = ref(false)
         <!-- Button: delete Delivery -->
         <template #button-delete-booked-in="{ action }">
             <div>
+                <template v-if="action.supervisor">
                 <ModalAfterConfirmationDelete
                     :routeDelete="action.route"
                     :data="data?.data"
@@ -410,6 +412,29 @@ const isModalUploadFileOpen = ref(false)
 
                     </template>
                 </ModalAfterConfirmationDelete>
+                </template>
+                <template v-else>
+                    <ModalSupervisorList
+                    :routeDelete="action.route"
+                    :routeSupervisor="action.supervisors_route"
+                    isFullLoading
+                    isWithMessage
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+
+                        <Button
+                            @click="() => changeModel()"
+                            :style="action.style"
+                            :label="action.label"
+                            :icon="action.icon"
+                            :iconRight="action.iconRight"
+                            :key="`ActionButton${action.label}${action.style}`"
+                            :tooltip="action.tooltip"
+                        />
+
+                    </template>
+                    </ModalSupervisorList>
+                </template>
             </div>
         </template>
 
