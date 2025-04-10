@@ -116,9 +116,13 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             'end_picking'         => $deliveryNote->end_picking,
             'start_packing'       => $deliveryNote->start_packing,
             'end_packing'         => $deliveryNote->end_packing,
-
-
         ];
+
+        if ($transaction) {
+            $this->parsedData['delivery_note_item']['order_id']    = $transaction->order_id;
+            $this->parsedData['delivery_note_item']['customer_id'] = $transaction->customer_id;
+            $this->parsedData['delivery_note_item']['invoice_id']  = $transaction->invoice_id;
+        }
     }
 
     public function fetchDeliveryNoteTransaction(int $id, DeliveryNote $deliveryNote): ?array

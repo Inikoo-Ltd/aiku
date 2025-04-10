@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 10 Apr 2025 09:06:01 Malaysia Time, Kuala Lumpur, Malaysia
@@ -13,7 +14,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class () extends Migration {
     use HasDateIntervalsStats;
 
     public function up(): void
