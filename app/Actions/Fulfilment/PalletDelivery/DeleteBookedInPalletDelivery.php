@@ -12,12 +12,15 @@ namespace App\Actions\Fulfilment\PalletDelivery;
 use App\Actions\Comms\Email\SendPalletDeliveryDeletedNotification;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
+use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
 use App\Actions\Fulfilment\Pallet\DeletePallet;
 use App\Actions\Fulfilment\Pallet\DeleteStoredPallet;
+use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopSupervisorAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Support\Facades\Event;
@@ -27,6 +30,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class DeleteBookedInPalletDelivery extends OrgAction
 {
@@ -39,13 +43,15 @@ class DeleteBookedInPalletDelivery extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PalletDelivery $palletDelivery): FulfilmentCustomer
+    public function handle(PalletDelivery $palletDelivery, array $modelData): FulfilmentCustomer
     {
         $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
 
         $recurringBill = $palletDelivery->recurringBill;
 
-        DB::transaction(function () use ($palletDelivery, $fulfilmentCustomer, $recurringBill) {
+        DB::transaction(function () use ($palletDelivery, $fulfilmentCustomer, $recurringBill, $modelData) {
+
+            $palletDelivery = $this->update($palletDelivery, $modelData);
 
             foreach ($palletDelivery->pallets as $pallet) {
                 if (in_array($pallet->state, [
@@ -53,11 +59,24 @@ class DeleteBookedInPalletDelivery extends OrgAction
                     PalletStatusEnum::RECEIVING,
                     PalletStatusEnum::NOT_RECEIVED
                 ])) {
-                    DeletePallet::run($pallet, $recurringBill);  // this will NOT delete recurring bill transactions
+                    DeletePallet::run($pallet);  // this will NOT delete recurring bill transactions
                 } else {
-                    DeleteStoredPallet::make()->action(pallet:$pallet); // this will delete recurring bill transactions
+                    DeleteStoredPallet::make()->action(pallet:$pallet, modelData: [
+                        'deleted_note' => 'Pallet Delivery deleted due to: ' . $modelData['delete_comment'],
+                        'deleted_by'   => $modelData['deleted_by']
+                    ]); // this will delete recurring bill transactions
                 }
             }
+
+            foreach($palletDelivery->transactions as $transaction)
+            {
+                DeleteFulfilmentTransaction::make()->action($transaction);
+                if($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction)
+                {
+                    DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction);
+                }
+            }
+
             $palletDelivery->delete();
 
 
@@ -98,19 +117,15 @@ class DeleteBookedInPalletDelivery extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_confirmation' => ['required', 'string'],
+            'deleted_note' => ['required', 'string', 'max:4000'],
+            'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
 
-
-
-    public function afterValidator(Validator $validator): void
+    public function prepareForValidation(ActionRequest $request)
     {
-        if (strtolower(trim($this->get('delete_confirmation'))) != strtolower($this->palletDelivery->reference)) {
-            $validator->errors()->add('delete_confirmation', 'Incorrect confirmation, please write the delivery reference to confirm.'.' '.$this->palletDelivery->reference);
-        }
+        $this->set('deleted_by', $request->user()->id);
     }
-
     /**
      * @throws \Throwable
      */
@@ -119,7 +134,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
         $this->palletDelivery = $palletDelivery;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);
 
-        return $this->handle($palletDelivery);
+        return $this->handle($palletDelivery, $this->validatedData);
     }
 
     /**
@@ -131,6 +146,6 @@ class DeleteBookedInPalletDelivery extends OrgAction
         $this->palletDelivery = $palletDelivery;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $modelData);
 
-        $this->handle($palletDelivery);
+        $this->handle($palletDelivery, $this->validatedData);
     }
 }

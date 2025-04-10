@@ -62,7 +62,7 @@ class GetPalletDeliveryActions
                     [
                         'type'    => 'button',
                         'style'   => 'red_outline',
-                        'tooltip' => __('delete'),
+                        'tooltip' => __('Delete'),
                         'icon'    => $this->deleteIcon,
                         'key'     => 'delete_delivery',
                         'ask_why' => true,
@@ -134,7 +134,7 @@ class GetPalletDeliveryActions
                 [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('submit'),
+                    'tooltip' => __('Submit'),
                     'label'   => __('submit'),
                     'key'     => 'action',
                     'route'   => [
@@ -155,7 +155,7 @@ class GetPalletDeliveryActions
             [
                 'type'    => 'button',
                 'style'   => 'save',
-                'tooltip' => __('confirm'),
+                'tooltip' => __('Confirm'),
                 'label'   => __('confirm'),
                 'key'     => 'action',
                 'route'   => [
@@ -314,8 +314,8 @@ class GetPalletDeliveryActions
             'style'   => 'secondary',
             'icon'    => $this->addIcon,
             'key'     => 'add-service',
-            'label'   => __('add service'),
-            'tooltip' => __('Add single service'),
+            'label'   => __('service'),
+            'tooltip' => __('Add service'),
             'route'   => [
                 'name'       => 'grp.models.pallet-delivery.transaction.store',
                 'parameters' => [
@@ -331,9 +331,9 @@ class GetPalletDeliveryActions
             'type'    => 'button',
             'style'   => 'secondary',
             'icon'    => $this->addIcon,
-            'key'     => 'add-service',
-            'label'   => __('add service'),
-            'tooltip' => __('Add single service'),
+            'key'     => 'add-physical-good',
+            'label'   => __('Goods'),
+            'tooltip' => __('Add a physical goods'),
             'route'   => [
                 'name'       => 'grp.models.pallet-delivery.transaction.store',
                 'parameters' => [
@@ -350,16 +350,15 @@ class GetPalletDeliveryActions
         }
 
 
-
         return [
             'type'    => 'button',
             'style'   => 'red_outline',
-            'tooltip' => __('delete'),
+            'tooltip' => __('Delete'),
             'icon'    => $this->deleteIcon,
             'key'     => 'delete_booked_in',
             'ask_why' => true,
             'route'   => [
-                'method'     => 'delete',
+                'method'     => 'Delete',
                 'name'       => 'grp.models.pallet-delivery.booked-in-delete',
                 'parameters' => [
                     'palletDelivery' => $palletDelivery->id

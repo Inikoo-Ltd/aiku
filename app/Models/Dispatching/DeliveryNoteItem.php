@@ -49,10 +49,22 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $fetched_at
- * @property string|null $last_fetched_at
+ * @property \Illuminate\Support\Carbon|null $fetched_at
+ * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property DeliveryNoteItemSalesTypeEnum|null $sales_type
+ * @property \Illuminate\Support\Carbon|null $date
+ * @property string|null $queued_at
+ * @property string|null $handling_at
+ * @property string|null $handling_blocked_at
+ * @property \Illuminate\Support\Carbon|null $packed_at
+ * @property string|null $finalised_at
+ * @property \Illuminate\Support\Carbon|null $dispatched_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property string|null $start_picking
+ * @property string|null $end_picking
+ * @property string|null $start_packing
+ * @property string|null $end_packing
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
@@ -73,9 +85,21 @@ class DeliveryNoteItem extends Model
     protected $table = 'delivery_note_items';
 
     protected $casts = [
-        'data'   => 'array',
-        'state'  => DeliveryNoteItemStateEnum::class,
-        'sales_type' => DeliveryNoteItemSalesTypeEnum::class
+        'data'       => 'array',
+        'state'      => DeliveryNoteItemStateEnum::class,
+        'sales_type' => DeliveryNoteItemSalesTypeEnum::class,
+
+        'date'               => 'datetime',
+        'order_submitted_at' => 'datetime',
+        'assigned_at'        => 'datetime',
+        'picking_at'         => 'datetime',
+        'picked_at'          => 'datetime',
+        'packing_at'         => 'datetime',
+        'packed_at'          => 'datetime',
+        'dispatched_at'      => 'datetime',
+        'cancelled_at'       => 'datetime',
+        'fetched_at'         => 'datetime',
+        'last_fetched_at'    => 'datetime',
     ];
 
     protected $attributes = [
