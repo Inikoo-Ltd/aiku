@@ -53,7 +53,7 @@ class ShowPallet extends OrgAction
             $this->isSupervisor = $request->user()->authTo([
                 "supervisor-fulfilment-shop.".$this->fulfilment->id
             ]);
-            
+
             $this->canEdit = $request->user()->authTo("fulfilment.{$this->fulfilment->id}.stored-items.edit");
 
             return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.stored-items.view");
@@ -137,7 +137,7 @@ class ShowPallet extends OrgAction
         }
 
         if ($pallet->state == PalletStateEnum::STORING) {
-            if($this->parent instanceof FulfilmentCustomer || $this->parent instanceof Fulfilment) {
+            if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof Fulfilment) {
                 $actions[] = $this->isSupervisor ? [
                     'supervisor' => true,
                     'type'    => 'button',

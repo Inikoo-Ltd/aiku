@@ -47,7 +47,7 @@ trait IsInvoiceUI
             $this->isSupervisor = $request->user()->authTo([
                 "supervisor-fulfilment-shop.".$this->fulfilment->id
             ]);
-            
+
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->fulfilment->id}.view",

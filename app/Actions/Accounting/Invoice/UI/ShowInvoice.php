@@ -165,8 +165,7 @@ class ShowInvoice extends OrgAction
 
         $actions = [];
 
-        if($this->parent instanceof Fulfilment)
-        {
+        if ($this->parent instanceof Fulfilment) {
             $actions[] =
             $this->isSupervisor ? [
                 'supervisor' => true,
