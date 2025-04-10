@@ -165,22 +165,66 @@ class ShowInvoice extends OrgAction
 
         $actions = [];
 
-        $actions[] =
-        [
-            'type'    => 'button',
-            'style'   => 'red_outline',
-            'tooltip' => __('delete'),
-            'icon'    => 'fal fa-trash-alt',
-            'key'     => 'delete_booked_in',
-            'ask_why' => true,
-            'route'   => [
-                'method'     => 'delete',
-                'name'       => 'grp.models.invoice.delete',
-                'parameters' => [
-                    'invoice' => $invoice->id
+        if($this->parent instanceof Fulfilment)
+        {
+            $actions[] =
+            $this->isSupervisor ? [
+                'supervisor' => true,
+                'type'    => 'button',
+                'style'   => 'red_outline',
+                'tooltip' => __('delete'),
+                'icon'    => 'fal fa-trash-alt',
+                'key'     => 'delete_booked_in',
+                'ask_why' => true,
+                'route'   => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.invoice.delete',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
                 ]
-            ]
-        ];
+            ] : [
+                'supervisor' => false,
+                'supervisors_route' => [
+                    'method'     => 'get',
+                    'name'       => 'grp.json.fulfilment.supervisors.index',
+                    'parameters' => [
+                        'fulfilment' => $invoice->shop->fulfilment->slug
+                    ]
+                ],
+                'type'    => 'button',
+                'style'   => 'red_outline',
+                'tooltip' => __('Delete'),
+                'icon'    => 'fal fa-trash-alt',
+                'key'     => 'delete_booked_in',
+                'ask_why' => true,
+                'route'   => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.invoice.delete',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+        } else {
+            $actions[] =
+            [
+                'supervisor' => true,
+                'type'    => 'button',
+                'style'   => 'red_outline',
+                'tooltip' => __('delete'),
+                'icon'    => 'fal fa-trash-alt',
+                'key'     => 'delete_booked_in',
+                'ask_why' => true,
+                'route'   => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.invoice.delete',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+        }
 
         if ($this->parent instanceof Organisation) {
             $actions[] = [

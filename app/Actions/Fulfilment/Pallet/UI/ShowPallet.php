@@ -50,6 +50,10 @@ class ShowPallet extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof FulfilmentCustomer) {
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-fulfilment-shop.".$this->fulfilment->id
+            ]);
+            
             $this->canEdit = $request->user()->authTo("fulfilment.{$this->fulfilment->id}.stored-items.edit");
 
             return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.stored-items.view");
@@ -133,21 +137,62 @@ class ShowPallet extends OrgAction
         }
 
         if ($pallet->state == PalletStateEnum::STORING) {
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.pallet.stored.delete',
-                    'parameters' => [
-                        'pallet' => $pallet->id
+            if($this->parent instanceof FulfilmentCustomer || $this->parent instanceof Fulfilment) {
+                $actions[] = $this->isSupervisor ? [
+                    'supervisor' => true,
+                    'type'    => 'button',
+                    'style'   => 'red_outline',
+                    'tooltip' => __('delete'),
+                    'icon'    => 'fal fa-trash-alt',
+                    'key'     => 'delete_booked_in',
+                    'ask_why' => true,
+                    'route'   => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.pallet.stored.delete',
+                        'parameters' => [
+                            'pallet' => $pallet->id
+                        ]
                     ]
-                ]
-            ];
+                ] : [
+                    'supervisor' => false,
+                    'supervisors_route' => [
+                        'method'     => 'get',
+                        'name'       => 'grp.json.fulfilment.supervisors.index',
+                        'parameters' => [
+                            'fulfilment' => $this->fulfilment->slug
+                        ]
+                    ],
+                    'type'    => 'button',
+                    'style'   => 'red_outline',
+                    'tooltip' => __('Delete'),
+                    'icon'    => 'fal fa-trash-alt',
+                    'key'     => 'delete_booked_in',
+                    'ask_why' => true,
+                    'route'   => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.pallet.stored.delete',
+                        'parameters' => [
+                            'pallet' => $pallet->id
+                        ]
+                    ]
+                ];
+            } else {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'red_outline',
+                    'tooltip' => __('delete'),
+                    'icon'    => 'fal fa-trash-alt',
+                    'key'     => 'delete_booked_in',
+                    'ask_why' => true,
+                    'route'   => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.pallet.stored.delete',
+                        'parameters' => [
+                            'pallet' => $pallet->id
+                        ]
+                    ]
+                ];
+            }
         }
 
         if ($this->parent instanceof FulfilmentCustomer) {
