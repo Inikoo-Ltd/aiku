@@ -9,8 +9,10 @@ library.add(faDesktop, faMobileAndroidAlt, faTabletAndroidAlt)
 
 const props = withDefaults(defineProps<{
     currentView?: string
+    showList?:Array<string>
 }>(), {
-    currentView: 'desktop'
+    currentView: 'desktop',
+    showList: ['mobile', 'tablet', 'desktop']
 })
 
 defineEmits<{
@@ -25,7 +27,7 @@ const screenView = ref(props.currentView)
 
 <template>
     <div class="flex">
-        <div
+        <div v-if="showList.includes('mobile')"
             class="py-1 px-2 cursor-pointer"
             :class="[screenView == 'mobile' ? 'selected-bg' : 'unselected-bg']"
             @click="screenView = 'mobile', $emit('screenView', 'mobile')"
@@ -34,7 +36,7 @@ const screenView = ref(props.currentView)
             <FontAwesomeIcon icon='fal fa-mobile-android-alt' fixed-width aria-hidden='true' />
         </div>
 
-        <div
+        <div v-if="showList.includes('tablet')"
             class="py-1 px-2 cursor-pointer  md:block hidden"
             :class="[screenView == 'tablet' ? 'selected-bg' : 'unselected-bg']"
             @click="screenView = 'tablet', $emit('screenView', 'tablet')"
@@ -43,7 +45,7 @@ const screenView = ref(props.currentView)
             <FontAwesomeIcon icon='fal fa-tablet-android-alt' fixed-width aria-hidden='true' />
         </div>
 
-        <div
+        <div v-if="showList.includes('desktop')"
             class="py-1 px-2 cursor-pointer lg:block hidden"
             :class="[screenView == 'desktop' ? 'selected-bg' : 'unselected-bg']"
             @click="screenView = 'desktop', $emit('screenView', 'desktop')"

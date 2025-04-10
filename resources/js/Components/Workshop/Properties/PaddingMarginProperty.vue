@@ -36,8 +36,8 @@ const props = defineProps<{
 }>()
 
 
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
+/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 // Check if all padding values are the same
 const arePaddingValuesSame = (padding) => {
@@ -56,8 +56,10 @@ const changePaddingToSameValue = (newVal: number) => {
             model.value[key].value = newVal; // Set value to 99
         }
     }
-    onSaveWorkshopFromId(side_editor_block_id)
+   /*  onSaveWorkshopFromId(side_editor_block_id) */
+   /*  emits('update:modelValue', model.value) */
 }
+
 </script>
 
 <template>

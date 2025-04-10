@@ -35,9 +35,8 @@ onMounted(() => {
 
 
 <template>
-    <div class="pb-3">
-        <PaddingMarginProperty :modelValue="model" :scope="trans('Margin')" />
-    </div>
+        <PaddingMarginProperty v-model="model" :scope="trans('Margin')" />
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
