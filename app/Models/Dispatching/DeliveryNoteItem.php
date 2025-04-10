@@ -103,6 +103,10 @@ class DeliveryNoteItem extends Model
         'cancelled_at'       => 'datetime',
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
+
+        'revenue_amount'     => 'decimal:2',
+        'org_revenue_amount' => 'decimal:2',
+        'grp_revenue_amount' => 'decimal:2',
     ];
 
     protected $attributes = [
