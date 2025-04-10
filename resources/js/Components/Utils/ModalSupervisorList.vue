@@ -79,14 +79,16 @@ const fetchSupervisors = async () => {
 	isLoadingSupervisors.value = true
 	try {
 		// If your API expects "nama" instead of "name", adjust accordingly.
-		const { data } = await axios.get(route(props.routeSupervisor.name, props.routeSupervisor.parameters))
+		const { data } = await axios.get(
+			route(props.routeSupervisor.name, props.routeSupervisor.parameters)
+		)
 		// Assign list from data.data since your API returns it in the "data" property.
 		supervisors.value = data.data
 	} catch (error) {
 		notify({
 			title: trans("Something went wrong"),
 			text: trans("Failed to load supervisors"),
-			type: "error"
+			type: "error",
 		})
 	} finally {
 		isLoadingSupervisors.value = false
@@ -158,24 +160,38 @@ const onConfirm = () => {
 										<DialogTitle as="h3" class="text-base font-semibold mb-2">
 											{{ trans("Available Supervisors") }}
 										</DialogTitle>
-										<div class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">
+										<div
+											class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">
 											<div class="pt-0.5 text-yellow-400">
-												<FontAwesomeIcon icon="fal fa-exclamation-triangle" />
+												<FontAwesomeIcon
+													icon="fal fa-exclamation-triangle" />
 											</div>
 											<p class="text-sm text-yellow-800 font-medium">
-												you not available on this. only superviors can doing this
+												you not available on this, only superviors can doing
+												this
 											</p>
 										</div>
 										<template v-if="isLoadingSupervisors">
 											<p>Loading supervisors...</p>
 										</template>
 										<template v-else>
-											<p>Please contact one of the following supervisors:</p>
-											<ul class="list-disc pl-5 space-y-2">
-												<li v-for="sup in supervisors" :key="sup.id || sup.email">
-													{{ sup.name }}
-												</li>
-											</ul>
+											<template v-if="supervisors.length > 0">
+												<p>
+													Please contact one of the following supervisors:
+												</p>
+												<ul class="list-disc pl-5 space-y-2">
+													<li
+														v-for="sup in supervisors"
+														:key="sup.id || sup.email">
+														{{ sup.name }}
+													</li>
+												</ul>
+											</template>
+											<template v-else>
+												<p class="text-sm text-red-700 justify-center">
+													No supervisors available
+												</p>
+											</template>
 										</template>
 									</div>
 								</div>
