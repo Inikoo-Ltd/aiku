@@ -35,7 +35,11 @@ class StoreRetinaClientFromPlatform extends RetinaAction
                 ]);
             }
 
-            $customerClient = UpdateCustomerClient::run($existsClient, Arr::except($attributes, 'address'));
+            if ($parent instanceof TiktokUser) {
+                $attributes = Arr::except($attributes, 'address');
+            }
+
+            $customerClient = UpdateCustomerClient::run($existsClient, $attributes);
         }
 
         return $customerClient;

@@ -10,7 +10,6 @@ namespace App\Actions\Retina\Dropshipping\Client;
 
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,14 +18,12 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
 {
     use WithGeneratedShopifyAddress;
 
-    private Customer $parent;
-
     /**
      * @throws \Throwable
      */
     public function handle(): void
     {
-        $shopifyUser = $this->parent->shopifyUser;
+        $shopifyUser = $this->customer->shopifyUser;
 
         $response = $shopifyUser->api()->getRestClient()->request('GET', 'admin/api/2024-07/customers.json');
 
@@ -34,7 +31,7 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
             foreach ($response['body']['customers'] as $customer) {
                 $customer = $customer->toArray();
                 $address = Arr::get($customer, 'default_address', []);
-                $existsClient = $this->parent->clients()->where('email', $customer['email'])->first();
+                $existsClient = $this->customer->clients()->where('email', $customer['email'])->first();
 
                 $attributes = $this->getAttributes($customer, $address);
 
@@ -42,7 +39,7 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
                     data_set($attributes, 'address', $shopifyUser->customer?->deliveryAddress?->toArray());
                 }
 
-                StoreRetinaClientFromPlatform::run($shopifyUser, $address, $customer, $existsClient);
+                StoreRetinaClientFromPlatform::run($shopifyUser, $attributes, $customer, $existsClient);
             }
         }
     }
@@ -58,7 +55,6 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
     public function asController(ActionRequest $request): void
     {
         $this->initialisation($request);
-        $this->parent = $this->customer;
 
         $this->handle();
     }
@@ -66,7 +62,6 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
     public function inPlatform(Platform $platform, ActionRequest $request): void
     {
         $this->initialisation($request);
-        $this->parent = $this->customer;
 
         $this->handle();
     }
@@ -74,7 +69,6 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
     public function inPupil(Platform $platform, ActionRequest $request): void
     {
         $this->initialisationFromPupil($request);
-        $this->parent = $this->customer;
 
         $this->handle();
     }

@@ -10,15 +10,14 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\ShopifyUserHasFulfilment;
 use App\Models\TiktokUserHasOrder;
 use App\Services\QueryBuilder;
@@ -31,10 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 {
-    private ShopifyUser|TiktokUser $scope;
-    private Customer|FulfilmentCustomer $parent;
-
-    public function handle(ShopifyUser|Customer|TiktokUser $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|Customer|TiktokUser|WebUser $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -47,11 +43,11 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for($this->scope instanceof ShopifyUser ? ShopifyUserHasFulfilment::class : TiktokUserHasOrder::class);
+        $query = QueryBuilder::for($this->platformUser instanceof ShopifyUser ? ShopifyUserHasFulfilment::class : TiktokUserHasOrder::class);
 
-        if ($this->scope instanceof ShopifyUser) {
+        if ($this->platformUser instanceof ShopifyUser) {
             $query->where('shopify_user_has_fulfilments.shopify_user_id', $parent->id);
-        } else {
+        } elseif ($this->platformUser instanceof TiktokUser) {
             $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
         }
 
@@ -85,21 +81,9 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($request);
+        $this->initialisationFromPlatform($platform, $request);
 
-        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
-            $this->scope = $request->user()->customer->shopifyUser;
-        } else {
-            $this->scope = $request->user()->customer->tiktokUser;
-        }
-
-        if ($fulfilmentCustomer = $this->scope->customer->fulfilmentCustomer) {
-            $this->parent = $fulfilmentCustomer;
-        } else {
-            $this->parent = $this->scope->customer;
-        }
-
-        return $this->handle($this->scope);
+        return $this->handle($this->platformUser);
     }
 
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
@@ -155,11 +139,11 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             // $table->column(key: 'model', label: __('model'), canBeHidden: false, searchable: true);
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
 
-            if ($this->scope instanceof ShopifyUser) {
+            if ($this->platformUser instanceof ShopifyUser) {
                 $table->column(key: 'shopify_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
             }
 
-            if ($this->scope instanceof TiktokUser) {
+            if ($this->platformUser instanceof TiktokUser) {
                 $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
             }
 
