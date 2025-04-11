@@ -48,9 +48,7 @@ function dropshipRoute(customer: FulfilmentCustomer) {
                 "grp.org.shops.show.catalogue.products.all_products.show",
                 [route().params['organisation'], route().params['shop'], customer.slug])
         default:
-            return route(
-                "shops.show",
-                [customer.shop_slug])
+            return ""
     }
 }
 
