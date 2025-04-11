@@ -6,7 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dropshipping\Aiku\StoreRetinaAikuPlatform;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
+use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
@@ -147,6 +149,9 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
+    Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
+
+    Route::post('aiku', StoreRetinaAikuPlatform::class)->name('aiku.store')->withoutScopedBindings();
 });
 
 Route::name('web-users.')->prefix('web-users')->group(function () {

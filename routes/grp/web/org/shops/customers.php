@@ -14,11 +14,13 @@ use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
+use App\Actions\CRM\Customer\UI\IndexCustomerPlatforms;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Customer\UI\IndexPortfolios;
 use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
+use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
@@ -41,6 +43,12 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
     Route::get('/invoices', [IndexInvoices::class, 'inCustomer'])->name('.invoices.index');
     Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('.invoices.show');
+    Route::prefix('platforms')->as('.platforms')->group(function () {
+        Route::get('', IndexCustomerPlatforms::class)->name('.index');
+        Route::prefix('{modelHasPlatform}')->as('.show')->group(function () {
+            Route::get('', ShowCustomerPlatform::class);
+        });
+    });
     Route::prefix('web-users')->as('.web-users')->group(function () {
         Route::get('', IndexWebUsers::class)->name('.index');
         Route::get('create', CreateWebUser::class)->name('.create');

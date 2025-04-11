@@ -8,8 +8,11 @@
 
 namespace App\Models\Ordering;
 
+use App\Models\Dropshipping\Platform;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  *
@@ -42,7 +45,7 @@ class ModelHasPlatform extends Model
 {
     use InShop;
 
-    protected $table = 'model_has_web_blocks';
+    protected $table = 'model_has_platforms';
 
     protected $guarded = [];
 
@@ -50,6 +53,13 @@ class ModelHasPlatform extends Model
         'data' => 'array'
     ];
 
+    public function model(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
-
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
+    }
 }

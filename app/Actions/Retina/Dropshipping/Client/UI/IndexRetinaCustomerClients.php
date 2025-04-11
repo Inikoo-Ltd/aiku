@@ -15,7 +15,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUser;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,8 +26,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaCustomerClients extends RetinaAction
 {
-    private Customer|ShopifyUser $parent;
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->is_root;
@@ -44,8 +41,7 @@ class IndexRetinaCustomerClients extends RetinaAction
 
     public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($request);
-        $this->parent = $this->customer->shopifyUser;
+        $this->initialisationFromPlatform($platform, $request);
 
         return $this->handle($this->customer);
     }

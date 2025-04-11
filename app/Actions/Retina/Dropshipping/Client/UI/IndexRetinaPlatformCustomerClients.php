@@ -29,9 +29,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPlatformCustomerClients extends RetinaAction
 {
-    private Customer|ShopifyUser|TiktokUser $parent;
-    private Platform $platform;
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -43,14 +40,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
     public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->platform = $platform;
-        $this->initialisation($request);
-
-        $this->parent = match ($platform->type) {
-            PlatformTypeEnum::TIKTOK => $this->customer->tiktokUser,
-            PlatformTypeEnum::SHOPIFY => $this->customer->shopifyUser,
-            PlatformTypeEnum::WOOCOMMERCE => throw new \Exception('To be implemented')
-        };
+        $this->initialisationFromPlatform($platform, $request);
 
         return $this->handle($this->customer);
     }
@@ -62,9 +52,9 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
         $this->platform = $platform;
         if ($platform->type === PlatformTypeEnum::SHOPIFY) {
-            $this->parent = $this->customer->shopifyUser;
+            $this->platformUser = $this->customer->shopifyUser;
         } else {
-            $this->parent = $this->customer->tiktokUser;
+            $this->platformUser = $this->customer->tiktokUser;
         }
 
         return $this->handle($this->customer);
@@ -86,8 +76,8 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(PlatformHasClient::class);
         $queryBuilder->where('platform_has_clients.customer_id', $customer->id);
-        $queryBuilder->where('platform_has_clients.userable_type', $this->parent->getMorphClass());
-        $queryBuilder->where('platform_has_clients.userable_id', $this->parent->id);
+        $queryBuilder->where('platform_has_clients.userable_type', $this->platformUser->getMorphClass());
+        $queryBuilder->where('platform_has_clients.userable_id', $this->platformUser->id);
 
         /*
         foreach ($this->elementGroups as $key => $elementGroup) {
@@ -164,17 +154,17 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
     {
         // $scope = $this->parent;
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->parent->name;
+        $title      = $this->platformUser->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('customer client')
         ];
 
-        if ($this->parent instanceof TiktokUser) {
+        if ($this->platformUser instanceof TiktokUser) {
             $afterTitle = [
                 'label' => __('Tiktok Clients')
             ];
-        } elseif ($this->parent instanceof ShopifyUser) {
+        } elseif ($this->platformUser instanceof ShopifyUser) {
             $afterTitle = [
                 'label' => __('Shopify Clients')
             ];
@@ -199,19 +189,20 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'actions'       => [
-                        match (class_basename($this->parent)) {
+                        match (class_basename($this->platformUser)) {
                             'ShopifyUser' => [
                                 'type'    => 'button',
                                 'style'   => 'create',
                                 'tooltip' => __('Fetch Client'),
                                 'label'   => __('Fetch Client'),
                                 'route'   => [
-                                    'name'       => 'pupil.dropshipping.platforms.client.fetch',
+                                    'name'       => $this->asPupil ? 'pupil.dropshipping.platforms.client.fetch' : 'retina.dropshipping.platforms.client.fetch',
                                     'parameters' => [
                                         'platform' => $this->platform->slug
                                     ]
                                 ]
-                            ]
+                            ],
+                            default => []
                         },
                     ],
 
@@ -219,7 +210,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'data'        => CustomerClientResource::collection($customerClients),
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure($this->platformUser));
     }
 
     public function getBreadcrumbs($routeName, $routeParameters): array

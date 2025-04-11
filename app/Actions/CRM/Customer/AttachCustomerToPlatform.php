@@ -11,7 +11,6 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachCustomerToPlatform extends OrgAction
@@ -54,9 +53,9 @@ class AttachCustomerToPlatform extends OrgAction
         return $this->handle($customer, $platform, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Customer $customer, Platform $platform, ActionRequest $request): void
+    public function asController(Customer $customer, Platform $platform, ActionRequest $request): void
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($customer->organisation, $request);
         $this->handle($customer, $platform, $this->validatedData);
     }
 }

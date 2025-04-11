@@ -45,6 +45,7 @@ use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\ApproveCustomer;
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\DeletePortfolio;
 use App\Actions\CRM\Customer\RejectCustomer;
@@ -634,6 +635,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
+    Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
