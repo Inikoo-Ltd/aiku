@@ -15,7 +15,6 @@ const props = defineProps({
 		required: true,
 	},
 })
-console.log(props.data.quantity_ordered, "propsss")
 
 const emits = defineEmits(["update", "submit", "undo"])
 const originalQuantityOrdered = ref(props.data.quantity_ordered)

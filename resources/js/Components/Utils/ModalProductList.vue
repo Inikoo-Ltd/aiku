@@ -47,7 +47,6 @@ const emits = defineEmits<{
 	(e: "update:tab", value: string): void
 }>()
 
-const model = defineModel()
 const products = ref<any[]>([])
 const optionsMeta = ref(null)
 const optionsLinks = ref(null)
@@ -57,6 +56,7 @@ const iconStates = ref<Record<number, { increment: string; decrement: string }>>
 const addedProductIds = ref(new Set<number>())
 const addedOrderIds = ref(new Set<number>())
 const currentTab = ref(props.current)
+const isOpenModal = ref(false)
 
 const handleAction = (event: { type: string; value?: number }, slotProps: any) => {
 	switch (event.type) {
@@ -107,7 +107,7 @@ const onManualInputChange = (value: number, slotProps: any) => {
 }
 
 const closeModal = () => {
-	model.value = false
+	isOpenModal.value = false
 }
 
 const resetProducts = () => {
@@ -184,109 +184,112 @@ const formProducts = useForm({
 })
 
 const onSubmitAddProducts = async (data: any, slotProps: any) => {
-	const productId = slotProps.data.purchase_order_id
-	const orderId = slotProps.data.order_id
+  const quantity = parseFloat(slotProps.data.quantity_ordered || "0");
+  const productId = slotProps.data.purchase_order_id;
+  const orderId = slotProps.data.order_id;
 
-	try {
-		if (slotProps.data.quantity_ordered > 0) {
-			if (
-				(addedProductIds.value && addedProductIds.value.has(productId)) ||
-				(addedOrderIds.value && addedOrderIds.value.has(orderId))
-			) {
-				// Update product
-				if (slotProps.data.purchase_order_id || slotProps.data.order_id) {
-					await formProducts
-						.transform(() => ({
-							quantity_ordered: slotProps.data.quantity_ordered,
-						}))
-						.patch(
-							route(slotProps?.data?.updateRoute?.name || "#", {
-								...slotProps.data.updateRoute?.parameters,
-							})
-						)
-				}
-			} else if (props.typeModel === "purchase_order") {
-				// Add product ,
-				await formProducts
-					.transform(() => ({
-						quantity_ordered: slotProps.data.quantity_ordered,
-					}))
-					.post(
-						route(data.route?.name || "#", {
-							...data.route?.parameters,
-							historicSupplierProduct: slotProps.data.historic_id,
-							orgStock: slotProps.data.org_stock_id,
-						})
-					)
+  try {
+    if (quantity > 0) {
+      if (
+        (addedProductIds.value && addedProductIds.value.has(productId)) ||
+        (addedOrderIds.value && addedOrderIds.value.has(orderId))
+      ) {
+        // Update product
+        if (slotProps.data.purchase_order_id || slotProps.data.order_id) {
+          await formProducts
+            .transform(() => ({
+              quantity_ordered: quantity,
+            }))
+            .patch(
+              route(slotProps?.data?.updateRoute?.name || "#", {
+                ...slotProps.data.updateRoute?.parameters,
+              })
+            );
+        }
+      } else if (props.typeModel === "purchase_order") {
+        // Add product for purchase order
+        await formProducts
+          .transform(() => ({
+            quantity_ordered: quantity,
+          }))
+          .post(
+            route(data.route?.name || "#", {
+              ...data.route?.parameters,
+              historicSupplierProduct: slotProps.data.historic_id,
+              orgStock: slotProps.data.org_stock_id,
+            })
+          );
+        // Refresh list and update addedProductIds
+        await fetchProductList();
+        addedProductIds.value.add(productId);
+        iconStates.value[productId] = {
+          increment: "fal fa-cloud",
+          decrement: "fal fa-undo",
+        };
+      } else if (props.typeModel === "order") {
+        // Add product for order type
+        await formProducts
+          .transform(() => ({
+            quantity_ordered: quantity,
+          }))
+          .post(
+            route(data.route?.name || "#", {
+              ...data.route?.parameters,
+              historicAsset: slotProps.data.historic_id,
+            })
+          );
+        // Refresh list and update ID tracking (using addedProductIds as in your current logic,
+        // or consider using addedOrderIds if that better suits your business logic)
+        await fetchProductList();
+        addedProductIds.value.add(productId);
+        iconStates.value[productId] = {
+          increment: "fal fa-cloud",
+          decrement: "fal fa-undo",
+        };
+      }
 
-				// Refresh list and update addedProductIds
-				await fetchProductList()
-				addedProductIds.value.add(productId)
-				iconStates.value[productId] = {
-					increment: "fal fa-cloud",
-					decrement: "fal fa-undo",
-				}
-			} else if (props.typeModel === "order") {
-				await formProducts
-					.transform(() => ({
-						quantity_ordered: slotProps.data.quantity_ordered,
-					}))
-					.post(
-						route(data.route?.name || "#", {
-							...data.route?.parameters,
-							historicAsset: slotProps.data.historic_id,
-						})
-					)
+      notify({
+        title: trans("Success!"),
+        text: trans("Product successfully added or updated."),
+        type: "success",
+      });
+    } else if (quantity === 0) {
+      // Handle delete: check in both sets
+      if (
+        (addedProductIds.value && addedProductIds.value.has(productId)) ||
+        (addedOrderIds.value && addedOrderIds.value.has(orderId))
+      ) {
+        await formProducts.delete(
+          route(slotProps?.data?.deleteRoute?.name || "#", {
+            ...slotProps.data.deleteRoute?.parameters,
+          })
+        );
 
-				// Refresh list and update addedProductIds
-				await fetchProductList()
-				addedProductIds.value.add(productId)
-				iconStates.value[productId] = {
-					increment: "fal fa-cloud",
-					decrement: "fal fa-undo",
-				}
-			}
-			notify({
-				title: trans("Success!"),
-				text: trans("Product successfully added or updated."),
-				type: "success",
-			})
-		} else if (slotProps.data.quantity_ordered === 0) {
-			// Handle delete
-			if (addedProductIds.value && addedProductIds.value.has(productId)) {
-				await formProducts.delete(
-					route(slotProps?.data?.deleteRoute?.name || "#", {
-						...slotProps.data.deleteRoute?.parameters,
-					})
-				)
+        // Remove the product from both sets
+        addedProductIds.value.delete(productId);
+        addedOrderIds.value.delete(orderId);
 
-				// Remove product ID from the addedProductIds set
-				addedProductIds.value.delete(productId)
+        // Refresh list to reflect changes
+        await fetchProductList();
 
-				// Refresh list to reflect changes
-				await fetchProductList()
+        // Notify success
+        notify({
+          title: trans("Success!"),
+          text: trans("Product successfully deleted."),
+          type: "success",
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error adding/updating/deleting product:", error);
+    notify({
+      title: trans("Something went wrong"),
+      text: trans("An error occurred while processing the product."),
+      type: "error",
+    });
+  }
+};
 
-				// Notify success
-				notify({
-					title: trans("Success!"),
-					text: trans("Product successfully deleted."),
-					type: "success",
-				})
-			}
-		}
-	} catch (error) {
-		console.error("Error adding/updating/deleting product:", error)
-
-		// Notify error
-		notify({
-			title: trans("Something went wrong"),
-			text: trans("An error occurred while processing the product."),
-			type: "error",
-		})
-	}
-}
-
-console.log(products, "sdas")
 
 const onFetchNext = async () => {
 	if (optionsLinks.value?.next && !isLoading.value) {
@@ -331,8 +334,11 @@ onUnmounted(() => {
 </script>
 
 <template>
+	  <slot name="default" :isOpenModal :changeModel="() => isOpenModal = !isOpenModal" >
+
+	</slot>
 	<KeepAlive>
-		<Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-auto">
+		<Modal :isOpen="isOpenModal" @onClose="closeModal" :closeButton="true" width="w-auto">
 			<div class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4 px-3">
 				<div>
 					<!-- Title -->
