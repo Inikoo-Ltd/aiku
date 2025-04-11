@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\CRM\CustomerPlatformsResource;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerPlatformsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -80,7 +81,7 @@ class IndexCustomerPlatforms extends OrgAction
         $enableAiku = $this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first() ? false : true;
         // dd($this->parent->customer->platforms()->where('type', PlatformTypeEnum::AIKU)->first());
         return Inertia::render(
-            'Org/Fulfilment/FulfilmentCustomerPlatforms',
+            'Org/Shop/CRM/CustomerPlatforms',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -104,7 +105,7 @@ class IndexCustomerPlatforms extends OrgAction
                     ],
 
                 ],
-                'data'        => FulfilmentCustomerPlatformsResource::collection($platforms),
+                'data'        => CustomerPlatformsResource::collection($platforms),
                 'platforms'   => PlatformsResource::collection($this->parent->group->platforms),
                 'enableAiku'  => $enableAiku,
                 'attachRoute' => [
