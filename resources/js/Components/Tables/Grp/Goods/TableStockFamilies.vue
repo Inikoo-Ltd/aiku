@@ -58,8 +58,7 @@ console.log('Date interval:', interval)
             </Link>
         </template>
         <template #cell(revenue_grp_currency)="{ item: stockFamily }">
-            <!--  <pre>{{ interval }}</pre> -->
-            {{ locale.currencyFormat('usd', Number(stockFamily['revenue_grp_currency_' + interval])) }}
+            {{ locale.currencyFormat(stockFamily['grp_currency'], Number(stockFamily['revenue_grp_currency_' + interval])) }}
         </template>
     </Table>
 </template>

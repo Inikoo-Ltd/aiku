@@ -192,7 +192,7 @@ class IndexStockFamilies extends GrpAction
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true)
+                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
                 ->defaultSort('code');
         };
     }
