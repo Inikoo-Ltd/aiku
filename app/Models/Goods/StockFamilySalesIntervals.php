@@ -1202,7 +1202,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $profit_grp_currency_pq3
  * @property string $profit_grp_currency_pq4
  * @property string $profit_grp_currency_pq5
- * @property string|null $revenue_data_all
+ * @property array<array-key, mixed>|null $revenue_data_all
  * @property string|null $revenue_data_1y
  * @property string|null $revenue_data_1q
  * @property string|null $revenue_data_1m
