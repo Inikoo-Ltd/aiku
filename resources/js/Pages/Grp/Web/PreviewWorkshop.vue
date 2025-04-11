@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { ref, onMounted, provide } from 'vue'
+import { ref, onMounted, provide, onBeforeUnmount } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent} from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
@@ -39,6 +39,7 @@ const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
 const isPreviewMode = ref(mode != 'iris' ? false : true)
 const isInWorkshop = route().params.isInWorkshop || false
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
 const showWebpage = (activityItem) => {
     if (activityItem?.web_block?.layout && activityItem.show) {
@@ -68,6 +69,17 @@ onMounted(() => {
         }
     });
 });
+
+const checkScreenType = () => {
+  const width = window.innerWidth
+  if (width < 640) screenType.value = 'mobile'
+  else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+  else screenType.value = 'desktop'
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkScreenType)
+})
 
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)

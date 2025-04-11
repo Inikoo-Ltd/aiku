@@ -17,13 +17,19 @@ const model = defineModel<{ value: number; unit: string }>({
 })
 
 
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
+
+/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 // Fungsi untuk memperbarui model
 const updateModel = (key: keyof typeof model.value, newValue: any) => {
   model.value = { ...model.value, [key]: newValue }
-  onSaveWorkshopFromId(side_editor_block_id)
+  /* onSaveWorkshopFromId(side_editor_block_id) */
+  console.log(model.value)
+  emits('update:modelValue', model.value)
 }
 </script>
 

@@ -8,6 +8,11 @@ const model = defineModel<typeof localModel>({
     required: true,
 })
 
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
+
+
 // Create a local copy of the model for internal use
 const localModel = {
     top: { value: null },
@@ -76,7 +81,9 @@ onMounted(async () => {
 <template>
     <div >
         <BorderProperty
-            v-model="model"
+            :modelValue="model" @update:model-value="(value) => {
+                emits('update:modelValue', value)
+            }"
         />
     </div>
 </template>

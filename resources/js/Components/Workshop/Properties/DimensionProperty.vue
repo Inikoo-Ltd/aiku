@@ -12,8 +12,12 @@ library.add(faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOu
 
 const model = defineModel()
 
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
+/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
+
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
 
 </script>
 
@@ -34,10 +38,10 @@ const side_editor_block_id = inject('side_editor_block_id', () => { console.log(
                         leave-from-class="translate-y-0 opacity-100" leave-to-class="translate-y-1 opacity-0">
                         <PopoverPanel v-slot="{ close }"
                             class="bg-white shadow mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
-                            <div @click="() => { model.height.unit = 'px', onSaveWorkshopFromId(side_editor_block_id), close() }" class="px-4 py-1.5 cursor-pointer"
+                            <div @click="() => { model.height.unit = 'px', emits('update:modelValue',model), close() }" class="px-4 py-1.5 cursor-pointer"
                                 :class="model?.height.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px
                             </div>
-                            <div @click="() => { model.height.unit = '%', onSaveWorkshopFromId(side_editor_block_id), close() }" class="px-4 py-1.5 cursor-pointer"
+                            <div @click="() => { model.height.unit = '%', emits('update:modelValue',model), close() }" class="px-4 py-1.5 cursor-pointer"
                                 :class="model?.height.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
                         </PopoverPanel>
                     </transition>
@@ -55,7 +59,7 @@ const side_editor_block_id = inject('side_editor_block_id', () => { console.log(
                                 <div class="col-span-4">
                                     <PureInputNumber
                                         :modelValue="get(model, 'height.value', 0)"
-                                        @update:modelValue="(newVal) => (set(model, 'height.value', newVal), onSaveWorkshopFromId(side_editor_block_id))"
+                                        @update:modelValue="(newVal) => (set(model, 'height.value', newVal), emits('update:modelValue',model))"
                                         class=""
                                         :suffix="model?.height.unit"
                                     />

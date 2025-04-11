@@ -4,7 +4,7 @@ import { trans } from 'laravel-vue-i18n'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 
 // Injected props
-const onSaveWorkshopFromId: Function = inject(
+/* const onSaveWorkshopFromId: Function = inject(
   'onSaveWorkshopFromId',
   (e?: number) => console.warn('onSaveWorkshopFromId not provided')
 )
@@ -12,7 +12,11 @@ const onSaveWorkshopFromId: Function = inject(
 const side_editor_block_id = inject('side_editor_block_id', () => {
   console.warn('side_editor_block_id not provided')
 })
+ */
 
+ const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
 // Model is a string, e.g., 'rgba(255,255,255,1)'
 const model = defineModel<string>({ required: true })
 
@@ -24,7 +28,8 @@ const handleColorChange = (newColor: any) => {
   const rgba = `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`
   localColor.value = rgba
   model.value = rgba
-  onSaveWorkshopFromId(side_editor_block_id, 'ColorProperty')
+  /* onSaveWorkshopFromId(side_editor_block_id, 'ColorProperty') */
+  emits('update:modelValue', rgba)
 }
 </script>
 

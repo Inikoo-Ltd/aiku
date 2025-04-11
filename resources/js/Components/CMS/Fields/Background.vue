@@ -8,6 +8,10 @@ const props = defineProps<{
     uploadRoutes?: routeType
 }>()
 
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
+
 const defaultModel = {
     type: 'color',
     color: 'rgba(255, 255, 255, 1)',
@@ -26,7 +30,7 @@ const localModel = computed({
 
 <template>
     <div>
-        <BackgroundProperty v-model="localModel" :uploadImageRoute="uploadRoutes" />
+        <BackgroundProperty :modelValue="localModel" :uploadImageRoute="uploadRoutes" @update:modelValue="(val)=>emits('update:modelValue',val)" />
     </div>
 </template>
 
