@@ -27,7 +27,10 @@ const props = defineProps<{
     category?: {}
     product?: {}
     website_layout: {}
+    family?: {}
 }>()
+
+console.log(props)
 
 let currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
