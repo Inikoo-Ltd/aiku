@@ -1325,6 +1325,15 @@ class StockFamilySalesIntervals extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'revenue_data_all' => 'array',
+
+    ];
+
+
+    protected $attributes = [
+        'revenue_data_all' => '{}',
+    ];
 
     public function stockFamily(): BelongsTo
     {

@@ -10,6 +10,7 @@ namespace App\Actions\Goods\StockFamily\Hydrators;
 
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Goods\StockFamily;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -21,6 +22,7 @@ class StockFamilyHydrateSalesIntervals implements ShouldBeUnique
     use WithIntervalsAggregators;
 
     public string $jobQueue = 'sales';
+    public string $rawSqlGrpRevenue = 'sum(grp_revenue_amount) as sum_aggregate';
 
     public function getJobUniqueId(StockFamily $stockFamily, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): string
     {
@@ -41,9 +43,10 @@ class StockFamilyHydrateSalesIntervals implements ShouldBeUnique
 
     public function handle(StockFamily $stockFamily, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): void
     {
+
         $stats = [];
 
-        $queryBase = DeliveryNoteItem::where('sales_type', '!=', DeliveryNoteItemSalesTypeEnum::NA)->where('stock_family_id', $stockFamily->id)->selectRaw('sum(grp_revenue_amount) as sum_aggregate');
+        $queryBase = DeliveryNoteItem::where('sales_type', '!=', DeliveryNoteItemSalesTypeEnum::NA)->where('stock_family_id', $stockFamily->id)->selectRaw($this->rawSqlGrpRevenue);
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
@@ -51,6 +54,15 @@ class StockFamilyHydrateSalesIntervals implements ShouldBeUnique
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
+
+        $stats = $this->salesPerOrganisation(
+            $stockFamily,
+            $stats,
+            $intervals,
+            $doPreviousPeriods
+        );
+        $stockFamily->salesIntervals()->update($stats);
+
 
         if ($onlyProcessSalesType) {
             $salesTypes = [$onlyProcessSalesType];
@@ -67,21 +79,85 @@ class StockFamilyHydrateSalesIntervals implements ShouldBeUnique
                 $this->perSalesType($stockFamily, $stats, $salesType, $intervals, $doPreviousPeriods)
             );
         }
-
         $stockFamily->salesIntervals()->update($stats);
+
+
+
     }
 
     public function perSalesType(StockFamily $stockFamily, array $stats, DeliveryNoteItemSalesTypeEnum $salesType, ?array $intervals, ?array $doPreviousPeriods): array
     {
-        $queryBase = DeliveryNoteItem::where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)->where('stock_family_id', $stockFamily->id)->selectRaw('sum(grp_revenue_amount) as sum_aggregate');
+        $queryBase = DeliveryNoteItem::where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)->where('stock_family_id', $stockFamily->id)->selectRaw($this->rawSqlGrpRevenue);
 
-        return $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'revenue_'.$salesType->value.'_grp_currency_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
+        $this->salesPerOrganisationSalesType($stockFamily, $stats, $salesType, $intervals, $doPreviousPeriods);
+
+        return $stats;
+    }
+
+    public function salesPerOrganisation(StockFamily $stockFamily, array $stats, ?array $intervals, ?array $doPreviousPeriods): array
+    {
+
+        $organisations = $stockFamily->group->organisations()->where('organisations.type', OrganisationTypeEnum::SHOP)->orderBy('id')->pluck('id');
+
+        foreach ($organisations as $organisationID) {
+            $queryBase = DeliveryNoteItem::where('organisation_id', $organisationID)->where('sales_type', '!=', DeliveryNoteItemSalesTypeEnum::NA)->where('stock_family_id', $stockFamily->id)->selectRaw($this->rawSqlGrpRevenue);
+
+            $organisationIntervalData = $this->getIntervalsData(
+                stats: [],
+                queryBase: $queryBase,
+                statField: '',
+                intervals: $intervals,
+                doPreviousPeriods: $doPreviousPeriods
+            );
+
+            foreach ($organisationIntervalData as $intervalSuffix => $value) {
+                data_set(
+                    $stats,
+                    'revenue_data_'.$intervalSuffix.'.grp_currency.'.$organisationID,
+                    $value
+                );
+            }
+
+        }
+
+        return $stats;
+    }
+
+
+    public function salesPerOrganisationSalesType(StockFamily $stockFamily, array $stats, DeliveryNoteItemSalesTypeEnum $salesType, ?array $intervals, ?array $doPreviousPeriods): array
+    {
+
+        $organisations = $stockFamily->group->organisations()->where('organisations.type', OrganisationTypeEnum::SHOP)->orderBy('id')->pluck('id');
+
+        foreach ($organisations as $organisationID) {
+            $queryBase = DeliveryNoteItem::where('organisation_id', $organisationID)->where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)->where('stock_family_id', $stockFamily->id)->selectRaw($this->rawSqlGrpRevenue);
+
+            $organisationIntervalData = $this->getIntervalsData(
+                stats: [],
+                queryBase: $queryBase,
+                statField: '',
+                intervals: $intervals,
+                doPreviousPeriods: $doPreviousPeriods
+            );
+
+
+            foreach ($organisationIntervalData as $intervalSuffix => $value) {
+                data_set(
+                    $stats,
+                    'revenue_'.$salesType->value.'_data_'.$intervalSuffix.'.grp_currency.'.$organisationID,
+                    $value
+                );
+            }
+        }
+
+        return $stats;
     }
 
 }
