@@ -3,6 +3,7 @@
 	"scope": "webpage",
 	"code": "family-1",
 	"name": "Family",
+	"category": "family",
 	"fixed": true,
 	"icon": ["fal", "folder"],
 	"data": {
