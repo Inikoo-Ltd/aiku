@@ -17,11 +17,10 @@ const layout = inject('layout', layoutStructure)
 
 function platformRoute(platform: {}) {
     switch (route().current()) {
-         case "grp.org.fulfilments.show.crm.customers.show.platforms.index":
-            return ''
-            // route(
-            //    "grp.org.fulfilments.show.crm.customers.show.platforms.show",
-            //     [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.model_has_platform_id])
+         case "grp.org.shops.show.crm.customers.show.platforms.index":
+            return route(
+               "grp.org.shops.show.crm.customers.show.platforms.show",
+                [route().params["organisation"], route().params["shop"], route().params["customer"], platform.model_has_platform_id])
     }
 }
 
