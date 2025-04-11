@@ -33,8 +33,8 @@ class InertiaTable
     private static bool|string $defaultGlobalSearch = false;
     private static array $defaultQueryBuilderConfig = [];
 
-    private array $labelRecord = [];
-    private $footerRows;
+    private array $labelRecord;
+    private mixed $footerRows;
 
     public function __construct(Request $request)
     {
@@ -56,6 +56,14 @@ class InertiaTable
         }
     }
 
+    /**
+     * Set the default global search label for all table instances.
+     *
+     * @param  bool|string  $label
+     *
+     * @return void
+     * @noinspection PhpUnused
+     */
     public static function defaultGlobalSearch(bool|string $label = 'default'): void
     {
         if ($label === 'default') {
@@ -111,6 +119,14 @@ class InertiaTable
         return $this;
     }
 
+    /**
+     * Set the per page options for the table.
+     *
+     * @param  array  $perPageOptions
+     *
+     * @return self
+     * @noinspection PhpUnused
+     */
     public function perPageOptions(array $perPageOptions): self
     {
         $this->perPageOptions = $perPageOptions;
@@ -130,13 +146,27 @@ class InertiaTable
     protected function getQueryBuilderProps(): array
     {
         return [
-            'defaultVisibleToggleableColumns' => $this->columns->reject->hidden->map->key->sort()->values(),
+            'defaultVisibleToggleableColumns' => $this->columns
+                ->reject(function (Column $item) {
+                    return $item->hidden;
+                })
+                ->map(function (Column $item) {
+                    return $item->key;
+                })
+                ->sort()
+                ->values(),
             'columns'                         => $this->transformColumns(),
-            'hasHiddenColumns'                => $this->columns->filter->hidden->isNotEmpty(),
-            'hasToggleableColumns'            => $this->columns->filter->canBeHidden->isNotEmpty(),
+            'hasHiddenColumns'                => $this->columns->filter(function (Column $item) {
+                return $item->hidden;
+            })->isNotEmpty(),
+            'hasToggleableColumns'            => $this->columns->filter(function (Column $item) {
+                return $item->canBeHidden;
+            })->isNotEmpty(),
             'filters'                         => $this->transformFilters(),
             'hasFilters'                      => $this->filters->isNotEmpty(),
-            'hasEnabledFilters'               => $this->filters->filter->value->isNotEmpty(),
+            'hasEnabledFilters'               => $this->filters->filter(function ($filter) {
+                return $filter->value;
+            })->isNotEmpty(),
             'searchInputs'                    => $searchInputs = $this->transformSearchInputs(),
             'searchInputsWithoutGlobal'       => $searchInputsWithoutGlobal = $searchInputs->where('key', '!=', 'global'),
             'hasSearchInputs'                 => $searchInputsWithoutGlobal->isNotEmpty(),
@@ -449,7 +479,19 @@ class InertiaTable
         return $this;
     }
 
-
+    /**
+     * Add a select filter to the table.
+     *
+     * @param  string  $key
+     * @param  array  $options
+     * @param  string|null  $label
+     * @param  string|null  $defaultValue
+     * @param  bool  $noFilterOption
+     * @param  string|null  $noFilterOptionLabel
+     *
+     * @return $this
+     * @noinspection PhpUnused
+     */
     public function selectFilter(string $key, array $options, string $label = null, string $defaultValue = null, bool $noFilterOption = true, string $noFilterOptionLabel = null): self
     {
         $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
