@@ -2,6 +2,7 @@
 
 namespace App\InertiaTable;
 
+use App\Enums\DateIntervals\DateIntervalEnum;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
@@ -25,6 +26,7 @@ class InertiaTable
 
     private array $title = [];
     private array $betweenDates = [];
+    private DateIntervalEnum $dateInterval;
 
     private Collection $emptyState;
     private Collection $modelOperations;
@@ -50,6 +52,7 @@ class InertiaTable
         $this->emptyState      = new Collection();
         $this->labelRecord     = [];
         $this->footerRows      = null;
+        $this->dateInterval    = DateIntervalEnum::ALL;
 
         if (static::$defaultGlobalSearch !== false) {
             $this->withGlobalSearch(static::$defaultGlobalSearch);
@@ -115,6 +118,21 @@ class InertiaTable
     public function betweenDates(array $betweenDates): self
     {
         $this->betweenDates = $betweenDates;
+
+        return $this;
+    }
+
+    /**
+     * Set the date interval to be shown in table columns.
+     *
+     * @param  DateIntervalEnum  $dateInterval
+     *
+     * @return self
+     * @noinspection PhpUnused
+     */
+    public function dateInterval(DateIntervalEnum $dateInterval): self
+    {
+        $this->dateInterval = $dateInterval;
 
         return $this;
     }
@@ -189,6 +207,7 @@ class InertiaTable
             'title'                           => $this->title,
             'footerRows'                      => $this->footerRows,
             'betweenDates'                    => $this->betweenDates,
+            'dateInterval'                    => $this->dateInterval,
         ];
     }
 
@@ -373,6 +392,7 @@ class InertiaTable
         bool $hidden = false,
         bool $sortable = false,
         bool $searchable = false,
+        bool $isInterval = false,
         string $type = null,
         string $align = null,
         string $className = null,
@@ -393,6 +413,7 @@ class InertiaTable
                 type: $type,
                 align: $align,
                 className: $className,
+                isInterval: $isInterval,
             )
         )->values();
 

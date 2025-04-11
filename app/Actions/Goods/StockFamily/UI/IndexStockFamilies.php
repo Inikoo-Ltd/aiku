@@ -33,9 +33,9 @@ class IndexStockFamilies extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-
         $this->initialisation(group(), $request);
         $this->bucket = 'all';
+
         return $this->handle($this->group);
     }
 
@@ -189,8 +189,7 @@ class IndexStockFamilies extends GrpAction
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true)
-
+                ->column(key: 'revenue', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
                 ->defaultSort('code');
         };
     }
@@ -207,7 +206,7 @@ class IndexStockFamilies extends GrpAction
             [
                 'label'  => __('Active'),
                 'root'   => 'grp.goods.stock-families.active.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stock-families.active.index',
                     'parameters' => []
                 ],
@@ -216,7 +215,7 @@ class IndexStockFamilies extends GrpAction
             [
                 'label'  => __('In process'),
                 'root'   => 'grp.goods.stock-families.in-process.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stock-families.in-process.index',
                     'parameters' => []
                 ],
@@ -225,7 +224,7 @@ class IndexStockFamilies extends GrpAction
             [
                 'label'  => __('Discontinuing'),
                 'root'   => 'grp.goods.stock-families.discontinuing.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stock-families.discontinuing.index',
                     'parameters' => []
                 ],
@@ -235,7 +234,7 @@ class IndexStockFamilies extends GrpAction
                 'label'  => __('Discontinued'),
                 'root'   => 'grp.goods.stock-families.discontinued.',
                 'align'  => 'right',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stock-families.discontinued.index',
                     'parameters' => []
                 ],
@@ -246,7 +245,7 @@ class IndexStockFamilies extends GrpAction
                 'icon'   => 'fal fa-bars',
                 'root'   => 'grp.goods.stock-families.index',
                 'align'  => 'right',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stock-families.index',
                     'parameters' => []
                 ],
@@ -259,17 +258,16 @@ class IndexStockFamilies extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $stockFamily, ActionRequest $request): Response
     {
-
         $parent = $this->group;
 
         $subNavigation = $this->getStockFamiliesSubNavigation();
 
         $title = match ($this->bucket) {
-            'active'        => __('Active SKU Families'),
-            'in_process'    => __('In process SKU Families'),
+            'active' => __('Active SKU Families'),
+            'in_process' => __('In process SKU Families'),
             'discontinuing' => __('Discontinuing SKU Families'),
-            'discontinued'  => __('Discontinued SKU Families'),
-            default         => __('SKU Families')
+            'discontinued' => __('Discontinued SKU Families'),
+            default => __('SKU Families')
         };
 
         return Inertia::render(
@@ -279,11 +277,11 @@ class IndexStockFamilies extends GrpAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
-                    'icon'    => [
+                    'icon'          => [
                         'title' => __("SKUs families"),
                         'icon'  => 'fal fa-boxes-alt'
                     ],
-                    'actions' => [
+                    'actions'       => [
                         $this->canEdit && $request->route()->getName() == 'grp.goods.stock-families.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -297,7 +295,7 @@ class IndexStockFamilies extends GrpAction
                     ],
                     'subNavigation' => $subNavigation
                 ],
-                'data' => StockFamiliesResource::collection($stockFamily),
+                'data'        => StockFamiliesResource::collection($stockFamily),
             ]
         )->table($this->tableStructure(parent: $parent, bucket: $this->bucket));
     }
