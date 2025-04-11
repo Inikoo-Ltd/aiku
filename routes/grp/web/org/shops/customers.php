@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
+use App\Actions\CRM\Customer\UI\IndexCustomerPlatformOrders;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformPortfolios;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatforms;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
@@ -56,6 +57,9 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inPlatformInCustomer'])->name('.aiku.index');
                 Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInCustomer'])->name('.aiku.show');
                 Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+            });
+            Route::prefix('/orders')->as('.orders')->group(function () {
+                Route::get('', IndexCustomerPlatformOrders::class)->name('.index');
             });
         });
     });
