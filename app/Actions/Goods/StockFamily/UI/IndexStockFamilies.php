@@ -108,7 +108,7 @@ class IndexStockFamilies extends GrpAction
         $queryBuilder = QueryBuilder::for(StockFamily::class);
         $queryBuilder->where('stock_families.group_id', $group->id);
         $queryBuilder->leftJoin('stock_family_stats', 'stock_family_stats.stock_family_id', 'stock_families.id');
-        $queryBuilder->leftJoin('stock_family_intervals', 'stock_family_intervals.stock_family_id', 'stock_families.id');
+        $queryBuilder->leftJoin('stock_family_sales_intervals', 'stock_family_sales_intervals.stock_family_id', 'stock_families.id');
 
 
         if ($this->bucket == 'active') {
@@ -138,7 +138,7 @@ class IndexStockFamilies extends GrpAction
                 'stock_families.id as id',
                 'name',
                 'number_current_stocks',
-                'stock_family_intervals.*'
+                'stock_family_sales_intervals.*'
 
             ])
             ->allowedSorts(['code', 'name', 'number_current_stocks'])
@@ -189,7 +189,7 @@ class IndexStockFamilies extends GrpAction
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
+                ->column(key: 'revenue_grp_currency_all', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
                 ->defaultSort('code');
         };
     }
