@@ -11,6 +11,7 @@ namespace App\Actions\Goods\StockFamily\UI;
 use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Http\Resources\Goods\StockFamiliesResource;
 use App\InertiaTable\InertiaTable;
@@ -167,8 +168,10 @@ class IndexStockFamilies extends GrpAction
                 }
             }
 
+
             $table
                 ->withGlobalSearch()
+                ->dateInterval(DateIntervalEnum::YEAR_TO_DAY)
                 ->withEmptyState(
                     [
                         'title'       => __('no stock families'),
@@ -189,7 +192,7 @@ class IndexStockFamilies extends GrpAction
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue_grp_currency_all', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
+                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true)
                 ->defaultSort('code');
         };
     }

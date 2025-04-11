@@ -25,7 +25,7 @@ function stockFamilyRoute(stockFamily: StockFamily) {
 
 }
 
-
+const interval='all'
 
 </script>
 
@@ -46,5 +46,9 @@ function stockFamilyRoute(stockFamily: StockFamily) {
                 {{ stockFamily['number_stocks'] }}
             </Link>
         </template>
+      <template #cell(revenue_grp_currency)="{ item: stockFamily }">
+
+        {{ stockFamily['revenue_grp_currency_'+interval] }}
+      </template>
     </Table>
 </template>

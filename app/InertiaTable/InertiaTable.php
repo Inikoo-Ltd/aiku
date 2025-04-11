@@ -26,7 +26,7 @@ class InertiaTable
 
     private array $title = [];
     private array $betweenDates = [];
-    private DateIntervalEnum $dateInterval;
+    private ?DateIntervalEnum $dateInterval;
 
     private Collection $emptyState;
     private Collection $modelOperations;
@@ -52,7 +52,7 @@ class InertiaTable
         $this->emptyState      = new Collection();
         $this->labelRecord     = [];
         $this->footerRows      = null;
-        $this->dateInterval    = DateIntervalEnum::ALL;
+        $this->dateInterval    = null;
 
         if (static::$defaultGlobalSearch !== false) {
             $this->withGlobalSearch(static::$defaultGlobalSearch);
@@ -392,7 +392,6 @@ class InertiaTable
         bool $hidden = false,
         bool $sortable = false,
         bool $searchable = false,
-        bool $isInterval = false,
         string $type = null,
         string $align = null,
         string $className = null,
@@ -413,7 +412,6 @@ class InertiaTable
                 type: $type,
                 align: $align,
                 className: $className,
-                isInterval: $isInterval,
             )
         )->values();
 
