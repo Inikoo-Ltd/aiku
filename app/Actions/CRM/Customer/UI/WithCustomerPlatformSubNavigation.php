@@ -77,11 +77,11 @@ trait WithCustomerPlatformSubNavigation
         }
         $subNavigation[] = [
             'label'     => __('Orders'),
-            // 'route' => [
-            //     'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
-            //     'parameters' => $request->route()->originalParameters()
+            'route' => [
+                'name'      => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
+                'parameters' => $request->route()->originalParameters()
 
-            // ],
+            ],
             'leftIcon'  => [
                 'icon'    => 'fal fa-shopping-cart',
                 'tooltip' => __('order'),
