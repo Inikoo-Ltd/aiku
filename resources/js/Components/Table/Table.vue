@@ -28,10 +28,10 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheckSquare, faCheck, faSquare} from '@fal'
 import { faCheckSquare as fasCheckSquare} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
+import TableDateInterval from './TableDateInterval.vue'
 library.add(faCheckSquare, faCheck, faSquare, fasCheckSquare)
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -448,6 +448,7 @@ function dataForNewQueryString() {
     const elementFilter = queryBuilderData.value.elementFilter
     const period = queryBuilderData.value.periodFilter
     const radioFilter = queryBuilderData.value.radioFilter
+    const dateInterval = queryBuilderData.value.dateInterval
 
 
     if (cursor) {
@@ -813,11 +814,15 @@ const isLoading = ref<string | boolean>(false)
                         </div> -->
 
                         <!-- Filter: date between -->
-                        <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
+                        <div  v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter
                                 :optionsList="queryBuilderProps?.betweenDates"
                                 :tableName="props.name"
                             />
+                        </div>
+
+                        <div v-if="queryBuilderProps.dateInterval" class="w-fit flex gap-x-2">
+                             <TableDateInterval :dateInterval="queryBuilderProps.dateInterval"/>
                         </div>
 
                         <!-- Filter: Period -->
