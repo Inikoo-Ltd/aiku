@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\FamilyWebsiteResource;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
@@ -22,7 +23,7 @@ class GetWebsiteWorkshopFamily
 
     public function handle(Website $website, ProductCategory $category): array
     {
-        $webBlockTypes = WebBlockType::where('category', 'family')->get();
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get();
 
         $webBlockTypes->each(function ($blockType) use ($category) {
             $data = $blockType->data ?? [];
@@ -35,7 +36,7 @@ class GetWebsiteWorkshopFamily
 
         return [
             'category' => FamilyWebsiteResource::make($category),
-            'web_block_type' => WebBlockTypesResource::collection($webBlockTypes)
+            'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
         ];
     }
 }

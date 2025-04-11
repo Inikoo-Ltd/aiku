@@ -2,7 +2,12 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Catalogue\FamilyWebsiteResource;
+use App\Http\Resources\Catalogue\ProductResource;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Product;
+use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -12,8 +17,22 @@ class GetWebsiteWorkshopProduct
 
     public function handle(Website $website, Product $product): array
     {
+        $category = $product->family;
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
+
+        $webBlockTypes->each(function ($blockType) use ($product) {
+            $data = $blockType->data ?? [];
+            $fieldValue = $data['fieldValue'] ?? [];
+
+            $fieldValue['product'] = ProductResource::make($product);
+            $data['fieldValue'] = $fieldValue;
+            $blockType->data = $data;
+        });
+
         $propsValue = [
             'settings' => $website->settings,
+            'category' => FamilyWebsiteResource::make($category),
+            'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
         ];
         $updateRoute = [
             'updateRoute' => [
