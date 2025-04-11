@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 04-04-2025-11h-52m
@@ -8,21 +9,14 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
-use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
-use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerPlatformsResource;
-use App\Http\Resources\Fulfilment\FulfilmentCustomerPlatformsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -35,7 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexCustomerPlatforms extends OrgAction
 {
     use WithCustomerSubNavigation;
-    
+
     private Customer $parent;
 
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator

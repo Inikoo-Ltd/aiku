@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-04-2025-11h-17m
@@ -8,17 +9,11 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
-use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
-use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\Fulfilment\FulfilmentCustomerPlatformsResource;
-use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\Fulfilment\StoredItemsResource;
-use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
@@ -52,7 +47,7 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
 
         $query = QueryBuilder::for(StoredItem::class);
 
-        if($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
             $query->where('stored_items.fulfilment_customer_id', $modelHasPlatform->model->fulfilmentCustomer->id);
         } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->leftJoin('shopify_user_has_products', function ($join) {
@@ -71,13 +66,13 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
         return $query
             ->defaultSort('stored_items.id')
             ->select(
-                    'stored_items.id',
-                    'stored_items.slug',
-                    'stored_items.reference',
-                    'stored_items.state',
-                    'stored_items.name',
-                    'stored_items.total_quantity'
-                    )
+                'stored_items.id',
+                'stored_items.slug',
+                'stored_items.reference',
+                'stored_items.state',
+                'stored_items.name',
+                'stored_items.total_quantity'
+            )
             ->allowedSorts(['reference', 'name', 'total_quantity'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

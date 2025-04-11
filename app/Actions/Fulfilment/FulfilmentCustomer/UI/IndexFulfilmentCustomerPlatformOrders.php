@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-04-2025-14h-36m
@@ -10,27 +11,18 @@ namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
-use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\ModelHasPlatform;
-use App\Models\PlatformHasClient;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -64,9 +56,9 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
-        if($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
             $queryBuilder->where('pallet_returns.fulfilment_customer_id', $modelHasPlatform->model->fulfilmentCustomer->id);
-        } elseif( $modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
@@ -80,18 +72,18 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
         return $queryBuilder
             ->defaultSort('pallet_returns.reference')
             ->select([
-                'pallet_returns.id', 
-                'pallet_returns.state', 
-                'pallet_returns.slug', 
-                'pallet_returns.reference', 
-                'pallet_returns.customer_reference', 
-                'pallet_return_stats.number_pallets', 
-                'pallet_return_stats.number_services', 
-                'pallet_return_stats.number_physical_goods', 
-                'pallet_returns.date', 
+                'pallet_returns.id',
+                'pallet_returns.state',
+                'pallet_returns.slug',
+                'pallet_returns.reference',
+                'pallet_returns.customer_reference',
+                'pallet_return_stats.number_pallets',
+                'pallet_return_stats.number_services',
+                'pallet_return_stats.number_physical_goods',
+                'pallet_returns.date',
                 'pallet_returns.dispatched_at',
-                'pallet_returns.type', 
-                'pallet_returns.total_amount', 
+                'pallet_returns.type',
+                'pallet_returns.total_amount',
                 'currencies.code as currency_code'
             ])
             ->allowedSorts(['reference', 'total_amount'])

@@ -249,7 +249,7 @@ class IndexCustomerClients extends OrgAction
             ];
         };
 
-        if(isset($routeParameters['modelHasPlatform'])){
+        if (isset($routeParameters['modelHasPlatform'])) {
             $modelHasPlatform = ModelHasPlatform::find($routeParameters['modelHasPlatform'])->first();
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-04-2025-15h-30m
@@ -75,7 +76,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             ]
         );
     }
-    
+
     public function getBreadcrumbs(ModelHasPlatform $modelHasPlatform, array $routeParameters): array
     {
         $headCrumb = function (FulfilmentCustomer $fulfilmentCustomer, array $routeParameters, string $suffix = '') {

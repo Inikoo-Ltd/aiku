@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-04-2025-14h-10m
@@ -30,7 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexFulfilmentCustomerPlatforms extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
-    
+
     private FulfilmentCustomer $parent;
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): LengthAwarePaginator

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-04-2025-16h-03m
@@ -8,7 +9,6 @@
 
 namespace App\Actions\Fulfilment;
 
-use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\ModelHasPlatform;
@@ -47,14 +47,14 @@ trait WithFulfilmentCustomerPlatformSubNavigation
                 'tooltip' => __('portfolio'),
             ],
         ];
-        
-        if($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+
+        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
             $subNavigation[] = [
                 'label'     => __('Clients'),
                 'route' => [
                     'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
                     'parameters' => $request->route()->originalParameters()
-    
+
                 ],
                 'leftIcon'  => [
                     'icon'    => 'fal fa-users',
@@ -67,7 +67,7 @@ trait WithFulfilmentCustomerPlatformSubNavigation
                 'route' => [
                     'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
                     'parameters' => $request->route()->originalParameters()
-    
+
                 ],
                 'leftIcon'  => [
                     'icon'    => 'fal fa-users',

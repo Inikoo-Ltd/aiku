@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-04-2025-13h-07m
@@ -9,7 +10,6 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Http\Resources\HasSelfCall;
-use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
