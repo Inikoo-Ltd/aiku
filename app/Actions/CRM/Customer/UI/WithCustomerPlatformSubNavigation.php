@@ -51,11 +51,11 @@ trait WithCustomerPlatformSubNavigation
         if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
             $subNavigation[] = [
                 'label'     => __('Clients'),
-                // 'route' => [
-                //     'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
-                //     'parameters' => $request->route()->originalParameters()
+                'route' => [
+                    'name'      => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                    'parameters' => $request->route()->originalParameters()
 
-                // ],
+                ],
                 'leftIcon'  => [
                     'icon'    => 'fal fa-users',
                     'tooltip' => __('clients'),
@@ -64,11 +64,11 @@ trait WithCustomerPlatformSubNavigation
         } else {
             $subNavigation[] = [
                 'label'     => __('Clients'),
-                // 'route' => [
-                //     'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
-                //     'parameters' => $request->route()->originalParameters()
+                'route' => [
+                    'name'      => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                    'parameters' => $request->route()->originalParameters()
 
-                // ],
+                ],
                 'leftIcon'  => [
                     'icon'    => 'fal fa-users',
                     'tooltip' => __('clients'),

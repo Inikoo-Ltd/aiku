@@ -72,6 +72,14 @@ class ShowCustomerClient extends OrgAction
 
         return $this->handle($customerClient);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    {
+        $this->parent = $modelHasPlatform;
+        $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
+
+        return $this->handle($customerClient);
+    }
 
     public function htmlResponse(CustomerClient $customerClient, ActionRequest $request): Response
     {

@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
@@ -39,6 +40,7 @@ class IndexCustomerClients extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerPlatformSubNavigation;
+    use WithCustomerPlatformSubNavigation;
 
     private Customer|FulfilmentCustomer|ModelHasPlatform $parent;
 
@@ -66,6 +68,14 @@ class IndexCustomerClients extends OrgAction
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($fulfilmentCustomer->customer);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $modelHasPlatform;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($customer);
     }
 
     public function handle(Customer|FulfilmentCustomer $parent, $prefix = null): LengthAwarePaginator
@@ -176,9 +186,12 @@ class IndexCustomerClients extends OrgAction
         if ($this->parent instanceof FulfilmentCustomer) {
             $scope = $this->parent->customer;
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($scope->fulfilmentCustomer, $request);
-        } elseif ($this->parent instanceof ModelHasPlatform) {
+        } elseif ($this->parent instanceof ModelHasPlatform && $this->shop->type == ShopTypeEnum::FULFILMENT) {
             $scope = $this->parent->model;
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
+        } elseif ($this->parent instanceof ModelHasPlatform && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $scope = $this->parent->model;
+            $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->model, $request);
         } else {
             $scope = $this->parent;
             $subNavigation = $this->getCustomerDropshippingSubNavigation($scope, $request);
@@ -290,6 +303,21 @@ class IndexCustomerClients extends OrgAction
                     [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
                         'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'modelHasPlatform'])
+                    ]
+                )
+            ),
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show' =>
+            array_merge(
+                ShowCustomerPlatform::make()->getBreadcrumbs(
+                    $modelHasPlatform,
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'modelHasPlatform'])
                     ]
                 )
             ),
