@@ -88,8 +88,8 @@ const changePaddingToSameValue = (newVal: number) => {
                         leave-to-class="translate-y-1 opacity-0"
                     >
                         <PopoverPanel v-slot="{ close }" class="bg-white shadow mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
-                            <div @click="() => {set(model, 'unit','px'), close()}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px</div>
-                            <div @click="() => {set(model, 'unit','%'), close()}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
+                            <div @click="() => {set(model, 'unit','px'), close(), emits('update:modelValue', model)}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px</div>
+                            <div @click="() => {set(model, 'unit','%'), close(), emits('update:modelValue', model)}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
                         </PopoverPanel>
                     </transition>
                 </Popover>
@@ -132,14 +132,14 @@ const changePaddingToSameValue = (newVal: number) => {
                             <div class="grid grid-cols-5 items-center">
                                 <FontAwesomeIcon icon='fad fa-border-top' v-tooltip="scope + ' ' + trans('top')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
-                                    <PureInputNumber :modelValue="get(model, 'top.value', 0)" @update:modelValue="(e) => (set(model, 'top.value', e))" class="" :suffix="model?.unit" />
+                                    <PureInputNumber :modelValue="get(model, 'top.value', 0)" @update:modelValue="(e) => (set(model, 'top.value', e), emits('update:modelValue', model))" class="" :suffix="model?.unit" />
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-5 items-center">
                                 <FontAwesomeIcon icon='fad fa-border-bottom' v-tooltip="scope + ' ' + trans('bottom')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
-                                    <PureInputNumber :modelValue="get(model, 'bottom.value', 0)" @update:modelValue="(e) => (set(model, 'bottom.value', e))" class="" :suffix="model?.unit" />
+                                    <PureInputNumber :modelValue="get(model, 'bottom.value', 0)" @update:modelValue="(e) => (set(model, 'bottom.value', e), emits('update:modelValue', model))" class="" :suffix="model?.unit" />
                                 </div>
                             </div>
                             
@@ -147,7 +147,7 @@ const changePaddingToSameValue = (newVal: number) => {
                                 <FontAwesomeIcon icon='fad fa-border-left' v-tooltip="scope + ' ' + trans('left')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
-                                        :modelValue="get(model, 'left.value', 0)" @update:modelValue="(e) => (set(model, 'left.value', e))"
+                                        :modelValue="get(model, 'left.value', 0)" @update:modelValue="(e) => (set(model, 'left.value', e),emits('update:modelValue', model))"
                                         class=""
                                         :suffix="model?.unit"
                                         :disabled="additionalData?.left?.disabled"
@@ -160,7 +160,7 @@ const changePaddingToSameValue = (newVal: number) => {
                                 <FontAwesomeIcon icon='fad fa-border-right' v-tooltip="scope + ' ' + trans('right')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
-                                        :modelValue="get(model, 'right.value', 0)" @update:modelValue="(e) => (set(model, 'right.value', e))"
+                                        :modelValue="get(model, 'right.value', 0)" @update:modelValue="(e) => (set(model, 'right.value', e),emits('update:modelValue', model))"
                                         class=""
                                         :suffix="model?.unit"
                                         :disabled="additionalData?.right?.disabled"

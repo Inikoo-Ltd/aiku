@@ -13,6 +13,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -22,7 +23,8 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<div class="relative" :style="getStyles(modelValue.container.properties)">
+		{{ getStyles(modelValue?.container?.properties,screenType) }}
+	<div class="relative" :style="getStyles(modelValue.container.properties,screenType)">
 		<div
 			@click="
 				() =>
