@@ -1,7 +1,7 @@
 {
-	"slug": "family",
+	"slug": "family-1",
 	"scope": "webpage",
-	"code": "family",
+	"code": "family-1",
 	"name": "Family",
 	"fixed": true,
 	"icon": ["fal", "folder"],
