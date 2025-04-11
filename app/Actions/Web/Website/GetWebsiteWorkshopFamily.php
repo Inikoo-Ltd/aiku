@@ -21,18 +21,20 @@ class GetWebsiteWorkshopFamily
 
     public function handle(Website $website, ProductCategory $category): array
     {
-        $webBlockType = WebBlockType::where('category', 'family')->first();
+        $webBlockTypes = WebBlockType::where('category', 'family')->get();
 
-        $data = $webBlockType->data ?? [];
-        $fieldValue = $data['fieldValue'] ?? [];
+        $webBlockTypes->each(function ($blockType) use ($category) {
+            $data = $blockType->data ?? [];
+            $fieldValue = $data['fieldValue'] ?? [];
 
-        $fieldValue['product'] = $category->getProducts()->first();
-        $data['fieldValue'] = $fieldValue;
-        $webBlockType->data = $data;
+            $fieldValue['product'] = $category->getProducts()->first();
+            $data['fieldValue'] = $fieldValue;
+            $blockType->data = $data;
+        });
 
         return [
             'category' => FamilyWebsiteResource::make($category),
-            'web_block_type' => WebBlockTypesResource::make($webBlockType)
+            'web_block_type' => WebBlockTypesResource::collection($webBlockTypes)
         ];
     }
 }
