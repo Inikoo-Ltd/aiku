@@ -1,18 +1,20 @@
 <?php
-
 /*
  * author Arya Permana - Kirin
- * created on 03-04-2025-13h-54m
+ * created on 11-04-2025-14h-33m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
 
-namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
+namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\Fulfilment;
@@ -29,26 +31,26 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
+class IndexCustomerPlatformCustomerClients extends OrgAction
 {
     private ShopifyUser|TiktokUser $parent;
     private ModelHasPlatform $modelHasPlatform;
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
         $this->modelHasPlatform = $modelHasPlatform;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromShop($shop, $request);
 
         $this->parent = match ($modelHasPlatform->platform->type) {
-            PlatformTypeEnum::TIKTOK => $fulfilmentCustomer->customer->tiktokUser,
-            PlatformTypeEnum::SHOPIFY => $fulfilmentCustomer->customer->shopifyUser,
+            PlatformTypeEnum::TIKTOK => $customer->tiktokUser,
+            PlatformTypeEnum::SHOPIFY => $customer->shopifyUser,
             PlatformTypeEnum::WOOCOMMERCE => throw new \Exception('To be implemented')
         };
 
-        return $this->handle($fulfilmentCustomer);
+        return $this->handle($customer);
     }
 
-    public function handle(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -63,7 +65,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(PlatformHasClient::class);
-        $queryBuilder->where('platform_has_clients.customer_id', $fulfilmentCustomer->customer->id);
+        $queryBuilder->where('platform_has_clients.customer_id', $customer->id);
         $queryBuilder->where('platform_has_clients.userable_type', $this->parent->getMorphClass());
         $queryBuilder->where('platform_has_clients.userable_id', $this->parent->id);
 
@@ -204,13 +206,13 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->modelHasPlatform, $routeParameters),
+                ShowCustomerPlatform::make()->getBreadcrumbs($this->modelHasPlatform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),
