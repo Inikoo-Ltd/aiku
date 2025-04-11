@@ -23,7 +23,6 @@ const emits = defineEmits<{
 </script>
 
 <template>
-		{{ getStyles(modelValue?.container?.properties,screenType) }}
 	<div class="relative" :style="getStyles(modelValue.container.properties,screenType)">
 		<div
 			@click="

@@ -70,9 +70,9 @@ onBeforeUnmount(() => {
   </Head>
 
 
-  <div class="text-center text-sm text-gray-600 my-4">
+ <!--  <div class="text-center text-sm text-gray-600 my-4">
   Current screen type: <strong>{{ screenType }}</strong>
-</div>
+</div> -->
 
 
   <div class="bg-white">

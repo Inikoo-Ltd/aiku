@@ -105,7 +105,7 @@ const onPropertyUpdate = (newVal: any) => {
     </div>
   </div>
 
-  <pre>{{get(modelValue, props.blueprint.key)}}</pre>
+  <!-- <pre>{{get(modelValue, props.blueprint.key)}}</pre> -->
   <component
     :is="getComponent(blueprint.type)"
     :uploadRoutes="uploadImageRoute"

@@ -27,7 +27,6 @@ const props = defineProps<{
 
 <template>
 	<!-- {{ fieldValue?.container?.properties }} -->
-	{{ getStyles(fieldValue?.container?.properties,screenType) }}
 	<div class="relative" :style="getStyles(fieldValue?.container?.properties,screenType)">
 		<div class="relative h-80 overflow-hidden md:absolute md:left-0 md:h-full md:w-1/3 lg:w-1/2">
 			<template v-if="fieldValue?.image?.source">
