@@ -30,6 +30,7 @@ export interface InvoiceResource {
     slug: string
     tax_liability_at: string
     total_amount: string
+    in_process : boolean
     type: {
         icon: Icon
         label: string

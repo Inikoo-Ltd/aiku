@@ -9,8 +9,8 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
-use App\Actions\Accounting\StandaloneFulfilmentInvoice\CalculateStandaloneFulfilmentInvoiceTotals;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Models\Accounting\InvoiceTransaction;
@@ -34,7 +34,7 @@ class UpdateStandaloneFulfilmentInvoiceTransaction extends OrgAction
 
         $invoiceTransaction = CalculateStandaloneFulfilmentInvoiceTransactionAmounts::run($invoiceTransaction);
 
-        CalculateStandaloneFulfilmentInvoiceTotals::run($invoiceTransaction->invoice);
+        CalculateInvoiceTotals::run($invoiceTransaction->invoice);
 
         return $invoiceTransaction;
     }

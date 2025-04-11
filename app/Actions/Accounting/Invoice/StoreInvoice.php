@@ -46,6 +46,7 @@ class StoreInvoice extends OrgAction
     use WithFixedAddressActions;
     use WithOrderExchanges;
     use WithNoStrictRules;
+    use WithRunInvoiceHydrators;
 
 
     private Order|Customer|RecurringBill $parent;

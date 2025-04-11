@@ -16,84 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $stock_family_id
- * @property string $revenue_grp_currency_all
- * @property string $revenue_grp_currency_1y
- * @property string $revenue_grp_currency_1q
- * @property string $revenue_grp_currency_1m
- * @property string $revenue_grp_currency_1w
- * @property string $revenue_grp_currency_3d
  * @property string $revenue_grp_currency_1d
- * @property string $revenue_grp_currency_ytd
- * @property string $revenue_grp_currency_qtd
- * @property string $revenue_grp_currency_mtd
- * @property string $revenue_grp_currency_wtd
- * @property string $revenue_grp_currency_tdy
- * @property string $revenue_grp_currency_lm
- * @property string $revenue_grp_currency_lw
- * @property string $revenue_grp_currency_ld
- * @property string $revenue_grp_currency_1y_ly
- * @property string $revenue_grp_currency_1q_ly
- * @property string $revenue_grp_currency_1m_ly
- * @property string $revenue_grp_currency_1w_ly
- * @property string $revenue_grp_currency_3d_ly
  * @property string $revenue_grp_currency_1d_ly
- * @property string $revenue_grp_currency_ytd_ly
- * @property string $revenue_grp_currency_qtd_ly
- * @property string $revenue_grp_currency_mtd_ly
- * @property string $revenue_grp_currency_wtd_ly
- * @property string $revenue_grp_currency_tdy_ly
- * @property string $revenue_grp_currency_lm_ly
- * @property string $revenue_grp_currency_lw_ly
- * @property string $revenue_grp_currency_ld_ly
- * @property string $revenue_grp_currency_py1
- * @property string $revenue_grp_currency_py2
- * @property string $revenue_grp_currency_py3
- * @property string $revenue_grp_currency_py4
- * @property string $revenue_grp_currency_py5
- * @property string $revenue_grp_currency_pq1
- * @property string $revenue_grp_currency_pq2
- * @property string $revenue_grp_currency_pq3
- * @property string $revenue_grp_currency_pq4
- * @property string $revenue_grp_currency_pq5
- * @property string $profit_grp_currency_all
- * @property string $profit_grp_currency_1y
- * @property string $profit_grp_currency_1q
- * @property string $profit_grp_currency_1m
- * @property string $profit_grp_currency_1w
- * @property string $profit_grp_currency_3d
  * @property string $profit_grp_currency_1d
- * @property string $profit_grp_currency_ytd
- * @property string $profit_grp_currency_qtd
- * @property string $profit_grp_currency_mtd
- * @property string $profit_grp_currency_wtd
- * @property string $profit_grp_currency_tdy
- * @property string $profit_grp_currency_lm
- * @property string $profit_grp_currency_lw
- * @property string $profit_grp_currency_ld
- * @property string $profit_grp_currency_1y_ly
- * @property string $profit_grp_currency_1q_ly
- * @property string $profit_grp_currency_1m_ly
- * @property string $profit_grp_currency_1w_ly
- * @property string $profit_grp_currency_3d_ly
  * @property string $profit_grp_currency_1d_ly
- * @property string $profit_grp_currency_ytd_ly
- * @property string $profit_grp_currency_qtd_ly
- * @property string $profit_grp_currency_mtd_ly
- * @property string $profit_grp_currency_wtd_ly
- * @property string $profit_grp_currency_tdy_ly
- * @property string $profit_grp_currency_lm_ly
- * @property string $profit_grp_currency_lw_ly
- * @property string $profit_grp_currency_ld_ly
- * @property string $profit_grp_currency_py1
- * @property string $profit_grp_currency_py2
- * @property string $profit_grp_currency_py3
- * @property string $profit_grp_currency_py4
- * @property string $profit_grp_currency_py5
- * @property string $profit_grp_currency_pq1
- * @property string $profit_grp_currency_pq2
- * @property string $profit_grp_currency_pq3
- * @property string $profit_grp_currency_pq4
- * @property string $profit_grp_currency_pq5
  * @property int $dispatched_all
  * @property int $dispatched_1y
  * @property int $dispatched_1q

@@ -34,6 +34,7 @@ const removeImage = (index: number) => {
     newValue.splice(index, 1);
     modelValue.value = newValue;
 };
+
 </script>
 
 <template>

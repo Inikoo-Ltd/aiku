@@ -11,9 +11,9 @@
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
-use App\Actions\Accounting\Invoice\DestroyRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
+use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
@@ -323,6 +323,7 @@ test('UI create payment', function () {
 });
 
 test('UI show payment', function (Payment $payment) {
+    $this->withoutExceptionHandling();
     $response                  = get(
         route(
             'grp.org.accounting.payments.show',
@@ -1209,7 +1210,6 @@ test('UI show list invoices in customer', function () {
             ->component('Org/Accounting/Invoices')
             ->has('title')
             ->has('breadcrumbs')
-            ->has('pageHead')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
@@ -1217,7 +1217,8 @@ test('UI show list invoices in customer', function () {
                     ->has('subNavigation')
                     ->etc()
             )
-            ->has('data');
+            ->has('tabs')
+            ->has('invoices');
     });
 });
 
@@ -1245,7 +1246,8 @@ test('UI show list invoices in customer client', function () {
                     ->has('subNavigation')
                     ->etc()
             )
-            ->has('data');
+            ->has('tabs')
+            ->has('invoices');
     });
 });
 
@@ -1299,7 +1301,6 @@ test('UI show invoice in Organisation', function () {
                         'information',
                         fn (AssertableInertia $page) => $page
                             ->has('recurring_bill')
-                            ->has('routes')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1358,7 +1359,6 @@ test('UI show invoice in Shop', function () {
                         'information',
                         fn (AssertableInertia $page) => $page
                             ->has('recurring_bill')
-                            ->has('routes')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1485,8 +1485,8 @@ test('Store invoice refund transaction', function (Invoice $refund) {
 
     $transaction = $originalInvoice->invoiceTransactions()->first();
 
-    $refundTransaction = StoreRefundInvoiceTransaction::make()->action($transaction, [
-        'gross_amount' => $transaction->gross_amount,
+    $refundTransaction = StoreRefundInvoiceTransaction::make()->action($refund, $transaction, [
+        'net_amount' => $transaction->net_amount,
     ]);
 
     $refund->refresh();
@@ -1500,7 +1500,7 @@ test('Delete Refund', function (Invoice $refund) {
     $customer = $refund->customer;
     expect($customer->stats->number_invoices_type_refund)->toBe(1);
 
-    DestroyRefund::make()->action($refund, []);
+    ForceDeleteRefund::make()->handle($refund);
     $customer->refresh();
     expect($customer->stats->number_invoices_type_refund)->toBe(0);
 })->depends('Store invoice refund');

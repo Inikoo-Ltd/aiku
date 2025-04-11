@@ -80,6 +80,7 @@ use Spatie\Tags\HasTags;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $historic_source_id
+ * @property bool $is_for_sale For sale products including out of stock
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BackInStockReminder> $backInStockReminders

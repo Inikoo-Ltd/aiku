@@ -87,19 +87,20 @@ class ShowPayment extends OrgAction
 
     public function htmlResponse(Payment $payment, ActionRequest $request): Response
     {
+        $title = (string) ($payment->reference ?? $payment->id);
         return Inertia::render(
             'Org/Accounting/Payment',
             [
-                'title'                                 => $payment->reference,
+                'title'                                 => $title,
                 'breadcrumbs'                           => $this->getBreadcrumbs($payment, $request->route()->getName(), $request->route()->originalParameters()),
                 'navigation'                            => [
                     'previous' => $this->getPrevious($payment, $request),
-                   'next'     => $this->getNext($payment, $request),
+                    'next'     => $this->getNext($payment, $request),
                 ],
                 'pageHead'    => [
                     'model'     => __('payment'),
                     'icon'      => 'fal fa-coins',
-                    'title'     => $payment->reference,
+                    'title'     => $title,
                     'edit'      => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -112,6 +113,11 @@ class ShowPayment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => PaymentTabsEnum::navigation()
                 ],
+
+                PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
+                    fn () => GetPaymentShowcase::run($payment)
+                    : Inertia::lazy(fn () => GetPaymentShowcase::run($payment)),
+
             ]
         );
     }
@@ -173,7 +179,7 @@ class ShowPayment extends OrgAction
 
     public function getPrevious(Payment $payment, ActionRequest $request): ?array
     {
-        $previous = Payment::where('reference', '<', $payment->reference)->when(true, function ($query) use ($payment, $request) {
+        $previous = Payment::where('id', '<', $payment->id)->when(true, function ($query) use ($payment, $request) {
             switch ($request->route()->getName()) {
                 case 'grp.org.accounting.payment-accounts.show.payments.show':
                     $query->where('payments.payment_account_id', $payment->payment_account_id);
@@ -184,7 +190,7 @@ class ShowPayment extends OrgAction
                     break;
 
             }
-        })->orderBy('reference', 'desc')->first();
+        })->orderBy('id', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
 
@@ -192,7 +198,7 @@ class ShowPayment extends OrgAction
 
     public function getNext(Payment $payment, ActionRequest $request): ?array
     {
-        $next = Payment::where('reference', '>', $payment->reference)->when(true, function ($query) use ($payment, $request) {
+        $next = Payment::where('id', '>', $payment->id)->when(true, function ($query) use ($payment, $request) {
             switch ($request->route()->getName()) {
                 case 'grp.org.accounting.payment-accounts.show.payments.show':
                     $query->where('payments.payment_account_id', $payment->paymentAccount->id);
@@ -203,7 +209,7 @@ class ShowPayment extends OrgAction
                     break;
 
             }
-        })->orderBy('reference')->first();
+        })->orderBy('id')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }

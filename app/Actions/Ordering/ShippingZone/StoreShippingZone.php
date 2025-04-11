@@ -38,7 +38,7 @@ class StoreShippingZone extends OrgAction
 
         return DB::transaction(function () use ($shippingZoneSchema, $modelData) {
             /** @var $shippingZone ShippingZone */
-            $shippingZone = $shippingZoneSchema->shippingZone()->create($modelData);
+            $shippingZone = $shippingZoneSchema->shippingZones()->create($modelData);
             $shippingZone->stats()->create();
             $shippingZone->refresh();
 

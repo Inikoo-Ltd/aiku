@@ -93,8 +93,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $footer
  * @property int|null $invoice_category_id
  * @property bool $is_vip Indicate if invoice is for a VIP customer
- * @property int|null $as_organisation_id Indicate if invoice is for a organisation in this group
- * @property int|null $as_employee_id Indicate if invoice is for a employee
+ * @property int|null $as_organisation_id Indicate if invoice is for an organisation in this group
+ * @property int|null $as_employee_id Indicate if invoice is for an employee
  * @property string|null $deleted_note
  * @property int|null $deleted_by
  * @property bool $deleted_from_deleted_invoice_fetch This is used to prevent the invoice from being fetched and updated again in FetchAuroraDeletedInvoices
@@ -255,6 +255,12 @@ class Invoice extends Model implements Auditable
         return $this->belongsTo(SalesChannel::class);
     }
 
+    /**
+     * Get the original invoice that this invoice is related to (for refunds).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @noinspection PhpUnused
+     */
     public function originalInvoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');

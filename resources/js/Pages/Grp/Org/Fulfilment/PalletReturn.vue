@@ -5,50 +5,46 @@
   -->
 
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { capitalize } from "@/Composables/capitalize"
-import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, watch } from 'vue'
-import type { Component } from 'vue'
-import { useTabChange } from "@/Composables/tab-change"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import Timeline from "@/Components/Utils/Timeline.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import TablePalletReturn from "@/Components/PalletReturn/tablePalletReturn.vue"
-import TablePalletReturnPallets from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletReturnPallets.vue"
-import { routeType } from '@/types/route'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import palletReturnDescriptor from "@/Components/PalletReturn/Descriptor/PalletReturn"
-import Tag from "@/Components/Tag.vue"
-import { BoxStats, PDRNotes, PalletReturn, UploadPallet } from '@/types/Pallet'
-import BoxStatsPalletReturn from '@/Pages/Grp/Org/Fulfilment/Return/BoxStatsPalletReturn.vue'
-import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import { trans } from "laravel-vue-i18n"
-import TableStoredItemReturnStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemReturnStoredItems.vue"
-import { get } from "lodash"
-import PureInput from "@/Components/Pure/PureInput.vue"
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import Popover from "@/Components/Popover.vue"
-import { Tabs as TSTabs } from "@/types/Tabs"
-import { Action } from "@/types/Action"
-import axios from "axios"
+import { Head, useForm } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { capitalize } from "@/Composables/capitalize";
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import type { Component } from "vue";
+import { computed, inject, ref, watch } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import Timeline from "@/Components/Utils/Timeline.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import BoxNote from "@/Components/Pallet/BoxNote.vue";
+import TablePalletReturnPallets from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletReturnPallets.vue";
+import { routeType } from "@/types/route";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { BoxStats, PalletReturn, PDRNotes, UploadPallet } from "@/types/Pallet";
+import BoxStatsPalletReturn from "@/Pages/Grp/Org/Fulfilment/Return/BoxStatsPalletReturn.vue";
+import UploadExcel from "@/Components/Upload/UploadExcel.vue";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+import { trans } from "laravel-vue-i18n";
+import TableStoredItemReturnStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemReturnStoredItems.vue";
+import { get } from "lodash";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import Popover from "@/Components/Popover.vue";
+import { Tabs as TSTabs } from "@/types/Tabs";
+import { Action } from "@/types/Action";
+import axios from "axios";
 import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue";
-import { notify } from "@kyvg/vue3-notification"
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import { notify } from "@kyvg/vue3-notification";
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue";
-import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
-import { Table as TableTS } from '@/types/Table'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faUser, faPaperclip, faBuilding, faEnvelope, faPhone, faMapMarkerAlt, faNarwhal, faUndo, faUndoAlt } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { inject } from "vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-library.add(faIdCardAlt, faUser, faPaperclip, faBuilding, faEnvelope, faPhone, faMapMarkerAlt, faNarwhal, faUndo, faUndoAlt )
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue";
+import { Table as TableTS } from "@/types/Table";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faBuilding, faEnvelope, faIdCardAlt, faMapMarkerAlt, faNarwhal, faPaperclip, faPhone, faUndo, faUndoAlt, faUser, faArrowAltRight, faArrowAltLeft } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { AddressManagement } from "@/types/PureComponent/Address";
+
+library.add(faIdCardAlt, faUser, faPaperclip, faBuilding, faEnvelope, faPhone, faMapMarkerAlt, faNarwhal, faUndo, faUndoAlt, faArrowAltRight, faArrowAltLeft)
 
 const props = defineProps<{
     title: string
@@ -76,13 +72,22 @@ const props = defineProps<{
         items_storage: boolean
         dropshipping: boolean
     }
-    
+
     upload_spreadsheet: UploadPallet
     can_edit_transactions: boolean,
     box_stats: BoxStats
     notes_data: PDRNotes[]
     route_check_stored_items : routeType
     routeStorePallet : routeType
+
+
+    address_management:{
+      can_open_address_management: boolean
+      updateRoute: routeType
+      addresses: AddressManagement
+      address_update_route: routeType,
+      address_modal_title: string
+    }
 
     option_attach_file?: {
 		name: string
@@ -93,7 +98,7 @@ const props = defineProps<{
 
 
 const locale = inject('locale', aikuLocaleStructure)
-const xstored_items_count = ref(props.stored_items_count || 0)
+const parsed_stored_items_count = ref(props.stored_items_count || 0)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -149,9 +154,7 @@ const onOpenModalAddService = async () => {
     isLoadingData.value = false
 }
 const onSubmitAddService = (data: Action, closedPopover: Function) => {
-    const selectedHistoricAssetId = dataServiceList.value.filter(service => service.id == formAddService.service_id)[0].historic_asset_id
-    
-    formAddService.historic_asset_id = selectedHistoricAssetId
+  formAddService.historic_asset_id = dataServiceList.value.filter(service => service.id == formAddService.service_id)[0].historic_asset_id
     isLoadingButton.value = 'addService'
 
     formAddService.post(
@@ -179,7 +182,7 @@ const onSubmitAddService = (data: Action, closedPopover: Function) => {
 
 // Tabs: Physical Goods
 const onOpenModalAddPGood = async () => {
-    isLoadingData.value = 'addPGood'
+    isLoadingData.value = 'addPhysicalGood'
     try {
         const xxx = await axios.get(
             route(props.physical_good_list_route.name, props.physical_good_list_route.parameters)
@@ -196,10 +199,9 @@ const onOpenModalAddPGood = async () => {
 }
 
 const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
-    const selectedHistoricAssetId = dataPGoodList.value.filter(pgood => pgood.id == formAddPhysicalGood.outer_id)[0].historic_asset_id
-    formAddPhysicalGood.historic_asset_id = selectedHistoricAssetId
+  formAddPhysicalGood.historic_asset_id = dataPGoodList.value.filter(physical_good => physical_good.id == formAddPhysicalGood.outer_id)[0].historic_asset_id
 
-    isLoadingButton.value = 'addPGood'
+    isLoadingButton.value = 'addPhysicalGood'
     formAddPhysicalGood.post(
         route( data.route?.name, data.route?.parameters ),
         {
@@ -425,7 +427,7 @@ const isModalUploadFileOpen = ref(false)
                             <div class="flex justify-end mt-3">
                                 <Button
                                     :style="'save'"
-                                    :loading="isLoadingButton == 'addPGood'"
+                                    :loading="isLoadingButton == 'addPhysicalGood'"
                                     :disabled="!formAddPhysicalGood.outer_id || !(formAddPhysicalGood.quantity > 0)"
                                     :label="'save'"
                                     full
@@ -433,8 +435,8 @@ const isModalUploadFileOpen = ref(false)
                                 />
                             </div>
 
-                            <!-- Loading: fetching pgood list -->
-                            <div v-if="isLoadingData === 'addPGood'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                            <!-- Loading: fetching physical_good list -->
+                            <div v-if="isLoadingData === 'addPhysicalGood'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
                                 <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-5xl' fixed-width aria-hidden='true' />
                             </div>
                         </div>
@@ -447,13 +449,13 @@ const isModalUploadFileOpen = ref(false)
         <template #button-submit-stored-items="{ action }">
             <ButtonWithLink
                 :routeTarget="action.route"
-                :label="`${trans('Submit')} (${xstored_items_count})`"
+                :label="`${trans('Submit')} (${parsed_stored_items_count})`"
                 :icon="action.icon"
                 :iconRight="action.iconRight"
                 :style="action.style"
-                :tooltip="xstored_items_count ? '' : action.tooltip"
+                :tooltip="parsed_stored_items_count ? '' : action.tooltip"
                 :disabled="
-                    !xstored_items_count  // Need to improve
+                    action.disabled  // Need to improve
                 "   
             />
         </template>
@@ -480,7 +482,10 @@ const isModalUploadFileOpen = ref(false)
     </div>
 
     <!-- Section: Box Stats -->
-    <BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :updateRoute="updateRoute" />
+    <BoxStatsPalletReturn :dataPalletReturn="data.data"
+                          :boxStats="box_stats"
+                          :address_management
+    />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component 
@@ -493,7 +498,7 @@ const isModalUploadFileOpen = ref(false)
         :route_checkmark="currentTab == 'pallets' ? routeStorePallet : route_check_stored_items" 
         :palletReturn="data?.data"
         :detachRoute="attachmentRoutes?.detachRoute"
-        @isStoredItemAdded="(e: boolean) => (console.log(e), e ? xstored_items_count++ : xstored_items_count--)"
+        @isStoredItemAdded="(e: boolean) => (console.log(e), e ? parsed_stored_items_count++ : parsed_stored_items_count--)"
     >
         <template #button-empty-state-attachments="{ action }">
             <Button

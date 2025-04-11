@@ -21,12 +21,20 @@ class AssetHydrateSales implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Asset $asset): string
+    public function getJobUniqueId(Asset $asset, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $asset->id;
+        $uniqueId = $asset->id;
+        if ($intervals !== null) {
+            $uniqueId .= '-'.implode('-', $intervals);
+        }
+        if ($doPreviousPeriods !== null) {
+            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
+        }
+
+        return $uniqueId;
     }
 
-    public function handle(Asset $asset): void
+    public function handle(Asset $asset, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $stats = [];
 
@@ -34,21 +42,27 @@ class AssetHydrateSales implements ShouldBeUnique
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'sales_'
+            statField: 'sales_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = InvoiceTransaction::where('in_process', false)->where('asset_id', $asset->id)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'sales_grp_currency_'
+            statField: 'sales_grp_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $queryBase = InvoiceTransaction::where('in_process', false)->where('asset_id', $asset->id)->selectRaw('sum(org_net_amount) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'sales_org_currency_'
+            statField: 'sales_org_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 

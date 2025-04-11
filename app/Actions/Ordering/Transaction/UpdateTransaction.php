@@ -10,7 +10,9 @@ namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -23,69 +25,71 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateTransaction extends OrgAction
 {
     use WithActionUpdate;
+    use WithNoStrictRules;
 
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
-        if (Arr::exists($modelData, 'quantity_ordered')) {
-            if ($this->strict) {
-                $historicAsset = $transaction->historicAsset;
-                $net = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-                // todo deal with discounts
-                $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-
-                data_set($modelData, 'gross_amount', $gross);
-                data_set($modelData, 'net_amount', $net);
-
+        if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
+            if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
+                return DeleteTransaction::run($transaction);
             }
 
+            $historicAsset = $transaction->historicAsset;
+            $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            // here we are going to  deal with discounts 15/09/24
+            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+
+            data_set($modelData, 'gross_amount', $gross);
+            data_set($modelData, 'net_amount', $net);
         }
 
         $this->update($transaction, $modelData, ['data']);
 
         if ($this->strict) {
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
-            if (count($changes)) {
-                if (array_key_exists('net_amount', $changes) || array_key_exists('gross_amount', $changes)) {
-                    $transaction->order->refresh();
-                    CalculateOrderTotalAmounts::run($transaction->order);
-                }
+            if (count($changes) && (array_key_exists('net_amount', $changes) || array_key_exists('gross_amount', $changes))) {
+                $transaction->order->refresh();
+                CalculateOrderTotalAmounts::run($transaction->order);
             }
         }
+
         return $transaction;
     }
 
     public function rules(): array
     {
+        $qtyRule     = ['sometimes', 'numeric', 'min:0'];
+        $numericRule = ['sometimes', 'numeric'];
+
         $rules = [
-            'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
-            'quantity_bonus'      => ['sometimes', 'numeric', 'min:0'],
-            'quantity_dispatched' => ['sometimes', 'numeric', 'min:0'],
-            'quantity_fail'       => ['sometimes', 'numeric', 'min:0'],
+            'quantity_ordered'    => $qtyRule,
+            'quantity_bonus'      => $qtyRule,
+            'quantity_dispatched' => $qtyRule,
+            'quantity_fail'       => $qtyRule,
             'quantity_cancelled'  => ['sometimes', 'sometimes', 'numeric', 'min:0'],
-            'source_id'           => ['sometimes', 'string'],
             'state'               => ['sometimes', Rule::enum(TransactionStateEnum::class)],
             'status'              => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
             'fail_status'         => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
-            'gross_amount'        => ['sometimes', 'numeric'],
-            'net_amount'          => ['sometimes', 'numeric'],
-            'org_exchange'        => ['sometimes', 'numeric'],
-            'grp_exchange'        => ['sometimes', 'numeric'],
-            'org_net_amount'      => ['sometimes', 'numeric'],
-            'grp_net_amount'      => ['sometimes', 'numeric'],
+            'gross_amount'        => $numericRule,
+            'net_amount'          => $numericRule,
+            'org_exchange'        => $numericRule,
+            'grp_exchange'        => $numericRule,
+            'org_net_amount'      => $numericRule,
+            'grp_net_amount'      => $numericRule,
             'tax_category_id'     => ['sometimes', 'exists:tax_categories,id'],
             'date'                => ['sometimes', 'date'],
             'submitted_at'        => ['sometimes', 'date'],
         ];
 
         if (!$this->strict) {
+            $rules = $this->noStrictStoreRules($rules);
+
             $rules['model_type']        = ['sometimes', 'required', 'string'];
             $rules['model_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['asset_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['historic_asset_id'] = ['sometimes', 'nullable', 'integer'];
-
-            $rules['in_warehouse_at'] = ['sometimes', 'required', 'date'];
-            $rules['created_at']      = ['sometimes', 'required', 'date'];
-            $rules['last_fetched_at'] = ['sometimes', 'required', 'date'];
+            $rules['in_warehouse_at']   = ['sometimes', 'required', 'date'];
+            $rules                      = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

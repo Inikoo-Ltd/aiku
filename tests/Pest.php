@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -21,6 +22,8 @@ use App\Actions\SysAdmin\Group\StoreGroup;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -118,8 +121,8 @@ function createAdminGuest(Group $group): Guest
                         ]
                     )
                 );
-        } catch (Exception|Throwable $e) {
-            dd($e);
+        } catch (Exception|Throwable) {
+            //
         }
     }
 
@@ -221,13 +224,11 @@ function createCustomer(Shop $shop): Customer
 }
 
 
-
 /**
  * @throws \Throwable
  */
 function createStocks(Group $group): array
 {
-
     $numberStocks = $group->stocks()->count();
     if ($numberStocks < 3) {
         $stock = StoreStock::make()->action(
@@ -246,7 +247,6 @@ function createStocks(Group $group): array
             $group,
             array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])
         );
-
     } else {
         $stock  = $group->stocks()->first();
         $stock2 = $group->stocks()->skip(1)->first();
@@ -324,6 +324,13 @@ function createProduct(Shop $shop): array
         $product     = StoreProduct::make()->action(
             $family,
             $productData
+        );
+        $product     = UpdateProduct::make()->action(
+            $product,
+            [
+                'state'  => ProductStateEnum::ACTIVE,
+                'status' => ProductStatusEnum::FOR_SALE,
+            ]
         );
     }
 

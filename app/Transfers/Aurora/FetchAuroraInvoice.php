@@ -24,12 +24,12 @@ class FetchAuroraInvoice extends FetchAurora
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Invoice Store Key'});
 
         if ($shop->type != ShopTypeEnum::FULFILMENT) {
-            if (!$this->auroraModelData->{'Invoice Order Key'} and $this->auroraModelData->{'Invoice Total Amount'} == 0) {
-                print ">>>No Invoice Order Key and no total \n";
-
-                // just ignore it
-                return;
-            }
+            //            if (!$this->auroraModelData->{'Invoice Order Key'} && $this->auroraModelData->{'Invoice Total Amount'} == 0) {
+            //                print ">>>No Invoice Order Key and no total \n";
+            //
+            //                // just ignore it
+            //                return;
+            //            }
 
             //            if (!$this->auroraModelData->{'Invoice Order Key'}) {
             //                print "No Invoice Order Key\n";

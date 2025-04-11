@@ -59,4 +59,26 @@ trait HasDateIntervalsStats
 
         return $table;
     }
+
+    public function jsonDateIntervals(Blueprint $table, array $subjects = []): Blueprint
+    {
+        foreach ($subjects as $subject) {
+            $subject = $subject ? $subject.'_' : '';
+
+            foreach (DateIntervalEnum::values() as $col) {
+                $table->jsonb($subject.$col)->nullable();
+            }
+            foreach (DateIntervalEnum::lastYearValues() as $col) {
+                $table->jsonb($subject.$col.'_ly')->nullable();
+            }
+            foreach (PreviousYearsEnum::values() as $col) {
+                $table->jsonb($subject.$col)->nullable();
+            }
+            foreach (PreviousQuartersEnum::values() as $col) {
+                $table->jsonb($subject.$col)->nullable();
+            }
+        }
+
+        return $table;
+    }
 }

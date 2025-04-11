@@ -9,8 +9,8 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction;
 
-use App\Actions\Accounting\InvoiceTransaction\DeleteRefundInProcessInvoiceTransaction;
-use App\Actions\Accounting\StandaloneFulfilmentInvoice\CalculateStandaloneFulfilmentInvoiceTotals;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,9 +22,9 @@ class DeleteStandaloneFulfilmentInvoiceTransaction extends OrgAction
         $invoice = $invoiceTransaction->invoice;
 
 
-        DeleteRefundInProcessInvoiceTransaction::make()->action($invoiceTransaction);
+        DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
         $invoice->refresh();
-        CalculateStandaloneFulfilmentInvoiceTotals::run($invoice);
+        CalculateInvoiceTotals::run($invoice);
 
     }
 

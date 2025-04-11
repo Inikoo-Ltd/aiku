@@ -32,6 +32,11 @@ trait IsInvoiceUI
             //todo think about it
             return false;
         } elseif ($this->parent instanceof Fulfilment) {
+
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-fulfilment-shop.".$this->fulfilment->id
+            ]);
+
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->fulfilment->id}.view",
@@ -39,6 +44,10 @@ trait IsInvoiceUI
                 ]
             );
         } elseif ($this->parent instanceof FulfilmentCustomer) {
+            $this->isSupervisor = $request->user()->authTo([
+                "supervisor-fulfilment-shop.".$this->fulfilment->id
+            ]);
+
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->fulfilment->id}.view",
@@ -141,21 +150,6 @@ trait IsInvoiceUI
                 'recurring_bill' => [
                     'reference' => $invoice->reference,
                     'route'     => $this->getRecurringBillRoute($invoice)
-                ],
-                'routes'         => [
-                    'fetch_payment_accounts' => [
-                        'name'       => 'grp.json.shop.payment-accounts',
-                        'parameters' => [
-                            'shop' => $invoice->shop->slug
-                        ]
-                    ],
-                    'submit_payment'         => [
-                        'name'       => 'grp.models.invoice.payment.store',
-                        'parameters' => [
-                            'invoice'  => $invoice->id,
-                        ]
-                    ]
-
                 ],
                 'paid_amount'    => $invoice->payment_amount,
                 'pay_amount'     => round($invoice->total_amount - $invoice->payment_amount, 2)

@@ -39,5 +39,8 @@ return [
         'client_id' => env('TIKTOK_CLIENT_ID'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
         'scopes' => env('TIKTOK_SCOPES')
+    ],
+    'apple_pay' => [
+        'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
     ]
 ];

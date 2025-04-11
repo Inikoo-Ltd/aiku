@@ -17,6 +17,8 @@ import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { capitalize } from "@/Composables/capitalize"
+import PaymentShowcase from './PaymentShowcase.vue';
+import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
 
 library.add(faCoins);
 
@@ -24,21 +26,23 @@ const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChan
 
 const props = defineProps<{
     title: string,
-    pageHead: object,
+    pageHead: PageHeadingTS,
     tabs: {
         current: string;
-        navigation: object;
+        navigation: {};
     }
+    showcase?: {}
 }>()
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
 
     const components = {
         details: ModelDetails,
         history: ModelChangelog,
+        showcase: PaymentShowcase
     };
     return components[currentTab.value];
 
@@ -51,6 +55,6 @@ const component = computed(() => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
 </template>
 

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use Carbon\Carbon;
@@ -35,24 +36,39 @@ class SetInvoicePaymentState extends OrgAction
         $paymentAt             = null;
         $runningPaymentsAmount = 0;
 
+        if (!$invoice->invoice_id) {
+            $payments = $invoice->payments()
+                ->where('payments.status', PaymentStatusEnum::SUCCESS)
+                ->where('payments.type', '=', PaymentTypeEnum::PAYMENT)
+                ->get();
+        } else {
+            $payments = $invoice->payments()
+                ->where('payments.status', PaymentStatusEnum::SUCCESS)
+                ->where('payments.type', '=', PaymentTypeEnum::REFUND)
+                ->get();
+        }
+
         /** @var Payment $payment */
         foreach (
-            $invoice->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment
+            $payments as $payment
         ) {
             $runningPaymentsAmount += $payment->amount;
-            if ($payStatus == InvoicePayStatusEnum::UNPAID && $runningPaymentsAmount >= $invoice->total_amount) {
+            if ($payStatus == InvoicePayStatusEnum::UNPAID && abs($runningPaymentsAmount) >= abs($invoice->total_amount)) {
                 $payStatus = InvoicePayStatusEnum::PAID;
                 $paymentAt = $payment->date;
             }
         }
 
-        $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
-        if ($cutOffDate) {
-            $cutOffDate = Carbon::parse($cutOffDate);
-        }
 
-        if ($payStatus == InvoicePayStatusEnum::UNPAID && $cutOffDate && $invoice->created_at->lt($cutOffDate)) {
-            $payStatus = InvoicePayStatusEnum::UNKNOWN;
+        if (!$invoice->invoice_id) {
+            $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
+            if ($cutOffDate) {
+                $cutOffDate = Carbon::parse($cutOffDate);
+            }
+
+            if ($payStatus == InvoicePayStatusEnum::UNPAID && $cutOffDate && $invoice->created_at->lt($cutOffDate)) {
+                $payStatus = InvoicePayStatusEnum::UNKNOWN;
+            }
         }
 
         $invoice->update(
