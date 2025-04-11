@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Http\Resources\Catalogue\FamilyWebsiteResource;
+use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
@@ -27,7 +28,7 @@ class GetWebsiteWorkshopFamily
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['product'] = $category->getProducts()->first();
+            $fieldValue['product'] = ProductResource::make($category->getProducts()->first());
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
