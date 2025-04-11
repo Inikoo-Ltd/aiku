@@ -161,6 +161,7 @@ export default {
 			replaceForm: [
 				{
 					key: ["background"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label :"Background",
 					type: "background",
 					
@@ -181,6 +182,7 @@ export default {
 				},
 				{
 					key: ["border"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Border",
 					type: "border",
 					

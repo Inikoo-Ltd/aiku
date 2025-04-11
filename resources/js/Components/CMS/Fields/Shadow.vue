@@ -37,6 +37,6 @@ onMounted(() => {
 
 <template>
   <div class="pb-3">
-    <PaddingMarginProperty :modelValue="model" :scope="trans('Shadow')" />
+    <PaddingMarginProperty :modelValue="model" :scope="trans('Shadow')" @update:modelValue="(e)=>emit('update:modelValue',e)" />
   </div>
 </template>
