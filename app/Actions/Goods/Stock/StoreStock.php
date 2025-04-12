@@ -50,6 +50,7 @@ class StoreStock extends GrpAction
             $stock = $parent->stocks()->create($modelData);
             $stock->stats()->create();
             $stock->intervals()->create();
+            $stock->salesIntervals()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $stock->timeSeries()->create(['frequency' => $frequency]);
             }

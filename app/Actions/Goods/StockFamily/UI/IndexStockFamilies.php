@@ -27,17 +27,16 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStockFamilies extends GrpAction
-
 {
     use HasGoodsAuthorisation;
 
     private string $bucket;
-    private DateIntervalEnum $dateInterval= DateIntervalEnum::YEAR_TO_DAY;
+    private DateIntervalEnum $dateInterval = DateIntervalEnum::YEAR_TO_DAY;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
 
-        if($request->has('dateInterval')) {
+        if ($request->has('dateInterval')) {
             $this->dateInterval = DateIntervalEnum::from($request->get('dateInterval'));
         }
 

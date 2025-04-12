@@ -15,10 +15,24 @@ return new class () extends Migration {
     use HasDateIntervalsStats;
     public function up(): void
     {
-        Schema::create('stock_family_sales_intervals', function (Blueprint $table) {
+        Schema::create('stock_sales_intervals', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('stock_family_id')->index();
-            $table->foreign('stock_family_id')->references('id')->on('stock_families');
+            $table->unsignedInteger('stock_id')->index();
+            $table->foreign('stock_id')->references('id')->on('stocks');
+
+            $table = $this->decimalDateIntervals($table, [
+                "revenue_grp_currency",
+                "profit_grp_currency",
+            ]);
+            $this->jsonDateIntervals($table, [
+                "revenue_data",
+            ]);
+
+            $this->unsignedIntegerDateIntervals($table, [
+                "number_invoices",
+                "number_customers",
+            ]);
+
 
 
             $salesTypes = [
@@ -41,6 +55,7 @@ return new class () extends Migration {
 
 
 
+
             $table->timestampsTz();
         });
     }
@@ -48,6 +63,6 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('stock_family_sales_intervals');
+        Schema::dropIfExists('stock_sales_intervals');
     }
 };
