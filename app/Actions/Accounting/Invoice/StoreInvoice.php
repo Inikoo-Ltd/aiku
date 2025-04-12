@@ -8,24 +8,10 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
-use App\Actions\Comms\Email\SendInvoiceEmailToCustomer;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
@@ -91,26 +77,7 @@ class StoreInvoice extends OrgAction
         }
 
         if (!Arr::exists($modelData, 'tax_category_id')) {
-            if ($parent instanceof Order || $parent instanceof RecurringBill) {
-                $modelData['tax_category_id'] = $parent->tax_category_id;
-            } else {
-                /** @var Customer $customer */
-                $customer = Customer::find($modelData['customer_id']);
-
-                $billingAddress  = $customer->address;
-                $deliveryAddress = $customer->deliveryAddress;
-
-                data_set(
-                    $modelData,
-                    'tax_category_id',
-                    GetTaxCategory::run(
-                        country: $this->organisation->country,
-                        taxNumber: $customer->taxNumber,
-                        billingAddress: $billingAddress,
-                        deliveryAddress: $deliveryAddress
-                    )->id
-                );
-            }
+            $modelData = $this->processTaxCategory($modelData, $parent);
         }
 
 
@@ -155,35 +122,36 @@ class StoreInvoice extends OrgAction
             CustomerHydrateInvoices::dispatch($invoice->customer)->delay($this->hydratorsDelay);
         }
 
-        // todo: Upload Invoices to Google Drive #544
-        //UploadPdfInvoice::run($invoice);
 
-        ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
-
-
-        if ($invoice->invoiceCategory) {
-            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-        }
-
-        ShopHydrateSales::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        OrganisationHydrateSales::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        GroupHydrateSales::dispatch($invoice->group)->delay($this->hydratorsDelay);
-
-        ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
-
-        InvoiceRecordSearch::dispatch($invoice);
-
-        if ($this->strict) {
-            SendInvoiceEmailToCustomer::dispatch($invoice);
-        }
+        $this->runInvoiceHydrators($invoice);
 
         return $invoice;
+    }
+
+    public function processTaxCategory(array $modelData, Customer|Order|RecurringBill $parent): array
+    {
+        if ($parent instanceof Order || $parent instanceof RecurringBill) {
+            $modelData['tax_category_id'] = $parent->tax_category_id;
+        } else {
+            /** @var Customer $customer */
+            $customer = Customer::find($modelData['customer_id']);
+
+            $billingAddress  = $customer->address;
+            $deliveryAddress = $customer->deliveryAddress;
+
+            data_set(
+                $modelData,
+                'tax_category_id',
+                GetTaxCategory::run(
+                    country: $this->organisation->country,
+                    taxNumber: $customer->taxNumber,
+                    billingAddress: $billingAddress,
+                    deliveryAddress: $deliveryAddress
+                )->id
+            );
+        }
+
+        return $modelData;
     }
 
 
