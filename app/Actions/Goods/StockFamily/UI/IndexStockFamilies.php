@@ -27,13 +27,20 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStockFamilies extends GrpAction
+
 {
     use HasGoodsAuthorisation;
 
     private string $bucket;
+    private DateIntervalEnum $dateInterval= DateIntervalEnum::YEAR_TO_DAY;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
+
+        if($request->has('dateInterval')) {
+            $this->dateInterval = DateIntervalEnum::from($request->get('dateInterval'));
+        }
+
         $this->initialisation(group(), $request);
         $this->bucket = 'all';
 
@@ -139,10 +146,14 @@ class IndexStockFamilies extends GrpAction
                 'stock_families.id as id',
                 'name',
                 'number_current_stocks',
-                'stock_family_sales_intervals.*'
+                'stock_family_sales_intervals.*',
+                'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
 
             ])
-            ->allowedSorts(['code', 'name', 'number_current_stocks'])
+       ->selectRaw(
+           "'".$group->currency->code."' as grp_currency_code"
+       )
+            ->allowedSorts(['code', 'name', 'number_current_stocks','revenue_grp_currency'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -171,7 +182,7 @@ class IndexStockFamilies extends GrpAction
 
             $table
                 ->withGlobalSearch()
-                ->dateInterval(DateIntervalEnum::YEAR_TO_DAY)
+                ->dateInterval($this->dateInterval)
                 ->withEmptyState(
                     [
                         'title'       => __('no stock families'),
@@ -192,7 +203,7 @@ class IndexStockFamilies extends GrpAction
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
+                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true)
                 ->defaultSort('code');
         };
     }
