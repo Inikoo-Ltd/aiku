@@ -27,5 +27,15 @@ class StockHydrateSalesIntervals implements ShouldBeUnique
         );
     }
 
+    public function handle(Stock $stock, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): void
+    {
+        $this->handleStockable(
+            $stock,
+            $intervals,
+            $doPreviousPeriods,
+            $onlyProcessSalesType
+        );
+    }
+
 
 }

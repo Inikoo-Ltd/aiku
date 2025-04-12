@@ -40,7 +40,7 @@ trait WithHydrateStockSalesIntervals
     }
 
 
-    public function handle(Stock|StockFamily $stockable, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): void
+    public function handleStockable(Stock|StockFamily $stockable, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): void
     {
         $stats = [];
 

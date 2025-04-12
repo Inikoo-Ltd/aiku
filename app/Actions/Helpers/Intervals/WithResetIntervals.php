@@ -191,7 +191,7 @@ trait WithResetIntervals
                     StockFamilyStateEnum::ACTIVE,
                     StockFamilyStateEnum::DISCONTINUING
                 ]
-            ) as $stockFamily
+            )->get() as $stockFamily
         ) {
             StockFamilyHydrateSalesIntervals::dispatch(
                 stockFamily: $stockFamily,
@@ -207,7 +207,7 @@ trait WithResetIntervals
                     StockFamilyStateEnum::ACTIVE,
                     StockFamilyStateEnum::DISCONTINUING
                 ]
-            ) as $stockFamily
+            )->get() as $stockFamily
         ) {
             StockFamilyHydrateSalesIntervals::dispatch(
                 stockFamily: $stockFamily,
