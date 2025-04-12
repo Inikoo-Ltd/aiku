@@ -12,6 +12,8 @@ use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrder
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
+use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
+use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
@@ -19,6 +21,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Goods\Stock;
+use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -97,12 +101,36 @@ trait WithResetIntervals
         }
     }
 
+    protected function resetStocks(): void
+    {
+        foreach (Stock::all() as $stock) {
+            StockHydrateSalesIntervals::run(
+                stock: $stock,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+    }
+
+    protected function resetStockFamilies(): void
+    {
+        foreach (StockFamily::all() as $stockfamilu) {
+            StockFamilyHydrateSalesIntervals::run(
+                stockFamily: $stockfamilu,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+    }
+
     public function handle(): void
     {
         $this->resetGroups();
         $this->resetOrganisations();
         $this->resetShops();
         $this->resetInvoiceCategories();
+        $this->resetStocks();
+
     }
 
 
