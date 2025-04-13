@@ -42,7 +42,9 @@ const onClickCopyButton = async (text: string) => {
 
 const generatePassword = () => {
   let target = props.form;
-  const generatedPassword = Math.random().toString(36).slice(-8); 
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  const generatedPassword = array[0].toString(36).slice(-8);
   target[props.fieldName] = generatedPassword;
   emits("update:form", target);
   props.form.clearErrors()
