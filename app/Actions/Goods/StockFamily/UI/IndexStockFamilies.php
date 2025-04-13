@@ -10,7 +10,7 @@ namespace App\Actions\Goods\StockFamily\UI;
 
 use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Http\Resources\Goods\StockFamiliesResource;
@@ -26,21 +26,19 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexStockFamilies extends GrpAction
+class IndexStockFamilies extends OrgAction
 {
     use HasGoodsAuthorisation;
 
     private string $bucket;
-    private DateIntervalEnum $dateInterval = DateIntervalEnum::YEAR_TO_DAY;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-
         if ($request->has('dateInterval')) {
             $this->dateInterval = DateIntervalEnum::from($request->get('dateInterval'));
         }
 
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'all';
 
         return $this->handle($this->group);
@@ -48,7 +46,7 @@ class IndexStockFamilies extends GrpAction
 
     public function active(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'active';
 
         return $this->handle($this->group);
@@ -56,7 +54,7 @@ class IndexStockFamilies extends GrpAction
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'in_process';
 
         return $this->handle($this->group);
@@ -64,7 +62,7 @@ class IndexStockFamilies extends GrpAction
 
     public function discontinuing(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'discontinuing';
 
         return $this->handle($this->group);
@@ -72,7 +70,7 @@ class IndexStockFamilies extends GrpAction
 
     public function discontinued(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'discontinued';
 
         return $this->handle($this->group);
@@ -149,10 +147,10 @@ class IndexStockFamilies extends GrpAction
                 'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
 
             ])
-       ->selectRaw(
-           "'".$group->currency->code."' as grp_currency_code"
-       )
-            ->allowedSorts(['code', 'name', 'number_current_stocks','revenue_grp_currency'])
+            ->selectRaw(
+                "'".$group->currency->code."' as grp_currency_code"
+            )
+            ->allowedSorts(['code', 'name', 'number_current_stocks', 'revenue_grp_currency'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

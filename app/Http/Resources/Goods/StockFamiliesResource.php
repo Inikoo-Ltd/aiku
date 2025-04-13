@@ -17,8 +17,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property string $description
  * @property string $number_current_stocks
- * @property mixed $created_at
- * @property mixed $updated_at
  * @property mixed $revenue_grp_currency_all
  * @property mixed $revenue_grp_currency_1y
  * @property mixed $revenue_grp_currency_1q
