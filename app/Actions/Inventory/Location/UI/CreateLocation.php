@@ -38,11 +38,11 @@ class CreateLocation extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new location'),
+                'title'       => __('New location'),
                 'pageHead'    => [
-                    'title'   => __('new location'),
+                    'title'   => __('New location'),
                     'icon'    => 'fal fa-warehouse',
-                    'model'   => __('warehouse'),
+
                     'actions' => [
                         [
                             'type'  => 'button',

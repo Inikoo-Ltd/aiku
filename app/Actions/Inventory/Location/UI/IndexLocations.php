@@ -218,11 +218,14 @@ class IndexLocations extends OrgAction
             'value' => $col
         ])->toArray();
 
+        $label = Str::possessive($scope->code ?? '');
+
+
         if (class_basename($scope) == 'Warehouse') {
             $container = [
                 'icon'    => ['fal', 'fa-warehouse'],
                 'tooltip' => __('Warehouse'),
-                'label'   => Str::possessive($scope->code)
+                'label'   => $label
             ];
             $export    = [
                 'route'   => [
@@ -239,7 +242,7 @@ class IndexLocations extends OrgAction
             $container = [
                 'icon'    => ['fal', 'fa-map-signs'],
                 'tooltip' => __('Warehouse Area'),
-                'label'   => Str::possessive($scope->code)
+                'label'   => $label
             ];
         }
 
