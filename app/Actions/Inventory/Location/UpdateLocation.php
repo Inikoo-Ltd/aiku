@@ -14,6 +14,7 @@ use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\LocationResource;
@@ -25,6 +26,7 @@ class UpdateLocation extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithWarehouseEditAuthorisation;
 
     private Location $location;
 
@@ -44,15 +46,6 @@ class UpdateLocation extends OrgAction
         LocationRecordSearch::dispatch($location);
 
         return $location;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        return $request->user()->authTo("locations.{$this->warehouse->id}.edit");
-
     }
 
     public function rules(): array
