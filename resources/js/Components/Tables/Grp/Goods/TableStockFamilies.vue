@@ -11,14 +11,13 @@ import { StockFamily } from "@/types/stock-family";
 import { computed, inject } from 'vue';
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
-const props = defineProps<{
+defineProps<{
     data: object,
     tab?: string
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
-// Extract the query string param `dateInterval`
-const page = usePage()
+
 const interval = computed(() => {
     const url = usePage().url;
     const params = new URLSearchParams(url.split('?')[1]);
@@ -27,17 +26,13 @@ const interval = computed(() => {
 
 
 function stockFamilyRoute(stockFamily: StockFamily) {
-    switch (route().current()) {
-        case 'grp.goods.stock-families.index':
             return route('grp.goods.stock-families.show', [
                 stockFamily.slug,
                 stockFamily.slug
             ])
-    }
+
 }
 
-console.log('Current route:', route().current())
-console.log('Date interval:', interval)
 </script>
 
 
@@ -58,7 +53,12 @@ console.log('Date interval:', interval)
             </Link>
         </template>
         <template #cell(revenue_grp_currency)="{ item: stockFamily }">
-            {{ locale.currencyFormat(stockFamily['grp_currency'], Number(stockFamily['revenue_grp_currency_' + interval])) }}
+            {{
+            locale.currencyFormat(
+              stockFamily["grp_currency"],
+              Number(stockFamily["revenue_grp_currency_" + interval])
+            )
+          }}
         </template>
     </Table>
 </template>
