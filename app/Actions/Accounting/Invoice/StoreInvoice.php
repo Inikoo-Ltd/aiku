@@ -8,6 +8,9 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
@@ -117,6 +120,13 @@ class StoreInvoice extends OrgAction
             return $invoice;
         });
 
+        if ($this->strict) {
+            CategoriseInvoice::run($invoice);
+        } elseif ($invoice->invoiceCategory) { // run hydrators if category from fetch
+            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+        }
 
         if ($invoice->customer_id) {
             CustomerHydrateInvoices::dispatch($invoice->customer)->delay($this->hydratorsDelay);
