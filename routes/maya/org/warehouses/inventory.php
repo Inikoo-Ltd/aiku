@@ -12,10 +12,10 @@ use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemPallets;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInWarehouse;
 use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
+use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPalletInWarehouse;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
-use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPallet;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
@@ -30,7 +30,7 @@ Route::prefix('locations')->as('locations.')->group(function () {
 Route::prefix('pallets')->as('pallets.')->group(function () {
     Route::get('/', IndexPalletsInWarehouse::class)->name('index');
     Route::get('{pallet:id}', ShowPallet::class)->name('show');
-    Route::get('{pallet:id}/stored-item-audits/create', [CreateStoredItemAuditFromPallet::class, 'inWarehouse'])->name('show.stored-item-audit.create')->withoutScopedBindings();
+    Route::get('{pallet:id}/stored-item-audits/create', CreateStoredItemAuditFromPalletInWarehouse::class)->name('show.stored-item-audit.create')->withoutScopedBindings();
     Route::get('{pallet:id}/stored-item-audit/{storedItemAudit:id}', [ShowStoredItemAuditForPallet::class, 'inWarehouse'])->name('show.stored-item-audit.show')->withoutScopedBindings();
 });
 

@@ -15,7 +15,7 @@ use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Fulfilment\StoredItem\UI\EditStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInWarehouse;
 use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
-use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPallet;
+use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPalletInWarehouse;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use App\Actions\Goods\Stock\UI\CreateStock;
 use App\Actions\Goods\Stock\UI\ShowStock;
@@ -135,7 +135,7 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
         Route::get('', IndexLostPallets::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');
     });
-    Route::get('{pallet}/stored-item-audits/create', [CreateStoredItemAuditFromPallet::class, 'inWarehouse'])->name('show.stored-item-audit.create');
+    Route::get('{pallet}/stored-item-audits/create', CreateStoredItemAuditFromPalletInWarehouse::class)->name('show.stored-item-audit.create');
     Route::get('{pallet}/stored-item-audit/{storedItemAudit}', [ShowStoredItemAuditForPallet::class, 'inWarehouse'])->name('show.stored-item-audit.show');
 });
 

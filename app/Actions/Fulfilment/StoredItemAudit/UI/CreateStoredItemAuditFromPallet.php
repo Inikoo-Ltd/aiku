@@ -11,7 +11,7 @@ namespace App\Actions\Fulfilment\StoredItemAudit\UI;
 
 use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAuditFromPallet;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateStoredItemAuditFromPallet extends OrgAction
 {
-    use WithFulfilmentWarehouseEditAuthorisation;
+    use WithFulfilmentShopEditAuthorisation;
 
     private Fulfilment|Warehouse $parent;
     private Pallet $pallet;
@@ -45,15 +45,6 @@ class CreateStoredItemAuditFromPallet extends OrgAction
 
     public function htmlResponse(StoredItemAudit $storedItemAudit, ActionRequest $request): RedirectResponse
     {
-        if ($this->parent instanceof Warehouse) {
-            return Redirect::route('grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.show', [
-                $storedItemAudit->organisation->slug,
-                $storedItemAudit->warehouse->slug,
-                $storedItemAudit->fulfilment->slug,
-                $storedItemAudit->slug
-            ]);
-        }
-
         return Redirect::route('grp.org.fulfilments.show.crm.customers.show.pallets.stored-item-audits.show', [
             $storedItemAudit->organisation->slug,
             $storedItemAudit->fulfilment->slug,
@@ -64,22 +55,11 @@ class CreateStoredItemAuditFromPallet extends OrgAction
     }
 
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPalletInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Pallet $pallet, ActionRequest $request): StoredItemAudit
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Pallet $pallet, ActionRequest $request): StoredItemAudit
     {
         $this->parent = $fulfilment;
         $this->pallet = $pallet;
         $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $this->handle($pallet, $this->validatedData);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, ActionRequest $request): StoredItemAudit
-    {
-        $this->parent = $warehouse;
-        $this->pallet = $pallet;
-        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($pallet, $this->validatedData);
     }
