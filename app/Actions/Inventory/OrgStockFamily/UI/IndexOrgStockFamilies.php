@@ -8,10 +8,10 @@
 
 namespace App\Actions\Inventory\OrgStockFamily\UI;
 
-use App\Actions\Inventory\HasInventoryAuthorisation;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Http\Resources\Inventory\OrgStockFamiliesResource;
 use App\InertiaTable\InertiaTable;
@@ -29,7 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgStockFamilies extends OrgAction
 {
-    use HasInventoryAuthorisation;
+    use WithInventoryAuthorisation;
 
     private string $bucket;
 

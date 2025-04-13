@@ -8,13 +8,13 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Actions\Inventory\HasInventoryAuthorisation;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\InertiaTable\InertiaTable;
@@ -36,7 +36,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgStocks extends OrgAction
 {
-    use HasInventoryAuthorisation;
+    use WithInventoryAuthorisation;
     use WithOrgPartnerSubNavigation;
     use WithOrgAgentSubNavigation;
 

@@ -46,49 +46,49 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::prefix('current')->as('current_org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'current'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
-            Route::get('', [ShowOrgStock::class, 'current'])->name('show');
+            Route::get('', ShowOrgStock::class)->name('show');
         });
     });
 
     Route::prefix('active')->as('active_org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'active'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
-            Route::get('', [ShowOrgStock::class, 'active'])->name('show');
+            Route::get('', ShowOrgStock::class)->name('show');
         });
     });
 
     Route::prefix('in-process')->as('in_process_org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'inProcess'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
-            Route::get('', [ShowOrgStock::class, 'inProcess'])->name('show');
+            Route::get('', ShowOrgStock::class)->name('show');
         });
     });
 
     Route::prefix('discontinuing')->as('discontinuing_org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'discontinuing'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
-            Route::get('', [ShowOrgStock::class, 'discontinuing'])->name('show');
+            Route::get('', ShowOrgStock::class)->name('show');
         });
     });
 
     Route::prefix('discontinued')->as('discontinued_org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'discontinued'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
-            Route::get('', [ShowOrgStock::class, 'discontinued'])->name('show');
+            Route::get('', ShowOrgStock::class)->name('show');
         });
     });
 
     Route::prefix('abnormality')->as('abnormality_org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'abnormality'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
-            Route::get('', [ShowOrgStock::class, 'abnormality'])->name('show');
+            Route::get('', ShowOrgStock::class)->name('show');
         });
     });
 });
 
 Route::prefix('families')->as('org_stock_families.')->group(function () {
     Route::get('', IndexOrgStockFamilies::class)->name('index');
-    Route::get('/active', [IndexOrgStockFamilies::class,  'active'])->name('active.index');
+    Route::get('/active', [IndexOrgStockFamilies::class, 'active'])->name('active.index');
     Route::get('/in-process', [IndexOrgStockFamilies::class, 'inProcess'])->name('in-process.index');
     Route::get('/discontinuing', [IndexOrgStockFamilies::class, 'discontinuing'])->name('discontinuing.index');
     Route::get('/discontinued', [IndexOrgStockFamilies::class, 'discontinued'])->name('discontinued.index');
@@ -115,7 +115,6 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
 
 
 Route::prefix('pallets')->as('pallets.')->group(function () {
-
     Route::prefix('current')->as('current.')->group(function () {
         Route::get('', IndexPalletsInWarehouse::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');

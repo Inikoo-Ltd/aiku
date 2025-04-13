@@ -14,7 +14,7 @@ use App\Actions\Fulfilment\PalletDelivery\UI\IndexServiceInPalletDelivery;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
@@ -53,54 +53,7 @@ class ShowWarehousePalletDelivery extends OrgAction
     {
         $subNavigation = [];
 
-
-        $numberPalletsStateBookingIn = $palletDelivery->pallets()->where('state', PalletStateEnum::BOOKING_IN)->count();
-        $numberPalletsRentalNotSet   = $palletDelivery->pallets()->whereNull('rental_id')->count();
-
-
-        $pdfButton    = [
-            'type'   => 'button',
-            'style'  => 'tertiary',
-            'label'  => 'PDF',
-            'target' => '_blank',
-            'icon'   => 'fal fa-file-pdf',
-            'key'    => 'action',
-            'route'  => [
-                'name'       => 'grp.models.pallet-delivery.pdf',
-                'parameters' => [
-                    'palletDelivery' => $palletDelivery->id
-                ]
-            ]
-        ];
-
-
-        $actions = match ($palletDelivery->state) {
-            PalletDeliveryStateEnum::BOOKING_IN => [
-                [
-                    'type'   => 'buttonGroup',
-                    'key'    => 'upload-add',
-                    'button' => []
-                ],
-                ($numberPalletsStateBookingIn == 0 and $numberPalletsRentalNotSet == 0) ? [
-                    'type'    => 'button',
-                    'style'   => 'primary',
-                    'icon'    => 'fal fa-check',
-                    'tooltip' => __('Confirm booking'),
-                    'label'   => __('Finish booking'),
-                    'key'     => 'action',
-                    'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.pallet-delivery.booked-in',
-                        'parameters' => [
-                            'palletDelivery' => $palletDelivery->id
-                        ]
-                    ]
-                ] : null,
-            ],
-            default => []
-        };
-        $actions = array_merge($actions, [$pdfButton]);
-
+        $actions = $this->getActions($palletDelivery);
 
         return Inertia::render(
             'Org/Fulfilment/PalletDelivery',
@@ -239,6 +192,57 @@ class ShowWarehousePalletDelivery extends OrgAction
         )->table(IndexAttachments::make()->tableStructure(PalletDeliveryTabsEnum::ATTACHMENTS->value));
     }
 
+    public function getActions(PalletDelivery $palletDelivery): array
+    {
+        $numberPalletsStateBookingIn = $palletDelivery->pallets()->where('state', PalletStateEnum::BOOKING_IN)->count();
+        $numberPalletsRentalNotSet   = $palletDelivery->pallets()->whereNull('rental_id')->count();
+
+        $pdfButton = [
+            'type'   => 'button',
+            'style'  => 'tertiary',
+            'label'  => 'PDF',
+            'target' => '_blank',
+            'icon'   => 'fal fa-file-pdf',
+            'key'    => 'action',
+            'route'  => [
+                'name'       => 'grp.models.pallet-delivery.pdf',
+                'parameters' => [
+                    'palletDelivery' => $palletDelivery->id
+                ]
+            ]
+        ];
+
+
+        $actions = match ($palletDelivery->state) {
+            PalletDeliveryStateEnum::BOOKING_IN => [
+                [
+                    'type'   => 'buttonGroup',
+                    'key'    => 'upload-add',
+                    'button' => []
+                ],
+                ($numberPalletsStateBookingIn == 0 && $numberPalletsRentalNotSet == 0) ? [
+                    'type'    => 'button',
+                    'style'   => 'primary',
+                    'icon'    => 'fal fa-check',
+                    'tooltip' => __('Confirm booking'),
+                    'label'   => __('Finish booking'),
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.pallet-delivery.booked-in',
+                        'parameters' => [
+                            'palletDelivery' => $palletDelivery->id
+                        ]
+                    ]
+                ] : null,
+            ],
+            default => []
+        };
+
+        return array_merge($actions, [$pdfButton]);
+    }
+
+
     public function jsonResponse(PalletDelivery $palletDelivery): PalletDeliveryResource
     {
         return new PalletDeliveryResource($palletDelivery);
@@ -270,8 +274,6 @@ class ShowWarehousePalletDelivery extends OrgAction
 
 
         return match ($routeName) {
-
-
             'grp.org.warehouses.show.incoming.pallet_deliveries.show' =>
             array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(
@@ -299,7 +301,6 @@ class ShowWarehousePalletDelivery extends OrgAction
 
     public function getPrevious(PalletDelivery $palletDelivery, ActionRequest $request): ?array
     {
-
         $previous = PalletDelivery::where('id', '<', $palletDelivery->id)->orderBy('id', 'desc')->first();
 
 
@@ -308,7 +309,6 @@ class ShowWarehousePalletDelivery extends OrgAction
 
     public function getNext(PalletDelivery $palletDelivery, ActionRequest $request): ?array
     {
-
         $next = PalletDelivery::where('id', '>', $palletDelivery->id)->orderBy('id')->first();
 
 

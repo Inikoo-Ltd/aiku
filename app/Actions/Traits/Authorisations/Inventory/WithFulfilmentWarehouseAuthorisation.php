@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Traits\Authorisations;
+namespace App\Actions\Traits\Authorisations\Inventory;
 
 use Lorisleiva\Actions\ActionRequest;
 
@@ -29,7 +29,8 @@ trait WithFulfilmentWarehouseAuthorisation
         return $request->user()->authTo([
             "fulfilment.{$this->warehouse->id}.view",
             "supervisor-incoming.".$this->warehouse->id,
-            "supervisor-fulfilment.".$this->warehouse->id
+            "supervisor-fulfilment.".$this->warehouse->id,
+            'warehouses-view.'.$this->organisation->id,
         ]);
     }
 }
