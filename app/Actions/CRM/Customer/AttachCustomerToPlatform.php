@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
@@ -22,6 +23,8 @@ class AttachCustomerToPlatform extends OrgAction
         $pivotData['shop_id']         = $customer->shop_id;
         $customer->platforms()->attach($platform->id, $pivotData);
 
+        PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
+
 
         return $customer;
     }
@@ -34,8 +37,9 @@ class AttachCustomerToPlatform extends OrgAction
     }
 
 
-    public function action(Customer $customer, Platform $platform, array $modelData): Customer
+    public function action(Customer $customer, Platform $platform, array $modelData, int $hydratorsDelay = 0): Customer
     {
+        $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($customer->organisation, $modelData);
 
         return $this->handle($customer, $platform, $this->validatedData);
