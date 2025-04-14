@@ -101,7 +101,7 @@ const onManualInputChange = (value: number, slotProps: any) => {
 	// Mark input as triggered and update icons
 	slotProps.data.inputTriggered = true
 	iconStates.value[slotProps.data.id] = {
-		increment: "fal fa-cloud",
+		increment: "fal fa-save",
 		decrement: "fal fa-undo",
 	}
 }
@@ -137,7 +137,8 @@ const fetchProductList = async (url?: string) => {
 			resetProducts()
 			products.value = data.data
 		}
-
+		console.log("products.value",data.data);
+		
 		optionsMeta.value = data.meta
 		optionsLinks.value = data.links
 
@@ -185,65 +186,64 @@ const formProducts = useForm({
 
 const onSubmitAddProducts = async (data: any, slotProps: any) => {
   const quantity = parseFloat(slotProps.data.quantity_ordered || "0");
-  const productId = slotProps.data.purchase_order_id;
-  const orderId = slotProps.data.order_id;
-
+  const productUniqueId = slotProps.data.id;
+	console.log('xxx');
+	
   try {
     if (quantity > 0) {
-      if (
-        (addedProductIds.value && addedProductIds.value.has(productId)) ||
-        (addedOrderIds.value && addedOrderIds.value.has(orderId))
-      ) {
-        // Update product
-        if (slotProps.data.purchase_order_id || slotProps.data.order_id) {
+      if (addedProductIds.value && addedProductIds.value.has(productUniqueId)) {
+        // Update branch: the product exists, so patch it
+        if (slotProps.data.updateRoute?.name) {
           await formProducts
             .transform(() => ({
               quantity_ordered: quantity,
             }))
             .patch(
-              route(slotProps?.data?.updateRoute?.name || "#", {
-                ...slotProps.data.updateRoute?.parameters,
+              route(slotProps.data.updateRoute.name, {
+                ...slotProps.data.updateRoute.parameters,
+              })
+            );
+          // Refresh the list after update so the UI reflects the change
+          await fetchProductList();
+          // Optionally update icon states if needed
+          iconStates.value[productUniqueId] = {
+            increment: "fal fa-save",
+            decrement: "fal fa-undo",
+          };
+        } else {
+          console.error("Update route is not defined for this product.");
+        }
+      } else {
+        // Add branch: product not present so post as new
+        if (props.typeModel === "purchase_order") {
+          await formProducts
+            .transform(() => ({
+              quantity_ordered: quantity,
+            }))
+            .post(
+              route(data.route?.name || "#", {
+                ...data.route?.parameters,
+                historicSupplierProduct: slotProps.data.historic_id,
+                orgStock: slotProps.data.org_stock_id,
+              })
+            );
+        } else if (props.typeModel === "order") {
+          await formProducts
+            .transform(() => ({
+              quantity_ordered: quantity,
+            }))
+            .post(
+              route(data.route?.name || "#", {
+                ...data.route?.parameters,
+                historicAsset: slotProps.data.historic_id,
               })
             );
         }
-      } else if (props.typeModel === "purchase_order") {
-        // Add product for purchase order
-        await formProducts
-          .transform(() => ({
-            quantity_ordered: quantity,
-          }))
-          .post(
-            route(data.route?.name || "#", {
-              ...data.route?.parameters,
-              historicSupplierProduct: slotProps.data.historic_id,
-              orgStock: slotProps.data.org_stock_id,
-            })
-          );
-        // Refresh list and update addedProductIds
+        // Refresh the product list and update tracking with the unique product id
         await fetchProductList();
-        addedProductIds.value.add(productId);
-        iconStates.value[productId] = {
-          increment: "fal fa-cloud",
-          decrement: "fal fa-undo",
-        };
-      } else if (props.typeModel === "order") {
-        // Add product for order type
-        await formProducts
-          .transform(() => ({
-            quantity_ordered: quantity,
-          }))
-          .post(
-            route(data.route?.name || "#", {
-              ...data.route?.parameters,
-              historicAsset: slotProps.data.historic_id,
-            })
-          );
-        // Refresh list and update ID tracking (using addedProductIds as in your current logic,
-        // or consider using addedOrderIds if that better suits your business logic)
-        await fetchProductList();
-        addedProductIds.value.add(productId);
-        iconStates.value[productId] = {
-          increment: "fal fa-cloud",
+        addedProductIds.value.add(productUniqueId);
+        iconStates.value[productUniqueId] = {
+          increment: "fal fa-save",
           decrement: "fal fa-undo",
         };
       }
@@ -254,25 +254,21 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
         type: "success",
       });
     } else if (quantity === 0) {
-      // Handle delete: check in both sets
-      if (
-        (addedProductIds.value && addedProductIds.value.has(productId)) ||
-        (addedOrderIds.value && addedOrderIds.value.has(orderId))
-      ) {
+		console.log(productUniqueId, addedProductIds.value.has(productUniqueId),'xx');
+		
+      if (addedProductIds.value && addedProductIds.value.has(productUniqueId)) {
         await formProducts.delete(
-          route(slotProps?.data?.deleteRoute?.name || "#", {
+          route(slotProps.data.deleteRoute?.name || "#", {
             ...slotProps.data.deleteRoute?.parameters,
           })
         );
 
-        // Remove the product from both sets
-        addedProductIds.value.delete(productId);
-        addedOrderIds.value.delete(orderId);
+        // Remove the product from the set
+        addedProductIds.value.delete(productUniqueId);
 
-        // Refresh list to reflect changes
+        // Refresh list to reflect the deletion
         await fetchProductList();
 
-        // Notify success
         notify({
           title: trans("Success!"),
           text: trans("Product successfully deleted."),
@@ -298,7 +294,6 @@ const onFetchNext = async () => {
 }
 
 const onKeyDown = (slotProps: any) => {
-	console.log(slotProps.data.inputTriggered, "we ap ni")
 	if (slotProps.data.inputTriggered) {
 		slotProps.data.inputTriggered = true
 		iconStates.value[slotProps.data.id] = {

@@ -770,7 +770,8 @@ const openModal = (action: any) => {
 			:fetchRoute="routes.products_list"
 			:modalOpen="isModalUploadOpen"
 			:action="currentAction"
-			@update:tab="handleTabUpdate" />
+			@update:tab="handleTabUpdate"
+			:typeModel="'order'" />
 	</div>
 
 	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">

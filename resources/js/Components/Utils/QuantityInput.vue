@@ -74,7 +74,8 @@ watch(
 				:incrementButtonClass="loading ? 'p-disabled' : ''"
 				:decrementButtonClass="loading ? 'p-disabled' : ''"
 				@change="onValueChange"
-				@blur="triggerInput">
+				@focus="triggerInput"
+				>
 				<!-- Increment Button -->
 				<template #incrementicon>
 					<div
