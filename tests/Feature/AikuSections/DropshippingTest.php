@@ -217,7 +217,7 @@ test('UI Index customer clients', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -239,7 +239,7 @@ test('UI Show customer client', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customerClient->name)
                     ->has('subNavigation')
                     ->etc()
@@ -267,7 +267,7 @@ test('UI edit customer client', function () {
             ->where('title', 'edit client')
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint', 1)
                     ->where('blueprint.0.title', 'contact')
                     ->has('blueprint.0.fields.company_name')
@@ -286,7 +286,7 @@ test('UI edit customer client', function () {
             )
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'edit client')
                     ->has('actions')
                     ->etc()
@@ -307,7 +307,7 @@ test('UI Index customer portfolios', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()

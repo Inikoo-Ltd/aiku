@@ -18,7 +18,6 @@ use App\Models\Dropshipping\Platform;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
-use Checkout\PlatformType;
 use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;

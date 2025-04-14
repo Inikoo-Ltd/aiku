@@ -1,10 +1,10 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 14 Apr 2025 19:21:20 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
-
 
 namespace Tests\Helpers;
 
@@ -42,7 +42,7 @@ function setupDropshippingTest($testClass)
     list(
         $testClass->tradeUnit,
         $testClass->product
-        ) = createProduct($testClass->shop);
+    ) = createProduct($testClass->shop);
 
     Config::set(
         'inertia.testing.page_paths',
