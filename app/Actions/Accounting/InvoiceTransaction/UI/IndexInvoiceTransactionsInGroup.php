@@ -90,7 +90,9 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
     public function tableStructure($prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
-            if ($prefix) {$table->name($prefix)->pageName($prefix.'Page');}
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix.'Page');
+            }
             $table->withModelOperations()->withGlobalSearch();
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);

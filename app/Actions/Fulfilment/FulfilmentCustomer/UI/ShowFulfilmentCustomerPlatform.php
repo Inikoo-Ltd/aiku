@@ -14,9 +14,9 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -27,23 +27,23 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    public function handle(ModelHasPlatform $modelHasPlatform): ModelHasPlatform
+    public function handle(CustomerHasPlatform $customerHasPlatform): CustomerHasPlatform
     {
-        return $modelHasPlatform;
+        return $customerHasPlatform;
     }
 
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): ModelHasPlatform
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): CustomerHasPlatform
     {
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentCustomerTabsEnum::values());
 
-        return $this->handle($modelHasPlatform);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function htmlResponse(ModelHasPlatform $modelHasPlatform, ActionRequest $request): Response
+    public function htmlResponse(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
     {
-        $fulfilmentCustomer = $modelHasPlatform->model->fulfilmentCustomer;
-        $navigation = FulfilmentCustomerPlatformTabsEnum::navigation();
+        $fulfilmentCustomer = $customerHasPlatform->customer->fulfilmentCustomer;
+        $navigation         = FulfilmentCustomerPlatformTabsEnum::navigation();
 
         $actions = [];
 
@@ -52,7 +52,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $modelHasPlatform,
+                    $customerHasPlatform,
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
@@ -61,10 +61,10 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                         'icon'  => 'fal fa-user',
                     ],
                     'model'         => __('Platform'),
-                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($modelHasPlatform, $fulfilmentCustomer, $request),
-                    'title'         => $modelHasPlatform->platform->name,
+                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($customerHasPlatform, $fulfilmentCustomer, $request),
+                    'title'         => $customerHasPlatform->platform->name,
                     'afterTitle'    => [
-                        'label' => '('.$modelHasPlatform->model->name.')',
+                        'label' => '('.$customerHasPlatform->customer->name.')',
                     ],
                     'actions'       => $actions
                 ],
@@ -77,7 +77,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(ModelHasPlatform $modelHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, array $routeParameters): array
     {
         $headCrumb = function (FulfilmentCustomer $fulfilmentCustomer, array $routeParameters, string $suffix = '') {
             return [
@@ -101,7 +101,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             ];
         };
 
-        $fulfilmentCustomer = $modelHasPlatform->model->fulfilmentCustomer;
+        $fulfilmentCustomer = $customerHasPlatform->customer->fulfilmentCustomer;
 
         return array_merge(
             ShowFulfilmentCustomer::make()->getBreadcrumbs(
@@ -118,10 +118,10 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                     'model' => [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show',
                         'parameters' => [
-                            'organisation' => $routeParameters['organisation'],
-                            'fulfilment'   => $routeParameters['fulfilment'],
-                            'fulfilmentCustomer' => $routeParameters['fulfilmentCustomer'],
-                            'modelHasPlatform'     => $modelHasPlatform->id
+                            'organisation'        => $routeParameters['organisation'],
+                            'fulfilment'          => $routeParameters['fulfilment'],
+                            'fulfilmentCustomer'  => $routeParameters['fulfilmentCustomer'],
+                            'customerHasPlatform' => $customerHasPlatform->id
                         ]
                     ]
                 ]

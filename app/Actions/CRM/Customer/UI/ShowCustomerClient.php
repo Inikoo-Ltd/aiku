@@ -21,10 +21,10 @@ use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Arr;
 use Inertia\Inertia;
@@ -40,7 +40,7 @@ class ShowCustomerClient extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private Customer|FulfilmentCustomer|ModelHasPlatform $parent;
+    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
 
     public function handle(CustomerClient $customerClient): CustomerClient
     {
@@ -65,17 +65,17 @@ class ShowCustomerClient extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $this->parent = $modelHasPlatform;
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
     }
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $this->parent = $modelHasPlatform;
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
@@ -100,8 +100,8 @@ class ShowCustomerClient extends OrgAction
             $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof ModelHasPlatform) {
-            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
+        } elseif ($this->parent instanceof CustomerHasPlatform) {
+            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
         }
 
         return Inertia::render(

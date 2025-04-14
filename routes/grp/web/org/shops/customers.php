@@ -48,7 +48,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('.invoices.show');
     Route::prefix('/platforms')->as('.platforms')->group(function () {
         Route::get('', IndexCustomerPlatforms::class)->name('.index');
-        Route::prefix('/{modelHasPlatform}')->as('.show')->group(function () {
+        Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
             Route::get('', ShowCustomerPlatform::class);
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
                 Route::get('', IndexCustomerPlatformPortfolios::class)->name('.index');

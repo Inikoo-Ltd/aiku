@@ -15,10 +15,10 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -27,21 +27,22 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use UnexpectedValueException;
 
 class IndexFulfilmentCustomerPlatformOrders extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
-    private ModelHasPlatform $modelHasPlatform;
+    private CustomerHasPlatform $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->modelHasPlatform = $modelHasPlatform;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle($modelHasPlatform);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function handle(ModelHasPlatform $modelHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -56,15 +57,15 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
-        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
-            $queryBuilder->where('pallet_returns.fulfilment_customer_id', $modelHasPlatform->model->fulfilmentCustomer->id);
-        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+            $queryBuilder->where('pallet_returns.fulfilment_customer_id', $customerHasPlatform->customer->fulfilmentCustomer->id);
+        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
             });
         } else {
-            throw new \Exception('To be implemented');
+            throw new UnexpectedValueException('To be implemented');
         }
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
@@ -133,20 +134,19 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
-        // $scope = $this->parent;
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->modelHasPlatform->model->name;
+        $title      = $this->customerHasPlatform->customer->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders')
         ];
-        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->modelHasPlatform, $this->modelHasPlatform->model->fulfilmentCustomer, $request);
+        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $this->customerHasPlatform->customer->fulfilmentCustomer, $request);
 
-        if ($this->modelHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
+        if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
                 'label' => __('Tiktok Orders')
             ];
-        } elseif ($this->modelHasPlatform->platform->type ==  PlatformTypeEnum::SHOPIFY) {
+        } elseif ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::SHOPIFY) {
             $afterTitle = [
                 'label' => __('Shopify Orders')
             ];
@@ -182,7 +182,7 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->modelHasPlatform, $routeParameters),
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

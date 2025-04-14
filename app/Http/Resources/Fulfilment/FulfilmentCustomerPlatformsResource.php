@@ -16,7 +16,7 @@ class FulfilmentCustomerPlatformsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'model_has_platform_id' => $this->model_has_platform_id,
+            'customer_has_platform_id' => $this->customer_has_platform_id,
             'id'                    => $this->id,
             'code'                  => $this->code,
             'name'                  => $this->name,

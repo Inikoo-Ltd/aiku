@@ -10,13 +10,13 @@
 namespace App\Actions\Fulfilment;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Ordering\ModelHasPlatform;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithFulfilmentCustomerPlatformSubNavigation
 {
-    public function getFulfilmentCustomerPlatformSubNavigation(ModelHasPlatform $modelHasPlatform, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): array
+    public function getFulfilmentCustomerPlatformSubNavigation(CustomerHasPlatform $customerHasPlatform, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): array
     {
         $subNavigation = [];
 
@@ -48,7 +48,7 @@ trait WithFulfilmentCustomerPlatformSubNavigation
             ],
         ];
 
-        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
             $subNavigation[] = [
                 'label'     => __('Clients'),
                 'route' => [

@@ -147,7 +147,6 @@ Route::post('customer-client', StoreRetinaCustomerClient::class)->name('customer
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('customer/{customer:id}/products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
-    //     Route::post('orders/{shopifyHasFulfilmentId:id}/release-hold', StoreRetinaProductShopify::class)->name('orders.release_hold')->withoutScopedBindings();
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
@@ -166,4 +165,3 @@ Route::name('web-users.')->prefix('web-users')->group(function () {
 });
 
 Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('attachment.download');
-

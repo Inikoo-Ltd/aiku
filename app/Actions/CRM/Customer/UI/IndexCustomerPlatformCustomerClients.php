@@ -15,9 +15,9 @@ use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\PlatformHasClient;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -33,14 +33,14 @@ use UnexpectedValueException;
 class IndexCustomerPlatformCustomerClients extends OrgAction
 {
     private ShopifyUser|TiktokUser $parent;
-    private ModelHasPlatform $modelHasPlatform;
+    private CustomerHasPlatform $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->modelHasPlatform = $modelHasPlatform;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
-        $this->parent = match ($modelHasPlatform->platform->type) {
+        $this->parent = match ($customerHasPlatform->platform->type) {
             PlatformTypeEnum::TIKTOK => $customer->tiktokUser,
             PlatformTypeEnum::SHOPIFY => $customer->shopifyUser,
             PlatformTypeEnum::WOOCOMMERCE => throw new UnexpectedValueException('To be implemented')
@@ -194,7 +194,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowCustomerPlatform::make()->getBreadcrumbs($this->modelHasPlatform, $routeName, $routeParameters),
+                ShowCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

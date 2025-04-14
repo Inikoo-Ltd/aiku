@@ -15,7 +15,7 @@ use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\ModelHasPlatform;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -30,17 +30,17 @@ use UnexpectedValueException;
 class IndexCustomerPlatformOrders extends OrgAction
 {
     use WithCustomerPlatformSubNavigation;
-    private ModelHasPlatform $modelHasPlatform;
+    private CustomerHasPlatform $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->modelHasPlatform = $modelHasPlatform;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($modelHasPlatform);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function handle(ModelHasPlatform $modelHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -53,14 +53,14 @@ class IndexCustomerPlatformOrders extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Order::class);
-        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
-            $queryBuilder->where('orders.customer_id', $modelHasPlatform->model->id);
-        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+            $queryBuilder->where('orders.customer_id', $customerHasPlatform->customer->id);
+        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'orders.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'Order');
             });
-            $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $modelHasPlatform->model->shopifyUser->id);
+            $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $customerHasPlatform->customer->shopifyUser->id);
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
@@ -117,21 +117,22 @@ class IndexCustomerPlatformOrders extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->modelHasPlatform->model->name;
+        $title      = $this->customerHasPlatform->customer->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders')
         ];
         $subNavigation = $this->getCustomerPlatformSubNavigation(
-            $this->modelHasPlatform,
-            $this->modelHasPlatform->model,
-            $request);
+            $this->customerHasPlatform,
+            $this->customerHasPlatform->customer,
+            $request
+        );
 
-        if ($this->modelHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
+        if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
                 'label' => __('Tiktok Orders')
             ];
-        } elseif ($this->modelHasPlatform->platform->type ==  PlatformTypeEnum::SHOPIFY) {
+        } elseif ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::SHOPIFY) {
             $afterTitle = [
                 'label' => __('Shopify Orders')
             ];
@@ -167,7 +168,7 @@ class IndexCustomerPlatformOrders extends OrgAction
     {
         return
             array_merge(
-                ShowCustomerPlatform::make()->getBreadcrumbs($this->modelHasPlatform, $routeName, $routeParameters),
+                ShowCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

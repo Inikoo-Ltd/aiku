@@ -11,8 +11,8 @@ namespace App\Actions\Fulfilment\PalletReturn\UI;
 
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
-use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
+use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
@@ -25,10 +25,10 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -41,7 +41,7 @@ class ShowStoredItemReturn extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private FulfilmentCustomer|Fulfilment|ModelHasPlatform $parent;
+    private FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
@@ -68,9 +68,9 @@ class ShowStoredItemReturn extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
-        $this->parent = $modelHasPlatform;
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
@@ -81,7 +81,7 @@ class ShowStoredItemReturn extends OrgAction
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof ModelHasPlatform) {
+        } elseif ($this->parent instanceof CustomerHasPlatform) {
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
         }
 

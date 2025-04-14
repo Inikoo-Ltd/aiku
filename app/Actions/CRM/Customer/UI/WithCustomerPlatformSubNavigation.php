@@ -11,12 +11,12 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\ModelHasPlatform;
+use App\Models\CRM\CustomerHasPlatform;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomerPlatformSubNavigation
 {
-    public function getCustomerPlatformSubNavigation(ModelHasPlatform $modelHasPlatform, Customer $customer, ActionRequest $request): array
+    public function getCustomerPlatformSubNavigation(CustomerHasPlatform $customerHasPlatform, Customer $customer, ActionRequest $request): array
     {
         $subNavigation = [];
 
@@ -48,7 +48,7 @@ trait WithCustomerPlatformSubNavigation
             ],
         ];
 
-        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
             $subNavigation[] = [
                 'label'     => __('Clients'),
                 'route' => [

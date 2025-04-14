@@ -9,13 +9,12 @@
 namespace App\Models\Dropshipping;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\Order;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -32,8 +31,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Portfolio> $portfolios
  * @property-read \App\Models\Dropshipping\PlatformStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform newQuery()
@@ -69,21 +67,16 @@ class Platform extends Model
         return $this->hasOne(PlatformStats::class);
     }
 
-    public function customers(): MorphToMany
+    public function customers(): BelongsToMany
     {
-        return $this->morphToMany(Customer::class, 'model', 'model_has_platforms')
+        return $this->belongsToMany(Customer::class, 'model', 'customer_has_platforms')
             ->withTimestamps();
     }
 
-    public function products(): MorphToMany
+
+    public function portfolios(): HasMany
     {
-        return $this->morphToMany(Product::class, 'model', 'model_has_platforms')
-            ->withTimestamps();
+        return $this->hasMany(Portfolio::class);
     }
 
-    public function orders(): MorphToMany
-    {
-        return $this->morphToMany(Order::class, 'model', 'model_has_platforms')
-            ->withTimestamps();
-    }
 }

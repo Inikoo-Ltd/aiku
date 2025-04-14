@@ -103,7 +103,7 @@ test('associate customer shopify to customer', function () {
 
 
     expect($this->customer->platforms->count())->toBe(0)
-        ->and($this->customer->platform())->toBeNull();
+        ->and($this->customer->getMainPlatform())->toBeNull();
     $customer = AttachCustomerToPlatform::make()->action(
         $this->customer,
         $platform,
@@ -117,8 +117,8 @@ test('associate customer shopify to customer', function () {
 
 
     expect($customer->platforms->first())->toBeInstanceOf(Platform::class)
-        ->and($customer->platform())->toBeInstanceOf(Platform::class)
-        ->and($customer->platform()->type)->toBe(PlatformTypeEnum::SHOPIFY);
+        ->and($customer->getMainPlatform())->toBeInstanceOf(Platform::class)
+        ->and($customer->getMainPlatform()->type)->toBe(PlatformTypeEnum::SHOPIFY);
 
 
 

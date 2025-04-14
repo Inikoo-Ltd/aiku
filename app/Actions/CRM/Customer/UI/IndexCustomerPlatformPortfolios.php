@@ -17,8 +17,8 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -32,13 +32,13 @@ class IndexCustomerPlatformPortfolios extends OrgAction
 {
     use WithCustomerPlatformSubNavigation;
 
-    private ModelHasPlatform $modelHasPlatform;
+    private CustomerHasPlatform $customerHasPlatform;
 
-    public function handle(ModelHasPlatform $modelHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('stored_items.reference', 'ILIKE', "$value%");
+                $query->whereStartWith('stored_items.reference', $value);
             });
         });
 
@@ -48,38 +48,38 @@ class IndexCustomerPlatformPortfolios extends OrgAction
 
         $query = QueryBuilder::for(Portfolio::class);
 
-        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
-            $query->where('portfolios.customer_id', $modelHasPlatform->model->id);
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+            $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
             $query->where('portfolios.type', PortfolioTypeEnum::MANUAL);
-        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $query->where('portfolios.customer_id', $modelHasPlatform->model->id);
+        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
             $query->where('portfolios.type', PortfolioTypeEnum::SHOPIFY);
-        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::TIKTOK) {
-            $query->where('portfolios.customer_id', $modelHasPlatform->model->id);
+        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::TIKTOK) {
+            $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
             $query->where('portfolios.type', PortfolioTypeEnum::TIKTOK);
         }
 
         $query->where('item_type', class_basename(Product::class));
 
         return $query
-        ->defaultSort('portfolios.reference')
-        ->with('item')
-        ->allowedSorts(['reference', 'created_at'])
-        ->allowedFilters([$globalSearch])
-        ->withPaginator($prefix, tableName: request()->route()->getName())
-        ->withQueryString();
+            ->defaultSort('portfolios.reference')
+            ->with('item')
+            ->allowedSorts(['reference', 'created_at'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getCustomerPlatformSubNavigation($this->modelHasPlatform, $this->modelHasPlatform->model, $request);
-        $icon       = ['fal', 'fa-user'];
-        $title      = $this->modelHasPlatform->model->name;
-        $iconRight  = [
+        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $this->customerHasPlatform->customer, $request);
+        $icon          = ['fal', 'fa-user'];
+        $title         = $this->customerHasPlatform->customer->name;
+        $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('portfolios')
         ];
-        $afterTitle = [
+        $afterTitle    = [
 
             'label' => __('Portfolios')
         ];
@@ -88,7 +88,7 @@ class IndexCustomerPlatformPortfolios extends OrgAction
             'Org/Shop/CRM/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->modelHasPlatform,
+                    $this->customerHasPlatform,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -125,18 +125,18 @@ class IndexCustomerPlatformPortfolios extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->modelHasPlatform = $modelHasPlatform;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($modelHasPlatform);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function getBreadcrumbs(ModelHasPlatform $modelHasPlatform, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowCustomerPlatform::make()->getBreadcrumbs($modelHasPlatform, $routeName, $routeParameters),
+            ShowCustomerPlatform::make()->getBreadcrumbs($customerHasPlatform, $routeName, $routeParameters),
             [
                 [
                     'type'   => 'simple',

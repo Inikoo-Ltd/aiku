@@ -22,11 +22,11 @@ use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Inventory\Warehouse;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,16 +39,16 @@ class ShowStoredItem extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
-    private Warehouse|Organisation|FulfilmentCustomer|Fulfilment|ModelHasPlatform $parent;
+    private Warehouse|Organisation|FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent;
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof ModelHasPlatform) {
+        if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof CustomerHasPlatform) {
             $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
 
             return
                 (
-                    $request->user()->tokenCan('root') or
+                    $request->user()->tokenCan('root') ||
                     $request->user()->authTo("human-resources.{$this->organisation->id}.view")
                 );
         } elseif ($this->parent instanceof Warehouse) {
@@ -77,9 +77,9 @@ class ShowStoredItem extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, StoredItem $storedItem, ActionRequest $request): StoredItem
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, StoredItem $storedItem, ActionRequest $request): StoredItem
     {
-        $this->parent = $modelHasPlatform;
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(StoredItemTabsEnum::values());
 
         return $this->handle($storedItem);
@@ -95,7 +95,7 @@ class ShowStoredItem extends OrgAction
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof ModelHasPlatform) {
+        } elseif ($this->parent instanceof CustomerHasPlatform) {
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
         }
         return Inertia::render(
@@ -198,13 +198,13 @@ class ShowStoredItem extends OrgAction
         return new StoredItemResource($storedItem);
     }
 
-    public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer|ModelHasPlatform $parent, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer|CustomerHasPlatform $parent, array $routeParameters, string $suffix = ''): array
     {
         $storedItem = StoredItem::where('slug', $routeParameters['storedItem'])->first();
 
         return match (class_basename($parent)) {
             'Warehouse'    => $this->getBreadcrumbsFromWarehouse($storedItem, $suffix),
-            'ModelHasPlatform' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
+            'CustomerHasPlatform' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
             default        => $this->getBreadcrumbsFromFulfilmentCustomer($storedItem, $suffix),
         };
     }
@@ -258,7 +258,7 @@ class ShowStoredItem extends OrgAction
                                     'organisation' => request()->route()->originalParameters()['organisation'],
                                     'fulfilment' => request()->route()->originalParameters()['fulfilment'],
                                     'fulfilmentCustomer' => request()->route()->originalParameters()['fulfilmentCustomer'],
-                                    'modelHasPlatform' => request()->route()->originalParameters()['modelHasPlatform'],
+                                    'customerHasPlatform' => request()->route()->originalParameters()['customerHasPlatform'],
                                     'storedItem' => $storedItem->slug,
                                 ]
                             ],

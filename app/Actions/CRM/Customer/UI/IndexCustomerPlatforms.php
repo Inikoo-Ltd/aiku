@@ -36,7 +36,7 @@ class IndexCustomerPlatforms extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('platforms.code', 'ILIKE', "$value%");
+                $query->whereStartWith('platforms.code', $value);
             });
         });
 
@@ -45,13 +45,12 @@ class IndexCustomerPlatforms extends OrgAction
         }
 
         $query = QueryBuilder::for(Platform::class);
-        $query->join('model_has_platforms', 'model_has_platforms.platform_id', 'platforms.id');
-        $query->where('model_has_platforms.model_type', 'Customer');
-        $query->where('model_has_platforms.model_id', $customer->id);
+        $query->join('customer_has_platforms', 'customer_has_platforms.platform_id', 'platforms.id');
+        $query->where('customer_has_platforms.customer_id', $customer->id);
 
         return $query
-            ->defaultSort('model_has_platforms.id')
-            ->select(['model_has_platforms.id as model_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
+            ->defaultSort('customer_has_platforms.id')
+            ->select(['customer_has_platforms.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -61,24 +60,23 @@ class IndexCustomerPlatforms extends OrgAction
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
         $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
-        $icon       = ['fal', 'fa-user'];
-        $title      = $this->parent->name;
-        $iconRight  = [
+        $icon          = ['fal', 'fa-user'];
+        $title         = $this->parent->name;
+        $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('channels')
         ];
-        $afterTitle = [
+        $afterTitle    = [
 
             'label' => __('Channels')
         ];
 
-        $enableAiku = $this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first() ? false : true;
-        // dd($this->parent->customer->platforms()->where('type', PlatformTypeEnum::AIKU)->first());
+        $enableAiku  = !$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first();
         $aikuChannel = Platform::where('type', PlatformTypeEnum::AIKU)->first();
 
         $actions = [];
 
-        if(!$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first()) {
+        if (!$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first()) {
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
@@ -93,7 +91,8 @@ class IndexCustomerPlatforms extends OrgAction
                     ]
                 ]
             ];
-        }   
+        }
+
         return Inertia::render(
             'Org/Shop/CRM/CustomerPlatforms',
             [
@@ -115,7 +114,7 @@ class IndexCustomerPlatforms extends OrgAction
                 'platforms'   => PlatformsResource::collection($this->parent->group->platforms),
                 'enableAiku'  => $enableAiku,
                 'attachRoute' => [
-                    'name' => 'grp.models.customer.platform.attach',
+                    'name'       => 'grp.models.customer.platform.attach',
                     'parameters' => [
                         'customer' => $this->parent->id,
                     ]

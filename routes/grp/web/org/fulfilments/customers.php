@@ -169,7 +169,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
 
     Route::prefix('platforms')->as('.platforms')->group(function () {
         Route::get('', IndexFulfilmentCustomerPlatforms::class)->name('.index');
-        Route::prefix('/{modelHasPlatform}')->as('.show')->group(function () {
+        Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
             Route::get('', ShowFulfilmentCustomerPlatform::class);
 
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {

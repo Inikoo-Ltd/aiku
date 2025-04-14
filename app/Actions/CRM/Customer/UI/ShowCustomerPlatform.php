@@ -13,7 +13,7 @@ use App\Actions\OrgAction;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\ModelHasPlatform;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -24,21 +24,21 @@ class ShowCustomerPlatform extends OrgAction
 {
     use WithCustomerPlatformSubNavigation;
 
-    public function handle(ModelHasPlatform $modelHasPlatform): ModelHasPlatform
+    public function handle(CustomerHasPlatform $customerHasPlatform): CustomerHasPlatform
     {
-        return $modelHasPlatform;
+        return $customerHasPlatform;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): ModelHasPlatform
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): CustomerHasPlatform
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
 
-        return $this->handle($modelHasPlatform);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function htmlResponse(ModelHasPlatform $modelHasPlatform, ActionRequest $request): Response
+    public function htmlResponse(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
     {
-        $customer = $modelHasPlatform->model;
+        $customer   = $customerHasPlatform->customer;
         $navigation = CustomerPlatformTabsEnum::navigation();
 
         $actions = [];
@@ -48,7 +48,7 @@ class ShowCustomerPlatform extends OrgAction
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $modelHasPlatform,
+                    $customerHasPlatform,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -58,10 +58,10 @@ class ShowCustomerPlatform extends OrgAction
                         'icon'  => 'fal fa-user',
                     ],
                     'model'         => __('Platform'),
-                    'subNavigation' => $this->getCustomerPlatformSubNavigation($modelHasPlatform, $customer, $request),
-                    'title'         => $modelHasPlatform->platform->name,
+                    'subNavigation' => $this->getCustomerPlatformSubNavigation($customerHasPlatform, $customer, $request),
+                    'title'         => $customerHasPlatform->platform->name,
                     'afterTitle'    => [
-                        'label' => '('.$modelHasPlatform->model->name.')',
+                        'label' => '('.$customerHasPlatform->customer->name.')',
                     ],
                     'actions'       => $actions
                 ],
@@ -74,7 +74,7 @@ class ShowCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(ModelHasPlatform $modelHasPlatform, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, string $routeName, array $routeParameters): array
     {
         $headCrumb = function (Customer $customer, array $routeParameters, string $suffix = '') {
             return [
@@ -98,7 +98,7 @@ class ShowCustomerPlatform extends OrgAction
             ];
         };
 
-        $customer = $modelHasPlatform->model;
+        $customer = $customerHasPlatform->customer;
 
         return array_merge(
             ShowCustomer::make()->getBreadcrumbs(
@@ -116,10 +116,10 @@ class ShowCustomerPlatform extends OrgAction
                     'model' => [
                         'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show',
                         'parameters' => [
-                            'organisation' => $routeParameters['organisation'],
-                            'shop'   => $routeParameters['shop'],
-                            'customer' => $routeParameters['customer'],
-                            'modelHasPlatform'     => $modelHasPlatform->id
+                            'organisation'     => $routeParameters['organisation'],
+                            'shop'             => $routeParameters['shop'],
+                            'customer'         => $routeParameters['customer'],
+                            'customerHasPlatform' => $customerHasPlatform->id
                         ]
                     ]
                 ]

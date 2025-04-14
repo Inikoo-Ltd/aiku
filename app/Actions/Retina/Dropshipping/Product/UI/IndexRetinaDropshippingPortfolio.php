@@ -95,17 +95,20 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
         $manual = false;
-        if($this->platform && $this->platform->type == PlatformTypeEnum::AIKU) {
+        if ($this->platform && $this->platform->type == PlatformTypeEnum::AIKU) {
             $manual = true;
         }
+
+        $title=__('My Portfolio');
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title' => __('My Portfolio'),
+                'title' => $title,
                 'is_manual' => $manual,
                 'pageHead' => [
-                    'title' => __('My Portfolio'),
+                    'title' => $title,
                     'icon' => 'fal fa-cube',
                     'actions' => [
                         $this->customer->is_fulfilment && ($this->platformUser instanceof ShopifyUser) ? [
@@ -175,7 +178,6 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
-            // $table->column(key: 'tags', label: __('tags'), canBeHidden: false);
         };
     }
 

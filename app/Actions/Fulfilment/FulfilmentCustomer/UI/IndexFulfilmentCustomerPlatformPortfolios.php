@@ -14,10 +14,10 @@ use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\StoredItemsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
-use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -31,13 +31,13 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private ModelHasPlatform $modelHasPlatform;
+    private CustomerHasPlatform $customerHasPlatform;
 
-    public function handle(ModelHasPlatform $modelHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('stored_items.reference', 'ILIKE', "$value%");
+                $query->whereStartWith('stored_items.reference', $value);
             });
         });
 
@@ -47,20 +47,20 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
 
         $query = QueryBuilder::for(StoredItem::class);
 
-        if ($modelHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
-            $query->where('stored_items.fulfilment_customer_id', $modelHasPlatform->model->fulfilmentCustomer->id);
-        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+            $query->where('stored_items.fulfilment_customer_id', $customerHasPlatform->customer->fulfilmentCustomer->id);
+        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->leftJoin('shopify_user_has_products', function ($join) {
                 $join->on('shopify_user_has_products.product_id', '=', 'stored_items.id')
-                        ->where('shopify_user_has_products.product_type', '=', 'StoredItem');
+                    ->where('shopify_user_has_products.product_type', '=', 'StoredItem');
             });
-            $query->where('shopify_user_has_products.shopify_user_id', $modelHasPlatform->model->shopifyUser->id);
-        } elseif ($modelHasPlatform->platform->type == PlatformTypeEnum::TIKTOK) {
+            $query->where('shopify_user_has_products.shopify_user_id', $customerHasPlatform->customer->shopifyUser->id);
+        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::TIKTOK) {
             $query->leftJoin('shopify_user_has_products', function ($join) {
                 $join->on('tiktok_user_has_products.product_id', '=', 'stored_items.id')
-                        ->where('tiktok_user_has_products.product_type', '=', 'StoredItem');
+                    ->where('tiktok_user_has_products.product_type', '=', 'StoredItem');
             });
-            $query->where('tiktok_user_has_products.shopify_user_id', $modelHasPlatform->model->tiktokUser->id);
+            $query->where('tiktok_user_has_products.shopify_user_id', $customerHasPlatform->customer->tiktokUser->id);
         }
 
         return $query
@@ -81,14 +81,14 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->modelHasPlatform, $this->modelHasPlatform->model->fulfilmentCustomer, $request);
-        $icon       = ['fal', 'fa-user'];
-        $title      = $this->modelHasPlatform->model->name;
-        $iconRight  = [
+        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $this->customerHasPlatform->customer->fulfilmentCustomer, $request);
+        $icon          = ['fal', 'fa-user'];
+        $title         = $this->customerHasPlatform->customer->name;
+        $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('portfolios')
         ];
-        $afterTitle = [
+        $afterTitle    = [
 
             'label' => __('Portfolios')
         ];
@@ -97,7 +97,7 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
             'Org/Fulfilment/FulfilmentCustomerPlatformPortfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->modelHasPlatform,
+                    $this->customerHasPlatform,
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('Channels'),
@@ -133,18 +133,18 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->modelHasPlatform = $modelHasPlatform;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle($modelHasPlatform);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function getBreadcrumbs(ModelHasPlatform $modelHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, array $routeParameters): array
     {
         return array_merge(
-            ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($modelHasPlatform, $routeParameters),
+            ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($customerHasPlatform, $routeParameters),
             [
                 [
                     'type'   => 'simple',

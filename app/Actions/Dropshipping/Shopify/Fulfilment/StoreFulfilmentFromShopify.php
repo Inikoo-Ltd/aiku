@@ -57,7 +57,7 @@ class StoreFulfilmentFromShopify extends OrgAction
 
             $palletReturn = StorePalletReturn::make()->actionWithDropshipping($shopifyUser->customer->fulfilmentCustomer, [
                 'type' => PalletReturnTypeEnum::DROPSHIPPING,
-                'platform_id' => $shopifyUser->customer->platform()?->id
+                'platform_id' => $shopifyUser->customer->getMainPlatform()?->id
             ]);
 
             $storedItems = [];

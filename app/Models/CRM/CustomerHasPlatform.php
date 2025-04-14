@@ -2,46 +2,44 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 26 Jun 2024 13:46:17 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Mon, 14 Apr 2025 17:15:16 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Models\Ordering;
+namespace App\Models\CRM;
 
 use App\Models\Dropshipping\Platform;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+
 
 /**
- *
  *
  * @property int $id
  * @property int $group_id
  * @property int|null $organisation_id
  * @property int $shop_id
  * @property int $platform_id
- * @property string $model_type
- * @property int $model_id
  * @property string|null $reference
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $customer_id
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read Model|\Eloquent $model
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read Platform $platform
  * @property-read \App\Models\Catalogue\Shop $shop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasPlatform newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasPlatform newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasPlatform query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerHasPlatform newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerHasPlatform newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerHasPlatform query()
  * @mixin \Eloquent
  */
-class ModelHasPlatform extends Model
+class CustomerHasPlatform extends Model
 {
     use InShop;
 
-    protected $table = 'model_has_platforms';
+    protected $table = 'customer_has_platforms';
 
     protected $guarded = [];
 
@@ -49,9 +47,9 @@ class ModelHasPlatform extends Model
         'data' => 'array'
     ];
 
-    public function model(): MorphTo
+    public function customer(): BelongsTo
     {
-        return $this->morphTo();
+        return $this->belongsTo(Customer::class);
     }
 
     public function platform(): BelongsTo

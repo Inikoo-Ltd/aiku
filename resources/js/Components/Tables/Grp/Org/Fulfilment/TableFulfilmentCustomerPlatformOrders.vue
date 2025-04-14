@@ -17,7 +17,7 @@ function orderRoute(order: {}) {
          case "grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index":
             return route(
                "grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["modelHasPlatform"],  order.slug])
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["customerHasPlatform"],  order.slug])
     }
 }
 
