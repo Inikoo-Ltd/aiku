@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 11-04-2025-14h-33m
@@ -8,7 +9,6 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -17,8 +17,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\ModelHasPlatform;
 use App\Models\PlatformHasClient;
 use App\Models\SysAdmin\Organisation;
@@ -30,6 +28,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use UnexpectedValueException;
 
 class IndexCustomerPlatformCustomerClients extends OrgAction
 {
@@ -44,7 +43,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
         $this->parent = match ($modelHasPlatform->platform->type) {
             PlatformTypeEnum::TIKTOK => $customer->tiktokUser,
             PlatformTypeEnum::SHOPIFY => $customer->shopifyUser,
-            PlatformTypeEnum::WOOCOMMERCE => throw new \Exception('To be implemented')
+            PlatformTypeEnum::WOOCOMMERCE => throw new UnexpectedValueException('To be implemented')
         };
 
         return $this->handle($customer);
@@ -69,16 +68,6 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
         $queryBuilder->where('platform_has_clients.userable_type', $this->parent->getMorphClass());
         $queryBuilder->where('platform_has_clients.userable_id', $this->parent->id);
 
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                prefix: $prefix,
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
-        */
 
         $queryBuilder->leftJoin('customer_clients', 'platform_has_clients.customer_client_id', 'customer_clients.id');
 
@@ -142,7 +131,6 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
-        // $scope = $this->parent;
         $icon       = ['fal', 'fa-user'];
         $title      = $this->parent->name;
         $iconRight  = [

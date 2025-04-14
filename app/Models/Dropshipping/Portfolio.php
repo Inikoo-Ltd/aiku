@@ -43,6 +43,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $item_type
+ * @property int|null $platform_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group

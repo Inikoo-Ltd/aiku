@@ -21,20 +21,16 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $group_id
  * @property int|null $organisation_id
  * @property int $shop_id
- * @property int $website_id
- * @property int|null $webpage_id
- * @property int|null $position
- * @property int $web_block_id
+ * @property int $platform_id
  * @property string $model_type
  * @property int $model_id
- * @property bool $show
- * @property bool $show_logged_in
- * @property bool $show_logged_out
+ * @property string|null $reference
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $migration_checksum
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Model|\Eloquent $model
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read Platform $platform
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasPlatform newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasPlatform newQuery()
