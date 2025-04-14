@@ -6,20 +6,20 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Inventory;
+namespace App\Actions\Traits\Authorisations\Inventory;
 
-use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
 
-trait HasInventoryAuthorisation
+trait WithInventoryAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->parent instanceof Group) {
+        if (str_starts_with($request->route()->getName(), 'grp.overview')) {
             return $request->user()->authTo("group-overview");
         }
 
         $this->canEdit = $request->user()->authTo("inventory.{$this->organisation->id}.edit");
+
         return $request->user()->authTo("inventory.{$this->organisation->id}.view");
     }
 }

@@ -14,6 +14,7 @@ use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreLocation extends OrgAction
 {
     use WithNoStrictRules;
+    use WithWarehouseEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -43,7 +45,7 @@ class StoreLocation extends OrgAction
             $organisation = $parent->organisation;
         }
 
-        $location = DB::transaction(function () use ($parent, $modelData, $organisation) {
+        $location = DB::transaction(function () use ($parent, $modelData) {
             /** @var Location $location */
             $location = $parent->locations()->create($modelData);
             $location->stats()->create();
@@ -62,15 +64,6 @@ class StoreLocation extends OrgAction
         LocationRecordSearch::dispatch($location);
 
         return $location;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("locations.{$this->warehouse->id}.edit");
     }
 
     public function rules(): array

@@ -2,14 +2,16 @@
 import { computed } from 'vue'
 import InputNumberCssProperty from '@/Components/Workshop/Properties/InputNumberCssProperty.vue'
 
+
 // Define the expected shape
 type CssProperty = {
   value: number | null
   unit: string
 }
 
-// Default structure
-const defaultModel: CssProperty = { value: null, unit: 'px' }
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
 
 // Accepting model from parent — might be undefined or partial
 const rawModel = defineModel<Partial<CssProperty>>({
@@ -32,6 +34,6 @@ const normalizedModel = computed<CssProperty>({
 
 <template>
   <div>
-    <InputNumberCssProperty v-model="normalizedModel" />
+    <InputNumberCssProperty :modelValue="normalizedModel" @update:model-value="(val)=> emits('update:modelValue',val)" />
   </div>
 </template>

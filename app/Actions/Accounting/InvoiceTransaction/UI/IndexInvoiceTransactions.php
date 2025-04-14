@@ -42,6 +42,12 @@ class IndexInvoiceTransactions extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
+
+        if($parent instanceof Invoice && $parent->deleted_at)
+        {
+            $queryBuilder->withTrashed();
+        }
+        
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
 

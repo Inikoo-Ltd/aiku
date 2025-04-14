@@ -3,6 +3,7 @@ import { onMounted, inject } from 'vue'
 import PaddingMarginProperty from '@/Components/Workshop/Properties/PaddingMarginProperty.vue'
 import { trans } from 'laravel-vue-i18n'
 import { cloneDeep, defaultsDeep } from 'lodash-es'
+import { isPlainObject } from 'lodash-es'
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -24,17 +25,23 @@ const localModel = {
   bottom: { value: null }
 }
 
+
+
 onMounted(() => {
-  if (!model.value || Object.keys(model.value).length === 0) {
-    model.value = cloneDeep(localModel)
-  } else {
-    model.value = defaultsDeep(cloneDeep(model.value), cloneDeep(localModel))
+  if (!isPlainObject(model.value)) return
+
+  for (const key in localModel) {
+    if (!(key in model.value)) {
+      // @ts-ignore
+      model.value[key] = cloneDeep(localModel[key])
+    }
   }
 })
+
 </script>
 
 <template>
   <div class="pb-3">
-    <PaddingMarginProperty :modelValue="model" :scope="trans('Padding')" />
+    <PaddingMarginProperty :modelValue="model" :scope="trans('Padding')" @update:modelValue="(val) => emit('update:modelValue',val)"/>
   </div>
 </template>

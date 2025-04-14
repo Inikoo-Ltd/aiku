@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\Location\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\SysAdmin\Organisation;
@@ -18,16 +19,18 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateLocation extends OrgAction
 {
+    use WithWarehouseEditAuthorisation;
+
     private WarehouseArea|Warehouse $parent;
 
     public function handle(ActionRequest $request): Response
     {
-        // dd($this->parent);
         if ($this->parent instanceof WarehouseArea) {
             $routeName = preg_replace('/.locations.create$/', '', $request->route()->getName());
-        } elseif ($this->parent instanceof Warehouse) {
+        } else {
             $routeName = preg_replace('/create$/', 'index', $request->route()->getName());
         }
+
         return Inertia::render(
             'CreateModel',
             [
@@ -35,11 +38,11 @@ class CreateLocation extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new location'),
+                'title'       => __('New location'),
                 'pageHead'    => [
-                    'title'   => __('new location'),
+                    'title'   => __('New location'),
                     'icon'    => 'fal fa-warehouse',
-                    'model'   => __('warehouse'),
+
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -102,12 +105,6 @@ class CreateLocation extends OrgAction
             ]
         );
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("inventory.{$this->warehouse->id}.edit");
-    }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouse(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Response

@@ -86,12 +86,12 @@ class ShowPalletDeleted extends OrgAction
             'tooltip' => __('Pallet')
         ];
         $model      = __('Pallet');
-        $title      = $this->pallet->reference;
+        $title      = $pallet->reference;
         $iconRight  = $pallet->status->statusIcon()[$pallet->status->value];
         $afterTitle = [];
-        if ($this->pallet->customer_reference) {
+        if ($pallet->customer_reference) {
             $afterTitle = [
-                'label' => '('.$this->pallet->customer_reference.')'
+                'label' => '('.$pallet->customer_reference.')'
             ];
         }
 
@@ -160,8 +160,8 @@ class ShowPalletDeleted extends OrgAction
                     : Inertia::lazy(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($this->pallet))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
+                    fn () => HistoryResource::collection(IndexHistory::run($pallet))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($pallet)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))
@@ -177,7 +177,7 @@ class ShowPalletDeleted extends OrgAction
 
     public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer $parent, array $routeParameters, string $suffix = ''): array
     {
-        $pallet = Pallet::where('slug', $routeParameters['pallet'])->first();
+        $pallet = Pallet::withTrashed()->where('slug', $routeParameters['pallet'])->first();
 
         return match (class_basename($parent)) {
             'Warehouse' => $this->getBreadcrumbsFromWarehouse($pallet, $suffix),
@@ -261,13 +261,13 @@ class ShowPalletDeleted extends OrgAction
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.deleted.show',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.deleted_pallets.show',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
                             'label' => $pallet->reference,
                         ],
                     ],
-                    'suffix'         => __('Pallets'),
+                    'suffix'         => __('(🗑️ Deleted)'),
                 ],
             ]
         );

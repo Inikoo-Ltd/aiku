@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Asset\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Asset;
@@ -18,20 +19,13 @@ class AssetHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(Asset $asset, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $uniqueId = $asset->id;
-        if ($intervals !== null) {
-            $uniqueId .= '-'.implode('-', $intervals);
-        }
-        if ($doPreviousPeriods !== null) {
-            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
-        }
-
-        return $uniqueId;
+        return $this->getUniqueJobWithInterval($asset, $intervals, $doPreviousPeriods);
     }
 
     public function handle(Asset $asset, ?array $intervals = null, ?array $doPreviousPeriods = null): void
