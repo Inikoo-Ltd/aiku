@@ -6,22 +6,17 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\Catalogue\Shop\UpdateShop;
+/** @noinspection PhpUnhandledExceptionInspection */
+
 use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformStats;
 use App\Models\Dropshipping\Portfolio;
-
-use function Pest\Laravel\actingAs;
 
 uses()->group('integration');
 
@@ -35,13 +30,13 @@ beforeEach(function () {
 });
 
 test('test platform were seeded ', function () {
-    expect($this->group->platforms()->count())->toBe(2);
+    expect($this->group->platforms()->count())->toBe(4);
     $platform = Platform::first();
     expect($platform)->toBeInstanceOf(Platform::class)
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
 
     $this->artisan('group:seed-platforms')->assertExitCode(0);
-    expect($this->group->platforms()->count())->toBe(2);
+    expect($this->group->platforms()->count())->toBe(4);
 });
 
 test('create customer client', function () {

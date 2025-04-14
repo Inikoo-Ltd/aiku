@@ -9,8 +9,6 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Analytics\GetSectionRoute;
-use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
@@ -20,13 +18,10 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\SaveModelImages;
 use App\Actions\SysAdmin\Group\CreateAccessToken;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\ImgProxy\Image;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -37,7 +32,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
-use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
 beforeAll(function () {
@@ -55,7 +49,7 @@ test('test platform were seeded ', function () {
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
 
     $this->artisan('group:seed-platforms')->assertExitCode(0);
-    expect($this->group->platforms()->count())->toBe(3);
+    expect($this->group->platforms()->count())->toBe(4);
 });
 
 test('create customer client', function () {
@@ -228,10 +222,9 @@ test('UI Index customer clients', function () {
 });
 
 test('UI Show customer client', function () {
-
     $customerClient = CustomerClient::first();
-    $customer = $customerClient->customer;
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer-clients.show', [$this->organisation->slug, $this->shop->slug, $customer->slug, $customerClient->ulid]));
+    $customer       = $customerClient->customer;
+    $response       = $this->get(route('grp.org.shops.show.crm.customers.show.customer-clients.show', [$this->organisation->slug, $this->shop->slug, $customer->slug, $customerClient->ulid]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
         $page
@@ -261,8 +254,8 @@ test('UI create customer client', function () {
 
 test('UI edit customer client', function () {
     $customerClient = CustomerClient::first();
-    $customer = $customerClient->customer;
-    $response = get(route('grp.org.shops.show.crm.customers.show.customer-clients.edit', [$this->organisation->slug, $this->shop->slug, $customer->slug, $customerClient]));
+    $customer       = $customerClient->customer;
+    $response       = get(route('grp.org.shops.show.crm.customers.show.customer-clients.edit', [$this->organisation->slug, $this->shop->slug, $customer->slug, $customerClient]));
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
         $page
             ->component('EditModel')
@@ -298,7 +291,6 @@ test('UI edit customer client', function () {
 });
 
 test('UI Index customer portfolios', function () {
-
     $customer = Customer::first();
     $response = $this->get(route('grp.org.shops.show.crm.customers.show.portfolios.index', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
 
@@ -325,7 +317,7 @@ test('UI get section route client dropshipping', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.customer-clients.index', [
         'organisation' => $this->organisation->slug,
         'shop'         => $this->shop->slug,
-        'customer'     => $customerClient->slug
+        'customer'     => $customerClient->customer->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
