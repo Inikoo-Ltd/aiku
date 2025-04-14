@@ -319,8 +319,8 @@ const isModalGallery = ref(false)
 				All Sales:
 				{{
 					useLocaleStore().currencyFormat(
-						data.product.data.currency_code,
-						data.stats[0].amount
+						data.product.data.currency_code ? data.product.data.currency_code : "usd",
+						data?.stats[0].amount 
 					)
 				}}
 			</h3>
@@ -328,7 +328,7 @@ const isModalGallery = ref(false)
 			<dl
 				class="mt-5 grid grid-cols-1 gap-4 overflow-hidden rounded bg-white md:grid-cols-3 md:gap-x-2 md:gap-y-4">
 				<!-- Loop over displayedStats instead of full props.data.stats -->
-				<div
+				<div v-if="props.data.stats"
 					v-for="item in displayedStats"
 					:key="item.name"
 					class="px-4 py-5 sm:p-6 border border-gray-200 rounded-md">
@@ -337,7 +337,7 @@ const isModalGallery = ref(false)
 						<div class="flex items-baseline text-2xl font-semibold text-indigo-600">
 							{{
 								useLocaleStore().currencyFormat(
-									data.product.data.currency_code,
+									data.product.data.currency_code ? data.product.data.currency_code : "usd",
 									item.amount
 								)
 							}}
@@ -347,7 +347,7 @@ const isModalGallery = ref(false)
 								from
 								{{
 									useLocaleStore().currencyFormat(
-										data.product.data.currency_code,
+										data.product.data.currency_code ? data.product.data.currency_code : "usd",
 										item.amount_ly
 									)
 								}}
@@ -378,7 +378,7 @@ const isModalGallery = ref(false)
 			</dl>
 			<!-- "Show more" card: full width on mobile, fixed width on larger screens -->
 			<div
-				v-if="props.data.stats.length > 6 && !showAllStats"
+				v-if="props.data?.stats?.length > 6 && !showAllStats"
 				@click="showAllStats = true"
 				class="cursor-pointer border border-dashed border-gray-300 rounded-md mt-3 flex items-center justify-center p-4 w-full sm:w-40 mx-auto">
 				<span class="text-sm font-medium">Show more</span>

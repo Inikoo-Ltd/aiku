@@ -57,6 +57,7 @@ use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
+use App\Actions\Dropshipping\Aiku\StoreManualPortfolio;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
@@ -636,6 +637,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
+    Route::post('portfolio', StoreManualPortfolio::class)->name('portfolio.store');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
