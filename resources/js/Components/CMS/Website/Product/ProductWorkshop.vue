@@ -41,7 +41,6 @@ const optionsToogle = ref([
     { name: 'Membership', value: 'member' }
 ])
 
-console.log('ddd', props.data)
 
 const selectPreviousTemplate = () => {
     let index = props.data.web_block_types.data.findIndex((item) => item.key == usedTemplates.value.code)
@@ -97,7 +96,7 @@ onMounted(() => {
                         aria-labelledby="multiple" />
                 </div>
                 <div class="px-8">
-                    <div v-if="modelValue.product?.setting?.faqs" class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Show FAQs</span>
                             <ToggleSwitch v-model="modelValue.product.setting.faqs" />
@@ -106,7 +105,7 @@ onMounted(() => {
                             Toggle to show or hide frequently asked questions for your product.
                         </div>
                     </div>
-                    <div v-if="modelValue.product?.setting?.product_specs" class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Product Specification</span>
                             <ToggleSwitch v-model="modelValue.product.setting.product_specs" />
@@ -115,7 +114,7 @@ onMounted(() => {
                             Toggle to show or hide product specifications for your product.
                         </div>
                     </div>
-                    <div v-if="modelValue.product?.setting?.customer_review" class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Customer Reviews</span>
                             <ToggleSwitch v-model="modelValue.product.setting.customer_review" />
@@ -124,7 +123,7 @@ onMounted(() => {
                             Toggle to show or hide customer reviews for your product.
                         </div>
                     </div>
-                    <div v-if="modelValue.product?.setting?.payments_and_policy" class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Payments & Policy</span>
                             <ToggleSwitch v-model="modelValue.product.setting.payments_and_policy" />
