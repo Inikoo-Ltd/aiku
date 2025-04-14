@@ -69,6 +69,7 @@ class IndexCustomerClients extends OrgAction
 
         return $this->handle($fulfilmentCustomer->customer);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, ModelHasPlatform $modelHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
@@ -78,7 +79,7 @@ class IndexCustomerClients extends OrgAction
         return $this->handle($customer);
     }
 
-    public function handle(Customer|FulfilmentCustomer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -95,22 +96,7 @@ class IndexCustomerClients extends OrgAction
         $queryBuilder = QueryBuilder::for(CustomerClient::class);
 
 
-        if (class_basename($parent) == 'Customer') {
-            $queryBuilder->where('customer_clients.customer_id', $parent->id);
-        }
-
-
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                prefix: $prefix,
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
-        */
-
+        $queryBuilder->where('customer_clients.customer_id', $customer->id);
 
         return $queryBuilder
             ->defaultSort('customer_clients.reference')
@@ -184,16 +170,16 @@ class IndexCustomerClients extends OrgAction
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
         if ($this->parent instanceof FulfilmentCustomer) {
-            $scope = $this->parent->customer;
+            $scope         = $this->parent->customer;
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($scope->fulfilmentCustomer, $request);
         } elseif ($this->parent instanceof ModelHasPlatform && $this->shop->type == ShopTypeEnum::FULFILMENT) {
-            $scope = $this->parent->model;
+            $scope         = $this->parent->model;
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
         } elseif ($this->parent instanceof ModelHasPlatform && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $scope = $this->parent->model;
+            $scope         = $this->parent->model;
             $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->model, $request);
         } else {
-            $scope = $this->parent;
+            $scope         = $this->parent;
             $subNavigation = $this->getCustomerDropshippingSubNavigation($scope, $request);
         }
 
@@ -262,6 +248,7 @@ class IndexCustomerClients extends OrgAction
             ];
         };
 
+        $modelHasPlatform = null;
         if (isset($routeParameters['modelHasPlatform'])) {
             $modelHasPlatform = ModelHasPlatform::find($routeParameters['modelHasPlatform'])->first();
         }
