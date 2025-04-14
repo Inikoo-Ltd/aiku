@@ -6,62 +6,33 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Platform\Hydrators;
+namespace App\Actions\Dropshipping\Platform\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PlatformHydrateModels
+class PlatformHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Platform $platform;
 
-    public function __construct(Platform $platform)
+    public function getJobUniqueId(Platform $platform): string
     {
-        $this->platform = $platform;
+        return $platform->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->platform->id))->dontRelease()];
-    }
     public function handle(Platform $platform): void
     {
         $stats = [
-            'number_customers' => $platform->customers()->count(),
             'number_orders'    => $platform->orders()->count(),
-            'number_products'  => $platform->products()->count(),
+
         ];
 
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'products',
-                field: 'state',
-                enum: ProductStateEnum::class,
-                models: Product::class
-            )
-        );
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'customers',
-                field: 'state',
-                enum: CustomerStateEnum::class,
-                models: Customer::class
-            )
-        );
 
         $stats = array_merge(
             $stats,

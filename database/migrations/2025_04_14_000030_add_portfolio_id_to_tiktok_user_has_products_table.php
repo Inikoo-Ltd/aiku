@@ -14,7 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('tiktok_user_has_products', function (Blueprint $table) {
-            $table->unsignedInteger('portfolio_id')->index()->after('productable_type')->nullable();
+            $table->unsignedInteger('portfolio_id')->index()->nullable();
             $table->foreign('portfolio_id')->references('id')->on('portfolios');
         });
     }

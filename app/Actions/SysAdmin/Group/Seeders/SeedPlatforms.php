@@ -8,8 +8,8 @@
 
 namespace App\Actions\SysAdmin\Group\Seeders;
 
-use App\Actions\Ordering\Platform\StorePlatform;
-use App\Actions\Ordering\Platform\UpdatePlatform;
+use App\Actions\Dropshipping\Platform\StorePlatform;
+use App\Actions\Dropshipping\Platform\UpdatePlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;

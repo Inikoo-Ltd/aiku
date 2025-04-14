@@ -52,7 +52,6 @@ class FetchAuroraPortfolio extends FetchAurora
         if ($lastRemoved) {
             $this->parsedData['portfolio']['last_removed_at'] = $lastRemoved;
         }
-        // dd($this->parsedData['portfolio']);
 
     }
 

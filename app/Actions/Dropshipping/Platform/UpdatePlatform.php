@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Platform;
+namespace App\Actions\Dropshipping\Platform;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
