@@ -45,41 +45,11 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    $this->organisation = createOrganisation();
-    $this->group        = $this->organisation->group;
-    $this->user         = createAdminGuest($this->group)->getUser();
-
-
-    $shop = Shop::first();
-    if (!$shop) {
-        $storeData = Shop::factory()->definition();
-        data_set($storeData, 'type', ShopTypeEnum::DROPSHIPPING);
-
-        $shop = StoreShop::make()->action(
-            $this->organisation,
-            $storeData
-        );
-    }
-    $this->shop = $shop;
-
-    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
-
-    $this->customer = createCustomer($this->shop);
-
-    list(
-        $this->tradeUnit,
-        $this->product
-    ) = createProduct($this->shop);
-
-    Config::set(
-        'inertia.testing.page_paths',
-        [resource_path('js/Pages/Grp')]
-    );
-    actingAs($this->user);
+    \Tests\Helpers\setupDropshippingTest($this);
 });
 
 test('test platform were seeded ', function () {
-    expect($this->group->platforms()->count())->toBe(3);
+    expect($this->group->platforms()->count())->toBe(4);
     $platform = Platform::first();
     expect($platform)->toBeInstanceOf(Platform::class)
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
