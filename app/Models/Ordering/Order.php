@@ -166,7 +166,24 @@ class Order extends Model implements HasMedia, Auditable
     protected $casts = [
         'data'         => 'array',
         'payment_data' => 'array',
-        'date'         => 'datetime',
+
+
+        'date'            => 'datetime',
+        'submitted_at'    => 'datetime',
+        'in_warehouse_at' => 'datetime',
+        'handling_at'     => 'datetime',
+        'packed_at'       => 'datetime',
+        'finalised_at'    => 'datetime',
+        'dispatched_at'   => 'datetime',
+        'cancelled_at'    => 'datetime',
+        'settled_at'      => 'datetime',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'grp_exchange'    => 'decimal:4',
+        'org_exchange'    => 'decimal:4',
+        'payment_amount'  => 'decimal:2',
+
+
         'state'        => OrderStateEnum::class,
         'status'       => OrderStatusEnum::class,
         'handing_type' => OrderHandingTypeEnum::class,
@@ -297,7 +314,6 @@ class Order extends Model implements HasMedia, Auditable
     {
         return $this->belongsTo(SalesChannel::class);
     }
-
 
 
 }

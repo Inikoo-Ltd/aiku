@@ -10,7 +10,7 @@ import BentoGridBlueprint from '@/Components/CMS/Webpage/BentoGrid/Blueprint'
 import CTA2Blueprint from '@/Components/CMS/Webpage/CTA2/Blueprint'
 import CategoriesBlueprint from '@/Components/CMS/Webpage/Categories/Blueprint'
 import CTA3Blueprint from '@/Components/CMS/Webpage/CTA3/Blueprint'
-import CTAAurora1Blueprint from '@/Components/CMS/Webpage/CTAAurora1/Blueprint'
+import { blueprint as CTAAurora1Blueprint } from '@/Components/CMS/Webpage/CTAAurora1/Blueprint'
 import CTABlueprint from '@/Components/CMS/Webpage/CTA/Blueprint'
 import DepartmentBlueprint from '@/Components/CMS/Webpage/Department/Blueprint'
 import GalleryBlueprint from '@/Components/CMS/Webpage/Gallery/Blueprint'
@@ -28,6 +28,9 @@ import TextColumn from '@/Components/CMS/Webpage/TextColumn/Blueprint'
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Blueprint'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Blueprint'
 import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Blueprint'
+import Button from '@/Components/CMS/Webpage/Button/Blueprint'
+import ColumnLayout2Blueprint from '@/Components/CMS/Webpage/Column/Blueprint'
+import DisclosureBlueprint from '@/Components/CMS/Webpage/Disclosure/Blueprint'
 
 export const getBlueprint = (componentName: string) => {
     const components: Component = {
@@ -54,11 +57,14 @@ export const getBlueprint = (componentName: string) => {
         'products': .blueprint, */
         "script": ScriptBlueprint.blueprint,
         'text': TextBlueprint.blueprint,
-        'cta_aurora_1' : CTAAurora1Blueprint.blueprint,
+        'cta_aurora_1' : CTAAurora1Blueprint,
         'overview_2' : Overview2Blueprint.blueprint,
         'top-bar-1-fulfilment': Topbar1Fulfilment.blueprint,
         'top-bar-2-fulfilment': Topbar2Fulfilment.blueprint,
         'top-bar-3-fulfilment': Topbar3Fulfilment.blueprint,
+        'button' : Button.blueprint,
+        'column-layout-2': ColumnLayout2Blueprint.blueprint,
+        'disclosure': DisclosureBlueprint.blueprint,
     }
     return components[componentName] ?? []
 }

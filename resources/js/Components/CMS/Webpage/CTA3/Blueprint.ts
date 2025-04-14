@@ -114,6 +114,7 @@ export default {
 		{
 			name: "Button",
 			key: ["button"],
+			editGlobalStyle : "button",
 			replaceForm: [
 				{
 					key: ["container", "properties", "background"],
@@ -181,6 +182,16 @@ export default {
 					label: "Border",
 					type: "border",
 				},
+				{
+                    key: ["shadow"],
+                    label : "Shadow",
+                    type: "shadow",
+                },
+                {
+                    key: ["shadowColor"],
+                    label : "Shadow Color",
+                    type: "color",
+                },
 			],
 		},
 	],

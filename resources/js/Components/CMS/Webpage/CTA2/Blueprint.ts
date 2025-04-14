@@ -24,11 +24,22 @@ export default {
 					label: "Border",
 					type: "border",
 				},
+				{
+                    key: ["shadow"],
+                    label : "Shadow",
+                    type: "shadow",
+                },
+                {
+                    key: ["shadowColor"],
+                    label : "Shadow Color",
+                    type: "color",
+                },
 			],
 		},
 		{
 			name: "Button",
 			key: ["button"],
+			editGlobalStyle : "button",
 			replaceForm: [
 				{
 					key: ["link"],

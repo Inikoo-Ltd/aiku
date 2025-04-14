@@ -18,7 +18,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\FulfilmentTransaction\FulfilmentTransactionTypeEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
-use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
+use App\Enums\UI\Fulfilment\RetinaPalletDeliveryTabsEnum;
 use App\Http\Resources\Catalogue\RentalsResource;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
@@ -41,7 +41,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
     {
-        $this->initialisation($request)->withTab(PalletDeliveryTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaPalletDeliveryTabsEnum::values());
 
         return $palletDelivery;
     }
@@ -50,6 +50,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
     public function htmlResponse(PalletDelivery $palletDelivery, ActionRequest $request): Response
     {
         $palletsInDelivery = $palletDelivery->pallets()->count();
+        $transactionsInDelivery = $palletDelivery->transactions()->count();
 
         $numberPallets       = $palletDelivery->fulfilmentCustomer->pallets()->count();
         $numberStoredPallets = $palletDelivery->pallets()->where('state', PalletDeliveryStateEnum::BOOKED_IN->value)->count();
@@ -67,12 +68,12 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 : ($palletLimitLeft == 0
                     ? [
                         'status'  => 'limit',
-                        'message' => __("Pallet has reached the limit, no space left.")
+                        'message' => __("Your Contract Agreement has reached the limit (no space left), please contact us to extend your agreement limit.")
                     ]
                     : ($palletLimitLeft <= 5
                         ? [
                             'status'  => 'almost',
-                            'message' => __("Pallet almost reached the limit: :palletLimitLeft left.", ['palletLimitLeft' => $palletLimitLeft])
+                            'message' => __("Your Contract Agreement almost reached the limit: :palletLimitLeft left.", ['palletLimitLeft' => $palletLimitLeft])
                         ]
                         : null)));
 
@@ -123,7 +124,8 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                     'type'  => 'button',
                                     'style' => 'secondary',
                                     'icon'  => 'fal fa-plus',
-                                    'label' => __('pallet'),
+                                    'key'   => 'storage',
+                                    'label' => __('storage'),
                                     'route' => [
                                         'name'       => 'retina.models.pallet-delivery.pallet.store',
                                         'parameters' => [
@@ -163,9 +165,9 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 [
                     'type'     => 'button',
                     'icon'     => 'fad fa-save',
-                    'tooltip'  => $palletsInDelivery == 0 ? __('Add pallet before submit') : (!($palletDelivery->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit Delivery')),
+                    'tooltip'  => $palletsInDelivery == 0 ? __('Add items before submit') : (!($palletDelivery->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit Delivery')),
                     'label'    => __('submit'),
-                    'disabled' => $palletsInDelivery == 0 || !($palletDelivery->estimated_delivery_date),
+                    'disabled' => ($palletsInDelivery != 0 || $transactionsInDelivery != 0) && $palletDelivery->estimated_delivery_date ? false : true,
                     'key'      => 'submit',
                     'route'    => [
                         'method'     => 'post',
@@ -222,7 +224,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletDelivery',
             [
-                'title'       => __('pallet delivery').' '.$palletDelivery->reference,
+                'title'       => __('goods in').' '.$palletDelivery->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($palletDelivery),
                 'navigation'  => [
                     'previous' => $this->getPrevious($palletDelivery, $request),
@@ -230,8 +232,8 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 ],
                 'pageHead'    => [
                     'model' => $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS
-                        ? __('New pallet delivery')
-                        : __('Pallet delivery'),
+                        ? __('New goods in')
+                        : __('Goods in'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-truck'],
                         'title' => $palletDelivery->reference
@@ -259,7 +261,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 'upload_spreadsheet' => [
                     'event'           => 'action-progress',
                     'channel'         => 'retina.personal.'.$palletDelivery->organisation->id,
-                    'required_fields' => ['customer_reference', 'notes', 'stored_items', 'type'],
+                    'required_fields' => ['pallet_customer_reference', 'pallet_notes', 'pallet_stored_items', 'pallet_type'],
                     'template'        => [
                         'label' => 'Download template (.xlsx)',
                     ],
@@ -287,7 +289,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
                 'upload_pallet' => [
                     'title' => [
-                        'label' => __('Upload pallet'),
+                        'label' => __('Upload goods'),
                         'information' => __('The list of column file: customer_reference, notes')
                     ],
                     'progressDescription'   => __('Adding Pallet Deliveries'),
@@ -297,19 +299,19 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                 'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
                             ]
                         ],
-                        'header' => ['type', 'customer_reference', 'notes'],
+                        'header' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes'],
                         'rows' => [
                             [
-                                'type' => 'Pallet',
-                                'customer_reference' => 'PALLET1',
-                                'notes' => 'notes',
+                                'pallet_type' => 'Pallet',
+                                'pallet_customer_reference' => 'PALLET1',
+                                'pallet_notes' => 'notes',
                             ],
                         ]
                     ],
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
                         'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['customer_reference', 'notes', 'stored_items', 'type'],
+                        'required_fields' => ['pallet_customer_reference', 'pallet_notes', 'pallet_stored_items', 'pallet_type'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)',
                         ],
@@ -347,22 +349,22 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                 'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
                             ]
                         ],
-                        'header' => ['type', 'customer_reference', 'notes', 'stored_item_reference', 'quantity', 'stored_item_name'],
+                        'header' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name'],
                         'rows' => [
                             [
-                                'type' => 'Pallet',
-                                'customer_reference' => 'PALLET1',
-                                'notes' => 'notes',
-                                'stored_item_reference' => 'SKU1',
-                                'quantity'  => 10,
-                                'stored_item_name' => 'SKU 1'
+                                'pallet_type' => 'Pallet',
+                                'pallet_customer_reference' => 'PALLET1',
+                                'pallet_notes' => 'notes',
+                                'sku_reference' => 'SKU1',
+                                'sku_quantity'  => 10,
+                                'sku_name' => 'SKU 1'
                             ],
                         ]
                     ],
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
                         'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['type', 'customer_reference', 'notes', 'stored_item_reference', 'quantity', 'stored_item_name' ],
+                        'required_fields' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name' ],
                         'template'        => [
                             'label' => 'Download template (.xlsx)',
                         ],
@@ -380,7 +382,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                 ]
                             ],
                             'download' => [
-                                'name'       => 'retina.fulfilment.storage.pallet_deliveries.pallets.uploads.templates',
+                                'name'       => 'retina.fulfilment.storage.pallet_deliveries.pallet-stored-items.uploads.templates',
                                 'parameters' => [
                                     'palletDelivery' => $palletDelivery->slug
                                 ]
@@ -444,7 +446,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => PalletDeliveryTabsEnum::navigation($palletDelivery)
+                    'navigation' => RetinaPalletDeliveryTabsEnum::navigation($palletDelivery)
                 ],
 
                 'pallet_limits' => $palletLimitData,
@@ -519,39 +521,39 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     ]
                 ],
 
-                PalletDeliveryTabsEnum::PALLETS->value => $this->tab == PalletDeliveryTabsEnum::PALLETS->value ?
-                    fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))),
+                RetinaPalletDeliveryTabsEnum::GOODS->value => $this->tab == RetinaPalletDeliveryTabsEnum::GOODS->value ?
+                    fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))
+                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))),
 
-                PalletDeliveryTabsEnum::SERVICES->value => $this->tab == PalletDeliveryTabsEnum::SERVICES->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))),
+                RetinaPalletDeliveryTabsEnum::SERVICES->value => $this->tab == RetinaPalletDeliveryTabsEnum::SERVICES->value ?
+                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))
+                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))),
 
-                PalletDeliveryTabsEnum::PHYSICAL_GOODS->value => $this->tab == PalletDeliveryTabsEnum::PHYSICAL_GOODS->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
+                RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value => $this->tab == RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value ?
+                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
+                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
 
-                PalletDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == PalletDeliveryTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))),
+                RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))),
 
             ]
         )->table(
             IndexPalletsInDelivery::make()->tableStructure(
                 $palletDelivery,
-                prefix: PalletDeliveryTabsEnum::PALLETS->value
+                prefix: RetinaPalletDeliveryTabsEnum::GOODS->value
             )
         )->table(
             IndexServiceInPalletDelivery::make()->tableStructure(
                 $palletDelivery,
-                prefix: PalletDeliveryTabsEnum::SERVICES->value
+                prefix: RetinaPalletDeliveryTabsEnum::SERVICES->value
             )
         )->table(
             IndexPhysicalGoodInPalletDelivery::make()->tableStructure(
                 $palletDelivery,
-                prefix: PalletDeliveryTabsEnum::PHYSICAL_GOODS->value
+                prefix: RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value
             )
-        )->table(IndexAttachments::make()->tableStructure(PalletDeliveryTabsEnum::ATTACHMENTS->value));
+        )->table(IndexAttachments::make()->tableStructure(RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value));
     }
 
 
@@ -564,7 +566,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Pallet deliveries')
+                            'label' => __('Goods in')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

@@ -37,7 +37,7 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
                         $stock = UpdateStock::make()->action(
                             stock: $stock,
                             modelData: $stockData['stock'],
-                            hydratorsDelay: 60,
+                            hydratorsDelay: $this->hydratorsDelay,
                             strict: false,
                             audit: false
                         );
@@ -56,7 +56,7 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
                     $stock = StoreStock::make()->action(
                         parent: $organisationSource->getOrganisation()->group,
                         modelData: $stockData['stock'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

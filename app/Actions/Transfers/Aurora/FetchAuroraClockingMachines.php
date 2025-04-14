@@ -30,7 +30,7 @@ class FetchAuroraClockingMachines extends FetchAuroraAction
                     $clockingMachine = UpdateClockingMachine::make()->action(
                         clockingMachine: $clockingMachine,
                         modelData: $clockingMachineData['clocking-machine'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -45,7 +45,7 @@ class FetchAuroraClockingMachines extends FetchAuroraAction
                     $clockingMachine = StoreClockingMachine::make()->action(
                         workplace: $clockingMachineData['workplace'],
                         modelData: $clockingMachineData['clocking-machine'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

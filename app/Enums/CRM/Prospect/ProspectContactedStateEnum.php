@@ -25,7 +25,7 @@ enum ProspectContactedStateEnum: string
     public static function labels(): array
     {
         return [
-            'no_applicable' => __('NA'),
+            'no_applicable' => __('N/A'),
             'soft_bounced'  => __('Bounced'),
             'never_open'    => __('Never open'),
             'open'          => __('Open'),
@@ -37,7 +37,7 @@ enum ProspectContactedStateEnum: string
     {
         return [
             'no_applicable' => [
-                'tooltip' => __('NA'),
+                'tooltip' => __('N/A'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-indigo-500'
 

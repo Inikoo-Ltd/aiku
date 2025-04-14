@@ -14,25 +14,18 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateOrders
+class CustomerHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Customer $customer;
-
-    public function __construct(Customer $customer)
+    public function getJobUniqueId(Customer $customer): string
     {
-        $this->customer = $customer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->customer->id))->dontRelease()];
+        return $customer->id;
     }
 
     public function handle(Customer $customer): void

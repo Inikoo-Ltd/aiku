@@ -31,7 +31,7 @@ class FetchAuroraOrders extends FetchAuroraAction
     use WithAuroraAttachments;
     use WithAuroraParsers;
 
-    public string $commandSignature = 'fetch:orders {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: transactions payments full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
+    public string $commandSignature = 'fetch:orders {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: transactions payments full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset} {--B|basket : fetch updated orders in basket} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     private bool $errorReported = false;
     private string $fingerPrint;
@@ -110,6 +110,10 @@ class FetchAuroraOrders extends FetchAuroraAction
         }
 
 
+        DB::connection('aurora')->table('Order Dimension')
+            ->where('Order Key', $sourceData[1])
+            ->update(['last_fetched_at' => now()]);
+
         return $order;
     }
 
@@ -129,7 +133,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                                 'address' => $deliveryAddress,
                                 'type'    => 'delivery'
                             ],
-                            hydratorsDelay: 300,
+                            hydratorsDelay: $this->hydratorsDelay,
                             audit: false
                         );
                     } else {
@@ -149,7 +153,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                             'address' => $billingAddress,
                             'type'    => 'billing'
                         ],
-                        hydratorsDelay: 300,
+                        hydratorsDelay: $this->hydratorsDelay,
                         audit: false
                     );
                 } else {
@@ -160,7 +164,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                 $order = UpdateOrder::make()->action(
                     order: $order,
                     modelData: $orderData['order'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
@@ -315,6 +319,19 @@ class FetchAuroraOrders extends FetchAuroraAction
 
     public function commonSelectModelsToFetch($query)
     {
+
+
+        if ($this->basket) {
+            $query->where('Order State', 'InBasket');
+
+            $query->where(function ($q) {
+                $q->whereNull('last_fetched_at')
+                    ->orWhereRaw('last_fetched_at  < `Order Last Updated Date`');
+            });
+
+
+        }
+
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         } elseif ($this->onlyOrdersNoTransactions) {
@@ -329,6 +346,10 @@ class FetchAuroraOrders extends FetchAuroraAction
             $sourceData = explode(':', $this->shop->source_id);
             $query->where('Order Store Key', $sourceData[1]);
         }
+
+        // print_r( $query->getBindings() );
+
+        // dd($query->toSql());
 
         return $query;
     }

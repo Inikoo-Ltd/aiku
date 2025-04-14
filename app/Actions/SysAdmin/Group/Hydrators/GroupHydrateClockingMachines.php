@@ -13,12 +13,20 @@ use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\SysAdmin\Group;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateClockingMachines
+class GroupHydrateClockingMachines implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Group $group): string
+    {
+        return $group->id;
+    }
 
     public function handle(Group $group): void
     {

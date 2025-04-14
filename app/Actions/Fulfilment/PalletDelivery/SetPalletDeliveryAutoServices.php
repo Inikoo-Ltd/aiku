@@ -47,13 +47,17 @@ class SetPalletDeliveryAutoServices extends OrgAction
         $palletTypes = DB::table('pallets')
             ->select('type', DB::raw('count(*) as count'))
             ->where('pallet_delivery_id', $palletDelivery->id)
+            ->whereNull('pallets.deleted_at')
             ->where('pallets.status', '!=', PalletStatusEnum::NOT_RECEIVED->value)
             ->groupBy('type')->pluck('count', 'type')->toArray();
 
         $autoServices = $palletDelivery->fulfilment->shop->services()
             ->where('auto_assign_trigger', 'PalletDelivery')
             ->where('auto_assign_subject', 'Pallet')
+            ->whereNull('deleted_at')
             ->where('is_auto_assign', true)->get();
+
+
 
         return $this->processAutoServices($palletDelivery, $autoServices, $palletTypes, $debug);
     }

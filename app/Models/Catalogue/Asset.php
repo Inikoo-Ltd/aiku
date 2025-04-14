@@ -12,9 +12,11 @@ use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Fulfilment\RecurringBill;
+use App\Models\Fulfilment\Space;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Ordering\Transaction;
@@ -60,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property ProductUnitRelationshipType $unit_relationship_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
+ * @property-read Charge|null $charge
  * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
@@ -78,6 +81,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\AssetSalesIntervals|null $salesIntervals
  * @property-read Service|null $service
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Space|null $space
  * @property-read \App\Models\Catalogue\AssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\AssetTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
@@ -194,6 +198,16 @@ class Asset extends Model implements HasMedia
     public function product(): HasOne
     {
         return $this->hasOne(Product::class);
+    }
+
+    public function charge(): HasOne
+    {
+        return $this->hasOne(Charge::class);
+    }
+
+    public function space(): HasOne
+    {
+        return $this->hasOne(Space::class);
     }
 
     public function recurringBills(): MorphToMany

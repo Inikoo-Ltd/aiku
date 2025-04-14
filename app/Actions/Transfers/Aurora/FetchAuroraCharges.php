@@ -30,7 +30,7 @@ class FetchAuroraCharges extends FetchAuroraAction
                     $charge = UpdateCharge::make()->action(
                         charge: $charge,
                         modelData: $chargeData['charge'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -45,7 +45,7 @@ class FetchAuroraCharges extends FetchAuroraAction
                     $charge = StoreCharge::make()->action(
                         shop: $chargeData['shop'],
                         modelData: $chargeData['charge'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

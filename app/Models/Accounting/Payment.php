@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\UniversalSearch;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -61,10 +63,13 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $with_refund
  * @property string|null $source_id
+ * @property int|null $original_payment_id Only use when payment refund to original payment
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Invoice> $invoices
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\Accounting\OrgPaymentServiceProvider $orgPaymentServiceProvider
  * @property-read Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
@@ -148,5 +153,15 @@ class Payment extends Model implements Auditable
     public function topUps(): HasMany
     {
         return $this->hasMany(TopUp::class);
+    }
+
+    public function invoices(): MorphToMany
+    {
+        return $this->morphedByMany(Invoice::class, 'model', 'model_has_payments');
+    }
+
+    public function orders(): MorphToMany
+    {
+        return $this->morphedByMany(Order::class, 'model', 'model_has_payments');
     }
 }

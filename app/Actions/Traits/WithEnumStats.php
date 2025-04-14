@@ -30,7 +30,7 @@ trait WithEnumStats
             };
         }
 
-        if (is_null($fieldStatsLabel)) {
+        if ($fieldStatsLabel === null) {
             $fieldStatsLabel = $field;
         }
 

@@ -11,12 +11,13 @@ namespace App\Actions\Fulfilment\StoredItemAudit\UI;
 
 use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAuditFromPallet;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\StoredItemAudit;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -24,9 +25,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateStoredItemAuditFromPallet extends OrgAction
 {
-    use WithFulfilmentShopAuthorisation;
+    use WithFulfilmentShopEditAuthorisation;
 
-    private Fulfilment $parent;
+    private Fulfilment|Warehouse $parent;
     private Pallet $pallet;
 
     public function handle(Pallet $pallet, array $modelData): StoredItemAudit
@@ -48,14 +49,13 @@ class CreateStoredItemAuditFromPallet extends OrgAction
             $storedItemAudit->organisation->slug,
             $storedItemAudit->fulfilment->slug,
             $storedItemAudit->fulfilmentCustomer->slug,
-            $storedItemAudit->scope->slug,
+            $this->pallet,
             $storedItemAudit->slug
         ]);
     }
 
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPalletInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Pallet $pallet, ActionRequest $request): StoredItemAudit
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Pallet $pallet, ActionRequest $request): StoredItemAudit
     {
         $this->parent = $fulfilment;
         $this->pallet = $pallet;

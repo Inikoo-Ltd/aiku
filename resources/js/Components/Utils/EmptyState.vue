@@ -10,7 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import { routeType } from "@/types/route"
 import { ref } from 'vue'
 import { FlyingAstronaut } from '@/Assets/Iconscout/FlyingAstronaut'
-
+import { box } from '@/Assets/Iconscout/box'
 
 const props = defineProps<{
     data?: {
@@ -49,7 +49,7 @@ const isLoading = ref(false)
         <h3 v-if="data?.title" class="text-lg font-light text-[#4b525b] tracking-wide pb-2">{{ data?.title || trans('No records found') }}</h3>
         <p v-if="data?.description" class="text-sm text-gray-500 inline-block">{{ data?.description }}</p>
 
-        <div v-if="!isNoIcon" class="mb-6 h-64 aspect-square text-indigo-600 mx-auto" v-html="FlyingAstronaut" />
+        <div v-if="!isNoIcon" class="mb-6 h-64 aspect-square text-indigo-600 mx-auto" v-html="box" />
 
         <!-- <div v-if="data?.icons?.length === 1" class="mb-6">
             <FontAwesomeIcon :icon="data?.icons?.[0]" class="mx-auto h-9 text-gray-300" aria-hidden="true" />

@@ -23,7 +23,7 @@ const openGallery = ref(false)
 
 <template>
 	<div class="relative overflow-hidden rounded-lg lg:h-96" :style="getStyles(properties)">
-		<div class="absolute inset-0">
+		<div class="absolute inset-0" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))" >
 			<template v-if="modelValue?.image?.source">
 				<Image :src="modelValue.image.source" :imageCover="true" :alt="modelValue.image.alt"
 					:imgAttributes="modelValue.image.attributes" :style="getStyles(modelValue.image.properties)" />

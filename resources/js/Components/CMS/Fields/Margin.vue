@@ -1,66 +1,46 @@
 <script setup lang="ts">
-import { inject, onBeforeMount, onMounted } from 'vue'
+import { onMounted, inject } from 'vue'
 import PaddingMarginProperty from '@/Components/Workshop/Properties/PaddingMarginProperty.vue'
 import { trans } from 'laravel-vue-i18n'
-import { set, get } from 'lodash-es'
+import { cloneDeep, defaultsDeep } from 'lodash-es'
+import { isPlainObject } from 'lodash-es'
+
+const emit = defineEmits(['update:modelValue'])
+
+const model = defineModel<{
+  unit?: string
+  top?: { value: number | null }
+  left?: { value: number | null }
+  right?: { value: number | null }
+  bottom?: { value: number | null }
+}>()
 
 
-const model = defineModel<typeof localModel>()
-// const emits = defineEmits<{
-//     (e: 'update:modelValue'): void
-// }>()
-
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
-
-// Create a local copy of the model for internal use
+// Default values
 const localModel = {
-    unit: "px",
-    top: {
-        value: null
-    },
-    left: {
-        value: null
-    },
-    right: {
-        value: null
-    },
-    bottom: {
-        value: null
-    }
+  unit: "px",
+  top: { value: null },
+  left: { value: null },
+  right: { value: null },
+  bottom: { value: null }
 }
 
+onMounted(() => {
+  if (!isPlainObject(model.value)) return
 
-onMounted(async () => {
-
-    if (!model.value?.unit && model.value?.unit !== localModel.unit ) {
-        set(model, 'value.unit', localModel.unit)
-        onSaveWorkshopFromId(side_editor_block_id, 'margin value.unit')
+  for (const key in localModel) {
+    if (!(key in model.value)) {
+      // @ts-ignore
+      model.value[key] = cloneDeep(localModel[key])
     }
-    if (!model.value?.top?.value && model.value?.top?.value !== localModel.top?.value ) {
-        set(model, 'value.top.value', localModel.top.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'margin value.top.value')
-    }
-    if (!model.value?.left?.value && model.value?.left?.value !== localModel.left?.value ) {
-        set(model, 'value.left.value', localModel.left.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'margin value.left.value')
-    }
-    if (!model.value?.right?.value && model.value?.right?.value !== localModel.right?.value ) {
-        set(model, 'value.right.value', localModel.right.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'margin value.right.value')
-    }
-    if (!model.value?.bottom?.value && model.value?.bottom?.value !== localModel.bottom?.value ) {
-        set(model, 'value.bottom.value', localModel.bottom.value)
-        onSaveWorkshopFromId(side_editor_block_id, 'margin value.bottom.value')
-    }
+  }
 })
-
 </script>
 
+
 <template>
-    <div>
-        <PaddingMarginProperty :modelValue="model || localModel" @update:modelValue="(e) => model = e" :scope="trans('Margin')" />
-    </div>
+  <PaddingMarginProperty :modelValue="model" :scope="trans('Margin')"
+    @update:modelValue="val => emit('update:modelValue', val)" />
 </template>
 
 <style scoped></style>

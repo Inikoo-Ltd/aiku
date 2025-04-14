@@ -29,7 +29,7 @@ const isModalGallery = ref(false)
 				<img v-if="!fieldValue?.image?.source"
 					src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" :alt="fieldValue?.image?.alt"
 					class="h-full w-full object-cover" />
-				<Image :src="fieldValue?.image?.source" :imageCover=true :alt="fieldValue?.image?.alt"
+				<Image v-else :src="fieldValue?.image?.source" :imageCover=true :alt="fieldValue?.image?.alt"
 					:imgAttributes="fieldValue?.image?.attributes" :style="getStyles(fieldValue?.image?.properties)" />
 			</div>
 		</div>

@@ -42,13 +42,14 @@ use App\Actions\Comms\Outbox\ToggleOutbox;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
-use App\Actions\Comms\OutboxHasSubscribers\StoreOutboxHasSubscriber;
+use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\DeletePortfolio;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
@@ -70,6 +71,7 @@ use App\Actions\Fulfilment\Pallet\AttachPalletsToReturn;
 use App\Actions\Fulfilment\Pallet\AttachPalletToReturn;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\DeletePallet;
+use App\Actions\Fulfilment\Pallet\DeleteStoredPallet;
 use App\Actions\Fulfilment\Pallet\ImportPalletReturnItem;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
 use App\Actions\Fulfilment\Pallet\SetPalletAsLost;
@@ -85,6 +87,7 @@ use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Fulfilment\PalletDelivery\CancelPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
+use App\Actions\Fulfilment\PalletDelivery\DeleteBookedInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\DeletePalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDeliveryWithStoredItems;
@@ -102,6 +105,7 @@ use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
+use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturnItem\NotPickedPalletFromReturn;
@@ -195,6 +199,7 @@ use App\Actions\Web\Banner\UpdateBanner;
 use App\Actions\Web\Banner\UpdateBannerState;
 use App\Actions\Web\Banner\UpdateUnpublishedBannerSnapshot;
 use App\Actions\Web\Banner\UploadImagesToBanner;
+use App\Actions\Web\ModelHasWebBlocks\BulkUpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
@@ -254,6 +259,7 @@ Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
 Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.update')->withoutScopedBindings();
+Route::patch('customer-balance/{customer:id}', UpdateBalanceCustomer::class)->name('customer_balance.update')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
 
@@ -395,6 +401,7 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
     Route::post('received', ReceivePalletDelivery::class)->name('received');
     Route::post('booking', StartBookingPalletDelivery::class)->name('booking');
     Route::post('booked-in', SetPalletDeliveryAsBookedIn::class)->name('booked-in');
+    Route::delete('booked-in-delete', DeleteBookedInPalletDelivery::class)->name('booked-in-delete');
 
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPalletDelivery'])->name('attachment.detach')->withoutScopedBindings();
@@ -416,6 +423,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('pick-all-with-stored-items', PickedPalletReturnWithStoredItems::class)->name('pick_all_with_stored_items');
     Route::post('address', AddAddressToPalletReturn::class)->name('address.store');
+    Route::patch('address/switch', SwitchPalletReturnDeliveryAddress::class)->name('address.switch');
     Route::patch('address/update', UpdatePalletReturnDeliveryAddress::class)->name('address.update');
     Route::delete('address/delete', DeletePalletReturnAddress::class)->name('address.delete');
 
@@ -432,7 +440,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     //todo this new action
     Route::post('pallet-stored-item/{palletStoredItem:id}', AttachStoredItemToReturn::class)->name('stored_item.store')->withoutScopedBindings();
     Route::post('pallet-stored-item/pick/{palletStoredItem:id}', PickNewPalletReturnItem::class)->name('pallet_return_item.new_pick')->withoutScopedBindings();
-    Route::post('stored-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('stored-item.upload');
+    Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
     // This is wrong ImportPalletsInPalletDelivery is used when creating a pallet delivery
@@ -452,6 +460,7 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
 
     Route::patch('pallet-return-item', SyncPalletReturnItem::class)->name('pallet-return-item.sync');
 
+    Route::delete('stored/delete', DeleteStoredPallet::class)->name('stored.delete');
     Route::post('stored-items', SyncStoredItemToPallet::class)->name('stored-items.update');
     Route::post('stored-items/audit/{storedItemAudit:id}', SyncStoredItemToPalletAudit::class)->name('stored-items.audit')->withoutScopedBindings();
     Route::delete('stored-items/reset', ResetAuditStoredItemToPallet::class)->name('stored-items.audit.reset');
@@ -540,10 +549,15 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
-        Route::post('subscriber', [StoreOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.store')->withoutScopedBindings();
-        Route::delete('subscriber/{outBoxHasSubscriber:id}', [DeleteOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.delete')->withoutScopedBindings();
     });
 
+});
+
+Route::name('fulfilment.')->prefix('fulfilment/{fulfilment}')->group(function () {
+    Route::name('outboxes.')->prefix('outboxes/{outbox}')->group(function () {
+        Route::post('subscriber', [StoreManyOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.store')->withoutScopedBindings();
+        Route::delete('subscriber/{outBoxHasSubscriber:id}', [DeleteOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.delete')->withoutScopedBindings();
+    });
 });
 
 Route::post('fulfilment-customer-note/{fulfilmentCustomer}', StoreFulfilmentCustomerNote::class)->name('fulfilment_customer_note.store');
@@ -600,17 +614,20 @@ Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
 });
 
-Route::name('model_has_web_block.')->prefix('model-has-web-block/{modelHasWebBlocks:id}')->group(function () {
-    Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
-    Route::delete('', DeleteModelHasWebBlocks::class)->name('delete');
-    Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
+Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
+    Route::patch('bulk', BulkUpdateModelHasWebBlocks::class)->name('bulk.update');
+    Route::prefix('{modelHasWebBlocks:id}')->group(function () {
+        Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
+        Route::delete('', DeleteModelHasWebBlocks::class)->name('delete');
+        Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
+    });
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
-    Route::post('address', AddDeliveryAddressToCustomer::class)->name('address.store');
+    Route::post('delivery-address', AddDeliveryAddressToCustomer::class)->name('address.store');
     Route::patch('address/update', UpdateCustomerAddress::class)->name('address.update');
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');

@@ -2,6 +2,7 @@
 import { ref } from "vue"
 import Dialog from "./Dialog.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
   show: boolean
@@ -23,7 +24,7 @@ function onSubmit() {
 </script>
 
 <template>
-    <Dialog title="Tambah Video Youtube" :show="show" @close="closeDialog">
+    <Dialog :title="trans('Add youtube video')" :show="show" @close="closeDialog">
       <form @submit.prevent="onSubmit">
         <div class="flex flex-col space-y-5">
           
@@ -39,13 +40,13 @@ function onSubmit() {
               class="rounded-md px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
               @click="closeDialog"
             >
-              Batal
+              {{ trans("Cancel") }}
             </button>
             <button
               type="submit"
               class="rounded-md bg-blue-700 px-4 py-3 text-sm font-medium text-white hover:bg-opacity-80"
             >
-              Tambah
+              {{ trans("Add") }}
             </button>
           </div>
         </div>

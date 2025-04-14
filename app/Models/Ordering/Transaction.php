@@ -10,6 +10,7 @@ namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\CRM\Customer;
@@ -54,21 +55,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $model_id
  * @property int|null $asset_id
  * @property int|null $historic_asset_id
- * @property string|null $quantity_ordered
- * @property string|null $quantity_bonus
- * @property string|null $quantity_dispatched
- * @property string|null $quantity_fail
- * @property string|null $quantity_cancelled
+ * @property numeric|null $quantity_ordered
+ * @property numeric|null $quantity_bonus
+ * @property numeric|null $quantity_dispatched
+ * @property numeric|null $quantity_fail
+ * @property numeric|null $quantity_cancelled
  * @property bool $out_of_stock_in_basket
  * @property \Illuminate\Support\Carbon|null $out_of_stock_in_basket_at
  * @property string|null $fail_status
- * @property string $gross_amount net amount before discounts
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $gross_amount net amount before discounts
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -78,12 +79,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_id
  * @property string|null $source_alt_id to be used in no products transactions
  * @property-read Asset|null $asset
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItem
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
+ * @property-read HistoricAsset|null $historicAssetWithTrashed
+ * @property-read Invoice|null $invoice
  * @property-read Model|\Eloquent $item
  * @property-read Collection<int, Offer> $offer
  * @property-read Collection<int, OfferCampaign> $offerCampaign
@@ -118,11 +121,20 @@ class Transaction extends Model
         'submitted_at'              => 'datetime',
         'in_warehouse_at'           => 'datetime',
         'settled_at'                => 'datetime',
-
-
         'out_of_stock_in_basket_at' => 'datetime',
         'fetched_at'                => 'datetime',
         'last_fetched_at'           => 'datetime',
+        'quantity_ordered'          => 'decimal:3',
+        'quantity_bonus'            => 'decimal:3',
+        'quantity_dispatched'       => 'decimal:3',
+        'quantity_fail'             => 'decimal:3',
+        'quantity_cancelled'        => 'decimal:3',
+        'gross_amount'              => 'decimal:2',
+        'net_amount'                => 'decimal:2',
+        'grp_net_amount'            => 'decimal:2',
+        'org_net_amount'            => 'decimal:2',
+        'grp_exchange'              => 'decimal:4',
+        'org_exchange'              => 'decimal:4',
 
 
     ];
@@ -159,6 +171,16 @@ class Transaction extends Model
         return $this->belongsTo(HistoricAsset::class);
     }
 
+    /**
+     * Get the historic asset relationship including trashed records.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function historicAssetWithTrashed(): BelongsTo
+    {
+        return $this->belongsTo(HistoricAsset::class)->withTrashed();
+    }
+
     public function feedbacks(): MorphToMany
     {
         return $this->morphToMany(Feedback::class, 'model', 'model_has_feedbacks');
@@ -184,5 +206,9 @@ class Transaction extends Model
         return $this->hasOne(DeliveryNoteItem::class);
     }
 
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
+    }
 
 }

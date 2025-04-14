@@ -30,7 +30,6 @@ class EditInvoice extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->parent instanceof Organisation) {
             return $request->user()->authTo("accounting.{$this->organisation->id}.view");
         } elseif ($this->parent instanceof Shop) {
@@ -60,7 +59,7 @@ class EditInvoice extends OrgAction
         $this->parent = $invoice->shop;
         $this->initialisationFromShop($invoice->shop, $request);
 
-        return $this->handle($$invoice);
+        return $this->handle($invoice);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -87,6 +86,7 @@ class EditInvoice extends OrgAction
             [
                 'title'       => __('edit invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $invoice,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -116,11 +116,11 @@ class EditInvoice extends OrgAction
                             'label'   => __('footer'),
                             'icon'    => 'fa-light fa-key',
                             'current' => true,
-                            'fields' => [
-                                'footer'  => [
-                                    'type'        => 'textEditor',
-                                    'label'       => __('footer'),
-                                    'value'       => $invoice->footer
+                            'fields'  => [
+                                'footer' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('footer'),
+                                    'value' => $invoice->footer
                                 ],
                             ],
                         ],
@@ -136,9 +136,10 @@ class EditInvoice extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters): array
     {
         return ShowInvoice::make()->getBreadcrumbs(
+            $invoice,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'

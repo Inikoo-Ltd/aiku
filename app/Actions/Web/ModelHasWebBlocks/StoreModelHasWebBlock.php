@@ -34,15 +34,18 @@ class StoreModelHasWebBlock extends OrgAction
     {
         $position = Arr::pull($modelData, 'position', $webpage->modelHasWebBlocks()->max('position') + 1);
         $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
-        $positions = [];
-    
-        foreach ($webBlocks as $block) {
-            if ($block->position >= $position) {
-                $positions[$block->webBlock->id] = ['position' => $block->position + 1];
+
+        if (!$webBlocks->isEmpty()) {
+            $positions = [];
+
+            foreach ($webBlocks as $block) {
+                if ($block->position >= $position) {
+                    $positions[$block->webBlock->id] = ['position' => $block->position + 1];
+                }
             }
+
+            ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
         }
-        
-        ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
 
         $webBlockType = WebBlockType::find($modelData['web_block_type_id']);
 

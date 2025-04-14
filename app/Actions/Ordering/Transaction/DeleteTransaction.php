@@ -8,10 +8,12 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrders;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -20,27 +22,36 @@ class DeleteTransaction extends OrgAction
     use WithActionUpdate;
 
 
-    private Transaction $transaction;
-
-    public function handle(Order $order, Transaction $transaction): bool
+    public function handle(Transaction $transaction): Transaction
     {
-
         $transaction->delete();
+
+        $order = $transaction->order;
+
+        if ($this->strict) {
+            CalculateOrderTotalAmounts::run($order);
+            OrderHydrateTransactions::dispatch($order);
+        }
+
+        AssetHydrateOrders::dispatch($transaction->asset)->delay($this->hydratorsDelay);
+
 
         OrderRecordSearch::dispatch($order);
 
-        return true;
+        return $transaction;
     }
 
-    public function action(Order $order, Transaction $transaction): bool
+    public function action(Transaction $transaction): Transaction
     {
-        $this->initialisationFromShop($order->shop, []);
-        return $this->handle($order, $transaction);
+        $this->initialisationFromShop($transaction->shop, []);
+
+        return $this->handle($transaction);
     }
 
-    public function asController(Order $order, Transaction $transaction, ActionRequest $request): bool
+    public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
-        $this->initialisationFromShop($order->shop, $request);
-        return $this->handle($order, $transaction);
+        $this->initialisationFromShop($transaction->shop, $request);
+
+        return $this->handle($transaction);
     }
 }

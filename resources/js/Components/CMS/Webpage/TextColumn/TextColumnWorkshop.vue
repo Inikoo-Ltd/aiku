@@ -67,9 +67,16 @@ const getImageSlots = (layoutType: string): number => {
     <div :style="getStyles(modelValue?.container?.properties)" class="flex flex-wrap">
         <div v-for="index in getImageSlots(modelValue?.value?.layout_type)"
             :key="`${index}-${modelValue?.value?.images?.[index - 1]}`"
-            class="group relative p-2 hover:bg-white/40"
+            class=" relative p-2 hover:bg-white/40"
             :class="getColumnWidthClass(modelValue?.value?.layout_type, index - 1)">
-            <EditorV2 placeholder="Text......" v-model="modelValue.value.text[index - 1]" @update:modelValue="() => emits('autoSave')" />
+            <EditorV2 
+                placeholder="Text......" 
+                v-model="modelValue.value.text[index - 1]" 
+                @update:modelValue="() => emits('autoSave')"  
+                :uploadImageRoute="{ 
+                    name: webpageData.images_upload_route.name, 
+                    parameters: { modelHasWebBlocks: blockData.id } 
+                }" />
         </div>
     </div>
 </template>

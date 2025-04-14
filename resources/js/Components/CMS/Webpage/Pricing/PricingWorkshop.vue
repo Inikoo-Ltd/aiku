@@ -4,6 +4,8 @@ import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fal"
+import { sendMessageToParent } from "@/Composables/Workshop"
+import Blueprint from "@/Components/CMS/Webpage/Pricing/Blueprint"
 
 library.add(faCheck)
 
@@ -18,7 +20,14 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 
-
+const getBackgroundStyle = (bg: any): Record<string, string> => {
+  if (bg && bg.type === "color" && bg.color) {
+    return { backgroundColor: bg.color }
+  } else if (bg && bg.type === "image" && bg.image?.original) {
+    return { backgroundImage: `url(${bg.image.original})` }
+  }
+  return {}
+}
 </script>
 
 <template>
@@ -26,9 +35,7 @@ const emits = defineEmits<{
 		class="container flex flex-wrap justify-between"
 		:style="getStyles(modelValue?.container?.properties)">
 		<div class="mx-auto max-w-7xl px-6 lg:px-8">
-			<Editor
-				v-model="modelValue.text"
-				@update:modelValue="() => emits('autoSave')" />
+			<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" />
 			<div
 				class="isolate mx-auto mt-5 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
 				<div
@@ -38,8 +45,9 @@ const emits = defineEmits<{
 						tier.mostPopular ? 'lg:z-10 lg:rounded-b-none' : 'lg:mt-8',
 						tierIdx === 0 ? 'lg:rounded-r-none' : '',
 						tierIdx === modelValue?.tiers?.length - 1 ? 'lg:rounded-l-none' : '',
-						'flex flex-col justify-between rounded-3xl bg-white p-8 ring-1 ring-gray-200 xl:p-10',
-					]">
+						`flex flex-col justify-between rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10`,
+					]"
+					:style="getBackgroundStyle(tier.background)">
 					<div>
 						<div class="flex items-center justify-between gap-x-4">
 							<h3
@@ -56,7 +64,9 @@ const emits = defineEmits<{
 								Most popular
 							</p>
 						</div>
-						<p class="mt-4 text-sm/6 text-gray-600">{{ tier.description }}</p>
+						<Editor
+							v-model="tier.description"
+							@update:modelValue="() => emits('autoSave')" />
 						<p class="mt-6 flex items-baseline gap-x-1">
 							<span class="text-4xl font-semibold tracking-tight text-gray-900">{{
 								tier.priceMonthly
@@ -73,24 +83,26 @@ const emits = defineEmits<{
 									class="h-6 w-5 flex-none text-indigo-600"
 									fixed-width
 									aria-hidden="true" />
-								
+
 								{{ feature }}
 							</li>
 						</ul>
 					</div>
-					<a
-						:href="tier.link.type === 'internal' ? tier.link.workshop
-						: tier.link.href"
-						:aria-describedby="tier.id"
-						:target="tier.link.target"
-						:class="[
-							tier.mostPopular
-								? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500'
-								: 'text-indigo-600 ring-1 ring-indigo-200 ring-inset hover:ring-indigo-300',
-							'mt-8 block rounded-md px-3 py-2 text-center text-sm/6 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
-						]">
-						Buy plan
-					</a> 
+					<div class="flex justify-center">
+						<div
+							@click="
+								() =>
+									sendMessageToParent(
+										'activeChildBlock',
+										Blueprint?.blueprint?.[1]?.key?.join('-')
+									)
+							"
+							typeof="button"
+							:style="getStyles(tier.button.container.properties)"
+							>
+							{{ tier.button.text }}
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

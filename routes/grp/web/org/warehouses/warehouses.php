@@ -18,7 +18,7 @@ Route::get('create', CreateWarehouse::class)->name('create');
 
 Route::prefix('{warehouse}')
     ->group(function () {
-        Route::get('locations', [IndexLocations::class, 'inWarehouse'])->name('locations.index');
+        Route::get('locations', IndexLocations::class)->name('locations.index');
         Route::get('locations/download', DownloadLocations::class)->name('locations.download');
         Route::get('edit', EditWarehouse::class)->name('edit');
         Route::name('show')

@@ -43,7 +43,7 @@ class UpdateProduct extends OrgAction
 
 
         $product = $this->update($product, $modelData);
-        $changed = $product->getChanges();
+        $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
@@ -56,7 +56,7 @@ class UpdateProduct extends OrgAction
 
         UpdateAsset::run($product->asset, [], $this->hydratorsDelay);
 
-        if (Arr::hasAny($changed, ['state'])) {
+        if (Arr::hasAny($changed, ['state','status'])) {
             $this->productHydrators($product);
         }
 

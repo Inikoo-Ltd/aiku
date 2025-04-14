@@ -20,6 +20,9 @@ class FulfilmentHydratePalletDeliveries
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'urgent';
+
+
     private Fulfilment $fulfilment;
     public function __construct(Fulfilment $fulfilment)
     {

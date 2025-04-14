@@ -43,7 +43,7 @@ class GetRetinaFulfilmentNavigation
             if ($webUser?->customer?->fulfilmentCustomer?->number_pallets_status_storing) {
                 $additionalSubsections = [
                     [
-                        'label' => __('returns'),
+                        'label' => __('goods Out'),
                         'icon'  => ['fal', 'fa-truck-ramp'],
                         'root'  => 'retina.fulfilment.storage.pallet_returns.',
                         'route' => [
@@ -65,7 +65,7 @@ class GetRetinaFulfilmentNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('pallets'),
+                            'label' => __('goods'),
                             'icon'  => ['fal', 'fa-pallet'],
                             'root'  => 'retina.fulfilment.storage.pallets.',
                             'route' => [
@@ -73,7 +73,7 @@ class GetRetinaFulfilmentNavigation
                             ]
                         ],
                         [
-                            'label' => __('deliveries'),
+                            'label' => __('goods In'),
                             'icon'  => ['fal', 'fa-truck'],
                             'root'  => 'retina.fulfilment.storage.pallet_deliveries.',
                             'route' => [
@@ -187,6 +187,8 @@ class GetRetinaFulfilmentNavigation
                 ]
             ];*/
 
+            $currentRecurringBill = $webUser->customer?->fulfilmentCustomer?->currentRecurringBill;
+
             $groupNavigation['billing'] = [
                 'label'   => __('billing'),
                 'icon'    => ['fal', 'fa-file-invoice-dollar'],
@@ -196,15 +198,14 @@ class GetRetinaFulfilmentNavigation
                 ],
                 'topMenu' => [
                     'subSections' => [
-                        [
+                        $currentRecurringBill ? [
                             'label' => __('next bill'),
                             'icon'  => ['fal', 'fa-receipt'],
                             'root'  => 'retina.fulfilment.billing.next_recurring_bill',
                             'route' => [
-                                'name' => 'retina.fulfilment.billing.next_recurring_bill',
-
+                                'name' => 'retina.fulfilment.billing.next_recurring_bill'
                             ]
-                        ],
+                        ] : null,
 
                         [
                             'label' => __('invoices'),

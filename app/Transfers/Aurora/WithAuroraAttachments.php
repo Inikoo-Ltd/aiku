@@ -40,7 +40,7 @@ trait WithAuroraAttachments
 
     public function fetchAttachment($auroraAttachmentData, $organisationID): ?array
     {
-        if (is_null($auroraAttachmentData->{'Attachment Data'})) {
+        if ($auroraAttachmentData->{'Attachment Data'} === null) {
             return null;
         }
 
@@ -94,7 +94,7 @@ trait WithAuroraAttachments
 
 
         foreach ($this->parseAttachments($modelSourceID, $modelType) as $attachmentData) {
-            if (is_null($attachmentData)) {
+            if ($attachmentData === null) {
                 continue;
             }
 

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string $userable_type
  * @property int $userable_id
  * @property int $customer_client_id
- * @property int $platform_customer_client_id
+ * @property int|null $platform_customer_client_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformHasClient newModelQuery()

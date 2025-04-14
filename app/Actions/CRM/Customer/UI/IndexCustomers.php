@@ -40,33 +40,30 @@ class IndexCustomers extends OrgAction
     private Group|Shop|Organisation $parent;
 
 
-
     protected function getElementGroups($parent): array
     {
-        $elements = [
-            'state' => [
-                    'label'    => __('State'),
-                    'elements' => array_merge_recursive(
-                        CustomerStateEnum::labels(),
-                        CustomerStateEnum::count($parent)
-                    ),
-                    'engine'   => function ($query, $elements) {
-                        $query->whereIn('customers.state', $elements);
-                    }
-                ],
+        return [
+            'state'  => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(
+                    CustomerStateEnum::labels(),
+                    CustomerStateEnum::count($parent)
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('customers.state', $elements);
+                }
+            ],
             'status' => [
-                    'label'    => __('Status'),
-                    'elements' => array_merge_recursive(
-                        CustomerStatusEnum::labels(),
-                        CustomerStatusEnum::count($parent)
-                    ),
-                    'engine'   => function ($query, $elements) {
-                        $query->whereIn('customers.status', $elements);
-                    }
-                ]
+                'label'    => __('Status'),
+                'elements' => array_merge_recursive(
+                    CustomerStatusEnum::labels(),
+                    CustomerStatusEnum::count($parent)
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('customers.status', $elements);
+                }
+            ]
         ];
-
-        return $elements;
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -272,17 +269,17 @@ class IndexCustomers extends OrgAction
             }
 
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('since'), type: 'date', canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
 
 
             if ($isDropshipping) {
-                $table->column(key: 'number_current_customer_clients', label: '', tooltip: __('Clients'), icon: 'fal fa-users', canBeHidden: false, sortable: true, searchable: true)
+                $table->column(key: 'number_current_customer_clients', label: '', icon: 'fal fa-users', tooltip: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'number_current_portfolios', label: '', icon: 'fal fa-chess-board', tooltip: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                     // ->column(key: 'platforms', label: __('Platforms'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'platform_name', label: __('Platforms'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, type: 'date', sortable: true, searchable: true)
+            $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true);
 

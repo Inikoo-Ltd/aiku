@@ -39,7 +39,7 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
                     $stockDelivery = UpdateStockDelivery::make()->action(
                         $stockDelivery,
                         $stockDeliveryData['stockDelivery'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -54,7 +54,7 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
                     $stockDelivery = StoreStockDelivery::make()->action(
                         $stockDeliveryData['org_parent'],
                         $stockDeliveryData['stockDelivery'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );

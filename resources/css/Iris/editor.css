@@ -11,10 +11,10 @@
 
 .editor-class p {
     display: block;
-    margin-block-start: 0em;
-    margin-block-end: 0em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
     unicode-bidi: isolate;
 }
 
@@ -80,3 +80,35 @@
 .editor-class p:empty::after {
     content: "\00A0";
 }
+
+/* Float kiri */
+.editor-class img[style*="float:left"] {
+    margin-right: 1em;
+    margin-bottom: 1em;
+    max-width: 300px;
+}
+
+/* Float kanan */
+.editor-class img[style*="float:right"] {
+    margin-left: 1em;
+  margin-bottom: 1em;
+  max-width: 300px;
+}
+
+@media screen and (max-width: 768px) {
+    .editor-class img {
+      width: 100% !important;
+      height: auto !important;
+      max-width: 100% !important;
+      float: none !important;
+      margin: 0 auto !important;
+      display: block !important;
+    }
+  
+    .editor-class div[style*="float:left"],
+    .editor-class div[style*="float:right"] {
+      float: none !important;
+      width: 100% !important;
+      margin: 0 auto !important;
+    }
+  }

@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
+use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
@@ -24,6 +25,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,14 +33,40 @@ class UpdateWebpage extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    // use HasWebAuthorisation;
 
     private Webpage $webpage;
 
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
+        $currentSeoData = Arr::get($modelData, 'seo_data');
 
-        $modelData = StoreWebpageHasRedirect::make()->action($webpage, $modelData);
+        if ($currentSeoData) {
+            $oldSeoData = $webpage->seo_data;
+
+
+            $isUseCanonicalUrl = Arr::pull($currentSeoData, 'is_use_canonical_url');
+            if ($isUseCanonicalUrl) {
+                data_set($modelData, 'is_use_canonical_url', $isUseCanonicalUrl);
+            }
+
+            $canonicalUrl = Arr::pull($currentSeoData, 'canonical_url');
+            if ($canonicalUrl) {
+                data_set($modelData, 'canonical_url', $canonicalUrl);
+            }
+
+            $newData = [];
+            data_set($newData, 'structured_data', Arr::pull($currentSeoData, 'structured_data', Arr::get($oldSeoData, 'structured_data')));
+            data_set($newData, 'structured_data_type', Arr::pull($currentSeoData, 'structured_data_type', Arr::get($oldSeoData, 'structured_data_type')));
+            data_set($newData, 'meta_title', Arr::pull($currentSeoData, 'meta_title', Arr::get($oldSeoData, 'meta_title')));
+            data_set($newData, 'meta_description', Arr::pull($currentSeoData, 'meta_description', Arr::get($oldSeoData, 'meta_description')));
+            data_set($newData, 'image', Arr::pull($currentSeoData, 'image', Arr::get($oldSeoData, 'image')));
+
+            data_set($modelData, 'seo_data', $newData);
+        }
+
+        // $modelData = StoreWebpageHasRedirect::make()->action($webpage, $modelData);
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
@@ -58,15 +86,6 @@ class UpdateWebpage extends OrgAction
         return $webpage;
     }
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("web.{$this->shop->id}.edit");
-    }
 
 
     public function rules(): array
@@ -119,6 +138,7 @@ class UpdateWebpage extends OrgAction
             'type'          => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
             'state'         => ['sometimes', Rule::enum(WebpageStateEnum::class)],
             'google_search' => ['sometimes', 'array'],
+            'webpage_type'  => ['sometimes', 'array'],
             'ready_at'      => ['sometimes', 'date'],
             'live_at'       => ['sometimes', 'date'],
             'title'         => ['sometimes', 'string'],
@@ -152,6 +172,7 @@ class UpdateWebpage extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->webpage = $webpage;
+        $this->scope  = $webpage->organisation;
 
         $this->initialisation($webpage->organisation, $request);
 
@@ -162,6 +183,7 @@ class UpdateWebpage extends OrgAction
     public function inShop(Shop $shop, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->webpage = $webpage;
+        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request);
 
         $modelData = [];
@@ -169,7 +191,8 @@ class UpdateWebpage extends OrgAction
             data_set(
                 $modelData,
                 match ($key) {
-                    'google_search' => 'data',
+                    'google_search' => 'seo_data',
+                    'webpage_type' => 'seo_data',
                     default => $key
                 },
                 $value

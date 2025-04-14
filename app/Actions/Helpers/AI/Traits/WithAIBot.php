@@ -21,7 +21,7 @@ trait WithAIBot
 {
     public function driverHelper(string $driver, string $key): string
     {
-        return config("llmdriver.drivers.{$driver}.{$key}");
+        return config("llmdriver.drivers.$driver.$key");
     }
 
     public function get_embedding_size(string $embedding_driver): string
@@ -129,7 +129,7 @@ trait WithAIBot
         ";
     }
 
-    public function askDeepseek($question)
+    public function askDeepseek($question): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $apiKey = config('askbot-laravel.deepseek_api_key');
         $baseUrl = config('askbot-laravel.deepseek_api_url');
@@ -175,7 +175,7 @@ trait WithAIBot
         ]);
     }
 
-    public function askLlama($question)
+    public function askLlama($question): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $response = Ollama::model(config('ollama-laravel.model'))
         ->prompt($question)

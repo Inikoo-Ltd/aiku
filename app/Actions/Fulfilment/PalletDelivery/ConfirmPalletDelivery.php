@@ -47,18 +47,20 @@ class ConfirmPalletDelivery extends OrgAction
         } else {
             $modelData['confirmed_at'] = now();
         }
-        foreach ($palletDelivery->pallets as $pallet) {
-            UpdatePallet::run($pallet, [
-                'reference' => GetSerialReference::run(
-                    container: $palletDelivery->fulfilmentCustomer,
-                    modelType: SerialReferenceModelEnum::PALLET
-                ),
-                'state'  => PalletStateEnum::SUBMITTED,
-                'status' => PalletStatusEnum::RECEIVING
-            ]);
-            $pallet->generateSlug();
+        if ($palletDelivery->pallets) {
+            foreach ($palletDelivery->pallets as $pallet) {
+                UpdatePallet::run($pallet, [
+                    'reference' => GetSerialReference::run(
+                        container: $palletDelivery->fulfilmentCustomer,
+                        modelType: SerialReferenceModelEnum::PALLET
+                    ),
+                    'state'  => PalletStateEnum::SUBMITTED,
+                    'status' => PalletStatusEnum::RECEIVING
+                ]);
+                $pallet->generateSlug();
 
-            PalletRecordSearch::run($pallet);
+                PalletRecordSearch::run($pallet);
+            }
         }
 
         $modelData['state']        = PalletDeliveryStateEnum::CONFIRMED;
@@ -67,11 +69,13 @@ class ConfirmPalletDelivery extends OrgAction
             $modelData[PalletDeliveryStateEnum::SUBMITTED->value.'_at'] = now();
         }
 
-        foreach ($palletDelivery->pallets as $pallet) {
-            UpdatePallet::run($pallet, [
-                'state'     => PalletStateEnum::CONFIRMED,
-                'status'    => PalletStatusEnum::RECEIVING,
-            ]);
+        if ($palletDelivery->pallets) {
+            foreach ($palletDelivery->pallets as $pallet) {
+                UpdatePallet::run($pallet, [
+                    'state'     => PalletStateEnum::CONFIRMED,
+                    'status'    => PalletStatusEnum::RECEIVING,
+                ]);
+            }
         }
 
         $palletDelivery = $this->update($palletDelivery, $modelData);

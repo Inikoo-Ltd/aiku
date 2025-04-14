@@ -15,6 +15,11 @@ export default {
             type: "background",
           },
           {
+            key: ["gap"],
+            label:"Gap",
+            type: "numberCss",
+          },
+          {
             key: ["padding"],
             label:"Padding",
             type: "padding",
@@ -29,6 +34,16 @@ export default {
             label:"Border",
             type: "border",
           },
+          {
+            key: ["shadow"],
+            label : "Shadow",
+            type: "shadow",
+        },
+        {
+            key: ["shadowColor"],
+            label : "Shadow Color",
+            type: "color",
+        },
         ],
       },
     ]

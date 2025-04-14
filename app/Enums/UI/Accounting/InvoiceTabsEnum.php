@@ -16,15 +16,23 @@ enum InvoiceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case ITEMS                  = 'items';
+    case GROUPED                  = 'grouped';
+    case ITEMIZED               = 'itemized';
     case HISTORY                = 'history';
     case PAYMENTS               = 'payments';
     case EMAIL = 'email';
+    case REFUNDS                = 'refunds';
 
     public function blueprint(): array
     {
         return match ($this) {
 
+            InvoiceTabsEnum::REFUNDS     => [
+                'title' => __('Refunds'),
+                'icon'  => 'fal fa-arrow-circle-left',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             InvoiceTabsEnum::PAYMENTS     => [
                 'title' => __('Payments'),
                 'type'  => 'icon',
@@ -46,8 +54,12 @@ enum InvoiceTabsEnum: string
                 'align' => 'right',
             ],
 
-            InvoiceTabsEnum::ITEMS => [
-                'title' => __('Items'),
+            InvoiceTabsEnum::GROUPED => [
+                'title' => __('Itemized by rental/service'),
+                'icon'  => 'fal fa-bars',
+            ],
+            InvoiceTabsEnum::ITEMIZED => [
+                'title' => __('Itemised by pallets'),
                 'icon'  => 'fal fa-bars',
             ],
         };

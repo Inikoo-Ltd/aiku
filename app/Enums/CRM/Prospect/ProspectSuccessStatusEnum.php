@@ -23,7 +23,7 @@ enum ProspectSuccessStatusEnum: string
     public static function labels(): array
     {
         return [
-            'no_applicable' => __('NA'),
+            'no_applicable' => __('N/A'),
             'registered'    => __('Registered'),
             'invoiced'      => __('Invoiced'),
         ];
@@ -34,7 +34,7 @@ enum ProspectSuccessStatusEnum: string
         return [
             'no_applicable' => [
 
-                'tooltip' => __('NA'),
+                'tooltip' => __('N/A'),
                 'icon'    => 'fal fa-location-slash',
             ],
             'registered'    => [

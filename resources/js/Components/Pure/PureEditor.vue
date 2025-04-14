@@ -18,10 +18,6 @@ import EditorMenu from '@/Components/Pure/Supports/EditorMenu.vue'
 import Placeholder from '@tiptap/extension-placeholder'
 import FontFamily from '@tiptap/extension-font-family'
 import "@/../css/Iris/blockTextContent.css"
-
-
-import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faText, faUndoAlt, faRedoAlt } from '@far'
 import { faHorizontalRule, faQuoteRight, faMarker } from '@fas'
@@ -254,8 +250,8 @@ defineExpose({
         font-size: 2em;
         margin-block-start: 0.67em;
         margin-block-end: 0.67em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -265,8 +261,8 @@ defineExpose({
         font-size: 1.5em;
         margin-block-start: 0.83em;
         margin-block-end: 0.83em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }
@@ -276,8 +272,8 @@ defineExpose({
         font-size: 1.17em;
         margin-block-start: 1em;
         margin-block-end: 1em;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
         font-weight: bold;
         unicode-bidi: isolate;
     }

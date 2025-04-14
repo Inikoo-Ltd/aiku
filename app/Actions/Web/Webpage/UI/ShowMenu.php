@@ -21,6 +21,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Http\Resources\Web\WebBlockTypesResource;
+use Illuminate\Support\Arr;
 
 class ShowMenu extends OrgAction
 {
@@ -42,6 +43,9 @@ class ShowMenu extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
+        $menuLayout = Arr::get($website->published_layout, 'menu');
+        $isMenuActive = Arr::get($menuLayout, 'status');
+
         return Inertia::render(
             'Org/Web/Workshop/Menu/MenuWorkshop',
             [
@@ -116,6 +120,7 @@ class ShowMenu extends OrgAction
                         'website' => $website->id
                     ]
                 ],
+                'status' => $isMenuActive ?? true,
                 'domain' => $website->domain,
                 'data' => GetWebsiteWorkshopMenu::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(

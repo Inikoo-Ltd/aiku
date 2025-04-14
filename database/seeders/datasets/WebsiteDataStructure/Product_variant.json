@@ -1,0 +1,131 @@
+[
+    {
+      "@context": "https://schema.org/",
+      "@type": "ProductGroup",
+      "name": "Wool winter coat",
+      "description": "Wool coat, new for the coming winter season",
+      "url": "https://www.example.com/coat",
+      "brand": {
+        "@type": "Brand",
+        "name": "Good brand"
+      },
+      "audience": {
+        "@type": "PeopleAudience",
+        "suggestedGender": "unisex",
+        "suggestedAge": {
+          "@type": "QuantitativeValue",
+          "minValue": 13,
+          "unitCode": "ANN"
+        }
+      },
+      "productGroupID": "44E01",
+      "pattern": "striped",
+      "material": "wool",
+      "variesBy": [
+        "https://schema.org/size",
+        "https://schema.org/color"
+      ],
+      "hasVariant": [
+        {
+          "@type": "Product",
+          "sku": "44E01-M11000",
+          "gtin14": "98766051104214",
+          "image": "https://www.example.com/coat_small_green.jpg",
+          "name": "Small green coat",
+          "description": "Small wool green coat for the winter season",
+          "color": "Green",
+          "size": "small",
+          "offers": {
+            "@type": "Offer",
+            "url": "https://www.example.com/coat?size=small&color=green",
+            "priceCurrency": "USD",
+            "price": 39.99,
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/InStock",
+            "shippingDetails": { "@id": "#shipping_policy" },
+            "hasMerchantReturnPolicy": { "@id": "#return_policy" }
+          }
+        },
+        {
+          "@type": "Product",
+          "sku": "44E01-K11000",
+          "gtin14": "98766051104207",
+          "image": "https://www.example.com/coat_small_lightblue.jpg",
+          "name": "Small light blue coat",
+          "description": "Small wool light blue coat for the winter season",
+          "color": "light blue",
+          "size": "small",
+          "offers": {
+            "@type": "Offer",
+            "url": "https://www.example.com/coat?size=small&color=lightblue",
+            "priceCurrency": "USD",
+            "price": 39.99,
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/InStock",
+            "shippingDetails": { "@id": "#shipping_policy" },
+            "hasMerchantReturnPolicy": { "@id": "#return_policy" }
+          }
+        },
+        {
+          "@type": "Product",
+          "sku": "44E01-X1100000",
+          "gtin14": "98766051104399",
+          "image": "https://www.example.com/coat_large_lightblue.jpg",
+          "name": "Large light blue coat",
+          "description": "Large wool light blue coat for the winter season",
+          "color": "light blue",
+          "size": "large",
+          "offers": {
+            "@type": "Offer",
+            "url": "https://www.example.com/coat?size=large&color=lightblue",
+            "priceCurrency": "USD",
+            "price": 49.99,
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/BackOrder",
+            "shippingDetails": { "@id": "#shipping_policy" },
+            "hasMerchantReturnPolicy": { "@id": "#return_policy" }
+          }
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org/",
+      "@type": "OfferShippingDetails",
+      "@id": "#shipping_policy",
+      "shippingRate": {
+        "@type": "MonetaryAmount",
+        "value": 2.99,
+        "currency": "USD"
+      },
+      "shippingDestination": {
+        "@type": "DefinedRegion",
+        "addressCountry": "US"
+      },
+      "deliveryTime": {
+        "@type": "ShippingDeliveryTime",
+        "handlingTime": {
+          "@type": "QuantitativeValue",
+          "minValue": 0,
+          "maxValue": 1,
+          "unitCode": "DAY"
+        },
+        "transitTime": {
+          "@type": "QuantitativeValue",
+          "minValue": 1,
+          "maxValue": 5,
+          "unitCode": "DAY"
+        }
+      }
+    },
+    {
+      "@context": "http://schema.org/",
+      "@type": "MerchantReturnPolicy",
+      "@id": "#return_policy",
+      "applicableCountry": "US",
+      "returnPolicyCountry": "US",
+      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+      "merchantReturnDays": 60,
+      "returnMethod": "https://schema.org/ReturnByMail",
+      "returnFees": "https://schema.org/FreeReturn"
+    }
+  ]

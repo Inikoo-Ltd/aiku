@@ -18,6 +18,10 @@ trait WithFulfilmentShopAuthorisation
             return true;
         }
 
+        $this->isSupervisor = $request->user()->authTo([
+            "supervisor-fulfilment-shop.".$this->fulfilment->id
+        ]);
+
         $this->canEdit = $request->user()->authTo([
             "fulfilment-shop.{$this->fulfilment->id}.edit",
             "supervisor-fulfilment-shop.".$this->fulfilment->id

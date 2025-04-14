@@ -31,6 +31,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sub Domain
+    |--------------------------------------------------------------------------
+    |
+    | This is the subdomain where Shopify will be accessible from. If the
+    | setting is null, Shopify will reside under the same domain as the
+    | application. Otherwise, this value will be used as the subdomain.
+    |
+    */
+
+    'domain' => env('SHOPIFY_DOMAIN', 'pupil'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Manual routes
     |--------------------------------------------------------------------------
     |
@@ -362,7 +375,7 @@ return [
 
     'listen' => [
         \Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent::class => [
-            // \App\Listeners\MyListener::class,
+            \App\Listeners\ShopifyAppInstalledListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\ShopAuthenticatedEvent::class => [
             // \App\Listeners\MyListener::class,
@@ -371,7 +384,7 @@ return [
             // \App\Listeners\MyListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\AppUninstalledEvent::class => [
-            // \App\Listeners\MyListener::class,
+//             \App\Listeners\ShopifyAppInstalledListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\PlanActivatedEvent::class => [
             // \App\Listeners\MyListener::class,
@@ -393,6 +406,11 @@ return [
     */
 
     'webhooks' => [
+/*        [
+            'topic' => 'app/uninstalled',
+            'address' => config('app.url') . '/webhooks/shopify-user/app-uninstalled',
+            'format' => 'json',
+        ],*/
         /*
             [
                 'topic' => env('SHOPIFY_WEBHOOK_1_TOPIC', 'ORDERS_CREATE'),

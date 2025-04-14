@@ -12,6 +12,7 @@ use App\Actions\Catalogue\HasRentalAgreement;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\GetFulfilmentCustomerShowcase;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexCustomerBalanceTransaction;
 use App\Actions\Fulfilment\RentalAgreementClause\UI\IndexRentalAgreementClauses;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
@@ -23,6 +24,7 @@ use App\Actions\Traits\WithWebUserMeta;
 use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Fulfilment\CustomerBalanceTransactionsResource;
 use App\Http\Resources\Fulfilment\RentalAgreementClausesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -107,12 +109,29 @@ class ShowFulfilmentCustomer extends OrgAction
                     [
                         'type'        => 'button',
                         'style'       => 'create',
-                        'tooltip'     => __('Create Return'),
-                        'label'       => __('Return'),
+                        'tooltip'     => __('Create Return (Whole pallet)'),
+                        'label'       => __('Return (Whole pallet)'),
                         'fullLoading' => true,
                         'route'       => [
                             'method'     => 'post',
                             'name'       => 'grp.models.fulfilment-customer.pallet-return.store',
+                            'parameters' => [
+                                'fulfilmentCustomer' => $fulfilmentCustomer->id
+                            ]
+                        ]
+                    ];
+            }
+            if ($fulfilmentCustomer->number_pallets_status_storing > 0) {
+                $additionalActions[] =
+                    [
+                        'type'        => 'button',
+                        'style'       => 'create',
+                        'tooltip'     => __('Create Return (Customer SKUs)'),
+                        'label'       => __('Return (SKUs)'),
+                        'fullLoading' => true,
+                        'route'       => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.fulfilment-customer.pallet-return-stored-items.store',
                             'parameters' => [
                                 'fulfilmentCustomer' => $fulfilmentCustomer->id
                             ]
@@ -207,6 +226,10 @@ class ShowFulfilmentCustomer extends OrgAction
                     : Inertia::lazy(fn () => RentalAgreementClausesResource::collection(IndexRentalAgreementClauses::run($fulfilmentCustomer, FulfilmentCustomerTabsEnum::AGREED_PRICES->value))),
 
 
+                FulfilmentCustomerTabsEnum::BALANCE->value => $this->tab == FulfilmentCustomerTabsEnum::BALANCE->value ?
+                    fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))
+                    : Inertia::lazy(fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))),
+
                 FulfilmentCustomerTabsEnum::EMAIL->value => $this->tab == FulfilmentCustomerTabsEnum::EMAIL->value ?
                     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))
                     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))),
@@ -225,6 +248,7 @@ class ShowFulfilmentCustomer extends OrgAction
             ->table(IndexRentalAgreementClauses::make()->tableStructure(prefix: FulfilmentCustomerTabsEnum::AGREED_PRICES->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($fulfilmentCustomer, prefix: FulfilmentCustomerTabsEnum::EMAIL->value))
             ->table(IndexHistory::make()->tableStructure(prefix: FulfilmentCustomerTabsEnum::HISTORY->value))
+            ->table(IndexCustomerBalanceTransaction::make()->tableStructure($fulfilmentCustomer->customer, prefix: FulfilmentCustomerTabsEnum::BALANCE->value))
             ->table(IndexAttachments::make()->tableStructure(FulfilmentCustomerTabsEnum::ATTACHMENTS->value));
     }
 
@@ -259,7 +283,7 @@ class ShowFulfilmentCustomer extends OrgAction
         };
 
         if (Arr::get($routeParameters, 'pallet')) {
-            $pallet             = Pallet::where('slug', $routeParameters['pallet'])->first();
+            $pallet             = Pallet::where('slug', $routeParameters['pallet'])->withTrashed()->first();
             $fulfilmentCustomer = $pallet->fulfilmentCustomer->slug;
         } else {
             $fulfilmentCustomer = $routeParameters['fulfilmentCustomer'];

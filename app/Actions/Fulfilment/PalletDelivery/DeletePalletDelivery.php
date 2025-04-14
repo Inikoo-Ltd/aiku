@@ -8,6 +8,8 @@
 
 namespace App\Actions\Fulfilment\PalletDelivery;
 
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
@@ -41,7 +43,7 @@ class DeletePalletDelivery extends OrgAction
             $palletDelivery->transactions()->delete();
 
             $this->update($palletDelivery, [
-                'delete_comment' => Arr::get($modelData, 'delete_comment')
+                'deleted_note' => Arr::get($modelData, 'deleted_note')
             ]);
 
             $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
@@ -59,7 +61,13 @@ class DeletePalletDelivery extends OrgAction
 
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
 
+            $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
+
             $palletDelivery->delete();
+
+            $fulfilmentCustomer->refresh();
+            FulfilmentCustomerHydratePalletDeliveries::dispatch($fulfilmentCustomer);
+            FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
         } else {
             abort(401);
         }
@@ -77,7 +85,7 @@ class DeletePalletDelivery extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_comment' => ['sometimes', 'required']
+            'deleted_note' => ['required', 'string', 'max:4000'],
         ];
     }
 

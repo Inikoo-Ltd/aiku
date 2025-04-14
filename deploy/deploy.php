@@ -35,7 +35,7 @@ task('deploy:sync-octane-anchor', function () {
 desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'));
 
-set('keep_releases', 50);
+set('keep_releases', 15);
 
 set('shared_dirs', ['storage', 'private']);
 set('shared_files', [

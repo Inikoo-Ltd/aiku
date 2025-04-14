@@ -9,6 +9,8 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Dropshipping\Shopify\Order\CancelFulfilmentRequestToShopify;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -46,9 +48,9 @@ class DeletePalletReturn extends OrgAction
                 $palletIds = $palletReturn->pallets->pluck('id')->toArray();
                 foreach ($palletReturn->pallets as $pallet) {
                     UpdatePallet::run($pallet, [
-                        'state'                => PalletStateEnum::STORING,
-                        'status'               => PalletStatusEnum::STORING,
-                        'pallet_return_id'     => null,
+                        'state'                   => PalletStateEnum::STORING,
+                        'status'                  => PalletStatusEnum::STORING,
+                        'pallet_return_id'        => null,
                         'requested_for_return_at' => null
                     ]);
                 }
@@ -78,9 +80,14 @@ class DeletePalletReturn extends OrgAction
 
             Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
 
-            CancelFulfilmentRequestToShopify::dispatch($palletReturn);
+            if ($palletReturn->fulfilmentCustomer->customer->shopifyUser !== null) {
+                CancelFulfilmentRequestToShopify::dispatch($palletReturn);
+            }
 
             $palletReturn->delete();
+            $fulfilmentCustomer->refresh();
+            FulfilmentCustomerHydratePalletReturns::dispatch($fulfilmentCustomer);
+            FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
         } else {
             abort(401);
         }
@@ -89,7 +96,7 @@ class DeletePalletReturn extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_comment' => ['sometimes', 'required']
+            'deleted_note' => ['required', 'string', 'max:4000'],
         ];
     }
 

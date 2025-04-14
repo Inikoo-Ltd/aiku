@@ -17,7 +17,7 @@ Route::get('/', IndexWarehouses::class)->name('index');
 
 Route::prefix('{warehouse:id}')
     ->group(function () {
-        Route::get('locations', [IndexLocations::class, 'inWarehouse'])->name('locations.index');
+        Route::get('locations', IndexLocations::class)->name('locations.index');
         Route::name('show')
             ->group(function () {
 

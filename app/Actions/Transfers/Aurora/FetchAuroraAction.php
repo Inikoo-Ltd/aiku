@@ -19,6 +19,8 @@ class FetchAuroraAction extends FetchAction
 {
     use WithAuroraOrganisationsArgument;
 
+    public string $jobQueue = 'aurora';
+
 
     protected function preProcessCommand(Command $command): void
     {
@@ -128,6 +130,10 @@ class FetchAuroraAction extends FetchAction
             'fetch:dispatched_emails'
         ])) {
             $this->with = $command->option('with');
+        }
+
+        if ($command->getName() == 'fetch:orders') {
+            $this->basket = $command->option('basket') ?? false;
         }
 
         if ($command->getName() == 'fetch:histories' and $command->option('model')) {

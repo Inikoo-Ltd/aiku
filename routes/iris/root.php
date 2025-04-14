@@ -10,17 +10,17 @@
 use App\Actions\UI\Iris\ShowHome;
 use Illuminate\Support\Facades\Route;
 
+Route::get(".well-known/apple-developer-merchantid-domain-association", function () {
+    return config('services.apple_pay.verification_string', '');
+})->name("apple-pay-verification");
+
+
 Route::middleware(["iris-auth:retina"])->group(function () {
     Route::prefix("")->group(function () {
-        require __DIR__ . '/system.php';
-
+        Route::group([], __DIR__ . '/system.php');
         Route::get('/{path?}', ShowHome::class)->where("path", ".*")->name('home');
     });
 });
-
-//Route::prefix("crm")
-//    ->name("crm.")
-//    ->group(__DIR__."/crm.php");
 
 Route::prefix("disclosure")
     ->name("disclosure.")

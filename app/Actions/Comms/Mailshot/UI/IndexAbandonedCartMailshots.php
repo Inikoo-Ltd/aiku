@@ -41,8 +41,7 @@ class IndexAbandonedCartMailshots extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('mailshots.state', '~*', "\y$value\y")
-                    ->orWhere('mailshots.data', '=', $value);
+                $query->whereWith('mailshots.slug', $value);
             });
         });
 
@@ -52,19 +51,20 @@ class IndexAbandonedCartMailshots extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Mailshot::class);
         $queryBuilder->leftJoin('organisations', 'mailshots.organisation_id', '=', 'organisations.id')
-        ->leftJoin('shops', 'mailshots.shop_id', '=', 'shops.id');
+            ->leftJoin('shops', 'mailshots.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('outboxes', 'mailshots.outbox_id', 'outboxes.id')
-                        ->leftJoin('mailshot_stats', 'mailshot_stats.mailshot_id', 'mailshots.id')
-                        ->leftJoin('post_rooms', 'outboxes.post_room_id', 'post_rooms.id')
-                        ->when($parent, function ($query) use ($parent) {
-                            if (class_basename($parent) == 'Comms') {
-                                $query->where('mailshots.post_room_id', $parent->id);
-                            }
-                        });
+            ->leftJoin('mailshot_stats', 'mailshot_stats.mailshot_id', 'mailshots.id')
+            ->leftJoin('post_rooms', 'outboxes.post_room_id', 'post_rooms.id')
+            ->when($parent, function ($query) use ($parent) {
+                if (class_basename($parent) == 'Comms') {
+                    $query->where('mailshots.post_room_id', $parent->id);
+                }
+            });
         $queryBuilder->where('mailshots.type', OutboxCodeEnum::ABANDONED_CART->value);
         if ($parent instanceof Group) {
             $queryBuilder->where('mailshots.group_id', $parent->id);
         }
+
         return $queryBuilder
             ->defaultSort('mailshots.id')
             ->select([
@@ -89,7 +89,6 @@ class IndexAbandonedCartMailshots extends OrgAction
                 'organisations.slug as organisation_slug',
 
             ])
-
             ->allowedSorts(['state', 'date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -99,7 +98,6 @@ class IndexAbandonedCartMailshots extends OrgAction
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
-
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -114,7 +112,7 @@ class IndexAbandonedCartMailshots extends OrgAction
                 ->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'sent', label: __('sent'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'hard_bounce', label: __('hard bounce'), canBeHidden: false, sortable: true, searchable: true)
@@ -134,13 +132,12 @@ class IndexAbandonedCartMailshots extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
-
         $actions = [
             [
-                'type'    => 'button',
-                'style'   => 'create',
-                'label'   => __('mailshot'),
-                'route'   => [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('mailshot'),
+                'route' => [
                     'name'       => 'grp.org.shops.show.marketing.mailshots.create',
                     'parameters' => array_values($request->route()->originalParameters())
                 ]
@@ -150,7 +147,7 @@ class IndexAbandonedCartMailshots extends OrgAction
         $title = __('mailshots');
         if ($this->parent instanceof Group) {
             $actions = [];
-            $title = __('abandoned cart mailshots');
+            $title   = __('abandoned cart mailshots');
         }
 
         return Inertia::render(
@@ -163,10 +160,10 @@ class IndexAbandonedCartMailshots extends OrgAction
                 ),
                 'title'       => $title,
                 'pageHead'    => array_filter([
-                    'title'    => $title,
-                    'actions'  => $actions,
+                    'title'   => $title,
+                    'actions' => $actions,
                 ]),
-                'data' => AbandonedCartMailshotsResource::collection($mailshots),
+                'data'        => AbandonedCartMailshotsResource::collection($mailshots),
             ]
         )->table($this->tableStructure($this->parent));
     }

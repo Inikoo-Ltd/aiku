@@ -9,7 +9,7 @@ import { Head, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, inject, ref, watch } from "vue"
+import { computed, inject, provide, ref, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -58,6 +58,19 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import ModalAddPalletReturn from "@/Components/Segmented/ModalAddPalletReturn.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
+interface UploadSection {
+    title: {
+        label: string
+        information: string
+    }
+    progressDescription: string
+    upload_spreadsheet: UploadPallet
+    preview_template: {
+        header: string[]
+        rows: {}[]
+    }
+}
+
 const props = defineProps<{
 	title: string
 	tabs: TSTabs
@@ -91,23 +104,30 @@ const props = defineProps<{
         [key: string]: PDRNotes
     }
 
-	pallets?: {}
+	goods?: {}
     stored_items?: {}
     services?: {}
     service_list_route: routeType
-
+    address_management:{
+      can_open_address_management: boolean
+      updateRoute: routeType
+      addresses: AddressManagement
+      address_update_route: routeType,
+      address_modal_title: string
+    }
     physical_goods?: {}
     physical_good_list_route: routeType
     stored_item_list_route : routeType
     stored_items_add_route : routeType
     routeStorePallet : routeType
     route_check_stored_items : routeType
-
+    address_update_route: routeType
     option_attach_file?: {
 		name: string
 		code: string
 	}[]
     pallets_route: routeType
+    upload_pallet: UploadSection
 }>()
 
 
@@ -128,7 +148,7 @@ const formAddPhysicalGood = useForm({ outer_id: '', quantity: 1, historic_asset_
 
 const component = computed(() => {
 	const components: Component = {
-		pallets: TablePalletReturnPallets,
+		goods: TablePalletReturnPallets,
         stored_items: TableStoredItems,
         services: TableFulfilmentTransactions,
         physical_goods: TableFulfilmentTransactions,
@@ -203,6 +223,22 @@ const onOpenModalAddPGood = async () => {
         })
     }
     isLoadingData.value = false
+}
+
+const deliveryListError = ref<string[]>([])
+provide('deliveryListError', deliveryListError.value)
+const onClickDisabledSubmit = () => {
+
+    if (!props.data?.data?.estimated_delivery_date) {
+        if (!deliveryListError.value?.includes('estimated_delivery_date')) {
+            deliveryListError.value?.push('estimated_delivery_date');
+        }
+    } else {
+        const index = deliveryListError.value?.indexOf('estimated_delivery_date');
+        if (index > -1) {
+            deliveryListError.value?.splice(index, 1);
+        }
+    }
 }
 
 const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
@@ -312,7 +348,7 @@ const openModalAddPallet = ref(false)
                 :label="trans('Add pallet')"
                 type="secondary"
                 icon="fal fa-plus"
-                :tooltip="'action.tooltip'"
+                :tooltip="trans('Select pallets via modal')"
                 @click="() => openModalAddPallet = true"
                 class="border-none rounded-[4px]"
             />
@@ -530,6 +566,8 @@ const openModalAddPallet = ref(false)
         :box_stats
         :updateRoute
         :notes_data
+        :address_management
+        :address_update_route
     />
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"  />
@@ -554,7 +592,7 @@ const openModalAddPallet = ref(false)
         </template>
     </component>
 
-    <UploadExcel
+    <!-- <UploadExcel
         v-model="isModalUploadOpen"
         scope="Pallet delivery"
         :title="{
@@ -563,6 +601,16 @@ const openModalAddPallet = ref(false)
         }"
         progressDescription="Adding Pallet Deliveries"        
         :upload_spreadsheet
+        :additionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
+    /> -->
+    
+    <UploadExcel
+        v-if="upload_pallet"
+        v-model="isModalUploadOpen"
+        :title="upload_pallet.title"
+        :progressDescription="upload_pallet.progressDescription"
+        :upload_spreadsheet="upload_pallet.upload_spreadsheet"
+        :preview_template="upload_pallet.preview_template"
         :additionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
     />
     
@@ -578,7 +626,7 @@ const openModalAddPallet = ref(false)
         :options="props.option_attach_file"
     />
     
-    <Modal :isOpen="openModalAddPallet" @onClose="openModalAddPallet = false">
+    <Modal :isOpen="openModalAddPallet" @onClose="openModalAddPallet = false" width="w-full max-w-4xl">
         <ModalAddPalletReturn
             :fetchRoute="pallets_route"
             :palletReturn="data?.data"

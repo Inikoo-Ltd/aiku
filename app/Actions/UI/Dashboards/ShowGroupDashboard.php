@@ -210,6 +210,7 @@ class ShowGroupDashboard extends OrgAction
                          ] */
                     ],
                 ),
+                !app()->environment('production') ?
                 $this->getWidget(
                     data: [
                         'label' => __('In Basket'),
@@ -217,27 +218,26 @@ class ShowGroupDashboard extends OrgAction
                         'type' => 'number_amount',
                         'tabs' => [
                             [
-                                'label' => $orderingHandling->number_orders_state_submitted_paid,
+                                'label' => $orderingHandling->number_orders_state_creating,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_grp_currency"},
+                                    'label' => $orderingHandling->{"orders_state_submitted_paid_amount_org_currency"},
                                     'type' => 'currency'
                                 ]
                             ],
                             [
-                                'tab_slug' => 'submitted_unpaid',
-                                'label' => $orderingHandling->number_orders_state_submitted_not_paid,
+                                'label' => $orderingHandling->orders_state_creating_amount_grp_currency,
                                 'type' => 'number',
                                 'icon' => 'fal fa-tachometer-alt',
                                 'information' => [
-                                    'label' => $orderingHandling->{"orders_state_submitted_not_paid_amount_grp_currency"},
+                                    'label' => $orderingHandling->{"orders_state_creating_amount_grp_currency"},
                                     'type' => 'currency'
                                 ]
                             ]
                         ]
                     ]
-                ),
+                ) : [],
                 $this->getWidget(
                     data: [
                         'label' => __('Submitted'),

@@ -18,9 +18,7 @@ class TimezoneResource extends JsonResource
 
     public function toArray($request): array
     {
-
-
-        if (is_null($this->resource)) {
+        if ($this->resource === null) {
             return [
                 'id'     => null,
                 'name'   => null,

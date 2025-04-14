@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Http\Resources\Fulfilment\MayaPalletsResource;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Fulfilment;
@@ -35,7 +36,6 @@ class IndexPallets extends OrgAction
     use WithPalletsSubNavigation;
 
 
-    private bool $selectStoredPallets = false;
 
     private Group|Fulfilment $parent;
 
@@ -58,7 +58,7 @@ class IndexPallets extends OrgAction
         ];
     }
 
-    public function handle(Group|Fulfilment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Fulfilment|Location $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -76,6 +76,8 @@ class IndexPallets extends OrgAction
 
         if ($parent instanceof Group) {
             $query->where('pallets.group_id', $parent->id);
+        } elseif ($parent instanceof Location) {
+            $query->where('pallets.location_id', $parent->id);
         } else {
             $query->where('pallets.fulfilment_id', $parent->id);
             $query->whereNotIn('pallets.status', ['in_process', 'not_received', 'returned', 'incident']);
@@ -188,8 +190,11 @@ class IndexPallets extends OrgAction
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $pallets): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $pallets, ActionRequest $request): AnonymousResourceCollection
     {
+        if ($request->hasHeader('Maya-Version')) {
+            return MayaPalletsResource::collection($pallets);
+        }
         return PalletsResource::collection($pallets);
     }
 

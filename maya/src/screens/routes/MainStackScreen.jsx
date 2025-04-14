@@ -10,14 +10,18 @@ import Organisation from '@/src/screens/Organisation';
 import Warehouse from '@/src/screens/Warehouse';
 import Fulfilment from '@/src/screens/Fulfilment';
 import ShowDeliveryNote from '@/src/screens/Fulfilment/DeliveryNote/ShowDeliveryNote';
-import ShowLocation from '@/src/screens/Fulfilment/Location/ShowLocation';
+import LocationStackScreens from '@/src/screens/routes/LocationStackScreens';
 import ShowArea from '@/src/screens/Fulfilment/Area/ShowArea';
 import ShowStockDelivery from '@/src/screens/Fulfilment/Stock/ShowStockDelivery';
 import SessionExpired from '@/src/screens/SessionExpired';
 import ShowOrgStock from '@/src/screens/Fulfilment/OrgStock/ShowOrgStock';
 import EditProfile from '@/src/screens/EditProfile';
 import GlobalScanner from '@/src/screens/GlobalScanner';
-import Scanner from '@/src/screens/Scanner';
+import AuditSku from '@/src/screens/Fulfilment/Pallet/AuditSku';
+
+/* import ShowLocation from '@/src/screens/Fulfilment/Location/ShowLocation'; */
+/* import Scanner from '@/src/screens/Scanner'; */
+
 import DrawerScreens from '@/src/screens/routes/drawerScreens';
 import {AuthContext} from '@/src/components/Context/context';
 
@@ -94,7 +98,7 @@ const HomeStack = () => {
             />
             <Stack.Screen
                 name="show-location"
-                component={ShowLocation}
+                component={LocationStackScreens}
                 options={{
                     headerShown: true,
                     title: 'Location',
@@ -160,6 +164,14 @@ const HomeStack = () => {
                 options={{
                     headerShown: true,
                     title: 'Edit Profile',
+                }}
+            />
+             <Stack.Screen
+                name='audit-sku'
+                component={AuditSku}
+                options={{
+                    headerShown: true,
+                    title: 'Audit SKU',
                 }}
             />
         </Stack.Navigator>

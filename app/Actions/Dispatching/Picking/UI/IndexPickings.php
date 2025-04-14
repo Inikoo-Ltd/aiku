@@ -33,8 +33,8 @@ class IndexPickings extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('org_stocks.code', '~*', "\y$value\y")
-                    ->orWhereStartWith('org_stocks.name', $value);
+                $query->whereStartWith('org_stocks.code', $value)
+                    ->orWhereAnyWordStartWith('org_stocks.name', $value);
             });
         });
 

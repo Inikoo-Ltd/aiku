@@ -24,6 +24,7 @@ enum FulfilmentCustomerTabsEnum: string
     case NOTE          = 'note'; */
     case ATTACHMENTS = 'attachments';
     case EMAIL = 'email';
+    case BALANCE = 'balance';
 
     public function blueprint(): array
     {
@@ -46,6 +47,12 @@ enum FulfilmentCustomerTabsEnum: string
                 'title' => __('history'),
                 'icon'  => 'fal fa-clock',
             ],
+            FulfilmentCustomerTabsEnum::BALANCE => [
+                'align' => 'right',
+                'type'  => 'icon',
+                'title' => __('balance'),
+                'icon'  => 'fal fa-wallet',
+            ],
             /* FulfilmentCustomerTabsEnum::WEBHOOK => [
                 'align' => 'right',
                 'type'  => 'icon',
@@ -60,6 +67,7 @@ enum FulfilmentCustomerTabsEnum: string
                 'title' => __('agreed prices'),
                 'icon'  => 'fal fa-usd-circle',
             ],
+
             //            FulfilmentCustomerTabsEnum::NOTE => [
             //                'title' => __('note'),
             //                'icon'  => 'fal fa-sticky-note',

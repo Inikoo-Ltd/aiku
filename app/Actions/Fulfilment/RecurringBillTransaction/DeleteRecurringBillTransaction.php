@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\RecurringBillTransaction;
 
+use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Fulfilment\RecurringBill\Hydrators\RecurringBillHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Models\Fulfilment\RecurringBillTransaction;
@@ -42,9 +43,8 @@ class DeleteRecurringBillTransaction extends OrgAction
 
         if ($this->precursor != 'recurring_bill') {
             RecurringBillHydrateTransactions::dispatch($recurringBill)->delay($this->hydratorsDelay);
+            CalculateRecurringBillTotals::dispatch($recurringBill)->delay($this->hydratorsDelay);
         }
-
-
 
     }
 

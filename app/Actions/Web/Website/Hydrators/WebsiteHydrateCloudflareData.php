@@ -13,12 +13,12 @@ namespace App\Actions\Web\Website\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Web\Website;
 use Exception;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
-class WebsiteHydrateCloudflareData
+class WebsiteHydrateCloudflareData implements ShouldBeUnique
 {
     use WithHydrateCommand;
     private Website $website;
@@ -37,9 +37,9 @@ class WebsiteHydrateCloudflareData
         $this->model = Website::class;
     }
 
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Website $website): string
     {
-        return [(new WithoutOverlapping($this->website->id))->dontRelease()];
+        return $website->id;
     }
 
     /**

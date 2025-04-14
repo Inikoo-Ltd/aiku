@@ -47,7 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Collection<int, \App\Models\Ordering\ShippingZone> $shippingZone
+ * @property-read Collection<int, \App\Models\Ordering\ShippingZone> $shippingZones
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Ordering\ShippingZoneSchemaStats|null $stats
  * @method static \Database\Factories\Ordering\ShippingZoneSchemaFactory factory($count = null, $state = [])
@@ -107,7 +107,7 @@ class ShippingZoneSchema extends Model implements Auditable
         return 'slug';
     }
 
-    public function shippingZone(): HasMany
+    public function shippingZones(): HasMany
     {
         return $this->hasMany(ShippingZone::class);
     }

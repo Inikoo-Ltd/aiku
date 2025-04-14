@@ -17,6 +17,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
+use App\Enums\UI\Accounting\StandaloneFulfilmentInvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\StandaloneFulfilmentInvoiceTransactionsResource;
 use App\Models\Accounting\Invoice;
@@ -43,7 +44,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
     public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $fulfilmentCustomer;
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoiceTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(StandaloneFulfilmentInvoiceTabsEnum::values());
 
         return $this->handle($invoice);
     }
@@ -56,8 +57,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
             $disable = false;
             $tooltip = 'complete invoice';
         }
-        $navigation = InvoiceTabsEnum::navigation();
-        unset($navigation[InvoiceTabsEnum::PAYMENTS->value]);
+        $navigation = StandaloneFulfilmentInvoiceTabsEnum::navigation();
 
         $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
 
@@ -85,6 +85,23 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
         ];
 
         $actions = [];
+
+        $actions[] =
+        [
+            'type'    => 'button',
+            'style'   => 'red_outline',
+            'tooltip' => __('delete'),
+            'icon'    => 'fal fa-trash-alt',
+            'key'     => 'delete_booked_in',
+            'ask_why' => true,
+            'route'   => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.invoice.in-process.delete',
+                'parameters' => [
+                    'invoice' => $invoice->id
+                ]
+            ]
+        ];
 
         $actions[] = [
             'type'    => 'button',
@@ -222,12 +239,12 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
 
-                InvoiceTabsEnum::ITEMS->value => $this->tab == InvoiceTabsEnum::ITEMS->value ?
-                    fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))),
+                StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value => $this->tab == StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value ?
+                    fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value))),
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
-            ->table(IndexStandaloneFulfilmentInvoiceTransactions::make()->tableStructure(InvoiceTabsEnum::ITEMS->value));
+            ->table(IndexStandaloneFulfilmentInvoiceTransactions::make()->tableStructure(StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

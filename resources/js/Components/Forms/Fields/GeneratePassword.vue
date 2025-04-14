@@ -6,16 +6,15 @@
 
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import Password from '@//Components/Forms/Fields/Password.vue'
-import { useCopyText } from '@/Composables/useCopyText'
+import { ref } from "vue";
+import Password from "@//Components/Forms/Fields/Password.vue";
+import { useCopyText } from "@/Composables/useCopyText";
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faExclamationCircle, faCheckCircle, faEye, faEyeSlash, } from '@fas'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSync } from '@far'
-import { faCopy } from '@fal'
-import { formToJSON } from 'axios'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCheckCircle, faExclamationCircle, faEye, faEyeSlash } from "@fas";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSync } from "@far";
+import { faCopy } from "@fal";
 
 library.add(faExclamationCircle, faCheckCircle, faEye, faEyeSlash, faCopy)
 
@@ -25,10 +24,7 @@ const props = defineProps(['form', 'fieldName', 'options', 'fieldData'])
 const emits = defineEmits()
 const _password = ref()
 
-// let type = 'text'
-// if (props.options !== undefined && props.options.type) {
-//     type = props.options.type;
-// }
+
 const isRecentlyCopied = ref(false)
 const onClickCopyButton = async (text: string) => {
     useCopyText(text)
@@ -42,8 +38,9 @@ const onClickCopyButton = async (text: string) => {
 
 const generatePassword = () => {
   let target = props.form;
-  const generatedPassword = Math.random().toString(36).slice(-8); 
-  target[props.fieldName] = generatedPassword;
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  target[props.fieldName] = array[0].toString(36).slice(-8);
   emits("update:form", target);
   props.form.clearErrors()
   if (_password.value) _password.value.showPassword = false; 

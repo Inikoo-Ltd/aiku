@@ -180,7 +180,7 @@ class ShowArtefact extends OrgAction
                                 'name'       => 'grp.org.productions.show.crafts.artefacts.index',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('Artifacts'),
+                            'label' => __('Artefacts'),
                             'icon'  => 'fal fa-bars',
                         ],
                         'model' => [

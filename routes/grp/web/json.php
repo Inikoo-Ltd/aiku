@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Payment\Json\GetRefundPayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
@@ -16,7 +17,7 @@ use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
 use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
-use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxHasSubscribers;
+use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
@@ -27,10 +28,16 @@ use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallet
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Tag\GetTagOptions;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\SysAdmin\User\GetSupervisorUsers;
+use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use Illuminate\Support\Facades\Route;
 
-Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/subscribers', [GetOutboxHasSubscribers::class, 'inFulfilment'])->name('fulfilment.outbox.subcribers.index');
+Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
+
+Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/users', [GetOutboxUsers::class, 'inFulfilment'])->name('fulfilment.outbox.users.index');
+
+Route::get('fulfilment/{fulfilment}/supervisors', [GetSupervisorUsers::class, 'inFulfilment'])->name('fulfilment.supervisors.index');
 
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/services', [GetFulfilmentServices::class, 'inPalletDelivery'])->name('fulfilment.delivery.services.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/services', [GetFulfilmentServices::class, 'inPalletReturn'])->name('fulfilment.return.services.index');
@@ -41,6 +48,8 @@ Route::get('fulfilment/{fulfilment}/delivery/{scope}/physical-goods', [GetFulfil
 Route::get('fulfilment/{fulfilment}/return/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inPalletReturn'])->name('fulfilment.return.physical-goods.index');
 Route::get('fulfilment/{fulfilment}/recurring-bill/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inRecurringBill'])->name('fulfilment.recurring-bill.physical-goods.index');
 Route::get('fulfilment/{fulfilment}/invoice/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inInvoice'])->name('fulfilment.invoice.physical-goods.index');
+
+Route::get('refund/{invoice:id}/payments', GetRefundPayments::class)->name('refund.show.payments.index');
 
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
 
@@ -58,7 +67,6 @@ Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name(
 
 
 Route::get('shop/{shop}/catalogue/collection/{scope}/products', GetProducts::class)->name('shop.catalogue.collection.products');
-Route::get('shop/{shop}/catalogue/order/{order}/products', GetOrderProducts::class)->name('shop.catalogue.order.products');
 Route::get('shop/{shop}/catalogue/{scope}/departments', GetDepartments::class)->name('shop.catalogue.departments');
 Route::get('shop/{shop}/catalogue/{scope}/families', GetFamilies::class)->name('shop.catalogue.families');
 Route::get('shop/{shop}/catalogue/{scope}/collections', GetCollections::class)->name('shop.catalogue.collections');
@@ -72,3 +80,5 @@ Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-suppli
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 
 Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliveryUploads::class)->name('pallet_delivery.recent_uploads');
+
+Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');

@@ -18,14 +18,16 @@ library.add(faCube, faLink, faImage)
 const props = defineProps<{
 	fieldValue: FieldValue
 	webpageData?: any
-	blockData?: Object
+	blockData?: Object,
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 
 </script>
 
 <template>
-	<div class="relative" :style="getStyles(fieldValue?.container?.properties)">
+	<!-- {{ fieldValue?.container?.properties }} -->
+	<div class="relative" :style="getStyles(fieldValue?.container?.properties,screenType)">
 		<div class="relative h-80 overflow-hidden md:absolute md:left-0 md:h-full md:w-1/3 lg:w-1/2">
 			<template v-if="fieldValue?.image?.source">
 				<Image :src="fieldValue?.image?.source" :imageCover="true" :alt="fieldValue?.image?.alt"
@@ -40,6 +42,7 @@ const props = defineProps<{
 		<div class="py-16 sm:py-32 lg:px-8 lg:py-40">
 			<div class="pl-6 pr-6 md:ml-auto md:w-2/3 md:pl-16 lg:w-1/2 lg:pl-24 lg:pr-0 xl:pl-32">
 				<div v-html="fieldValue?.text" />
+				<div class="flex justify-center">
 				<div>
 					<a typeof="button" :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
 						:style="getStyles(fieldValue?.button?.container?.properties)"
@@ -47,6 +50,7 @@ const props = defineProps<{
 						{{ fieldValue?.button?.text }}
 					</a>
 				</div>
+			</div>
 			</div>
 		</div>
 	</div>

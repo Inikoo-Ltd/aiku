@@ -10,23 +10,16 @@ namespace App\Actions\Inventory\Warehouse\Hydrators;
 
 use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Models\Inventory\Warehouse;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WarehouseHydrateLocations
+class WarehouseHydrateLocations implements ShouldBeUnique
 {
     use AsAction;
 
-    private Warehouse $warehouse;
-
-    public function __construct(Warehouse $warehouse)
+    public function getJobUniqueId(Warehouse $warehouse): string
     {
-        $this->warehouse = $warehouse;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->warehouse->id))->dontRelease()];
+        return $warehouse->id;
     }
 
 

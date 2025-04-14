@@ -34,7 +34,7 @@ jobs:
 
       - name: Get db changed files
         id: changed-db-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             app/Enums/**
@@ -42,7 +42,7 @@ jobs:
             database/migrations/**
       - name: Get coverage changed files
         id: changed-coverage-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             app/**
@@ -66,3 +66,6 @@ jobs:
           file: ./clover.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+      - name: Upload coverage to Codacy
+        if: steps.changed-coverage-files.outputs.any_changed == 'true'
+        run: export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}; bash <(curl -Ls https://coverage.codacy.com/get.sh)

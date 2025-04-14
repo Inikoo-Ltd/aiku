@@ -73,6 +73,10 @@ class IndexPalletsInDelivery extends OrgAction
                 'locations.code as location_code',
             );
 
+            if($palletDelivery->deleted_at)
+            {
+                $query->withTrashed();
+            }
 
         return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name','type'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
@@ -97,7 +101,7 @@ class IndexPalletsInDelivery extends OrgAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __('No pallet in this delivery'),
+                'title' => __('No items in this delivery'),
                 'count' => $palletDelivery->stats->number_pallets
             ];
 
@@ -153,7 +157,7 @@ class IndexPalletsInDelivery extends OrgAction
 
 
             if ($palletDelivery->fulfilmentCustomer->items_storage) {
-                $table->column(key: 'stored_items', label: 'Stored Items', canBeHidden: false, searchable: true);
+                $table->column(key: 'stored_items', label: 'SKUs (Stored items)', canBeHidden: false, searchable: true);
             }
 
 

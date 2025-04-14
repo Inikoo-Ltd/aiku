@@ -19,6 +19,7 @@ export default {
 	"get-areas" : { url: "maya/org/{}/warehouses/{}/areas" },
 	"get-location" : { url: "maya/org/{}/warehouses/{}/locations/{}" },
 	"get-area" : { url: "maya/org/{}/warehouses/{}/areas/{}" },
+	"get-location-pallet" : { url: "maya/org/{}/warehouses/{}/inventory/locations/{}/pallets" },
 
 	//stored items
 	'get-stored-items' :  { url: "maya/org/{}/warehouses/{}/inventory/stored-items" },
@@ -48,7 +49,13 @@ export default {
 	'set-pallet-picked' : { url : "maya/action/pallet-return-item/pallet/{}/pick"},
 	'set-pallet-not-picked' : { url : "maya/action/pallet-return-item/pallet/{}/not-picked"},
 	'undo-pallet-picked' :  { url : "maya/action/pallet-return-item/pallet/{}/undo-pick"},
-
+	//audit
+	'create-pallet-audit' :  { url : "maya/org/{}/warehouses/{}/inventory/pallets/{}/stored-item-audits/create"},
+	'get-pallet-audit' :  { url : "maya/org/{}/warehouses/{}/inventory/pallets/{}/stored-item-audit/{}"},
+	'edit-stored-item-audit' :  { url : "maya/action/stored-item-audit-delta/{}"},
+	'add-stored-item-audit' :  { url : "maya/action/stored-item-audit/{}/stored-item-audit-delta"},
+	'delete-stored-item-audit' :  { url : "maya/action/stored-item-audit-delta/{}"},
+	'complete-stored-item-audit' :  { url : "maya/action/stored-item-audit/{}/complete"},
 
 	//return
 	"get-returns" : { url: "maya/org/{}/warehouses/{}/dispatching/handling-fulfilment-returns" },

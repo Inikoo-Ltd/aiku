@@ -14,7 +14,6 @@ use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReorderWebBlocks extends OrgAction

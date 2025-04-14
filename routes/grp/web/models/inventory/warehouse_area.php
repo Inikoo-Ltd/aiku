@@ -8,6 +8,7 @@
 
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\WarehouseArea\DeleteWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UpdateWarehouseArea;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +16,5 @@ Route::name('warehouse_area.')->prefix('warehouse-area/{warehouseArea:id}')->gro
     Route::patch('update', UpdateWarehouseArea::class)->name('update');
     Route::post('location/upload', [ImportLocation::class, 'inWarehouseArea'])->name('location.upload');
     Route::post('location', [StoreLocation::class, 'inWarehouseArea'])->name('location.store');
+    Route::delete('delete', DeleteWarehouseArea::class)->name('delete');
 });

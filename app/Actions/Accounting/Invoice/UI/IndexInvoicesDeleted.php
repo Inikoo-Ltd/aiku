@@ -335,7 +335,7 @@ class IndexInvoicesDeleted extends OrgAction
             ]
         );
 
-        if ($this->tab && !app()->environment('production')) {
+        if ($this->tab) {
             $inertiaRender->table($this->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::INVOICES->value))
                 ->table(IndexRefunds::make()->tableStructure(parent: $this->parent, prefix: InvoicesTabsEnum::REFUNDS->value));
         } else {

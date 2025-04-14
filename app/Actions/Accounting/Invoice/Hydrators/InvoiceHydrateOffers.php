@@ -12,24 +12,19 @@ namespace App\Actions\Accounting\Invoice\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class InvoiceHydrateOffers
+class InvoiceHydrateOffers implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Invoice $invoice;
 
-    public function __construct(Invoice $invoice)
+    public function getJobUniqueId(Invoice $invoice): string
     {
-        $this->invoice = $invoice;
+        return $invoice->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->invoice->id))->dontRelease()];
-    }
     public function handle(Invoice $invoice): void
     {
 

@@ -228,6 +228,7 @@ class ReindexSearch extends HydrateModel
         $command->call('search:stored_item_audits'); // not yet tested
         $command->call('search:pallet_returns'); // not yet tested
         $command->call('search:pallet_deliveries'); // not yet tested
+        $command->call('search:pallets');
 
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {

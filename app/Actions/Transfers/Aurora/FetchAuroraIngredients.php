@@ -42,7 +42,7 @@ class FetchAuroraIngredients extends FetchAuroraAction
                     $ingredient = UpdateIngredient::make()->action(
                         ingredient: $ingredient,
                         modelData: $ingredientData['ingredient'],
-                        hydratorsDelay: 60,
+                        hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
@@ -67,7 +67,7 @@ class FetchAuroraIngredients extends FetchAuroraAction
                 $ingredient = StoreIngredient::make()->action(
                     group: group(),
                     modelData: $ingredientData['ingredient'],
-                    hydratorsDelay: 60,
+                    hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );

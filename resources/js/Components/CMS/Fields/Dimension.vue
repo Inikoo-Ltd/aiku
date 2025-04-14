@@ -8,13 +8,15 @@ const defaultModel = {
     width: { value: null, unit: '%' },
 }
 
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
+
 // Menggunakan defineModel untuk dua arah binding
 const model = defineModel<typeof defaultModel>({
     default: () => ({ height: { value: null, unit: 'px' }, width: { value: null, unit: '%' } })
 })
 
-// Pastikan model tidak null atau undefined
-const normalizedModel = computed(() => model.value ?? defaultModel)
 
 onMounted(() => {
     if (!model.value) {
@@ -32,7 +34,7 @@ onMounted(() => {
 
 <template>
     <div>
-        <DimensionProperty v-model="model" />
+        <DimensionProperty :model-value="model"  @update:model-value="val => emits('update:modelValue',val)"/>
     </div>
 </template>
 

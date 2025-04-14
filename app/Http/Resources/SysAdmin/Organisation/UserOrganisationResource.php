@@ -33,7 +33,7 @@ class UserOrganisationResource extends JsonResource
 
         $user = self::$user;
 
-        $authorisedShops=$user->authorisedShops()->where('organisation_id', $organisation->id)->where('shops.type','!=',ShopTypeEnum::FULFILMENT)->get();
+        $authorisedShops = $user->authorisedShops()->where('organisation_id', $organisation->id)->where('shops.type', '!=', ShopTypeEnum::FULFILMENT)->get();
 
         return [
             'id'        => $organisation->id,

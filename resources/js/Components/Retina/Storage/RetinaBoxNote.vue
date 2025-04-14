@@ -94,7 +94,7 @@ const onSubmitNote = async () => {
         </p>
     </div>
 
-    <Modal :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)">
+    <Modal :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)" width="w-full max-w-2xl">
 		<div class="min-h-72 max-h-96 px-2 overflow-auto">
             <div class="text-xl font-semibold mb-2">{{ noteData.label }}</div>
 			<div class="relative">

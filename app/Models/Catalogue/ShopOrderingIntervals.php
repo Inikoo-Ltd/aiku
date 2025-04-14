@@ -331,6 +331,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property int $baskets_updated_pq4
  * @property int $baskets_updated_pq5
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals query()

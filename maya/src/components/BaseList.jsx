@@ -114,7 +114,6 @@ const BaseList = forwardRef((props, ref) => {
 
     // Detect When Scrolling Near Bottom
     const handleScroll = ({nativeEvent}) => {
-      console.log(nativeEvent)
         const {layoutMeasurement, contentOffset, contentSize} = nativeEvent;
         const isCloseToBottom =
             layoutMeasurement.height + contentOffset.y >=
@@ -139,19 +138,7 @@ const BaseList = forwardRef((props, ref) => {
     return (
         <View style={{flex: 1}}>
             {/* Search Bar dengan Sticky Header */}
-            <View
-                style={{
-                    position: 'absolute',
-                    top: insets.top,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'white',
-                    zIndex: 10,
-                    padding: 10,
-                    elevation: 5,
-                    borderBottomWidth: 1,
-                    borderBottomColor: '#ddd',
-                }}>
+           
                 <Input
                     variant="outline"
                     size="md"
@@ -168,13 +155,13 @@ const BaseList = forwardRef((props, ref) => {
                     </InputSlot>
                 </Input>
                 {props.showTotalResults(meta)}
-            </View>
+       
 
             {/* List dengan Margin Top Agar Tidak Tertutup */}
             <KeyboardAwareScrollView
                 style={[
                     props.listContainerStyle,
-                    {marginTop: insets.top + props.height},
+                    {marginTop: 10},
                 ]}
                 enableOnAndroid={true}
                 onEndReached={() => fetchMoreData(true)}
@@ -255,7 +242,7 @@ BaseList.defaultProps = {
     urlKey: '',
     args: [],
     params: {},
-    height: 120,
+    height: 100,
     listContainerStyle: {flex: 1, marginBottom: 60},
     showTotalResults,
     itemKey: 'id',
