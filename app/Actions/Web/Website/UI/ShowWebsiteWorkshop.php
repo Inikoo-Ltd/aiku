@@ -137,7 +137,7 @@ class ShowWebsiteWorkshop extends OrgAction
                             'type'  => 'button',
                             'style' => 'primary',
                             'icon'  => ["fas", "fa-save"],
-                            'label' => __('Save'),
+                            'label' => __('publish'),
                             'route' => [
                                 'method'     => 'patch',
                                 'name'       => 'grp.models.website.update',
@@ -153,7 +153,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
-
+                'settings' => $website->settings,
                ...$tabs
             ]
         );

@@ -74,6 +74,26 @@ class IndexCustomerPlatforms extends OrgAction
 
         $enableAiku = $this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first() ? false : true;
         // dd($this->parent->customer->platforms()->where('type', PlatformTypeEnum::AIKU)->first());
+        $aikuChannel = Platform::where('type', PlatformTypeEnum::AIKU)->first();
+
+        $actions = [];
+
+        if(!$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first()) {
+            $actions[] = [
+                'type'        => 'button',
+                'style'       => 'create',
+                'label'       => __('add manual channel'),
+                'fullLoading' => true,
+                'route'       => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.customer.platform.attach',
+                    'parameters' => [
+                        'customer' => $this->parent->id,
+                        'platform' => $aikuChannel->id
+                    ]
+                ]
+            ];
+        }   
         return Inertia::render(
             'Org/Shop/CRM/CustomerPlatforms',
             [
@@ -88,15 +108,7 @@ class IndexCustomerPlatforms extends OrgAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New Channel'),
-                            'label'   => __('New Channel'),
-                            'key'     => 'new-channel',
-                        ],
-                    ],
+                    'actions'       => $actions
 
                 ],
                 'data'        => CustomerPlatformsResource::collection($platforms),
