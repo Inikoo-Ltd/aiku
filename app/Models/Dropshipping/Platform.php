@@ -71,7 +71,7 @@ class Platform extends Model
 
     public function customers(): BelongsToMany
     {
-        return $this->belongsToMany(Customer::class, 'model', 'customer_has_platforms')
+        return $this->belongsToMany(Customer::class, 'customer_has_platforms')
             ->withTimestamps();
     }
 
