@@ -30,13 +30,11 @@ const props = defineProps<{
     family?: {}
 }>()
 
-console.log(props)
 
 let currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
-
     const components = {
         website_layout: LayoutWorkshop,
         family: CategoryWorkshop,

@@ -18,6 +18,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import Image from "@/Components/Image.vue";
 
 library.add(
     faCube,
@@ -36,46 +37,45 @@ library.add(
 );
 
 const props = defineProps<{
-    mode: Object;
-    colorThemed?: Object;
-    data: object;
+    fieldValue: {}
+	theme?: any
 }>();
 
 const tableData = [
     {
         label: "Origin",
-        value: "Spain",
+        value: "Dummy",
     },
     {
         label: "Net weight",
-        value: "0.04Kg /piece",
+        value: "Dummy",
     },
     {
         label: "Shipping weight",
-        value: "0.04Kg",
+        value: "Dummy",
     },
     {
         label: "Dimensions",
-        value: "0x0 (cm)",
+        value: "Dummy",
     },
     {
         label: "Barcode",
-        value: "5055796528424",
+        value: "Dummy",
     },
     {
         label: "MSDS",
-        value: "CLP SDS",
-        url: "https://www.ancientwisdom.biz/attachment.php?id=10787",
+        value: "Dummy",
+        url: "Dummy",
     },
     {
         label: "MSDS",
-        value: "IFRA Certificate",
-        url: "https://www.ancientwisdom.biz/attachment.php?id=10788",
+        value: "Dummy",
+        url: "Dummy",
     },
     {
         label: "MSDS",
-        value: "Declaration",
-        url: "https://www.ancientwisdom.biz/attachment.php?id=10789",
+        value: "Dummy",
+        url: "Dummy",
     },
 ];
 
@@ -95,10 +95,10 @@ const dataProduct = ref({
     <div id="app" class="mx-auto max-w-5xl px-4 py-4 text-gray-600">
         <div class="flex gap-x-10 mb-12">
             <div class="flex-1">
-                <div class="font-bold text-2xl">8x Monkey Bath Bomb 90g - Guava & Strawberry</div>
+                <div class="font-bold text-2xl">{{ fieldValue.product.name }}</div>
 
                 <div class="mb-1 flex gap-x-10">
-                    <div class="text-sm">Product code: BKB-07</div>
+                    <div class="text-sm">Product code:{{ fieldValue.product.code }}</div>
                     <div class="flex gap-x-[1px] items-center">
                         <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
                         <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
@@ -114,16 +114,16 @@ const dataProduct = ref({
                         <FontAwesomeIcon icon="fas fa-circle" class="text-sm text-green-600" />
                         <span class="ml-1 text-sm">(41)</span>
                     </div>
-                    <div>RRP: £3.95/Piece</div>
+                    <div>RRP: £{{fieldValue.product.price}}/Piece</div>
                 </div>
 
                 <!-- Images product -->
                 <div class="grid grid-cols-5 mb-10 gap-x-2">
                     <div class="flex flex-col gap-y-1.5">
-                        <div v-for="(product, idxProduct) in dataProduct.images"
+                        <div v-for="(product, idxProduct) in fieldValue.product.images"
                             @click="() => (selectedProduct = idxProduct)" class="aspect-square cursor-pointer"
                             :class="selectedProduct == idxProduct ? 'ring-2 ring-gray-400' : 'hover:ring-1 hover:ring-gray-300'">
-                            <img :src="product" alt="" />
+                            <Image :imageCover="true" :src="product.source" :alt="`product Image ${idxProduct}`" />
                         </div>
                     </div>
 
@@ -131,7 +131,7 @@ const dataProduct = ref({
                     <div class="relative col-span-4 aspect-square">
                         <FontAwesomeIcon
                             icon="absolute bottom-2 right-2 text-3xl far fa-heart text-gray-400 hover:text-gray-600 cursor-pointer" />
-                        <img :src="dataProduct.images[selectedProduct]" alt="" />
+                        <Image :imageCover="true"  :src="fieldValue.product.images[selectedProduct].source" alt="product Image" />
                         <div v-if="selectedProduct != 0" @click="() => (selectedProduct = selectedProduct - 1)"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
                             <FontAwesomeIcon icon="fas fa-chevron-left" class="text-2xl" />
@@ -147,22 +147,11 @@ const dataProduct = ref({
                 <!-- Section: Description -->
                 <div class="space-y-4 mb-6">
                     <div class="text-xs text-gray-500">
-                        Introducing our
-                        <span class="font-bold">Wholesale Monkey Shaped Bath Bomb</span> weighing
-                        90g and infused with the delightful fusion of Guava & Strawberry. This bulk
-                        package is perfect for retailers, spas, or anyone looking to add a touch of
-                        fun and tropical fragrance to their bath and body products.
-                        <br />
-                        Each bath bomb is meticulously crafted into an adorable monkey shape,
-                        bringing a sense of whimsy and playfulness to any bathing routine. The
-                        attention to detail and vibrant colours make these bath bombs visually
-                        appealing and irresistible to customers of all ages.
+                       {{ fieldValue.product.description }}
                     </div>
-                    <div class="font-bold text-xs underline">Read More</div>
                 </div>
 
-                <!-- Section: Label -->
-                <div class="flex gap-x-10 text-gray-400 mb-6">
+                <!-- <div class="flex gap-x-10 text-gray-400 mb-6">
                     <div class="flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-seedling" class="text-sm" />
                         <div class="text-xs">Vegan</div>
@@ -180,9 +169,9 @@ const dataProduct = ref({
                             style="--fa-rotate-angle: 45deg" />
                         <div class="text-xs">Plastic Free</div>
                     </div>
-                </div>
+                </div> -->
 
-                <Disclosure v-if="data.setting.product_spec" v-slot="{ open }">
+                <Disclosure v-if="fieldValue.setting.product_specs" v-slot="{ open }">
                     <DisclosureButton class="cursor-pointer w-full">
                         <div class="mb-2 flex gap-x-4 items-center w-fit cursor-pointer">
                             <div class="font-bold">Product Specification & Documentation</div>
@@ -205,7 +194,7 @@ const dataProduct = ref({
                     </DisclosurePanel>
                 </Disclosure>
 
-                <Disclosure v-slot="{ open }" v-if="data.setting.customer_review" >
+                <Disclosure v-slot="{ open }" v-if="fieldValue.setting.customer_review" >
                     <DisclosureButton class="cursor-pointer w-full">
                         <div class="mb-2 flex gap-x-4 items-center w-fit cursor-pointer">
                             <div class="font-bold">Customer Reviews</div>
@@ -214,15 +203,14 @@ const dataProduct = ref({
                         </div>
                     </DisclosureButton>
                     <DisclosurePanel class="text-sm text-gray-500">
-                        If you're unhappy with your purchase for any reason, email us within 90 days and we'll refund
-                        you in full, no questions asked.
+                       Dummy
                     </DisclosurePanel>
                 </Disclosure>
             </div>
 
             <!-- Column: Right -->
             <div class="flex-none w-1/3"> <!-- Adjust width as needed -->
-                <div v-if="mode.value == 'login' || mode.value == 'member'">
+               <!--  <div v-if="mode.value == 'login' || mode.value == 'member'">
                     <div v-if="mode.value == 'login'" class="mb-2 font-semibold text-2xl">£9.60 (£1.20/Piece)</div>
                     <div v-if="mode.value == 'login' || mode.value == 'member'"
                         class="mb-2 font-semibold text-2xl text-orange-500">
@@ -241,9 +229,9 @@ const dataProduct = ref({
                         </div>
                         <div class="text-xs underline cursor-pointer">Browse Product Family</div>
                     </div>
-                </div>
+                </div> -->
 
-                <div v-else class="p-3 w-full">
+                <div  class="p-3 w-full">
                     <div class="flex gap-3">
                         <div
                             class="bg-gray-600 flex-1 text-white rounded px-3 py-1 h-fit flex items-center justify-center">
@@ -257,7 +245,7 @@ const dataProduct = ref({
                 </div>
 
                 <!-- Section: Order now -->
-                <div v-if="mode.value == 'login' || mode.value == 'member'" class="flex gap-x-2 mb-6">
+                <div  class="flex gap-x-2 mb-6">
                     <div class="flex items-start gap-x-1">
                         <div class="font-bold text-3xl leading-none cursor-pointer">-</div>
                         <div
@@ -272,7 +260,7 @@ const dataProduct = ref({
                 </div>
 
                 <!-- Section: Buy now pay later, delivery info, return policy -->
-                <div v-if="data.setting.payments_and_policy" class="mb-4">
+                <div v-if="fieldValue.setting.payments_and_policy" class="mb-4">
                     <Disclosure v-slot="{ open }">
                         <DisclosureButton
                             class="flex items-center w-full gap-x-4 border-t border-gray-300 pl-3 font-bold text-gray-600 py-1">
@@ -334,7 +322,7 @@ const dataProduct = ref({
                 </div>
 
                 <!-- Section: FAQ -->
-                <div v-if="data.setting.faqs" class="mt-4 pl-3">
+                <div v-if="fieldValue.setting.faqs" class="mt-4 pl-3">
                     <h2 class="mb-4 text">Frequently Asked Questions (FAQs):</h2>
                     <Disclosure v-slot="{ open }">
                         <DisclosureButton class="cursor-pointer border-b-2 w-full border-gray-300 py-2 pl-1.5">
