@@ -261,13 +261,13 @@ class ShowPalletDeleted extends OrgAction
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.deleted.show',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.deleted_pallets.show',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
                             'label' => $pallet->reference,
                         ],
                     ],
-                    'suffix'         => __('Pallets'),
+                    'suffix'         => __('(🗑️ Deleted)'),
                 ],
             ]
         );
