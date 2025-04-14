@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
@@ -93,11 +94,16 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
+        $manual = false;
+        if($this->platform && $this->platform->type == PlatformTypeEnum::AIKU) {
+            $manual = true;
+        }
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title' => __('My Portfolio'),
+                'is_manual' => $manual,
                 'pageHead' => [
                     'title' => __('My Portfolio'),
                     'icon' => 'fal fa-cube',
