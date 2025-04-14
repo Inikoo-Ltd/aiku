@@ -112,8 +112,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $rejected_notes
  * @property \Illuminate\Support\Carbon|null $rejected_at
  * @property bool $is_vip VIP customer
- * @property int|null $as_organisation_id Indicate customer is a organisation in this group
- * @property int|null $as_employee_id Indicate customer is a employee
+ * @property int|null $as_organisation_id Indicate customer is an organisation in this group
+ * @property int|null $as_employee_id Indicate customer is an employee
  * @property string|null $approved_at
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
@@ -361,7 +361,7 @@ class Customer extends Model implements HasMedia, Auditable
 
     public function platforms(): BelongsToMany
     {
-        return $this->belongsToMany(Platform::class, 'model', 'customer_has_platforms')
+        return $this->belongsToMany(Platform::class, 'customer_has_platforms')
             ->withPivot('group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
     }
 
