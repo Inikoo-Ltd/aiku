@@ -17,6 +17,7 @@ class GetWebsiteWorkshopProduct
 
     public function handle(Website $website, Product $product): array
     {
+        
         $category = $product->family;
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
@@ -30,8 +31,6 @@ class GetWebsiteWorkshopProduct
         });
 
         $propsValue = [
-            'settings' => $website->settings,
-            'category' => FamilyWebsiteResource::make($category),
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
         ];
         $updateRoute = [

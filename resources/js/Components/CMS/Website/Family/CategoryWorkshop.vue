@@ -8,11 +8,8 @@
 import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
 import Button from '@/Components/Elements/Buttons/Button.vue';
-import { getComponent } from "./Content"
-import FamilyList from "./FamilyList"
 import Modal from '@/Components/Utils/Modal.vue'
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import { getIrisComponent } from "@/Composables/getIrisComponents"
