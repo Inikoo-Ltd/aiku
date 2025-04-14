@@ -16,7 +16,7 @@ enum WebBlockCategoryScopeEnum: string
 
 
     case FAMILY  = 'family';
-    case PRODUCT  = 'webpage';
+    case PRODUCT  = 'product';
     case DEPARTMENT  = 'department';
 
 
