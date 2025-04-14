@@ -17,18 +17,25 @@ import { getIrisComponent } from "@/Composables/getIrisComponents"
 library.add(faCube, faLink, faStar, faCircle)
 
 const props = defineProps<{
+    modelValue: any
     data: {
-        web_block_type : any
+        web_block_types: any
         category: any
     }
 }>()
 
 const isModalOpen = ref(false)
-const usedTemplates = ref()
+const usedTemplates = ref(
+    props.data.web_block_types.data.find((template) => template.code === props.modelValue.family?.code)
+)
 
-const onPickTemplate = (family) => {
+const onPickTemplate = (family: any) => {
     isModalOpen.value = false
     usedTemplates.value = family
+    props.modelValue.family = {
+        code: family.code,
+        settings: null
+    }
 }
 
 </script>
@@ -38,20 +45,16 @@ const onPickTemplate = (family) => {
         <div class="py-3">
             <Button label="Templates" @click="isModalOpen = true"></Button>
         </div>
-        <div v-if="usedTemplates?.code" class="grid grid-cols-4 gap-x-10">
+        <div v-if="modelValue?.family?.code" class="grid grid-cols-4 gap-x-10">
             <div class="col-span-1">
-                <component 
-                class="w-full"
-			    :is="getIrisComponent(usedTemplates.code)"
-			    :fieldValue="usedTemplates.data.fieldValue"
-                />
+                <component class="w-full" :is="getIrisComponent(modelValue.family.code)"
+                    :fieldValue="usedTemplates.data.fieldValue" />
             </div>
         </div>
     </div>
 
-
     <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-2/5">
-        <BlockList :onPickBlock="onPickTemplate" :webBlockTypes="data.web_block_type" scope="webpage" />
+        <BlockList :onPickBlock="onPickTemplate" :webBlockTypes="data.web_block_types" scope="webpage" />
     </Modal>
 
 </template>

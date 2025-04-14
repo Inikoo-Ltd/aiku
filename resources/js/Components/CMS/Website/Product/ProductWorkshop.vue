@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { onMounted, ref, watch } from "vue"
 import { trans } from 'laravel-vue-i18n'
 import { useColorTheme } from '@/Composables/useStockList'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -19,10 +19,11 @@ import { routeType } from "@/types/route"
 library.add(faRocketLaunch)
 
 const props = defineProps<{
+    modelValue: any
     data: {
         updateRoute: routeType
-        web_block_types : {
-            data : Array<any>
+        web_block_types: {
+            data: Array<any>
         }
     }
 }>()
@@ -31,7 +32,8 @@ const emits = defineEmits(['update:modelValue', 'autoSave'])
 const op = ref()
 const comment = ref('')
 const isLoading = ref(false)
-const usedTemplates = ref(props.data.web_block_types.data[0])
+const usedTemplates = ref(
+    props.modelValue.product ? props.data.web_block_types.data.find((template) => template.code === props.modelValue.product.code) : props.data.web_block_types.data[0])
 const mode = ref({ name: 'Logged In', value: 'login' })
 const optionsToogle = ref([
     { name: 'Logged Out', value: 'logout' },
@@ -39,12 +41,7 @@ const optionsToogle = ref([
     { name: 'Membership', value: 'member' }
 ])
 
-console.log('ddd',props.data)
-
-
-const toggle = (event) => {
-    op.value.toggle(event)
-}
+console.log('ddd', props.data)
 
 const selectPreviousTemplate = () => {
     let index = props.data.web_block_types.data.findIndex((item) => item.key == usedTemplates.value.code)
@@ -60,21 +57,20 @@ const selectNextTemplate = () => {
     }
 }
 
-const onPublish = async (action: {}, popover: {}) => {
-    try {
-        isLoading.value = true
-        const response = await axios.patch(route(props.data.updateRoute.name, props.data.updateRoute.parameters), { data: usedTemplates.value, comment: comment.value })
-    } catch (error) {
-        const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred"
-        notify({
-            title: "Something went wrong.",
-            text: errorMessage,
-            type: "error",
-        })
-    } finally {
-        isLoading.value = false
+onMounted(() => {
+    if (!props.modelValue.product) {
+        props.modelValue.product = {
+            code: props.data.web_block_types.data[0].code,
+            setting: {
+                faqs: true,
+                product_specs: true,
+                customer_review: true,
+                payments_and_policy: true
+            }
+        }
     }
-}
+})
+
 
 </script>
 
@@ -86,16 +82,10 @@ const onPublish = async (action: {}, popover: {}) => {
                     <font-awesome-icon :icon="['fas', 'chevron-left']"
                         class="px-4 cursor-pointer text-gray-600 hover:text-gray-800 transition duration-200"
                         @click="selectPreviousTemplate" />
-                    <PureMultiselect 
-                        :options="data.web_block_types.data" 
-                        label="code"  
-                        :object="true"
-                        :valueProp="'code'"
-                        :model-value="usedTemplates" 
-                        @update:model-value="(value) => { console.log(value)}"
-                        :required="true" 
-                        class="mx-2 focus:ring-2 focus:ring-blue-500" 
-                    />
+                    <PureMultiselect :options="data.web_block_types.data" label="code" :object="true"
+                        :valueProp="'code'" :model-value="usedTemplates"
+                        @update:model-value="(value) => { console.log(value) }" :required="true"
+                        class="mx-2 focus:ring-2 focus:ring-blue-500" />
                     <font-awesome-icon :icon="['fas', 'chevron-right']"
                         class="px-4 cursor-pointer text-gray-600 hover:text-gray-800 transition duration-200"
                         @click="selectNextTemplate" />
@@ -107,37 +97,37 @@ const onPublish = async (action: {}, popover: {}) => {
                         aria-labelledby="multiple" />
                 </div>
                 <div class="px-8">
-                    <div class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting?.faqs" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Show FAQs</span>
-                            <ToggleSwitch v-model="usedTemplates.data.fieldValue.setting.faqs" />
+                            <ToggleSwitch v-model="modelValue.product.setting.faqs" />
                         </div>
                         <div class="text-xs text-gray-500">
                             Toggle to show or hide frequently asked questions for your product.
                         </div>
                     </div>
-                    <div class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting?.product_specs" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Product Specification</span>
-                            <ToggleSwitch v-model="usedTemplates.data.fieldValue.setting.product_specs" />
+                            <ToggleSwitch v-model="modelValue.product.setting.product_specs" />
                         </div>
                         <div class="text-xs text-gray-500">
                             Toggle to show or hide product specifications for your product.
                         </div>
                     </div>
-                    <div class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting?.customer_review" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Customer Reviews</span>
-                            <ToggleSwitch v-model="usedTemplates.data.fieldValue.setting.customer_review" />
+                            <ToggleSwitch v-model="modelValue.product.setting.customer_review" />
                         </div>
                         <div class="text-xs text-gray-500">
                             Toggle to show or hide customer reviews for your product.
                         </div>
                     </div>
-                    <div class="py-5 border-t border-gray-300">
+                    <div v-if="modelValue.product?.setting?.payments_and_policy" class="py-5 border-t border-gray-300">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-lg font-semibold">Payments & Policy</span>
-                            <ToggleSwitch v-model="usedTemplates.data.fieldValue.setting.payments_and_policy" />
+                            <ToggleSwitch v-model="modelValue.product.setting.payments_and_policy" />
                         </div>
                         <div class="text-xs text-gray-500">
                             Toggle to show or hide payment and policy information for your product.
@@ -145,54 +135,21 @@ const onPublish = async (action: {}, popover: {}) => {
                     </div>
                 </div>
             </div>
-            <div class="px-4 py-4 bg-gray-200">
-                <Button type="submit" full label="Publish" :icon="faRocketLaunch" @click="toggle" />
-            </div>
         </div>
 
         <div class="bg-gray-100 h-full col-span-3 rounded-lg shadow-lg">
             <div class="bg-gray-100 px-6 py-6 h-[79vh] rounded-lg  overflow-auto">
                 <div :class="usedTemplates?.code ? 'bg-white shadow-md rounded-lg' : ''">
                     <section v-if="usedTemplates?.code">
-                        <component :is="getIrisComponent(usedTemplates.code)" :fieldValue="usedTemplates.data.fieldValue" />
+                        <component :is="getIrisComponent(usedTemplates.code)"
+                            :fieldValue="usedTemplates.data.fieldValue" />
                     </section>
                 </div>
             </div>
         </div>
     </div>
-
-    <Popover ref="op">
-        <div class="flex flex-col gap-4 w-[25rem]">
-            <div>
-                <div class="inline-flex items-start leading-none">
-                    <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
-                    <span class="capitalize">{{ trans('comment') }}</span>
-                </div>
-                <div class="py-2.5">
-                    <textarea rows="3" v-model="comment"
-                        class="block w-64 lg:w-96 rounded-md shadow-sm border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm" />
-                </div>
-                <div class="flex justify-end">
-                    <Button :key="comment.length" size="xs" icon="far fa-rocket-launch" label="Publish"
-                        :type="comment.length > 0 ? 'primary' : 'disabled'" @click="onPublish">
-                        <template #icon>
-                            <LoadingIcon v-if="isLoading" />
-                            <FontAwesomeIcon v-else icon='far fa-rocket-launch' class='' aria-hidden='true' />
-                        </template>
-                    </Button>
-                </div>
-            </div>
-        </div>
-    </Popover>
 </template>
 
 
 <style scoped>
-.splitpanes__pane {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    box-shadow: 0 0 3px rgba(0, 0, 0, .2) inset;
-}
 </style>
