@@ -217,26 +217,26 @@ class ShowPalletDeliveryDeleted extends OrgAction
                     'delivery_state'      => PalletDeliveryStateEnum::stateIcon()[$palletDelivery->state->value],
                     'recurring_bill'      => $recurringBillData,
                     'order_summary'       => [
-                        [
-                            // [
-                            //     'label'       => __('Pallets'),
-                            //     'quantity'    => $palletDelivery->stats->number_pallets ?? 0,
-                            //     'price_base'  => __('Multiple'),
-                            //     'price_total' => $palletPriceTotal ?? 0
-                            // ],
-                            [
-                                'label'       => __('Services'),
-                                'quantity'    => $palletDelivery->stats->number_services ?? 0,
-                                'price_base'  => __('Multiple'),
-                                'price_total' => $palletDelivery->services_amount
-                            ],
-                            [
-                                'label'       => __('Physical Goods'),
-                                'quantity'    => $palletDelivery->stats->number_physical_goods ?? 0,
-                                'price_base'  => __('Multiple'),
-                                'price_total' => $palletDelivery->goods_amount
-                            ],
-                        ],
+                        // [
+                        //     // [
+                        //     //     'label'       => __('Pallets'),
+                        //     //     'quantity'    => $palletDelivery->stats->number_pallets ?? 0,
+                        //     //     'price_base'  => __('Multiple'),
+                        //     //     'price_total' => $palletPriceTotal ?? 0
+                        //     // ],
+                        //     [
+                        //         'label'       => __('Services'),
+                        //         'quantity'    => $palletDelivery->stats->number_services ?? 0,
+                        //         'price_base'  => __('Multiple'),
+                        //         'price_total' => $palletDelivery->services_amount
+                        //     ],
+                        //     [
+                        //         'label'       => __('Physical Goods'),
+                        //         'quantity'    => $palletDelivery->stats->number_physical_goods ?? 0,
+                        //         'price_base'  => __('Multiple'),
+                        //         'price_total' => $palletDelivery->goods_amount
+                        //     ],
+                        // ],
 
                         $showGrossAndDiscount ? [
                             [

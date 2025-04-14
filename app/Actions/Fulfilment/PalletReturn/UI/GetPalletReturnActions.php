@@ -20,6 +20,10 @@ class GetPalletReturnActions
 
     public function handle(PalletReturn $palletReturn, $canEdit = false, $isSupervisor = false): array
     {
+        if ($palletReturn->deleted_at) {
+            return $this->addPdf($palletReturn, []);
+        }
+
         if ($canEdit) {
             $actions = match ($palletReturn->state) {
                 PalletReturnStateEnum::IN_PROCESS => $this->getPalletReturnInProcessActions($palletReturn),
