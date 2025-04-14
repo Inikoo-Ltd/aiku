@@ -9,32 +9,30 @@
 namespace App\Actions\Fulfilment\Pallet\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;
 use App\Http\Resources\Fulfilment\PalletsResource;
+use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\InertiaTable\InertiaTable;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Services\QueryBuilder;
 
 class IndexPalletsInWarehouse extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
     use WithPalletsSubNavigation;
 
-    private bool $selectStoredPallets = false;
 
     private Warehouse|Location $parent;
-
 
 
     public function handle(Warehouse|Location $parent, $prefix = null): LengthAwarePaginator
@@ -53,19 +51,13 @@ class IndexPalletsInWarehouse extends OrgAction
 
         $query = QueryBuilder::for(Pallet::class);
 
-        switch (class_basename($parent)) {
-            case "Location":
-                $query->where('location_id', $parent->id);
-                break;
-            default:
-                $query->where('pallets.warehouse_id', $parent->id);
-                break;
+        if (class_basename($parent) == 'Location') {
+            $query->where('location_id', $parent->id);
+        } else {
+            $query->where('pallets.warehouse_id', $parent->id);
         }
 
         $query->whereIn('pallets.status', ['receiving', 'storing', 'returning']);
-
-
-
 
 
         $query->defaultSort('pallets.id')
@@ -109,16 +101,12 @@ class IndexPalletsInWarehouse extends OrgAction
             }
 
 
-
             $table->withGlobalSearch();
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
                 'title' => '',
-                'count' => match (class_basename($parent)) {
-                    'FulfilmentCustomer' => $parent->number_pallets,
-                    default              => $parent->stats->number_pallets
-                }
+                'count' => $parent->stats->number_pallets
             ];
 
 
@@ -194,7 +182,7 @@ class IndexPalletsInWarehouse extends OrgAction
 
     public function getBreadcrumbs(array $routeParameters): array
     {
-        return  array_merge(
+        return array_merge(
             ShowWarehouseFulfilmentDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [

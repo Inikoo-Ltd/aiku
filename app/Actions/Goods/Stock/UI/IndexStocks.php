@@ -11,7 +11,7 @@ namespace App\Actions\Goods\Stock\UI;
 use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Http\Resources\Goods\StocksResource;
 use App\InertiaTable\InertiaTable;
@@ -27,7 +27,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexStocks extends GrpAction
+class IndexStocks extends OrgAction
 {
     use HasGoodsAuthorisation;
 
@@ -39,7 +39,7 @@ class IndexStocks extends GrpAction
     {
         $this->bucket = 'all';
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle($this->parent);
     }
@@ -48,7 +48,7 @@ class IndexStocks extends GrpAction
     {
         $this->bucket = 'active';
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle($this->parent);
     }
@@ -57,7 +57,7 @@ class IndexStocks extends GrpAction
     {
         $this->bucket = 'in_process';
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle($this->parent);
     }
@@ -66,7 +66,7 @@ class IndexStocks extends GrpAction
     {
         $this->bucket = 'discontinuing';
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle($this->parent);
     }
@@ -75,7 +75,7 @@ class IndexStocks extends GrpAction
     {
         $this->bucket = 'discontinued';
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle($this->parent);
     }
@@ -83,7 +83,7 @@ class IndexStocks extends GrpAction
     public function inStockFamily(StockFamily $stockFamily, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->parent = $stockFamily;
 
         return $this->handle(parent: $stockFamily);
@@ -127,11 +127,14 @@ class IndexStocks extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(Stock::class);
+        $queryBuilder->leftJoin('stock_sales_intervals', 'stock_sales_intervals.stock_id', 'stocks.id');
 
         if ($parent instanceof StockFamily) {
             $queryBuilder->where('stock_family_id', $parent->id);
+            $group = $parent->group;
         } else {
             $queryBuilder->where('stocks.group_id', $this->group->id);
+            $group = $parent;
         }
 
 
@@ -162,7 +165,13 @@ class IndexStocks extends GrpAction
                 'stocks.slug',
                 'stocks.name',
                 'stocks.unit_value',
+                'stock_sales_intervals.*',
+                'stock_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
+
             ])
+            ->selectRaw(
+                "'".$group->currency->code."' as grp_currency_code"
+            )
             ->leftJoin('stock_stats', 'stock_stats.stock_id', 'stocks.id');
 
         if ($parent instanceof Group) {
@@ -174,7 +183,7 @@ class IndexStocks extends GrpAction
         }
 
 
-        return $queryBuilder->allowedSorts(['code', 'family_code', 'name'])
+        return $queryBuilder->allowedSorts(['code', 'family_code', 'name', 'revenue_grp_currency'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -201,49 +210,54 @@ class IndexStocks extends GrpAction
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
+                ->dateInterval($this->dateInterval)
                 ->withModelOperations($modelOperations)
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Group' => [
-                            'title'       => __("No SKUs found"),
-                            'description' => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? __('Get started by creating a shop. ✨')
-                                : __("In fact, is no even create a SKUs family yet 🤷🏽‍♂️"),
-                            'count'       => $parent->goodsStats->number_stocks,
-                            'action'      => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new SKUs family'),
-                                'label'   => __('SKUs family'),
-                                'route'   => [
-                                    'name'       => 'grp.goods.stock-families.create',
-                                    'parameters' => []
-                                ]
-                            ] : null
-                        ],
-                        'StockFamily' => [
-                            'title'       => __("No SKUs found"),
-                            'description' => $this->canEdit ? __('Get started by creating a new SKU. ✨')
-                                : null,
-                            'count'       => $parent->stats->number_stocks,
-                            'action'      => $this->canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new SKU'),
-                                'label'   => __('SKU'),
-                                'route'   => [
-                                    'name'       => 'inventory.stock-families.show.stocks.create',
-                                    'parameters' => [$parent->slug]
-                                ]
-                            ] : null
-                        ],
-                        default => null
-                    }
-                )
+                ->withEmptyState($this->getEmptyState($parent))
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'family_code', label: __('family'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true);
+        };
+    }
+
+    private function getEmptyState(Group|StockFamily $parent): ?array
+    {
+        return match (class_basename($parent)) {
+            'Group' => [
+                'title'       => __("No SKUs found"),
+                'description' => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? __('Get started by creating a shop. ✨')
+                    : __("In fact, is no even create a SKUs family yet 🤷🏽‍♂️"),
+                'count'       => $parent->goodsStats->number_stocks,
+                'action'      => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new SKUs family'),
+                    'label'   => __('SKUs family'),
+                    'route'   => [
+                        'name'       => 'grp.goods.stock-families.create',
+                        'parameters' => []
+                    ]
+                ] : null
+            ],
+            'StockFamily' => [
+                'title'       => __("No SKUs found"),
+                'description' => $this->canEdit ? __('Get started by creating a new SKU. ✨')
+                    : null,
+                'count'       => $parent->stats->number_stocks,
+                'action'      => $this->canEdit ? [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new SKU'),
+                    'label'   => __('SKU'),
+                    'route'   => [
+                        'name'       => 'inventory.stock-families.show.stocks.create',
+                        'parameters' => [$parent->slug]
+                    ]
+                ] : null
+            ],
+            default => null
         };
     }
 
@@ -261,7 +275,7 @@ class IndexStocks extends GrpAction
             [
                 'label'  => __('Active'),
                 'root'   => 'grp.goods.stocks.active_stocks.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stocks.active_stocks.index',
                     'parameters' => []
                 ],
@@ -270,7 +284,7 @@ class IndexStocks extends GrpAction
             [
                 'label'  => __('In process'),
                 'root'   => 'grp.goods.stocks.in_process_stocks.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stocks.in_process_stocks.index',
                     'parameters' => []
                 ],
@@ -279,7 +293,7 @@ class IndexStocks extends GrpAction
             [
                 'label'  => __('Discontinuing'),
                 'root'   => 'grp.goods.stocks.discontinuing_stocks.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stocks.discontinuing_stocks.index',
                     'parameters' => []
                 ],
@@ -289,7 +303,7 @@ class IndexStocks extends GrpAction
                 'label'  => __('Discontinued'),
                 'root'   => 'grp.goods.stocks.discontinued_stocks.',
                 'align'  => 'right',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stocks.discontinued_stocks.index',
                     'parameters' => []
                 ],
@@ -300,7 +314,7 @@ class IndexStocks extends GrpAction
                 'icon'   => 'fal fa-bars',
                 'root'   => 'grp.goods.stocks.index',
                 'align'  => 'right',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.goods.stocks.index',
                     'parameters' => []
                 ],
@@ -317,11 +331,11 @@ class IndexStocks extends GrpAction
         $subNavigation = $this->getStocksSubNavigation();
 
         $title = match ($this->bucket) {
-            'active'        => __('Active SKUs'),
-            'in_process'    => __('In process SKUs'),
+            'active' => __('Active SKUs'),
+            'in_process' => __('In process SKUs'),
             'discontinuing' => __('Discontinuing SKUs'),
-            'discontinued'  => __('Discontinued SKUs'),
-            default         => __('SKUs')
+            'discontinued' => __('Discontinued SKUs'),
+            default => __('SKUs')
         };
 
         return Inertia::render(
@@ -368,7 +382,6 @@ class IndexStocks extends GrpAction
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
-
             $label = match ($routeParameters['name']) {
                 'grp.goods.stocks.active_stocks.index' => __('Active SKUs'),
                 'grp.goods.stocks.in_process_stocks.index' => __('In process SKUs'),

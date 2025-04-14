@@ -28,6 +28,10 @@ const props = defineProps<{
     uploadImageRoute?: routeType
 }>()
 
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
+
 const model = defineModel<BackgroundProperty>({
     required: true,
     default : {
@@ -35,8 +39,8 @@ const model = defineModel<BackgroundProperty>({
     }
 })
 
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })
+/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 const isOpenGallery = ref(false)
 
@@ -46,7 +50,8 @@ const onSubmitSelectedImage = (images: ImageData[]) => {
     model.value.image = images[0]
     isOpenGallery.value = false
     model.value.type = 'image'
-    onSaveWorkshopFromId(side_editor_block_id, 'background property')
+    emits('update:modelValue', model.value)
+  /*   onSaveWorkshopFromId(side_editor_block_id, 'background property') */
 }
 
 
@@ -72,7 +77,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
         )
         
         model.value.image = aaa.data.data[0]
-        onSaveWorkshopFromId(side_editor_block_id, 'background image')
+        emits('update:modelValue', model.value)
 
         // Assuming you want to notify on success
         notify({
@@ -124,10 +129,10 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                         <FontAwesomeIcon icon='fal fa-image' class='text-white' fixed-width aria-hidden='true' />
                     </div>
 
-                    <div v-else @click="() => (model.type = 'image', onSaveWorkshopFromId(side_editor_block_id, 'background type image'))" class="flex absolute inset-0 bg-gray-200/70 hover:bg-gray-100/40 items-center justify-center cursor-pointer" />
+                    <div v-else @click="() => (model.type = 'image',emits('update:modelValue', model))" class="flex absolute inset-0 bg-gray-200/70 hover:bg-gray-100/40 items-center justify-center cursor-pointer" />
                 </div>
             </div>
-            <PureRadio v-model="model.type" @update:modelValue="() => onSaveWorkshopFromId(side_editor_block_id, 'background type image')" :options="[{ name: 'image'}]" by="name" key="image1" />
+            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)" :options="[{ name: 'image'}]" by="name" key="image1" />
         </div>
         
         <!-- {{ model }} -->
@@ -140,7 +145,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                     @changeColor="(newColor)=> {
                         model.color = `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`,
                         model.type = 'color',
-                        onSaveWorkshopFromId(side_editor_block_id, 'background property')
+                        emits('update:modelValue', model)
                     }"
                     closeButton
                     v-tooltip="trans('Color background')"
@@ -159,7 +164,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
 
                     <template #before-main-picker>
                         <div class="flex items-center gap-2">
-                            <RadioButton size="small" v-model="model.color" @update:modelValue="() => onSaveWorkshopFromId(side_editor_block_id, 'background property')" inputId="bg-color-picker-1" name="bg-color-picker" value="var(--iris-color-primary)" />
+                            <RadioButton size="small" v-model="model.color" @update:modelValue="() => emits('update:modelValue', model)" inputId="bg-color-picker-1" name="bg-color-picker" value="var(--iris-color-primary)" />
                             <label class="cursor-pointer" for="bg-color-picker-1">{{ trans("Primary color") }} 
                                 <a  :href="route(route().params.shop ? 'grp.org.shops.show.web.websites.workshop' : 'grp.org.fulfilments.show.web.websites.workshop', {...route().params, tab: 'website_layout', section: 'theme_colors'})" as="a" target="_blank" class="text-xs text-blue-600">{{ trans("themes") }}</a>
                             </label>
@@ -168,7 +173,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                         <div class="flex items-center gap-2">
                             <RadioButton size="small"
                                 :modelValue="!model.color?.includes('var') ? '#111111' : null"
-                                @update:modelValue="(e) => model.color.includes('var') ? (model.color = '#111111', onSaveWorkshopFromId(side_editor_block_id, 'background property')) : false"
+                                @update:modelValue="(e) => model.color.includes('var') ? (model.color = '#111111', emits('update:modelValue', model)) : false"
                                 inputId="bg-color-picker-3"
                                 name="bg-color-picker"
                                 value="#111111" />
@@ -177,12 +182,12 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                     </template>
                 </ColorPicker>
                 
-                <div v-if="model.type !== 'color'" @click="() => (model.type = 'color', onSaveWorkshopFromId(side_editor_block_id, 'background type color'))" class="flex absolute inset-0 items-center justify-center cursor-pointer" />
+                <div v-if="model.type !== 'color'" @click="() => (model.type = 'color', emits('update:modelValue', model))" class="flex absolute inset-0 items-center justify-center cursor-pointer" />
 
             </div>
             <!-- <div v-else class="h-8 w-8 rounded-md border border-gray-300 shadow" :style="{background: model.color}" /> -->
 
-            <PureRadio v-model="model.type" @update:modelValue="() => onSaveWorkshopFromId(side_editor_block_id, 'background property')" :options="[{ name: 'color'}]" by="name" key="color2" />
+            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)" :options="[{ name: 'color'}]" by="name" key="color2" />
         </div>
     </div>
     

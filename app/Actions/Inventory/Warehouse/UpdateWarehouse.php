@@ -13,6 +13,7 @@ use App\Actions\Inventory\Warehouse\Search\WarehouseRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouses;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouses;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
@@ -28,6 +29,7 @@ class UpdateWarehouse extends OrgAction
 {
     use WithActionUpdate;
     use WithModelAddressActions;
+    use WithWarehouseManagementEditAuthorisation;
 
     public function handle(Warehouse $warehouse, array $modelData): Warehouse
     {
@@ -46,15 +48,6 @@ class UpdateWarehouse extends OrgAction
         WarehouseRecordSearch::dispatch($warehouse);
 
         return $warehouse;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("inventory.{$this->warehouse->id}.edit");
     }
 
     public function rules(): array

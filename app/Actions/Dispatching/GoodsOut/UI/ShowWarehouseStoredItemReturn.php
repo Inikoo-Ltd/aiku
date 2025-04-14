@@ -11,19 +11,19 @@ namespace App\Actions\Dispatching\GoodsOut\UI;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
-use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
-use App\Http\Resources\Fulfilment\PalletReturnResource;
-use App\Http\Resources\Fulfilment\PalletReturnsResource;
-use App\Models\Fulfilment\PalletReturn;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
 use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
+use App\Http\Resources\Fulfilment\PalletReturnResource;
+use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -41,7 +41,6 @@ class ShowWarehouseStoredItemReturn extends OrgAction
     }
 
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletReturnTabsEnum::values());
@@ -49,20 +48,10 @@ class ShowWarehouseStoredItemReturn extends OrgAction
         return $this->handle($palletReturn);
     }
 
-
-    public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
+    public function getActions(PalletReturn $palletReturn): array
     {
-        $subNavigation = [];
-
-
-        $actions = [];
-        $navigation = PalletReturnTabsEnum::navigation($palletReturn);
-        unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
-        $this->tab = $request->get('tab', array_key_first($navigation));
-
-
-
-        $actions[]     = [
+        $actions   = [];
+        $actions[] = [
             'type'   => 'button',
             'style'  => 'tertiary',
             'label'  => 'PDF',
@@ -77,7 +66,6 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             ]
         ];
         if ($this->canEdit) {
-
             if ($palletReturn->state == PalletReturnStateEnum::CONFIRMED) {
                 $actions[] = [
                     'type'    => 'button',
@@ -109,24 +97,32 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                         'method'     => 'post',
                         'name'       => 'grp.models.pallet-return.dispatch',
                         'parameters' => [
-                            'palletReturn'       => $palletReturn->id
+                            'palletReturn' => $palletReturn->id
                         ]
                     ]
                 ];
             }
-
         }
+
+        return $actions;
+    }
+
+    public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
+    {
+        $subNavigation = [];
+
+
+        $navigation = PalletReturnTabsEnum::navigation($palletReturn);
+        unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
+        $this->tab = $request->get('tab', array_key_first($navigation));
 
 
         $afterTitle = [
             'label' => '('.__("Customer's SKUs").')'
-            ];
+        ];
 
-        $showGrossAndDiscount = $palletReturn->gross_amount !== $palletReturn->net_amount;
 
-        $downloadRoute = 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.stored-items.export';
-
-        $recurringBillData = null;
+        $actions = $this->getActions($palletReturn);
 
         return Inertia::render(
             'Org/Fulfilment/PalletReturn',
@@ -136,17 +132,17 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation' => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($palletReturn, $request),
                     'next'     => $this->getNext($palletReturn, $request),
                 ],
-                'pageHead' => [
+                'pageHead'    => [
                     // 'container' => $container,
                     'subNavigation' => $subNavigation,
-                    'title'     => $palletReturn->reference,
-                    'model'     => __('return'),
-                    'afterTitle' => $afterTitle,
-                    'icon'      => [
+                    'title'         => $palletReturn->reference,
+                    'model'         => __('return'),
+                    'afterTitle'    => $afterTitle,
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-truck-couch'],
                         'title' => $palletReturn->reference
                     ],
@@ -154,7 +150,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     'actions' => $actions
                 ],
 
-                'interest'  => [
+                'interest' => [
                     'pallets_storage' => $palletReturn->fulfilmentCustomer->pallets_storage,
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
@@ -163,44 +159,41 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                 'updateRoute' => [
                     'name'       => 'grp.models.pallet-return.update',
                     'parameters' => [
-                        'palletReturn'       => $palletReturn->id
+                        'palletReturn' => $palletReturn->id
                     ]
                 ],
-
 
 
                 'routeStorePallet' => [
                     'name'       => 'grp.models.pallet-return.pallet.store',
                     'parameters' => [
-                        'palletReturn'       => $palletReturn->id
+                        'palletReturn' => $palletReturn->id
                     ]
                 ],
-
-
 
 
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
-                'data'             => PalletReturnResource::make($palletReturn),
+                'data' => PalletReturnResource::make($palletReturn),
 
-                'service_list_route'   => [
+                'service_list_route'       => [
                     'name'       => 'grp.json.fulfilment.return.services.index',
                     'parameters' => [
-                        'fulfilment'     => $palletReturn->fulfilment->slug,
-                        'scope'          => $palletReturn->slug
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
                     ]
                 ],
-                'physical_good_list_route'   => [
+                'physical_good_list_route' => [
                     'name'       => 'grp.json.fulfilment.return.physical-goods.index',
                     'parameters' => [
-                        'fulfilment'     => $palletReturn->fulfilment->slug,
-                        'scope'          => $palletReturn->slug
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
                     ]
                 ],
 
-                'route_check_stored_items'   => [
+                'route_check_stored_items' => [
                     'method'     => 'post',
                     'name'       => 'grp.models.pallet-return.stored_item.store',
                     'parameters' => [
@@ -209,17 +202,17 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                 ],
 
                 'can_edit_transactions' => true,
-                'option_attach_file' => [
+                'option_attach_file'    => [
                     [
                         'name' => __('Other'),
                         'code' => 'Other'
                     ]
                 ],
-                'stored_items_count' => $palletReturn->storedItems()->count(),
+                'stored_items_count'    => $palletReturn->storedItems()->count(),
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
-                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value)) //todo idk if this is right
-                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))), //todo idk if this is right
+                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))),
 
                 PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn))
@@ -275,7 +268,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                         ],
 
                     ],
-                    'suffix' => $suffix
+                    'suffix'         => $suffix
                 ],
             ];
         };
@@ -283,7 +276,6 @@ class ShowWarehouseStoredItemReturn extends OrgAction
         $palletReturn = PalletReturn::where('slug', $routeParameters['palletReturn'])->first();
 
         return match ($routeName) {
-
             'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show' => array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
@@ -310,7 +302,6 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
     public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-
         $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::STORED_ITEM)->orderBy('id', 'desc')->first();
 
 
@@ -319,9 +310,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
     public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-
         $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
-
 
 
         return $this->getNavigation($next, $request->route()->getName());
@@ -339,9 +328,9 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             'route' => [
                 'name'       => $routeName,
                 'parameters' => [
-                    'organisation'   => $palletReturn->organisation->slug,
-                    'warehouse'      => $palletReturn->warehouse->slug,
-                    'palletReturn'   => $palletReturn->reference
+                    'organisation' => $palletReturn->organisation->slug,
+                    'warehouse'    => $palletReturn->warehouse->slug,
+                    'palletReturn' => $palletReturn->reference
                 ]
 
             ]

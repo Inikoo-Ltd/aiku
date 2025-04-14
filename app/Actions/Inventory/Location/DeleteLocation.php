@@ -2,13 +2,19 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 24 Jun 2023 13:12:05 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Sat, 24 Jun 2023 13:12:05 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Inventory\Location;
 
+use App\Actions\Inventory\Location\Search\LocationRecordSearch;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
+use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisation;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +28,8 @@ class DeleteLocation extends OrgAction
 {
     use AsController;
     use WithAttributes;
+    use WithWarehouseSupervisorAuthorisation;
+
 
     private Warehouse|WarehouseArea $parent;
 
@@ -29,52 +37,30 @@ class DeleteLocation extends OrgAction
     {
         $location->delete();
 
+        GroupHydrateLocations::dispatch($location->group)->delay($this->hydratorsDelay);
+        OrganisationHydrateLocations::dispatch($location->organisation)->delay($this->hydratorsDelay);
+        WarehouseHydrateLocations::dispatch($location->warehouse)->delay($this->hydratorsDelay);
+
+        if ($location->warehouse_area_id) {
+            WarehouseAreaHydrateLocations::dispatch($location->warehouseArea)->delay($this->hydratorsDelay);
+        }
+
+        LocationRecordSearch::dispatch($location);
+
         return $location;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        return $request->user()->authTo("locations.{$this->warehouse->id}.edit");
-    }
-
-    public function asController(Location $location, ActionRequest $request): Location
-    {
-        $request->validate();
-
-        return $this->handle($location);
-    }
 
     public function action(Location $location): Location
     {
         $this->asAction = true;
-        return $this->handle($location);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWarehouse(Warehouse $warehouse, Location $location, ActionRequest $request): Location
-    {
-        $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($location);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWarehouseArea(WarehouseArea $warehouseArea, Location $location, ActionRequest $request): Location
+    public function asController(Location $location, ActionRequest $request): Location
     {
-        $this->parent = $warehouseArea;
-        $this->initialisationFromWarehouse($warehouseArea->warehouse, $request);
-
-        return $this->handle($location);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWarehouseInWarehouseArea(Warehouse $warehouse, WarehouseArea $warehouseArea, Location $location, ActionRequest $request): Location
-    {
-        $request->validate();
+        $this->initialisationFromWarehouse($location->warehouse, $request);
 
         return $this->handle($location);
     }
@@ -82,27 +68,13 @@ class DeleteLocation extends OrgAction
 
     public function htmlResponse(): RedirectResponse
     {
-        if ($this->parent instanceof Warehouse) {
-            return Redirect::route(
-                route: 'grp.org.warehouses.show.infrastructure.locations.index',
-                parameters: [
-                    'organisation'       => $this->parent->organisation->slug,
-                    'warehouse'          => $this->parent->slug
-                ]
-            );
-
-        } elseif ($this->parent instanceof WarehouseArea) {
-            return Redirect::route(
-                route: 'grp.org.warehouses.show.infrastructure.warehouse_areas.show',
-                parameters: [
-                    'organisation'       => $this->parent->organisation->slug,
-                    'warehouse'          => $this->parent->warehouse->slug,
-                    'warehouseArea'      => $this->parent->slug
-                ]
-            );
-        } else {
-            return Redirect::route('grp.org.warehouses.show.inventory.locations.index');
-        }
+        return Redirect::route(
+            route: 'grp.org.warehouses.show.infrastructure.locations.index',
+            parameters: [
+                'organisation' => $this->parent->organisation->slug,
+                'warehouse'    => $this->parent->slug
+            ]
+        );
     }
 
 }

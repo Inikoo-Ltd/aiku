@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\WarehouseArea\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -17,15 +18,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditWarehouseArea extends OrgAction
 {
+    use WithWarehouseEditAuthorisation;
+
     public function handle(WarehouseArea $warehouseArea): WarehouseArea
     {
         return $warehouseArea;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
-    }
 
     public function asController(Organisation $organisation, $shop, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
     {
