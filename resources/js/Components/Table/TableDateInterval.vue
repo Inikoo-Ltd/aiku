@@ -2,6 +2,10 @@
 import { onBeforeMount, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import Select from 'primevue/select'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faWatchCalculator } from '@fas'
+library.add( faWatchCalculator)
 
 const selectedPeriodType = ref<string>('all')
 
@@ -45,19 +49,27 @@ onBeforeMount(() => {
 </script>
 
 <template>
-    <div class="select-container">
-      <Select
-        v-model="selectedPeriodType"
-        :options="periodOptions"
-        optionLabel="label"
-        optionValue="value"
-        class="custom-select"
-      />
-    </div>
+   <div class="select-container">
+    <FontAwesomeIcon
+      icon="fas fa-watch-calculator"
+      aria-hidden="true"
+      fixed-width
+      class="text-gray-500 mr-2"
+    />
+    <Select
+      v-model="selectedPeriodType"
+      :options="periodOptions"
+      optionLabel="label"
+      optionValue="value"
+      class="custom-select"
+    />
+  </div>
   </template>
   
   <style  scoped>
   .select-container {
+    display: flex;
+    align-items: center;
     min-width: 100px;
     max-width: 160px;
   }

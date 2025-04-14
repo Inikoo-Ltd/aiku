@@ -91,6 +91,12 @@ const isCellNumber = () => {
                             fixed-width
                             class="text-gray-500 mr-2"
                         />
+                        <FontAwesomeIcon
+                            v-if="cell?.is_interval"
+                            icon="fas fa-watch-calculator"
+                            aria-hidden="true"
+                            fixed-width
+                            class="text-gray-500 mr-2"/>
                         <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
                         <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
                         

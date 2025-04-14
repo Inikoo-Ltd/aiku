@@ -118,9 +118,9 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
         Route::get('{palletDelivery}/pallet-stored-item-templates', DownloadPalletStoredItemTemplate::class)->name('pallets-stored-item.uploads.templates');
     });
 
-    Route::get('pallets-deleted/{pallet}', [ShowPalletDeleted::class, 'inFulfilmentCustomer'])->name('deleted_pallets.show');
-    Route::get('pallet-deliveries-deleted/{palletDelivery}', [ShowPalletDeliveryDeleted::class, 'inFulfilmentCustomer'])->name('deleted_pallet_deliveries.show');
-    Route::get('pallet-returns-deleted/{palletReturn}', [ShowPalletReturnDeleted::class, 'inFulfilmentCustomer'])->name('deleted_pallet_returns.show');
+    Route::get('pallets-deleted/{pallet}', [ShowPalletDeleted::class, 'inFulfilmentCustomer'])->name('.deleted_pallets.show');
+    Route::get('pallet-deliveries-deleted/{palletDelivery}', [ShowPalletDeliveryDeleted::class, 'inFulfilmentCustomer'])->name('.deleted_pallet_deliveries.show');
+    Route::get('pallet-returns-deleted/{palletReturn}', [ShowPalletReturnDeleted::class, 'inFulfilmentCustomer'])->name('.deleted_pallet_returns.show');
 
     Route::prefix('pallet-returns')->as('.pallet_returns.')->group(function () {
         Route::get('', [IndexPalletReturns::class, 'inFulfilmentCustomer'])->name('index');
