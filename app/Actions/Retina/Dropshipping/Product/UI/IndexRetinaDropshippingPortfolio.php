@@ -130,6 +130,17 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                                 ]
                             ]
                         ] : [],
+                        $this->customer->is_dropshipping && ($this->platformUser instanceof WebUser) ? [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => 'Create Order',
+                            'route' => [
+                                'name' => 'retina.models.customer.order.store',
+                                'parameters' => [
+                                    'customer' => $this->customer->id
+                                ]
+                            ]
+                        ] : [],
                     ]
                 ],
                 'tabs' => [
