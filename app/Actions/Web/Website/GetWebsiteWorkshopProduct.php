@@ -3,7 +3,6 @@
 namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
-use App\Http\Resources\Catalogue\FamilyWebsiteResource;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Product;
@@ -17,8 +16,7 @@ class GetWebsiteWorkshopProduct
 
     public function handle(Website $website, Product $product): array
     {
-        
-        $category = $product->family;
+
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
         $webBlockTypes->each(function ($blockType) use ($product) {

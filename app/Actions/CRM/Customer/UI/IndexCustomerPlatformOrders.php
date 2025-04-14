@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 11-04-2025-15h-30m
@@ -8,20 +9,12 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
-use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Ordering\OrdersResource;
-use App\Http\Resources\Sales\OrderResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\ModelHasPlatform;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
@@ -32,6 +25,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use UnexpectedValueException;
 
 class IndexCustomerPlatformOrders extends OrgAction
 {
@@ -68,7 +62,7 @@ class IndexCustomerPlatformOrders extends OrgAction
             });
             $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $modelHasPlatform->model->shopifyUser->id);
         } else {
-            throw new \Exception('To be implemented');
+            throw new UnexpectedValueException('To be implemented');
         }
         $queryBuilder->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
@@ -99,9 +93,9 @@ class IndexCustomerPlatformOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -122,14 +116,16 @@ class IndexCustomerPlatformOrders extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
-        // $scope = $this->parent;
         $icon       = ['fal', 'fa-user'];
         $title      = $this->modelHasPlatform->model->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders')
         ];
-        $subNavigation = $this->getCustomerPlatformSubNavigation($this->modelHasPlatform, $this->modelHasPlatform->model, $request);
+        $subNavigation = $this->getCustomerPlatformSubNavigation(
+            $this->modelHasPlatform,
+            $this->modelHasPlatform->model,
+            $request);
 
         if ($this->modelHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
@@ -164,7 +160,7 @@ class IndexCustomerPlatformOrders extends OrgAction
                 'data'        => OrdersResource::collection($orders),
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs($routeName, $routeParameters): array

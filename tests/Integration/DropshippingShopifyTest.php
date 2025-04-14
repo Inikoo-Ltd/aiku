@@ -70,7 +70,7 @@ test('test platform were seeded ', function () {
     expect($platform)->toBeInstanceOf(Platform::class)
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
 
-    $this->artisan('group:seed-platforms '.$this->group->slug)->assertExitCode(0);
+    $this->artisan('group:seed-platforms')->assertExitCode(0);
     expect($this->group->platforms()->count())->toBe(2);
 });
 

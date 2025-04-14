@@ -7,7 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
-use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
@@ -115,7 +115,7 @@ Route::name('ordering.')->prefix('ordering')->group(function () {
     Route::get('/purges', [IndexPurges::class, 'inGroup'])->name('purges.index');
     Route::get('/invoices', [IndexInvoices::class, 'inGroup'])->name('invoices.index');
     Route::get('/delivery-notes', IndexDeliveryNotesInGroup::class)->name('delivery_notes.index');
-    Route::get('/transactions', [IndexInvoiceTransactions::class, 'inGroup'])->name('transactions.index');
+    Route::get('/transactions', IndexInvoiceTransactionsInGroup::class)->name('transactions.index');
 });
 
 Route::name('inventory.')->prefix('inventory')->group(function () {

@@ -36,14 +36,18 @@ class DropshippingPortfolioResource extends JsonResource
     public function toArray($request): array
     {
         $quantity = 0;
+        $itemId   = null;
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
+            $itemId = $this->item->id;
         } elseif ($this->item instanceof Product) {
             $quantity = $this->item->available_quantity;
+            $itemId = $this->item->current_historic_asset_id;
         }
 
         return [
             'id'                        => $this->id,
+            'item_id'                   => $itemId,
             'slug'                      => $this->item->slug,
             'code'                      => $this->item->code,
             'name'                      => $this->item->name ?? $this->item->code,
