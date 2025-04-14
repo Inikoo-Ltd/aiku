@@ -73,6 +73,10 @@ class IndexPalletsInDelivery extends OrgAction
                 'locations.code as location_code',
             );
 
+            if($palletDelivery->deleted_at)
+            {
+                $query->withTrashed();
+            }
 
         return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name','type'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])

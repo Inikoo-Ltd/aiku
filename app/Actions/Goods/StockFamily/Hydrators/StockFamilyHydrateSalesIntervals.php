@@ -8,48 +8,33 @@
 
 namespace App\Actions\Goods\StockFamily\Hydrators;
 
-use App\Actions\Traits\WithIntervalsAggregators;
+use App\Actions\Goods\WithHydrateStockSalesIntervals;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
-use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Goods\StockFamily;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class StockFamilyHydrateSalesIntervals implements ShouldBeUnique
 {
-    use AsAction;
-    use WithIntervalsAggregators;
+    use  WithHydrateStockSalesIntervals;
 
-    public string $jobQueue = 'urgent';
-
-    public function getJobUniqueId(StockFamily $stockFamily, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    public function getJobUniqueId(StockFamily $stockFamily, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): string
     {
-        $uniqueId = $stockFamily->id;
-        if ($intervals !== null) {
-            $uniqueId .= '-'.implode('-', $intervals);
-        }
-        if ($doPreviousPeriods !== null) {
-            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
-        }
-
-        return $uniqueId;
+        return $this->getStockableJobUniqueId(
+            $stockFamily,
+            $intervals,
+            $doPreviousPeriods,
+            $onlyProcessSalesType
+        );
     }
 
-    public function handle(StockFamily $stockFamily, ?array $intervals = null, ?array $doPreviousPeriods = null): void
+    public function handle(StockFamily $stockFamily, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): void
     {
-
-        $stats = [];
-
-        $queryBase = DeliveryNoteItem::where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)->where('stock_family_id', $stockFamily->id)->selectRaw('sum(grp_revenue_amount) as sum_aggregate');
-        $stats     = $this->getIntervalsData(
-            stats: $stats,
-            queryBase: $queryBase,
-            statField: 'revenue_b2b_grp_currency_',
-            intervals: $intervals,
-            doPreviousPeriods: $doPreviousPeriods
+        $this->handleStockable(
+            $stockFamily,
+            $intervals,
+            $doPreviousPeriods,
+            $onlyProcessSalesType
         );
-
-        $stockFamily->salesIntervals()->update($stats);
     }
 
 }

@@ -12,6 +12,7 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\Inventory\WarehouseAreaResource;
 use App\InertiaTable\InertiaTable;
@@ -31,27 +32,10 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWarehouseAreas extends OrgAction
 {
+    use WithWarehouseAuthorisation;
+
     protected Group|Warehouse|Organisation $parent;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } elseif ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
-            return $request->user()->authTo(
-                [
-                    'warehouses-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
-                ]
-            );
-        }
-
-        $this->canEdit = $request->user()->authTo("locations.{$this->warehouse->id}.edit");
-
-        return $request->user()->authTo("locations.{$this->warehouse->id}.edit");
-    }
 
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -206,6 +190,8 @@ class IndexWarehouseAreas extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $warehouseAreas, ActionRequest $request): Response
     {
+        $title = __('warehouse areas');
+
         $scope     = $this->parent;
         $container = null;
         if (class_basename($scope) == 'Warehouse') {
@@ -218,13 +204,13 @@ class IndexWarehouseAreas extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-map-signs'],
-            'title' => __('warehouse areas')
+            'title' => $title
         ];
 
         if ($scope instanceof Group) {
             $icon = [
                 'icon'  => ['fal', 'fa-industry-alt'],
-                'title' => __('warehouses areas')
+                'title' => $title
             ];
         }
 
@@ -235,9 +221,9 @@ class IndexWarehouseAreas extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('warehouse areas'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title'     => __('warehouse areas'),
+                    'title'     => $title,
                     'container' => $container,
                     'icon'      => $icon,
                     'actions'   => [
@@ -280,11 +266,6 @@ class IndexWarehouseAreas extends OrgAction
                     ],
                     'progressDescription'   => __('Importing locations'),
                     'preview_template'    => [
-                        // 'unique_column' => [
-                        //     'type'  => [
-                        //         'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
-                        //     ]
-                        // ],
                         'header' => ['code', 'name'],
                         'rows' => [
                             [
@@ -332,7 +313,7 @@ class IndexWarehouseAreas extends OrgAction
         return match ($routeName) {
             'grp.overview.inventory.warehouses-areas.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

@@ -15,7 +15,6 @@ class GetWarehouseAreaShowcase
 {
     use AsObject;
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function handle(WarehouseArea $warehouseArea): array
     {
         return [

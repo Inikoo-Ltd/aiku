@@ -44,8 +44,6 @@ use App\Actions\HumanResources\JobPosition\UI\IndexJobPositions;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\Inventory\Location\UI\IndexLocations;
-use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
-use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\Warehouse\UI\IndexWarehouses;
 use App\Actions\Inventory\WarehouseArea\UI\IndexWarehouseAreas;
@@ -90,7 +88,6 @@ Route::name('catalogue.')->prefix('catalogue')->group(function () {
 });
 
 Route::name('billables.')->prefix('billables')->group(function () {
-    // Route::get('/shipping', [IndexShippingZoneSchemas::class, 'inGroup'])->name('shipping.index');
     Route::get('/rentals', [IndexFulfilmentRentals::class, 'inGroup'])->name('rentals.index');
     Route::get('/charges', [IndexCharges::class, 'inGroup'])->name('charges.index');
     Route::get('/services', [IndexFulfilmentServices::class, 'inGroup'])->name('services.index');
@@ -122,8 +119,6 @@ Route::name('ordering.')->prefix('ordering')->group(function () {
 });
 
 Route::name('inventory.')->prefix('inventory')->group(function () {
-    Route::get('/org-stocks', [IndexOrgStocks::class, 'inGroup'])->name('org-stocks.index');
-    Route::get('/org-stock-families', [IndexOrgStockFamilies::class, 'inGroup'])->name('org-stock-families.index');
     Route::get('/org-stock-movements', [IndexOrgStockMovements::class, 'inGroup'])->name('org-stock-movements.index');
     Route::get('/warehouses', [IndexWarehouses::class, 'inGroup'])->name('warehouses.index');
     Route::get('/warehouses-areas', [IndexWarehouseAreas::class, 'inGroup'])->name('warehouses-areas.index');
@@ -134,8 +129,6 @@ Route::name('fulfilment.')->prefix('fulfilment')->group(function () {
     Route::get('/pallets', [IndexPallets::class, 'inGroup'])->name('pallets.index');
     Route::get('/stored-items', [IndexStoredItems::class, 'inGroup'])->name('stored-items.index');
     Route::get('/pallet-deliveries', [IndexPalletDeliveries::class, 'inGroup'])->name('pallet-deliveries.index');
-    // Route::get('/artefacts', [IndexArtefacts::class, 'inGroup'])->name('artefacts.index');
-    // Route::get('/manufacture-tasks', [IndexManufactureTasks::class, 'inGroup'])->name('manufacture-tasks.index');
 });
 
 Route::name('procurement.')->prefix('procurement')->group(function () {
