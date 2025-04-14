@@ -102,14 +102,12 @@ class CategoriseInvoice extends OrgAction
         } else {
             return $this->inHaystack($invoiceCategory, 'organisation_ids', $needle);
         }
-
-
     }
 
     protected function inHaystack(InvoiceCategory $invoiceCategory, string $haystack, $needle): ?InvoiceCategory
     {
         $hay = Arr::get($invoiceCategory->settings, $haystack, []);
-        if ($needle and in_array($needle, $hay)) {
+        if ($needle && in_array($needle, $hay)) {
             return $invoiceCategory;
         }
 
@@ -119,7 +117,7 @@ class CategoriseInvoice extends OrgAction
     protected function notInHaystack(InvoiceCategory $invoiceCategory, string $haystack, $needle): ?InvoiceCategory
     {
         $hay = Arr::get($invoiceCategory->settings, $haystack, []);
-        if (!$needle or !in_array($needle, $hay)) {
+        if (!$needle || !in_array($needle, $hay)) {
             return $invoiceCategory;
         }
 
@@ -165,12 +163,10 @@ class CategoriseInvoice extends OrgAction
 
         $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
             foreach ($modelsData as $modelId) {
-                $invoice = Invoice::withTrashed()->find($modelId->id);
-                //$this->handle($invoice);
-
+                $invoice         = Invoice::withTrashed()->find($modelId->id);
                 $invoiceCategory = $this->getInvoiceCategory($invoice);
 
-                if ($invoice->invoiceCategory and $invoiceCategory != $invoice->invoiceCategory) {
+                if ($invoice->invoiceCategory && $invoiceCategory != $invoice->invoiceCategory) {
                     $command->error('>>'.$invoice->id.' '.$invoice->invoiceCategory->slug.' diff '.$invoiceCategory?->slug);
                     exit;
                 }

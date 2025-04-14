@@ -15,7 +15,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 
 library.add(faRoad, faUserCircle, faUserSlash, faBlender);
 
-const props = defineProps<{
+defineProps<{
   pageHead: PageHeadingTypes
   data: object
   title: string

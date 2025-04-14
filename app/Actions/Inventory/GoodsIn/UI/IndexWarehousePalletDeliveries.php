@@ -10,7 +10,7 @@ namespace App\Actions\Inventory\GoodsIn\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\UI\Fulfilment\PalletDeliveriesTabsEnum;
 use App\Http\Resources\Fulfilment\PalletDeliveriesResource;
@@ -105,21 +105,18 @@ class IndexWarehousePalletDeliveries extends OrgAction
         ]);
 
 
-
         if ($this->restriction) {
-            switch ($this->restriction) {
-                case 'booked_in':
-                    $queryBuilder->where('pallet_deliveries.state', PalletDeliveryStateEnum::BOOKED_IN);
-                    break;
-                case 'handling':
-                    $queryBuilder->whereIn(
-                        'pallet_deliveries.state',
-                        [
-                            PalletDeliveryStateEnum::CONFIRMED,
-                            PalletDeliveryStateEnum::RECEIVED,
-                            PalletDeliveryStateEnum::BOOKING_IN
-                        ]
-                    );
+            if ($this->restriction == 'booked_in') {
+                $queryBuilder->where('pallet_deliveries.state', PalletDeliveryStateEnum::BOOKED_IN);
+            } else {
+                $queryBuilder->whereIn(
+                    'pallet_deliveries.state',
+                    [
+                        PalletDeliveryStateEnum::CONFIRMED,
+                        PalletDeliveryStateEnum::RECEIVED,
+                        PalletDeliveryStateEnum::BOOKING_IN
+                    ]
+                );
             }
         }
 

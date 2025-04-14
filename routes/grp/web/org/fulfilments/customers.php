@@ -61,7 +61,6 @@ use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAudit;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
 
-//Route::get('', ShowFulfilmentCRMDashboard::class)->name('dashboard');
 
 Route::get('', IndexFulfilmentCustomersApproved::class)->name('index');
 Route::get('pending-approval', IndexFulfilmentCustomersPendingApproval::class)->name('pending_approval.index');
@@ -82,14 +81,12 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
 
     Route::prefix('web-users')->as('.web-users.')->group(function () {
         Route::get('', [IndexWebUsers::class, 'inFulfilmentCustomer'])->name('index');
-        Route::get('create', [CreateWebUser::class,'inFulfilmentCustomer'])->name('create');
+        Route::get('create', [CreateWebUser::class, 'inFulfilmentCustomer'])->name('create');
         Route::prefix('{webUser}')->group(function () {
             Route::get('', [ShowWebUser::class, 'inFulfilmentCustomer'])->name('show');
             Route::get('edit', [EditWebUser::class, 'inFulfilmentCustomer'])->name('edit');
         });
     });
-
-
 
 
     Route::get('stored-items', [IndexStoredItems::class, 'inFulfilmentCustomer'])->name('.stored-items.index');
@@ -104,7 +101,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
         Route::get('{pallet}/edit', [EditPallet::class, 'inFulfilmentCustomer'])->name('edit');
         Route::get('{pallet}/export', [PdfPallet::class, 'inFulfilmentCustomer'])->name('export');
         Route::get('{pallet}/stored-item-audits', [IndexStoredItemAudits::class, 'inPalletInFulfilmentCustomer'])->name('stored-item-audits.index');
-        Route::get('{pallet}/stored-item-audits/create', [CreateStoredItemAuditFromPallet::class, 'inPalletInFulfilmentCustomer'])->name('stored-item-audits.create');
+        Route::get('{pallet}/stored-item-audits/create', CreateStoredItemAuditFromPallet::class)->name('stored-item-audits.create');
         Route::get('{pallet}/stored-item-audits/{storedItemAudit}', [ShowStoredItemAuditForPallet::class, 'inPalletInFulfilmentCustomer'])->name('stored-item-audits.show');
     });
 

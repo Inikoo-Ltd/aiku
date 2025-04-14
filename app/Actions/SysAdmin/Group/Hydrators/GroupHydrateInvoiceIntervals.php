@@ -10,6 +10,7 @@
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -21,20 +22,13 @@ class GroupHydrateInvoiceIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $uniqueId = $group->id;
-        if ($intervals !== null) {
-            $uniqueId .= '-'.implode('-', $intervals);
-        }
-        if ($doPreviousPeriods !== null) {
-            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
-        }
-
-        return $uniqueId;
+        return $this->getUniqueJobWithInterval($group, $intervals, $doPreviousPeriods);
     }
 
     public function handle(Group $group, ?array $intervals = null, $doPreviousPeriods = null): void

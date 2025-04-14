@@ -10,7 +10,6 @@
 namespace App\Actions\Inventory\Location;
 
 use App\Actions\OrgAction;
-use App\Events\FileDownloadProgress;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\SysAdmin\Organisation;
@@ -18,20 +17,22 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DownloadLocations extends OrgAction
 {
-    public function handle(Warehouse $warehouse, array $modelData)
+    /**
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
+    public function handle(Warehouse $warehouse, array $modelData): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
-        $fileName = 'locations_warehouse_' . $warehouse->id . '.xlsx';
+        $fileName = 'locations_warehouse_'.$warehouse->id.'.xlsx';
 
         return Excel::download(new LocationsExport($warehouse, $modelData), $fileName);
-
-        /*Excel::queue(new LocationsExport($warehouse, $modelData), 'public/'.$fileName)->chain([
-            function () use ($warehouse, $fileName) {
-                broadcast(new FileDownloadProgress($warehouse->id, 100, $fileName));
-            }
-        ]);*/
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request)
+    /**
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $this->initialisationFromWarehouse($warehouse, $request);
         $columns = explode(',', $request->query('columns', ''));

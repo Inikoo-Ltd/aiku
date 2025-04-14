@@ -524,7 +524,7 @@ test("UI Create location", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "new location")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New location")->etc()
             )
             ->has("formData");
     });

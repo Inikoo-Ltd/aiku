@@ -10,7 +10,7 @@ namespace App\Actions\Goods\StockFamily\UI;
 
 use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Http\Resources\Goods\StockFamiliesResource;
@@ -26,7 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexStockFamilies extends GrpAction
+class IndexStockFamilies extends OrgAction
 {
     use HasGoodsAuthorisation;
 
@@ -34,7 +34,11 @@ class IndexStockFamilies extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        if ($request->has('dateInterval')) {
+            $this->dateInterval = DateIntervalEnum::from($request->get('dateInterval'));
+        }
+
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'all';
 
         return $this->handle($this->group);
@@ -42,7 +46,7 @@ class IndexStockFamilies extends GrpAction
 
     public function active(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'active';
 
         return $this->handle($this->group);
@@ -50,7 +54,7 @@ class IndexStockFamilies extends GrpAction
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'in_process';
 
         return $this->handle($this->group);
@@ -58,7 +62,7 @@ class IndexStockFamilies extends GrpAction
 
     public function discontinuing(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'discontinuing';
 
         return $this->handle($this->group);
@@ -66,7 +70,7 @@ class IndexStockFamilies extends GrpAction
 
     public function discontinued(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         $this->bucket = 'discontinued';
 
         return $this->handle($this->group);
@@ -139,10 +143,14 @@ class IndexStockFamilies extends GrpAction
                 'stock_families.id as id',
                 'name',
                 'number_current_stocks',
-                'stock_family_sales_intervals.*'
+                'stock_family_sales_intervals.*',
+                'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
 
             ])
-            ->allowedSorts(['code', 'name', 'number_current_stocks'])
+            ->selectRaw(
+                "'".$group->currency->code."' as grp_currency_code"
+            )
+            ->allowedSorts(['code', 'name', 'number_current_stocks', 'revenue_grp_currency'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -171,7 +179,7 @@ class IndexStockFamilies extends GrpAction
 
             $table
                 ->withGlobalSearch()
-                ->dateInterval(DateIntervalEnum::YEAR_TO_DAY)
+                ->dateInterval($this->dateInterval)
                 ->withEmptyState(
                     [
                         'title'       => __('no stock families'),
@@ -192,7 +200,7 @@ class IndexStockFamilies extends GrpAction
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), canBeHidden: false, sortable: true, isInterval: true)
+                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true)
                 ->defaultSort('code');
         };
     }

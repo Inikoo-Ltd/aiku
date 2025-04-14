@@ -11,7 +11,7 @@ namespace App\Actions\Dispatching\GoodsOut\UI;
 use App\Actions\Fulfilment\WithPalletReturnSubNavigation;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\UI\Fulfilment\PalletReturnsTabsEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
@@ -191,6 +191,9 @@ class IndexWarehousePalletReturns extends OrgAction
                             PalletReturnStateEnum::PICKED
                         ]
                     );
+                    break;
+                default:
+                    //
             }
         }
 

@@ -14,6 +14,7 @@ use App\Actions\Inventory\WarehouseArea\Search\WarehouseAreaRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouseAreas;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouseAreas;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
@@ -25,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreWarehouseArea extends OrgAction
 {
+    use WithWarehouseEditAuthorisation;
+
     /**
      * @throws \Throwable
      */
@@ -52,14 +55,6 @@ class StoreWarehouseArea extends OrgAction
         return $warehouseArea;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
-    }
 
     public function rules(): array
     {

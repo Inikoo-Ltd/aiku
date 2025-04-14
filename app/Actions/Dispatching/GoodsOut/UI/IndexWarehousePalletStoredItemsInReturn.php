@@ -10,15 +10,15 @@ namespace App\Actions\Dispatching\GoodsOut\UI;
 
 use App\Actions\Fulfilment\PalletReturnItem\UI\IndexPalletStoredItemsInReturn;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Http\Resources\Fulfilment\PalletStoredItemsInPalletReturnResource;
 use App\Models\Fulfilment\PalletReturn;
-use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Lorisleiva\Actions\ActionRequest;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Lorisleiva\Actions\ActionRequest;
 
 class IndexWarehousePalletStoredItemsInReturn extends OrgAction
 {
