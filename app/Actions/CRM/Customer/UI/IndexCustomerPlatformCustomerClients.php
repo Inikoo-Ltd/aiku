@@ -87,9 +87,9 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -99,25 +99,6 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Customer' => [
-                            'title'       => __("No clients found"),
-                            'description' => __("You can add your client 🤷🏽‍♂️"),
-                            'count'       => $parent->stats->number_customer_clients,
-                            'action'      => [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new client'),
-                                'label'   => __('client'),
-                                'route'   => [
-                                    'name'       => 'retina.dropshipping.client.create',
-                                ]
-                            ]
-                        ],
-                        default => null
-                    }
-                )
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true)
                 ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true);
@@ -187,7 +168,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
                 'data'        => CustomerClientResource::collection($customerClients),
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs($routeName, $routeParameters): array
