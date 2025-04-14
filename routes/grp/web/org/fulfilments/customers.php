@@ -34,13 +34,16 @@ use App\Actions\Fulfilment\Pallet\UI\EditPallet;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInCustomer;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInStoredItem;
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
+use App\Actions\Fulfilment\Pallet\UI\ShowPalletDeleted;
 use App\Actions\Fulfilment\PalletDelivery\UI\EditPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\PalletDelivery\UI\ShowPalletDelivery;
+use App\Actions\Fulfilment\PalletDelivery\UI\ShowPalletDeliveryDeleted;
 use App\Actions\Fulfilment\PalletReturn\ExportPalletReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\ExportPalletReturnStoredItem;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPalletReturns;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\UI\ShowPalletReturnDeleted;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowStoredItemReturn;
 use App\Actions\Fulfilment\RecurringBill\UI\IndexRecurringBills;
 use App\Actions\Fulfilment\RecurringBill\UI\ShowRecurringBill;
@@ -60,7 +63,6 @@ use App\Actions\Fulfilment\StoredItemAudit\UI\IndexStoredItemAudits;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAudit;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
-
 
 Route::get('', IndexFulfilmentCustomersApproved::class)->name('index');
 Route::get('pending-approval', IndexFulfilmentCustomersPendingApproval::class)->name('pending_approval.index');
@@ -115,6 +117,10 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
         Route::get('{palletDelivery}/pallets-templates', DownloadPalletsTemplate::class)->name('pallets.uploads.templates');
         Route::get('{palletDelivery}/pallet-stored-item-templates', DownloadPalletStoredItemTemplate::class)->name('pallets-stored-item.uploads.templates');
     });
+
+    Route::get('pallets-deleted/{pallet}', [ShowPalletDeleted::class, 'inFulfilmentCustomer'])->name('deleted_pallets.show');
+    Route::get('pallet-deliveries-deleted/{palletDelivery}', [ShowPalletDeliveryDeleted::class, 'inFulfilmentCustomer'])->name('deleted_pallet_deliveries.show');
+    Route::get('pallet-returns-deleted/{palletReturn}', [ShowPalletReturnDeleted::class, 'inFulfilmentCustomer'])->name('deleted_pallet_returns.show');
 
     Route::prefix('pallet-returns')->as('.pallet_returns.')->group(function () {
         Route::get('', [IndexPalletReturns::class, 'inFulfilmentCustomer'])->name('index');
