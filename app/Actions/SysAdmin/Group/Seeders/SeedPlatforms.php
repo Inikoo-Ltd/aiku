@@ -30,9 +30,6 @@ class SeedPlatforms extends OrgAction
             if ($group->platforms()->where('code', $code)->exists()) {
                 $platform = $group->platforms()->where('code', $code)->first();
 
-                print_r([
-                    'name' => $case->labels()[$case->value],
-                ]);
                 UpdatePlatform::make()->action($platform, [
                     'name' => $case->labels()[$case->value],
                 ]);
