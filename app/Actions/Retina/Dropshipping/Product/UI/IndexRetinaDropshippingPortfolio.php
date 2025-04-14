@@ -99,7 +99,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $manual = true;
         }
 
-        $title=__('My Portfolio');
+        $title = __('My Portfolio');
 
         return Inertia::render(
             'Dropshipping/Portfolios',

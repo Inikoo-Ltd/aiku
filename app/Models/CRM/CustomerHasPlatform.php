@@ -13,8 +13,8 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-
 /**
+ *
  *
  * @property int $id
  * @property int $group_id
