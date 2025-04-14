@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $tiktok_product_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $portfolio_id
+ * @property-read Portfolio|null $portfolio
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct query()

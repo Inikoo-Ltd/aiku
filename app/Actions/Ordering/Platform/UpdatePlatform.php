@@ -2,19 +2,18 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:33:32 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:33:32 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Ordering\Platform;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Platform;
-use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 
-class UpdatePlatform extends GrpAction
+class UpdatePlatform extends OrgAction
 {
     use WithActionUpdate;
 
@@ -34,9 +33,9 @@ class UpdatePlatform extends GrpAction
         ];
     }
 
-    public function action(Group $group, Platform $platform, array $modelData): Platform
+    public function action(Platform $platform, array $modelData): Platform
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($platform->group, $modelData);
 
         return $this->handle($platform, $modelData);
     }

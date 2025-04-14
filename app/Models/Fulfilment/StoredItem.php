@@ -67,6 +67,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Portfolio|null $portfolio
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read ShopifyUserHasProduct|null $shopifyPortfolio
+ * @property-read TiktokUserHasProduct|null $tiktokPortfolio
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|StoredItem newModelQuery()

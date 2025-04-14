@@ -15,11 +15,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachCustomerToPlatform extends OrgAction
 {
-    /**
-     * @var \App\Models\CRM\Customer
-     */
-    private Customer $customer;
-
     public function handle(Customer $customer, Platform $platform, array $pivotData): Customer
     {
         $pivotData['group_id']        = $this->organisation->group_id;
@@ -38,16 +33,9 @@ class AttachCustomerToPlatform extends OrgAction
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        /*        if ($this->customer->platforms()->count() >= 1) {
-                    abort(403);
-                }*/
-    }
 
     public function action(Customer $customer, Platform $platform, array $modelData): Customer
     {
-        $this->customer = $customer;
         $this->initialisation($customer->organisation, $modelData);
 
         return $this->handle($customer, $platform, $this->validatedData);

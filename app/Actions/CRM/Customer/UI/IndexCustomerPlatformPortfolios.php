@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 11-04-2025-10h-58m
@@ -8,20 +9,15 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\PortfolioResource;
-use App\Http\Resources\Fulfilment\StoredItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\StoredItem;
 use App\Models\Ordering\ModelHasPlatform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
