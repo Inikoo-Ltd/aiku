@@ -31,6 +31,7 @@ class SeedWebBlockTypes
                     'scope',
                     'code',
                     'name',
+                    'category',
                     'fixed',
                     'data'
                 ]

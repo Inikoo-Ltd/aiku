@@ -18,7 +18,6 @@ use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -43,12 +42,13 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $item_type
+ * @property int|null $platform_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Platform> $platforms
+ * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read ShopifyUserHasProduct|null $shopifyPortfolio
  * @property-read \App\Models\Dropshipping\PortfolioStats|null $stats
@@ -65,17 +65,17 @@ class Portfolio extends Model implements Auditable
     use HasUniversalSearch;
 
     protected $casts = [
-        'type'                        => PortfolioTypeEnum::class,
-        'data'                        => 'array',
-        'settings'                    => 'array',
-        'status'                      => 'boolean',
-        'added_at'                    => 'datetime',
-        'removed_at'                  => 'datetime',
+        'type'       => PortfolioTypeEnum::class,
+        'data'       => 'array',
+        'settings'   => 'array',
+        'status'     => 'boolean',
+        'added_at'   => 'datetime',
+        'removed_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'           => '{}',
-        'settings'       => '{}',
+        'data'     => '{}',
+        'settings' => '{}',
     ];
 
     protected $guarded = [];
@@ -113,19 +113,9 @@ class Portfolio extends Model implements Auditable
         return $this->hasOne(ShopifyUserHasProduct::class, 'portfolio_id');
     }
 
-    public function platforms(): MorphToMany
+    public function platform(): BelongsTo
     {
-        return $this->morphToMany(Platform::class, 'model', 'model_has_platforms')
-            ->withPivot('group_id', 'organisation_id', 'shop_id', 'reference')
-            ->withTimestamps();
-    }
-
-    public function platform(): Platform|null
-    {
-        /** @var Platform $platform */
-        $platform = $this->platforms()->first();
-
-        return $platform;
+        return $this->belongsTo(Platform::class);
     }
 
 }

@@ -11,10 +11,10 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 use App\Actions\Catalogue\Product\UI\IndexProducts as IndexUIProducts;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
@@ -24,8 +24,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaDropshippingProducts extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer|TiktokUser $scope): ShopifyUser|Customer|TiktokUser
+    public function handle(ShopifyUser|Customer|TiktokUser|WebUser $scope): ShopifyUser|Customer|TiktokUser|WebUser
     {
+        if ($scope instanceof WebUser) {
+            $scope = $scope->customer;
+        }
+
         return $scope;
     }
 
@@ -47,20 +51,14 @@ class IndexRetinaDropshippingProducts extends RetinaAction
         return $this->handle($customer);
     }
 
-    public function inPlatform(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser
+    public function inPlatform(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser|WebUser|Customer
     {
-        $this->initialisation($request);
+        $this->initialisationFromPlatform($platform, $request);
 
-        if ($platform->type === PlatformTypeEnum::SHOPIFY) {
-            $scope = $request->user()->customer->shopifyUser;
-        } else {
-            $scope = $request->user()->customer->tiktokUser;
-        }
-
-        return $this->handle($scope);
+        return $this->handle($this->platformUser);
     }
 
-    public function inPupil(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser
+    public function inPupil(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser|WebUser|Customer
     {
         $this->asAction = true;
         $this->initialisationFromPupil($request);
@@ -68,7 +66,7 @@ class IndexRetinaDropshippingProducts extends RetinaAction
         return $this->handle($this->shopifyUser);
     }
 
-    public function htmlResponse(ShopifyUser|Customer|TiktokUser $scope): Response
+    public function htmlResponse(ShopifyUser|Customer|TiktokUser|WebUser $scope): Response
     {
         if ($scope instanceof ShopifyUser) {
             $shop = $scope->customer->shop;

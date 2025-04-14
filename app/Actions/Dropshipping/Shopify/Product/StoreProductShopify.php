@@ -12,6 +12,8 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -27,11 +29,14 @@ class StoreProductShopify extends OrgAction
 
     public function handle(ShopifyUser $shopifyUser, array $modelData)
     {
-        DB::transaction(function () use ($shopifyUser, $modelData) {
+        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
+
+        DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
             foreach (Arr::get($modelData, 'products') as $product) {
                 $portfolio = StorePortfolio::run($shopifyUser->customer, [
-                    'product_id' => $product,
-                    'type' => PortfolioTypeEnum::SHOPIFY->value,
+                    'product_id'  => $product,
+                    'type'        => PortfolioTypeEnum::SHOPIFY->value,
+                    'platform_id' => $platform->id
                 ]);
 
                 HandleApiProductToShopify::dispatch($shopifyUser, [$portfolio->id]);

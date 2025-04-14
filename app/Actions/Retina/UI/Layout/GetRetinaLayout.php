@@ -44,7 +44,7 @@ class GetRetinaLayout
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
             'navigation' => match ($request->get('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
-                'dropshipping' => GetRetinaDropshippingNavigation::run($webUser, $request),
+                'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
                 'b2b' => GetRetinaB2bNavigation::run($webUser),
                 default      => []
             },

@@ -6,22 +6,17 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\Catalogue\Shop\UpdateShop;
+/** @noinspection PhpUnhandledExceptionInspection */
+
 use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformStats;
 use App\Models\Dropshipping\Portfolio;
-
-use function Pest\Laravel\actingAs;
 
 uses()->group('integration');
 
@@ -31,47 +26,17 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    $this->organisation = createOrganisation();
-    $this->group        = $this->organisation->group;
-    $this->user         = createAdminGuest($this->group)->getUser();
-
-
-    $shop = Shop::first();
-    if (!$shop) {
-        $storeData = Shop::factory()->definition();
-        data_set($storeData, 'type', ShopTypeEnum::DROPSHIPPING);
-
-        $shop = StoreShop::make()->action(
-            $this->organisation,
-            $storeData
-        );
-    }
-    $this->shop = $shop;
-
-    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
-
-    $this->customer = createCustomer($this->shop);
-
-    list(
-        $this->tradeUnit,
-        $this->product
-    ) = createProduct($this->shop);
-
-    Config::set(
-        'inertia.testing.page_paths',
-        [resource_path('js/Pages/Grp')]
-    );
-    actingAs($this->user);
+    \Tests\Helpers\setupDropshippingTest($this);
 });
 
 test('test platform were seeded ', function () {
-    expect($this->group->platforms()->count())->toBe(2);
+    expect($this->group->platforms()->count())->toBe(4);
     $platform = Platform::first();
     expect($platform)->toBeInstanceOf(Platform::class)
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
 
-    $this->artisan('group:seed-platforms '.$this->group->slug)->assertExitCode(0);
-    expect($this->group->platforms()->count())->toBe(2);
+    $this->artisan('group:seed-platforms')->assertExitCode(0);
+    expect($this->group->platforms()->count())->toBe(4);
 });
 
 test('create customer client', function () {
@@ -103,7 +68,7 @@ test('associate customer shopify to customer', function () {
 
 
     expect($this->customer->platforms->count())->toBe(0)
-        ->and($this->customer->platform())->toBeNull();
+        ->and($this->customer->getMainPlatform())->toBeNull();
     $customer = AttachCustomerToPlatform::make()->action(
         $this->customer,
         $platform,
@@ -117,8 +82,8 @@ test('associate customer shopify to customer', function () {
 
 
     expect($customer->platforms->first())->toBeInstanceOf(Platform::class)
-        ->and($customer->platform())->toBeInstanceOf(Platform::class)
-        ->and($customer->platform()->type)->toBe(PlatformTypeEnum::SHOPIFY);
+        ->and($customer->getMainPlatform())->toBeInstanceOf(Platform::class)
+        ->and($customer->getMainPlatform()->type)->toBe(PlatformTypeEnum::SHOPIFY);
 
 
 

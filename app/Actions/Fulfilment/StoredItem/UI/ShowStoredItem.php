@@ -9,7 +9,9 @@
 namespace App\Actions\Fulfilment\StoredItem\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\StoredItemAuditDelta\UI\IndexStoredItemAuditDeltas;
+use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
@@ -20,6 +22,7 @@ use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
@@ -35,16 +38,17 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowStoredItem extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
-    private Warehouse|Organisation|FulfilmentCustomer|Fulfilment $parent;
+    use WithFulfilmentCustomerPlatformSubNavigation;
+    private Warehouse|Organisation|FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent;
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->parent instanceof FulfilmentCustomer) {
+        if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof CustomerHasPlatform) {
             $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
 
             return
                 (
-                    $request->user()->tokenCan('root') or
+                    $request->user()->tokenCan('root') ||
                     $request->user()->authTo("human-resources.{$this->organisation->id}.view")
                 );
         } elseif ($this->parent instanceof Warehouse) {
@@ -72,6 +76,15 @@ class ShowStoredItem extends OrgAction
         return $this->handle($storedItem);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, StoredItem $storedItem, ActionRequest $request): StoredItem
+    {
+        $this->parent = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(StoredItemTabsEnum::values());
+
+        return $this->handle($storedItem);
+    }
+
     public function handle(StoredItem $storedItem): StoredItem
     {
         return $storedItem;
@@ -82,6 +95,8 @@ class ShowStoredItem extends OrgAction
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
+        } elseif ($this->parent instanceof CustomerHasPlatform) {
+            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->model->fulfilmentCustomer, $request);
         }
         return Inertia::render(
             'Org/Fulfilment/StoredItem',
@@ -183,12 +198,13 @@ class ShowStoredItem extends OrgAction
         return new StoredItemResource($storedItem);
     }
 
-    public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer $parent, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer|CustomerHasPlatform $parent, array $routeParameters, string $suffix = ''): array
     {
         $storedItem = StoredItem::where('slug', $routeParameters['storedItem'])->first();
 
         return match (class_basename($parent)) {
             'Warehouse'    => $this->getBreadcrumbsFromWarehouse($storedItem, $suffix),
+            'CustomerHasPlatform' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
             default        => $this->getBreadcrumbsFromFulfilmentCustomer($storedItem, $suffix),
         };
     }
@@ -211,6 +227,40 @@ class ShowStoredItem extends OrgAction
                             'route' => [
                                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-items.show',
                                 'parameters' => array_values(request()->route()->originalParameters())
+                            ],
+                            'label' => $storedItem->slug,
+                        ],
+                    ],
+                    'suffix' => $suffix,
+                ],
+            ]
+        );
+    }
+    public function getBreadcrumbsFromPlatform(StoredItem $storedItem, $suffix = null): array
+    {
+        return array_merge(
+            ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, request()->route()->originalParameters()),
+            [
+                [
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => [
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.index',
+                                'parameters' => array_values(request()->route()->originalParameters())
+                            ],
+                            'label' => __("Portfolios")
+                        ],
+                        'model' => [
+                            'route' => [
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.show',
+                                'parameters' => [
+                                    'organisation' => request()->route()->originalParameters()['organisation'],
+                                    'fulfilment' => request()->route()->originalParameters()['fulfilment'],
+                                    'fulfilmentCustomer' => request()->route()->originalParameters()['fulfilmentCustomer'],
+                                    'customerHasPlatform' => request()->route()->originalParameters()['customerHasPlatform'],
+                                    'storedItem' => $storedItem->slug,
+                                ]
                             ],
                             'label' => $storedItem->slug,
                         ],

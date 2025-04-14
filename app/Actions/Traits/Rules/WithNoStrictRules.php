@@ -16,34 +16,35 @@ trait WithNoStrictRules
         $rules['fetched_at'] = ['sometimes', 'date'];
         $rules['deleted_at'] = ['sometimes', 'nullable', 'date'];
         $rules['source_id']  = ['sometimes', 'string', 'max:255'];
-        return $rules;
 
+        return $rules;
     }
 
     protected function noStrictUpdateRules($rules): array
     {
-        $rules['created_at'] = ['sometimes', 'date'];
+        $rules['created_at']      = ['sometimes', 'date'];
         $rules['last_fetched_at'] = ['sometimes', 'date'];
-        $rules['deleted_at'] = ['sometimes', 'nullable', 'date'];
-        $rules['source_id']  = ['sometimes', 'string', 'max:255'];
-        return $rules;
+        $rules['deleted_at']      = ['sometimes', 'nullable', 'date'];
+        $rules['source_id']       = ['sometimes', 'string', 'max:255'];
 
+        return $rules;
     }
 
     protected function orderNoStrictFields(array $rules): array
     {
-        $rules['billing_locked']   = ['sometimes', 'boolean'];
-        $rules['delivery_locked']  = ['sometimes', 'boolean'];
+        $rules['billing_locked']  = ['sometimes', 'boolean'];
+        $rules['delivery_locked'] = ['sometimes', 'boolean'];
         $rules['submitted_at']    = ['sometimes', 'nullable', 'date'];
         $rules['in_warehouse_at'] = ['sometimes', 'nullable', 'date'];
         $rules['packed_at']       = ['sometimes', 'nullable', 'date'];
         $rules['finalised_at']    = ['sometimes', 'nullable', 'date'];
         $rules['dispatched_at']   = ['sometimes', 'nullable', 'date'];
-        $rules['payment_amount'] = ['sometimes', 'numeric'];
-        $rules['data']         = ['sometimes', 'array'];
-        $rules['reference']    = ['sometimes', 'string', 'max:64'];
-        $rules['date']         = ['sometimes', 'required', 'date'];
-        $rules['cancelled_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['payment_amount']  = ['sometimes', 'numeric'];
+        $rules['data']            = ['sometimes', 'array'];
+        $rules['reference']       = ['sometimes', 'string', 'max:64'];
+        $rules['date']            = ['sometimes', 'required', 'date'];
+        $rules['cancelled_at']    = ['sometimes', 'nullable', 'date'];
+        $rules['platform_id']     = ['sometimes', 'integer'];
 
         return $this->orderingAmountNoStrictFields($rules);
     }
@@ -65,6 +66,7 @@ trait WithNoStrictRules
         $rules['net_amount']   = ['sometimes', 'numeric'];
         $rules['tax_amount']   = ['sometimes', 'numeric'];
         $rules['total_amount'] = ['sometimes', 'numeric'];
+
         return $rules;
     }
 
