@@ -16,6 +16,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -32,9 +33,8 @@ class IndexMasterShops extends GrpAction
         return $request->user()->authTo("goods.{$this->group->id}.view");
     }
 
-    public function handle(Group $group, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('master_shops.code', $value)
@@ -47,6 +47,7 @@ class IndexMasterShops extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterShop::class);
+        $queryBuilder->leftJoin('master_shop_stats', 'master_shops.id', '=', 'master_shop_stats.master_shop_id');
 
         $queryBuilder->where('master_shops.group_id', $group->id);
 
@@ -54,20 +55,24 @@ class IndexMasterShops extends GrpAction
             ->defaultSort('master_shops.code')
             ->select(
                 [
-                        'master_shops.id',
-                        'master_shops.code',
-                        'master_shops.name',
-                        'master_shops.slug',
-                        'master_shops.type',
-                    ]
+                    'master_shops.id',
+                    'master_shops.code',
+                    'master_shops.name',
+                    'master_shops.slug',
+                    'master_shops.type',
+                    'master_shop_stats.number_current_shops as used_in',
+                    'master_shop_stats.number_current_master_product_categories_type_department as departments',
+                    'master_shop_stats.number_current_master_product_categories_type_family as families',
+                    'master_shop_stats.number_current_master_assets_type_product as products',
+                ]
             )
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'departments', 'families', 'products', 'used_in'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null)
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -80,11 +85,15 @@ class IndexMasterShops extends GrpAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                            'title'       => __("No master shops found"),
-                        ],
+                        'title' => __("No master shops found"),
+                    ],
                 )
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'departments', label: __('departments'), tooltip: __('current master departments'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'families', label: __('families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -96,15 +105,12 @@ class IndexMasterShops extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $masterShops, ActionRequest $request): Response
     {
-        $subNavigation = $this->getMasterCatalogueSubNavigation($this->group);
+        $subNavigation = $this->getMasterCatalogueSubNavigation();
 
         return Inertia::render(
             'Goods/MasterShops',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
                 'title'       => __('master shops'),
                 'pageHead'    => [
                     'title'         => __('Master Shops'),
@@ -120,7 +126,7 @@ class IndexMasterShops extends GrpAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -136,26 +142,23 @@ class IndexMasterShops extends GrpAction
             ];
         };
 
-        return match ($routeName) {
-            'grp.goods.catalogue.shops.index' =>
-            array_merge(
-                ShowGoodsDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => []
-                    ],
-                    $suffix
-                ),
+        return array_merge(
+            ShowGoodsDashboard::make()->getBreadcrumbs(),
+            $headCrumb(
+                [
+                    'name'       => $routeName,
+                    'parameters' => []
+                ],
+                $suffix
             ),
-            default => []
-        };
+        );
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $group = group();
         $this->initialisation($group, $request);
+
         return $this->handle($group, $request);
     }
 
