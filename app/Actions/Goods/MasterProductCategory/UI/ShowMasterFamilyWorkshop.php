@@ -25,7 +25,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterFamily extends GrpAction
+class ShowMasterFamilyWorkshop extends GrpAction
 {
     use WithFamilySubNavigation;
 
@@ -58,7 +58,7 @@ class ShowMasterFamily extends GrpAction
     public function htmlResponse(MasterProductCategory $masterfamily, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Catalogue/Family',
+            'Showcases/FamilyMasterWorkshop',
             [
                 'title'       => __('family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -78,15 +78,14 @@ class ShowMasterFamily extends GrpAction
                         'title' => __('department')
                     ],
                     'actions' => [
-                        [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'workshop',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ] : false,
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',

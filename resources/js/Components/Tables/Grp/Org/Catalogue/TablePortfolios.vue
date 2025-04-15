@@ -25,7 +25,7 @@ import {
 } from "@fal"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref, defineEmits, computed } from "vue"
+import { computed, onMounted, onUnmounted, ref,watch } from "vue"
 import Tag from "@/Components/Tag.vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -44,8 +44,6 @@ import IconField from "primevue/iconfield"
 import Select from "primevue/select"
 import { faStar } from "@fas"
 import route from "../../../../../../../vendor/tightenco/ziggy/src/js/index"
-import { watch } from "vue"
-import QuantityInput from "@/Components/Utils/QuantityInput.vue"
 
 library.add(
 	faConciergeBell,
@@ -72,6 +70,8 @@ const props = defineProps<{
 	tagsList: tag[]
 	tagRoute?: {}
 	productRoute?: any
+	orderMode?: boolean
+	order_route?: routeType
 }>()
 
 interface tag {
@@ -126,6 +126,7 @@ const optionsView = [
 		icon: "fal fa-list-ul",
 	},
 ]
+
 const productQuantities = ref<{ [key: number]: number }>({})
 const isLoadingDetach = ref<string[]>([])
 const sortKey = ref()
@@ -141,10 +142,6 @@ const gridSortOptions = ref([
 const filters = ref({
 	global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 })
-
-const emit = defineEmits<{
-	(e: "update-selectedProducts", selected: any[]): void
-}>()
 
 const onSortChange = (event) => {
 	const value = event.value.value
@@ -253,9 +250,57 @@ const selectedProductsWithQuantity = computed(() => {
 	}))
 })
 
-watch(selectedProductsWithQuantity, (newVal) => {
-  emit("update-selectedProducts", newVal);
-});
+const onSubmitProduct = () => {
+console.log();
+
+	router.post(
+		route(props.order_route.name, props.order_route.parameters),
+		{
+			products: selectedProductsWithQuantity.value,
+		},
+		{
+			headers: {
+				Authorization: `Bearer ${window.sessionToken}`,
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			onStart: () => {
+				isLoadingSubmit.value = true
+			},
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text:
+						trans("Successfully added") +
+						` ${selectedProductsWithQuantity.value.length} ` +
+						trans("Order"),
+					type: "success",
+				})
+				selectedProductsWithQuantity.value = []
+			},
+			onError: () => {
+				notify({
+					title: trans("Failed"),
+					text: trans("Something went wrong. Try again."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingSubmit.value = false
+			},
+		}
+	)
+}
+
+watch(
+	() => props.orderMode,
+	(newVal) => {
+		if (!newVal) {
+			// Jika order mode off, reset pilihan dan quantity
+			selectedProducts.value = []
+			productQuantities.value = {}
+		}
+	}
+)
 </script>
 
 <template>
@@ -274,14 +319,15 @@ watch(selectedProductsWithQuantity, (newVal) => {
 				</template>
 			</SelectButton>
 
-			<!--     <Button
-                @click="() => onSubmitProduct()"
-                :key="'buttonSubmit' + isLoadingSubmit"
-                :loading="isLoadingSubmit"
-                label="Add product"
-                icon="fal fa-plus"
-                :disabled="!selectedProducts.length"
-                type="black" /> -->
+			<Button
+				v-if="props.orderMode"
+				@click="() => onSubmitProduct()"
+				:key="'buttonSubmit' + isLoadingSubmit"
+				:loading="isLoadingSubmit"
+				label="Submit Order"
+				icon="fal fa-plus"
+				:disabled="!selectedProducts.length"
+				type="black" />
 		</div>
 
 		<div class="bg-stone-100 overflow-hidden rounded-2xl border border-stone-300">
@@ -315,6 +361,7 @@ watch(selectedProductsWithQuantity, (newVal) => {
 				</template>
 
 				<Column
+					v-if="props.orderMode"
 					selectionMode="multiple"
 					style="width: 3rem"
 					:exportable="false"
@@ -332,7 +379,11 @@ watch(selectedProductsWithQuantity, (newVal) => {
 				<Column field="type" header="Type" sortable style="min-width: 8rem"> </Column>
 
 				<Column field="quantity_left" header="Quantity" style="min-width: 8rem"> </Column>
-				<Column field="action" header="Action" style="min-width: 8rem">
+				<Column
+					field="action"
+					header="Action"
+					style="min-width: 8rem"
+					v-if="props.orderMode">
 					<template #body="{ data }">
 						<InputText
 							type="number"
