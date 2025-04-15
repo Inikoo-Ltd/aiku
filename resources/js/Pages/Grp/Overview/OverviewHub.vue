@@ -42,7 +42,7 @@ import { faAngleDown, faAngleUp } from "@far"
 import StoreStatsCard from "@/Components/DataDisplay/StoreStatsCard.vue"
 import InfoDashboardCard from "@/Components/DataDisplay/InfoDashboardCard.vue"
 import ProgressDashboardCard from "@/Components/DataDisplay/ProgressDashboardCard.vue"
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 
 const props = defineProps<{
 	title: string

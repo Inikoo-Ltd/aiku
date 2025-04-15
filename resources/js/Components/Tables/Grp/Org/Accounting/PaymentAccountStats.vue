@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import Dashboard from '@/Components/DataDisplay/Dashboard/Dashboard.vue'
+import Dashboard from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
 
 
 const props = defineProps<{

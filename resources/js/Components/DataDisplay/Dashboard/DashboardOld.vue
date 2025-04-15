@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import DashboardSettings from "./DashboardSettings.vue"
-import DashboardTable from "./DashboardTable.vue"
-import DashboardWidget from "./DashboardWidget.vue"
+import DashboardSettings from "./DashboardSettingsOld.vue"
+import DashboardTable from "./DashboardTableOld.vue"
+import DashboardWidget from "./DashboardWidgetOld.vue"
 import { inject, ref, computed, provide } from "vue"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'

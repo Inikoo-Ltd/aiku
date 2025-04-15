@@ -3,417 +3,232 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Row from "primevue/row"
 import ColumnGroup from "primevue/columngroup"
-import { ref, computed } from "vue"
-import { useLocaleStore } from "@/Stores/locale"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ref, computed, inject } from "vue"
+// import { useLocaleStore } from "@/Stores/locale"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
-import { Link } from "@inertiajs/vue3"
-import { router } from "@inertiajs/vue3"
+// import { Link } from "@inertiajs/vue3"
+// import { router } from "@inertiajs/vue3"
+// import { data } from "@/Components/CMS/Website/Product/ProductTemplates/Product1/Descriptor"
 import { trans } from "laravel-vue-i18n"
-import DeltaItemDashboard from "../../Utils/DeltaItemDashboard.vue"
-import LabelItemDashboard from "@/Components/Utils/LabelItemDashboard.vue"
+// import DeltaItemDashboard from "../../Utils/DeltaItemDashboard.vue"
+// import LabelItemDashboard from "@/Components/Utils/LabelItemDashboard.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
+
+interface Column {
+	formatted_value: string  // "€0.00"
+	raw_value: string  // "0.00"
+	tooltip: string
+	sortable?: boolean
+	align?: string
+} 
+
+interface Header {
+	slug: string
+	columns: {
+		[key: string]: {  // key: 'baskets_created_org_currency', 'baskets_created_grp_currency', 'baskets_created_grp_currency_minified'
+			[key: string]: Column  // key: '1y', '3m', '1m', '7d', '1d'
+		}
+	} | Column
+}
+interface Tables {
+	[key: string]: {
+		body: {
+
+		}
+		header: Header
+		total: {
+
+		}
+		slug: string
+		state: string
+		columns: {
+			baskets_created_org_currency: {
+				'1y': {
+					formatted_value: string  // "€0.00"
+					raw_value: string  // "0.00"
+					tooltip: string
+				} 
+			}
+		}
+	}[]
+}
 
 const props = defineProps<{
-	tableData: {}[]
-	locale: any
-	totalAmount: {
-		total_invoices: number
-		total_sales: number
-		total_refunds: number
+	tableData: {
+		charts: []
+		current_tab: string  // 'shops'
+		id: string  // 'sales_table'
+		tables: Tables
+		tabs: {
+			[key: string]: {
+				icon: string
+				title: string
+			}
+		}
 	}
-	total_tooltip: {
-		total_sales: string
-		total_invoices: string
-		total_refunds: string
+	intervals: {
+		options: {}[]
+		value: string
 	}
-	currency_code?: string
-	tableType?: string
-	current?: string
-	settings: {}
-	dashboardTable: {
-		tab_label: string
-		tab_slug: string
-		type: string // 'table'
-		data: {}
-	}[]
+	settings: {
+		[key: string]: {  // 'model_state', 'data_display_type'
+			align: string
+			id: string
+			options: {
+				label: string
+				value: string
+			}[]
+			type: string
+			value: string
+		}
+	}
 }>()
 
-function ShopDashboard(shop: any) {
-	return route(shop?.route?.name, shop?.route?.parameters)
-}
+const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
-const activeIndexTab = ref(props.current)
+// console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
+console.log('%c Table ', 'background: red; color: white', props.tableData.tables);
 
-const selectedTab = computed(() => {
-	return props.dashboardTable.find((tab) => tab.tab_slug === activeIndexTab.value)
+const compTableHeaderColumns = computed<Header>(() => {
+	if (props.settings.data_display_type.value === 'minified') {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
+			if (key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	} else {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
+			if (!key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	}
 })
-function useTabChangeDashboard(tab_slug: string) {
-	if (tab_slug === activeIndexTab.value) {
-		return
+const compTableTotalColumns = computed(() => {
+	if (props.settings.data_display_type.value === 'minified') {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
+			if (key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	} else {
+		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
+			if (!key.includes('minified')) {
+				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
+			}
+
+			return newObj;
+		}, {});
+
+		return aaa;
+	}
+})
+
+const compTableBody = computed(() => {
+	if (props.settings.model_state?.value === 'open') {
+		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
 	}
 
-	router.reload({
-		data: { tab_dashboard_interval: tab_slug },
-		// only: ['dashboard_stats'],
-		onSuccess: () => {
-			activeIndexTab.value = tab_slug
-		},
-		onError: (error) => {
-			console.error("Error reloading dashboard:", error)
-		},
-	})
-}
-console.log('ewqewqewq', selectedTab.value.data)
-
-const listColumnInTable = computed(() => {
-
-	const resultSet = new Set();  // Create a Set to store unique elements
-
-    // Iterate through each sub-array in the input array
-    selectedTab.value?.data?.map((e) => Object.keys(e.interval_percentages || {}))?.forEach(subArray => {
-        // Add each element of the sub-array to the Set
-        subArray.forEach(item => resultSet.add(item));
-    });
-
-    // Convert the Set back to an Array to return the result
-    return Array.from(resultSet);
+	return props.tableData.tables[props.tableData.current_tab].body;
 })
-
 </script>
 
 <template>
-	<div class="bg-white mb-3 p-4 shadow-md border border-gray-200">
+	<div class="relative bg-white mb-3 p-4 border border-gray-200">
+		<!-- <pre>{{ props.tableData.tables[props.tableData.current_tab].body.filter(row => row.state === 'open') }}</pre> -->
 		<div class="">
-			<Tabs :value="activeIndexTab" class="overflow-x-auto text-sm md:text-base pb-2">
+			<!-- Section: Tabs -->
+			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-sm md:text-base pb-2">
 				<TabList>
 					<Tab
-						v-for="tab in dashboardTable"
-						@click="() => useTabChangeDashboard(tab.tab_slug)"
-						:key="tab.tab_slug"
-						:value="tab.tab_slug"
-						class="qwezxc">
-						<FontAwesomeIcon
-							:icon="tab.tab_icon"
-							class=""
-							fixed-width
-							aria-hidden="true" />
-						{{ tab.tab_label }}</Tab
+						v-for="(tab, tabSlug) in tableData.tabs"
+						@click="() => (tableData.current_tab = tabSlug, 'useTabChangeDashboard(tab.tab_slug)')"
+						:key="tabSlug"
+						:value="tabSlug"
 					>
+						<FontAwesomeIcon :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+						{{ tab.title }}
+					</Tab>
 				</TabList>
 			</Tabs>
 
-			<DataTable v-if="selectedTab.type === 'table'" :value="selectedTab.data" removableSort>
+			<!-- Section: Table -->
+			<DataTable :value="compTableBody" removableSort>
 				<template #empty>
 					<div class="flex items-center justify-center h-full text-center">
-						No data available.
+						{{ trans("No data available.") }}
 					</div>
 				</template>
-
-				<!-- Code -->
-				<Column sortable field="code">
+				
+				<!-- Column (looping) -->
+				<Column
+					v-for="(column, colSlug) in compTableHeaderColumns"
+					:key="colSlug"
+					:sortable="column.sortable"
+					:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
+					:field="colSlug"
+				>
 					<template #header>
-						<div class="text-xs md:text-base flex items-center justify-between">
-							<span class="">{{ trans("Name") }}</span>
+						<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
+							:class="column.align === 'right' ? 'justify-end' : ''"
+						>
+							<FontAwesomeIcon v-if="column.icon" :icon="column.icon" class="" fixed-width aria-hidden="true" />
+							<span class="leading-5">{{ column.formatted_value }}</span>
+							<FontAwesomeIcon v-if="column.iconRight" :icon="column.iconRight" class="" fixed-width aria-hidden="true" />
 						</div>
 					</template>
-
-					<template #body="{ data }" v-if="tableType == 'org' || current == 'shops'">
-						<div class="relative">
-							<Transition name="spin-to-down" mode="out-in">
-								<div :key="data.name">
-									<Link
-										v-if="data.route"
-										:href="ShopDashboard(data)"
-										class="hover-underline text-sm">
-										{{ data.name }}
-									</Link>
-									<span v-else class="text-sm">
-										{{ data.name }}
-									</span>
+					<template #body="{ data }">
+						<div class="px-2 flex relative"
+							:class="column.align === 'right' ? 'justify-end' : ''"
+						>
+						<!-- {{ data.columns[colSlug]?.[intervals.value]?.formatted_value }} -->
+							<Transition name="spin-to-right">
+								<div :key="intervals.value">
+									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 								</div>
-							</Transition>
-						</div>
-					</template>
-
-					<template #body="{ data }" v-else>
-						<div class="relative">
-							<Transition name="spin-to-down" mode="out-in">
-								<div :key="data.code">
-									<span class="text-[14px] md:text-[16px]">
-										{{ data.name }}
-									</span>
-								</div>
-							</Transition>
+							</transition>
 						</div>
 					</template>
 				</Column>
-
-				<!-- Refunds -->
-				<Column
-					v-if="listColumnInTable.includes('refunds')"
-					field="interval_percentages.refunds.amount"
-					sortField="interval_percentages.refunds.amount"
-					sortable
-					headerClass="align-right">
-					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end w-full">
-							<span class="">Refunds</span>
-						</div>
-					</template>
-
-					<template #body="{ data }">
-						<div class="flex justify-end relative">
-							<LabelItemDashboard
-								:dataTable="data"
-								:settings="props.settings"
-								type="refunds"
-								:locale />
-						</div>
-					</template>
-				</Column>
-
-				<!-- Refunds: Diff 1y -->
-				<Column
-					v-if="listColumnInTable.includes('refunds')"
-					sortable
-					field="interval_percentages.refunds.percentage"
-					sortField="interval_percentages.refunds.percentage"
-					class="overflow-hidden transition-all"
-					headerClass="align-right"
-					headerStyle=" width: 140px">
-					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end w-full">
-							<span class="font-semibold">
-								<FontAwesomeIcon
-									fixed-width
-									icon="fal fa-triangle"
-									aria-hidden="true" />
-								1y
-							</span>
-						</div>
-					</template>
-					<template #body="{ data }">
-						<div class="flex justify-end relative">
-							<DeltaItemDashboard :dataTable="data" type="refunds" section="body" />
-						</div>
-					</template>
-				</Column>
-
-				<!-- Invoice -->
-				<Column
-					v-if="listColumnInTable.includes('invoices')"
-					sortable
-					field="interval_percentages.invoices.amount"
-					sortField="interval_percentages.invoices.amount"
-					class="overflow-hidden transition-all"
-					headerClass="align-right">
-					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end w-full">
-							<span class="">Invoices</span>
-						</div>
-					</template>
-					<template #body="{ data }">
-						<div class="flex justify-end relative">
-							<LabelItemDashboard
-								:dataTable="data"
-								:settings="props.settings"
-								type="invoices"
-								:locale />
-						</div>
-					</template>
-				</Column>
-
-				<!-- Invoice: Diff 1y -->
-				<Column
-					v-if="listColumnInTable.includes('invoices')"
-					field="interval_percentages.invoices.percentage"
-					sortField="interval_percentages.invoices.percentage"
-					sortable
-					class="overflow-hidden transition-all"
-					headerClass="align-right"
-					headerStyle=" width: 140px">
-					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end w-full">
-							<span class="">
-								<FontAwesomeIcon
-									fixed-width
-									icon="fal fa-triangle"
-									aria-hidden="true" />
-								1y</span
-							>
-						</div>
-					</template>
-
-					<template #body="{ data }">
-						<div class="flex justify-end relative">
-							<DeltaItemDashboard :dataTable="data" type="invoices" section="body" />
-						</div>
-					</template>
-				</Column>
-
-				<!-- Sales -->
-				<Column
-					v-if="listColumnInTable.includes('sales')"
-					field="interval_percentages.sales.amount"
-					sortField="interval_percentages.sales.amount"
-					sortable
-					class="overflow-hidden transition-all"
-					headerClass="align-right">
-					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end w-full">
-							<span class="">Sales</span>
-						</div>
-					</template>
-					<template #body="{ data }">
-						<div class="flex justify-end relative">
-							<LabelItemDashboard
-								:dataTable="data"
-								:settings="props.settings"
-								type="sales" />
-						</div>
-					</template>
-				</Column>
-
-				<!-- Sales: Diff 1y -->
-				<Column
-					v-if="listColumnInTable.includes('sales')"
-					field="interval_percentages.sales.percentage"
-					sortField="interval_percentages.sales.percentage"
-					sortable
-					class="overflow-hidden transition-all"
-					headerClass="align-right"
-					headerStyle=" width: 140px">
-					<template #header>
-						<div class="text-xs md:text-base flex justify-end items-end w-full">
-							<span class="text-gray-700">
-								<FontAwesomeIcon
-									fixed-width
-									icon="fal fa-triangle"
-									aria-hidden="true" />
-								1y</span
-							>
-						</div>
-					</template>
-					<template #body="{ data }">
-						<div class="flex justify-end relative">
-							<DeltaItemDashboard :dataTable="data" type="sales" section="body" />
-						</div>
-					</template>
-				</Column>
-
-				<!-- Total -->
+			
+				<!-- Row: Total -->
 				<ColumnGroup type="footer">
 					<Row>
-						<Column footer="Total"> Total </Column>
-
-						<!-- Footer: Refunds -->
 						<Column
-							v-if="listColumnInTable.includes('refunds')"
-							footerStyle="text-align:right"
+							v-for="(column, colSlug) in compTableTotalColumns"
+							:key="colSlug"
+							:sortable="column.sortable"
+							:sortField="`${column.key}.${intervals.value}.formatted_value`"
+							:field="column.key"
 						>
 							<template #footer>
-								<div class="whitespace-nowrap text-[#474545]">
-									<span  class="text-[14px] md:text-[16px] font-mono">
-										{{
-											locale.number(
-												totalAmount.total_refunds || 0
-											)
-										}}
-									</span>
-								</div>
-							</template>
-						</Column>
-						<Column
-							v-if="listColumnInTable.includes('refunds')"
-							footerStyle="text-align:right"
-						>
-							<template #footer>
-								<div class="whitespace-nowrap text-[#474545]">
-									<DeltaItemDashboard
-										:totalAmount="totalAmount"
-										:totalTooltip="total_tooltip"
-										type="total_refunds"
-										:settings="props.settings.db_settings.selected_interval"
-										section="footer" />
-								</div>
-							</template>
-						</Column>
-
-						<!-- Footer: Invoices -->
-						<Column
-							v-if="listColumnInTable.includes('invoices')"
-							footerStyle="text-align:right"
-						>
-							<template #footer>
-								<div class="whitespace-nowrap text-[#474545]">
-									<span  class="text-[14px] md:text-[16px] font-mono">
-										{{
-											locale.number(
-												totalAmount.total_invoices || 0
-											)
-										}}
-									</span>
-								</div>
-							</template>
-						</Column>
-						<Column
-							v-if="listColumnInTable.includes('invoices')"
-							footerStyle="text-align:right"
-						>
-							<template #footer>
-								<div class="whitespace-nowrap  text-[#474545]">
-									<DeltaItemDashboard
-										:totalAmount="totalAmount"
-										:totalTooltip="total_tooltip"
-										:settings="props.settings.db_settings.selected_interval"
-										type="total_invoices"
-										section="footer" />
-								</div>
-							</template>
-						</Column>
-
-						<!-- Footer: Sales -->
-						<Column
-							v-if="listColumnInTable.includes('sales')"
-							v-tooltip="
-								useLocaleStore().currencyFormat(
-									props.currency_code,
-									Number(totalAmount.total_sales)
-								)
-							"
-							:footer="
-								props.currency_code ||
-								settings.options_currency[0].label ==
-									settings.options_currency[1].label
-									? useLocaleStore().CurrencyShort(
-											props.currency_code,
-											Number(totalAmount.total_sales),
-											props.settings
-									  )
-									: ''
-							"
-							footerStyle="text-align:right" class="font-mono"
-						/>
-						<Column footerStyle="text-align:right text-[#474545]"
-							v-if="listColumnInTable.includes('sales')"
-						>
-							<template
-								#footer
-								v-if="
-									props.currency_code ||
-									settings.options_currency[0].label ==
-										settings.options_currency[1].label
-								">
-								<div class="whitespace-nowrap">
-									<DeltaItemDashboard
-										:totalAmount="totalAmount"
-										:totalTooltip="total_tooltip"
-										:settings="props.settings.db_settings.selected_interval"
-										type="total_sales"
-										section="footer" />
+								<div class="px-2 flex relative"
+									:class="compTableHeaderColumns?.[colSlug]?.align === 'right' ? 'justify-end' : ''"
+								>
+									<transition name="spin-to-right">
+										<div :key="intervals.value">
+											{{ column[intervals.value]?.formatted_value ?? column?.formatted_value }}
+										</div>
+									</transition>
 								</div>
 							</template>
 						</Column>
@@ -421,8 +236,12 @@ const listColumnInTable = computed(() => {
 				</ColumnGroup>
 			</DataTable>
 
-			<div v-else class="text-red-500">Type not found</div>
-			<!-- <pre>{{ listColumnInTable }}</pre> -->
+			<div v-if="isLoadingOnTable" class="absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
+				<LoadingIcon />
+			</div>
+
+			<!-- <pre>{{ tableData.tables[tableData.current_tab] }}</pre> -->
+
 		</div>
 	</div>
 </template>

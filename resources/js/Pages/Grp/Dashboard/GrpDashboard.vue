@@ -8,7 +8,7 @@ import { Head } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faCog, faFolderOpen, faSeedling, faTimesCircle, faTriangle } from "@fal"
 import "tippy.js/dist/tippy.css"
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import DashboardOld from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import { capitalize } from "@/Composables/capitalize"
 
 library.add(faTriangle, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine)
@@ -183,7 +183,7 @@ const options = {
 
 	<div class="grid grid-cols-12 m-3 gap-4">
 		<div class="col-span-12">
-			<Dashboard 
+			<DashboardOld 
 				:dashboard="dashboard_stats"
 			/>
 		</div>

@@ -12,11 +12,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { faSortDown, faSortUp } from "@fas"
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import DashboardOld from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import { faSitemap } from "@fal"
-import DashboardTableNewwww from "@/Components/DataDisplay/Dashboard/DashboardTableNewwww.vue"
-import DashboardSettingsNew from "@/Components/DataDisplay/Dashboard/DashboardSettingsNew.vue"
-import DashboardWidgetNewww from "@/Components/DataDisplay/Dashboard/DashboardWidgetNewww.vue"
+import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
+import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
+import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
@@ -95,39 +95,32 @@ provide('isLoadingOnTable', isLoadingOnTable)
 <template>
 	<Head :title="trans('Dashboard')" />
 	<!-- <pre>{{ props.dashboard?.super_blocks?.[0].settings }}</pre> -->
-	<DashboardSettingsNew
+
+	<DashboardSettings
 		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		:settings="props.dashboard?.super_blocks?.[0].settings"
 	/>
-	<DashboardTableNewwww
+	
+	<DashboardTable
 		:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		:settings="props.dashboard?.super_blocks?.[0].settings"
 	/>
 
-	<DashboardWidgetNewww v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
+	<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
 	
 	<!-- {{ props.dashboard?.super_blocks?.[0].blocks[0] }} -->
 
-	<div class="grid grid-cols-12 m-3 gap-4 border-t-4 border-red-500 mt-12 pt-12">
+	<!-- <div class="grid grid-cols-12 m-3 gap-4 border-t-4 border-red-500 mt-12 pt-12"> -->
 
-    <!-- <pre>{{ dashboard }}</pre> -->
-
-	<!-- <DashboardTableNewwww
-		
-
-	/> -->
-
-	
-	
 				<!-- <div class="col-span-12">
-					<Dashboard 
+					<DashboardOld 
 						:dashboard="dashboard_stats"
 						:checked="checked"
 						tableType="org"/>	
 				</div> -->
 		
 
-	</div>
+	<!-- </div> -->
 </template>
 
