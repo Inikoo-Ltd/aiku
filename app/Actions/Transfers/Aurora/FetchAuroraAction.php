@@ -20,7 +20,7 @@ class FetchAuroraAction extends FetchAction
     use WithAuroraOrganisationsArgument;
 
     public string $jobQueue = 'aurora';
-
+    public int $jobTimeout = 60 * 60 * 12;
 
     protected function preProcessCommand(Command $command): void
     {
