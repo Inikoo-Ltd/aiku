@@ -15,12 +15,26 @@ import { ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 defineProps<{
-    data: object,
-    tab?: string
+  data: object,
+  tab?: string
 }>()
+
+
+function familyRoute(family: Family) {
+  return route(
+    "grp.goods.catalogue.shops.show.families.show",
+    { masterShop: route().params["masterShop"], masterFamily: family.slug })
+}
+
+
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-    </Table>
+  <Table :resource="data" :name="tab" class="mt-5">
+    <template #cell(code)="{ item: family }">
+      <Link :href="familyRoute(family)" class="primaryLink">
+      {{ family["code"] }}
+      </Link>
+    </template>
+  </Table>
 </template>

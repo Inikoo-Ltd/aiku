@@ -7,20 +7,21 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
-import { Department } from "@/types/department"
-import Icon from "@/Components/Icon.vue"
-import { remove as loRemove } from 'lodash-es'
-import { routeType } from '@/types/route'
-import { ref } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 
 defineProps<{
     data: object,
     tab?: string
 }>()
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(code)="{ item: department }">
+            <Link :href="route('grp.goods.catalogue.shops.show.departments.show', 
+            { masterShop: route().params['masterShop'], masterDepartment: department.slug })" class="primaryLink">
+                {{ department["code"] }}
+            </Link>
+        </template>
     </Table>
 </template>

@@ -17,6 +17,7 @@ use App\Http\Resources\Goods\Catalogue\MasterDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -30,18 +31,18 @@ class IndexMasterDepartments extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
 
-    private MasterShop $parent;
+    private MasterShop|Group $parent;
 
     public function asController(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterShop;
-        $group = group();
+        $group        = group();
         $this->initialisation($group, $request);
 
         return $this->handle(parent: $masterShop);
     }
 
-    public function handle(MasterShop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|MasterShop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -56,6 +57,8 @@ class IndexMasterDepartments extends GrpAction
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
+        } else {
+            $queryBuilder->where('master_product_categories.group_id', $parent->id);
         }
 
         return $queryBuilder
@@ -77,9 +80,9 @@ class IndexMasterDepartments extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -91,12 +94,12 @@ class IndexMasterDepartments extends GrpAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title'       => __("No departments found"),
+                        'title' => __("No master departments found"),
                     ],
                 );
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -111,16 +114,16 @@ class IndexMasterDepartments extends GrpAction
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
         }
-        $title = $this->parent->name;
-        $model = '';
-        $icon  = [
+        $title      = $this->parent->name;
+        $model      = '';
+        $icon       = [
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('master shop')
         ];
         $afterTitle = [
-            'label'     => __('Departments')
+            'label' => __('Departments')
         ];
-        $iconRight    = [
+        $iconRight  = [
             'icon' => 'fal fa-folder-tree',
         ];
 
@@ -128,6 +131,7 @@ class IndexMasterDepartments extends GrpAction
             'Goods/MasterDepartments',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -166,7 +170,7 @@ class IndexMasterDepartments extends GrpAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(MasterShop|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -185,7 +189,7 @@ class IndexMasterDepartments extends GrpAction
         return match ($routeName) {
             'grp.goods.catalogue.shops.show.departments.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($routeName, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,

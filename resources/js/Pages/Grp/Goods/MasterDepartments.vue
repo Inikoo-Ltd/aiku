@@ -7,7 +7,6 @@
   <script setup lang="ts">
   import { Head } from '@inertiajs/vue3'
   import PageHeading from '@/Components/Headings/PageHeading.vue'
-  import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
   import TableMasterDepartments from "@/Components/Tables/Grp/Goods/TableMasterDepartments.vue"
   import { capitalize } from "@/Composables/capitalize"
   import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown,faHome } from '@fal'

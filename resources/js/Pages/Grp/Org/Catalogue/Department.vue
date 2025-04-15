@@ -16,6 +16,7 @@ import {
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { computed, defineAsyncComponent, ref } from "vue";
+import DepartmentShowcase from "@/Components/Showcases/Grp/DepartementShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue";
@@ -64,6 +65,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components = {
+        showcase : DepartmentShowcase,
         products: TableProducts,
         families: TableFamilies,
         mailshots: TableMailshots,
