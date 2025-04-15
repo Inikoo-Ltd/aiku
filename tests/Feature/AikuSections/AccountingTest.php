@@ -1282,7 +1282,7 @@ test('UI show invoice in Organisation', function () {
                     ->has('navigation')
             )
             ->has('order_summary', 3)
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
@@ -1340,7 +1340,7 @@ test('UI show invoice in Shop', function () {
                     ->has('navigation')
             )
             ->has('order_summary', 3)
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page

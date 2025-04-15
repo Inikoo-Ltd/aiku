@@ -153,6 +153,34 @@ class ShowInvoice extends OrgAction
         ];
     }
 
+    public function getExportOptions(Invoice $invoice): array
+    {
+        return [
+            [
+                'type'       => 'pdf',
+                'icon'       => 'fas fa-file-pdf',
+                'label'      => 'PDF',
+                'tooltip'    => __('Download PDF'),
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ],
+            [
+                'type'       => 'isDoc',
+                'icon'       => 'fas fa-hockey-puck',
+                'tooltip'    => __('Download Doc'),
+                'label'      => 'IsDoc',
+                'name'       => 'grp.org.accounting.invoices.show.is_doc',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ]
+
+        ];
+    }
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
@@ -288,31 +316,7 @@ class ShowInvoice extends OrgAction
                 ];
         }
 
-        $exportInvoiceOptions=[
-            [
-                'type'       => 'pdf',
-                'icon'       => 'fas fa-file-pdf',
-                'label'      => 'PDF',
-                'tooltip'    => __('Download PDF'),
-                'name'       => 'grp.org.accounting.invoices.download',
-                'parameters' => [
-                    'organisation' => $invoice->organisation->slug,
-                    'invoice'      => $invoice->slug
-                ]
-            ],
-            [
-                'type'       => 'isDoc',
-                'icon'       => 'fas fa-hockey-puck',
-                'tooltip'    => __('Download Doc'),
-                'label'      => 'IsDoc',
-                'name'       => 'grp.org.accounting.invoices.show.is_doc',
-                'parameters' => [
-                    'organisation' => $invoice->organisation->slug,
-                    'invoice'      => $invoice->slug
-                ]
-            ]
-
-        ];
+        $exportInvoiceOptions = $this->getExportOptions($invoice);
 
 
         return Inertia::render(
@@ -350,34 +354,34 @@ class ShowInvoice extends OrgAction
                 'invoiceExportOptions' => $exportInvoiceOptions,
 
 
-                'box_stats'      => $this->getBoxStats($invoice),
-                'list_refunds'   => RefundResource::collection($invoice->refunds),
-                'invoice'        => InvoiceResource::make($invoice),
-                'outbox'         => [
+                'box_stats'    => $this->getBoxStats($invoice),
+                'list_refunds' => RefundResource::collection($invoice->refunds),
+                'invoice'      => InvoiceResource::make($invoice),
+                'outbox'       => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
 
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
-                    ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
+                    ? fn() => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
 
                 InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
+                    fn() => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn() => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
 
                 InvoiceTabsEnum::ITEMIZED->value => $this->tab == InvoiceTabsEnum::ITEMIZED->value ?
-                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
-                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
+                    fn() => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
+                    : Inertia::lazy(fn() => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
 
                 InvoiceTabsEnum::EMAIL->value => $this->tab == InvoiceTabsEnum::EMAIL->value ?
-                    fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))),
+                    fn() => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))
+                    : Inertia::lazy(fn() => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))),
 
 
                 InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
+                    fn() => PaymentsResource::collection(IndexPayments::run($invoice))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($invoice))),
 
 
             ]

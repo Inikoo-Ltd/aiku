@@ -119,7 +119,6 @@ class ShowRefund extends OrgAction
         }
 
 
-
         $actions = [];
 
         if ($refund->in_process) {
@@ -167,8 +166,6 @@ class ShowRefund extends OrgAction
         }
 
 
-
-
         $props = [
             'title'       => __('refund'),
             'breadcrumbs' => $this->getBreadcrumbs(
@@ -189,9 +186,9 @@ class ShowRefund extends OrgAction
                     'title' => $refund->reference
                 ],
                 'iconRight'     => $refund->in_process ? [
-                    'icon'      => 'fal fa-seedling',
-                    'class'     => 'text-green-500',
-                    'tooltip'   => __('In process')
+                    'icon'    => 'fal fa-seedling',
+                    'class'   => 'text-green-500',
+                    'tooltip' => __('In process')
                 ] : null,
                 'actions'       => $actions,
             ],
@@ -233,53 +230,47 @@ class ShowRefund extends OrgAction
             ],
 
 
-            'box_stats' => array_merge($this->getBoxStats($refund), [
+            'box_stats'      => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
             ...$this->getPayBoxData($refund->originalInvoice),
-            'invoice' => InvoiceResource::make($refund->originalInvoice),
+            'invoice'        => InvoiceResource::make($refund->originalInvoice),
             'invoice_refund' => RefundResource::make($refund),
 
 
         ];
-
-        // dd($refund->in_process);
 
         if ($refund->in_process) {
             $props = array_merge(
                 $props,
                 [
                     RefundInProcessTabsEnum::ITEMS->value => $this->tab == RefundInProcessTabsEnum::ITEMS->value ?
-                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
+                        fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
 
 
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
-                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
-                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
+                        fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
+                        : Inertia::lazy(fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
 
 
                 ]
             );
         } else {
+            $exportInvoiceOptions = ShowInvoice::make()->getExportOptions($refund);
+
             $props = array_merge(
                 $props,
                 [
                     RefundTabsEnum::ITEMS->value => $this->tab == RefundTabsEnum::ITEMS->value ?
-                        fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
+                        fn() => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn() => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
 
 
                     RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
-                        fn () => PaymentsResource::collection(IndexPayments::run($refund))
-                        : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
-                    'exportPdfRoute' => [
-                        'name'       => 'grp.org.accounting.invoices.download',
-                        'parameters' => [
-                            'organisation' => $refund->organisation->slug,
-                            'invoice'      => $refund->slug
-                        ]
-                    ]
+                        fn() => PaymentsResource::collection(IndexPayments::run($refund))
+                        : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($refund))),
+                    'invoiceExportOptions'          => $exportInvoiceOptions
                 ]
             );
         }
@@ -311,7 +302,6 @@ class ShowRefund extends OrgAction
 
     public function getBreadcrumbs(Invoice $refund, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-
         $originalInvoice = $refund->originalInvoice;
 
         $headCrumb = function (Invoice $refund, array $routeParameters, string $suffix = null, $suffixIndex = '') {
