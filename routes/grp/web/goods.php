@@ -141,7 +141,6 @@ Route::prefix('catalogue')->as('catalogue.')->group(function () {
         Route::prefix('products')->as('.products.')->group(function () {
             Route::get('index', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
         });
-        // Route::get('edit', EditTradeUnit::class)->name('edit');
     });
 });
 
