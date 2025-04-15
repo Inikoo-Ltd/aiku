@@ -24,6 +24,7 @@ import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
 import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue";
+import FamilyMasterWorkshop from '@/Components/Showcases/Grp/FamilyMasterWorkshop.vue'
 
 library.add(
     faFolder,
@@ -59,7 +60,8 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components = {
-        showcase: FamilyShowcase,
+        showcase: FamilyMasterWorkshop,
+       /*  showcase: FamilyShowcase, */
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,

@@ -39,7 +39,7 @@ class ShowMasterShop extends GrpAction
         $subNavigation = $this->getMasterShopNavigation($masterShop);
 
         return Inertia::render(
-            'Org/Catalogue/Shop',
+            'Goods/MasterShop',
             [
                 'title'       => __('Master shop'),
                 'breadcrumbs' => $this->getBreadcrumbs(

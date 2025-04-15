@@ -5,25 +5,33 @@
   -->
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3'
-import Table from '@/Components/Table/Table.vue'
-import { Department } from "@/types/department"
-import Icon from "@/Components/Icon.vue"
-import { remove as loRemove } from 'lodash-es'
-import { routeType } from '@/types/route'
-import { ref } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import { Link } from "@inertiajs/vue3";
+import Table from "@/Components/Table/Table.vue";
+import { RouteParams } from "@/types/route-params";
+
+interface Family {
+  slug: string;
+  code: string;
+}
 
 defineProps<{
   data: object,
   tab?: string
-}>()
+}>();
 
 
 function familyRoute(family: Family) {
-  return route(
-    "grp.goods.catalogue.shops.show.families.show",
-    { masterShop: route().params["masterShop"], masterFamily: family.slug })
+  if (route().current() == "grp.goods.catalogue.families.index") {
+    return route(
+      "grp.goods.catalogue.families.show",
+      { masterFamily: family.slug });
+  } else {
+    return route(
+      "grp.goods.catalogue.shops.show.families.show",
+      { masterShop: (route().params as RouteParams).masterShop, masterFamily: family.slug });
+  }
+
+
 }
 
 
@@ -33,7 +41,7 @@ function familyRoute(family: Family) {
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(code)="{ item: family }">
       <Link :href="familyRoute(family)" class="primaryLink">
-      {{ family["code"] }}
+        {{ family["code"] }}
       </Link>
     </template>
   </Table>

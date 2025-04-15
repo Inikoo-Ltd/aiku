@@ -11,7 +11,7 @@ namespace App\Actions\Goods\MasterProductCategory\UI;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Goods\Catalogue\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
@@ -27,7 +27,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterFamilies extends GrpAction
+class IndexMasterFamilies extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
 
@@ -38,10 +38,20 @@ class IndexMasterFamilies extends GrpAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle(parent: $masterShop);
     }
+
+    public function inGroup(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = group();
+        $group        = $this->parent;
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle(parent: $group);
+    }
+
 
     public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
     {

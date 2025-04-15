@@ -25,7 +25,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterDepartment extends GrpAction
+class ShowMasterDepartmentWorkshop extends GrpAction
 {
     use WithDepartmentSubNavigation;
 
@@ -55,7 +55,7 @@ class ShowMasterDepartment extends GrpAction
     public function htmlResponse(MasterProductCategory $masterdepartment, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Catalogue/Department',
+            'Showcases/FamilyMasterWorkshop',
             [
                 'title'       => __('department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -73,15 +73,14 @@ class ShowMasterDepartment extends GrpAction
                         'title' => __('department')
                     ],
                     'actions' => [
-                        [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'workshop',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ] : false,
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',

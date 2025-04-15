@@ -39,11 +39,11 @@ const product = props.data.data
         </div>
 
         <!-- Pricing -->
-       <!--  <div class="bg-gray-50 rounded-md p-4 border text-sm">
+        <div class="bg-gray-50 rounded-md p-4 border text-sm">
           <p><span class="font-medium">Cost:</span> €10.05 (€1.01/bag)</p>
           <p><span class="font-medium">Price:</span> €30.50 (€3.05/bag) margin 67.0%</p>
           <p><span class="font-medium">RRP:</span> €7.35/bag margin 58.5%</p>
-        </div> -->
+        </div>
 
         <!-- Webpage -->
         <div class="text-sm">

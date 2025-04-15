@@ -37,12 +37,12 @@ class IndexMasterAssets extends GrpAction
         return $request->user()->authTo("goods.{$this->group->id}.view");
     }
 
-    public function handle(Group|MasterShop $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('master_products.code', $value)
-                    ->orWhereStartWith('master_products.name', $value);
+                $query->whereStartWith('master_assets.code', $value)
+                    ->orWhereStartWith('master_assets.name', $value);
             });
         });
 
@@ -52,24 +52,23 @@ class IndexMasterAssets extends GrpAction
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
         if ($parent instanceof Group) {
-            $queryBuilder->where('master_products.group_id', $parent->id);
+            $queryBuilder->where('master_assets.group_id', $parent->id);
         } elseif ($parent instanceof MasterShop) {
-            $queryBuilder
-                ->join('master_shop_has_master_products', 'master_shop_has_master_products.master_product_id', '=', 'master_products.id')
-                ->where('master_shop_has_master_products.master_shop_id', $parent->id);
+            $queryBuilder->where('master_assets.master_shop', $parent->id);
+        } else {
+            abort(419);
         }
 
         return $queryBuilder
-            ->defaultSort('master_products.code')
+            ->defaultSort('master_assets.code')
             ->select(
                 [
-                    'master_shops.id',
-                    'master_shops.code',
-                    'master_shops.name',
-                    'master_shops.slug',
-                    'master_shops.state',
-                    'master_shops.status',
-                    'master_shops.price',
+                    'master_assets.id',
+                    'master_assets.code',
+                    'master_assets.name',
+                    'master_assets.slug',
+                    'master_assets.status',
+                    'master_assets.price',
                 ]
             )
             ->allowedSorts(['code', 'name'])
@@ -110,7 +109,7 @@ class IndexMasterAssets extends GrpAction
         $title = __('master products');
 
         if ($this->parent instanceof Group) {
-            $subNavigation = $this->getMasterCatalogueSubNavigation($this->parent);
+            $subNavigation = $this->getMasterCatalogueSubNavigation($this->group);
             $model         = '';
             $icon          = [
                 'icon'  => ['fal', 'fa-cube'],
@@ -138,10 +137,11 @@ class IndexMasterAssets extends GrpAction
             'Goods/MasterShops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('master products'),
+                'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,

@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
+use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
@@ -39,6 +40,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Purge;
 
@@ -46,7 +48,7 @@ class ShowOrder extends OrgAction
 {
     use HasOrderingAuthorisation;
 
-    private Shop|Customer|CustomerClient|Purge $parent;
+    private Shop|Customer|CustomerClient|Purge|CustomerHasPlatform $parent;
 
     public function handle(Order $order): Order
     {
@@ -75,6 +77,15 @@ class ShowOrder extends OrgAction
     public function inCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, ActionRequest $request): Order
     {
         $this->parent = $customer;
+        $this->scope  = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
+
+        return $this->handle($order);
+    }
+
+    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
+    {
+        $this->parent = $customerHasPlatform;
         $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
@@ -505,6 +516,24 @@ class ShowOrder extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.crm.customers.show.platforms.show.orders.show'
+            => array_merge(
+                (new ShowCustomerPlatform())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
+                $headCrumb(
+                    $order,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
+                            'parameters' => Arr::except($routeParameters, ['order'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -559,6 +588,20 @@ class ShowOrder extends OrgAction
                         'organisation' => $this->organisation->slug,
                         'shop'         => $order->shop->slug,
                         'customer'     => $this->parent->slug,
+                        'order'        => $order->slug
+                    ]
+
+                ]
+            ],
+            'grp.org.shops.show.crm.customers.show.platforms.show.orders.show' => [
+                'label' => $order->reference,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop'         => $order->shop->slug,
+                        'customer'     => $this->parent->customer->slug,
+                        'customerHasPlatform' => $this->parent->id,
                         'order'        => $order->slug
                     ]
 

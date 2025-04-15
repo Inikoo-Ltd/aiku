@@ -36,10 +36,10 @@ class StoreRetinaPlatformOrder extends RetinaAction
                 'platform_id' => $platform->id
             ]);
 
-            foreach ($modelData['product_ids'] as $productId) {
-                $historicAsset = HistoricAsset::find($productId);
+            foreach ($modelData['products'] as $product) {
+                $historicAsset = HistoricAsset::find($product['id']);
                 StoreTransaction::make()->action($order, $historicAsset, [
-                    'quantity_ordered' => 1
+                    'quantity_ordered' => $product['quantity']
                 ]);
             }
             return $order;
@@ -51,7 +51,7 @@ class StoreRetinaPlatformOrder extends RetinaAction
     public function rules(): array
     {
         return [
-            'product_ids' => ['required', 'array']
+            'products' => ['required', 'array']
         ];
     }
 

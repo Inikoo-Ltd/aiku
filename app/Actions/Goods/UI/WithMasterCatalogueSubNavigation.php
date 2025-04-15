@@ -9,10 +9,11 @@
 namespace App\Actions\Goods\UI;
 
 use App\Models\Goods\MasterShop;
+use App\Models\SysAdmin\Group;
 
 trait WithMasterCatalogueSubNavigation
 {
-    protected function getMasterCatalogueSubNavigation(): array
+    protected function getMasterCatalogueSubNavigation(Group $group): array
     {
         return [
             [
@@ -26,7 +27,20 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
             [
-                'label' => __('Products'),
+                'number'   => $group->goodsStats->number_current_master_product_categories_type_family,
+                'label'    => __('Families'),
+                'route'    => [
+                    'name'       => 'grp.goods.catalogue.families.index',
+                    'parameters' => []
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-folder-open'],
+                    'tooltip' => __('Master Families')
+                ]
+            ],
+            [
+                'number' => $group->goodsStats->number_current_master_assets_type_product,
+                'label'  => __('Products'),
 
                 'route'    => [
                     'name'       => 'grp.goods.catalogue.products.index',
@@ -108,7 +122,7 @@ trait WithMasterCatalogueSubNavigation
                 'align'    => 'right',
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
                 'label'    => __('Subs'),
-                'tooltip'    => __('Sub Departments'),
+                'tooltip'  => __('Sub Departments'),
                 'route'    => [
                     'name'       => 'grp.goods.catalogue.shops.show.sub-departments.index',
                     'parameters' => [
