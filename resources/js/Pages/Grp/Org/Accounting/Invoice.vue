@@ -31,11 +31,11 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faDraftingCompass, faEnvelope, faArrowCircleLeft, faTrashAlt } from '@fal'
-import { faClock, faFileInvoice, faFilePdf } from '@fas'
+import { faClock, faFileInvoice, faFileAlt, faFilePdf } from '@fas'
 import { faCheck } from '@far'
 import { usePage } from '@inertiajs/vue3';
 
-library.add(faCheck, faEnvelope ,faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faDraftingCompass, faArrowCircleLeft, faTrashAlt)
+library.add(faCheck, faEnvelope ,faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt)
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -134,6 +134,14 @@ const props = defineProps<{
         }
         total_need_to_pay: number
     }
+    exportOptions: {
+        type: string
+        name: string
+        label: string
+        parameters: any
+        tooltip: string
+        icon: Icon
+    }[]
 }>()
 console.log('sdsdsd',props)
 const currentTab = ref<string>(props.tabs.current)
@@ -179,14 +187,27 @@ const generateRefundRoute = (refundSlug: string) => {
 
 <template>
     <Head :title="capitalize(title)" />
+    <!-- <pre>{{exportOptions}}</pre> -->
+
     <PageHeading :data="pageHead">
 
         <!-- Button: PDF -->
         <template #otherBefore>
-            <a v-if="exportPdfRoute?.name" :href="route(exportPdfRoute.name, exportPdfRoute.parameters)" target="_blank"
-                class="mt-4 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
-                <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
-            </a>
+            <div v-if="props.exportOptions?.length" class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
+                <a v-for="exportOption in props.exportOptions"
+                    :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
+                    target="_blank"
+                    class="w-auto mt-0 sm:flex-none text-base"
+                    v-tooltip="exportOption.tooltip"
+                >
+                    <Button
+                        :label="exportOption.label"
+                        :icon="exportOption.icon"
+                        type="tertiary"
+                        class="rounded-none border-transparent"
+                    />
+                </a>
+            </div>
         </template>
 
         <!-- Button: delete Refund -->

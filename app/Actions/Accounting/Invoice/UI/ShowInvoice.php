@@ -323,7 +323,10 @@ class ShowInvoice extends OrgAction
 
                 'exportOptions' => [
                     [
-                        'type'       => 'pfd',
+                        'type'       => 'pdf',
+                        'icon'       => 'fas fa-file-pdf',
+                        'label'      => 'PDF',
+                        'tooltip'    => __('Download PDF'),
                         'name'       => 'grp.org.accounting.invoices.download',
                         'parameters' => [
                             'organisation' => $invoice->organisation->slug,
@@ -332,6 +335,9 @@ class ShowInvoice extends OrgAction
                     ],
                     [
                         'type'       => 'isDoc',
+                        'icon'       => 'fas fa-file-alt',
+                        'tooltip'    => __('Download Doc'),
+                        'label'      => 'Doc',
                         'name'       => 'grp.org.accounting.invoices.show.is_doc',
                         'parameters' => [
                             'organisation' => $invoice->organisation->slug,
