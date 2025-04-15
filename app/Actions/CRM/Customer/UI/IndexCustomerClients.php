@@ -250,7 +250,7 @@ class IndexCustomerClients extends OrgAction
 
         $customerHasPlatform = null;
         if (isset($routeParameters['customerHasPlatform'])) {
-            $customerHasPlatform = CustomerHasPlatform::find($routeParameters['customerHasPlatform'])->first();
+            $customerHasPlatform = CustomerHasPlatform::where('id', ($routeParameters['customerHasPlatform']))->first();
         }
 
         return match ($routeName) {
