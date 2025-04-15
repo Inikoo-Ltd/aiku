@@ -178,13 +178,14 @@ const compTableBody = computed(() => {
 						{{ trans("No data available.") }}
 					</div>
 				</template>
+				
 				<!-- Column (looping) -->
 				<Column
-					v-for="(column, colIndex) in compTableHeaderColumns"
-					:key="colIndex"
+					v-for="(column, colSlug) in compTableHeaderColumns"
+					:key="colSlug"
 					:sortable="column.sortable"
-					:sortField="`columns.${colIndex}.${intervals.value}.formatted_value`"
-					:field="colIndex"
+					:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
+					:field="colSlug"
 				>
 					<template #header>
 						<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
@@ -199,29 +200,29 @@ const compTableBody = computed(() => {
 						<div class="px-2 flex relative"
 							:class="column.align === 'right' ? 'justify-end' : ''"
 						>
-						<!-- {{ data.columns[colIndex]?.[intervals.value]?.formatted_value }} -->
+						<!-- {{ data.columns[colSlug]?.[intervals.value]?.formatted_value }} -->
 							<Transition name="spin-to-right">
 								<div :key="intervals.value">
-									{{ data.columns?.[colIndex]?.[intervals.value]?.formatted_value ?? data.columns[colIndex]?.formatted_value }}
+									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 								</div>
 							</transition>
 						</div>
 					</template>
 				</Column>
 			
-				<!-- Total -->
+				<!-- Row: Total -->
 				<ColumnGroup type="footer">
 					<Row>
 						<Column
-							v-for="(column, colIndex) in compTableTotalColumns"
-							:key="colIndex"
+							v-for="(column, colSlug) in compTableTotalColumns"
+							:key="colSlug"
 							:sortable="column.sortable"
 							:sortField="`${column.key}.${intervals.value}.formatted_value`"
 							:field="column.key"
 						>
 							<template #footer>
 								<div class="px-2 flex relative"
-									:class="column.align === 'right' ? 'justify-end' : ''"
+									:class="compTableHeaderColumns?.[colSlug]?.align === 'right' ? 'justify-end' : ''"
 								>
 									<transition name="spin-to-right">
 										<div :key="intervals.value">
