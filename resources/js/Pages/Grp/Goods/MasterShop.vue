@@ -1,7 +1,7 @@
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Mon, 23 Sept 2024 22:02:13 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2024, Raul A Perusquia Flores
+  - Created: Tue, 15 Apr 2025 13:06:38 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2025, Raul A Perusquia Flores
   -->
 
 <script setup lang="ts">
@@ -11,6 +11,8 @@ import {
   faCube,
   faFileInvoice,
   faFolder,
+  faFolderOpen,
+  faAtom,
   faFolderTree,
   faChartLine,
   faShoppingCart, faStickyNote, faMoneyBillWave
@@ -29,7 +31,7 @@ import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue
 import { PageHeading as TSPageHeading } from "@/types/PageHeading";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-  faMoneyBillWave
+  faMoneyBillWave, faFolderOpen, faAtom
 );
 
 const props = defineProps<{
