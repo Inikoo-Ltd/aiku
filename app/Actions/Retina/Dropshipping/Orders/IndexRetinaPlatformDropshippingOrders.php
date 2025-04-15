@@ -12,12 +12,14 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Ordering\Order;
 use App\Models\ShopifyUserHasFulfilment;
 use App\Models\TiktokUserHasOrder;
 use App\Services\QueryBuilder;
@@ -42,16 +44,25 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-
-        $query = QueryBuilder::for($this->platformUser instanceof ShopifyUser ? ShopifyUserHasFulfilment::class : TiktokUserHasOrder::class);
+        if($this->platformUser instanceof ShopifyUser) {
+            $query = QueryBuilder::for(ShopifyUserHasFulfilment::class);
+        } elseif ($this->platformUser instanceof TiktokUser) {
+            $query = QueryBuilder::for(TiktokUserHasOrder::class);
+        } else {
+            $query = QueryBuilder::for(Order::class);
+        }
 
         if ($this->platformUser instanceof ShopifyUser) {
             $query->where('shopify_user_has_fulfilments.shopify_user_id', $parent->id);
         } elseif ($this->platformUser instanceof TiktokUser) {
             $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
+        } else {
+            $query->where('orders.customer_id', $this->customer->id);
         }
 
-        $query->with('model');
+        if (!($this->platformUser instanceof WebUser)) {
+            $query->with('model');
+        }
         $query->defaultSort('id');
 
         return $query->defaultSort('id')
@@ -97,6 +108,11 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
+        if (!($this->platformUser instanceof WebUser)) {
+            $resource = RetinaDropshippingFulfilmentOrdersResources::collection($orders);
+        } else {
+            $resource = OrdersResource::collection($orders);
+        }
         return Inertia::render(
             'Dropshipping/Orders',
             [
@@ -111,7 +127,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'orders' => RetinaDropshippingFulfilmentOrdersResources::collection($orders)
+                'orders' => $resource
             ]
         )->table($this->tableStructure('orders'));
     }
