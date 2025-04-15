@@ -126,18 +126,23 @@ class IndexMasterShops extends GrpAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, string $suffix = null): array
+    public function getBreadcrumbs(string $suffix = null): array
     {
-        $headCrumb = function (array $routeParameters, ?string $suffix) {
+        $headCrumb = function (?string $suffix) {
             return [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => $routeParameters,
-                        'label' => __('Master shops'),
-                        'icon'  => 'fal fa-bars'
+                        'route'  => [
+                            'name'       => 'grp.goods.catalogue.shops.index',
+                            'parameters' => []
+                        ],
+                        'label'  => __('Master shops'),
+                        'icon'   => 'fal fa-bars',
+                        'suffix' => $suffix
                     ],
-                    'suffix' => $suffix
+
+
                 ],
             ];
         };
@@ -145,10 +150,6 @@ class IndexMasterShops extends GrpAction
         return array_merge(
             ShowGoodsDashboard::make()->getBreadcrumbs(),
             $headCrumb(
-                [
-                    'name'       => $routeName,
-                    'parameters' => []
-                ],
                 $suffix
             ),
         );

@@ -15,6 +15,7 @@ use App\Actions\GrpAction;
 use App\Http\Resources\Goods\Catalogue\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterAsset;
+use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -29,7 +30,7 @@ class IndexMasterAssets extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
 
-    private Group|MasterShop $parent;
+    private Group|MasterShop|MasterProductCategory $parent;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -38,7 +39,6 @@ class IndexMasterAssets extends GrpAction
 
     public function handle(Group|MasterShop $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('master_products.code', $value)
@@ -55,22 +55,22 @@ class IndexMasterAssets extends GrpAction
             $queryBuilder->where('master_products.group_id', $parent->id);
         } elseif ($parent instanceof MasterShop) {
             $queryBuilder
-            ->join('master_shop_has_master_products', 'master_shop_has_master_products.master_product_id', '=', 'master_products.id')
-            ->where('master_shop_has_master_products.master_shop_id', $parent->id);
+                ->join('master_shop_has_master_products', 'master_shop_has_master_products.master_product_id', '=', 'master_products.id')
+                ->where('master_shop_has_master_products.master_shop_id', $parent->id);
         }
 
         return $queryBuilder
             ->defaultSort('master_products.code')
             ->select(
                 [
-                        'master_shops.id',
-                        'master_shops.code',
-                        'master_shops.name',
-                        'master_shops.slug',
-                        'master_shops.state',
-                        'master_shops.status',
-                        'master_shops.price',
-                    ]
+                    'master_shops.id',
+                    'master_shops.code',
+                    'master_shops.name',
+                    'master_shops.slug',
+                    'master_shops.state',
+                    'master_shops.status',
+                    'master_shops.price',
+                ]
             )
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
@@ -91,8 +91,8 @@ class IndexMasterAssets extends GrpAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                            'title'       => __("No master shops found"),
-                        ],
+                        'title' => __("No master shops found"),
+                    ],
                 )
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
@@ -107,28 +107,29 @@ class IndexMasterAssets extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $masterAssets, ActionRequest $request): Response
     {
+        $title = __('master products');
+
         if ($this->parent instanceof Group) {
             $subNavigation = $this->getMasterCatalogueSubNavigation($this->parent);
-            $title = __('master products');
-            $model = '';
-            $icon  = [
+            $model         = '';
+            $icon          = [
                 'icon'  => ['fal', 'fa-cube'],
-                'title' => __('master products')
+                'title' => $title
             ];
-            $afterTitle = null;
-            $iconRight    = null;
+            $afterTitle    = null;
+            $iconRight     = null;
         } elseif ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
-            $title = $this->parent->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->name;
+            $model         = '';
+            $icon          = [
                 'icon'  => ['fal', 'fa-store-alt'],
                 'title' => __('master shop')
             ];
-            $afterTitle = [
-                'label'     => __('Products')
+            $afterTitle    = [
+                'label' => __('Products')
             ];
-            $iconRight    = [
+            $iconRight     = [
                 'icon' => 'fal fa-cube',
             ];
         }
@@ -155,7 +156,7 @@ class IndexMasterAssets extends GrpAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -185,7 +186,7 @@ class IndexMasterAssets extends GrpAction
             ),
             'grp.goods.catalogue.shops.show.products.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($routeName, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -202,17 +203,19 @@ class IndexMasterAssets extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group        = group();
         $this->parent = $group;
         $this->initialisation($group, $request);
+
         return $this->handle($group, $request);
     }
 
     public function inMasterShop(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group        = group();
         $this->parent = $masterShop;
         $this->initialisation($group, $request);
+
         return $this->handle($masterShop, $request);
     }
 

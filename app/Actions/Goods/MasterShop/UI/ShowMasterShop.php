@@ -30,6 +30,7 @@ class ShowMasterShop extends GrpAction
     {
         $group = group();
         $this->initialisation($group, $request)->withTab(MasterShopTabsEnum::values());
+
         return $this->handle($masterShop);
     }
 
@@ -40,19 +41,19 @@ class ShowMasterShop extends GrpAction
         return Inertia::render(
             'Org/Catalogue/Shop',
             [
-                'title'        => __('Master shop'),
-                'breadcrumbs'  => $this->getBreadcrumbs(
+                'title'       => __('Master shop'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $masterShop,
                     $request->route()->getName(),
-                    $request->route()->originalParameters()
                 ),
-                'navigation'   => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($masterShop, $request),
                     'next'     => $this->getNext($masterShop, $request),
                 ],
 
-                'pageHead'     => [
-                    'title'   => $masterShop->name,
-                    'icon'    => [
+                'pageHead' => [
+                    'title'         => $masterShop->name,
+                    'icon'          => [
                         'title' => __('Master shop'),
                         'icon'  => 'fal fa-store-alt'
                     ],
@@ -71,7 +72,7 @@ class ShowMasterShop extends GrpAction
 
                     // ]
                 ],
-                'tabs'         => [
+                'tabs'     => [
                     'current'    => $this->tab,
                     'navigation' => MasterShopTabsEnum::navigation()
                 ],
@@ -89,14 +90,11 @@ class ShowMasterShop extends GrpAction
         return new MasterShopResource($masterShop);
     }
 
-    public function getBreadcrumbs($routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(MasterShop $masterShop, $routeName, $suffix = null): array
     {
-
-        $masterShop = MasterShop::where('slug', $routeParameters['masterShop'])->first();
-
         return
             array_merge(
-                IndexMasterShops::make()->getBreadcrumbs($routeName, $routeParameters),
+                IndexMasterShops::make()->getBreadcrumbs($routeName),
                 [
                     [
                         'type'           => 'modelWithIndex',
@@ -113,7 +111,7 @@ class ShowMasterShop extends GrpAction
                                 'route' => [
                                     'name'       => 'grp.goods.catalogue.shops.show',
                                     'parameters' => [
-                                        'masterShop' => $masterShop->slug
+                                       $masterShop->slug
                                     ]
                                 ],
                                 'label' => $masterShop->code,
@@ -126,7 +124,6 @@ class ShowMasterShop extends GrpAction
                     ]
                 ]
             );
-
     }
 
     public function getPrevious(MasterShop $masterShop, ActionRequest $request): ?array
@@ -153,9 +150,9 @@ class ShowMasterShop extends GrpAction
             'grp.goods.catalogue.shops.show' => [
                 'label' => $masterShop->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name'       => 'grp.goods.catalogue.shops.show',
                     'parameters' => [
-                        'masterShop'        => $masterShop->slug
+                        'masterShop' => $masterShop->slug
                     ]
 
                 ]
