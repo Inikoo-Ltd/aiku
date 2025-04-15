@@ -78,7 +78,7 @@ const props = defineProps<{
 		value: string
 	}
 	settings: {
-		[key: string]: {  // 'model_state', 'data_display_type'
+		[key: string]: {
 			align: string
 			id: string
 			options: {
@@ -90,6 +90,8 @@ const props = defineProps<{
 		}
 	}
 }>()
+
+console.log(props.settings)
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
@@ -144,7 +146,7 @@ const compTableTotalColumns = computed(() => {
 })
 
 const compTableBody = computed(() => {
-	if (props.settings.model_state?.value === 'open') {
+	if (props.settings.shop_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
 	}
 
@@ -154,7 +156,6 @@ const compTableBody = computed(() => {
 
 <template>
 	<div class="relative bg-white mb-3 p-4 border border-gray-200">
-		<!-- <pre>{{ props.tableData.tables[props.tableData.current_tab].body.filter(row => row.state === 'open') }}</pre> -->
 		<div class="">
 			<!-- Section: Tabs -->
 			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-sm md:text-base pb-2">
@@ -239,15 +240,11 @@ const compTableBody = computed(() => {
 			<div v-if="isLoadingOnTable" class="absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
 				<LoadingIcon />
 			</div>
-
-			<!-- <pre>{{ tableData.tables[tableData.current_tab] }}</pre> -->
-
 		</div>
 	</div>
 </template>
 <style scoped>
 :deep(.p-tab) {
-	/* padding: 0.5rem 1rem; */
 	@apply py-2.5 px-3 md:py-4 md:px-4;
 }
 

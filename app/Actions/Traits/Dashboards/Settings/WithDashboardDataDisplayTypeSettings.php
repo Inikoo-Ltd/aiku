@@ -18,6 +18,7 @@ trait WithDashboardDataDisplayTypeSettings
 
         return [
             'id'      => $id,
+            'display' => true,
             'align'   => $align,
             'type'    => 'toggle',
             'value'   => Arr::get($settings, $id, 'full'),

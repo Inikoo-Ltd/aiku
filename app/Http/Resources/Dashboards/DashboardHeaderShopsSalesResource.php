@@ -24,35 +24,47 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 
 
         $deltaLabel = [
-            'formatted_value' => 'Δ 1Y',
-            'tooltip'         => __('Change versus 1 Year ago'),
-            'sortable'        => true,
-            'align'           => 'right'
+            'currency_type'     => 'always',
+            'data_display_type' => 'always',
+            'formatted_value'   => 'Δ 1Y',
+            'tooltip'           => __('Change versus 1 Year ago'),
+            'sortable'          => true,
+            'align'             => 'right'
         ];
+
+        $inBasketLabel = __('In basket');
 
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => __('Shop')
+                    'formatted_value'   => __('Shop'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => __('Shop')
+                    'formatted_value'   => __('Shop'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
                 'baskets_created_shop_currency' => [
-                    'formatted_value' => __('In basket'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => $inBasketLabel,
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
                 'baskets_created_shop_currency_minified' => [
-                    'formatted_value' => __('In basket'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => '▪ '.__('In basket'),
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
@@ -60,16 +72,20 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency' => [
-                    'formatted_value' => __('In basket'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => $inBasketLabel,
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value' => __('In basket'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => $inBasketLabel,
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
@@ -77,16 +93,20 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'invoices' => [
-                    'formatted_value' => __('Invoices'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
                 'invoices_minified' => [
-                    'formatted_value' => __('Invoices'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
@@ -94,16 +114,20 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'sales_shop_currency' => [
-                    'formatted_value' => __('Sales'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'full',
+                    'formatted_value'   => __('Sales'),
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
                 'sales_shop_currency_minified' => [
-                    'formatted_value' => __('Sales'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'minified',
+                    'formatted_value'   => __('Sales'),
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
@@ -111,16 +135,20 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'sales_org_currency' => [
-                    'formatted_value' => __('Sales'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [
                 'sales_org_currency_minified' => [
-                    'formatted_value' => __('Sales'),
-                    'sortable'       => true,
-                    'align'          => 'right'
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'minified',
+                    'formatted_value'   => __('Sales'),
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
             ],
             [

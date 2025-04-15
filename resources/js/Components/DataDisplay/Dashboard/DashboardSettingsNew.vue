@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from "vue"
-import { router, usePage } from "@inertiajs/vue3"
+import { inject, ref } from "vue"
+import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ToggleSwitch from "primevue/toggleswitch"
-import { get } from "lodash"
 import axios from "axios"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -23,7 +22,7 @@ const props = defineProps<{
 		value: string
 	}
 	settings: {
-		[key: string]: {  // 'model_state', 'data_display_type'
+		[key: string]: {
 			align: string
 			id: string
 			options: {
@@ -37,24 +36,11 @@ const props = defineProps<{
 	}
 }>()
 
+console.log(props);
+
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
-// const page = usePage()
-// const tabDashboardInterval = computed(() => {
-// 	const currentUrl = new URL(page.url, window.location.origin)
-// 	return currentUrl.searchParams.get("tab_dashboard_interval")
-// })
-
-// watch(
-// 	tabDashboardInterval,
-// 	(newVal, oldVal) => {
-// 		console.log("tab_dashboard_interval changed from", oldVal, "to", newVal)
-// 	},
-// 	{ immediate: true }
-// )
-
-// Section: Interval
 const isLoadingInterval = ref<string | null>(null)
 const updateInterval = (interval_code: string) => {
 	router.patch(
@@ -172,11 +158,11 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 								:modelValue="setting.value"
 								@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
 								:falseValue="setting.options[0].value"
-								:trueValue="setting.options[1].value"
+								:trueValue="setting.options[1]?.value"
 								:disabled="`left${indexSetting}` === isLoadingToggle"
 							/>
-							<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[1].label }}
+							<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[1]?.label }}
 							</p>
 						</template>
 					</div>
@@ -192,11 +178,11 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 								:modelValue="setting.value"
 								@update:modelValue="(value: any) => updateToggle(setting.id, value, `right${indexSetting}`, true)"
 								:falseValue="setting.options[0].value"
-								:trueValue="setting.options[1].value"
+								:trueValue="setting.options[1]?.value"
 								:disabled="`right${indexSetting}` === isLoadingToggle"
 							/>
-							<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[1].label }}
+							<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[1]?.label }}
 							</p>
 						</template>
 					</div>
