@@ -5,67 +5,43 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
-
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { Link } from '@inertiajs/vue3'
-
-import { computed, defineAsyncComponent, inject, ref, watch } from "vue"
+import { Head,Link } from '@inertiajs/vue3'
+import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import AddressSelector from "@/Components/DataDisplay/AddressSelector.vue"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
-import OperationsInvoiceShowcase from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from 'laravel-vue-i18n'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
-import { Calculation, ProductTransaction } from '@/types/Invoices'
 import { routeType } from '@/types/route'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import { FieldOrderSummary } from '@/types/Pallet'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faDraftingCompass, faEnvelope, faArrowCircleLeft, faTrashAlt } from '@fal'
 import { faClock, faFileInvoice, faFileAlt, faFilePdf } from '@fas'
 import { faCheck } from '@far'
-import { usePage } from '@inertiajs/vue3';
-
-library.add(faCheck, faEnvelope ,faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt)
-
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
-
-
-// import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { PageHeading as TSPageHeading } from '@/types/PageHeading'
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
-import { Address } from '@/types/PureComponent/Address'
 import { Icon } from '@/types/Utils/Icon'
-// import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
-import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import PureInput from '@/Components/Pure/PureInput.vue'
 import { InvoiceResource } from '@/types/invoice'
-import axios from 'axios'
-import { notify } from '@kyvg/vue3-notification'
-import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import TableDispatchedEmails from '@/Components/Tables/TableDispatchedEmails.vue'
-import InputNumber from 'primevue/inputnumber'
 import TableItemizedTransactions from '@/Components/Tables/Grp/Org/Accounting/TableItemizedTransactions.vue'
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import InvoiceRefundPay from '@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue'
 import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
 import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
-// const locale = useLocaleStore()
-const locale = inject('locale', aikuLocaleStructure)
+
+library.add(faCheck, faEnvelope ,faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt)
+
+const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 
 const props = defineProps<{
@@ -187,7 +163,6 @@ const generateRefundRoute = (refundSlug: string) => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <!-- <pre>{{exportOptions}}</pre> -->
 
     <PageHeading :data="pageHead">
 
@@ -309,28 +284,6 @@ const generateRefundRoute = (refundSlug: string) => {
                 <dd class="text-base text-gray-500">{{ box_stats?.customer.company_name }}</dd>
             </div>
 
-            <!-- Field: Tax number -->
-            <!-- <div v-if="box_stats?.customer.tax_number"
-                class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="'Email'" class="flex-none">
-                    <span class="sr-only">Tax Number</span>
-                    <FontAwesomeIcon icon='fal fa-passport' size="xs" class='text-gray-400' fixed-width
-                        aria-hidden='true' />
-                </dt>
-                <dd class="text-base text-gray-500">{{ box_stats?.customer.tax_number }}</dd>
-            </div> -->
-
-            <!-- Field: Location -->
-            <!-- <div v-if="box_stats?.customer.location"
-                class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="'Location'" class="flex-none">
-                    <span class="sr-only">Location</span>
-                    <FontAwesomeIcon icon='fal fa-map-marked-alt' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                </dt>
-                <dd class="text-base text-gray-500">
-                    <AddressLocation :data="box_stats?.customer.location" />
-                </dd>
-            </div> -->
 
             <!-- Field: Phone -->
             <div v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
@@ -390,14 +343,6 @@ const generateRefundRoute = (refundSlug: string) => {
                 </div>
 
                 <div class="relative flex items-start w-full flex-none gap-x-2 mt-2">
-                    <!-- <NeedToPay
-                        @click="() => Number(box_stats.information.pay_amount) > 0 ? (isOpenModalPayment = true, fetchPaymentMethod()) : false"
-                        :totalAmount="Number(props.invoice.total_amount)"
-                        :paidAmount="Number(box_stats.information.paid_amount)"
-                        :payAmount="Number(box_stats.information.pay_amount)"
-                        :currencyCode="invoice.currency_code"
-                        :class="[Number(box_stats.information.pay_amount) ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                    /> -->
                     
                     <InvoiceRefundPay
                         :invoice_pay
@@ -418,22 +363,6 @@ const generateRefundRoute = (refundSlug: string) => {
             <OrderSummary :order_summary :currency_code="invoice.currency_code" />
         </BoxStatPallet>
 
-        <!-- Section: Invoice Information (looping) -->
-        <!-- <BoxStatPallet class="col-start-4 py-2 px-3"')">
-            <div class="pt-1 text-gray-500">
-                <template v-for="invoiceGroup in boxInvoiceInformation">
-                    <div class="space-y-1">
-                        <div v-for="invoice in invoiceGroup" class="flex justify-between"
-                            :class="invoice.label == 'Total' ? 'font-semibold' : ''"
-                        >
-                            <div>{{ invoice.label }} <span v-if="invoice.label == 'Tax'" class="text-sm text-gray-400">(VAT {{invoice.tax_percentage || 0}}%)</span></div>
-                            <div>{{ locale.currencyFormat(box_stats?.currency, invoice.value || 0) }}</div>
-                        </div>
-                    </div>
-                    <hr class="last:hidden my-1.5 border-gray-300">
-                </template>
-            </div>
-        </BoxStatPallet> -->
     </div>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
