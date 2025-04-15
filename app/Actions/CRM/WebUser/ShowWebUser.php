@@ -241,6 +241,20 @@ class ShowWebUser extends OrgAction
 
                 ]
             ],
+            'grp.org.shops.show.crm.customers.show.web-users.show' => [
+                'label' => $webUser->username,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation' => $webUser->organisation->slug,
+                        'shop'      => $webUser->shop->slug,
+                        'customer' => $webUser->customer->slug,
+                        'webUser' => $webUser->slug
+                    ]
+
+                ]
+            ],
+            default => []
         };
     }
 

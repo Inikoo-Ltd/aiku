@@ -121,6 +121,9 @@ Route::prefix('trade-units')->as('trade-units.')->group(function () {
 Route::prefix('catalogue')->as('catalogue.')->group(function () {
     Route::get('/shops', IndexMasterShops::class)->name('shops.index');
     Route::get('/products', IndexMasterAssets::class)->name('products.index');
+    Route::get('/families', [IndexMasterFamilies::class, 'inGroup'])->name('families.index');
+    Route::get('/families/{masterFamily}', [ShowMasterFamily::class,'inGroup'])->name('families.show');
+
     Route::prefix('{masterShop}')->as('shops.show')->group(function () {
         Route::get('', ShowMasterShop::class)->name('');
         Route::prefix('departments')->as('.departments.')->group(function () {
@@ -130,17 +133,14 @@ Route::prefix('catalogue')->as('catalogue.')->group(function () {
         Route::prefix('families')->as('.families.')->group(function () {
             Route::get('index', IndexMasterFamilies::class)->name('index');
             Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
-
         });
         Route::prefix('sub-departments')->as('.sub-departments.')->group(function () {
             Route::get('index', IndexMasterSubDepartments::class)->name('index');
             Route::get('{masterSubDepartment}', ShowMasterSubDepartment::class)->name('show');
-
         });
         Route::prefix('products')->as('.products.')->group(function () {
             Route::get('index', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
         });
-        // Route::get('edit', EditTradeUnit::class)->name('edit');
     });
 });
 
