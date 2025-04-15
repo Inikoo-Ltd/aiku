@@ -45,14 +45,6 @@ class ISDocInvoice extends OrgAction
         $shop        = $invoice->shop;
         $shopAddress = $shop->address;
 
-        if (!$invoice->uuid) {
-            $invoice->update(
-                [
-                    'uuid' => Str::uuid(),
-                ]
-            );
-        }
-
         $isDocInvoice = new InvoiceISDoc(
             $invoice->reference,
             $invoice->uuid,
