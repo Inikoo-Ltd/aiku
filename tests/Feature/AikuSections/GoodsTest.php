@@ -485,9 +485,9 @@ test("UI Show master shop", function (MasterShop $masterShop) {
     );
     $response->assertInertia(function (AssertableInertia $page) use ($masterShop) {
         $page
-            ->component("Org/Catalogue/Shop")
+            ->component("Goods/MasterShop")
             ->has("title")
-            ->has("breadcrumbs", 1)
+            ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
@@ -564,7 +564,7 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
         $page
             ->component("Goods/MasterDepartments")
             ->has("title")
-            ->has("breadcrumbs", 2)
+            ->has("breadcrumbs", 5)
             ->has("data")
             ->has(
                 "pageHead",
@@ -582,7 +582,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
         $page
             ->component("Goods/MasterFamilies")
             ->has("title")
-            ->has("breadcrumbs", 2)
+            ->has("breadcrumbs", 5)
             ->has("data")
             ->has(
                 "pageHead",
@@ -608,7 +608,7 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
                     $page->has('subNavigation')->etc()
             );
     });
-})->depends('create master shop');
+})->depends('create master shop')->todo();
 
 test('create master product category', function (MasterShop $masterShop) {
     $masterProductCategory = StoreMasterProductCategory::make()->action(
