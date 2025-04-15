@@ -12,6 +12,7 @@ use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Inventory\Warehouse;
 use App\Models\ShopifyUserHasProduct;
+use App\Models\TiktokUserHasProduct;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasRetinaSearch;
 use App\Models\Traits\HasUniversalSearch;
@@ -66,6 +67,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Portfolio|null $portfolio
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read ShopifyUserHasProduct|null $shopifyPortfolio
+ * @property-read TiktokUserHasProduct|null $tiktokPortfolio
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|StoredItem newModelQuery()
@@ -136,6 +138,11 @@ class StoredItem extends Model implements Auditable
     public function shopifyPortfolio(): MorphOne
     {
         return $this->morphOne(ShopifyUserHasProduct::class, 'product');
+    }
+
+    public function tiktokPortfolio(): MorphOne
+    {
+        return $this->morphOne(TiktokUserHasProduct::class, 'productable');
     }
 
     public function portfolio(): MorphOne

@@ -1,157 +1,160 @@
 {
-    "name": "inikoo/aiku",
-    "type": "project",
-    "description": "aiku.",
-    "keywords": [
-        "aiku",
-        "warehouse"
+  "name": "inikoo/aiku",
+  "type": "project",
+  "description": "aiku.",
+  "keywords": [
+    "aiku",
+    "warehouse"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": "^8.3",
+    "ext-curl": "*",
+    "ext-gd": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*",
+    "ext-pdo": "*",
+    "ext-pgsql": "*",
+    "ext-simplexml": "*",
+    "ext-soap": "*",
+    "ext-zlib": "*",
+    "alibabacloud/dm-20151123": "^1.0",
+    "aws/aws-php-sns-message-validator": "^1.1",
+    "aws/aws-sdk-php": "^3.255",
+    "aws/aws-sdk-php-laravel": "^3.8",
+    "carlos-meneses/laravel-mpdf": "^2.1",
+    "checkout/checkout-sdk-php": "3.1.0",
+    "cloudstudio/ollama-laravel": "^1.0",
+    "commerceguys/addressing": "^1.4",
+    "commerceguys/intl": "^1.1",
+    "deepseek-php/deepseek-php-client": "^2.0",
+    "doctrine/dbal": "^3.5",
+    "elasticsearch/elasticsearch": "^8.8",
+    "google/apiclient": "^2.15.0",
+    "guzzlehttp/guzzle": "^7.2",
+    "hisorange/browser-detect": "^4.5",
+    "http-interop/http-factory-guzzle": "^1.2",
+    "inertiajs/inertia-laravel": "^2.0",
+    "inspector-apm/inspector-laravel": "^4.10",
+    "jackwh/laravel-new-relic": "^1.1",
+    "jubaer/zoom-laravel": "^1.3",
+    "kyon147/laravel-shopify": "^23.0.0",
+    "laravel-notification-channels/fcm": "^4.3",
+    "laravel/framework": "^11.0",
+    "laravel/horizon": "^5",
+    "laravel/octane": "^2.6",
+    "laravel/pennant": "^1.13",
+    "laravel/sanctum": "^4",
+    "laravel/scout": "^10.0",
+    "laravel/socialite": "^5",
+    "laravel/tinker": "^2",
+    "league/flysystem-aws-s3-v3": "^3.0",
+    "lorisleiva/laravel-actions": "^2.4",
+    "maatwebsite/excel": "^3.1",
+    "masbug/flysystem-google-drive-ext": "^2.3",
+    "matchish/laravel-scout-elasticsearch": "^7.2",
+    "meilisearch/meilisearch-php": "^1.0",
+    "monicahq/laravel-cloudflare": "^3.3",
+    "mpdf/qrcode": "^1.2",
+    "nyholm/psr7": "^1.8",
+    "owen-it/laravel-auditing": "^13.7",
+    "pgvector/pgvector": "^0.2.0",
+    "phlak/semver": "^4.0",
+    "phpmailer/phpmailer": "^6.9",
+    "predis/predis": "^2.1",
+    "propaganistas/laravel-phone": "^5.0",
+    "pusher/pusher-php-server": "^7.2",
+    "ralouphie/mimey": "^1.0",
+    "ryangjchandler/blade-cache-directive": "^1.0",
+    "sentry/sentry-laravel": "^4.4",
+    "shopify/shopify-api": "^5.6",
+    "spatie/laravel-backup": "^8.1",
+    "spatie/laravel-data": "^4.11",
+    "spatie/laravel-json-api-paginate": "^1.13",
+    "spatie/laravel-medialibrary": "^11.4",
+    "spatie/laravel-options": "^1.1",
+    "spatie/laravel-permission": "^6.1",
+    "spatie/laravel-query-builder": "^5.0",
+    "spatie/laravel-sluggable": "^3.4",
+    "spatie/laravel-tags": "^4.5",
+    "spatie/temporary-directory": "^2.2",
+    "spiral/roadrunner-cli": "^2.6.0",
+    "spiral/roadrunner-http": "^3.3.0",
+    "stevebauman/location": "^7.2",
+    "symfony/psr-http-message-bridge": "^7.2",
+    "tightenco/ziggy": "^1.0",
+    "tuupola/base32": "^2.0",
+    "vemcogroup/laravel-translation": "^3.0",
+    "vlucas/phpdotenv": "^5.4",
+    "xendit/xendit-php": "^5.0"
+  },
+  "require-dev": {
+    "amphibee/laravel-pint-pre-commit": "^1.5",
+    "barryvdh/laravel-debugbar": "^3.14",
+    "barryvdh/laravel-ide-helper": "^3.0",
+    "deployer/deployer": "^7.3",
+    "fakerphp/faker": "^1.9.1",
+    "laravel/breeze": "^2",
+    "laravel/envoy": "^2.8",
+    "laravel/pint": "^1.0",
+    "laravel/sail": "^1.18",
+    "laravel/telescope": "^5.0",
+    "league/flysystem-sftp-v3": "^3.26",
+    "mockery/mockery": "^1.4.4",
+    "nunomaduro/collision": "^8.1",
+    "pestphp/pest": "^2.0",
+    "pestphp/pest-plugin-laravel": "^2.0",
+    "phpunit/phpunit": "^10"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/",
+      "Database\\Factories\\": "database/factories/",
+      "Database\\Seeders\\": "database/seeders/"
+    },
+    "files": [
+      "app/Helpers/helpers.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    },
+    "files": [
+      "tests/Helpers/DropshippingTestHelpers.php"
+    ]
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+      "@php artisan package:discover --ansi"
     ],
-    "license": "MIT",
-    "require": {
-        "php": "^8.3",
-        "ext-curl": "*",
-        "ext-gd": "*",
-        "ext-intl": "*",
-        "ext-mbstring": "*",
-        "ext-pdo": "*",
-        "ext-pgsql": "*",
-        "ext-simplexml": "*",
-        "ext-soap": "*",
-        "ext-zlib": "*",
-        "alibabacloud/dm-20151123": "^1.0",
-        "aws/aws-php-sns-message-validator": "^1.1",
-        "aws/aws-sdk-php": "^3.255",
-        "aws/aws-sdk-php-laravel": "^3.8",
-        "carlos-meneses/laravel-mpdf": "^2.1",
-        "checkout/checkout-sdk-php": "3.1.0",
-        "cloudstudio/ollama-laravel": "^1.0",
-        "commerceguys/addressing": "^1.4",
-        "commerceguys/intl": "^1.1",
-        "deepseek-php/deepseek-php-client": "^2.0",
-        "doctrine/dbal": "^3.5",
-        "elasticsearch/elasticsearch": "^8.8",
-        "google/apiclient": "^2.15.0",
-        "guzzlehttp/guzzle": "^7.2",
-        "hisorange/browser-detect": "^4.5",
-        "http-interop/http-factory-guzzle": "^1.2",
-        "inertiajs/inertia-laravel": "^2.0",
-        "inspector-apm/inspector-laravel": "^4.10",
-        "jackwh/laravel-new-relic": "^1.1",
-        "jubaer/zoom-laravel": "^1.3",
-        "kyon147/laravel-shopify": "^23.0.0",
-        "laravel-notification-channels/fcm": "^4.3",
-        "laravel/framework": "^11.0",
-        "laravel/horizon": "^5",
-        "laravel/octane": "^2.6",
-        "laravel/pennant": "^1.13",
-        "laravel/sanctum": "^4",
-        "laravel/scout": "^10.0",
-        "laravel/socialite": "^5",
-        "laravel/tinker": "^2",
-        "league/flysystem-aws-s3-v3": "^3.0",
-        "lorisleiva/laravel-actions": "^2.4",
-        "maatwebsite/excel": "^3.1",
-        "masbug/flysystem-google-drive-ext": "^2.3",
-        "matchish/laravel-scout-elasticsearch": "^7.2",
-        "meilisearch/meilisearch-php": "^1.0",
-        "monicahq/laravel-cloudflare": "^3.3",
-        "mpdf/qrcode": "^1.2",
-        "nyholm/psr7": "^1.8",
-        "owen-it/laravel-auditing": "^13.7",
-        "pgvector/pgvector": "^0.2.0",
-        "phlak/semver": "^4.0",
-        "phpmailer/phpmailer": "^6.9",
-        "predis/predis": "^2.1",
-        "propaganistas/laravel-phone": "^5.0",
-        "pusher/pusher-php-server": "^7.2",
-        "ralouphie/mimey": "^1.0",
-        "ryangjchandler/blade-cache-directive": "^1.0",
-        "sentry/sentry-laravel": "^4.4",
-        "shopify/shopify-api": "^5.6",
-        "spatie/laravel-backup": "^8.1",
-        "spatie/laravel-data": "^4.11",
-        "spatie/laravel-json-api-paginate": "^1.13",
-        "spatie/laravel-medialibrary": "^11.4",
-        "spatie/laravel-options": "^1.1",
-        "spatie/laravel-permission": "^6.1",
-        "spatie/laravel-query-builder": "^5.0",
-        "spatie/laravel-sluggable": "^3.4",
-        "spatie/laravel-tags": "^4.5",
-        "spatie/temporary-directory": "^2.2",
-        "spiral/roadrunner-cli": "^2.6.0",
-        "spiral/roadrunner-http": "^3.3.0",
-        "stevebauman/location": "^7.2",
-        "symfony/psr-http-message-bridge": "^7.2",
-        "tightenco/ziggy": "^1.0",
-        "tuupola/base32": "^2.0",
-        "vemcogroup/laravel-translation": "^3.0",
-        "vlucas/phpdotenv": "^5.4",
-        "xendit/xendit-php": "^5.0"
-    },
-    "require-dev": {
-        "amphibee/laravel-pint-pre-commit": "^1.5",
-        "barryvdh/laravel-debugbar": "^3.14",
-        "barryvdh/laravel-ide-helper": "^3.0",
-        "deployer/deployer": "^7.3",
-        "fakerphp/faker": "^1.9.1",
-        "laravel/breeze": "^2",
-        "laravel/envoy": "^2.8",
-        "laravel/pint": "^1.0",
-        "laravel/sail": "^1.18",
-        "laravel/telescope": "^5.0",
-        "league/flysystem-sftp-v3": "^3.26",
-        "mockery/mockery": "^1.4.4",
-        "nunomaduro/collision": "^8.1",
-        "pestphp/pest": "^2.0",
-        "pestphp/pest-plugin-laravel": "^2.0",
-        "phpunit/phpunit": "^10"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
-        },
-        "files": [
-            "app/Helpers/helpers.php"
-        ]
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
-        }
-    },
-    "scripts": {
-        "post-autoload-dump": [
-            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
-        ],
-        "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
-        ],
-        "post-root-package-install": [
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
-        ],
-        "post-create-project-cmd": [
-            "@php artisan key:generate --ansi"
-        ]
-    },
-    "extra": {
-        "laravel": {
-            "dont-discover": [
-                "laravel/telescope"
-            ]
-        }
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "preferred-install": "dist",
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "php-http/discovery": true
-        }
-    },
-    "minimum-stability": "beta",
-    "prefer-stable": true
+    "post-update-cmd": [
+      "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+    ],
+    "post-root-package-install": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ],
+    "post-create-project-cmd": [
+      "@php artisan key:generate --ansi"
+    ]
+  },
+  "extra": {
+    "laravel": {
+      "dont-discover": [
+        "laravel/telescope"
+      ]
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true,
+      "php-http/discovery": true
+    }
+  },
+  "minimum-stability": "beta",
+  "prefer-stable": true
 }

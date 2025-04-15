@@ -8,25 +8,22 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachCustomerToPlatform extends OrgAction
 {
-    /**
-     * @var \App\Models\CRM\Customer
-     */
-    private Customer $customer;
-
     public function handle(Customer $customer, Platform $platform, array $pivotData): Customer
     {
         $pivotData['group_id']        = $this->organisation->group_id;
         $pivotData['organisation_id'] = $this->organisation->id;
         $pivotData['shop_id']         = $customer->shop_id;
         $customer->platforms()->attach($platform->id, $pivotData);
+
+        PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
 
 
         return $customer;
@@ -39,24 +36,18 @@ class AttachCustomerToPlatform extends OrgAction
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        /*        if ($this->customer->platforms()->count() >= 1) {
-                    abort(403);
-                }*/
-    }
 
-    public function action(Customer $customer, Platform $platform, array $modelData): Customer
+    public function action(Customer $customer, Platform $platform, array $modelData, int $hydratorsDelay = 0): Customer
     {
-        $this->customer = $customer;
+        $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($customer->organisation, $modelData);
 
         return $this->handle($customer, $platform, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Customer $customer, Platform $platform, ActionRequest $request): void
+    public function asController(Customer $customer, Platform $platform, ActionRequest $request): void
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($customer->organisation, $request);
         $this->handle($customer, $platform, $this->validatedData);
     }
 }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -33,6 +34,7 @@ class UpdateOrder extends OrgAction
 
     public function handle(Order $order, array $modelData): Order
     {
+        $oldPlatform   = $order->platform;
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
 
@@ -42,6 +44,13 @@ class UpdateOrder extends OrgAction
             OrderRecordSearch::dispatch($order);
             if (array_key_exists('state', $changedFields)) {
                 $this->orderHydrators($order);
+            }
+            if (array_key_exists('platform_id', $changedFields)) {
+                if ($order->platform_id) {
+                    PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+                } elseif($oldPlatform) {
+                    PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
+                }
             }
         }
 

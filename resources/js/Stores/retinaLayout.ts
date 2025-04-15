@@ -49,7 +49,7 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     const stackedComponents = ref<StackedComponent[]>([])
 
     const user = ref<{ id: number, avatar_thumbnail: Image, email: string, username: string } | {}>({})
-    
+
 
     return { root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, navigation, currentPlatform, rightSidebar, user }
 });

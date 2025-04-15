@@ -72,7 +72,7 @@ class FetchAuroraCustomer extends FetchAurora
         $company = $this->cleanCompanyName($company);
 
 
-        if (!$company and !$contactName) {
+        if (!$company && !$contactName) {
             $contactName = $this->auroraModelData->{'Customer Name'};
             $contactName = $this->cleanName($contactName);
             $contactName = $this->cleanCompanyName($contactName);

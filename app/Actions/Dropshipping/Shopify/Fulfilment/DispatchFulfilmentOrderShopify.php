@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\ShopifyFulfilmentStateEnum;
+use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -43,7 +43,7 @@ class DispatchFulfilmentOrderShopify extends OrgAction
 
         if (!$response['errors']) {
             $this->update($shopifyUserHasFulfilment, [
-                'state' => ShopifyFulfilmentStateEnum::DISPATCHED
+                'state' => ChannelFulfilmentStateEnum::DISPATCHED
             ]);
         }
 

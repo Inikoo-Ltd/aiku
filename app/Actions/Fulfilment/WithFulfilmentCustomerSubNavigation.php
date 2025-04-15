@@ -77,6 +77,24 @@ trait WithFulfilmentCustomerSubNavigation
             ];
         }
 
+        if ($fulfilmentCustomer->dropshipping) {
+            $subNavigation[] = [
+                'route' => [
+                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.index',
+                    'parameters' => $request->route()->originalParameters()
+
+                ],
+
+                'label'     => __('Channels'),
+                'leftIcon'  => [
+                    'icon'    => 'fal fa-parachute-box',
+                    'tooltip' => __('Channels'),
+                ],
+                'number' => $fulfilmentCustomer->customer->platforms->count()
+
+            ];
+        }
+
         if ($fulfilmentCustomer->pallets_storage && $fulfilmentCustomer->rentalAgreement()->where('state', RentalAgreementStateEnum::ACTIVE)->exists()) {
             $subNavigation[] = [
                 'route' => [

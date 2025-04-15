@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\ShopifyFulfilmentStateEnum;
+use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\ShopifyUserHasFulfilment;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +36,7 @@ class CancelFulfilmentOrderShopify extends OrgAction
 
         if (!$response['errors']) {
             $this->update($shopifyUserHasFulfilment, [
-                'state' => ShopifyFulfilmentStateEnum::INCOMPLETE
+                'state' => ChannelFulfilmentStateEnum::INCOMPLETE
             ]);
         }
 

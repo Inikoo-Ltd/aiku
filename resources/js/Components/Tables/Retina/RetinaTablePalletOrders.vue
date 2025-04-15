@@ -101,6 +101,7 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                 [
                     palletReturn.slug
                 ]);
+        case 'retina.dropshipping.orders.index':
         case 'retina.dropshipping.platforms.orders.index':
             return route(
                 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
@@ -122,6 +123,7 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
 function orderRoute(palletReturn: PalletDelivery) {
     switch (route().current()) {
         case 'retina.dropshipping.orders.index':
+        case 'retina.dropshipping.platforms.orders.index':
             return route(
                 'retina.dropshipping.orders.show',
                 [
@@ -179,6 +181,12 @@ function orderRoute(palletReturn: PalletDelivery) {
         <template #cell(shopify_order_id)="{ item: palletReturn }">
             <div class="tabular-nums">
                 {{ palletReturn.shopify_order_id }}
+            </div>
+        </template>
+
+        <template #cell(tiktok_order_id)="{ item: palletReturn }">
+            <div class="tabular-nums">
+                {{ palletReturn.tiktok_order_id }}
             </div>
         </template>
 

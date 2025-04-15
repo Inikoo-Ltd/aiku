@@ -32,7 +32,7 @@ class StoreRetinaProductManual extends RetinaAction
             foreach (Arr::get($modelData, 'products') as $product) {
                 StorePortfolio::run($customer, [
                     'product_id' => $product,
-                    'type' => PortfolioTypeEnum::SHOPIFY->value,
+                    'type' => PortfolioTypeEnum::MANUAL->value,
                 ]);
             }
         });

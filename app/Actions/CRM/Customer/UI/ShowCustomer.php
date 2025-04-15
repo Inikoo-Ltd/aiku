@@ -246,7 +246,13 @@ class ShowCustomer extends OrgAction
             ),
 
             'grp.org.shops.show.crm.customers.show',
-            'grp.org.shops.show.crm.customers.edit'
+            'grp.org.shops.show.crm.customers.edit',
+            'grp.org.shops.show.crm.customers.show.platforms.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show',
+            'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.orders.index'
             => array_merge(
                 ShowShop::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'shop'])),
                 $headCrumb(

@@ -112,7 +112,7 @@ class IndexCustomers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Customer::class);
 
-        if ($parent instanceof Organisation or $parent instanceof Shop) {
+        if ($parent instanceof Organisation || $parent instanceof Shop) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -163,19 +163,6 @@ class IndexCustomers extends OrgAction
                 ->leftJoin('shops', 'shops.id', 'shop_id');
         }
 
-
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                prefix: $prefix,
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
-        */
-
-
         return $queryBuilder
             ->defaultSort('-created_at')
             ->addSelect([
@@ -196,11 +183,10 @@ class IndexCustomers extends OrgAction
                 'platforms.name as platform_name',
                 'currencies.code as currency_code',
             ])
-            ->leftJoin('model_has_platforms', function ($join) {
-                $join->on('customers.id', '=', 'model_has_platforms.model_id')
-                    ->where('model_has_platforms.model_type', '=', class_basename(Customer::class));
+            ->leftJoin('customer_has_platforms', function ($join) {
+                $join->on('customers.id', '=', 'customer_has_platforms.customer_id');
             })
-            ->leftJoin('platforms', 'model_has_platforms.platform_id', '=', 'platforms.id')
+            ->leftJoin('platforms', 'customer_has_platforms.platform_id', '=', 'platforms.id')
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id')
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
@@ -230,7 +216,7 @@ class IndexCustomers extends OrgAction
 
 
             $isDropshipping = false;
-            if ($parent instanceof Shop and $parent->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($parent instanceof Shop && $parent->type == ShopTypeEnum::DROPSHIPPING) {
                 $isDropshipping = true;
             }
 
@@ -308,7 +294,7 @@ class IndexCustomers extends OrgAction
 
         $action = null;
 
-        if (!$scope instanceof Group and $this->canEdit) {
+        if (!$scope instanceof Group && $this->canEdit) {
             $action = [
                 [
                     'type'    => 'button',

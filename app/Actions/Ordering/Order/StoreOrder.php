@@ -71,7 +71,7 @@ class StoreOrder extends OrgAction
             if ($parent instanceof Customer) {
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
-            } elseif ($parent instanceof CustomerClient) {
+            } else {
                 $billingAddress  = $parent->customer->address;
                 $deliveryAddress = $parent->address;
             }
@@ -121,7 +121,7 @@ class StoreOrder extends OrgAction
 
         $modelData = $this->processExchanges($modelData, $parent->shop);
 
-        $order = DB::transaction(function () use ($parent, $modelData, $billingAddress, $deliveryAddress) {
+        $order = DB::transaction(function () use ($modelData, $billingAddress, $deliveryAddress) {
             /** @var Order $order */
             $order = Order::create($modelData);
             $order->refresh();
@@ -200,12 +200,9 @@ class StoreOrder extends OrgAction
 
 
             'customer_reference' => ['sometimes', 'string', 'max:255'],
-
             'state'        => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'status'       => ['sometimes', Rule::enum(OrderStatusEnum::class)],
             'handing_type' => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
-
-
             'tax_category_id'  => ['sometimes', 'required', 'exists:tax_categories,id'],
             'sales_channel_id' => [
                 'sometimes',
@@ -230,11 +227,11 @@ class StoreOrder extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION and !$this->shop->collection_address_id) {
+        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && !$this->shop->collection_address_id) {
             abort(400, 'Collection orders require a collection address');
         }
 
-        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION and !$this->shop->collectionAddress->country_id) {
+        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && !$this->shop->collectionAddress->country_id) {
             abort(400, 'Invalid collection address');
         }
     }
