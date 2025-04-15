@@ -99,6 +99,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $deleted_by
  * @property bool $deleted_from_deleted_invoice_fetch This is used to prevent the invoice from being fetched and updated again in FetchAuroraDeletedInvoices
  * @property int|null $external_invoicer_id
+ * @property string|null $uuid
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

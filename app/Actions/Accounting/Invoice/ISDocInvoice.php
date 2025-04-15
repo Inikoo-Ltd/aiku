@@ -17,12 +17,10 @@ use Adawolfa\ISDOC\Schema\Invoice\AccountingSupplierParty;
 use Adawolfa\ISDOC\Schema\Invoice\ClassifiedTaxCategory;
 use Adawolfa\ISDOC\Schema\Invoice\Contact;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithExportData;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 use Adawolfa\ISDOC\Schema\Invoice\Country;
 use Adawolfa\ISDOC\Schema\Invoice\InvoiceLine;
@@ -35,16 +33,9 @@ use Adawolfa\ISDOC\Schema\Invoice\PostalAddress;
 use Adawolfa\ISDOC\Schema\Invoice\Quantity;
 use Adawolfa\ISDOC\Schema\Invoice\TaxCategory;
 use Adawolfa\ISDOC\Schema\Invoice\TaxSubTotal;
-use Ramsey\Uuid\Uuid;
 
 class ISDocInvoice extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithExportData;
-    use WithInvoicesExport;
-
-
     /**
      * @throws \Adawolfa\ISDOC\WriterException
      */
@@ -54,10 +45,17 @@ class ISDocInvoice extends OrgAction
         $shop        = $invoice->shop;
         $shopAddress = $shop->address;
 
+        if (!$invoice->uuid) {
+            $invoice->update(
+                [
+                    'uuid' => Str::uuid(),
+                ]
+            );
+        }
 
         $isDocInvoice = new InvoiceISDoc(
             $invoice->reference,
-            Uuid::uuid4()->toString(),
+            $invoice->uuid,
             $invoice->date,
             $invoice->tax_amount > 0,
             $invoice->currency->code,
@@ -195,13 +193,14 @@ class ISDocInvoice extends OrgAction
     {
         $this->initialisationFromShop($invoice->shop, $request);
 
+
         $xmlIsDocInvoice = $this->handle($invoice);
 
         $filename = $invoice->slug.'.isdoc';
 
         return response($xmlIsDocInvoice, 200)
             ->header('Content-Type', 'application/xml')
-            ->header('Content-Disposition', 'inline; filename="'.$filename.'.is"');
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
 
