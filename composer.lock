@@ -4,8 +4,66 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a7590eb5ce9a9cb318e89be9a48154d",
+    "content-hash": "388095fcabea0989194935aa2e7afdbf",
     "packages": [
+        {
+            "name": "adawolfa/isdoc",
+            "version": "1.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/adawolfa/isdoc.git",
+                "reference": "f408e497f6e6872cf861d8fb558a6da741f4d283"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/adawolfa/isdoc/zipball/f408e497f6e6872cf861d8fb558a6da741f4d283",
+                "reference": "f408e497f6e6872cf861d8fb558a6da741f4d283",
+                "shasum": ""
+            },
+            "require": {
+                "ext-bcmath": "*",
+                "ext-simplexml": "*",
+                "ext-zip": "*",
+                "nette/utils": "^3.2|^4.0",
+                "php": ">=8.0",
+                "symfony/serializer": "^5.4|^6.0|^7.0"
+            },
+            "require-dev": {
+                "goetas-webservices/xsd-reader": "^0.3|^0.4",
+                "nette/php-generator": "^3.6|^4.0",
+                "phpstan/phpstan": "^1.12",
+                "phpunit/phpunit": "^9.5|^10.0|^11.0",
+                "symfony/console": "^5.4|^6.0|^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.3.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Adawolfa\\ISDOC\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Adam Klvač",
+                    "email": "adam@klva.cz",
+                    "homepage": "https://klva.cz"
+                }
+            ],
+            "description": "ISDOC parser and generator.",
+            "support": {
+                "issues": "https://github.com/adawolfa/isdoc/issues",
+                "source": "https://github.com/adawolfa/isdoc/tree/1.3.1"
+            },
+            "time": "2025-01-04T16:22:27+00:00"
+        },
         {
             "name": "adbario/php-dot-notation",
             "version": "2.5.0",
