@@ -16,9 +16,9 @@ return new class () extends Migration {
 
         Schema::table('customers', function (Blueprint $table) {
             $table->boolean('is_vip')->index()->default('false')->comment('VIP customer');
-            $table->unsignedSmallInteger('as_organisation_id')->index()->nullable()->comment('Indicate customer is a organisation in this group');
+            $table->unsignedSmallInteger('as_organisation_id')->index()->nullable()->comment('Indicate customer is an organisation in this group');
             $table->foreign('as_organisation_id')->references('id')->on('organisations')->nullOnDelete();
-            $table->unsignedSmallInteger('as_employee_id')->index()->nullable()->comment('Indicate customer is a employee');
+            $table->unsignedSmallInteger('as_employee_id')->index()->nullable()->comment('Indicate customer is an employee');
             $table->foreign('as_employee_id')->references('id')->on('employees')->nullOnDelete();
         });
 

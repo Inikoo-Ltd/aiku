@@ -115,8 +115,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property bool $is_vip Indicate if order is for a VIP customer
- * @property int|null $as_organisation_id Indicate if order is for a organisation in this group
- * @property int|null $as_employee_id Indicate if order is for a employee
+ * @property int|null $as_organisation_id Indicate if order is for an organisation in this group
+ * @property int|null $as_employee_id Indicate if order is for an employee
+ * @property int|null $platform_id
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -134,7 +135,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
- * @property-read Collection<int, Platform> $platforms
+ * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read Shop $shop
  * @property-read ShopifyUserHasFulfilment|null $shopifyOrder
@@ -282,19 +283,6 @@ class Order extends Model implements HasMedia, Auditable
         return $this->morphToMany(Address::class, 'model', 'model_has_addresses')->withTimestamps();
     }
 
-    public function platforms(): MorphToMany
-    {
-        return $this->morphToMany(Platform::class, 'model', 'model_has_platforms')->withTimestamps();
-    }
-
-    public function platform(): Platform|null
-    {
-        /** @var Platform $platform */
-        $platform = $this->platforms()->first();
-
-        return $platform;
-    }
-
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
@@ -313,6 +301,11 @@ class Order extends Model implements HasMedia, Auditable
     public function salesChannel(): BelongsTo
     {
         return $this->belongsTo(SalesChannel::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
     }
 
 

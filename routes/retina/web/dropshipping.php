@@ -69,6 +69,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
 
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::get('/', [IndexRetinaPlatformDropshippingOrders::class, 'inPlatform'])->name('index');
+        Route::get('/{order}', [ShowRetinaDropshippingOrder::class, 'inPlatform'])->name('show');
     });
 });
 

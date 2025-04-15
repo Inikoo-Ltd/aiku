@@ -24,9 +24,14 @@ use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\EditFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformCustomerClients;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformOrders;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformPortfolios;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatforms;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\Pallet\DownloadPalletsTemplate;
 use App\Actions\Fulfilment\Pallet\DownloadPalletStoredItemTemplate;
 use App\Actions\Fulfilment\Pallet\PdfPallet;
@@ -160,6 +165,27 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     Route::prefix('customer-clients')->as('.customer-clients')->group(function () {
         Route::get('', [IndexCustomerClients::class, 'inFulfilmentCustomer'])->name('.index');
         Route::get('{customerClient}', [ShowCustomerClient::class, 'inFulfilmentCustomer'])->name('.show');
+    });
+
+    Route::prefix('platforms')->as('.platforms')->group(function () {
+        Route::get('', IndexFulfilmentCustomerPlatforms::class)->name('.index');
+        Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
+            Route::get('', ShowFulfilmentCustomerPlatform::class);
+
+            Route::prefix('/portfolios')->as('.portfolios')->group(function () {
+                Route::get('', IndexFulfilmentCustomerPlatformPortfolios::class)->name('.index');
+                Route::get('/{storedItem}', [ShowStoredItem::class, 'inPlatformInFulfilmentCustomer'])->name('.show')->withoutScopedBindings();
+            });
+            Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
+                Route::get('', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.index');
+                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.show');
+                Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+            });
+            Route::prefix('/orders')->as('.orders')->group(function () {
+                Route::get('', IndexFulfilmentCustomerPlatformOrders::class)->name('.index');
+                Route::get('/{palletReturn}', [ShowStoredItemReturn::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
+            });
+        });
     });
 
     Route::get('/stored-item-audits', [IndexStoredItemAudits::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.index');

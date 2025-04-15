@@ -12,6 +12,9 @@ use App\Actions\Goods\MasterAsset\UI\IndexMasterAssets;
 use App\Actions\Goods\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Goods\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Goods\MasterProductCategory\UI\IndexMasterSubDepartments;
+use App\Actions\Goods\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Goods\MasterProductCategory\UI\ShowMasterFamily;
+use App\Actions\Goods\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Goods\MasterShop\UI\IndexMasterShops;
 use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\Stock\ExportStocks;
@@ -122,12 +125,17 @@ Route::prefix('catalogue')->as('catalogue.')->group(function () {
         Route::get('', ShowMasterShop::class)->name('');
         Route::prefix('departments')->as('.departments.')->group(function () {
             Route::get('index', IndexMasterDepartments::class)->name('index');
+            Route::get('{masterDepartment}', ShowMasterDepartment::class)->name('show');
         });
         Route::prefix('families')->as('.families.')->group(function () {
             Route::get('index', IndexMasterFamilies::class)->name('index');
+            Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
+
         });
         Route::prefix('sub-departments')->as('.sub-departments.')->group(function () {
             Route::get('index', IndexMasterSubDepartments::class)->name('index');
+            Route::get('{masterSubDepartment}', ShowMasterSubDepartment::class)->name('show');
+
         });
         Route::prefix('products')->as('.products.')->group(function () {
             Route::get('index', [IndexMasterAssets::class, 'inMasterShop'])->name('index');

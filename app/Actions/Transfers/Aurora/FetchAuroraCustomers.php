@@ -8,10 +8,13 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Platform;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
@@ -108,39 +111,42 @@ class FetchAuroraCustomers extends FetchAuroraAction
                 }
             }
 
+            if ($customer->shop->type == ShopTypeEnum::DROPSHIPPING) {
 
-            if ($customer->shop->type == ShopTypeEnum::DROPSHIPPING and
-                (
-                    in_array('clients', $with) || in_array('full', $with)
-                )
+                $platform = Platform::where('type', PlatformTypeEnum::AIKU)->first();
 
-            ) {
-                foreach (
-                    DB::connection('aurora')
-                        ->table('Customer Client Dimension')
-                        ->where('Customer Client Customer Key', $sourceData[1])
-                        ->select('Customer Client Key as source_id')
-                        ->orderBy('source_id')->get() as $customerClient
-                ) {
-                    FetchAuroraCustomerClients::run($organisationSource, $customerClient->source_id);
+                if (!$customer->platforms()->where('platform_id', $platform->id)->exists()) {
+                    AttachCustomerToPlatform::make()->action($customer, $platform, [
+                        'reference' => (string) $customer->id
+                    ]);
+                }
+
+
+                if (in_array('clients', $with) || in_array('full', $with)) {
+                    foreach (
+                        DB::connection('aurora')
+                            ->table('Customer Client Dimension')
+                            ->where('Customer Client Customer Key', $sourceData[1])
+                            ->select('Customer Client Key as source_id')
+                            ->orderBy('source_id')->get() as $customerClient
+                    ) {
+                        FetchAuroraCustomerClients::run($organisationSource, $customerClient->source_id);
+                    }
+                }
+
+                if (in_array('portfolio', $with) || in_array('full', $with)) {
+                    foreach (
+                        DB::connection('aurora')
+                            ->table('Customer Portfolio Fact')
+                            ->where('Customer Portfolio Customer Key', $sourceData[1])
+                            ->select('Customer Portfolio Key as source_id')
+                            ->orderBy('source_id')->get() as $portfolio
+                    ) {
+                        FetchAuroraPortfolios::run($organisationSource, $portfolio->source_id);
+                    }
                 }
             }
 
-            if ($customer->shop->type == ShopTypeEnum::DROPSHIPPING and
-                (
-                    in_array('portfolio', $with) || in_array('full', $with)
-                )
-            ) {
-                foreach (
-                    DB::connection('aurora')
-                        ->table('Customer Portfolio Fact')
-                        ->where('Customer Portfolio Customer Key', $sourceData[1])
-                        ->select('Customer Portfolio Key as source_id')
-                        ->orderBy('source_id')->get() as $portfolio
-                ) {
-                    FetchAuroraPortfolios::run($organisationSource, $portfolio->source_id);
-                }
-            }
 
             if (in_array('orders', $with) || in_array('full', $with)) {
                 foreach (

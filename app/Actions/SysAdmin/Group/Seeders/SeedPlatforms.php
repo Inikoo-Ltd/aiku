@@ -8,60 +8,56 @@
 
 namespace App\Actions\SysAdmin\Group\Seeders;
 
-use App\Actions\GrpAction;
-use App\Actions\Ordering\Platform\StorePlatform;
+use App\Actions\Dropshipping\Platform\StorePlatform;
+use App\Actions\Dropshipping\Platform\UpdatePlatform;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\SysAdmin\Group;
-use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedPlatforms extends GrpAction
+class SeedPlatforms extends OrgAction
 {
     use AsAction;
     use WithAttachMediaToModel;
 
     public function handle(Group $group): void
     {
-
         foreach (PlatformTypeEnum::cases() as $case) {
-
             $code = $case->value;
 
             if ($group->platforms()->where('code', $code)->exists()) {
-                continue;
-            }
+                $platform = $group->platforms()->where('code', $code)->first();
 
-            StorePlatform::make()->action(
-                $group,
-                [
-                'code' => $code,
-                'name' => $case->labels()[$case->value],
-                'type' => $case
-                ]
-            );
+                UpdatePlatform::make()->action($platform, [
+                    'name' => $case->labels()[$case->value],
+                ]);
+            } else {
+                StorePlatform::make()->action(
+                    $group,
+                    [
+                        'code' => $code,
+                        'name' => $case->labels()[$case->value],
+                        'type' => $case
+                    ]
+                );
+            }
         }
     }
 
-    public string $commandSignature = 'group:seed-platforms {group : group slug}';
+    public string $commandSignature = 'group:seed-platforms';
 
     public function asCommand(Command $command): int
     {
-        try {
-            /** @var Group $group */
-            $group       = Group::where('slug', $command->argument('group'))->firstOrFail();
+        foreach (Group::all() as $group) {
             $this->group = $group;
             app()->instance('group', $group);
             setPermissionsTeamId($group->id);
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
+            $this->handle($group);
         }
 
-        $this->handle($group);
-        echo "Success seed the platforms ✅ \n";
+        $command->line("Success seed the platforms ✅");
 
         return 0;
     }

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:24:56 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:24:56 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
@@ -15,15 +15,17 @@ enum PlatformTypeEnum: string
     use EnumHelperTrait;
 
     case SHOPIFY = 'shopify';
-    case TIKTOK  = 'tiktok';
-    case WOOCOMMERCE  = 'woocommerce';
+    case TIKTOK = 'tiktok';
+    case WOOCOMMERCE = 'woocommerce';
+    case AIKU = 'aiku';
 
     public function labels(): array
     {
         return [
-            'shopify' => 'Shopify',
-            'tiktok'  => 'Tiktok',
-            'woocommerce'  => 'Woo Commerce',
+            'shopify'     => 'Shopify',
+            'tiktok'      => 'Tiktok',
+            'woocommerce' => 'Woo Commerce',
+            'aiku'        => __('Manual'),
         ];
     }
 }
