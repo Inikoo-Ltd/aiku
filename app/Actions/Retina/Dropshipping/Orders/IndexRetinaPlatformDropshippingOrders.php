@@ -44,7 +44,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-        if($this->platformUser instanceof ShopifyUser) {
+        if ($this->platformUser instanceof ShopifyUser) {
             $query = QueryBuilder::for(ShopifyUserHasFulfilment::class);
         } elseif ($this->platformUser instanceof TiktokUser) {
             $query = QueryBuilder::for(TiktokUserHasOrder::class);
