@@ -167,62 +167,64 @@ class ShowInvoice extends OrgAction
 
         if ($this->parent instanceof Fulfilment) {
             $actions[] =
-            $this->isSupervisor ? [
-                'supervisor' => true,
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.invoice.delete',
-                    'parameters' => [
-                        'invoice' => $invoice->id
+                $this->isSupervisor
+                    ? [
+                    'supervisor' => true,
+                    'type'       => 'button',
+                    'style'      => 'red_outline',
+                    'tooltip'    => __('delete'),
+                    'icon'       => 'fal fa-trash-alt',
+                    'key'        => 'delete_booked_in',
+                    'ask_why'    => true,
+                    'route'      => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
                     ]
                 ]
-            ] : [
-                'supervisor' => false,
-                'supervisors_route' => [
-                    'method'     => 'get',
-                    'name'       => 'grp.json.fulfilment.supervisors.index',
-                    'parameters' => [
-                        'fulfilment' => $invoice->shop->fulfilment->slug
+                    : [
+                    'supervisor'        => false,
+                    'supervisors_route' => [
+                        'method'     => 'get',
+                        'name'       => 'grp.json.fulfilment.supervisors.index',
+                        'parameters' => [
+                            'fulfilment' => $invoice->shop->fulfilment->slug
+                        ]
+                    ],
+                    'type'              => 'button',
+                    'style'             => 'red_outline',
+                    'tooltip'           => __('Delete'),
+                    'icon'              => 'fal fa-trash-alt',
+                    'key'               => 'delete_booked_in',
+                    'ask_why'           => true,
+                    'route'             => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
                     ]
-                ],
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('Delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.invoice.delete',
-                    'parameters' => [
-                        'invoice' => $invoice->id
-                    ]
-                ]
-            ];
+                ];
         } else {
             $actions[] =
-            [
-                'supervisor' => true,
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.invoice.delete',
-                    'parameters' => [
-                        'invoice' => $invoice->id
+                [
+                    'supervisor' => true,
+                    'type'       => 'button',
+                    'style'      => 'red_outline',
+                    'tooltip'    => __('delete'),
+                    'icon'       => 'fal fa-trash-alt',
+                    'key'        => 'delete_booked_in',
+                    'ask_why'    => true,
+                    'route'      => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
                     ]
-                ]
-            ];
+                ];
         }
 
         if ($this->parent instanceof Organisation) {
@@ -286,6 +288,31 @@ class ShowInvoice extends OrgAction
                 ];
         }
 
+        $exportInvoiceOptions=[
+            [
+                'type'       => 'pdf',
+                'icon'       => 'fas fa-file-pdf',
+                'label'      => 'PDF',
+                'tooltip'    => __('Download PDF'),
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ],
+            [
+                'type'       => 'isDoc',
+                'icon'       => 'fas fa-hockey-puck',
+                'tooltip'    => __('Download Doc'),
+                'label'      => 'IsDoc',
+                'name'       => 'grp.org.accounting.invoices.show.is_doc',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ]
+
+        ];
 
 
         return Inertia::render(
@@ -320,13 +347,9 @@ class ShowInvoice extends OrgAction
 
                 ...$payBoxData,
 
-                'exportPdfRoute' => [
-                    'name'       => 'grp.org.accounting.invoices.download',
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-                ],
+                'invoiceExportOptions' => $exportInvoiceOptions,
+
+
                 'box_stats'      => $this->getBoxStats($invoice),
                 'list_refunds'   => RefundResource::collection($invoice->refunds),
                 'invoice'        => InvoiceResource::make($invoice),
