@@ -6,14 +6,19 @@ import { faChartLine, faPlay } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { faCog, faFolderOpen, faSeedling, faTimesCircle, faTriangle } from "@fal"
+import { faCog, faFolderOpen, faSeedling, faTimesCircle, faTriangle, faSitemap } from "@fal"
 import "tippy.js/dist/tippy.css"
 import DashboardOld from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import { capitalize } from "@/Composables/capitalize"
 
-library.add(faTriangle, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine)
 
-defineProps<{
+import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
+import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
+import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
+
+library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine)
+
+const props = defineProps<{
 	title: string
 	groupStats: {
 		currency: {
@@ -146,7 +151,10 @@ defineProps<{
 		}
 		settings: {}
 	}
+	dashboard: {}
 }>()
+
+console.log(props)
 
 
 const layout = inject("layout", layoutStructure)
@@ -186,6 +194,19 @@ const options = {
 			<DashboardOld 
 				:dashboard="dashboard_stats"
 			/>
+
+			<DashboardSettings
+				:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+				:settings="props.dashboard?.super_blocks?.[0].settings"
+			/>
+			
+			<DashboardTable
+				:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
+				:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+				:settings="props.dashboard?.super_blocks?.[0].settings"
+			/>
+
+			<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
 		</div>
 	</div>
 </template>
