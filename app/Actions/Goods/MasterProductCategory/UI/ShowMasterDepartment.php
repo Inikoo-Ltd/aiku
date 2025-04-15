@@ -76,9 +76,9 @@ class ShowMasterDepartment extends GrpAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'workshop',
+                            'label' => 'blueprint',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
