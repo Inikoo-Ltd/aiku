@@ -41,15 +41,9 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'google_drive_folder_key')) {
             data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
         }
-        if (Arr::has($modelData, 'isdoc_invoice')) {
-            data_set($modelData, "settings.isdoc_invoice", Arr::pull($modelData, 'isdoc_invoice'));
+        if (Arr::has($modelData, 'show_isdoc_invoice')) {
+            data_set($modelData, "settings.show_isdoc_invoice", Arr::pull($modelData, 'show_isdoc_invoice'));
         }
-
-        if (Arr::has($modelData, 'isdoc_invoice_payment')) {
-            data_set($modelData, "settings.isdoc_invoice_payment", Arr::pull($modelData, 'isdoc_invoice_payment'));
-        }
-
-
 
 
         if (Arr::has($modelData, 'address')) {
@@ -111,8 +105,7 @@ class UpdateOrganisation extends OrgAction
             'contact_name'            => ['sometimes', 'string', 'max:255'],
             'google_client_id'        => ['sometimes', 'string'],
             'google_client_secret'    => ['sometimes', 'string'],
-            'isdoc_invoice'        => ['sometimes', 'boolean'],
-            'isdoc_invoice_payment' => ['sometimes', 'boolean'],
+            'show_isdoc_invoice'        => ['sometimes', 'boolean'],
             'google_drive_folder_key' => ['sometimes', 'string'],
             'address'                 => ['sometimes', 'required', new ValidAddress()],
             'language_id'             => ['sometimes', 'exists:languages,id'],

@@ -110,15 +110,10 @@ class EditOrganisationSettings extends OrgAction
                             "label"  => __("ISDoc invoice"),
                             "icon"   => "fa-light fa-file-invoice-dollar",
                             "fields" => [
-                                'isdoc_invoice' => [
+                                'show_isdoc_invoice' => [
                                     'type'  => 'toggle',
-                                    'label' => __('Apply ISDoc invoice'),
-                                    'value' => Arr::get($organisation->settings, 'isdoc_invoice', false),
-                                ],
-                                'isdoc_invoice_payment' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Show ISDoc payment'),
-                                    'value' => Arr::get($organisation->settings, 'isdoc_invoice_payment', false),
+                                    'label' => __('Show ISDoc invoice'),
+                                    'value' => Arr::get($organisation->settings, 'show_isdoc_invoice', false),
                                 ],
                             ],
                         ],
