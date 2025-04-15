@@ -51,8 +51,8 @@ return new class () extends Migration {
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
                 $columnsToDrop = collect(\DB::select("
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = '$tableName' 
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = '$tableName'
                     AND (column_name LIKE '%baskets_created%' OR column_name LIKE '%baskets_updated%')
                 "))->pluck('column_name')->toArray();
 

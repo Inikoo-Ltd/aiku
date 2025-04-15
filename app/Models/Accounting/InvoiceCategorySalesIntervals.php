@@ -141,6 +141,10 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Currency|null $currency
+ * @property-read Group|null $group
+ * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
+ * @property-read Organisation|null $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals query()

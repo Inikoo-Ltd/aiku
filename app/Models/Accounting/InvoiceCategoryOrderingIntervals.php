@@ -139,6 +139,9 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Group|null $group
+ * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
+ * @property-read Organisation|null $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryOrderingIntervals query()

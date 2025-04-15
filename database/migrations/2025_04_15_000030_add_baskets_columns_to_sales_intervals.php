@@ -45,13 +45,12 @@ return new class () extends Migration {
 
     public function down(): void
     {
-
         Schema::table('group_sales_intervals', function (Blueprint $table) {
             $columnsToDrop = collect(
                 \DB::select(
                     "
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'group_sales_intervals' 
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'group_sales_intervals'
                     AND (column_name LIKE '%baskets_created_grp_currency%' OR column_name LIKE '%baskets_updated_grp_currency%')
                 "
                 )
@@ -66,12 +65,12 @@ return new class () extends Migration {
             $columnsToDrop = collect(
                 \DB::select(
                     "
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'organisation_sales_intervals' 
-                    AND (column_name LIKE '%baskets_created_org_currency%' OR 
-                         column_name LIKE '%baskets_updated_org_currency%' OR 
-                         column_name LIKE '%baskets_created_grp_currency%' OR 
-                         column_name LIKE '%baskets_updated_grp_currency%' 
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'organisation_sales_intervals'
+                    AND (column_name LIKE '%baskets_created_org_currency%' OR
+                         column_name LIKE '%baskets_updated_org_currency%' OR
+                         column_name LIKE '%baskets_created_grp_currency%' OR
+                         column_name LIKE '%baskets_updated_grp_currency%'
                         )
                 "
                 )
@@ -86,13 +85,13 @@ return new class () extends Migration {
             $columnsToDrop = collect(
                 \DB::select(
                     "
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'shop_sales_intervals' 
-                    AND (column_name LIKE '%baskets_created%' OR 
-                         column_name LIKE '%baskets_updated%' OR 
-                         column_name LIKE '%baskets_created_org_currency%' OR 
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'shop_sales_intervals'
+                    AND (column_name LIKE '%baskets_created%' OR
+                         column_name LIKE '%baskets_updated%' OR
+                         column_name LIKE '%baskets_created_org_currency%' OR
                          column_name LIKE '%baskets_updated_org_currency%' OR
-                         column_name LIKE '%baskets_created_grp_currency%' OR 
+                         column_name LIKE '%baskets_created_grp_currency%' OR
                          column_name LIKE '%baskets_updated_grp_currency%'
                         )
                 "
@@ -103,8 +102,5 @@ return new class () extends Migration {
                 $table->dropColumn($columnsToDrop);
             }
         });
-
-
-
     }
 };
