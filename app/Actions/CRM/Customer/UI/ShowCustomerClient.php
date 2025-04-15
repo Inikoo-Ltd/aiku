@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\WithWebUserMeta;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -39,6 +40,7 @@ class ShowCustomerClient extends OrgAction
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
+    use WithCustomerPlatformSubNavigation;
 
     private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
 
@@ -101,7 +103,11 @@ class ShowCustomerClient extends OrgAction
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform) {
-            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
+            if($this->shop->type == ShopTypeEnum::FULFILMENT) {
+                $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
+            } else {
+                $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->customer, $request);
+            }
         }
 
         return Inertia::render(
@@ -329,6 +335,26 @@ class ShowCustomerClient extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show'
+            => array_merge(
+                (new ShowCustomerPlatform())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
+                $headCrumb(
+                    $customerClient,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -375,6 +401,13 @@ class ShowCustomerClient extends OrgAction
                 ]
             ],
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show' => [
+                'label' => $customerClient->name,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => request()->route()->originalParameters()
+                ]
+            ],
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,
