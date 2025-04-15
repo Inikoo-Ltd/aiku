@@ -16,6 +16,7 @@ import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
 import { faSitemap } from "@fal"
 import DashboardTableNewwww from "@/Components/DataDisplay/Dashboard/DashboardTableNewwww.vue"
 import DashboardSettingsNew from "@/Components/DataDisplay/Dashboard/DashboardSettingsNew.vue"
+import DashboardWidgetNewww from "@/Components/DataDisplay/Dashboard/DashboardWidgetNewww.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
@@ -104,6 +105,8 @@ provide('isLoadingOnTable', isLoadingOnTable)
 		:settings="props.dashboard?.super_blocks?.[0].settings"
 	/>
 
+	<DashboardWidgetNewww v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
+	
 	<!-- {{ props.dashboard?.super_blocks?.[0].blocks[0] }} -->
 
 	<div class="grid grid-cols-12 m-3 gap-4 border-t-4 border-red-500 mt-12 pt-12">
@@ -117,12 +120,12 @@ provide('isLoadingOnTable', isLoadingOnTable)
 
 	
 	
-				<div class="col-span-12">
+				<!-- <div class="col-span-12">
 					<Dashboard 
 						:dashboard="dashboard_stats"
 						:checked="checked"
 						tableType="org"/>	
-				</div>
+				</div> -->
 		
 
 	</div>

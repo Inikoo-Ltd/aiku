@@ -94,7 +94,7 @@ const props = defineProps<{
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
-console.log('%c Table ', 'background: red; color: white', props.tableData.tables[props.tableData.current_tab]);
+console.log('%c Table ', 'background: red; color: white', props.tableData.tables);
 
 const compTableHeaderColumns = computed<Header>(() => {
 	if (props.settings.data_display_type.value === 'minified') {
