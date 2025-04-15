@@ -33,35 +33,19 @@ trait WithDashboardIntervalValues
             $rawValue = $intervalsModel->{$field.'_'.$interval->value};
 
 
-            if (is_null($rawValue)) {
-                // dd($intervalsModel, $field, $interval->value, $field.'_'.$interval->value);
-            }
-
             $data = [
-                'formatted_value' => $rawValue,
-                'raw_value'       => $rawValue,
-                'tooltip'         => '',
+                'raw_value' => $rawValue,
+                'tooltip'   => '',
             ];
 
             switch ($dataType) {
-                case DashboardDataType::NUMBER:
-
-                    if (is_null($rawValue)) {
-                        dd($field, $interval->value, $intervalsModel);
-                    }
-
-                    $data['formatted_value'] = Number::format($rawValue);
-                    break;
                 case DashboardDataType::NUMBER_MINIFIED:
                     $data['formatted_value'] = Number::abbreviate($rawValue);
                     break;
                 case DashboardDataType::CURRENCY:
-
-
                     if (is_null(Arr::get($options, 'currency'))) {
                         dd($intervalsModel, $field, $interval->value, $field.'_'.$interval->value, $options);
                     }
-
                     $data['formatted_value'] = Number::currency($rawValue, Arr::get($options, 'currency'));
                     break;
                 case DashboardDataType::CURRENCY_MINIFIED:
@@ -72,6 +56,13 @@ trait WithDashboardIntervalValues
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
                     $data['formatted_value'] = Number::delta($rawValue, $intervalsModel->{$field.'_'.$interval->value}.'_ly');
+                    break;
+                default: // as DashboardDataType::NUMBER:
+                    if (is_null($rawValue)) {
+                        dd($field, $interval->value, $intervalsModel);
+                    }
+
+                    $data['formatted_value'] = Number::format($rawValue);
                     break;
             }
 
@@ -84,7 +75,6 @@ trait WithDashboardIntervalValues
         string $columnFingerprint
     ): array {
         $originalColumnFingerprint = $columnFingerprint;
-
 
 
         $dataType = DashboardDataType::NUMBER;
@@ -114,19 +104,7 @@ trait WithDashboardIntervalValues
             $options['currency'] = $intervalsModel->invoiceCategory->currency->code;
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
-
-            if ($intervalsModel instanceof OrganisationSalesIntervals) {
-                $options['currency'] = $intervalsModel->organisation->currency->code;
-            } else {
-
-                if (is_null($intervalsModel->organisation)) {
-                    //  dd($intervalsModel, $columnFingerprint);
-                }
-
-                $options['currency'] = $intervalsModel->organisation->currency->code;
-            }
-
-
+            $options['currency'] = $intervalsModel->organisation->currency->code;
         } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
             $options['currency'] = $intervalsModel->group->currency->code;
         }
