@@ -111,8 +111,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $actions = [];
 
-
-        if ($this->canEdit) {
             $actions = match ($order->state) {
                 OrderStateEnum::CREATING => [
                     [
@@ -137,97 +135,16 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                             'label'   => __('submit'),
                             'key'     => 'action',
                             'route'   => [
-                                // 'method'     => 'patch',
-                                // 'name'       => 'grp.models.order.state.submitted',
-                                // 'parameters' => [
-                                //     'order' => $order->id
-                                // ]
+                                'method'     => 'patch',
+                                'name'       => 'retina.models.order.submit',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
                             ]
                         ] : [],
                 ],
-                OrderStateEnum::SUBMITTED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Send to Warehouse'),
-                        'label'   => __('send to warehouse'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.in-warehouse',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::IN_WAREHOUSE => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Handle'),
-                        'label'   => __('Handle'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.handling',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::HANDLING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Pack'),
-                        'label'   => __('Pack'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.packed',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::PACKED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Finalize'),
-                        'label'   => __('Finalize'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.finalized',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::FINALISED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Dispatch'),
-                        'label'   => __('Dispatch'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.dispatched',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
                 default => []
             };
-        }
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
