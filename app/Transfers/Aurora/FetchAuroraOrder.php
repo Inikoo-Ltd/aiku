@@ -14,7 +14,9 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +30,11 @@ class FetchAuroraOrder extends FetchAurora
 
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return;
+        }
+
+        $platform = null;
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $platform = Platform::where('type', PlatformTypeEnum::AIKU)->first();
         }
 
         $deliveryData = [];
@@ -174,6 +181,7 @@ class FetchAuroraOrder extends FetchAurora
         }
 
 
+
         $this->parsedData["order"] = [
             'date'            => $date,
             'submitted_at'    => $this->parseDatetime($this->auroraModelData->{'Order Submitted by Customer Date'}),
@@ -215,6 +223,9 @@ class FetchAuroraOrder extends FetchAurora
 
         ];
 
+        if ($platform) {
+            $this->parsedData["order"]['platform_id'] = $platform->id;
+        }
 
         if ($paymentAmount) {
             $this->parsedData["order"]['payment_amount'] = $paymentAmount;

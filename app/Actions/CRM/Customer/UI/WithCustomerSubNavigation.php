@@ -113,6 +113,21 @@ trait WithCustomerSubNavigation
                 'number'   => $customer->stats->number_web_users
             ],
             [
+                'route' => [
+                    'name'      => 'grp.org.shops.show.crm.customers.show.platforms.index',
+                    'parameters' => $request->route()->originalParameters()
+
+                ],
+
+                'label'     => __('Channels'),
+                'leftIcon'  => [
+                    'icon'    => 'fal fa-parachute-box',
+                    'tooltip' => __('Channels'),
+                ],
+                'number' => $customer->platforms->count()
+
+            ],
+            [
                 'label'    => __('Clients'),
                 'number'   => $customer->stats->number_current_customer_clients,
                 'route'     => [

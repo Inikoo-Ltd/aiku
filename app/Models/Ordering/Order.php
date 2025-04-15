@@ -134,7 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
- * @property-read Collection<int, Platform> $platforms
+ * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read Shop $shop
  * @property-read ShopifyUserHasFulfilment|null $shopifyOrder
@@ -282,19 +282,6 @@ class Order extends Model implements HasMedia, Auditable
         return $this->morphToMany(Address::class, 'model', 'model_has_addresses')->withTimestamps();
     }
 
-    public function platforms(): MorphToMany
-    {
-        return $this->morphToMany(Platform::class, 'model', 'model_has_platforms')->withTimestamps();
-    }
-
-    public function platform(): Platform|null
-    {
-        /** @var Platform $platform */
-        $platform = $this->platforms()->first();
-
-        return $platform;
-    }
-
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
@@ -313,6 +300,11 @@ class Order extends Model implements HasMedia, Auditable
     public function salesChannel(): BelongsTo
     {
         return $this->belongsTo(SalesChannel::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
     }
 
 

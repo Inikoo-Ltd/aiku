@@ -85,7 +85,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
- * @property-read HistoricAsset|null $historicAssetWithTrashed
  * @property-read Invoice|null $invoice
  * @property-read Model|\Eloquent $item
  * @property-read Collection<int, Offer> $offer
@@ -171,14 +170,10 @@ class Transaction extends Model
         return $this->belongsTo(HistoricAsset::class);
     }
 
-    /**
-     * Get the historic asset relationship including trashed records.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function historicAssetWithTrashed(): BelongsTo
+
+    public function getHistoricAssetWithTrashed(): HistoricAsset
     {
-        return $this->belongsTo(HistoricAsset::class)->withTrashed();
+        return HistoricAsset::withTrashed()->where('id', $this->historic_asset_id)->first();
     }
 
     public function feedbacks(): MorphToMany

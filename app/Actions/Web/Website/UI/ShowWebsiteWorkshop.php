@@ -132,6 +132,19 @@ class ShowWebsiteWorkshop extends OrgAction
                                 'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
+                        ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'icon'  => ["fas", "fa-save"],
+                            'label' => __('publish'),
+                            'route' => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.website.update',
+                                'parameters' => [
+                                    'website' => $website->id
+                                ]
+                            ]
                         ]
                     ],
                 ],
@@ -140,7 +153,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
-
+                'settings' => $website->settings,
                ...$tabs
             ]
         );

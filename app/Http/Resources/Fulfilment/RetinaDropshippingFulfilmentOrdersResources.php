@@ -15,7 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property string $slug
  * @property string $customer_reference
- * @property \App\Enums\Dropshipping\ShopifyFulfilmentStateEnum $state
+ * @property \App\Enums\Dropshipping\ChannelFulfilmentStateEnum $state
  * @property string $status
  * @property string $notes
  * @property \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
@@ -30,6 +30,7 @@ class RetinaDropshippingFulfilmentOrdersResources extends JsonResource
         return [
             'id' => $this->id,
             'shopify_order_id' => $this->shopify_order_id,
+            'tiktok_order_id' => $this->tiktok_order_id,
             'shopify_fulfilment_id' => $this->shopify_fulfilment_id,
             'reference' => $this->model->reference,
             'model' => class_basename($this->model),

@@ -32,6 +32,9 @@ class RefundToInvoice extends OrgAction
     private Invoice $invoice;
     private PaymentAccount $paymentAccount;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $type        = Arr::get($modelData, 'type_refund', 'payment');
@@ -99,6 +102,9 @@ class RefundToInvoice extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function afterValidator(Validator $validator): void
     {
         $type = $this->get("type_refund") ?? 'payment';
@@ -148,6 +154,9 @@ class RefundToInvoice extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $this->asAction = true;

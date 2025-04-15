@@ -16,6 +16,7 @@ import {
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { computed, defineAsyncComponent, ref } from "vue";
+import DepartmentShowcase from "@/Components/Showcases/Grp/DepartementShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue";
@@ -26,6 +27,7 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize"
+import DepartementMasterWorkshop from '@/Components/Showcases/Grp/DepartementMasterWorkshop.vue';
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 library.add(
     faFolder,
@@ -64,6 +66,8 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components = {
+        showcase : DepartmentShowcase,
+        /* showcase : DepartementMasterWorkshop, */
         products: TableProducts,
         families: TableFamilies,
         mailshots: TableMailshots,

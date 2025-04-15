@@ -34,15 +34,19 @@ class StoreAppointment extends OrgAction
         data_set($modelData, 'name', $modelData['contact_name']);
         data_set($modelData, 'shop_id', $shop->id);
 
+        /** @var Customer $customer */
         $customer = StoreCustomer::run($shop, Arr::only($modelData, ['contact_name', 'company_name', 'email']));
 
         /** @var \App\Models\CRM\Appointment $appointment */
         $appointment = $customer->appointments()->create(Arr::except($modelData, ['contact_name', 'company_name', 'email']));
 
-        match($appointment->event) {
-            AppointmentEventEnum::CALLBACK  => CreateMeetingUsingZoom::run($appointment),
-            AppointmentEventEnum::IN_PERSON => $appointment->update(['event_address' => 'https://maps.app.goo.gl/Gr6RQbgkx2gkXuae7'])
-        };
+
+        if ($appointment->event == AppointmentEventEnum::CALLBACK) {
+            CreateMeetingUsingZoom::run($appointment);
+        } elseif ($appointment->event == AppointmentEventEnum::IN_PERSON) {
+            $appointment->update(['event_address' => 'https://maps.app.goo.gl/Gr6RQbgkx2gkXuae7']);
+        }
+
 
         return $appointment;
     }
@@ -65,15 +69,15 @@ class StoreAppointment extends OrgAction
     public function rules(): array
     {
         return [
-            'customer_id'              => ['sometimes'],
-            'contact_name'             => ['sometimes', 'string'],
-            'company_name'             => ['sometimes', 'string'],
-            'email'                    => ['sometimes', 'email'],
-            'schedule_at'              => ['required'],
-            'description'              => ['nullable', 'string', 'max:255'],
-            'type'                     => ['required', Rule::enum(AppointmentTypeEnum::class)],
-            'event'                    => ['required', Rule::enum(AppointmentEventEnum::class)],
-            'event_address'            => ['required', 'string']
+            'customer_id'   => ['sometimes'],
+            'contact_name'  => ['sometimes', 'string'],
+            'company_name'  => ['sometimes', 'string'],
+            'email'         => ['sometimes', 'email'],
+            'schedule_at'   => ['required'],
+            'description'   => ['nullable', 'string', 'max:255'],
+            'type'          => ['required', Rule::enum(AppointmentTypeEnum::class)],
+            'event'         => ['required', Rule::enum(AppointmentEventEnum::class)],
+            'event_address' => ['required', 'string']
         ];
     }
 
@@ -82,28 +86,11 @@ class StoreAppointment extends OrgAction
      */
     public function asController(Customer $customer, ActionRequest $request): Model
     {
-        $this->fillFromRequest($request);
-        $request->validate();
+        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer->shop, $request->validated());
+        return $this->handle($customer->shop, $this->validatedData);
     }
 
-    public function inShop(Shop $shop, ActionRequest $request): Model
-    {
-        $this->fillFromRequest($request);
-        $request->validate();
-
-        return $this->handle($shop, $request->validated());
-    }
-
-    public function inCustomer(ActionRequest $request): Model
-    {
-        $this->fillFromRequest($request);
-        $request->validate();
-        $shop = $request->get('website')->shop;
-
-        return $this->handle($shop, $request->validated());
-    }
 
     public string $commandSignature = 'appointment:book {shop} {hour} {minute}';
 
@@ -125,11 +112,11 @@ class StoreAppointment extends OrgAction
         }
 
         $this->setRawAttributes([
-            'name'                 => fake()->name,
-            'schedule_at'          => now()->setHours($hour)->setMinutes($minute),
-            'type'                 => AppointmentTypeEnum::LEAD->value,
-            'event'                => AppointmentEventEnum::IN_PERSON->value,
-            'event_address'        => fake()->address
+            'name'          => fake()->name,
+            'schedule_at'   => now()->setHours($hour)->setMinutes($minute),
+            'type'          => AppointmentTypeEnum::LEAD->value,
+            'event'         => AppointmentEventEnum::IN_PERSON->value,
+            'event_address' => fake()->address
         ]);
 
         try {

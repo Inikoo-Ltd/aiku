@@ -51,11 +51,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -359,18 +359,15 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Portfolio::class);
     }
 
-    public function platforms(): MorphToMany
+    public function platforms(): BelongsToMany
     {
-        return $this->morphToMany(Platform::class, 'model', 'model_has_platforms')
+        return $this->belongsToMany(Platform::class, 'customer_has_platforms')
             ->withPivot('group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
     }
 
-    public function platform(): Platform|null
+    public function getMainPlatform(): Platform|null
     {
-        /** @var Platform $platform */
-        $platform = $this->platforms()->first();
-
-        return $platform;
+        return $this->platforms()->first();
     }
 
     public function transactions(): HasMany

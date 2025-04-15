@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  *
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $portfolio_id
+ * @property-read Portfolio|null $portfolio
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct query()
@@ -23,4 +26,9 @@ use Illuminate\Database\Eloquent\Model;
 class TiktokUserHasProduct extends Model
 {
     protected $guarded = [];
+
+    public function portfolio(): BelongsTo
+    {
+        return $this->belongsTo(Portfolio::class);
+    }
 }

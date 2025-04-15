@@ -50,19 +50,23 @@ onBeforeMount(() => {
 
 <template>
    <div class="select-container">
-    <FontAwesomeIcon
-      icon="fas fa-watch-calculator"
-      aria-hidden="true"
-      fixed-width
-      class="text-gray-500 mr-2"
-    />
+  
     <Select
       v-model="selectedPeriodType"
       :options="periodOptions"
       optionLabel="label"
       optionValue="value"
       class="custom-select"
+    >
+    <template #dropdownicon>
+      <FontAwesomeIcon
+      icon="fas fa-watch-calculator"
+      aria-hidden="true"
+      fixed-width
+      class="text-gray-500 mr-2"
     />
+    </template>
+    </Select>
   </div>
   </template>
   

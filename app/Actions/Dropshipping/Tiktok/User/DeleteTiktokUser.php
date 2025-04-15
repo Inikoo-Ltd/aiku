@@ -8,8 +8,11 @@
 
 namespace App\Actions\Dropshipping\Tiktok\User;
 
+use App\Actions\CRM\Customer\DetachCustomerToPlatform;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +26,8 @@ class DeleteTiktokUser extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser): void
     {
+        DetachCustomerToPlatform::run($tiktokUser->customer, Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first());
+
         $tiktokUser->delete();
     }
 

@@ -118,7 +118,6 @@ const fetchProductList = async (url?: string) => {
     const data = response.data;
 
     if (url && optionsLinks.value?.next) {
-      // products.value = [...products.value, ...data.data];
       products.value = data.data;
     } else {
       resetProducts();

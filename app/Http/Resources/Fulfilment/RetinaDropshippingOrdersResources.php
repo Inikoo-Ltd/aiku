@@ -15,7 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property string $slug
  * @property string $customer_reference
- * @property \App\Enums\Dropshipping\ShopifyFulfilmentStateEnum $state
+ * @property \App\Enums\Dropshipping\ChannelFulfilmentStateEnum $state
  * @property string $status
  * @property string $notes
  * @property \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer

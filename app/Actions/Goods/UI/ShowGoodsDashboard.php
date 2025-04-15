@@ -38,15 +38,13 @@ class ShowGoodsDashboard extends GrpAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $routeParameters = $request->route()->originalParameters();
-
         return Inertia::render(
             'Goods/GoodsDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs(),
                 'title'        => __('goods'),
                 'pageHead'     => [
-                    'icon'      => [
+                    'icon'  => [
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'title' => __('goods')
                     ],
@@ -57,7 +55,7 @@ class ShowGoodsDashboard extends GrpAction
                         [
                             'name'  => __('SKUs families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
-                            'route'  => [
+                            'route' => [
                                 'name'       => 'grp.goods.stock-families.index',
                                 'parameters' => []
                             ],
@@ -69,7 +67,7 @@ class ShowGoodsDashboard extends GrpAction
                         [
                             'name'  => 'SKUs',
                             'icon'  => ['fal', 'fa-box'],
-                            'route'  => [
+                            'route' => [
                                 'name'       => 'grp.goods.stocks.index',
                                 'parameters' => []
                             ],
@@ -81,10 +79,13 @@ class ShowGoodsDashboard extends GrpAction
                         [
                             'name'  => 'Master Shops',
                             'icon'  => ['fal', 'fa-books'],
-                            'route'  => [
+                            'route' => [
                                 'name'       => 'grp.goods.catalogue.shops.index',
                                 'parameters' => []
                             ],
+                            'index' => [
+                                'number' => $this->group->goodsStats->number_master_shops
+                            ]
                         ]
                     ]
                 ],

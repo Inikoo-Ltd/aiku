@@ -27,6 +27,14 @@ function customerRoute(customer: FulfilmentCustomer) {
             return route(
                 "grp.org.shops.show.crm.customers.show.customer-clients.show",
                 [route().params["organisation"], route().params["shop"], route().params["customer"], customer.ulid])
+        case "grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index":
+            return route(
+                "grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show",
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["customerHasPlatform"], customer.ulid])
+        case "grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index":
+            return route(
+                "grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show",
+                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["customerHasPlatform"], customer.ulid])
         case "grp.org.fulfilments.show.crm.customers.show.customer-clients.index":
             return route(
                 "grp.org.fulfilments.show.crm.customers.show.customer-clients.show",
@@ -42,13 +50,7 @@ function customerRoute(customer: FulfilmentCustomer) {
                 [customer.ulid]
             )
         default:
-            return route(
-                "grp.org.shops.show.crm.customers.show",
-                [
-                    route().params["organisation"],
-                    route().params["shop"],
-                    customer.slug
-                ])
+            return ''
     }
 }
 </script>

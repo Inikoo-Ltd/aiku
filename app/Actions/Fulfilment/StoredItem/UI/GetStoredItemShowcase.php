@@ -21,7 +21,6 @@ class GetStoredItemShowcase
     {
 
         $lastAudit = $storedItem->fulfilmentCustomer->storedItemAudits->last();
-
         return [
             'stored_item'         => StoredItemResource::make($storedItem)->getArray(),
             'pallets'             => $storedItem->pallets->map(function (Pallet $pallet) {

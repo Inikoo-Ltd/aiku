@@ -187,6 +187,21 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'aurora'           => [
+            'connection'      => 'redis',
+            'queue'           => ['aurora'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 1,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 128,
+            'tries'           => 2,
+            'timeout'         => 36000,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'sales'            => [
             'connection'      => 'redis',
             'queue'           => ['sales'],
@@ -272,6 +287,9 @@ return [
             'normal'           => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 256),
             ],
+            'aurora'           => [
+                'maxProcesses' => env('HORIZON_NORMAL_AURORA', 32),
+            ],
             'sales'            => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 256),
             ],
@@ -292,6 +310,9 @@ return [
         'staging'    => [
             'normal'           => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 2),
+            ],
+            'aurora'           => [
+                'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
             ],
             'sales'            => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 2),
@@ -314,6 +335,9 @@ return [
         'local'      => [
             'normal'           => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 5),
+            ],
+            'aurora'           => [
+                'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
             ],
             'sales'            => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 5),

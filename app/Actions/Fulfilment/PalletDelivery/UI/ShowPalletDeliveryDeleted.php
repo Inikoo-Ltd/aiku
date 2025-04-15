@@ -9,12 +9,10 @@
 
 namespace App\Actions\Fulfilment\PalletDelivery\UI;
 
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInDelivery;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
@@ -126,12 +124,6 @@ class ShowPalletDeliveryDeleted extends OrgAction
             $actions = array_merge($actions, [$pdfButton]);
         }
 
-        $palletPriceTotal = 0;
-        foreach ($palletDelivery->pallets as $pallet) {
-            $discount         = $pallet->rentalAgreementClause ? $pallet->rentalAgreementClause->percentage_off / 100 : null;
-            $rentalPrice      = $pallet->rental->price ?? 0;
-            $palletPriceTotal += $rentalPrice - $rentalPrice * $discount;
-        }
 
         $showGrossAndDiscount = $palletDelivery->gross_amount !== $palletDelivery->net_amount;
 
@@ -187,7 +179,7 @@ class ShowPalletDeliveryDeleted extends OrgAction
                     'subNavigation' => $subNavigation,
                     'model'         => __('pallet delivery'),
                     'iconRight'     => $palletDelivery->state->stateIcon()[$palletDelivery->state->value],
-                    'actions'       => $actions,
+                    // 'actions'       => $actions,
                 ],
 
                 'can_edit_transactions' => true,
@@ -373,37 +365,16 @@ class ShowPalletDeliveryDeleted extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix'         => __('(🗑️ Deleted)'),
                 ],
             ];
         };
 
-        $palletDelivery = PalletDelivery::where('slug', $routeParameters['palletDelivery'])->first();
+        $palletDelivery = PalletDelivery::where('slug', $routeParameters['palletDelivery'])->withTrashed()->first();
 
 
         return match ($routeName) {
-            'grp.org.fulfilments.show.operations.pallet-deliveries.show' =>
-            array_merge(
-                ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
-                $headCrumb(
-                    $palletDelivery,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.show',
-                            'parameters' => Arr::only(
-                                $routeParameters,
-                                ['organisation', 'fulfilment', 'palletDelivery']
-                            )
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show' =>
+            'grp.org.fulfilments.show.crm.customers.show.deleted_pallet_deliveries.show' =>
             array_merge(
                 ShowFulfilmentCustomer::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
@@ -419,7 +390,7 @@ class ShowPalletDeliveryDeleted extends OrgAction
                             )
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.deleted_pallet_deliveries.show',
                             'parameters' => Arr::only(
                                 $routeParameters,
                                 ['organisation', 'fulfilment', 'fulfilmentCustomer', 'palletDelivery']
@@ -429,27 +400,6 @@ class ShowPalletDeliveryDeleted extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.warehouses.show.incoming.pallet_deliveries.show' =>
-            array_merge(
-                ShowWarehouse::make()->getBreadcrumbs(
-                    Arr::only($routeParameters, ['organisation', 'warehouse'])
-                ),
-                $headCrumb(
-                    $palletDelivery,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.pallet_deliveries.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.pallet_deliveries.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'palletDelivery'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-
             default => []
         };
     }

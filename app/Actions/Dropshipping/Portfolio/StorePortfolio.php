@@ -58,6 +58,7 @@ class StorePortfolio extends OrgAction
             /** @var Portfolio $portfolio */
             $portfolio = $customer->portfolios()->create($modelData);
             $portfolio->stats()->create();
+
             return $portfolio;
         });
 
@@ -82,9 +83,10 @@ class StorePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'product_id'    => ['sometimes', 'required', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
-            'stored_item_id'    => ['sometimes', 'required', Rule::exists('stored_items', 'id')],
-            'reference'     => [
+            'platform_id'    => ['required', Rule::exists('platforms', 'id')],
+            'product_id'     => ['sometimes', 'required', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+            'stored_item_id' => ['sometimes', 'required', Rule::exists('stored_items', 'id')],
+            'reference'      => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -97,9 +99,9 @@ class StorePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'type'          => ['sometimes', Rule::enum(PortfolioTypeEnum::class)],
-            'status'        => 'sometimes|boolean',
-            'last_added_at' => 'sometimes|date',
+            'type'           => ['sometimes', Rule::enum(PortfolioTypeEnum::class)],
+            'status'         => 'sometimes|boolean',
+            'last_added_at'  => 'sometimes|date',
         ];
 
         if (!$this->strict) {
