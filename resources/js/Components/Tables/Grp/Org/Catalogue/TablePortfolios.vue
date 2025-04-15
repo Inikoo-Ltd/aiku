@@ -324,7 +324,7 @@ watch(
 				@click="() => onSubmitProduct()"
 				:key="'buttonSubmit' + isLoadingSubmit"
 				:loading="isLoadingSubmit"
-				label="Submit Order"
+				label="Process Order"
 				icon="fal fa-plus"
 				:disabled="!selectedProducts.length"
 				type="black" />
