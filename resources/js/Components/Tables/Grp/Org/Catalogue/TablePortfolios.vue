@@ -248,7 +248,7 @@ const updateQuantity = (item_id: number, value: string) => {
 
 const selectedProductsWithQuantity = computed(() => {
 	return selectedProducts.value.map((product) => ({
-		id: product.item_id, // Use the product.item_id as the id value in your payload
+		id: product.item_id,
 		quantity: productQuantities.value[product.item_id] || 1,
 	}))
 })

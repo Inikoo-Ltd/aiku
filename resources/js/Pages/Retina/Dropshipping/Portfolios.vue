@@ -52,7 +52,7 @@ const onSubmitProduct = (action: any) => {
 	router.post(
 		route(action.route.name, action.route.parameters),
 		{
-			products: selectedChildProducts.value,
+			product_ids: selectedChildProducts.value,
 		},
 		{
 			headers: {
