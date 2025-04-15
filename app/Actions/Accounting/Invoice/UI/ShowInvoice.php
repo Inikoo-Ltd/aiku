@@ -167,62 +167,64 @@ class ShowInvoice extends OrgAction
 
         if ($this->parent instanceof Fulfilment) {
             $actions[] =
-            $this->isSupervisor ? [
-                'supervisor' => true,
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.invoice.delete',
-                    'parameters' => [
-                        'invoice' => $invoice->id
+                $this->isSupervisor
+                    ? [
+                    'supervisor' => true,
+                    'type'       => 'button',
+                    'style'      => 'red_outline',
+                    'tooltip'    => __('delete'),
+                    'icon'       => 'fal fa-trash-alt',
+                    'key'        => 'delete_booked_in',
+                    'ask_why'    => true,
+                    'route'      => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
                     ]
                 ]
-            ] : [
-                'supervisor' => false,
-                'supervisors_route' => [
-                    'method'     => 'get',
-                    'name'       => 'grp.json.fulfilment.supervisors.index',
-                    'parameters' => [
-                        'fulfilment' => $invoice->shop->fulfilment->slug
+                    : [
+                    'supervisor'        => false,
+                    'supervisors_route' => [
+                        'method'     => 'get',
+                        'name'       => 'grp.json.fulfilment.supervisors.index',
+                        'parameters' => [
+                            'fulfilment' => $invoice->shop->fulfilment->slug
+                        ]
+                    ],
+                    'type'              => 'button',
+                    'style'             => 'red_outline',
+                    'tooltip'           => __('Delete'),
+                    'icon'              => 'fal fa-trash-alt',
+                    'key'               => 'delete_booked_in',
+                    'ask_why'           => true,
+                    'route'             => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
                     ]
-                ],
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('Delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.invoice.delete',
-                    'parameters' => [
-                        'invoice' => $invoice->id
-                    ]
-                ]
-            ];
+                ];
         } else {
             $actions[] =
-            [
-                'supervisor' => true,
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('delete'),
-                'icon'    => 'fal fa-trash-alt',
-                'key'     => 'delete_booked_in',
-                'ask_why' => true,
-                'route'   => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.invoice.delete',
-                    'parameters' => [
-                        'invoice' => $invoice->id
+                [
+                    'supervisor' => true,
+                    'type'       => 'button',
+                    'style'      => 'red_outline',
+                    'tooltip'    => __('delete'),
+                    'icon'       => 'fal fa-trash-alt',
+                    'key'        => 'delete_booked_in',
+                    'ask_why'    => true,
+                    'route'      => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
                     ]
-                ]
-            ];
+                ];
         }
 
         if ($this->parent instanceof Organisation) {
@@ -287,7 +289,6 @@ class ShowInvoice extends OrgAction
         }
 
 
-
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
@@ -320,6 +321,26 @@ class ShowInvoice extends OrgAction
 
                 ...$payBoxData,
 
+                'exportOptions' => [
+                    [
+                        'type'       => 'pfd',
+                        'name'       => 'grp.org.accounting.invoices.download',
+                        'parameters' => [
+                            'organisation' => $invoice->organisation->slug,
+                            'invoice'      => $invoice->slug
+                        ]
+                    ],
+                    [
+                        'type'       => 'isDoc',
+                        'name'       => 'grp.org.accounting.invoices.show.is_doc',
+                        'parameters' => [
+                            'organisation' => $invoice->organisation->slug,
+                            'invoice'      => $invoice->slug
+                        ]
+                    ]
+
+                ],
+
                 'exportPdfRoute' => [
                     'name'       => 'grp.org.accounting.invoices.download',
                     'parameters' => [
@@ -336,25 +357,25 @@ class ShowInvoice extends OrgAction
                 ],
 
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
-                    ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
+                    ? fn() => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
 
                 InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
+                    fn() => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn() => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
 
                 InvoiceTabsEnum::ITEMIZED->value => $this->tab == InvoiceTabsEnum::ITEMIZED->value ?
-                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
-                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
+                    fn() => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
+                    : Inertia::lazy(fn() => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
 
                 InvoiceTabsEnum::EMAIL->value => $this->tab == InvoiceTabsEnum::EMAIL->value ?
-                    fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))),
+                    fn() => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))
+                    : Inertia::lazy(fn() => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))),
 
 
                 InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
+                    fn() => PaymentsResource::collection(IndexPayments::run($invoice))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($invoice))),
 
 
             ]
