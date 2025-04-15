@@ -13,10 +13,8 @@ namespace App\Actions\Goods\MasterProductCategory\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\GrpAction;
-use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
-use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
@@ -92,30 +90,11 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     ],
                     // 'subNavigation' => $this->getDepartmentSubNavigation($masterdepartment)
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => MasterDepartmentTabsEnum::navigation()
-                ],
 
-                MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductCategoryShowcase::run($masterdepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterdepartment)),
-
-
-                MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($masterdepartment))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterdepartment))),
-
-
-
-
-
+                'data' => GetMasterProductCategoryShowcase::run($masterdepartment)
             ]
-        )
-
-            ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
+        );
     }
-
 
     public function jsonResponse(MasterProductCategory $masterdepartment): DepartmentsResource
     {

@@ -12,13 +12,9 @@ namespace App\Actions\Goods\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
-use App\Actions\Comms\Mailshot\UI\IndexMailshots;
-use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\GrpAction;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
-use App\Http\Resources\CRM\CustomersResource;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
 use Inertia\Inertia;
@@ -103,23 +99,9 @@ class ShowMasterFamilyWorkshop extends GrpAction
                     'navigation' => MasterFamilyTabsEnum::navigation()
                 ],
 
-                MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductCategoryShowcase::run($masterfamily)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterfamily)),
-
-                // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterfamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterfamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
-                // FamilyTabsEnum::MAILSHOTS->value => $this->tab == FamilyTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($masterfamily))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($masterfamily))),
-
-
+                'data' => GetMasterProductCategoryShowcase::run($masterfamily)
             ]
-        )
-        // ->table(IndexCustomers::make()->tableStructure(parent: $masterfamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure($masterfamily));
-
+        );
     }
 
 
