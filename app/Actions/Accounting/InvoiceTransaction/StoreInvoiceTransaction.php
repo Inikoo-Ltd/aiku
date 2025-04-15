@@ -58,7 +58,7 @@ class StoreInvoiceTransaction extends OrgAction
             if ($this->strict) {
                 $historicAsset = $model->historicAsset;
             } else {
-                $historicAsset = $model->getHistoricAssetWithTrashed()->first();
+                $historicAsset = $model->getHistoricAssetWithTrashed();
             }
         } else {
             $historicAsset = $model;
