@@ -95,7 +95,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
         $manual = false;
-        if ($this->platform && $this->platform->type == PlatformTypeEnum::AIKU) {
+        if (isset($this->platform) && $this->platform->type == PlatformTypeEnum::AIKU) {
             $manual = true;
         }
 
@@ -133,15 +133,16 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                                 ]
                             ]
                         ] : [],
-                        $this->customer->is_dropshipping && ($this->platformUser instanceof WebUser) ? [
+                        $this->customer->is_dropshipping && isset($this->platform) && ($this->platformUser instanceof WebUser) ? [
                             'type' => 'button',
                             'style' => 'create',
                             'key' => 'create-order',
                             'label' => 'Create Order',
                             'route' => [
-                                'name' => 'retina.models.customer.order.store',
+                                'name' => 'retina.models.customer.order.platform.store',
                                 'parameters' => [
-                                    'customer' => $this->customer->id
+                                    'customer' => $this->customer->id,
+                                    'platform' => $this->platform->id
                                 ]
                             ]
                         ] : [],
@@ -178,6 +179,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 

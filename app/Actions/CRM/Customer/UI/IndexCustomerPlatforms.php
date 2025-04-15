@@ -76,7 +76,7 @@ class IndexCustomerPlatforms extends OrgAction
 
         $actions = [];
 
-        if (!$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first()) {
+        if (!$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first() && $aikuChannel) {
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
