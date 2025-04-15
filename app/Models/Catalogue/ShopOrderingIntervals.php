@@ -330,7 +330,8 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property int $baskets_updated_pq3
  * @property int $baskets_updated_pq4
  * @property int $baskets_updated_pq5
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Group|null $group
+ * @property-read Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newQuery()

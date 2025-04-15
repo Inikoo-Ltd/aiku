@@ -89,8 +89,6 @@ class ShowOrganisationDashboard extends OrgAction
             ]
         ];
 
-     //   dd($dashboard);
-
 
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
@@ -482,7 +480,7 @@ class ShowOrganisationDashboard extends OrgAction
             $data,
             $selectedCurrency,
             $selectedInterval,
-            fn($child) => [
+            fn ($child) => [
                 'route'         => [
                     'name'       => 'grp.org.accounting.invoice-categories.show',
                     'parameters' => [

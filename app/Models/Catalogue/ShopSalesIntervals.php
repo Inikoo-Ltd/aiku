@@ -361,7 +361,9 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property string $baskets_updated_grp_currency_pq3
  * @property string $baskets_updated_grp_currency_pq4
  * @property string $baskets_updated_grp_currency_pq5
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Currency|null $currency
+ * @property-read Group|null $group
+ * @property-read Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesIntervals newQuery()

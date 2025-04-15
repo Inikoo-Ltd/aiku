@@ -14,7 +14,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 

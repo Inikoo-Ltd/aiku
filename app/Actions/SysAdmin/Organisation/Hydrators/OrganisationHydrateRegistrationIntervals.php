@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 14-03-2025-16h-42m
@@ -9,9 +10,6 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithIntervalsAggregators;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
