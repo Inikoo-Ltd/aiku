@@ -135,13 +135,13 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                         ] : [],
                     ]
                 ],
-                'order_route' => [
+                'order_route' => isset($this->platform) ? [
                     'name' => 'retina.models.customer.order.platform.store',
                     'parameters' => [
                         'customer' => $this->customer->id,
                         'platform' => $this->platform->id
                     ]
-                ],
+                ] : [],
                 'tabs' => [
                     'current' => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
