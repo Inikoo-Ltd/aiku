@@ -27,8 +27,7 @@ export const widgetList: {[key: string]: Component} = {
     'chart_display' : ChartDisplay,
     'circle_display': CircleDisplay,
     'multiple_chart_display': MultipleDisplay,
-    'distribution_chart_display': DistributionChartDisplay
-    'multiple_chart_display': MultipleDisplay,
+    'distribution_chart_display': DistributionChartDisplay,
     'user_subscribe': UserSubscriber,
 }
 

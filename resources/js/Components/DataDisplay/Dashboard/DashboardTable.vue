@@ -82,21 +82,7 @@ const listColumnInTable = computed(() => {
     // Convert the Set back to an Array to return the result
     return Array.from(resultSet);
 })
-console.log('ewqewqewq', selectedTab.value.data)
 
-const listColumnInTable = computed(() => {
-
-	const resultSet = new Set();  // Create a Set to store unique elements
-
-    // Iterate through each sub-array in the input array
-    selectedTab.value.data?.map((e) => Object.keys(e.interval_percentages || {})).forEach(subArray => {
-        // Add each element of the sub-array to the Set
-        subArray.forEach(item => resultSet.add(item));
-    });
-
-    // Convert the Set back to an Array to return the result
-    return Array.from(resultSet);
-})
 </script>
 
 <template>
