@@ -66,7 +66,6 @@ trait WithInvoicesExport
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
         } catch (Exception $e) {
-            dd($e);
             return response()->json(['error' => 'Failed to generate PDF'], 404);
         }
     }

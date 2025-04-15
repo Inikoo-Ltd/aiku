@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\ExportInvoices;
+use App\Actions\Accounting\Invoice\ISDocInvoice;
 use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\Invoice\UI\EditInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
@@ -72,6 +73,8 @@ Route::get('/payments', [IndexPayments::class, 'inOrganisation'])->name('payment
 Route::get('/payments/{payment}', [ShowPayment::class, 'inOrganisation'])->name('payments.show');
 Route::get('/payments/{payment}/edit', [EditPayment::class, 'inOrganisation'])->name('payments.edit');
 Route::get('/invoices/{invoice}/export', PdfInvoice::class)->name('invoices.download');
+Route::get('/invoices/{invoice}/is-doc', ISDocInvoice::class)->name('invoices.show.is_doc');
+
 Route::get('/invoices/export', ExportInvoices::class)->name('invoices.export');
 
 
@@ -96,12 +99,5 @@ Route::get('/invoice-categories/{invoiceCategory}', ShowInvoiceCategory::class)-
 Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index');
 
 Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::class)->name('invoice-categories.edit');
-
-
-//Route::get('/invoices/all/{invoice}', [ShowInvoice::class, 'inOrganisation'])->name('invoices.all_invoices.show');
-//Route::get('/invoices/all/{invoice}/refunds', [IndexRefunds::class, 'inInvoiceInOrganisation'])->name('invoices.show.refunds.index');
-//Route::get('/invoices/all/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrganisation'])->name('invoices.show.refunds.show');
-//
-//Route::get('/invoices/unpaid/{invoice}', [ShowInvoice::class, 'inOrganisation'])->name('invoices.unpaid_invoices.show');
 
 Route::get('/customer-balances', [IndexCustomerBalances::class, 'inOrganisation'])->name('balances.index');
