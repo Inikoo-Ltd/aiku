@@ -16,7 +16,7 @@ use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
-use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\DeleteRetinaFulfilmentTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\StoreRetinaFulfilmentTransaction;
@@ -134,7 +134,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::delete('delivery-address/{address:id}/delete', DeleteRetinaCustomerDeliveryAddress::class)->name('delivery-address.delete');
 
     Route::name('order.')->prefix('order')->group(function () {
-        Route::post('', StoreRetinaOrder::class)->name('store');
+        Route::post('{platform:id}', StoreRetinaPlatformOrder::class)->name('platform.store');
     });
 });
 

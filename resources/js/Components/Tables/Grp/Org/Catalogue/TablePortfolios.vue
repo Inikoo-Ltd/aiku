@@ -16,7 +16,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar } from "@fal"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref } from "vue"
+import { onMounted, onUnmounted, ref, defineEmits } from "vue"
 import Tag from "@/Components/Tag.vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -35,6 +35,7 @@ import IconField from 'primevue/iconfield'
 import Select from 'primevue/select'
 import { faStar } from "@fas"
 import route from '../../../../../../../vendor/tightenco/ziggy/src/js/index';
+import { watch } from "vue"
 
 library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar)
 
@@ -50,7 +51,7 @@ const props = defineProps<{
 	is_manual?: boolean
 	tagsList: tag[]
 	tagRoute?: {}
-    route?: any
+    productRoute?: any
 }>()
 
 interface tag {
@@ -120,6 +121,10 @@ const gridSortOptions = ref([
 const filters = ref({
     'global': {value: null, matchMode: FilterMatchMode.CONTAINS},
 })
+
+const emit = defineEmits<{
+  (e: "update-selectedProducts", selected: any[]): void
+}>()
 
 const onSortChange = (event) => {
     const value = event.value.value;
@@ -201,6 +206,8 @@ const isSelected = (id: number) => {
 }
 
 const toggleItem = (id) => {
+	console.log(id,'asdxxca');
+	
     const index = selectedProducts.value.findIndex(item => item.id === id);
     if (index !== -1) {
         // If item is found, remove it
@@ -209,57 +216,22 @@ const toggleItem = (id) => {
         // If item is not found, add it
         selectedProducts.value.push({id: id})
     }
+	
 }
 
-const onSubmitProduct = () => {
-    console.log(selectedProducts,'xxxx');
-    
-	/* router.post(
-		route(props.routes.store_product.name, props.routes.store_product.parameters),
-		{
-			product_ids: selectedProducts.value.map((sel) => sel.id),
-		},
-		{
-			headers: {
-				Authorization: `Bearer ${window.sessionToken}`,
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			onStart: () => {
-				isLoadingSubmit.value = true
-			},
-			onSuccess: () => {
-				notify({
-					title: trans("Success"),
-					text:
-						trans("Successfully add") +
-						` ${selectedProducts.value.length} ` +
-						trans("products"),
-					type: "success",
-				})
-				selectedProducts.value = []
-			},
-			onError: () => {
-				notify({
-					title: trans("Failed"),
-					text: trans("Something went wrong. Try again."),
-					type: "error",
-				})
-			},
-			onFinish: () => {
-				isLoadingSubmit.value = false
-			},
-		}
-	) */
-}
+
 
 const onChangeDisplay = (type: string) => {
 	if (productView.value == type) return
 	productView.value = type
 }
+
+watch(selectedProducts, (newSelected) => {
+  emit("update-selectedProducts", newSelected)
+})
 </script>
 
 <template>
-
     <div v-if="is_manual">
         <div class="flex justify-end gap-x-3 mb-2">
             <SelectButton
