@@ -27,6 +27,7 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize"
+import DepartementMasterWorkshop from '@/Components/Showcases/Grp/DepartementMasterWorkshop.vue';
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 library.add(
     faFolder,
@@ -66,6 +67,7 @@ const component = computed(() => {
 
     const components = {
         showcase : DepartmentShowcase,
+        /* showcase : DepartementMasterWorkshop, */
         products: TableProducts,
         families: TableFamilies,
         mailshots: TableMailshots,

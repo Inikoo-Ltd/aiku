@@ -60,8 +60,8 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components = {
-        showcase: FamilyMasterWorkshop,
-       /*  showcase: FamilyShowcase, */
+        /* showcase: FamilyMasterWorkshop */
+        showcase: FamilyShowcase,
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,

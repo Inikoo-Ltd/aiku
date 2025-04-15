@@ -32,7 +32,7 @@ const props = defineProps<{
       <EmptyState :data="{
         title: 'No Image Found',
         description: 'Please upload an image',
-      }" :isNoIcon="true" />
+      }" />
     </div>
 
   </div>
