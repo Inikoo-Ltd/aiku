@@ -46,13 +46,13 @@ const component = computed(() => {
 })
 
 const onSubmitProduct = (action: any) => {
-	console.log("action", action.route)
 	console.log("selectedChildProducts", selectedChildProducts.value)
 
+	// Send the products as an array of objects: { id, quantity }
 	router.post(
 		route(action.route.name, action.route.parameters),
 		{
-			product_ids: selectedChildProducts.value.map((sel) => sel.item_id),
+			products: selectedChildProducts.value,
 		},
 		{
 			headers: {

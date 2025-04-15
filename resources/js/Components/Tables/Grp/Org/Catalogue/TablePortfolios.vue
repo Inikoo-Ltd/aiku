@@ -13,10 +13,19 @@ import Icon from "@/Components/Icon.vue"
 import { remove as loRemove } from "lodash-es"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar } from "@fal"
+import {
+	faConciergeBell,
+	faGarage,
+	faExclamationTriangle,
+	faPencil,
+	faSearch,
+	faThLarge,
+	faListUl,
+	faStar as falStar,
+} from "@fal"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref, defineEmits } from "vue"
+import { onMounted, onUnmounted, ref, defineEmits, computed } from "vue"
 import Tag from "@/Components/Tag.vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -26,18 +35,29 @@ import SelectButton from "primevue/selectbutton"
 import { trans } from "laravel-vue-i18n"
 import DataView from "primevue/dataview"
 import DataTable from "primevue/datatable"
-import { FilterMatchMode } from '@primevue/core/api';
+import { FilterMatchMode } from "@primevue/core/api"
 import { useLocaleStore } from "@/Stores/locale"
-import Column from 'primevue/column'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
-import IconField from 'primevue/iconfield'
-import Select from 'primevue/select'
+import Column from "primevue/column"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
+import IconField from "primevue/iconfield"
+import Select from "primevue/select"
 import { faStar } from "@fas"
-import route from '../../../../../../../vendor/tightenco/ziggy/src/js/index';
+import route from "../../../../../../../vendor/tightenco/ziggy/src/js/index"
 import { watch } from "vue"
+import QuantityInput from "@/Components/Utils/QuantityInput.vue"
 
-library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar)
+library.add(
+	faConciergeBell,
+	faGarage,
+	faExclamationTriangle,
+	faPencil,
+	faSearch,
+	faThLarge,
+	faListUl,
+	faStar,
+	falStar
+)
 
 const props = defineProps<{
 	data: {}
@@ -51,7 +71,7 @@ const props = defineProps<{
 	is_manual?: boolean
 	tagsList: tag[]
 	tagRoute?: {}
-    productRoute?: any
+	productRoute?: any
 }>()
 
 interface tag {
@@ -91,6 +111,7 @@ const selectedProducts = ref([])
 const isLoadingSubmit = ref(false)
 const tagsListTemp = ref<tag[]>(props.tagsList)
 const onEditProduct = ref(false)
+const actionInput = ref(1)
 const optionsView = [
 	{
 		id: 1,
@@ -105,41 +126,39 @@ const optionsView = [
 		icon: "fal fa-list-ul",
 	},
 ]
-
-
+const productQuantities = ref<{ [key: number]: number }>({})
 const isLoadingDetach = ref<string[]>([])
-    const sortKey = ref()
+const sortKey = ref()
 const sortOrder = ref()
 const sortField = ref()
 const gridSortOptions = ref([
-    {label: 'Price High to Low', value: '!price'},
-    {label: 'Price Low to High', value: 'price'},
-    {label: 'Alphabetically a-z', value: 'name'},
-    {label: 'Alphabetically z-a', value: '!name'},
+	{ label: "Price High to Low", value: "!price" },
+	{ label: "Price Low to High", value: "price" },
+	{ label: "Alphabetically a-z", value: "name" },
+	{ label: "Alphabetically z-a", value: "!name" },
 ])
 
 const filters = ref({
-    'global': {value: null, matchMode: FilterMatchMode.CONTAINS},
+	global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 })
 
 const emit = defineEmits<{
-  (e: "update-selectedProducts", selected: any[]): void
+	(e: "update-selectedProducts", selected: any[]): void
 }>()
 
 const onSortChange = (event) => {
-    const value = event.value.value;
-    const sortValue = event.value;
+	const value = event.value.value
+	const sortValue = event.value
 
-    if (value.indexOf('!') === 0) {
-        sortOrder.value = -1;
-        sortField.value = value.substring(1, value.length);
-        sortKey.value = sortValue;
-    }
-    else {
-        sortOrder.value = 1;
-        sortField.value = value;
-        sortKey.value = sortValue;
-    }
+	if (value.indexOf("!") === 0) {
+		sortOrder.value = -1
+		sortField.value = value.substring(1, value.length)
+		sortKey.value = sortValue
+	} else {
+		sortOrder.value = 1
+		sortField.value = value
+		sortKey.value = sortValue
+	}
 }
 
 // Add new Tag
@@ -201,53 +220,61 @@ function isShopifyAdmin() {
 	return window.location.hostname === "admin.shopify.com"
 }
 
-const isSelected = (id: number) => {
-    return selectedProducts.value.some(item => item.id === id);
+const isSelected = (item_id: number) => {
+	return selectedProducts.value.some((product) => product.item_id === item_id)
 }
 
 const toggleItem = (id) => {
-	console.log(id,'asdxxca');
-	
-    const index = selectedProducts.value.findIndex(item => item.id === id);
-    if (index !== -1) {
-        // If item is found, remove it
-        selectedProducts.value.splice(index, 1)
-    } else {
-        // If item is not found, add it
-        selectedProducts.value.push({id: id})
-    }
-	
+	console.log(id, "asdxxca")
+
+	const index = selectedProducts.value.findIndex((item) => item.id === id)
+	if (index !== -1) {
+		// If item is found, remove it
+		selectedProducts.value.splice(index, 1)
+	} else {
+		// If item is not found, add it
+		selectedProducts.value.push({ id: id })
+	}
 }
-
-
 
 const onChangeDisplay = (type: string) => {
 	if (productView.value == type) return
 	productView.value = type
 }
 
-watch(selectedProducts, (newSelected) => {
-  emit("update-selectedProducts", newSelected)
+const updateQuantity = (item_id: number, value: string) => {
+	productQuantities.value[item_id] = Number(value)
+}
+
+const selectedProductsWithQuantity = computed(() => {
+	return selectedProducts.value.map((product) => ({
+		id: product.item_id, // Use the product.item_id as the id value in your payload
+		quantity: productQuantities.value[product.item_id] || 1,
+	}))
 })
+
+watch(selectedProductsWithQuantity, (newVal) => {
+  emit("update-selectedProducts", newVal);
+});
 </script>
 
 <template>
-    <div v-if="is_manual">
-        <div class="flex justify-end gap-x-3 mb-2">
-            <SelectButton
-                :modelValue="productView"
-                @update:modelValue="(e: string) => onChangeDisplay(e)"
-                :allowEmpty="false"
-                :options="optionsView"
-                optionValue="value"
-                dataKey="value"
-                aria-labelledby="custom">
-                <template #option="{ option }">
-                    <FontAwesomeIcon :icon="option.icon" class="" fixed-width aria-hidden="true" />
-                </template>
-            </SelectButton>
+	<div v-if="is_manual">
+		<div class="flex justify-end gap-x-3 mb-2">
+			<SelectButton
+				:modelValue="productView"
+				@update:modelValue="(e: string) => onChangeDisplay(e)"
+				:allowEmpty="false"
+				:options="optionsView"
+				optionValue="value"
+				dataKey="value"
+				aria-labelledby="custom">
+				<template #option="{ option }">
+					<FontAwesomeIcon :icon="option.icon" class="" fixed-width aria-hidden="true" />
+				</template>
+			</SelectButton>
 
-        <!--     <Button
+			<!--     <Button
                 @click="() => onSubmitProduct()"
                 :key="'buttonSubmit' + isLoadingSubmit"
                 :loading="isLoadingSubmit"
@@ -255,98 +282,157 @@ watch(selectedProducts, (newSelected) => {
                 icon="fal fa-plus"
                 :disabled="!selectedProducts.length"
                 type="black" /> -->
-        </div> 
+		</div>
 
-        <div class="bg-stone-100 overflow-hidden rounded-2xl border border-stone-300">
-            <DataTable v-if="productView === 'list'" ref="_dt"
-                       v-model:selection="selectedProducts"
-                       :value="data.data"
-                       dataKey="id"
-                       selectionMode="multiple"
-                       :paginator="true"
-                       :rows="20"
-                       :filters="filters"
-                       scrollable
-                       paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                       :rowsPerPageOptions="[5, 10, 20, 40]"
-                       currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products">
-                <template #header headerStyle="background: #ff0000">
-                    <div class="flex flex-wrap gap-2 items-center justify-between">
-                        <IconField>
-                            <InputIcon>
-                                <FontAwesomeIcon icon='fal fa-search' class='' fixed-width aria-hidden='true' />
-                            </InputIcon>
-                            <InputText v-model="filters['global'].value" placeholder="Search..." />
-                        </IconField>
-                    </div>
-                </template>
+		<div class="bg-stone-100 overflow-hidden rounded-2xl border border-stone-300">
+			<DataTable
+				v-if="productView === 'list'"
+				ref="_dt"
+				v-model:selection="selectedProducts"
+				:value="data.data"
+				dataKey="id"
+				selectionMode="multiple"
+				:paginator="true"
+				:rows="20"
+				:filters="filters"
+				scrollable
+				paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+				:rowsPerPageOptions="[5, 10, 20, 40]"
+				currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products">
+				<template #header headerStyle="background: #ff0000">
+					<div class="flex flex-wrap gap-2 items-center justify-between">
+						<IconField>
+							<InputIcon>
+								<FontAwesomeIcon
+									icon="fal fa-search"
+									class=""
+									fixed-width
+									aria-hidden="true" />
+							</InputIcon>
+							<InputText v-model="filters['global'].value" placeholder="Search..." />
+						</IconField>
+					</div>
+				</template>
 
-                <Column selectionMode="multiple" style="width: 3rem" :exportable="false" frozen ></Column>
+				<Column
+					selectionMode="multiple"
+					style="width: 3rem"
+					:exportable="false"
+					frozen></Column>
 
-                <Column field="code" header="Code" sortable style="min-width: 12rem"></Column>
+				<Column field="code" header="Code" sortable style="min-width: 12rem"></Column>
 
-                <Column field="name" header="Name" sortable style="min-width: 16rem" frozen ></Column>
+				<Column
+					field="name"
+					header="Name"
+					sortable
+					style="min-width: 16rem"
+					frozen></Column>
 
-                <Column field="type" header="Type" sortable style="min-width: 8rem">
-                   
-                </Column>
+				<Column field="type" header="Type" sortable style="min-width: 8rem"> </Column>
 
-                <Column field="quantity_left" header="Quantity" style="min-width: 8rem">
-                  
-                </Column>
-            </DataTable>
+				<Column field="quantity_left" header="Quantity" style="min-width: 8rem"> </Column>
+				<Column field="action" header="Action" style="min-width: 8rem">
+					<template #body="{ data }">
+						<InputText
+							type="number"
+							:disabled="!isSelected(data.item_id)"
+							:value="productQuantities[data.item_id] || 1"
+							@input="updateQuantity(data.item_id, $event.target.value)"
+							style="max-width: 7rem" />
+					</template>
+				</Column>
+			</DataTable>
 
-            <!-- View: Grid -->
-            <DataView v-else :value="data.data" paginator :rows="12" :sortOrder :sortField>
-                <template #header>
-                    <Select v-model="sortKey" :options="gridSortOptions" optionLabel="label" placeholder="Sort By Price" @change="onSortChange($event)" />
-                </template>
+			<!-- View: Grid -->
+			<DataView v-else :value="data.data" paginator :rows="12" :sortOrder :sortField>
+				<template #header>
+					<Select
+						v-model="sortKey"
+						:options="gridSortOptions"
+						optionLabel="label"
+						placeholder="Sort By Price"
+						@change="onSortChange($event)" />
+				</template>
 
-                <template #list="{ items }">
-                    <div class="p-4 grid grid-cols-12 gap-4">
-                        <div v-for="(item, index) in items" :key="index"
-                             @click="() => toggleItem(item.id)"
-                             class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3"
-                             :class="[isSelected(item.id) ? 'bg-stone-200 ring-1 ring-stone-500' : 'hover:bg-stone-100']"
-                        >
-                            <!-- == {{ isSelected(item.id) }} == -->
-                            <div class="relative flex justify-center rounded">
-                                <img class="rounded w-full" :src="`https://primefaces.org/cdn/primevue/images/product/gaming-set.jpg`" :alt="item.name" style="max-width: 300px"/>
-                                <div class="absolute top-1.5 left-2">
-                                    <div class="capitalize text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500" :theme="13">
-                                        {{ item.state }}
-                                    </div>
-                                </div>
-                                <div class="absolute top-1.5 right-2">
-                                    <input :checked="isSelected(item.id)" name="checkboxProduct" type="checkbox" class="cursor-pointer h-5 w-5  rounded border-stone-300 text-stone-800 shadow-sm focus:ring-0 focus:outline-none">
-                                </div>
-                            </div>
-                            <div class="py-4 px-6 h-full flex flex-col justify-between">
-                                <div class="flex flex-row justify-between items-start gap-2">
-                                    <div>
-                                        <span class="text-stone-500 text-sm">{{ item.code }}</span>
-                                        <div class="text-lg font-medium">{{ item.name }}</div>
-                                    </div>
-                                </div>
+				<template #list="{ items }">
+					<div class="p-4 grid grid-cols-12 gap-4">
+						<div
+							v-for="(item, index) in items"
+							:key="index"
+							@click="() => toggleItem(item.id)"
+							class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3"
+							:class="[
+								isSelected(item.id)
+									? 'bg-stone-200 ring-1 ring-stone-500'
+									: 'hover:bg-stone-100',
+							]">
+							<!-- == {{ isSelected(item.id) }} == -->
+							<div class="relative flex justify-center rounded">
+								<img
+									class="rounded w-full"
+									:src="`https://primefaces.org/cdn/primevue/images/product/gaming-set.jpg`"
+									:alt="item.name"
+									style="max-width: 300px" />
+								<div class="absolute top-1.5 left-2">
+									<div
+										class="capitalize text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500"
+										:theme="13">
+										{{ item.state }}
+									</div>
+								</div>
+								<div class="absolute top-1.5 right-2">
+									<input
+										:checked="isSelected(item.id)"
+										name="checkboxProduct"
+										type="checkbox"
+										class="cursor-pointer h-5 w-5 rounded border-stone-300 text-stone-800 shadow-sm focus:ring-0 focus:outline-none" />
+								</div>
+							</div>
+							<div class="py-4 px-6 h-full flex flex-col justify-between">
+								<div class="flex flex-row justify-between items-start gap-2">
+									<div>
+										<span class="text-stone-500 text-sm">{{ item.code }}</span>
+										<div class="text-lg font-medium">{{ item.name }}</div>
+									</div>
+								</div>
 
-                                <!-- Section: Price -->
-                                <div class="flex justify-between mt-6">
-                                    <span class="text-2xl font-semibold">${{ item.price }}</span>
-                                    <div class="p-1" style="border-radius: 30px">
-                                        <div class="flex items-center gap-2 justify-center py-1 px-2" style="border-radius: 30px; box-shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.06)">
-                                            <span class="font-medium text-sm">{{ item.rating || 0 }}</span>
-                                            <FontAwesomeIcon v-if="item.rating > 0" icon='fas fa-star' class='text-yellow-500' fixed-width aria-hidden='true' />
-                                            <FontAwesomeIcon v-else icon='fal fa-star' class='text-gray-500' fixed-width aria-hidden='true' />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </DataView>
-        </div>
-    </div>
+								<!-- Section: Price -->
+								<div class="flex justify-between mt-6">
+									<span class="text-2xl font-semibold">${{ item.price }}</span>
+									<div class="p-1" style="border-radius: 30px">
+										<div
+											class="flex items-center gap-2 justify-center py-1 px-2"
+											style="
+												border-radius: 30px;
+												box-shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.04),
+													0px 1px 2px 0px rgba(0, 0, 0, 0.06);
+											">
+											<span class="font-medium text-sm">{{
+												item.rating || 0
+											}}</span>
+											<FontAwesomeIcon
+												v-if="item.rating > 0"
+												icon="fas fa-star"
+												class="text-yellow-500"
+												fixed-width
+												aria-hidden="true" />
+											<FontAwesomeIcon
+												v-else
+												icon="fal fa-star"
+												class="text-gray-500"
+												fixed-width
+												aria-hidden="true" />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</template>
+			</DataView>
+		</div>
+	</div>
 
 	<Table :resource="data" :name="tab" class="mt-5" v-else>
 		<template #cell(state)="{ item: product }">
