@@ -77,8 +77,15 @@ const bottomNavOptions = [
                             class="whitespace-nowrap block py-2 pr-3 text-sm font-medium text-gray-500 hover:text-gray-600 cursor-pointer">
                             {{ option.label }}
                         </label>
-                        <PureRadio v-if="data.navigation?.[option.name].value && option.name == 'bottomNav'"
-                            v-model="data.navigation[option.name].type" :options="bottomNavOptions" />
+                        <PureRadio
+                            v-if="data.navigation?.[option.name].value && option.name == 'bottomNav'"
+                            v-model="data.navigation[option.name].type"
+                            :key="`bottomNav-${index}`"
+                            :name="`bottomNav-${index}`"
+                            :id="`bottomNav-${index}`"
+                            :indexChecked="bottomNavOptions.findIndex((item) => item.value == data.navigation[option.name].type.value)"
+                            :options="bottomNavOptions"
+                        />
                     </td>
                 </tr>
             </tbody>
