@@ -6,9 +6,13 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\Fulfilment\RedirectAssetLink;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;
+
+Route::get('redirect-asset/{asset:id}', RedirectAssetLink::class)->name('redirect_asset');
+
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
     Route::get('records', ShowUpload::class)->name('records.show');

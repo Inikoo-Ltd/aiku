@@ -135,5 +135,6 @@
         "vue3-popper": "^1.5.0",
         "vuedraggable": "^4.1.0",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
-    }
+    },
+    "web-types": "./web-types.json"
 }

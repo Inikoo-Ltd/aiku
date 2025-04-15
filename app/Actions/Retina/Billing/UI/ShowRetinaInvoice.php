@@ -8,15 +8,15 @@
 
 namespace App\Actions\Retina\Billing\UI;
 
-use App\Actions\Accounting\InvoiceTransaction\UI\IndexItemizedInvoiceTransactions;
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Retina\Accounting\Invoice\Transaction\UI\IndexRetinaInvoiceTransactions;
 use App\Actions\Retina\Accounting\Payment\UI\IndexRetinaPayments;
 use App\Actions\RetinaAction;
-use App\Enums\UI\Accounting\InvoiceTabsEnum;
+use App\Enums\UI\Accounting\RetinaFulfilmentInvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
-use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Accounting\RetinaFulfilmentInvoiceTransactionsResource;
 use App\Models\Accounting\Invoice;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,7 +39,7 @@ class ShowRetinaInvoice extends RetinaAction
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->initialisation($request)->withTab(InvoiceTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaFulfilmentInvoiceTabsEnum::values());
         return $this->handle($invoice);
     }
 
@@ -70,7 +70,7 @@ class ShowRetinaInvoice extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => InvoiceTabsEnum::navigation()
+                    'navigation' => RetinaFulfilmentInvoiceTabsEnum::navigation()
                 ],
 
                 'order_summary' => [
@@ -157,23 +157,23 @@ class ShowRetinaInvoice extends RetinaAction
                 'invoice' => InvoiceResource::make($invoice),
 
 
-                InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
+                RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
+                    fn () => RetinaFulfilmentInvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => RetinaFulfilmentInvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
-                InvoiceTabsEnum::ITEMIZED->value => $this->tab == InvoiceTabsEnum::ITEMIZED->value ?
-                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))
-                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexItemizedInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMIZED->value))),
+                RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
+                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
-                InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
+                RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
 
 
             ]
-        )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
-            ->table(IndexItemizedInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::ITEMIZED->value))
-            ->table(IndexRetinaInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value));
+        )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value))
+            ->table(IndexInvoiceTransactions::make()->tableStructure(RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+            ->table(IndexRetinaInvoiceTransactions::make()->tableStructure($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value));
     }
 
 
@@ -229,7 +229,6 @@ class ShowRetinaInvoice extends RetinaAction
     public function getPrevious(Invoice $invoice, ActionRequest $request): ?array
     {
         $previous = Invoice::where('reference', '<', $invoice->reference)
-            ->where('invoices.shop_id', $invoice->shop_id)
             ->where('invoices.customer_id', $invoice->customer_id)
             ->orderBy('reference', 'desc')->first();
 
@@ -239,7 +238,6 @@ class ShowRetinaInvoice extends RetinaAction
     public function getNext(Invoice $invoice, ActionRequest $request): ?array
     {
         $next = Invoice::where('reference', '>', $invoice->reference)
-            ->where('invoices.shop_id', $invoice->shop_id)
             ->where('invoices.customer_id', $invoice->customer_id)
             ->orderBy('reference')->first();
 

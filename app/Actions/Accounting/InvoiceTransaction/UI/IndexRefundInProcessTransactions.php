@@ -77,7 +77,7 @@ class IndexRefundInProcessTransactions extends OrgAction
 
     public function tableStructure(Invoice $invoice, $prefix = null): Closure
     {
-        return IndexInvoiceTransactions::make()->tableStructure($invoice, $prefix);
+        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, $prefix);
     }
 
 

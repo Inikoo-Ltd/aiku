@@ -8,11 +8,9 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
-use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -21,44 +19,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait IsInvoiceUI
 {
-    use WithAccountingAuthorisation;
-    public function authorize(ActionRequest $request): bool
-    {
-
-        return true;
-        if ($this->parent instanceof Organisation) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        } elseif ($this->parent instanceof Shop) {
-            //todo think about it
-            return false;
-        } elseif ($this->parent instanceof Fulfilment) {
-
-            $this->isSupervisor = $request->user()->authTo([
-                "supervisor-fulfilment-shop.".$this->fulfilment->id
-            ]);
-
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $this->isSupervisor = $request->user()->authTo([
-                "supervisor-fulfilment-shop.".$this->fulfilment->id
-            ]);
-
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        }
-
-        return false;
-    }
-
     public function getCustomerRoute(Invoice $invoice): array
     {
         if ($this->parent instanceof Fulfilment) {
@@ -110,28 +70,7 @@ trait IsInvoiceUI
         ];
     }
 
-    public function getRecurringBillRoute(Invoice $invoice): ?array
-    {
-        if ($invoice->shop->type !== ShopTypeEnum::FULFILMENT) {
-            return  null;
-        }
-        $recurringBillRoute = null;
-        if ($invoice->recurringBill()->exists()) {
-            if ($this->parent instanceof Fulfilment) {
-                $recurringBillRoute = [
-                    'name' => 'grp.org.fulfilments.show.operations.recurring_bills.show',
-                    'parameters' => [$invoice->organisation->slug, $this->parent->slug, $invoice->recurringBill->slug]
-                ];
-            } elseif ($this->parent instanceof FulfilmentCustomer) {
-                $recurringBillRoute = [
-                    'name' => 'grp.org.fulfilments.show.crm.customers.show.recurring_bills.show',
-                    'parameters' => [$invoice->organisation->slug, $this->parent->fulfilment->slug, $this->parent->slug, $invoice->recurringBill->slug]
-                ];
-            }
-        }
 
-        return $recurringBillRoute;
-    }
 
     public function getBoxStats(Invoice $invoice): array
     {
@@ -147,14 +86,160 @@ trait IsInvoiceUI
                 // 'address'      => AddressResource::collection($invoice->customer->addresses),
             ],
             'information' => [
-                'recurring_bill' => [
-                    'reference' => $invoice->reference,
-                    'route'     => $this->getRecurringBillRoute($invoice)
-                ],
                 'paid_amount'    => $invoice->payment_amount,
                 'pay_amount'     => round($invoice->total_amount - $invoice->payment_amount, 2)
             ]
         ];
+    }
+
+    public function getPrevious(Invoice $invoice, ActionRequest $request): ?array
+    {
+        $previous = Invoice::where('reference', '<', $invoice->reference)
+            ->where('invoices.shop_id', $invoice->shop_id)
+            ->orderBy('reference', 'desc')->first();
+
+        return $this->getNavigation($previous, $request->route()->getName());
+    }
+
+    public function getNext(Invoice $invoice, ActionRequest $request): ?array
+    {
+        $next = Invoice::where('reference', '>', $invoice->reference)
+            ->where('invoices.shop_id', $invoice->shop_id)
+            ->orderBy('reference')->first();
+
+        return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData): array
+    {
+        $actions = [];
+
+        $trashIcon = 'fal fa-trash-alt';
+
+        if ($this->parent instanceof Fulfilment) {
+            $actions[] =
+                $this->isSupervisor
+                    ? [
+                    'supervisor' => true,
+                    'type'       => 'button',
+                    'style'      => 'red_outline',
+                    'tooltip'    => __('delete'),
+                    'icon'       => $trashIcon,
+                    'key'        => 'delete_booked_in',
+                    'ask_why'    => true,
+                    'route'      => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
+                    ]
+                ]
+                    : [
+                    'supervisor'        => false,
+                    'supervisors_route' => [
+                        'method'     => 'get',
+                        'name'       => 'grp.json.fulfilment.supervisors.index',
+                        'parameters' => [
+                            'fulfilment' => $invoice->shop->fulfilment->slug
+                        ]
+                    ],
+                    'type'              => 'button',
+                    'style'             => 'red_outline',
+                    'tooltip'           => __('Delete'),
+                    'icon'              => $trashIcon,
+                    'key'               => 'delete_booked_in',
+                    'ask_why'           => true,
+                    'route'             => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
+                    ]
+                ];
+        } else {
+            $actions[] =
+                [
+                    'supervisor' => true,
+                    'type'       => 'button',
+                    'style'      => 'red_outline',
+                    'tooltip'    => __('delete'),
+                    'icon'       => $trashIcon,
+                    'key'        => 'delete_booked_in',
+                    'ask_why'    => true,
+                    'route'      => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.invoice.delete',
+                        'parameters' => [
+                            'invoice' => $invoice->id
+                        ]
+                    ]
+                ];
+        }
+
+        if ($this->parent instanceof Organisation) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('edit'),
+                'route' => [
+                    'name'       => 'grp.org.accounting.invoices.edit',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+            ];
+        } elseif ($this->parent instanceof FulfilmentCustomer) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('edit'),
+                'route' => [
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.edit',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+            ];
+        }
+
+
+        $actions[] =
+            [
+                'type'  => 'button',
+                'style' => 'tertiary',
+                'label' => __('send invoice'),
+                'key'   => 'send-invoice',
+                'route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.invoice.send_invoice',
+                    'parameters' => [
+                        'invoice' => $invoice->id
+                    ]
+                ]
+            ];
+
+        if ($payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('create refund'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.refund.create',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
+
+                        ],
+                        'body'       => [
+                            'referral_route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ],
+                ];
+        }
+
+        return $actions;
     }
 
 }

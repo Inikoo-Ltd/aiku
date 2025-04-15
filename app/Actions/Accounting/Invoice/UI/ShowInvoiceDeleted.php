@@ -10,7 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
-use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsGroupedByAsset;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
@@ -150,8 +150,8 @@ class ShowInvoiceDeleted extends OrgAction
                 ],
 
                 InvoiceTabsEnum::GROUPED->value => $this->tab == InvoiceTabsEnum::GROUPED->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::GROUPED->value))),
+                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, InvoiceTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, InvoiceTabsEnum::GROUPED->value))),
 
                 InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run($invoice))
@@ -160,7 +160,7 @@ class ShowInvoiceDeleted extends OrgAction
 
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
-            ->table(IndexInvoiceTransactions::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value));
+            ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, InvoiceTabsEnum::GROUPED->value));
     }
 
 

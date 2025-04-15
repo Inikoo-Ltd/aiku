@@ -175,5 +175,11 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         );
     }
 
+    public function withTrashed()
+    {
+        $this->queryBuilder->withTrashed();
+        return $this;
+    }
+
 
 }

@@ -44,17 +44,20 @@ import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck } from "@fas
 import { faCheck } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import TableGroupedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableGroupedFulfilmentInvoiceTransactions.vue";
+import TableItemizedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableItemizedFulfilmentInvoiceTransactions.vue";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
+
 import { Icon } from "@/types/Utils/Icon";
 import Modal from "@/Components/Utils/Modal.vue";
 import { InvoiceResource } from "@/types/invoice";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
-import TableItemizedTransactions from "@/Components/Tables/Grp/Org/Accounting/TableItemizedTransactions.vue";
 import TableRefunds from "@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue";
 import InvoiceRefundPay from "@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue";
 import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmationDelete.vue";
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
+
 
 library.add(faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt);
 
@@ -92,23 +95,23 @@ const props = defineProps<{
       pay_amount: number | null
     }
   }
-  exportPdfRoute: routeType
   order_summary: FieldOrderSummary[][]
-  recurring_bill_route: routeType
+  recurring_bill_route?: routeType
   invoice: InvoiceResource
-  grouped: {}
-  itemized: {}
-  payments: {}
+  invoice_transactions?: {}
+  grouped_fulfilment_invoice_transactions?: {}
+  itemized_fulfilment_invoice_transactions?: {}
+  payments?: {}
   email?: {}
-  details: {}
-  history: {}
-  refunds: {}
+  details?: {}
+  history?: {}
+  refunds?: {}
 
   outbox: {
     state: string
     workshop_route: routeType
   }
-  list_refunds: {}[]
+  list_refunds: {}[] | {}
   invoice_pay: {
     routes: {
       fetch_payment_accounts: routeType
@@ -141,8 +144,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
   const components: Component = {
-    grouped: TableInvoiceTransactions,
-    itemized: TableItemizedTransactions,
+    invoice_transactions: TableInvoiceTransactions,
+    grouped_fulfilment_invoice_transactions: TableGroupedFulfilmentInvoiceTransactions,
+    itemized_fulfilment_invoice_transactions: TableItemizedFulfilmentInvoiceTransactions,
     payments: TablePayments,
     details: ModelDetails,
     history: ModelChangelog,
@@ -163,15 +167,6 @@ const onPayInOnClick = () => {
 const isVisitWorkshopOutbox = ref(false);
 const isModalSendInvoice = ref(false);
 
-
-const generateRefundRoute = (refundSlug: string) => {
-  return route("grp.org.fulfilments.show.operations.invoices.show.refunds.show", {
-    organisation: route().params?.organisation,
-    fulfilment: route().params?.fulfilment,
-    invoice: props.invoice.slug,
-    refund: refundSlug
-  });
-};
 </script>
 
 
@@ -268,49 +263,50 @@ const generateRefundRoute = (refundSlug: string) => {
     <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
 
       <!-- Field: Registration Number -->
-      <Link as="a" v-if="box_stats?.customer.reference" :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
-            class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-        <dt v-tooltip="'Company name'" class="flex-none">
-          <span class="sr-only">Registration number</span>
-          <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
-        </dt>
-        <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
-      </Link>
-
+      <dl>
+        <Link as="a" v-if="box_stats?.customer.reference" :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
+              class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+          <dt v-tooltip="'Company name'" class="flex-none">
+            <span class="sr-only">Registration number</span>
+            <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width
+                             aria-hidden="true" />
+          </dt>
+          <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
+        </Link>
+      </dl>
       <!-- Field: Contact name -->
-      <div v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Contact name'" class="flex-none">
           <span class="sr-only">Contact name</span>
           <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width
                            aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
-      </div>
+      </dl>
 
       <!-- Field: Company name -->
-      <div v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Company name'" class="flex-none">
           <span class="sr-only">Company name</span>
           <FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width
                            aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.company_name }}</dd>
-      </div>
+      </dl>
 
 
       <!-- Field: Phone -->
-      <div v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Phone'" class="flex-none">
           <span class="sr-only">Phone</span>
           <FontAwesomeIcon icon="fal fa-phone" size="xs" class="text-gray-400" fixed-width
                            aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
-      </div>
+      </dl>
 
       <!-- Field: Address -->
-      <div class="pl-1 flex items-start w-full gap-x-2">
+      <dl class="pl-1 flex items-start w-full gap-x-2">
         <dt v-tooltip="'Phone'" class="flex-none">
           <span class="sr-only">Phone</span>
           <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width
@@ -326,14 +322,14 @@ const generateRefundRoute = (refundSlug: string) => {
             No address
           </div>
         </dd>
-      </div>
+      </dl>
     </BoxStatPallet>
 
     <!-- Section: Detail (2nd box) -->
     <BoxStatPallet class="col-span-2 py-2 px-3">
       <div class="mt-1">
-        <div v-tooltip="'Recurring bill'"
-             class="w-fit flex items-center flex-none gap-x-2">
+        <dl v-if="box_stats.information.recurring_bill" v-tooltip="trans('Recurring bill')"
+            class="w-fit flex items-center flex-none gap-x-2">
           <dt class="flex-none">
             <FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" class="text-gray-500" />
           </dt>
@@ -344,17 +340,17 @@ const generateRefundRoute = (refundSlug: string) => {
                      :class="box_stats.information.recurring_bill?.route?.name ? 'cursor-pointer primaryLink' : ''">
             {{ box_stats.information.recurring_bill?.reference || "-" }}
           </component>
-        </div>
+        </dl>
 
-        <div v-tooltip="'Invoice created'"
-             class="flex items-center flex-none gap-x-2 w-fit">
+        <dl v-tooltip="trans('Invoice date')"
+            class="flex items-center flex-none gap-x-2 w-fit">
           <dt class="flex-none">
             <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500" />
           </dt>
           <dd class="text-base text-gray-500" :class='"ff"'>
             {{ useFormatTime(props.invoice.date) }}
           </dd>
-        </div>
+        </dl>
 
         <div class="relative flex items-start w-full flex-none gap-x-2 mt-2">
 
