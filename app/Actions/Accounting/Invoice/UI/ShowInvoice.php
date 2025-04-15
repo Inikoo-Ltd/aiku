@@ -288,6 +288,32 @@ class ShowInvoice extends OrgAction
                 ];
         }
 
+        $exportInvoiceOptions=[
+            [
+                'type'       => 'pdf',
+                'icon'       => 'fas fa-file-pdf',
+                'label'      => 'PDF',
+                'tooltip'    => __('Download PDF'),
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ],
+            [
+                'type'       => 'isDoc',
+                'icon'       => 'fas fa-hockey-puck',
+                'tooltip'    => __('Download Doc'),
+                'label'      => 'IsDoc',
+                'name'       => 'grp.org.accounting.invoices.show.is_doc',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ]
+
+        ];
+
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -321,39 +347,9 @@ class ShowInvoice extends OrgAction
 
                 ...$payBoxData,
 
-                'exportOptions' => [
-                    [
-                        'type'       => 'pdf',
-                        'icon'       => 'fas fa-file-pdf',
-                        'label'      => 'PDF',
-                        'tooltip'    => __('Download PDF'),
-                        'name'       => 'grp.org.accounting.invoices.download',
-                        'parameters' => [
-                            'organisation' => $invoice->organisation->slug,
-                            'invoice'      => $invoice->slug
-                        ]
-                    ],
-                    [
-                        'type'       => 'isDoc',
-                        'icon'       => 'fas fa-file-alt',
-                        'tooltip'    => __('Download Doc'),
-                        'label'      => 'Doc',
-                        'name'       => 'grp.org.accounting.invoices.show.is_doc',
-                        'parameters' => [
-                            'organisation' => $invoice->organisation->slug,
-                            'invoice'      => $invoice->slug
-                        ]
-                    ]
+                'invoiceExportOptions' => $exportInvoiceOptions,
 
-                ],
 
-                'exportPdfRoute' => [
-                    'name'       => 'grp.org.accounting.invoices.download',
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-                ],
                 'box_stats'      => $this->getBoxStats($invoice),
                 'list_refunds'   => RefundResource::collection($invoice->refunds),
                 'invoice'        => InvoiceResource::make($invoice),
