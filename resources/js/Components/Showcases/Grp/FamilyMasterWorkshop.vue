@@ -66,6 +66,16 @@ const addFaq = () => {
 }
 
 
+const images = [
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+    {image : 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'},
+]
+
 </script>
 
 <template>

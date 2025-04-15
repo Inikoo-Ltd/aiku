@@ -316,22 +316,92 @@ watch(
 
 <template>
 	<div v-if="is_manual">
-		<div class="p-5">
-			<div class="flex justify-end gap-x-3 mb-2">
-				<SelectButton
-					:modelValue="productView"
-					@update:modelValue="(e: string) => onChangeDisplay(e)"
-					:allowEmpty="false"
-					:options="optionsView"
-					optionValue="value"
-					dataKey="value"
-					aria-labelledby="custom">
-					<template #option="{ option }">
-						<FontAwesomeIcon
-							:icon="option.icon"
-							class=""
-							fixed-width
-							aria-hidden="true" />
+		<div class="flex justify-end gap-x-3 mb-2">
+			<SelectButton
+				:modelValue="productView"
+				@update:modelValue="(e: string) => onChangeDisplay(e)"
+				:allowEmpty="false"
+				:options="optionsView"
+				optionValue="value"
+				dataKey="value"
+				aria-labelledby="custom">
+				<template #option="{ option }">
+					<FontAwesomeIcon :icon="option.icon" class="" fixed-width aria-hidden="true" />
+				</template>
+			</SelectButton>
+
+			<Button
+				v-if="props.orderMode"
+				@click="() => onSubmitProduct()"
+				:key="'buttonSubmit' + isLoadingSubmit"
+				:loading="isLoadingSubmit"
+				label="Process Order"
+				icon="fal fa-plus"
+				:disabled="!selectedProducts.length"
+				type="black" />
+		</div>
+
+		<div class="bg-stone-100 overflow-hidden rounded-2xl border border-stone-300">
+			<DataTable
+				v-if="productView === 'list'"
+				ref="_dt"
+				v-model:selection="selectedProducts"
+				:value="data.data"
+				dataKey="id"
+				selectionMode="multiple"
+				:paginator="true"
+				:rows="20"
+				:filters="filters"
+				scrollable
+				paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+				:rowsPerPageOptions="[5, 10, 20, 40]"
+				currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products">
+				<template #header headerStyle="background: #ff0000">
+					<div class="flex flex-wrap gap-2 items-center justify-between">
+						<IconField>
+							<InputIcon>
+								<FontAwesomeIcon
+									icon="fal fa-search"
+									class=""
+									fixed-width
+									aria-hidden="true" />
+							</InputIcon>
+							<InputText v-model="filters['global'].value" placeholder="Search..." />
+						</IconField>
+					</div>
+				</template>
+
+				<Column
+					v-if="props.orderMode"
+					selectionMode="multiple"
+					style="width: 3rem"
+					:exportable="false"
+					frozen></Column>
+
+				<Column field="code" header="Code" sortable style="min-width: 12rem"></Column>
+
+				<Column
+					field="name"
+					header="Name"
+					sortable
+					style="min-width: 16rem"
+					frozen></Column>
+
+				<Column field="type" header="Type" sortable style="min-width: 8rem"> </Column>
+
+				<Column field="quantity_left" header="Quantity" style="min-width: 8rem"> </Column>
+				<Column
+					field="action"
+					header="Action"
+					style="min-width: 8rem"
+					v-if="props.orderMode">
+					<template #body="{ data }">
+						<InputText
+							type="number"
+							:disabled="!isSelected(data.item_id)"
+							:value="productQuantities[data.item_id] || 1"
+							@input="updateQuantity(data.item_id, $event.target.value)"
+							style="max-width: 7rem" />
 					</template>
 				</SelectButton>
 
