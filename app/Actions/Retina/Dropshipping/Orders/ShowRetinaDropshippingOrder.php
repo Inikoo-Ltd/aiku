@@ -35,6 +35,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use Illuminate\Support\Facades\DB;
 
@@ -51,6 +52,14 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         return $this->handle($order);
     }
+
+    public function inPlatform(Platform $platform, Order $order, ActionRequest $request): Order
+    {
+        $this->initialisationFromPlatform($platform, $request);
+
+        return $this->handle($order);
+    }
+
 
 
     public function htmlResponse(Order $order, ActionRequest $request): Response

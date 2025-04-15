@@ -139,9 +139,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                             'key' => 'create-order',
                             'label' => 'Create Order',
                             'route' => [
-                                'name' => 'retina.models.customer.order.store',
+                                'name' => 'retina.models.customer.order.platform.store',
                                 'parameters' => [
-                                    'customer' => $this->customer->id
+                                    'customer' => $this->customer->id,
+                                    'platform' => $this->platform->id
                                 ]
                             ]
                         ] : [],
