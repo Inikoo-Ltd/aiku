@@ -131,12 +131,12 @@ Route::prefix('catalogue')->as('catalogue.')->group(function () {
         Route::prefix('departments')->as('.departments.')->group(function () {
             Route::get('index', IndexMasterDepartments::class)->name('index');
             Route::get('{masterDepartment}', ShowMasterDepartment::class)->name('show');
-            Route::get('{masterDepartment}/workshop', ShowMasterDepartmentWorkshop::class)->name('workshop');
+            Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
         });
         Route::prefix('families')->as('.families.')->group(function () {
             Route::get('index', IndexMasterFamilies::class)->name('index');
             Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
-            Route::get('/families/{masterFamily}/workshop', ShowMasterFamilyWorkshop::class)->name('workshop');
+            Route::get('/families/{masterFamily}/blueprint', ShowMasterFamilyWorkshop::class)->name('blueprint');
         });
         Route::prefix('sub-departments')->as('.sub-departments.')->group(function () {
             Route::get('index', IndexMasterSubDepartments::class)->name('index');
