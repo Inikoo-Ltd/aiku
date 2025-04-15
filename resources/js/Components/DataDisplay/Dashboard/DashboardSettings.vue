@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from "vue"
-import { router, usePage } from "@inertiajs/vue3"
+import { inject, ref } from "vue"
+import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ToggleSwitch from "primevue/toggleswitch"
@@ -23,7 +23,7 @@ const props = defineProps<{
 		value: string
 	}
 	settings: {
-		[key: string]: {  // 'model_state', 'data_display_type'
+		[key: string]: {  // 'data_display_type'
 			align: string
 			id: string
 			options: {
@@ -172,11 +172,11 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 								:modelValue="setting.value"
 								@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
 								:falseValue="setting.options[0].value"
-								:trueValue="setting.options[1].value"
+								:trueValue="setting.options[1]?.value"
 								:disabled="`left${indexSetting}` === isLoadingToggle"
 							/>
-							<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[1].label }}
+							<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[1]?.label }}
 							</p>
 						</template>
 					</div>
@@ -192,11 +192,11 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 								:modelValue="setting.value"
 								@update:modelValue="(value: any) => updateToggle(setting.id, value, `right${indexSetting}`, true)"
 								:falseValue="setting.options[0].value"
-								:trueValue="setting.options[1].value"
+								:trueValue="setting.options[1]?.value"
 								:disabled="`right${indexSetting}` === isLoadingToggle"
 							/>
-							<p v-tooltip="setting.options[1].tooltip" class="" :class="[ setting.options[1].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[1].label }}
+							<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
+								{{ setting.options[1]?.label }}
 							</p>
 						</template>
 					</div>

@@ -78,7 +78,7 @@ const props = defineProps<{
 		value: string
 	}
 	settings: {
-		[key: string]: {  // 'model_state', 'data_display_type'
+		[key: string]: {  // 'data_display_type'
 			align: string
 			id: string
 			options: {
@@ -144,7 +144,7 @@ const compTableTotalColumns = computed(() => {
 })
 
 const compTableBody = computed(() => {
-	if (props.settings.model_state?.value === 'open') {
+	if (props.settings.shop_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
 	}
 
