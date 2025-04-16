@@ -127,18 +127,18 @@ trait WithCustomerSubNavigation
                 'number' => $customer->platforms->count()
 
             ],
-            [
-                'label'    => __('Clients'),
-                'number'   => $customer->stats->number_current_customer_clients,
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.index',
-                    'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-user-friends'],
-                    'tooltip' => __('clients')
-                ]
-            ],
+            // [
+            //     'label'    => __('Clients'),
+            //     'number'   => $customer->stats->number_current_customer_clients,
+            //     'route'     => [
+            //         'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.index',
+            //         'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
+            //     ],
+            //     'leftIcon' => [
+            //         'icon'    => ['fal', 'fa-user-friends'],
+            //         'tooltip' => __('clients')
+            //     ]
+            // ],
             [
                 'label'    => __('Portfolio'),
                 'number'   => $customer->portfolios()->count(),

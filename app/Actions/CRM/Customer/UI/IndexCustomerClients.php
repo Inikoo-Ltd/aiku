@@ -195,6 +195,8 @@ class IndexCustomerClients extends OrgAction
         ];
 
 
+        
+
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
             [
@@ -210,7 +212,21 @@ class IndexCustomerClients extends OrgAction
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                     'actions'       => [
-                        [
+                        $this->parent instanceof CustomerHasPlatform ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('New Client'),
+                            'label'   => __('New Client'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create',
+                                'parameters' => [
+                                    'organisation' => $scope->organisation->slug,
+                                    'shop'         => $scope->shop->slug,
+                                    'customer'     => $scope->slug,
+                                    'customerHasPlatform'     => $this->parent->id
+                                ]
+                            ]
+                        ] : [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New Client'),

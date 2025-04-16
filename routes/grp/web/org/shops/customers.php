@@ -55,8 +55,9 @@ Route::prefix('{customer}')->as('show')->group(function () {
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inPlatformInCustomer'])->name('.aiku.index');
-                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInCustomer'])->name('.aiku.show');
+                Route::get('create', [CreateCustomerClient::class, 'inPlatformInCustomer'])->name('.create');
                 Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInCustomer'])->name('.aiku.show');
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
                 Route::get('', IndexCustomerPlatformOrders::class)->name('.index');
