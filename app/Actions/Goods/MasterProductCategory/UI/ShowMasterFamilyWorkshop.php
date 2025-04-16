@@ -54,7 +54,7 @@ class ShowMasterFamilyWorkshop extends GrpAction
     public function htmlResponse(MasterProductCategory $masterfamily, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Goods/FamilyMasterWorkshop',
+            'Goods/FamilyMasterBlueprint',
             [
                 'title'       => __('family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
