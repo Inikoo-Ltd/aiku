@@ -30,12 +30,14 @@ trait WithDashboardIntervalValues
         array $options = []
     ): array {
         return collect(DateIntervalEnum::cases())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options) {
-            $rawValue = $intervalsModel->{$field.'_'.$interval->value};
+            $rawValue = $intervalsModel->{$field.'_'.$interval->value} ?? 0;
 
 
             $data = [
                 'raw_value' => $rawValue,
                 'tooltip'   => '',
+                // 'change'   => 'increase',  // TODO
+                // 'state'    => 'positive'  // TODO
             ];
 
             switch ($dataType) {

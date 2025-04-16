@@ -95,7 +95,7 @@ const props = defineProps<{
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
-console.log('%c Table ', 'background: red; color: white', props.tableData.tables);
+console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
 
 // const compTableHeaderColumns = computed<Header>(() => {
 // 	if (props.settings.data_display_type.value === 'minified') {
@@ -144,18 +144,18 @@ console.log('%c Table ', 'background: red; color: white', props.tableData.tables
 // 	}
 // })
 
+
+// Section: show/hide setting shop state
+const dashboardTabActive = inject("dashboardTabActive", ref(''))
+watch(() => props.tableData.current_tab, (newValueTab) => {
+	dashboardTabActive.value = newValueTab
+})
 const compTableBody = computed(() => {
 	if (props.settings.shop_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
 	}
 
 	return props.tableData.tables[props.tableData.current_tab].body;
-})
-
-// Section: show/hide setting shop state
-const dashboardTabActive = inject("dashboardTabActive", ref(''))
-watch(() => props.tableData.current_tab, (newValueTab) => {
-	dashboardTabActive.value = newValueTab
 })
 </script>
 
@@ -208,15 +208,24 @@ watch(() => props.tableData.current_tab, (newValueTab) => {
 								<FontAwesomeIcon v-if="column.iconRight" :icon="column.iconRight" class="" fixed-width aria-hidden="true" />
 							</div>
 						</template>
+						
 						<template #body="{ data }">
 							<!-- <pre>{{ column.data_display_type }}</pre> -->
 							<div class="px-2 flex relative"
 								:class="column.align === 'left' ? '' : 'justify-end text-right'"
 							>
+							<!-- <pre>{{ data.columns?.[colSlug]?.[intervals.value] }}</pre> -->
 								<Transition name="spin-to-right">
 									<div :key="intervals.value">
 										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
-										<!-- <FontAwesomeIcon :icon="faTriangle" class="text-sm" :class="colIndex%2==0 ? 'text-green-600' : 'rotate-180 text-red-400'" fixed-width aria-hidden="true" /> -->
+										<FontAwesomeIcon v-if="data.columns?.[colSlug]?.[intervals.value]?.change" :icon="faTriangle" class="text-sm"
+											:class="[
+												data.columns?.[colSlug]?.[intervals.value]?.change == 'increase' ? '' : 'rotate-180',
+												data.columns?.[colSlug]?.[intervals.value]?.state == 'positive' ? 'text-green-500' : 'text-red-500',
+											]"
+											fixed-width
+											aria-hidden="true"
+										/>
 									</div>
 								</Transition>
 							</div>

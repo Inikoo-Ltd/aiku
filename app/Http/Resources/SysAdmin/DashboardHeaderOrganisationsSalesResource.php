@@ -31,24 +31,29 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => __('Organisation'),
-                    'align'           => 'left'
+                    'formatted_value'   => __('Organisation'),
+                    'align'             => 'left',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => __('Organisation'),
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
                 'baskets_created_shop_currency' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'sortable'        => true,
                 ]
             ],
             [
                 'baskets_created_shop_currency_minified' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'sortable'        => true,
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
@@ -61,7 +66,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value' => __('In basket'),
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
@@ -74,7 +80,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             ],
             [
                 'invoices_minified' => [
-                    'formatted_value' => __('Invoices')
+                    'formatted_value' => __('Invoices'),
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
@@ -87,7 +94,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             ],
             [
                 'sales_shop_currency_minified' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
@@ -100,7 +108,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             ],
             [
                 'sales_org_currency_minified' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
