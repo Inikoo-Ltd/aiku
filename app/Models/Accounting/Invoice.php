@@ -269,7 +269,7 @@ class Invoice extends Model implements Auditable
 
     public function refunds(): HasMany
     {
-        return $this->hasMany(Invoice::class, 'invoice_id');
+        return $this->hasMany(Invoice::class, 'original_invoice_id');
     }
 
     public function invoiceCategory(): BelongsTo
