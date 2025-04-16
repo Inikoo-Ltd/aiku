@@ -20,21 +20,20 @@ class GetWebsiteWorkshopDepartment
 {
     use AsObject;
 
-    public function handle(Website $website, ProductCategory $category): array
+    public function handle(Website $website, ProductCategory $departments): array
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($category) {
+        $webBlockTypes->each(function ($blockType) use ($departments) {
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['department'] = DepartmentWebsiteResource::make($category);
+            $fieldValue['departments'] = DepartmentWebsiteResource::collection($departments);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
 
         return [
-            'category' => DepartmentWebsiteResource::make($category),
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
         ];
     }

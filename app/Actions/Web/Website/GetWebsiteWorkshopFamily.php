@@ -34,7 +34,8 @@ class GetWebsiteWorkshopFamily
         });
 
         return [
-            'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
+            'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
+            'website' => $website->settings
         ];
     }
 }
