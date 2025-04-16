@@ -101,7 +101,6 @@ const checkNumber = (event: KeyboardEvent) => {
     }
 }
 
-console.log(props)
 </script>
 
 <template>

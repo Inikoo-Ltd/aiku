@@ -14,8 +14,9 @@ use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\UI\Accounting\FulfilmentInvoiceTabsEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
@@ -25,8 +26,10 @@ use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -37,7 +40,7 @@ class ShowInvoice extends OrgAction
     use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
 
-    private Organisation|Shop $parent;
+    private Organisation|Shop|CustomerClient $parent;
 
     public function handle(Invoice $invoice): Invoice
     {
@@ -48,7 +51,14 @@ class ShowInvoice extends OrgAction
     public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(InvoiceTabsEnum::values());
+
+        if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
+            $tabs = FulfilmentInvoiceTabsEnum::values();
+        } else {
+            $tabs = InvoiceTabsEnum::values();
+        }
+
+        $this->initialisationFromShop($invoice->shop, $request)->withTab($tabs);
 
         return $this->handle($invoice);
     }
@@ -58,6 +68,14 @@ class ShowInvoice extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $customerClient;
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($invoice);
     }
@@ -160,12 +178,15 @@ class ShowInvoice extends OrgAction
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
+        if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
+            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab);
+        }
+
         $subNavigation = [];
 
         $payBoxData           = $this->getPayBoxData($invoice);
         $actions              = $this->getInvoiceActions($invoice, $request, $payBoxData);
         $exportInvoiceOptions = $this->getExportOptions($invoice);
-
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -243,127 +264,4 @@ class ShowInvoice extends OrgAction
     }
 
 
-    public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
-    {
-        $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
-            return [
-                [
-
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Invoices').$suffixIndex,
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $invoice->reference,
-                        ],
-
-                    ],
-                    'suffix'         => $suffix
-
-                ],
-            ];
-        };
-
-        return match ($routeName) {
-            'grp.org.accounting.invoices.all_invoices.show',
-            => array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.accounting.invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.accounting.invoices.all_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('All').')'
-                ),
-            ),
-
-            'grp.org.accounting.invoices.unpaid_invoices.show',
-            => array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.accounting.invoices.unpaid_invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.accounting.invoices.unpaid_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('Unpaid').')'
-                ),
-            ),
-
-            'grp.org.accounting.invoices.show',
-            => array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.accounting.invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.accounting.invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoice'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-
-
-            default => []
-        };
-    }
-
-
-    protected function getNavigation(?Invoice $invoice, string $routeName): ?array
-    {
-        if (!$invoice) {
-            return null;
-        }
-
-
-        return match ($routeName) {
-            'grp.org.accounting.invoices.show', 'grp.org.accounting.invoices.all_invoices.show', 'grp.org.accounting.invoices.unpaid_invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.shops.show.dashboard.invoices.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'shop'         => $this->parent->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
-        };
-    }
 }

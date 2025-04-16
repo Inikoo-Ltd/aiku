@@ -41,7 +41,7 @@ class IndexUniversalSearch extends OrgAction
 
         // dd($sections, $organisationSlug, $shopSlug, $warehouseSlug, $websiteSlug, $fulfilmentSlug);
         if ($sections && count($sections) > 0) {
-            $query->whereIn('sections', $sections);
+            $query->whereIn('sections', array_values($sections));
         }
 
         if ($organisationSlug) {
