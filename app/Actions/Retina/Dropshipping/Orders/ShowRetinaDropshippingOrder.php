@@ -195,7 +195,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
                 'pageHead'    => [
@@ -227,7 +226,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ],
                     'delivery_note' => $deliveryNoteRoute
                 ],
-      
+
                 'notes'       => [
                     "note_list" => [
                         [
@@ -438,7 +437,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return new OrderResource($order);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
+    public function getBreadcrumbs(array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (Order $order, array $routeParameters, string $suffix) {
             return [
@@ -448,6 +447,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'route' => $routeParameters,
                         'label' => __($order->slug),
                     ],
+                    'suffix' => $suffix,
                 ],
             ];
         };
