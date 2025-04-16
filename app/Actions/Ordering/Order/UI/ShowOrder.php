@@ -93,7 +93,7 @@ class ShowOrder extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
     {
         $this->parent = $customerClient;
         $this->scope  = $shop;
