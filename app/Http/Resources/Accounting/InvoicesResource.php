@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Accounting;
 
-use App\Models\Accounting\Invoice;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -33,13 +32,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $tax_liability_at
  * @property mixed $paid_at
  * @property mixed $pay_status
+ * @property mixed $organisation_name
+ * @property mixed $organisation_slug
+ * @property mixed $in_process
  *
  */
 class InvoicesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $parentInvoice = Invoice::find($this->invoice_id);
         return [
             'slug'              => $this->slug,
             'reference'         => $this->reference,
@@ -65,9 +66,6 @@ class InvoicesResource extends JsonResource
             'currency_symbol'   => $this->currency_symbol,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'parent_invoice'    => $parentInvoice ? [
-                'slug'              => $parentInvoice->slug,
-            ] : null,
             'in_process'        => $this->in_process,
         ];
     }
