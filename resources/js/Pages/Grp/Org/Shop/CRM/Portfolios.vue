@@ -9,7 +9,7 @@ import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import Popover from "@/Components/Popover.vue"
 import { inject, ref } from 'vue'
 import axios from 'axios'
@@ -21,7 +21,7 @@ import { notify } from '@kyvg/vue3-notification'
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
 }>()
 
 const layout = inject('layout', layoutStructure)

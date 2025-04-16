@@ -85,11 +85,11 @@ class UpdateBalanceCustomer extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): CreditTransaction
+    public function asController(Customer $customer, ActionRequest $request): void
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $this->handle($customer, $this->validatedData);
     }
 
     /**

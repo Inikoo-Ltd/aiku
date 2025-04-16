@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 
 import { faNarwhal, faBallotCheck } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { computed, ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from '@/Components/Navigation/Tabs.vue'
@@ -23,7 +23,7 @@ library.add(faNarwhal, faBallotCheck)
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: {
         current: string;
         navigation: object;

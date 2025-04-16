@@ -9,12 +9,12 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 defineProps<{
   data: object
   title: string
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
 }>();
 
 

@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import OrdersStats from '@/Components/Dropshipping/Orders/OrdersStats.vue'
 import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
@@ -24,7 +24,7 @@ import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDel
 library.add(faTags, faTasksAlt, faChartPie)
 
 const props = defineProps<{
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     title: string
     tabs: {
         current: string

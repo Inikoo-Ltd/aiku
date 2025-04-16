@@ -8,7 +8,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, defineAsyncComponent, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import RetinaTablePalletOrders from "@/Components/Tables/Retina/RetinaTablePalletOrders.vue";
 
@@ -16,7 +16,7 @@ import RetinaTablePalletOrders from "@/Components/Tables/Retina/RetinaTablePalle
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     orders: {}
 }>()
