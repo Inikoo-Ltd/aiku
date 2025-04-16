@@ -135,7 +135,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                         ] : [],
                     ]
                 ],
-                'order_route' => isset($this->platform) ? [
+                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::AIKU ? [
                     'name' => 'retina.models.customer.order.platform.store',
                     'parameters' => [
                         'customer' => $this->customer->id,
