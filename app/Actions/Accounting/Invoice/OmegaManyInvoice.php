@@ -75,7 +75,8 @@ class OmegaManyInvoice extends OrgAction
     {
         return [
             'filter' => 'required|string',
-            'bucket' => 'required|string',
+            'bucket' => 'string',
+            'type'   => 'required|string',
         ];
     }
 
@@ -101,11 +102,13 @@ class OmegaManyInvoice extends OrgAction
         $start = Carbon::createFromFormat('Ymd H:i:s', $start)->format('Y-m-d H:i:s');
         $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
 
+        $type = $this->get("type", 'invoice');
         $invoices = [];
         $query = Invoice::where('organisation_id', $this->organisation->id)
-            ->whereBetween('date', [$start, $end]);
+            ->whereBetween('date', [$start, $end])
+            ->where('type', $type);
 
-        if ($this->get('bucket') !== 'all') {
+        if ($type != 'refund' && $this->get('bucket') !== 'all') {
             $query->where('pay_status', InvoicePayStatusEnum::from($this->get('bucket')));
         }
 

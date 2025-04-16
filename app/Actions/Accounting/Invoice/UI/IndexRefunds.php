@@ -210,7 +210,7 @@ class IndexRefunds extends OrgAction
             $parameters = [
                 'organisation' => $this->organisation->slug,
                 'filter'      => $filter,
-                'bucket'      => $this->bucket,
+                'type'      => 'refund',
             ];
         } elseif ($this->parent instanceof Shop) {
             $route = 'grp.org.shops.show.dashboard.invoices.index.omega';
@@ -218,7 +218,7 @@ class IndexRefunds extends OrgAction
                 'organisation' => $this->organisation->slug,
                 'shop'        => $this->shop->slug,
                 'filter'      => $filter,
-                'bucket'      => $this->bucket,
+                'type'      => 'refund',
             ];
         } else {
             return [];

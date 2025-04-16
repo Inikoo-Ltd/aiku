@@ -269,6 +269,7 @@ class IndexInvoices extends OrgAction
                 'organisation' => $this->organisation->slug,
                 'filter'      => $filter,
                 'bucket'      => $this->bucket,
+                'type'      => 'invoice',
             ];
         } elseif ($this->parent instanceof Shop) {
             $route = 'grp.org.shops.show.dashboard.invoices.index.omega';
@@ -277,6 +278,7 @@ class IndexInvoices extends OrgAction
                 'shop'        => $this->shop->slug,
                 'filter'      => $filter,
                 'bucket'      => $this->bucket,
+                'type'      => 'invoice',
             ];
         } else {
             return [];
