@@ -40,6 +40,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                     'formatted_value'   => __('Shop'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
+                    'align'             => 'left'
                 ]
             ],
             [
@@ -47,6 +48,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                     'formatted_value'   => __('Shop'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
+                    'align'             => 'left'
                 ]
             ],
             [

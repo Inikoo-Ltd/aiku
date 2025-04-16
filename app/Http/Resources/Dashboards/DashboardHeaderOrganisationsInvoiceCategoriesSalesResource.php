@@ -31,12 +31,14 @@ class DashboardHeaderOrganisationsInvoiceCategoriesSalesResource extends JsonRes
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => __('Category')
+                    'formatted_value' => __('Category'),
+                    'align' => 'left'
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => __('Category')
+                    'formatted_value' => __('Category'),
+                    'align' => 'left'
                 ]
             ],
             [

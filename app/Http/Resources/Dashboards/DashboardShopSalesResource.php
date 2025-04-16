@@ -25,13 +25,15 @@ class DashboardShopSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $shop->name
+                    'formatted_value' => $shop->name,
+                    'align'           => 'left'
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $shop->code,
-                    'tooltip'         => $shop->name
+                    'tooltip'         => $shop->name,
+                    'align'           => 'left'
                 ]
             ],
             $this->getDashboardTableColumn($shop->salesIntervals, 'baskets_created_shop_currency'),

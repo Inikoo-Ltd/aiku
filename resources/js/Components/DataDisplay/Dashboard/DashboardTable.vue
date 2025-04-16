@@ -17,6 +17,7 @@ import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
+import { faTriangle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
@@ -181,7 +182,7 @@ const compTableBody = computed(() => {
 				
 				<!-- Column (looping) -->
 				<Column
-					v-for="(column, colSlug) in compTableHeaderColumns"
+					v-for="(column, colSlug, colIndex) in compTableHeaderColumns"
 					:key="colSlug"
 					:sortable="column.sortable"
 					:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
@@ -189,7 +190,7 @@ const compTableBody = computed(() => {
 				>
 					<template #header>
 						<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
-							:class="column.align === 'right' ? 'justify-end' : ''"
+							:class="column.align === 'left' ? '' : 'justify-end text-right'"
 						>
 							<FontAwesomeIcon v-if="column.icon" :icon="column.icon" class="" fixed-width aria-hidden="true" />
 							<span class="leading-5">{{ column.formatted_value }}</span>
@@ -198,14 +199,15 @@ const compTableBody = computed(() => {
 					</template>
 					<template #body="{ data }">
 						<div class="px-2 flex relative"
-							:class="column.align === 'right' ? 'justify-end' : ''"
+							:class="column.align === 'left' ? '' : 'justify-end text-right'"
 						>
 						<!-- {{ data.columns[colSlug]?.[intervals.value]?.formatted_value }} -->
 							<Transition name="spin-to-right">
 								<div :key="intervals.value">
 									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
+									<!-- <FontAwesomeIcon :icon="faTriangle" class="text-sm" :class="colIndex%2==0 ? 'text-green-600' : 'rotate-180 text-red-400'" fixed-width aria-hidden="true" /> -->
 								</div>
-							</transition>
+							</Transition>
 						</div>
 					</template>
 				</Column>
@@ -222,7 +224,7 @@ const compTableBody = computed(() => {
 						>
 							<template #footer>
 								<div class="px-2 flex relative"
-									:class="compTableHeaderColumns?.[colSlug]?.align === 'right' ? 'justify-end' : ''"
+									:class="compTableHeaderColumns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
 								>
 									<transition name="spin-to-right">
 										<div :key="intervals.value">

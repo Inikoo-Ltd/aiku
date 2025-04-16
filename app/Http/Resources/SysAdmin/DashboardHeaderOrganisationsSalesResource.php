@@ -31,12 +31,14 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => __('Organisation')
+                    'formatted_value' => __('Organisation'),
+                    'align'           => 'left'
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => __('Organisation')
+                    'formatted_value' => __('Organisation'),
+                    'align'           => 'left'
                 ]
             ],
             [

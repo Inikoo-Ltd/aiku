@@ -25,13 +25,15 @@ class DashboardOrganisationSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $organisation->name
+                    'formatted_value' => $organisation->name,
+                    'align'           => 'left'
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $organisation->code,
-                    'tooltip'         => $organisation->name
+                    'tooltip'         => $organisation->name,
+                    'align'           => 'left'
                 ]
             ],
             $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency'),

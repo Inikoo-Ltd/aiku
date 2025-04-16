@@ -60,12 +60,14 @@ class DashboardTotalShopsSalesResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $organisation->name,
+                    'align'           => 'left'
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $organisation->code,
                     'tooltip'         => $organisation->name,
+                    'align'           => 'left'
                 ]
             ],
             $baskets_created_shop_currency,
