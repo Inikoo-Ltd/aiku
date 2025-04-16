@@ -290,7 +290,7 @@ class GetPalletDeliveryActions
     {
         return [
             $this->bookedInDelete($palletDelivery),
-            $palletDelivery->recurringBill->status == RecurringBillStatusEnum::CURRENT ? $this->addServiceAndGoods($palletDelivery) : []
+            isset($palletDelivery->recurringBill) && $palletDelivery->recurringBill->status == RecurringBillStatusEnum::CURRENT ? $this->addServiceAndGoods($palletDelivery) : []
         ];
     }
 
