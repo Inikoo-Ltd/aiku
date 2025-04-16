@@ -258,6 +258,43 @@ class IndexInvoices extends OrgAction
         return InvoicesResource::collection($invoices);
     }
 
+    public function getExportOptions(string $filter): array
+    {
+
+        $route = '';
+        $parameters = [];
+        if ($this->parent instanceof Organisation) {
+            $route = 'grp.org.accounting.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'filter'      => $filter,
+                'bucket'      => $this->bucket,
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $route = 'grp.org.shops.show.dashboard.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'shop'        => $this->shop->slug,
+                'filter'      => $filter,
+                'bucket'      => $this->bucket,
+            ];
+        } else {
+            return [];
+        }
+
+        return [
+            [
+                'type'       => 'omega',
+                'icon'       => 'fas fa-file-code',
+                'tooltip'    => __('Download Omega'),
+                'label'      => 'Omega',
+                'name'       => $route,
+                'parameters' => $parameters,
+            ]
+
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
         $subNavigation = [];
@@ -388,6 +425,11 @@ class IndexInvoices extends OrgAction
             ];
         }
 
+        if ($request->input('between')) {
+            $filter = request()->input('between')['date'];
+            $exportInvoiceOptions = $this->getExportOptions($filter);
+            $data['invoiceExportOptions'] = $exportInvoiceOptions;
+        }
 
 
         $inertiaRender = Inertia::render(
