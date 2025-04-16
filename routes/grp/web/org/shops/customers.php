@@ -75,6 +75,10 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 });
 
             });
+            Route::prefix('/orders')->as('.orders')->group(function () {
+                Route::get('', IndexCustomerPlatformOrders::class)->name('.index');
+                Route::get('/{order}', [ShowOrder::class, 'inPlatformInCustomer'])->name('.show');
+            });
         });
     });
     Route::prefix('web-users')->as('.web-users')->group(function () {
