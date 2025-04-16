@@ -23,9 +23,16 @@ const locale = inject("locale", aikuLocaleStructure);
 
 
 function assetRedirectRoute(transaction: InvoiceTransaction) {
-  return route(
-    "grp.helpers.redirect_asset",
-    [transaction.asset_id]);
+  console.log(route().current());
+  if(route().current()=='retina.fulfilment.billing.invoices.show'){
+    return ''
+  }else{
+    return route(
+      "grp.helpers.redirect_asset",
+      [transaction.asset_id]);
+  }
+
+
 }
 
 
@@ -35,9 +42,14 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
   <div class="h-min">
     <Table :resource="data" :name="tab">
       <template #cell(code)="{ item: transaction }">
-        <Link :href="assetRedirectRoute(transaction)" class="primaryLink">
-          {{ transaction["code"] }}
-        </Link>
+        <template v-if="assetRedirectRoute(transaction)">
+          <Link :href="assetRedirectRoute(transaction)" class="primaryLink">
+            {{ transaction["code"] }}
+          </Link>
+        </template>
+        <span v-else>{{ transaction["code"] }}</span>
+
+
       </template>
       <template #cell(net_amount)="{ item }">
         <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
@@ -51,7 +63,6 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
         <span v-if="transaction.number_grouped_transactions" class="px-3">
              <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
         </span>
-
         <span v-if="transaction.fulfilment_info" class="pl-2">
             <span v-if="transaction.fulfilment_info.servicePalletInfo">
               <span class="px-2">{{ trans("Pallet") }}:

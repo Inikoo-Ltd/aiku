@@ -10,6 +10,7 @@
 namespace App\Http\Resources\Accounting;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $code
@@ -41,12 +42,12 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
             'currency_code'   => $this->currency_code,
             'in_process'      => $this->in_process,
             'fulfilment_info' => [
-                'servicePalletInfo' => $this->model_type == 'Service' ? $this->getServicePalletInfo($this->data, false) : null,
+                'servicePalletInfo' => $this->model_type == 'Service' ? $this->getServicePalletInfo($this->data, Arr::get($this->additional, 'isRetina', false)) : null,
                 'rentedScopeInfo'   => $this->getRentedScopeInfo(
                     $this->recurring_bill_transaction_id,
                     $this->model_type,
                     $this->model_id,
-                    false
+                    Arr::get($this->additional, 'isRetina', false)
                 )
             ]
 

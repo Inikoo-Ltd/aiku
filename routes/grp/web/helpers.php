@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
-use App\Actions\Fulfilment\RedirectAssetLink;
+use App\Actions\Helpers\RedirectAssetLink;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;

@@ -68,6 +68,7 @@ trait WithInvoiceTransactionFulfilmentExtraData
 
     public function getRentedScopeInfo(?int $recurring_bill_transaction_id, ?string $modelType, ?int $modelId, bool $isRetina): ?array
     {
+
         $rentalObjectInfo         = null;
         if (!$recurring_bill_transaction_id || !$modelType) {
             return null;
@@ -75,6 +76,7 @@ trait WithInvoiceTransactionFulfilmentExtraData
 
 
         $recurringBillTransaction = RecurringBillTransaction::find($recurring_bill_transaction_id);
+
         if ($recurringBillTransaction) {
             $rentalObjectInfo = [
                 'model'       => '',
