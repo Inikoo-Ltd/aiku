@@ -50,8 +50,15 @@ class ShowFulfilmentInvoice extends OrgAction
 
     protected function getParent(ActionRequest $request): Organisation|null
     {
-        $routeName = $request->route()->getName();
+
+        if(!$request->route()){
+            return null;
+        }
+
         $parent    = null;
+
+
+        $routeName = $request->route()->getName();
 
         if ($routeName == 'grp.org.accounting.invoices.show') {
             /** @var Organisation $organisation */
