@@ -14,12 +14,12 @@ import {library} from '@fortawesome/fontawesome-svg-core';
 import {
   faFileMinus
 } from "@fal";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faFileMinus);
 
 defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   data: object
   title: string
 }>()

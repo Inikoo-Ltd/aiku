@@ -7,7 +7,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, defineAsyncComponent, inject, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -54,7 +54,7 @@ const layout = inject('layout', layoutStructure)
 
 
 // Section: fetch PageHead and Tabs list
-const dataProfile = ref<{ pageHead: TSPageHeading, tabs: TSTabs } | null>(null)
+const dataProfile = ref<{ pageHead: PageHeadingTypes, tabs: TSTabs } | null>(null)
 const fetchPageHead = async () => {
     try {
         const { data } = await axios.get(

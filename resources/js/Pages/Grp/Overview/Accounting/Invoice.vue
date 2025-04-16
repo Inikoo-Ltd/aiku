@@ -21,7 +21,7 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { faClock } from '@fas';
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faFolder, faCube, faChartLine, faCreditCard, faClock, faPercent, faFileMinus);
 
@@ -29,7 +29,7 @@ const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChan
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading,
+    pageHead: PageHeadingTypes,
     tabs: {
         current: string;
         navigation: object;
