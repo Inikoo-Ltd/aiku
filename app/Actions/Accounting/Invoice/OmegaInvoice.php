@@ -27,10 +27,7 @@ class OmegaInvoice extends OrgAction
 
         $text .= $this->getOmegaExportText($invoice, 'SK');
 
-
-        $encoded_text = iconv(mb_detect_encoding($text), 'ISO-8859-15//IGNORE', mb_convert_encoding($text, 'UTF-8', 'auto'));
-        return $encoded_text;
-
+        return iconv(mb_detect_encoding($text), 'ISO-8859-15//IGNORE', mb_convert_encoding($text, 'UTF-8', 'auto'));
     }
 
 
