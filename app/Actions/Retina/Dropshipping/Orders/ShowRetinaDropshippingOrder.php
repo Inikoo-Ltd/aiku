@@ -100,7 +100,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             }
         });
 
-        $addressCollection = AddressResource::collection($processedAddresses);
 
         $payAmount   = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
@@ -111,40 +110,40 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $actions = [];
 
-            $actions = match ($order->state) {
-                OrderStateEnum::CREATING => [
+        $actions = match ($order->state) {
+            OrderStateEnum::CREATING => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-plus',
+                    'key'     => 'add-products',
+                    'label'   => __('add products'),
+                    'tooltip' => __('Add products'),
+                    'route'   => [
+                        // 'name'       => 'grp.models.order.transaction.store',
+                        // 'parameters' => [
+                        //     'order' => $order->id,
+                        // ]
+                    ]
+                ],
+                ($order->transactions()->count() > 0) ?
                     [
                         'type'    => 'button',
-                        'style'   => 'secondary',
-                        'icon'    => 'fal fa-plus',
-                        'key'     => 'add-products',
-                        'label'   => __('add products'),
-                        'tooltip' => __('Add products'),
+                        'style'   => 'save',
+                        'tooltip' => __('submit'),
+                        'label'   => __('submit'),
+                        'key'     => 'action',
                         'route'   => [
-                            // 'name'       => 'grp.models.order.transaction.store',
-                            // 'parameters' => [
-                            //     'order' => $order->id,
-                            // ]
-                        ]
-                    ],
-                    ($order->transactions()->count() > 0) ?
-                        [
-                            'type'    => 'button',
-                            'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
-                            'key'     => 'action',
-                            'route'   => [
-                                'method'     => 'patch',
-                                'name'       => 'retina.models.order.submit',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
+                            'method'     => 'patch',
+                            'name'       => 'retina.models.order.submit',
+                            'parameters' => [
+                                'order' => $order->id
                             ]
-                        ] : [],
-                ],
-                default => []
-            };
+                        ]
+                    ] : [],
+            ],
+            default => []
+        };
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
@@ -228,11 +227,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ],
                     'delivery_note' => $deliveryNoteRoute
                 ],
-                // 'alert'   => [  // TODO
-                //     'status'        => 'danger',
-                //     'title'         => 'Dummy Alert from BE',
-                //     'description'   => 'Dummy description'
-                // ],
+      
                 'notes'       => [
                     "note_list" => [
                         [

@@ -245,13 +245,13 @@ class ShowRefund extends OrgAction
                 $props,
                 [
                     RefundInProcessTabsEnum::ITEMS->value => $this->tab == RefundInProcessTabsEnum::ITEMS->value ?
-                        fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
+                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
 
 
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
-                        fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
-                        : Inertia::lazy(fn() => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
+                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
+                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
 
 
                 ]
@@ -263,13 +263,13 @@ class ShowRefund extends OrgAction
                 $props,
                 [
                     RefundTabsEnum::ITEMS->value => $this->tab == RefundTabsEnum::ITEMS->value ?
-                        fn() => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn() => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
+                        fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))
+                        : Inertia::lazy(fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
 
 
                     RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
-                        fn() => PaymentsResource::collection(IndexPayments::run($refund))
-                        : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($refund))),
+                        fn () => PaymentsResource::collection(IndexPayments::run($refund))
+                        : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
                     'invoiceExportOptions'          => $exportInvoiceOptions
                 ]
             );

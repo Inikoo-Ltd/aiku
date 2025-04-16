@@ -103,7 +103,7 @@ class ShowCustomerClient extends OrgAction
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform) {
-            if($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
                 $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
             } else {
                 $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->customer, $request);
