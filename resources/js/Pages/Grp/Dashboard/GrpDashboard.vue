@@ -15,6 +15,7 @@ import { capitalize } from "@/Composables/capitalize"
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
+import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
 
 library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine)
 
@@ -191,11 +192,11 @@ const options = {
 
 	<div class="grid grid-cols-12 m-3 gap-4">
 		<div class="col-span-12">
-			<DashboardOld 
-				:dashboard="dashboard_stats"
+			<Dashboard
+				:dashboard="props.dashboard"
 			/>
 
-			<DashboardSettings
+			<!-- <DashboardSettings
 				:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 				:settings="props.dashboard?.super_blocks?.[0].settings"
 			/>
@@ -206,7 +207,7 @@ const options = {
 				:settings="props.dashboard?.super_blocks?.[0].settings"
 			/>
 
-			<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
+			<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" /> -->
 		</div>
 	</div>
 </template>

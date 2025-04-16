@@ -20,16 +20,16 @@ const props = defineProps<{
 		current?: string
 		total_tooltip?:{}[]
 	}
-	checked?: boolean
-	tableType?: string
+	// checked?: boolean
+	// tableType?: string
 }>()
 
-const layout = inject("layout")
-const locale = inject("locale")
-const checked = ref(props.checked || false)
+// const layout = inject("layout")
+// const locale = inject("locale")
+// const checked = ref(props.checked || false)
 
 
-const isOrganisation = ref(false)
+// const isOrganisation = ref(false)
 /* .filter((org) => {
 			if (props.dashboard.settings.key_shop) {
                 return org.state !== "closed";
@@ -87,11 +87,28 @@ const isOrganisation = ref(false)
 	},
 ] */
 
+const dashboardTabActive = ref(true)
+provide("dashboardTabActive", dashboardTabActive)
+
 </script>
 
 <template>
 	<div>
+		<!-- Dashboard: {{ dashboardTabActive }} -->
 		<DashboardSettings
+			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+			:settings="props.dashboard?.super_blocks?.[0].settings"
+		/>
+		
+		<DashboardTable
+			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
+			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+			:settings="props.dashboard?.super_blocks?.[0].settings"
+		/>
+
+		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
+		
+		<!-- <DashboardSettings
 			v-if="props.dashboard?.settings"
 			:intervalOptions="props.dashboard?.interval_options"
 			:tableType="tableType"
@@ -108,6 +125,6 @@ const isOrganisation = ref(false)
 			:currency_code="props.dashboard?.currency_code"
 			:total_tooltip="props.dashboard?.total_tooltip" />
 
-		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
+		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" /> -->
 	</div>
 </template>

@@ -3,7 +3,7 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Row from "primevue/row"
 import ColumnGroup from "primevue/columngroup"
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, watch } from "vue"
 // import { useLocaleStore } from "@/Stores/locale"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
@@ -97,52 +97,52 @@ const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
 console.log('%c Table ', 'background: red; color: white', props.tableData.tables);
 
-const compTableHeaderColumns = computed<Header>(() => {
-	if (props.settings.data_display_type.value === 'minified') {
-		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
-			if (key.includes('minified')) {
-				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
-			}
+// const compTableHeaderColumns = computed<Header>(() => {
+// 	if (props.settings.data_display_type.value === 'minified') {
+// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
+// 			if (key.includes('minified')) {
+// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
+// 			}
 
-			return newObj;
-		}, {});
+// 			return newObj;
+// 		}, {});
 
-		return aaa;
-	} else {
-		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
-			if (!key.includes('minified')) {
-				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
-			}
+// 		return aaa;
+// 	} else {
+// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
+// 			if (!key.includes('minified')) {
+// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
+// 			}
 
-			return newObj;
-		}, {});
+// 			return newObj;
+// 		}, {});
 
-		return aaa;
-	}
-})
-const compTableTotalColumns = computed(() => {
-	if (props.settings.data_display_type.value === 'minified') {
-		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
-			if (key.includes('minified')) {
-				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
-			}
+// 		return aaa;
+// 	}
+// })
+// const compTableTotalColumns = computed(() => {
+// 	if (props.settings.data_display_type.value === 'minified') {
+// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
+// 			if (key.includes('minified')) {
+// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
+// 			}
 
-			return newObj;
-		}, {});
+// 			return newObj;
+// 		}, {});
 
-		return aaa;
-	} else {
-		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
-			if (!key.includes('minified')) {
-				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
-			}
+// 		return aaa;
+// 	} else {
+// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
+// 			if (!key.includes('minified')) {
+// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
+// 			}
 
-			return newObj;
-		}, {});
+// 			return newObj;
+// 		}, {});
 
-		return aaa;
-	}
-})
+// 		return aaa;
+// 	}
+// })
 
 const compTableBody = computed(() => {
 	if (props.settings.shop_state_type?.value === 'open') {
@@ -151,18 +151,25 @@ const compTableBody = computed(() => {
 
 	return props.tableData.tables[props.tableData.current_tab].body;
 })
+
+// Section: show/hide setting shop state
+const dashboardTabActive = inject("dashboardTabActive", ref(''))
+watch(() => props.tableData.current_tab, (newValueTab) => {
+	dashboardTabActive.value = newValueTab
+})
 </script>
 
 <template>
 	<div class="relative bg-white mb-3 p-4 border border-gray-200">
 		<!-- <pre>{{ props.tableData.tables[props.tableData.current_tab].body.filter(row => row.state === 'open') }}</pre> -->
+		<!-- Table: {{ isShowSettingShopState }} -->
 		<div class="">
 			<!-- Section: Tabs -->
 			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-sm md:text-base pb-2">
 				<TabList>
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
-						@click="() => (tableData.current_tab = tabSlug, 'useTabChangeDashboard(tab.tab_slug)')"
+						@click="() => (tableData.current_tab = tabSlug, dashboardTabActive = tabSlug, 'useTabChangeDashboard(tab.tab_slug)')"
 						:key="tabSlug"
 						:value="tabSlug"
 					>

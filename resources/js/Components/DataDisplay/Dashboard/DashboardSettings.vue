@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 import { get } from "lodash"
 import axios from "axios"
-import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
+import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCog } from "@far"
@@ -40,6 +40,14 @@ const props = defineProps<{
 	}
 }>()
 
+const dashboardTabActive = inject("dashboardTabActive", ref(''))
+const compShowShopStateSetting = computed(() => {
+	if (dashboardTabActive.value === "shops") {
+		return true
+	}
+
+	return false
+})
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
@@ -166,34 +174,35 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 			<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
 				<!-- Toggle: Align left (open/closed) -->
 				<template v-for="setting, indexSetting in settings" :key="indexSetting">
-					<div v-if="setting.align !== 'right'" class="flex items-center space-x-4">
-						<template v-if="setting.type === 'toggle'">
-							<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[0].label }}
-							</p>
-							<ToggleSwitch
-								:modelValue="setting.value"
-								@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
-								:falseValue="setting.options[0].value"
-								:trueValue="setting.options[1]?.value"
-								:disabled="`left${indexSetting}` === isLoadingToggle"
-							/>
-							<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[1]?.label }}
-							</p>
-						</template>
-
-						<template v-if="setting.type === 'radio'">
-							<PureRadio
-								mode="compact"
-								label="label"
-								:modelValue="setting.value"
-								@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`)"
-								:options="setting.options"
-								:disabled="`left${indexSetting}` === isLoadingToggle"
-							/>
-						</template>
-					</div>
+					<template v-if="setting.id === 'shop_state' ? compShowShopStateSetting : true">
+						<div v-if="setting.align !== 'right'" class="flex items-center space-x-4">
+							<template v-if="setting.type === 'toggle'">
+								<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
+									{{ setting.options[0].label }}
+								</p>
+								<ToggleSwitch
+									:modelValue="setting.value"
+									@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
+									:falseValue="setting.options[0].value"
+									:trueValue="setting.options[1]?.value"
+									:disabled="`left${indexSetting}` === isLoadingToggle"
+								/>
+								<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
+									{{ setting.options[1]?.label }}
+								</p>
+							</template>
+							<template v-if="setting.type === 'radio'">
+								<PureRadio
+									mode="compact"
+									label="label"
+									:modelValue="setting.value"
+									@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`)"
+									:options="setting.options"
+									:disabled="`left${indexSetting}` === isLoadingToggle"
+								/>
+							</template>
+						</div>
+					</template>
 				</template>
 
 				<!-- Toggle: Align right (minified/full) -->
