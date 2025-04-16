@@ -8,9 +8,9 @@ import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
 import WorkshopProduct from "@/Components/CMS/Website/Product/ProductWorkshop.vue"
-import { capitalize } from "@/Composables/capitalize"
 import CategoryWorkshop from '@/Components/CMS/Website/Family/CategoryWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import DepartmentWorkshop from '@/Components/CMS/Website/Departement/DepartementWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -21,15 +21,12 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    color_scheme?: {}
-    header?: {}
-    menu?: {}
-    footer?: {}
     category?: {}
     product?: {}
     website_layout: {}
     family?: {}
     settings: {}
+    department : {}
 }>()
 
 console.log(props)
@@ -43,7 +40,8 @@ const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
         family: CategoryWorkshop,
-        product: WorkshopProduct
+        product: WorkshopProduct,
+        department : DepartmentWorkshop
     }
     return components[currentTab.value]
 })

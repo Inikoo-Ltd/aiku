@@ -13,13 +13,13 @@ import {
   faFileMinus,
   faHandHoldingUsd
 } from "@fal";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoicesDeleted from '@/Components/Tables/Grp/Org/Accounting/TableInvoicesDeleted.vue'
 
 library.add(faFileMinus, faHandHoldingUsd);
 
 const props = defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   data: object
   title: string
 }>()

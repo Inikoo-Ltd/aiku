@@ -200,40 +200,7 @@ class IndexRefunds extends OrgAction
         };
     }
 
-    //    public function authorize(ActionRequest $request): bool
-    //    {
-    //
-    //        $routeName = $request->route()->getName();
-    //
-    //        if ($routeName == 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index') {
-    //            return $request->user()->authTo(
-    //                [
-    //                    "fulfilment-shop.{$this->fulfilment->id}.view",
-    //                    "accounting.{$this->fulfilment->organisation_id}.view"
-    //                ]
-    //            );
-    //        }
-    //
-    //
-    //
-    //
-    //
-    //        if ($this->parent instanceof Organisation) {
-    //            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    //        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-    //            return $request->user()->authTo("crm.{$this->shop->id}.view");
-    //        } elseif ($this->parent instanceof Shop) {
-    //            return $request->user()->authTo("orders.{$this->shop->id}.view");
-    //        } elseif ($this->parent instanceof FulfilmentCustomer or $this->parent instanceof Fulfilment) {
-    //            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
-    //        } elseif ($this->parent instanceof Group) {
-    //            return $request->user()->authTo("group-overview");
-    //        } elseif ($this->parent instanceof InvoiceCategory) {
-    //            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    //        }
-    //
-    //        return false;
-    //    }
+
 
 
     public function jsonResponse(LengthAwarePaginator $refunds): AnonymousResourceCollection

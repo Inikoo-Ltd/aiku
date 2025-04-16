@@ -636,6 +636,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
     Route::post('client', StoreCustomerClient::class)->name('client.store');
+    Route::post('client/{platform:id}', [StoreCustomerClient::class, 'inPlatform'])->name('platform-client.store');
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
     Route::post('portfolio', StoreManualPortfolio::class)->name('portfolio.store');

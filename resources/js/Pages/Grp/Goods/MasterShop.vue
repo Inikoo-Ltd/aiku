@@ -28,14 +28,14 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ShopShowcase from "@/Components/Showcases/Grp/ShopShowcase.vue";
 import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
   faMoneyBillWave, faFolderOpen, faAtom
 );
 
 const props = defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   tabs: {
     current: string
     navigation: {}

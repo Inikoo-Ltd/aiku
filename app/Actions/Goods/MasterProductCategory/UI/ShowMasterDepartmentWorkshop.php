@@ -53,7 +53,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
     public function htmlResponse(MasterProductCategory $masterdepartment, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Goods/FamilyMasterWorkshop',
+            'Goods/DepartementMasterBlueprint',
             [
                 'title'       => __('department'),
                 'breadcrumbs' => $this->getBreadcrumbs(

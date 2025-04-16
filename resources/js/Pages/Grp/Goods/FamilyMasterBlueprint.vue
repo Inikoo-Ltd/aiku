@@ -26,6 +26,7 @@ const props = defineProps<{
 
     }
 }>()
+
 const locale = inject('locale', layoutStructure)
 const visible = ref(false)
 const isModalGallery = ref(false)

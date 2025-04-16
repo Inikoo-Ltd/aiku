@@ -21,7 +21,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
 import { routeType } from "@/types/route"
-import { PageHeading as TSPageHeading } from "@/types/PageHeading"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@/Components/Image.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -54,7 +54,7 @@ library.add(
 )
 
 const props = defineProps<{
-	pageHead: TSPageHeading
+	pageHead: PageHeadingTypes
 	title: string
 	uploadImageRoute: routeType
 	data: {}

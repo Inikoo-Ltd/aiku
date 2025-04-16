@@ -16,7 +16,7 @@ import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faCheckCircle, faCircle, faClock } from '@fal'
 import { routeType } from '@/types/route'
@@ -27,7 +27,7 @@ library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPale
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     builder: String
     imagesUploadRoute: routeType
     updateRoute: routeType
