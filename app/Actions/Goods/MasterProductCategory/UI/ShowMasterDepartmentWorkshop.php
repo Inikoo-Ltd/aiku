@@ -15,9 +15,9 @@ use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\GrpAction;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
-use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Goods\Catalogue\MasterDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
@@ -89,7 +89,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     // 'subNavigation' => $this->getDepartmentSubNavigation($masterdepartment)
                 ],
 
-                'department' => DepartmentResource::make($masterdepartment),
+                'department' => MasterDepartmentsResource::make($masterdepartment),
                 'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
                 'families' => FamilyResource::collection($masterdepartment->families())
             ]
