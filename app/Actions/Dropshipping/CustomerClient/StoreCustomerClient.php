@@ -104,7 +104,7 @@ class StoreCustomerClient extends OrgAction
             'address'        => ['required', new ValidAddress()],
             'deactivated_at' => ['sometimes', 'nullable', 'date'],
             'status'         => ['sometimes', 'boolean'],
-            'platform_id'    => ['sometimes', 'nullable', 'exists:platforms,id'],
+            'platform_id'    => ['required', 'exists:platforms,id'],
 
         ];
     }
@@ -148,19 +148,11 @@ class StoreCustomerClient extends OrgAction
         return $this->handle($customer, $this->validatedData);
     }
 
+
     /**
      * @throws \Throwable
      */
-    public function asController(Customer $customer, ActionRequest $request): CustomerClient
-    {
-        $this->customer = $customer;
-        $this->asAction = true;
-        $this->initialisationFromShop($customer->shop, $request);
-
-        return $this->handle($customer, $this->validatedData);
-    }
-
-    public function inPlatform(Customer $customer, Platform $platform, ActionRequest $request): CustomerClient
+    public function asController(Customer $customer, Platform $platform, ActionRequest $request): CustomerClient
     {
         $this->customer = $customer;
         $this->set('platform_id', $platform->id);
@@ -168,18 +160,5 @@ class StoreCustomerClient extends OrgAction
 
         return $this->handle($customer, $this->validatedData);
     }
-
-    /**
-     * @throws \Throwable
-     */
-    public function fromRetina(ActionRequest $request): CustomerClient
-    {
-        $customer       = $request->user()->customer;
-        $this->customer = $customer;
-        $this->initialisation($request->get('website')->organisation, $request);
-
-        return $this->handle($customer, $this->validatedData);
-    }
-
 
 }

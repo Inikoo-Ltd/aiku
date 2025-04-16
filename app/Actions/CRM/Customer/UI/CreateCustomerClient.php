@@ -35,21 +35,20 @@ class CreateCustomerClient extends OrgAction
                 ),
                 'title'       => __('new client'),
                 'pageHead'    => [
-                    'title'        => __('new client'),
-                    'icon'         => [
+                    'title'   => __('new client'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('client')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
-                                    'grp.org.shops.show.crm.customers.show.customer-clients.create' => preg_replace('/create$/', 'index', $request->route()->getName()),
                                     'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create' => preg_replace('/create$/', 'aiku.index', $request->route()->getName()),
-                                    default                       => preg_replace('/create$/', 'index', $request->route()->getName())
+                                    default => preg_replace('/create$/', 'index', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
@@ -70,11 +69,11 @@ class CreateCustomerClient extends OrgAction
                                         'type'  => 'input',
                                         'label' => __('contact name')
                                     ],
-                                    'email' => [
+                                    'email'        => [
                                         'type'  => 'input',
                                         'label' => __('email')
                                     ],
-                                    'phone' => [
+                                    'phone'        => [
                                         'type'  => 'input',
                                         'label' => __('phone')
                                     ],
@@ -97,18 +96,20 @@ class CreateCustomerClient extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => $this->scope instanceof CustomerHasPlatform ? [
-                        'name'      => 'grp.models.customer.platform-client.store',
-                        'parameters' => [
-                            'customer'     => $customer->id,
-                            'platform'     => $this->scope->platform_id
+                    'route'     => $this->scope instanceof CustomerHasPlatform
+                        ? [
+                            'name'       => 'grp.models.customer.platform-client.store',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                                'platform' => $this->scope->platform_id
                             ]
-                    ] : [
-                        'name'      => 'grp.models.customer.client.store',
-                        'parameters' => [
-                            'customer'     => $customer->id
+                        ]
+                        : [
+                            'name'       => 'grp.models.customer.client.store',
+                            'parameters' => [
+                                'customer' => $customer->id
                             ]
-                    ]
+                        ]
                 ]
 
             ]
@@ -121,17 +122,11 @@ class CreateCustomerClient extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): Response
-    {
-        $this->scope = $customer;
-        $this->initialisationFromShop($shop, $request);
-        return $this->handle($customer, $request);
-    }
-
-    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
     {
         $this->scope = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($customer, $request);
     }
 

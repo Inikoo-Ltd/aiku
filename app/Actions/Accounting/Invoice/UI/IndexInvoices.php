@@ -372,7 +372,7 @@ class IndexInvoices extends OrgAction
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $inertiaRender->table($this->tableStructure(parent: $this->parent, prefix: InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value))
                 ->table(IndexRefunds::make()->tableStructure(parent: $this->parent, prefix: InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
-                ->table(IndexStandaloneInvoicesInProcess::make()->tableStructure(fulfilmentCustomer: $this->parent, prefix: InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value));
+                ->table(IndexStandaloneInvoicesInProcess::make()->tableStructure(prefix: InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value));
         } else {
             $inertiaRender = $inertiaRender->table($this->tableStructure(parent: $this->parent));
         }
