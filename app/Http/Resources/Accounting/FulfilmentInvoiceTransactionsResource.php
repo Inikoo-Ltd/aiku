@@ -22,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $in_process
  * @property mixed $model_type
  * @property mixed $asset_id
+ * @property mixed $number_grouped_transactions
  */
 class FulfilmentInvoiceTransactionsResource extends JsonResource
 {
@@ -53,16 +54,17 @@ class FulfilmentInvoiceTransactionsResource extends JsonResource
 
 
         return [
-            'asset_id'      => $this->asset_id,
-            'code'          => $this->code,
-            'name'          => $this->name,
-            'quantity'      => (int)$this->quantity,
-            'net_amount'    => $this->net_amount,
-            'currency_code' => $this->currency_code,
-            'in_process'    => $this->in_process,
-            'pallet'        => $palletRef,
-            'handling_date' => $handlingDate,
-            'palletRoute'   => $palletRoute,
+            'asset_id'                    => $this->asset_id,
+            'code'                        => $this->code,
+            'name'                        => $this->name,
+            'quantity'                    => (int)$this->quantity,
+            'net_amount'                  => $this->net_amount,
+            'currency_code'               => $this->currency_code,
+            'in_process'                  => $this->in_process,
+            'pallet'                      => $palletRef,
+            'handling_date'               => $handlingDate,
+            'palletRoute'                 => $palletRoute,
+            'number_grouped_transactions' => $this->number_grouped_transactions,
 
             'refund_route'      => [
                 'name'       => 'grp.models.refund.refund_transaction.store',

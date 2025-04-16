@@ -64,6 +64,9 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
             ->addSelect(
                 DB::raw("'{$invoice->currency->code}' AS currency_code"),
             )
+            ->addSelect(
+                DB::raw("count(*) as number_grouped_transactions"),
+            )
             ->groupBy(
                 'historic_assets.code',
                 'invoice_transactions.invoice_id',
@@ -73,7 +76,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'invoice_transactions.in_process',
                 'invoice_transactions.historic_asset_id',
                 'assets.shop_id',
-                'invoice_transactions.model_type'
+                'invoice_transactions.model_type',
             );
 
 

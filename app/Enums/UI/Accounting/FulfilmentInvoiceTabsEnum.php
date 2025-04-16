@@ -54,12 +54,12 @@ enum FulfilmentInvoiceTabsEnum: string
             ],
 
             FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS => [
-                'title' => __('Itemized by rental/service'),
+                'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
             ],
             FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS => [
-                'title' => __('Itemised by pallets/spaces'),
-                'icon'  => 'fal fa-bars',
+                'title' => __('Show individual pallets/spaces'),
+                'icon'  => 'fal fa-expand-arrows',
             ],
         };
     }
