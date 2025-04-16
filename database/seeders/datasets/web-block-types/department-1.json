@@ -1,8 +1,9 @@
 {
-	"slug": "department",
-	"code": "department",
+	"slug": "department-1",
+	"code": "department-1",
 	"name": "Department",
 	"scope": "webpage",
+	"category": "department",
 	"icon": ["fal", "building"],
 	"fixed" : true,
 	"data": {

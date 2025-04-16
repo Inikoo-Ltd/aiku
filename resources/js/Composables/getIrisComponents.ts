@@ -14,7 +14,7 @@ import GalleryIris from "@/Components/CMS/Webpage/Gallery/GalleryIris.vue"
 import CTAIris from "@/Components/CMS/Webpage/CTA/CTAIris.vue"
 import CTA2Iris from "@/Components/CMS/Webpage/CTA2/CTA2Iris.vue"
 import CTA3Iris from "@/Components/CMS/Webpage/CTA3/CTA3Iris.vue"
-import DepartmentIris from "@/Components/CMS/Webpage/Department/DepartmentIris.vue"
+import Department1Iris from "@/Components/CMS/Webpage/Department1/Department1Iris.vue"
 import IframeIris from "@/Components/CMS/Webpage/Iframe/IframeIris.vue"
 import ImageIris from "@/Components/CMS/Webpage/Image/ImageIris.vue"
 import OverviewIris from "@/Components/CMS/Webpage/Overview/OverviewIris.vue"
@@ -50,7 +50,7 @@ const components: Record<string, Component> = {
     'cta1': CTAIris,
     'cta2': CTA2Iris,
     'cta3': CTA3Iris,
-    'department': DepartmentIris,
+    'department-1': Department1Iris,
     'iframe': IframeIris,
     'images': ImageIris,
     'overview_aurora': OverviewIris,
