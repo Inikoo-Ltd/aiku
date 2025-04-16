@@ -264,12 +264,12 @@ class Invoice extends Model implements Auditable
      */
     public function originalInvoice(): BelongsTo
     {
-        return $this->belongsTo(Invoice::class, 'invoice_id');
+        return $this->belongsTo(Invoice::class, 'original_invoice_id');
     }
 
     public function refunds(): HasMany
     {
-        return $this->hasMany(Invoice::class, 'invoice_id');
+        return $this->hasMany(Invoice::class, 'original_invoice_id');
     }
 
     public function invoiceCategory(): BelongsTo
