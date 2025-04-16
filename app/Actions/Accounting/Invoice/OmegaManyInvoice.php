@@ -20,7 +20,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
-use Laravel\Octane\Facades\Octane;
 
 class OmegaManyInvoice extends OrgAction
 {
@@ -28,12 +27,6 @@ class OmegaManyInvoice extends OrgAction
     public function handle(): string
     {
         $invoices = $this->invoices;
-
-        $tasks = [];
-        foreach ($invoices as $invoice) {
-            $tasks[] = fn () => OmegaInvoice::run($invoice);
-        }
-        Octane::concurrently($tasks);
 
         $text = '';
         foreach ($invoices as $invoice) {
@@ -130,7 +123,7 @@ class OmegaManyInvoice extends OrgAction
             }
         });
 
-        if (count($invoices) > 5000) {
+        if (count($invoices) > 3000) {
             throw ValidationException::withMessages(
                 [
                     'message' => [
