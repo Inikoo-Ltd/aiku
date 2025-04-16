@@ -10,7 +10,6 @@ namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\FamilyWebsiteResource;
-use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
@@ -29,7 +28,7 @@ class GetWebsiteWorkshopFamily
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['product'] = ProductResource::make($category->getProducts()->first());
+            $fieldValue['family'] = FamilyWebsiteResource::collection($category->getFamilies());
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });

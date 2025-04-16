@@ -58,13 +58,13 @@ const component = computed(() => {
 	
 		<template #other="{ action }">
 			<Button
-				v-if="!orderMode"
+				v-if="!orderMode && is_manual"
 				@click="onCreateOrder"
 				:label="'Create Order'"
 				:style="'create'"
 				 />
 			<Button
-				v-if="orderMode"
+				v-if="orderMode && is_manual"
 				@click="onCancelOrder"
 				:label="'Cancel'"
 				:style="'cancel'"
