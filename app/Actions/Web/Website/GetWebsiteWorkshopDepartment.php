@@ -13,6 +13,7 @@ use App\Http\Resources\Catalogue\DepartmentWebsiteResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -24,10 +25,10 @@ class GetWebsiteWorkshopDepartment
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($departments) {
+        $webBlockTypes->each(function ($blockType) use ($website, $departments) {
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
-
+            $fieldValue['settings'] = Arr::get($website->settings, 'catalogue_template.department');
             $fieldValue['departments'] = DepartmentWebsiteResource::collection($departments);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;

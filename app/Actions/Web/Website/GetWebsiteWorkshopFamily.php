@@ -13,6 +13,7 @@ use App\Http\Resources\Catalogue\FamilyWebsiteResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -24,10 +25,10 @@ class GetWebsiteWorkshopFamily
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($families) {
+        $webBlockTypes->each(function ($blockType) use ($website, $families) {
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
-
+            $fieldValue['settings'] = Arr::get($website->settings, 'catalogue_template.department');
             $fieldValue['family'] = FamilyWebsiteResource::collection($families);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;

@@ -104,7 +104,6 @@ class ShowPalletDelivery extends OrgAction
 
         $totalPallets = $numberPallets + $numberStoredPallets;
 
-
         $actions = GetPalletDeliveryActions::run($palletDelivery, $this->canEdit, $this->isSupervisor);
 
         $palletLimits    = $palletDelivery->fulfilmentCustomer->rentalAgreement->pallets_limit ?? 0;
