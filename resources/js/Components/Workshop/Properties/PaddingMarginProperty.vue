@@ -67,7 +67,6 @@ const changePaddingToSameValue = (newVal: number) => {
 
 <template>
     <div class="flex flex-col pt-1 pb-3">
-
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
                 <div class="text-xs">{{ trans('Unit') }}</div>
