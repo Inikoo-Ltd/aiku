@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $currency_code
  * @property mixed $id
  * @property mixed $in_process
+ * @property mixed $model_type
  */
 class RetinaFulfilmentInvoiceTransactionsResource extends JsonResource
 {

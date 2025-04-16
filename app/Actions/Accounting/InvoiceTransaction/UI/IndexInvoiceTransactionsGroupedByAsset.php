@@ -51,7 +51,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
                 'historic_assets.code',
-                'historic_assets.name',
+                'historic_assets.name as description',
                 'invoice_transactions.historic_asset_id',
                 'assets.id as asset_id',
                 'assets.shop_id',
@@ -82,7 +82,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
 
         $queryBuilder->defaultSort('code');
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'quantity', 'net_amount'])
+        return $queryBuilder->allowedSorts(['code', 'description', 'quantity', 'net_amount'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -96,7 +96,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
             }
             $table->withModelOperations()->withGlobalSearch();
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             if ($invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {

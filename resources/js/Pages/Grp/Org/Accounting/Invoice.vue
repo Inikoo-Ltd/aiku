@@ -44,8 +44,6 @@ import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck } from "@fas
 import { faCheck } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
-import TableGroupedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableGroupedFulfilmentInvoiceTransactions.vue";
-import TableItemizedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableItemizedFulfilmentInvoiceTransactions.vue";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
 
 import { Icon } from "@/types/Utils/Icon";
@@ -145,8 +143,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
   const components: Component = {
     invoice_transactions: TableInvoiceTransactions,
-    grouped_fulfilment_invoice_transactions: TableGroupedFulfilmentInvoiceTransactions,
-    itemized_fulfilment_invoice_transactions: TableItemizedFulfilmentInvoiceTransactions,
+    grouped_fulfilment_invoice_transactions: TableInvoiceTransactions,
+    itemized_fulfilment_invoice_transactions: TableInvoiceTransactions,
     payments: TablePayments,
     details: ModelDetails,
     history: ModelChangelog,
