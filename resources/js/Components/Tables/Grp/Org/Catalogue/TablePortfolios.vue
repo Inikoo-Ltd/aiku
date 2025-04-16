@@ -385,7 +385,8 @@ watch(
 						:exportable="false"
 						frozen></Column>
 
-					<Column field="code" header="Code" sortable style="min-width: 12rem"></Column>
+					<Column field="code" header="Code" sortable style="min-width: 12rem">
+					</Column>
 
 					<Column
 						field="name"
