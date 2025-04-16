@@ -13,14 +13,14 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue"
 
 import StartEndDate from '@/Components/Utils/StartEndDate.vue'
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { BoxStats } from '@/types/Pallet'
 
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     status_rb: string
     transactions: {}
