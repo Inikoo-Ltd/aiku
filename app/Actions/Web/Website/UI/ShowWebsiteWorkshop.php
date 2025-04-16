@@ -61,7 +61,7 @@ class ShowWebsiteWorkshop extends OrgAction
     {
         $product    = $website->shop->products()->first();
         $families     = $website->shop->getFamilies();
-        $department = $website->shop->departments()->first();
+        $departments = $website->shop->departments();
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
 
@@ -96,12 +96,12 @@ class ShowWebsiteWorkshop extends OrgAction
                     );
         }
 
-        if ($department) {
+        if (!blank($departments)) {
             $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT->value
                     ?
-                    fn () => GetWebsiteWorkshopDepartment::run($website, $department)
+                    fn () => GetWebsiteWorkshopDepartment::run($website, $departments)
                     : Inertia::lazy(
-                        fn () => GetWebsiteWorkshopDepartment::run($website, $department)
+                        fn () => GetWebsiteWorkshopDepartment::run($website, $departments)
                     );
         }
 

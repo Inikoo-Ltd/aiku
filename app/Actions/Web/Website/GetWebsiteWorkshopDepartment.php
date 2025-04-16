@@ -11,30 +11,29 @@ namespace App\Actions\Web\Website;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentWebsiteResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebsiteWorkshopDepartment
 {
     use AsObject;
 
-    public function handle(Website $website, ProductCategory $category): array
+    public function handle(Website $website, Collection $departments): array
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($category) {
+        $webBlockTypes->each(function ($blockType) use ($departments) {
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['department'] = DepartmentWebsiteResource::make($category);
+            $fieldValue['departments'] = DepartmentWebsiteResource::collection($departments);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
 
         return [
-            'category' => DepartmentWebsiteResource::make($category),
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
         ];
     }
