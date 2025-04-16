@@ -143,7 +143,7 @@ class DeleteDispatchedPalletReturn extends OrgAction
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
     }
 
-    public function asController(Organisation $organisation, PalletReturn $palletReturn, ActionRequest $request): void
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): void
     {
         $this->fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
