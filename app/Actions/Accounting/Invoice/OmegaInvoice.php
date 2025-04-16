@@ -50,17 +50,6 @@ class OmegaInvoice extends OrgAction
             ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
-    public function action(Invoice $invoice, array $modelData, int $hydratorsDelay = 0, bool $strict = true): string
-    {
-        $this->asAction       = true;
-        $this->strict         = $strict;
-        $this->hydratorsDelay = $hydratorsDelay;
-
-        $this->initialisationFromShop($invoice->shop, $modelData);
-
-        return $this->handle($invoice);
-    }
-
 
     public function getOmegaExportText(Invoice $invoice, $base_country = 'SK')
     {

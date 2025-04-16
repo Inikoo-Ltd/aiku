@@ -36,6 +36,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -357,7 +358,8 @@ class IndexRefunds extends OrgAction
         $routeParameters = $request->route()->originalParameters();
 
         $invoiceExportOptions = [];
-        if ($request->input('between')) {
+
+        if (Arr::get($request->input('between'), 'date')) {
             $filter = request()->input('between')['date'];
             $exportInvoiceOptions = $this->getExportOptions($filter);
             $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
