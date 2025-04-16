@@ -36,8 +36,20 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
           {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
         </div>
       </template>
-      <template #cell(description)="{ item: transaction }">
-        <span>{{ transaction.description }}</span>
+      <template #cell(name)="{ item: transaction }">
+        <span>{{ transaction.name }}</span>
+        <span v-if="transaction.pallet && transaction.handling_date">
+                    <br>
+                    <span class="text-gray-400 text-xs">Pallet:
+                        <Link :href="route(transaction.palletRoute?.name, transaction.palletRoute?.parameters) as unknown as string" class="primaryLink">
+                                {{ transaction.pallet }}
+                        </Link>
+                    </span>
+                    <br>
+                    <span class="text-gray-400 text-xs">Date: {{ transaction.handling_date }}</span>
+                </span>
+        <span v-else>
+                </span>
       </template>
     </Table>
   </div>

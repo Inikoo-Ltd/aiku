@@ -6,10 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Accounting\Invoice\Transaction\UI;
+namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
-use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsGroupedByAsset;
-use App\Actions\RetinaAction;
+use App\Actions\OrgAction;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -19,10 +19,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaInvoiceTransactions extends RetinaAction
+class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
 {
-    protected Invoice $invoice;
-
     public function handle(Invoice $invoice, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -35,7 +33,14 @@ class IndexRetinaInvoiceTransactions extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
+
+        if ($invoice->deleted_at) {
+            $baseQuery    = InvoiceTransaction::withTrashed();
+            $queryBuilder = QueryBuilder::for($baseQuery);
+        } else {
+            $queryBuilder = QueryBuilder::for(InvoiceTransaction::class);
+        }
+
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
 
@@ -44,10 +49,11 @@ class IndexRetinaInvoiceTransactions extends RetinaAction
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.model_type',
                 'invoice_transactions.in_process',
+                'invoice_transactions.data',
                 'historic_assets.code',
                 'historic_assets.name',
                 'invoice_transactions.historic_asset_id',
-                'assets.id',
+                'assets.id as asset_id',
                 'assets.shop_id',
                 DB::raw('SUM(invoice_transactions.quantity) as quantity'),
                 DB::raw('SUM(invoice_transactions.net_amount) as net_amount'),
@@ -61,6 +67,7 @@ class IndexRetinaInvoiceTransactions extends RetinaAction
             ->groupBy(
                 'historic_assets.code',
                 'invoice_transactions.invoice_id',
+                'invoice_transactions.data',
                 'historic_assets.name',
                 'assets.id',
                 'invoice_transactions.in_process',
@@ -80,7 +87,20 @@ class IndexRetinaInvoiceTransactions extends RetinaAction
 
     public function tableStructure(Invoice $invoice, $prefix = null): Closure
     {
-        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, $prefix);
+        return function (InertiaTable $table) use ($prefix, $invoice) {
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix.'Page');
+            }
+            $table->withModelOperations()->withGlobalSearch();
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            if ($invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {
+                $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            }
+            $table->defaultSort('code');
+        };
     }
 
 }

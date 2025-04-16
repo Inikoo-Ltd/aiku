@@ -107,6 +107,17 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
+                            "label"  => __("ISDoc invoice"),
+                            "icon"   => "fa-light fa-file-invoice-dollar",
+                            "fields" => [
+                                'show_isdoc_invoice' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Show ISDoc invoice'),
+                                    'value' => Arr::get($organisation->settings, 'show_isdoc_invoice', false),
+                                ],
+                            ],
+                        ],
+                        [
                             "label"  => __("google drive"),
                             "icon"   => "fab fa-google",
                             "button" => [

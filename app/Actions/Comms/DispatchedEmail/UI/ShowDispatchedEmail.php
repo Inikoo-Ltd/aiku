@@ -91,9 +91,6 @@ class ShowDispatchedEmail extends OrgAction
 
                 ],
 
-                // DispatchedEmailTabsEnum::SHOWCASE->value => $this->tab == DispatchedEmailTabsEnum::SHOWCASE->value ?
-                //     fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))
-                //     : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::ITEMS->value))),
 
                 DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value => $this->tab == DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value ?
                     fn () => EmailTrackingEventResource::collection(IndexEmailTrackingEvents::run($dispatchedEmail, DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value))

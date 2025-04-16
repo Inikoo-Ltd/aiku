@@ -32,7 +32,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?Invoice
     {
         $doTransactions = false;
-        if (in_array('transactions', $this->with) or $forceWithTransactions or in_array('full', $this->with)) {
+        if (in_array('transactions', $this->with) || $forceWithTransactions || in_array('full', $this->with)) {
             $doTransactions = true;
         }
 

@@ -18,6 +18,8 @@
     "ext-simplexml": "*",
     "ext-soap": "*",
     "ext-zlib": "*",
+    "ext-bcmath": "*",
+    "adawolfa/isdoc": "^1.3",
     "alibabacloud/dm-20151123": "^1.0",
     "aws/aws-php-sns-message-validator": "^1.1",
     "aws/aws-sdk-php": "^3.255",
