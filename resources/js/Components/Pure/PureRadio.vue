@@ -11,6 +11,7 @@ const props = defineProps<{
     mode?: string
     options: any
     by?: string
+    label?: string  // 'label'
 }>()
 
 const model = defineModel()
@@ -45,7 +46,7 @@ const layout = inject('layout', layoutStructure)
                                         active ? 'ring-2 ring-gray-600 ring-offset-2' : '',
                                         checked ? 'bg-gray-600 text-white hover:bg-gray-500' : 'ring-1 ring-inset ring-gray-300 bg-white text-gray-700 hover:bg-gray-50',
                                     ]">
-                                    <RadioGroupLabel as="span">{{ option.name }}</RadioGroupLabel>
+                                    <RadioGroupLabel as="span">{{ props.label ? option[props.label] : option.name }}</RadioGroupLabel>
                                 </div>
                             </RadioGroupOption>
                         </div>

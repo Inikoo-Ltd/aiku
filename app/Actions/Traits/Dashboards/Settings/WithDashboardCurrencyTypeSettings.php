@@ -33,7 +33,7 @@ trait WithDashboardCurrencyTypeSettings
             'display' => count($options) > 1,
             'id'      => $id,
             'align'   => $align,
-            'type'    => 'toggle',
+            'type'    => 'radio',
             'value'   => $value,
             'options' => $options
         ];

@@ -181,59 +181,68 @@ const compTableBody = computed(() => {
 				</template>
 				
 				<!-- Column (looping) -->
-				<Column
-					v-for="(column, colSlug, colIndex) in compTableHeaderColumns"
+				<template
+					v-for="(column, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
 					:key="colSlug"
-					:sortable="column.sortable"
-					:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
-					:field="colSlug"
 				>
-					<template #header>
-						<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
-							:class="column.align === 'left' ? '' : 'justify-end text-right'"
-						>
-							<FontAwesomeIcon v-if="column.icon" :icon="column.icon" class="" fixed-width aria-hidden="true" />
-							<span class="leading-5">{{ column.formatted_value }}</span>
-							<FontAwesomeIcon v-if="column.iconRight" :icon="column.iconRight" class="" fixed-width aria-hidden="true" />
-						</div>
-					</template>
-					<template #body="{ data }">
-						<div class="px-2 flex relative"
-							:class="column.align === 'left' ? '' : 'justify-end text-right'"
-						>
-						<!-- {{ data.columns[colSlug]?.[intervals.value]?.formatted_value }} -->
-							<Transition name="spin-to-right">
-								<div :key="intervals.value">
-									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
-									<!-- <FontAwesomeIcon :icon="faTriangle" class="text-sm" :class="colIndex%2==0 ? 'text-green-600' : 'rotate-180 text-red-400'" fixed-width aria-hidden="true" /> -->
-								</div>
-							</Transition>
-						</div>
-					</template>
-				</Column>
+				<!-- {{column.data_display_type}} -->
+					<Column
+						v-if="!column.data_display_type || column.data_display_type === 'always' ? true : column.data_display_type === props.settings.data_display_type.value"
+						:sortable="column.sortable"
+						:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
+						:field="colSlug"
+					>
+						<template #header>
+							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
+								:class="column.align === 'left' ? '' : 'justify-end text-right'"
+							>
+								<FontAwesomeIcon v-if="column.icon" :icon="column.icon" class="" fixed-width aria-hidden="true" />
+								<span class="leading-5">{{ column.formatted_value }}</span>
+								<FontAwesomeIcon v-if="column.iconRight" :icon="column.iconRight" class="" fixed-width aria-hidden="true" />
+							</div>
+						</template>
+						<template #body="{ data }">
+							<!-- <pre>{{ column.data_display_type }}</pre> -->
+							<div class="px-2 flex relative"
+								:class="column.align === 'left' ? '' : 'justify-end text-right'"
+							>
+								<Transition name="spin-to-right">
+									<div :key="intervals.value">
+										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
+										<!-- <FontAwesomeIcon :icon="faTriangle" class="text-sm" :class="colIndex%2==0 ? 'text-green-600' : 'rotate-180 text-red-400'" fixed-width aria-hidden="true" /> -->
+									</div>
+								</Transition>
+							</div>
+						</template>
+					</Column>
+				</template>
 			
-				<!-- Row: Total -->
+				<!-- Row: Total (footer) -->
 				<ColumnGroup type="footer">
 					<Row>
-						<Column
-							v-for="(column, colSlug) in compTableTotalColumns"
+						<template
+							v-for="(column, colSlug) in props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns"
 							:key="colSlug"
-							:sortable="column.sortable"
-							:sortField="`${column.key}.${intervals.value}.formatted_value`"
-							:field="column.key"
 						>
-							<template #footer>
-								<div class="px-2 flex relative"
-									:class="compTableHeaderColumns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
-								>
-									<transition name="spin-to-right">
-										<div :key="intervals.value">
-											{{ column[intervals.value]?.formatted_value ?? column?.formatted_value }}
-										</div>
-									</transition>
-								</div>
-							</template>
-						</Column>
+							<Column
+								v-if="!column.data_display_type || column.data_display_type === 'always' ? true : column.data_display_type === props.settings.data_display_type.value"
+								:sortable="column.sortable"
+								:sortField="`${column.key}.${intervals.value}.formatted_value`"
+								:field="column.key"
+							>
+								<template #footer>
+									<div class="px-2 flex relative"
+										:class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
+									>
+										<transition name="spin-to-right">
+											<div :key="intervals.value">
+												{{ column[intervals.value]?.formatted_value ?? column?.formatted_value }}
+											</div>
+										</transition>
+									</div>
+								</template>
+							</Column>
+						</template>
 					</Row>
 				</ColumnGroup>
 			</DataTable>
