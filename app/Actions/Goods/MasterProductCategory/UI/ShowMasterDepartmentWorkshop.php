@@ -71,22 +71,14 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                         'title' => __('department')
                     ],
                     'actions' => [
-                        $this->canEdit ? [
+                        [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
+                        ]
                     ],
                     // 'subNavigation' => $this->getDepartmentSubNavigation($masterdepartment)
                 ],

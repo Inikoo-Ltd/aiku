@@ -7,13 +7,14 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Dialog from 'primevue/dialog'
 import SwiperImage from '@/Components/Elements/SwiperImage.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-
+import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlug, faPlus, faPlusCircle } from '@far'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 
 const props = defineProps<{
+    PageHeading : {}
     data: {
         family: {
             data: {
@@ -80,6 +81,8 @@ const images = [
 </script>
 
 <template>
+     <PageHeading :data="pageHead">
+    </PageHeading>
     <div class="p-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Left: Product Form -->

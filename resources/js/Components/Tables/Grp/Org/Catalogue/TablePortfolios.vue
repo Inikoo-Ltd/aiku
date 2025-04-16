@@ -386,6 +386,11 @@ watch(
 						frozen></Column>
 
 					<Column field="code" header="Code" sortable style="min-width: 12rem">
+						<template #body="{ data }">
+							<Link :href="productRoute(data)" class="primaryLink">
+							{{ data.code }}
+							</Link>
+						</template>
 					</Column>
 
 					<Column

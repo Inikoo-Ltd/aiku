@@ -23,14 +23,22 @@ export default {
             type: "border",
         },
         {
-            key: ["settings", "container", "properties", "shadow"],
+            key: ["settings", "container", "properties"],
             name: "Shadow",
-            type: "shadow",
+            replaceForm : [
+                {
+                    key: ["shadow"],
+                    label: "Shadow",
+                    type: "shadow",
+                },
+                {
+                    key: ["shadowColor"],
+                    label: "Shadow Color",
+                    type: "color",
+                },
+            ]
+           
         },
-        {
-            key: ["settings", "container", "properties", "shadowColor"],
-            name: "Shadow Color",
-            type: "color",
-        },
+       
     ],
 }
