@@ -14,11 +14,16 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\GrpAction;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\WebBlockType;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -73,7 +78,8 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     'actions' => [
                         [
                             'type'  => 'button',
-                            'style' => 'edit',
+                            'style' => 'primary',
+                            'label' => 'save',
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -83,7 +89,9 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     // 'subNavigation' => $this->getDepartmentSubNavigation($masterdepartment)
                 ],
 
-                'data' => GetMasterProductCategoryShowcase::run($masterdepartment)
+                'department' => DepartmentResource::make($masterdepartment),
+                'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
+                'families' => FamilyResource::collection($masterdepartment->families())
             ]
         );
     }
