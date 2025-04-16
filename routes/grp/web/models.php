@@ -100,6 +100,7 @@ use App\Actions\Fulfilment\PalletDelivery\StartBookingPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\SubmitAndConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDelivery;
 use App\Actions\Fulfilment\PalletReturn\AddAddressToPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\DeleteDispatchedPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturnAddress;
 use App\Actions\Fulfilment\PalletReturn\DetachPalletFromReturn;
@@ -422,7 +423,6 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
 
 
 Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(function () {
-
     Route::post('pick-all-with-stored-items', PickedPalletReturnWithStoredItems::class)->name('pick_all_with_stored_items');
     Route::post('address', AddAddressToPalletReturn::class)->name('address.store');
     Route::patch('address/switch', SwitchPalletReturnDeliveryAddress::class)->name('address.switch');
@@ -431,6 +431,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('dispatch', DispatchPalletReturn::class)->name('dispatch');
     Route::patch('delete', DeletePalletReturn::class)->name('delete');
+    Route::delete('dispatched-delete', DeleteDispatchedPalletReturn::class)->name('dispatched-delete');
 
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPalletReturn'])->name('attachment.detach')->withoutScopedBindings();
