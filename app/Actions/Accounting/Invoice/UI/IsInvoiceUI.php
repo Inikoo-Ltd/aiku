@@ -112,12 +112,12 @@ trait IsInvoiceUI
 
     public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData): array
     {
-        $actions = [];
+        $wrappedActions = [];
 
         $trashIcon = 'fal fa-trash-alt';
 
         if ($this->parent instanceof Fulfilment) {
-            $actions[] =
+            $wrappedActions[] =
                 $this->isSupervisor
                     ? [
                     'supervisor' => true,
@@ -159,7 +159,7 @@ trait IsInvoiceUI
                     ]
                 ];
         } else {
-            $actions[] =
+            $wrappedActions[] =
                 [
                     'supervisor' => true,
                     'type'       => 'button',
@@ -179,7 +179,7 @@ trait IsInvoiceUI
         }
 
         if ($this->parent instanceof Organisation) {
-            $actions[] = [
+            $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
                 'label' => __('edit'),
@@ -189,7 +189,7 @@ trait IsInvoiceUI
                 ],
             ];
         } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $actions[] = [
+            $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
                 'label' => __('edit'),
@@ -201,7 +201,7 @@ trait IsInvoiceUI
         }
 
 
-        $actions[] =
+        $wrappedActions[] =
             [
                 'type'  => 'button',
                 'style' => 'tertiary',
@@ -217,7 +217,7 @@ trait IsInvoiceUI
             ];
 
         if ($payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
-            $actions[] =
+            $wrappedActions[] =
                 [
                     'type'  => 'button',
                     'style' => 'create',
@@ -239,7 +239,11 @@ trait IsInvoiceUI
                 ];
         }
 
-        return $actions;
+
+
+
+
+        return $wrappedActions;
     }
 
 }
