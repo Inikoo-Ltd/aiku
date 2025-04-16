@@ -49,9 +49,9 @@ class ShowCustomerClient extends OrgAction
         return $customerClient;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $this->parent = $customer;
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
@@ -74,14 +74,7 @@ class ShowCustomerClient extends OrgAction
 
         return $this->handle($customerClient);
     }
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
-    {
-        $this->parent = $customerHasPlatform;
-        $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
-        return $this->handle($customerClient);
-    }
 
     public function htmlResponse(CustomerClient $customerClient, ActionRequest $request): Response
     {
