@@ -16,6 +16,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Organisation;
 use Closure;
@@ -106,7 +107,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerClient;
         $this->initialisationFromShop($shop, $request);

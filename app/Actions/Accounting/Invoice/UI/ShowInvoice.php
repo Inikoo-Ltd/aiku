@@ -26,6 +26,9 @@ use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +40,7 @@ class ShowInvoice extends OrgAction
     use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
 
-    private Organisation|Shop $parent;
+    private Organisation|Shop|CustomerClient $parent;
 
     public function handle(Invoice $invoice): Invoice
     {
@@ -65,6 +68,14 @@ class ShowInvoice extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $customerClient;
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($invoice);
     }
