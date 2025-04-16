@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -46,8 +47,10 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     {
         if ($this->parent instanceof CustomerClient) {
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
-        } else {
+        } elseif ($this->parent instanceof Customer && $this->parent->shop->type == ShopTypeEnum::B2B) {
             $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
+        } elseif ($this->parent instanceof Customer && $this->parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
         }
 
 
