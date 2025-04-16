@@ -35,9 +35,10 @@ class MasterDepartmentsResource extends JsonResource
             'slug'               => $this->slug,
             'code'               => $this->code,
             'name'               => $this->name,
+            'image'               => $this->imageSources(720, 480),
             'description'              => $this->description,
             'created_at'               => $this->created_at,
-            'updated_at'               => $this->updated_at,
+            'updated_at'               => $this->updated_at
         ];
     }
 }
