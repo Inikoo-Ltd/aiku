@@ -24,25 +24,7 @@
 					}
 				  ]
 				},
-				"images": [
-				  {
-					"sources": {
-					  "avif": "http://10.0.0.100:8080/2bm_AyX-KHViYhTBhS2z9_W6Ep0Pzz_eXjP26ClWQ-8/bG9jYWw6Ly8vYWlrdS9hcHAvbWVkaWEvbWVkaWEvMjc2MTUvYmU0MTQ3Nzk5NGI2MDEwM2NkZDI5NzUyNmQxYmM4MDguanBn.avif",
-					  "webp": "http://10.0.0.100:8080/_r_0qxma2l01eS-xcmJB7WNqKNYEnTEWJ3GrnAVSX0s/bG9jYWw6Ly8vYWlrdS9hcHAvbWVkaWEvbWVkaWEvMjc2MTUvYmU0MTQ3Nzk5NGI2MDEwM2NkZDI5NzUyNmQxYmM4MDguanBn.webp",
-					  "original": "http://10.0.0.100:8080/5GYU0tMJNtINwmg559U7ADtCTmKeA-AAa5UDwYG_GGA/bG9jYWw6Ly8vYWlrdS9hcHAvbWVkaWEvbWVkaWEvMjc2MTUvYmU0MTQ3Nzk5NGI2MDEwM2NkZDI5NzUyNmQxYmM4MDguanBn"
-					},
-					"properties": {
-					  "width": "491px",
-					  "height": "819px",
-					  "position": {
-						"top": "28px",
-						"left": "9px",
-						"right": "776.333px",
-						"bottom": "65px"
-					  }
-					}
-				  }
-				],
+				"images": [],
 				"container": {
 				  "properties": {
 					"border": {
