@@ -43,7 +43,7 @@ import {
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck } from "@fas";
 import { faCheck } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableGroupedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableGroupedFulfilmentInvoiceTransactions.vue";
 import TableItemizedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableItemizedFulfilmentInvoiceTransactions.vue";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
@@ -66,7 +66,7 @@ const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChan
 
 const props = defineProps<{
   title: string,
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   tabs: {
     current: string
     navigation: {}

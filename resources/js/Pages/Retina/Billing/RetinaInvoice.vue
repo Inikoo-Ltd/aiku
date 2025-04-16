@@ -29,7 +29,7 @@
 
   
   import { useFormatTime } from '@/Composables/useFormatTime'
-  import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
   import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
 
   import { InvoiceResource } from '@/types/invoice'
@@ -42,7 +42,7 @@ import RetinaTableItemizedTransactions from './RetinaTableItemizedTransactions.v
   
   const props = defineProps<{
       title: string,
-      pageHead: TSPageHeading
+      pageHead: PageHeadingTypes
       tabs: {
           current: string
           navigation: {}

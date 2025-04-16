@@ -11,7 +11,7 @@ import { faCube, faChair, faFolder, } from '@fal'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import BoxNote from '@/Components/Pallet/BoxNote.vue'
@@ -32,7 +32,7 @@ library.add(faFolder, faCube, faChair)
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
     pickings: {}

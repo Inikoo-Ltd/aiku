@@ -20,7 +20,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -34,12 +33,10 @@ use App\Models\Accounting\InvoiceCategory;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -58,10 +55,10 @@ class IndexInvoices extends OrgAction
     use WithInvoiceCategorySubNavigation;
 
 
-    private Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop $parent;
+    private Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop $parent;
     private string $bucket = '';
 
-    public function handle(Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -100,8 +97,6 @@ class IndexInvoices extends OrgAction
             $queryBuilder->where('invoices.customer_client_id', $parent->id);
         } elseif ($parent instanceof Order) {
             $queryBuilder->where('invoices.order_id', $parent->id);
-        } elseif ($parent instanceof Group) {
-            $queryBuilder->where('invoices.group_id', $parent->id);
         } elseif ($parent instanceof InvoiceCategory) {
             $queryBuilder->where('invoices.invoice_category_id', $parent->id);
         } elseif ($parent instanceof OrgPaymentServiceProvider) {
@@ -161,7 +156,7 @@ class IndexInvoices extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): Closure
+    public function tableStructure(Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
@@ -179,9 +174,6 @@ class IndexInvoices extends OrgAction
             } elseif ($parent instanceof CustomerClient) {
                 $stats     = $parent->stats;
                 $noResults = __("This customer client hasn't been invoiced");
-            } elseif ($parent instanceof Group) {
-                $stats     = $parent->orderingStats;
-                $noResults = __("This group hasn't been invoiced");
             } elseif ($parent instanceof InvoiceCategory) {
                 $stats     = $parent->stats;
                 $noResults = __("This invoice category hasn't been invoiced");
@@ -207,50 +199,11 @@ class IndexInvoices extends OrgAction
             }
 
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-
-
-            if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
-            }
             $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
-
-
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-        if ($this->parent instanceof Organisation) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-            return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
-        } elseif ($this->parent instanceof Shop) {
-            //todo think about it
-            $permission = $request->user()->authTo("orders.{$this->shop->id}.view");
-
-            return $permission;
-        } elseif ($this->parent instanceof FulfilmentCustomer or $this->parent instanceof Fulfilment) {
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        }
-
-        return false;
     }
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
@@ -507,14 +460,6 @@ class IndexInvoices extends OrgAction
         return $this->handle($fulfilment);
     }
 
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle(group());
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inInvoiceCategory(Organisation $organisation, InvoiceCategory $invoiceCategory, ActionRequest $request): LengthAwarePaginator
@@ -716,16 +661,6 @@ class IndexInvoices extends OrgAction
                 )
             ),
 
-            'grp.overview.ordering.invoices.index' =>
-            array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
 
 
             default => []

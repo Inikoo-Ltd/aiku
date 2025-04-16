@@ -16,6 +16,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,6 @@ class StoreCustomerClient extends OrgAction
     use WithNoStrictRules;
 
     private Customer $customer;
-
 
     /**
      * @throws \Throwable
@@ -104,6 +104,7 @@ class StoreCustomerClient extends OrgAction
             'address'        => ['required', new ValidAddress()],
             'deactivated_at' => ['sometimes', 'nullable', 'date'],
             'status'         => ['sometimes', 'boolean'],
+            'platform_id'    => ['sometimes', 'nullable', 'exists:platforms,id'],
 
         ];
     }
@@ -154,6 +155,15 @@ class StoreCustomerClient extends OrgAction
     {
         $this->customer = $customer;
         $this->asAction = true;
+        $this->initialisationFromShop($customer->shop, $request);
+
+        return $this->handle($customer, $this->validatedData);
+    }
+
+    public function inPlatform(Customer $customer, Platform $platform, ActionRequest $request): CustomerClient
+    {
+        $this->customer = $customer;
+        $this->set('platform_id', $platform->id);
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
