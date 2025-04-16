@@ -44,10 +44,9 @@ class OmegaManyInvoice extends OrgAction
 
         $omegaText = $this->handle();
 
-        $filters  = Arr::pull($modelData, 'filter', []);
+        $filter  = Arr::pull($modelData, 'filter', []);
 
-
-        $filename = 'omega-invoice-'. $filters .'.txt';
+        $filename = 'omega-invoice-'. $filter .'.txt';
 
         return response($omegaText, 200)
             ->header('Content-Type', 'text/plain')
@@ -62,14 +61,22 @@ class OmegaManyInvoice extends OrgAction
 
         $omegaText = $this->handle();
 
-        $filters  = Arr::pull($modelData, 'filter', []);
+        $filter  = Arr::pull($modelData, 'filter', []);
 
 
-        $filename = 'omega-invoice-'. $filters .'.txt';
+        $filename = 'omega-invoice-'. $filter .'.txt';
 
         return response($omegaText, 200)
             ->header('Content-Type', 'text/plain')
             ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+    }
+
+    public function rules(): array
+    {
+        return [
+            'filter' => 'required|string',
+            'bucket' => 'required|string',
+        ];
     }
 
     public function afterValidator(): void
@@ -101,7 +108,8 @@ class OmegaManyInvoice extends OrgAction
         if ($this->get('bucket') !== 'all') {
             $query->where('pay_status', InvoicePayStatusEnum::from($this->get('bucket')));
         }
-        if ($this->shop) {
+
+        if (isset($this->shop) && $this->shop->id) {
             $query->where('shop_id', $this->shop->id);
         }
 
@@ -111,15 +119,15 @@ class OmegaManyInvoice extends OrgAction
             }
         });
 
-        // if(count($invoices) > 2000) {
-        //     throw ValidationException::withMessages(
-        //         [
-        //             'message' => [
-        //                 'amount' => 'The number of invoices is too large, please reduce the date range',
-        //             ]
-        //         ]
-        //     );
-        // }
+        if (count($invoices) > 1000) {
+            throw ValidationException::withMessages(
+                [
+                    'message' => [
+                        'amount' => 'The number of invoices is too large, please reduce the date range',
+                    ]
+                ]
+            );
+        }
 
         $this->invoices = $invoices;
 

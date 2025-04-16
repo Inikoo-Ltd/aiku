@@ -200,6 +200,43 @@ class IndexRefunds extends OrgAction
         };
     }
 
+    public function getExportOptions(string $filter): array
+    {
+
+        $route = '';
+        $parameters = [];
+        if ($this->parent instanceof Organisation) {
+            $route = 'grp.org.accounting.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'filter'      => $filter,
+                'bucket'      => $this->bucket,
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $route = 'grp.org.shops.show.dashboard.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'shop'        => $this->shop->slug,
+                'filter'      => $filter,
+                'bucket'      => $this->bucket,
+            ];
+        } else {
+            return [];
+        }
+
+        return [
+            [
+                'type'       => 'omega',
+                'icon'       => 'fas fa-file-code',
+                'tooltip'    => __('Download Omega'),
+                'label'      => 'Omega',
+                'name'       => $route,
+                'parameters' => $parameters,
+            ]
+
+        ];
+    }
+
     //    public function authorize(ActionRequest $request): bool
     //    {
     //
@@ -319,6 +356,13 @@ class IndexRefunds extends OrgAction
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
 
+        $invoiceExportOptions = [];
+        if ($request->input('between')) {
+            $filter = request()->input('between')['date'];
+            $exportInvoiceOptions = $this->getExportOptions($filter);
+            $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
+        }
+
         return Inertia::render(
             'Org/Accounting/Refunds',
             [
@@ -338,7 +382,7 @@ class IndexRefunds extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => RefundsResource::collection($refunds),
-
+                ...$invoiceExportOptions
 
             ]
         )->table($this->tableStructure($this->parent));

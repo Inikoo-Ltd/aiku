@@ -140,10 +140,21 @@ class OmegaInvoice extends OrgAction
 
             } else {
                 // $exchange_rate = $invoice->get('Invoice Currency Exchange');
-                if ($this->parent instanceof Organisation) {
-                    $exchange_rate = $invoice->org_exchange;
+
+                if ($invoice->type == InvoiceTypeEnum::REFUND) {
+                    $orginalInvoice = $invoice->originalInvoice;
+
+                    if ($this->parent instanceof Organisation) {
+                        $exchange_rate = $orginalInvoice->org_exchange;
+                    } else {
+                        $exchange_rate = $orginalInvoice->grp_exchange;
+                    }
                 } else {
-                    $exchange_rate = $invoice->grp_exchange;
+                    if ($this->parent instanceof Organisation) {
+                        $exchange_rate = $invoice->org_exchange;
+                    } else {
+                        $exchange_rate = $invoice->grp_exchange;
+                    }
                 }
             }
 
@@ -153,6 +164,11 @@ class OmegaInvoice extends OrgAction
         }
 
         $invoiceAddress = $invoice->address;
+
+        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+            $invoiceAddress = $invoice->originalInvoice->address;
+            $invoice->tax_liability_at = $invoice->originalInvoice->tax_liability_at;
+        }
 
         // if ($base_country == $invoice->get('Invoice Address Country 2 Alpha Code')) {
         if ($base_country == $invoiceAddress->country_code) {
