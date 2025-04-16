@@ -84,7 +84,7 @@ class IndexRefunds extends OrgAction
         } elseif ($parent instanceof Group) {
             $queryBuilder->where('invoices.group_id', $parent->id);
         } elseif ($parent instanceof Invoice) {
-            $queryBuilder->where('invoices.invoice_id', $parent->id);
+            $queryBuilder->where('invoices.original_invoice_id', $parent->id);
         } elseif ($parent instanceof InvoiceCategory) {
             $queryBuilder->where('invoices.invoice_category_id', $parent->id);
         } else {
@@ -106,7 +106,7 @@ class IndexRefunds extends OrgAction
                 'invoices.created_at',
                 'invoices.updated_at',
                 'invoices.slug',
-                'invoices.invoice_id',
+                'invoices.original_invoice_id',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'shops.name as shop_name',
@@ -200,40 +200,7 @@ class IndexRefunds extends OrgAction
         };
     }
 
-    //    public function authorize(ActionRequest $request): bool
-    //    {
-    //
-    //        $routeName = $request->route()->getName();
-    //
-    //        if ($routeName == 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index') {
-    //            return $request->user()->authTo(
-    //                [
-    //                    "fulfilment-shop.{$this->fulfilment->id}.view",
-    //                    "accounting.{$this->fulfilment->organisation_id}.view"
-    //                ]
-    //            );
-    //        }
-    //
-    //
-    //
-    //
-    //
-    //        if ($this->parent instanceof Organisation) {
-    //            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    //        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-    //            return $request->user()->authTo("crm.{$this->shop->id}.view");
-    //        } elseif ($this->parent instanceof Shop) {
-    //            return $request->user()->authTo("orders.{$this->shop->id}.view");
-    //        } elseif ($this->parent instanceof FulfilmentCustomer or $this->parent instanceof Fulfilment) {
-    //            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
-    //        } elseif ($this->parent instanceof Group) {
-    //            return $request->user()->authTo("group-overview");
-    //        } elseif ($this->parent instanceof InvoiceCategory) {
-    //            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    //        }
-    //
-    //        return false;
-    //    }
+
 
 
     public function jsonResponse(LengthAwarePaginator $refunds): AnonymousResourceCollection

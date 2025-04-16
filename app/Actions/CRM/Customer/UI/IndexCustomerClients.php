@@ -44,9 +44,9 @@ class IndexCustomerClients extends OrgAction
 
     private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $customer;
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);
@@ -70,14 +70,6 @@ class IndexCustomerClients extends OrgAction
         return $this->handle($fulfilmentCustomer->customer);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $customerHasPlatform;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($customer);
-    }
 
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
@@ -194,6 +186,7 @@ class IndexCustomerClients extends OrgAction
             'label' => __('Clients')
         ];
 
+        $newClientLabel = __('New Client');
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
@@ -203,18 +196,36 @@ class IndexCustomerClients extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('customer clients'),
-                'pageHead'    => [
+
+
+                'pageHead' => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                     'actions'       => [
-                        [
+                        $this->parent instanceof CustomerHasPlatform
+                            ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('New Client'),
-                            'label'   => __('New Client'),
+                            'tooltip' => $newClientLabel,
+                            'label'   => $newClientLabel,
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create',
+                                'parameters' => [
+                                    'organisation'        => $scope->organisation->slug,
+                                    'shop'                => $scope->shop->slug,
+                                    'customer'            => $scope->slug,
+                                    'customerHasPlatform' => $this->parent->id
+                                ]
+                            ]
+                        ]
+                            : [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => $newClientLabel,
+                            'label'   => $newClientLabel,
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.create',
                                 'parameters' => [
@@ -227,7 +238,7 @@ class IndexCustomerClients extends OrgAction
                     ],
 
                 ],
-                'data'        => CustomerClientResource::collection($customerClients),
+                'data'     => CustomerClientResource::collection($customerClients),
 
             ]
         )->table($this->tableStructure($this->parent));

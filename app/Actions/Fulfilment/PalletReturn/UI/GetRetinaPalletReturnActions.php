@@ -100,7 +100,7 @@ class GetRetinaPalletReturnActions
         }
 
         if ($palletReturn->pallets()->count() > 0) {
-            $actions[] = 
+            $actions[] =
                 [
                     'type'     => 'button',
                     'style'    => 'save',

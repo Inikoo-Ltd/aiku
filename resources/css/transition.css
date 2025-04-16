@@ -12,7 +12,7 @@
 
 /* Transition name="headlessui" */
 .headlessui-enter-active {
-    transition: all 0.2s ease-out;
+    transition: all 0.15s ease-out;
 }
 .headlessui-enter-from {
     transform: translateY(4px);
@@ -23,7 +23,7 @@
     opacity: 100;
 }
 .headlessui-leave-active {
-    transition: all 0.15s ease-in;
+    transition: all 0.1s ease-in;
 }
 .headlessui-leave-from {
     transform: translateY(0);

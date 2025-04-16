@@ -40,7 +40,7 @@ const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChan
 
 
 import { useFormatTime } from "@/Composables/useFormatTime";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoiceRefundsTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceRefundsTransactions.vue";
 import TableInvoiceRefundsInProcessTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceRefundsInProcessTransactions.vue";
 
@@ -59,7 +59,7 @@ const locale = inject("locale", aikuLocaleStructure);
 
 const props = defineProps<{
   title: string,
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   tabs: {
     current: string
     navigation: {}

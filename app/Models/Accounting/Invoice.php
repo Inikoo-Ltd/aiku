@@ -89,7 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property InvoicePayStatusEnum|null $pay_status
  * @property bool $in_process Used for refunds only
- * @property int|null $invoice_id For refunds link to original invoice
+ * @property int|null $original_invoice_id For refunds link to original invoice
  * @property string|null $footer
  * @property int|null $invoice_category_id
  * @property bool $is_vip Indicate if invoice is for a VIP customer

@@ -17,13 +17,13 @@ import {
   faArrowCircleLeft
 } from "@fal";
 import { useTabChange } from '@/Composables/tab-change'
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 
 library.add(faFileMinus, faArrowCircleLeft);
 
 const props = defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   data: object
   title: string
   tabs?: {

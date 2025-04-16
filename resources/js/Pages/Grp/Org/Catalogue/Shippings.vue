@@ -8,7 +8,7 @@
 import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import {capitalize} from "@/Composables/capitalize"
-import {PageHeading as TSPageHeading} from '@/types/PageHeading'
+import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
 import {computed, ref} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -21,7 +21,7 @@ import TableShippingZoneSchemas from '@/Components/Tables/Grp/Org/Catalogue/Tabl
 library.add(faTags,faTasksAlt,faChartPie)
 
 const props = defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   title: string
   data: {}
 

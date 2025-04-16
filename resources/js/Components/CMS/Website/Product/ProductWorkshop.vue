@@ -1,15 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue"
-import { trans } from 'laravel-vue-i18n'
-import { useColorTheme } from '@/Composables/useStockList'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Popover from 'primevue/popover'
+import { onMounted, ref } from "vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import SelectButton from 'primevue/selectbutton'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { notify } from "@kyvg/vue3-notification"
-import axios from "axios"
-import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import { getIrisComponent } from "@/Composables/getIrisComponents"
 
 import { faRocketLaunch } from '@far'

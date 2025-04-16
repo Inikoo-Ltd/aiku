@@ -12,9 +12,11 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Organisation;
 use Closure;
@@ -46,8 +48,10 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     {
         if ($this->parent instanceof CustomerClient) {
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
-        } else {
+        } elseif ($this->parent instanceof Customer && $this->parent->shop->type == ShopTypeEnum::B2B) {
             $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
+        } elseif ($this->parent instanceof Customer && $this->parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
         }
 
 
@@ -103,7 +107,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerClient;
         $this->initialisationFromShop($shop, $request);

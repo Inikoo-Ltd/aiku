@@ -4,11 +4,12 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Dialog from 'primevue/dialog'
 import SwiperImage from '@/Components/Elements/SwiperImage.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-
+import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { faPlug, faPlus, faPlusCircle } from '@far'
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 
 const props = defineProps<{
+    pageHead : {}
     data: {
         departement: {
             data: {
@@ -21,6 +22,8 @@ const props = defineProps<{
 
     }
 }>()
+
+console.log(props)
 
 const visible = ref(false)
 const isModalGallery = ref(false)
@@ -39,6 +42,8 @@ const images = [
 </script>
 
 <template>
+   <PageHeading :data="pageHead">
+    </PageHeading>
     <div class="p-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Left: Product Form -->

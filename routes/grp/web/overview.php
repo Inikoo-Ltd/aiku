@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Invoice\UI\IndexInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInGroup;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
@@ -113,7 +113,7 @@ Route::name('crm.')->prefix('crm')->group(function () {
 Route::name('ordering.')->prefix('ordering')->group(function () {
     Route::get('/orders', [IndexOrders::class, 'inGroup'])->name('orders.index');
     Route::get('/purges', [IndexPurges::class, 'inGroup'])->name('purges.index');
-    Route::get('/invoices', [IndexInvoices::class, 'inGroup'])->name('invoices.index');
+    Route::get('/invoices', IndexInvoicesInGroup::class)->name('invoices.index');
     Route::get('/delivery-notes', IndexDeliveryNotesInGroup::class)->name('delivery_notes.index');
     Route::get('/transactions', IndexInvoiceTransactionsInGroup::class)->name('transactions.index');
 });

@@ -43,6 +43,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
             if (!$isRefundAll) {
                 CalculateInvoiceTotals::run($refund);
             }
+
             return $invoiceTransaction;
         }
 
@@ -55,6 +56,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
                 if (!$isRefundAll) {
                     CalculateInvoiceTotals::run($refund);
                 }
+
                 return $invoiceTransaction;
             }
         }
@@ -82,7 +84,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'quantity', $quantity);
 
 
-        data_set($modelData, 'invoice_id', $refund->id);
+        data_set($modelData, 'original_invoice_id', $refund->id);
         data_set($modelData, 'group_id', $invoiceTransaction->group_id);
         data_set($modelData, 'organisation_id', $invoiceTransaction->organisation_id);
         data_set($modelData, 'shop_id', $invoiceTransaction->shop_id);
@@ -121,12 +123,15 @@ class StoreRefundInvoiceTransaction extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function afterValidator(Validator $validator): void
     {
         $totalTrRefunded = $this->invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
 
         $netAmount = $this->get('net_amount', 0) * -1;
-        $totalTr = $this->invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
+        $totalTr   = $this->invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
 
         if (abs($netAmount) == $this->invoiceTransaction->net_amount) {
             $totalTr = 0;
@@ -149,7 +154,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function asController(Invoice $refund, InvoiceTransaction $invoiceTransaction, ActionRequest $request): void
     {
         $this->invoiceTransaction = $invoiceTransaction;
-        $this->refund = $refund;
+        $this->refund             = $refund;
         $this->initialisationFromShop($invoiceTransaction->shop, $request);
         $this->handle($refund, $invoiceTransaction, $this->validatedData);
     }
@@ -160,7 +165,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function action(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
         $this->invoiceTransaction = $invoiceTransaction;
-        $this->refund = $refund;
+        $this->refund             = $refund;
         $this->initialisationFromShop($invoiceTransaction->shop, $modelData);
 
         return $this->handle($refund, $invoiceTransaction, $this->validatedData);

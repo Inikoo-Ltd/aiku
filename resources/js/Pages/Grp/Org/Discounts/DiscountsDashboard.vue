@@ -7,7 +7,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, inject, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import SimpleBox from '@/Components/DataDisplay/SimpleBox.vue'
@@ -16,7 +16,7 @@ import SimpleBox from '@/Components/DataDisplay/SimpleBox.vue'
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     stats: {
         label: string

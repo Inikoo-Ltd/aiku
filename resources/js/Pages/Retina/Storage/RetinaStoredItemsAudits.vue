@@ -13,7 +13,7 @@
   import BoxNote from "@/Components/Pallet/BoxNote.vue"
   import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'
 
-  import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
   import { library } from "@fortawesome/fontawesome-svg-core"
   import TableStoredItemsAudits from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsAudits.vue"
 
@@ -25,7 +25,7 @@
 
   const props = defineProps<{
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     data: {}
   }>()
   console.log(props)

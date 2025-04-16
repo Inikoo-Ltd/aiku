@@ -9,7 +9,7 @@ import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue";
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { ref } from 'vue';
 import UploadSpreadsheet from '@/Components/Upload/UploadSpreadsheet.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
@@ -17,7 +17,7 @@ import { trans } from 'laravel-vue-i18n'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue';
 
 const props = defineProps <{
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     title: string
     data: object
     upload_spreadsheet?: object

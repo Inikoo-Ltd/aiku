@@ -25,7 +25,9 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -113,7 +115,7 @@ class IndexOrders extends OrgAction
             $query->where('orders.state', OrderStateEnum::CREATING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-            ->whereColumn('orders.payment_amount', '>=', 'orders.total_amount');
+                ->whereColumn('orders.payment_amount', '>=', 'orders.total_amount');
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
                 ->where('orders.payment_amount', 0);
@@ -145,7 +147,7 @@ class IndexOrders extends OrgAction
             $query->where('orders.state', OrderStateEnum::CANCELLED);
         } elseif ($this->bucket == 'dispatched_today') {
             $query->where('orders.state', OrderStateEnum::DISPATCHED)
-                    ->where('dispatched_at', Carbon::today());
+                ->where('dispatched_at', Carbon::today());
         } elseif ($this->bucket == 'all' && !($parent instanceof ShopifyUser)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $query->whereElementGroup(
@@ -156,18 +158,7 @@ class IndexOrders extends OrgAction
                 );
             }
         }
-
-        // if (!($parent instanceof ShopifyUser)) {
-        //     foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-        //         $query->whereElementGroup(
-        //             key: $key,
-        //             allowedElements: array_keys($elementGroup['elements']),
-        //             engine: $elementGroup['engine'],
-        //             prefix: $prefix
-        //         );
-        //     }
-        // }
-
+        
         if ($parent instanceof ShopifyUser) {
             $query->join('shopify_user_has_fulfilments', function ($join) use ($parent) {
                 $join->on('orders.id', '=', 'shopify_user_has_fulfilments.order_id')
@@ -176,17 +167,29 @@ class IndexOrders extends OrgAction
         }
 
         return $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
-            ->select([
-                'orders.id', 'orders.reference', 'orders.date', 'orders.state',
-                'orders.created_at', 'orders.updated_at', 'orders.slug',
-                'orders.net_amount', 'orders.total_amount',
-                'customers.name as customer_name', 'customers.slug as customer_slug',
-                'customer_clients.name as client_name', 'customer_clients.ulid as client_ulid',
-                'payments.state as payment_state', 'payments.status as payment_status',
-                'currencies.code as currency_code', 'currencies.id as currency_id',
-                'shops.name as shop_name', 'shops.slug as shop_slug',
-                'organisations.name as organisation_name', 'organisations.slug as organisation_slug',
-            ])
+        ->select([
+            'orders.id',
+            'orders.reference',
+            'orders.date',
+            'orders.state',
+            'orders.created_at',
+            'orders.updated_at',
+            'orders.slug',
+            'orders.net_amount',
+            'orders.total_amount',
+            'customers.name as customer_name',
+            'customers.slug as customer_slug',
+            'customer_clients.name as client_name',
+            'customer_clients.ulid as client_ulid',
+            'payments.state as payment_state',
+            'payments.status as payment_status',
+            'currencies.code as currency_code',
+            'currencies.id as currency_id',
+            'shops.name as shop_name',
+            'shops.slug as shop_slug',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
@@ -259,10 +262,10 @@ class IndexOrders extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
+        if ($this->parent instanceof Customer || $this->parent instanceof CustomerClient) {
             $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.view");
 
-            return $request->user()->authTo(["crm.{$this->shop->id}.view","accounting.{$this->shop->organisation_id}.view"]);
+            return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
         }
         if ($this->parent instanceof Group) {
             return $request->user()->authTo("group-overview");
@@ -270,7 +273,7 @@ class IndexOrders extends OrgAction
 
         $this->canEdit = $request->user()->authTo("orders.{$this->shop->id}.edit");
 
-        return $request->user()->authTo(["orders.{$this->shop->id}.view","accounting.{$this->shop->organisation_id}.view"]);
+        return $request->user()->authTo(["orders.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
     }
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
@@ -437,6 +440,7 @@ class IndexOrders extends OrgAction
 
         return $this->handle(parent: $customer, prefix: OrdersTabsEnum::ORDERS->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
@@ -448,7 +452,7 @@ class IndexOrders extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
         $this->parent = $customerClient;

@@ -37,7 +37,7 @@ declare global {
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading,
+    pageHead: PageHeadingTypes,
     user: {}
     shop: string
     showIntro: boolean

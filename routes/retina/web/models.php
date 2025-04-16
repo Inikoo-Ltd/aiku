@@ -149,6 +149,7 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
 });
 
 Route::post('customer-client', StoreRetinaCustomerClient::class)->name('customer-client.store');
+Route::post('platform-customer-client/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform-customer-client.store');
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('customer/{customer:id}/products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();

@@ -8,7 +8,7 @@
 import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import Table from "@/Components/Table/Table.vue"
 import Icon from '@/Components/Icon.vue'
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
@@ -25,7 +25,7 @@ library.add(faReceipt, faCrown,faRoad, faQuestionCircle ,faServer ,faDesktopAlt,
 
 defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     data: {}
 
 }>()
