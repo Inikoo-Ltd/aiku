@@ -14,6 +14,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+// use Illuminate\Support\Facades\Auth;
+// use Lorisleiva\Actions\ActionRequest;
 
 class IndexShopsSalesTable extends OrgAction
 {
@@ -26,7 +28,12 @@ class IndexShopsSalesTable extends OrgAction
         } else {
             $queryBuilder->where('group_id', $parent->id);
         }
-
+        
+        // TODO: Check if this is okay
+        // $userSettings = Auth::user()->settings;
+        // if ($userSettings['shop_state'] === 'open') {
+        //     $queryBuilder->where('state', 'open');
+        // }
 
         return $queryBuilder
             ->defaultSort('shops.code')

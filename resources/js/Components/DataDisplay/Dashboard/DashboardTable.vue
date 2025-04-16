@@ -20,6 +20,7 @@ import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
 import { faTriangle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { Link } from "@inertiajs/vue3"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -149,7 +150,7 @@ console.log('%c Tables ', 'background: red; color: white', props.tableData.table
 const dashboardTabActive = inject("dashboardTabActive", ref(''))
 watch(() => props.tableData.current_tab, (newValueTab) => {
 	dashboardTabActive.value = newValueTab
-})
+}, { immediate: true })
 const compTableBody = computed(() => {
 	if (props.settings.shop_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
@@ -161,15 +162,15 @@ const compTableBody = computed(() => {
 
 <template>
 	<div class="relative bg-white mb-3 p-4 border border-gray-200">
-		<!-- <pre>{{ props.tableData.tables[props.tableData.current_tab].body.filter(row => row.state === 'open') }}</pre> -->
-		<!-- Table: {{ isShowSettingShopState }} -->
+		<!-- <pre>{{ props.tableData.tables.shops.body.length }}</pre> -->
+
 		<div class="">
 			<!-- Section: Tabs -->
 			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-sm md:text-base pb-2">
 				<TabList>
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
-						@click="() => (tableData.current_tab = tabSlug, dashboardTabActive = tabSlug, 'useTabChangeDashboard(tab.tab_slug)')"
+						@click="() => (tableData.current_tab = tabSlug, dashboardTabActive = tabSlug)"
 						:key="tabSlug"
 						:value="tabSlug"
 					>
@@ -202,6 +203,7 @@ const compTableBody = computed(() => {
 						<template #header>
 							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
 								:class="column.align === 'left' ? '' : 'justify-end text-right'"
+								v-tooltip="column.tooltip"
 							>
 								<FontAwesomeIcon v-if="column.icon" :icon="column.icon" class="" fixed-width aria-hidden="true" />
 								<span class="leading-5">{{ column.formatted_value }}</span>
@@ -210,15 +212,25 @@ const compTableBody = computed(() => {
 						</template>
 						
 						<template #body="{ data }">
-							<!-- <pre>{{ column.data_display_type }}</pre> -->
-							<div class="px-2 flex relative"
-								:class="column.align === 'left' ? '' : 'justify-end text-right'"
-							>
-							<!-- <pre>{{ data.columns?.[colSlug]?.[intervals.value] }}</pre> -->
+							<div class="flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
+								<!-- <pre>{{ column.data_display_type }}</pre> -->
+								<!-- <pre>{{ data.columns?.[colSlug]?.[intervals.value] }}</pre> -->
 								<Transition name="spin-to-right">
-									<div :key="intervals.value">
+									<component
+										:key="intervals.value"
+										class="px-2"
+										:class="[
+											data.route?.name ? 'cursor-pointer hover:underline' : '',
+										]"
+										:is="data.route?.name ? Link : 'div'"
+										:href="data.route?.name ? route(data.route.name, data.route.parameters) : '#'"
+										v-tooltip="data.tooltip"
+									>
 										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
-										<FontAwesomeIcon v-if="data.columns?.[colSlug]?.[intervals.value]?.change" :icon="faTriangle" class="text-sm"
+										<FontAwesomeIcon
+											v-if="data.columns?.[colSlug]?.[intervals.value]?.change"
+											:icon="faTriangle"
+											class="text-sm"
 											:class="[
 												data.columns?.[colSlug]?.[intervals.value]?.change == 'increase' ? '' : 'rotate-180',
 												data.columns?.[colSlug]?.[intervals.value]?.state == 'positive' ? 'text-green-500' : 'text-red-500',
@@ -226,7 +238,7 @@ const compTableBody = computed(() => {
 											fixed-width
 											aria-hidden="true"
 										/>
-									</div>
+									</component>
 								</Transition>
 							</div>
 						</template>

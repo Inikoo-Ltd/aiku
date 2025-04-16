@@ -87,7 +87,7 @@ const props = defineProps<{
 	},
 ] */
 
-const dashboardTabActive = ref(true)
+const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
 
 </script>
