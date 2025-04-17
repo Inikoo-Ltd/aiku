@@ -96,7 +96,7 @@ class GetSectionRoute extends OrgAction
             str_starts_with($route, 'discounts') => AikuSectionEnum::SHOP_OFFER,
             str_starts_with($route, 'marketing') => AikuSectionEnum::SHOP_MARKETING,
             str_starts_with($route, 'web') => AikuSectionEnum::SHOP_WEBSITE,
-            str_starts_with($route, 'crm.customers.show.customer-clients') => AikuSectionEnum::DROPSHIPPING,
+            str_starts_with($route, 'crm.customers.show.platforms') => AikuSectionEnum::DROPSHIPPING,
             str_starts_with($route, 'crm') => AikuSectionEnum::SHOP_CRM,
             str_starts_with($route, 'ordering') => AikuSectionEnum::SHOP_ORDERING,
             str_starts_with($route, 'settings') => AikuSectionEnum::SHOP_SETTINGS,

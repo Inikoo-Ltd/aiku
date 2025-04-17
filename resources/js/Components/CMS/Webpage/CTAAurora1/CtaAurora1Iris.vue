@@ -24,7 +24,7 @@ console.log(props)
 <template>
 	<div :style="getStyles(fieldValue.container.properties)">
         <div class="w-full">
-            <div class="relative isolate overflow-hidden px-6 py-16 md:py-24 text-center sm:px-16">
+            <div class="relative isolate px-6 py-16 md:py-24 text-center sm:px-16">
 				<section v-html="fieldValue.title"></section>
 				<section v-html="fieldValue.text"></section>
 

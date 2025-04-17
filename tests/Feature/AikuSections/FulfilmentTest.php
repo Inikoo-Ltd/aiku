@@ -3371,7 +3371,7 @@ test('create partial refund', function () {
 
     expect($refund)->toBeInstanceOf(Invoice::class)
         ->and($refund->in_process)->toBeTrue()
-        ->and($refund->invoice_id)->toBe($invoice->id)
+        ->and($refund->original_invoice_id)->toBe($invoice->id)
         ->and($refund->type)->toBe(InvoiceTypeEnum::REFUND);
 
     return [$invoice, $refund];
