@@ -14,11 +14,11 @@ import {
   faHandHoldingUsd
 } from "@fal";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
-import TableInvoicesDeleted from '@/Components/Tables/Grp/Org/Accounting/TableInvoicesDeleted.vue'
+import TableDeletedInvoices from '@/Components/Tables/Grp/Org/Accounting/TableDeletedInvoices.vue'
 
 library.add(faFileMinus, faHandHoldingUsd);
 
-const props = defineProps<{
+defineProps<{
   pageHead: PageHeadingTypes
   data: object
   title: string
@@ -29,6 +29,6 @@ const props = defineProps<{
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead" />
-    <TableInvoicesDeleted :data="data" />
+    <TableDeletedInvoices :data="data" />
 </template>
 

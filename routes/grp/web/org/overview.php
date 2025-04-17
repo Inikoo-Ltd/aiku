@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Organisation\UI\IndexHistoryInOrganisation;
 Route::get('/', ShowOrganisationOverviewHub::class)->name('hub');
 
 Route::get('/invoices', IndexInvoicesInOrganisation::class)->name('invoices.index');
+
 Route::get('/refunds', [IndexRefunds::class,'inOrganisation'])->name('refunds.index');
 Route::get('/orders', [IndexOrders::class,'inOrganisation'])->name('orders.index');
 

@@ -10,11 +10,14 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
@@ -56,8 +59,11 @@ class DeleteInvoice extends OrgAction
         $customer = $invoice->customer;
         CustomerHydrateInvoices::dispatch($customer);
         ShopHydrateInvoices::dispatch($customer->shop);
+        ShopHydrateDeletedInvoices::dispatch($customer->shop);
         OrganisationHydrateInvoices::dispatch($customer->organisation);
+        OrganisationHydrateDeletedInvoices::dispatch($customer->organisation);
         GroupHydrateInvoices::dispatch($customer->group);
+        GroupHydrateDeletedInvoices::dispatch($customer->group);
         $invoiceCategory = $invoice->invoiceCategory;
         if ($invoiceCategory) {
             $invoiceCategory->refresh();

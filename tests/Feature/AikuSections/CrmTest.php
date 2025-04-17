@@ -837,13 +837,15 @@ test('UI show order', function () {
     $this->withoutExceptionHandling();
     $order    = Order::first();
     $customer = $order->customer;
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.orders.show',
+    $response = $this->get(route(
+        'grp.org.shops.show.crm.customers.show.orders.show',
         [
             $this->organisation->slug,
             $this->shop->slug,
             $customer->slug,
             $order->slug
-        ]));
+        ]
+    ));
 
     $response->assertInertia(function (AssertableInertia $page) use ($order) {
         $page

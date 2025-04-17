@@ -21,6 +21,7 @@ export interface Invoice {
     in_process: boolean
     organisation_slug: string
     shop_slug: string
+    shop_id: string
     customer_slug: string
 }
 

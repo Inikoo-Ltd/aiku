@@ -14,4 +14,3 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/vision', AskBotVision::class)->name('vision.index');
 Route::get('/', AskBot::class)->name('index');
-

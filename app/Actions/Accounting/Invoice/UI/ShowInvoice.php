@@ -178,8 +178,8 @@ class ShowInvoice extends OrgAction
             ]
         ];
 
-        if(Arr::get($invoice->organisation->settings,'invoice_export.show_isdoc')){
-            $options[]=[
+        if (Arr::get($invoice->organisation->settings, 'invoice_export.show_isdoc')) {
+            $options[] = [
                 'type'       => 'isDoc',
                 'icon'       => 'fas fa-hockey-puck',
                 'tooltip'    => __('Download Doc'),
@@ -192,8 +192,8 @@ class ShowInvoice extends OrgAction
             ];
         }
 
-        if(Arr::get($invoice->organisation->settings,'invoice_export.show_omega')){
-            $options[]=[
+        if (Arr::get($invoice->organisation->settings, 'invoice_export.show_omega')) {
+            $options[] = [
                 'type'       => 'omega',
                 'icon'       => 'fas fa-omega',
                 'tooltip'    => __('Download Omega'),

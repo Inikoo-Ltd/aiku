@@ -14,7 +14,6 @@ use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
@@ -31,7 +30,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Carbon\Carbon;
@@ -395,12 +393,12 @@ class IndexOrders extends OrgAction
                 ],
 
                 OrdersTabsEnum::STATS->value => $this->tab == OrdersTabsEnum::STATS->value ?
-                    fn() => GetOrderStats::run($shop)
-                    : Inertia::lazy(fn() => GetOrderStats::run($shop)),
+                    fn () => GetOrderStats::run($shop)
+                    : Inertia::lazy(fn () => GetOrderStats::run($shop)),
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
-                    fn() => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn() => OrdersResource::collection($orders)),
+                    fn () => OrdersResource::collection($orders)
+                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
             ]
         )->table($this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket));
     }

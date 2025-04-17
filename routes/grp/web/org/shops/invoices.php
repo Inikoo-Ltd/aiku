@@ -8,7 +8,7 @@
 
 use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
-use App\Actions\Accounting\Invoice\UI\IndexInvoicesDeleted;
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
@@ -24,4 +24,4 @@ Route::get('/omega', [OmegaManyInvoice::class, 'inShop'])->name('index.omega');
 Route::get('/refunds', [IndexRefunds::class,'inShop'])->name('refunds.index');
 Route::get('/invoices-unpaid', [IndexInvoices::class, 'unpaidInShop'])->name('unpaid.index');
 Route::get('/invoices-paid', [IndexInvoices::class, 'paidInShop'])->name('paid.index');
-Route::get('/invoices-deleted', [IndexInvoicesDeleted::class, 'inShop'])->name('deleted.index');
+Route::get('/invoices-deleted', [IndexDeletedInvoices::class, 'inShop'])->name('deleted.index');

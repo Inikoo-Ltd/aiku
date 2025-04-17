@@ -47,11 +47,10 @@ class GetOrganisationOverview extends OrgAction
             __('Web')                         => $this->getWebSections($organisation),
             __('CRM')                         => $this->getCrmSections($organisation),
             __('Ordering')                    => $this->getOrderingSections($organisation),
-
+            __('Accounting')                  => $this->getAccountingSections($organisation),
             __('Inventory')       => $this->getInventorySections($organisation),
             __('Fulfilment')      => $this->getFulfilmentSections($organisation),
             __('Procurement')     => $this->getProcurementSections($organisation),
-            __('Accounting')      => $this->getAccountingSections($organisation),
             __('Human Resources') => $this->getHumanResourcesSections($organisation),
 
         ];
@@ -437,13 +436,19 @@ class GetOrganisationOverview extends OrgAction
                 'name'  => __('Invoices'),
                 'icon'  => 'fal fa-file-invoice-dollar',
                 'route' => '',
-                'count' => $organisation->accountingStats->number_invoices ?? 0
+                'count' => $organisation->orderingStats->number_invoices ?? 0
             ],
             [
                 'name'  => __('Payments'),
                 'icon'  => 'fal fa-coin',
                 'route' => '',
                 'count' => $organisation->accountingStats->number_payments ?? 0
+            ],
+            [
+                'name'  => __('Deleted Invoices'),
+                'icon'  => 'fal fa-eraser',
+                'route' => route('grp.org.accounting.deleted_invoices.index', $organisation->slug),
+                'count' => $organisation->orderingStats->number_deleted_invoices ?? 0
             ],
             [
                 'name'  => __('Customer Balances'),

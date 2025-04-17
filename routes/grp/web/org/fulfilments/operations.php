@@ -7,7 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
-use App\Actions\Accounting\Invoice\UI\IndexInvoicesDeleted;
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowFulfilmentInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
@@ -64,7 +64,6 @@ Route::get('/stored-item-audits', IndexStoredItemAudits::class)->name('stored-it
 Route::get('/stored-item-audits/create', [CreateStoredItemAudit::class, 'inFulfilment'])->name('stored-item-audits.create');
 
 Route::get('/pallets/{pallet}', [ShowPallet::class, 'inFulfilment'])->name('pallets.show');
-//Route::get('/pallets/create', CreatePallet::class)->name('pallets.create');
 Route::get('/pallets/{pallet}/edit', [EditPallet::class, 'inFulfilment'])->name('pallets.edit');
 
 Route::get('deliveries', IndexPalletDeliveries::class)->name('pallet-deliveries.index');
@@ -105,7 +104,7 @@ Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::cla
 Route::prefix('invoices')->as('invoices')->group(function () {
     Route::get('', [IndexInvoices::class, 'inFulfilment'])->name('.all.index');
 
-    Route::get('/invoices-deleted', [IndexInvoicesDeleted::class, 'inFulfilment'])->name('.deleted_invoices.index');
+    Route::get('/invoices-deleted', [IndexDeletedInvoices::class, 'inFulfilment'])->name('.deleted_invoices.index');
 
     Route::get('/unpaid-invoices', [IndexInvoices::class, 'unpaidInFulfilment'])->name('.unpaid_invoices.index');
 

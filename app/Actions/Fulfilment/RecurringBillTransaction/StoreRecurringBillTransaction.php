@@ -20,7 +20,6 @@ use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Fulfilment\Space;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRecurringBillTransaction extends OrgAction
@@ -29,11 +28,11 @@ class StoreRecurringBillTransaction extends OrgAction
 
     public function handle(RecurringBill $recurringBill, Space|Pallet|StoredItem|FulfilmentTransaction|HistoricAsset $item, array $modelData): RecurringBillTransaction
     {
-        $handlingPalletId=null;
+        $handlingPalletId = null;
         if (Arr::exists($modelData, 'pallet_id')) {
             $handlingPalletId = Arr::pull($modelData, 'pallet_id');
         }
-        $handlingDate=null;
+        $handlingDate = null;
         if (Arr::exists($modelData, 'handle_date')) {
             $handlingDate = Arr::pull($modelData, 'handle_date');
         }
@@ -68,7 +67,7 @@ class StoreRecurringBillTransaction extends OrgAction
             data_set($modelData, 'item_id', $item->model_id);
 
             if ($item->model_type == 'Service' && $item->model->is_pallet_handling) {
-                if ($handlingPalletId ) {
+                if ($handlingPalletId) {
                     data_set($modelData, 'data.handling_service_pallet_id', $handlingPalletId);
                 }
                 if ($handlingDate) {

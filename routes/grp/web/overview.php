@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInGroup;
 use App\Actions\Accounting\Invoice\UI\IndexRefundsInGroup;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup;
@@ -143,8 +144,8 @@ Route::name('accounting.')->prefix('accounting')->group(function () {
     Route::get('/payments', [IndexPayments::class, 'inGroup'])->name('payments.index');
     Route::get('/customer-balances', [IndexCustomerBalances::class, 'inGroup'])->name('customer-balances.index');
     Route::get('/invoices', IndexInvoicesInGroup::class)->name('invoices.index');
+    Route::get('/deleted-invoices', [IndexDeletedInvoices::class, 'inGroup'])->name('deleted_invoices.index');
     Route::get('/refunds', IndexRefundsInGroup::class)->name('refunds.index');
-
 });
 
 

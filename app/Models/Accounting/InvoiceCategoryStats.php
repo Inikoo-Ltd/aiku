@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_invoiced_customers
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_deleted_invoices
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryStats query()

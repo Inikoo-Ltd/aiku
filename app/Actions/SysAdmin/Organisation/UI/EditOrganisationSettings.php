@@ -46,7 +46,7 @@ class EditOrganisationSettings extends OrgAction
     public function htmlResponse(Organisation $organisation): Response
     {
 
-        $title=__('Organisation settings');
+        $title = __('Organisation settings');
 
         return Inertia::render(
             'EditModel',

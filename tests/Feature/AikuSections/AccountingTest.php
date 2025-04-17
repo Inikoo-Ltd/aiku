@@ -1412,7 +1412,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Accounting/InvoicesDeleted')
+            ->component('Org/Accounting/DeletedInvoices')
             ->has('title')
             ->has('breadcrumbs')
             ->has('pageHead')

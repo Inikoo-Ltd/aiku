@@ -435,6 +435,12 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->orderingStats->number_invoices_type_refund ?? 0
             ],
             [
+                'name'  => __('Deleted invoices'),
+                'icon'  => 'fal fa-eraser',
+                'route' => route('grp.overview.accounting.deleted_invoices.index'),
+                'count' => $group->orderingStats->number_deleted_invoices ?? 0
+            ],
+            [
                 'name'  => __('Payments'),
                 'icon'  => 'fal fa-coin',
                 'route' => route('grp.overview.accounting.payments.index'),
