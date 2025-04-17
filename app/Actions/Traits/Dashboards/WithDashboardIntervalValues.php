@@ -51,7 +51,7 @@ trait WithDashboardIntervalValues
                     $data['formatted_value'] = Number::currency($rawValue, Arr::get($options, 'currency'));
                     break;
                 case DashboardDataType::CURRENCY_MINIFIED:
-                    $data['formatted_value'] = Number::abbreviateCurrency($rawValue);
+                    $data['formatted_value'] = Number::abbreviateCurrency($rawValue, Arr::get($options, 'currency'));
                     break;
                 case DashboardDataType::PERCENTAGE:
                     $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
