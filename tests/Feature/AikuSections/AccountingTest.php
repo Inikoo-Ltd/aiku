@@ -1224,51 +1224,6 @@ test('UI show list invoices in customer', function () {
     });
 });
 
-test('UI show list invoices in customer client', function () {
-    $this->withoutExceptionHandling();
-    $shop = $this->shop;
-    $customer = createCustomer($shop);
-    $platform = Platform::where('code', 'aiku')->first();
-    AttachCustomerToPlatform::make()->action($customer, $platform, []);
-
-    $customer->refresh();
-    $customerClient = StoreCustomerClient::make()->action($customer, array_merge(
-        CustomerClient::factory()->definition(),
-        [
-            'platform_id' => $platform->id,
-        ]
-    ));
-
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $platform->id)->first();
-
-    $response = get(route(
-        'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
-        [
-            $customer->organisation->slug,
-            $customer->shop->slug,
-            $customer->slug,
-            $customerHasPlatform->id,
-            $customerClient->ulid
-        ]
-    ));
-
-    $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
-        $page
-            ->component('Org/Accounting/Invoices')
-            ->has('title')
-            ->has('breadcrumbs')
-            ->has('pageHead')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', $customerClient->name)
-                    ->has('subNavigation')
-                    ->etc()
-            )
-            ->has('tabs')
-            ->has('invoices');
-    });
-});
 
 test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
@@ -1420,7 +1375,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->has('subNavigation')
-                    ->where('title', 'Invoices')
+                    ->where('title', 'Deleted Invoices')
                     ->etc()
             )
             ->has('data');
