@@ -174,7 +174,7 @@ class ShowInvoice extends OrgAction
             ],
             [
                 'type'       => 'omega',
-                'icon'       => 'fas fa-file-code',
+                'icon'       => 'fas fa-omega',
                 'tooltip'    => __('Download Omega'),
                 'label'      => 'Omega',
                 'name'       => 'grp.org.accounting.invoices.show.omega',

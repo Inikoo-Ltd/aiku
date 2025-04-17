@@ -272,7 +272,7 @@ class IndexInvoices extends OrgAction
         return [
             [
                 'type'       => 'omega',
-                'icon'       => 'fas fa-file-code',
+                'icon'       => 'fas fa-omega',
                 'tooltip'    => __('Download Omega'),
                 'label'      => 'Omega',
                 'name'       => $route,

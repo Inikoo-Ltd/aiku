@@ -40,7 +40,7 @@ import {
   faArrowCircleLeft,
   faTrashAlt,faExpandArrows
 } from "@fal";
-import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck } from "@fas";
+import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega } from "@fas";
 import { faCheck } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -57,7 +57,7 @@ import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmat
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 
 
-library.add(faExpandArrows,faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt);
+library.add(faExpandArrows,faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega);
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
