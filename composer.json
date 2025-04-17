@@ -84,6 +84,7 @@
     "spiral/roadrunner-http": "^3.3.0",
     "stevebauman/location": "^7.2",
     "symfony/psr-http-message-bridge": "^7.2",
+        "theodo-group/llphant": "^0.9.9",
     "tightenco/ziggy": "^1.0",
     "tuupola/base32": "^2.0",
     "vemcogroup/laravel-translation": "^3.0",
