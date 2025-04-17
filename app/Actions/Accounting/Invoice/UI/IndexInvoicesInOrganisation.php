@@ -2,21 +2,19 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 16 Apr 2025 13:48:02 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 17 Apr 2025 16:36:40 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
+use App\Actions\Overview\ShowOrganisationOverviewHub;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\OrgPaymentServiceProvider;
-use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,11 +24,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexInvoicesInGroup extends OrgAction
+class IndexInvoicesInOrganisation extends OrgAction
 {
-    use WithGroupOverviewAuthorisation;
-
-    public function handle(Group $group, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -46,10 +42,9 @@ class IndexInvoicesInGroup extends OrgAction
         $queryBuilder = QueryBuilder::for(Invoice::class);
         $queryBuilder->where('invoices.type', InvoiceTypeEnum::INVOICE);
         $queryBuilder->whereNot('invoices.in_process', true);
-        $queryBuilder->where('invoices.group_id', $group->id);
-        $queryBuilder->leftjoin('customers', 'invoices.customer_id', '=', 'customers.id');
-        $queryBuilder->leftjoin('organisations', 'invoices.organisation_id', '=', 'organisations.id');
+        $queryBuilder->where('invoices.organisation_id', $organisation->id);
         $queryBuilder->leftjoin('shops', 'invoices.shop_id', '=', 'shops.id');
+
         $queryBuilder->defaultSort('-date')
             ->select([
                 'invoices.reference',
@@ -62,19 +57,18 @@ class IndexInvoicesInGroup extends OrgAction
                 'invoices.updated_at',
                 'invoices.in_process',
                 'invoices.slug',
-                'customers.name as customer_name',
-                'customers.slug as customer_slug',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-                'organisations.code as organisation_code',
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
+
+
+        $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+            ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
 
 
         return $queryBuilder->allowedSorts(['number', 'pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
@@ -84,9 +78,9 @@ class IndexInvoicesInGroup extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group $group, $prefix = null): Closure
+    public function tableStructure(Organisation $organisation, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $group) {
+        return function (InertiaTable $table) use ($prefix, $organisation) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -94,36 +88,27 @@ class IndexInvoicesInGroup extends OrgAction
             }
 
             $table->betweenDates(['date']);
-
-
-            $stats     = $group->orderingStats;
-            $noResults = __("This group hasn't been invoiced");
-
-
+            $noResults = __("No invoices found");
+            $stats     = $organisation->orderingStats->number_invoices_type_invoice;
             $table->withGlobalSearch();
-            if (!($group instanceof OrgPaymentServiceProvider)) {
-                $table->withEmptyState(
-                    [
-                        'title' => $noResults,
-                        'count' => $stats->number_invoices ?? 0,
-                    ]
-                );
-            }
-            $table->column(key: 'organisation_code', label: __('org'), canBeHidden: false, searchable: true);
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
+
+            $table->withEmptyState(
+                [
+                    'title' => $noResults,
+                    'count' => $stats->number_invoices ?? 0,
+                ]
+            );
+
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
-
-
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };
     }
-
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
@@ -132,18 +117,12 @@ class IndexInvoicesInGroup extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
-        $subNavigation = [];
-        $title         = __('Invoices');
+        $title = __('Invoices');
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
             'title' => __('invoices')
         ];
-
-        $afterTitle = null;
-        $iconRight  = null;
-        $model      = null;
-        $actions    = [];
 
 
         $routeName       = $request->route()->getName();
@@ -163,14 +142,9 @@ class IndexInvoicesInGroup extends OrgAction
                 ),
                 'title'       => __('invoices'),
                 'pageHead'    => [
-
-                    'title'         => $title,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'subNavigation' => $subNavigation,
-                    'actions'       => $actions,
+                    'title'   => $title,
+                    'icon'    => $icon,
+                    'actions' => [],
                 ],
 
                 ...$data
@@ -178,15 +152,14 @@ class IndexInvoicesInGroup extends OrgAction
         );
 
 
-        return $inertiaRender->table($this->tableStructure(group: $this->group));
+        return $inertiaRender->table($this->tableStructure(organisation: $this->organisation));
     }
 
-
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisation($organisation, $request);
 
-        return $this->handle(group());
+        return $this->handle($organisation);
     }
 
 
@@ -208,7 +181,7 @@ class IndexInvoicesInGroup extends OrgAction
         };
 
         return array_merge(
-            ShowGroupOverviewHub::make()->getBreadcrumbs(),
+            ShowOrganisationOverviewHub::make()->getBreadcrumbs($routeParameters),
             $headCrumb(
                 [
                     'name'       => $routeName,

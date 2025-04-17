@@ -48,10 +48,10 @@ class GetGroupOverview extends OrgAction
             __('Web')                         => $this->getWebSections($group),
             __('CRM')                         => $this->getCrmSections($group),
             __('Ordering')                    => $this->getOrderingSections($group),
+            __('Accounting')                  => $this->getAccountingSections($group),
             __('Inventory')                   => $this->getInventorySections($group),
             __('Fulfilment')                  => $this->getFulfilmentSections($group),
             __('Procurement')                 => $this->getProcurementSections($group),
-            __('Accounting')                  => $this->getHumanAccountingSections($group),
             __('Human Resources')             => $this->getHumanResourcesSections($group)
         ];
     }
@@ -289,12 +289,6 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->orderingStats->number_purges ?? 0
             ],
             [
-                'name'  => __('Invoices'),
-                'icon'  => 'fal fa-file-invoice-dollar',
-                'route' => route('grp.overview.ordering.invoices.index'),
-                'count' => $group->accountingStats->number_invoices ?? 0
-            ],
-            [
                 'name'  => __('Delivery Notes'),
                 'icon'  => 'fal fa-truck',
                 'route' => route('grp.overview.ordering.delivery_notes.index'),
@@ -419,7 +413,7 @@ class GetGroupOverview extends OrgAction
         ];
     }
 
-    protected function getHumanAccountingSections($group): array
+    protected function getAccountingSections($group): array
     {
         return [
             [
@@ -427,6 +421,18 @@ class GetGroupOverview extends OrgAction
                 'icon'  => 'fal fa-money-check-alt',
                 'route' => route('grp.overview.accounting.payment-accounts.index'),
                 'count' => $group->accountingStats->number_payment_accounts ?? 0
+            ],
+            [
+                'name'  => __('Invoices'),
+                'icon'  => 'fal fa-file-invoice-dollar',
+                'route' => route('grp.overview.accounting.invoices.index'),
+                'count' => $group->orderingStats->number_invoices_type_invoice ?? 0
+            ],
+            [
+                'name'  => __('Refunds'),
+                'icon'  => 'fal fa-arrow-circle-left',
+                'route' => route('grp.overview.accounting.refunds.index'),
+                'count' => $group->orderingStats->number_invoices_type_refund ?? 0
             ],
             [
                 'name'  => __('Payments'),
