@@ -89,6 +89,22 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     // 'subNavigation' => $this->getDepartmentSubNavigation($masterdepartment)
                 ],
 
+                'upload_image_route' => [
+                    'method' => 'post',
+                    'name'       => 'grp.models.master_product_image.upload',
+                    'parameters' => [
+                        'masterProductCategory' => $masterdepartment->id
+                    ]
+                ],
+
+                'update_route' => [
+                    'method' => 'patch',
+                    'name'       => 'grp.models.master_product.update',
+                    'parameters' => [
+                        'masterProductCategory' => $masterdepartment->id
+                    ]
+                ],
+
                 'department' => MasterDepartmentsResource::make($masterdepartment),
                 'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
                 'families' => FamilyResource::collection($masterdepartment->families()),
