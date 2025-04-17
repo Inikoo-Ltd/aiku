@@ -198,7 +198,7 @@ trait WithCustomerSubNavigation
                 'isAnchor' => true,
                 'label'    => __('Client'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
@@ -208,7 +208,7 @@ trait WithCustomerSubNavigation
             ],
             [
                 'label'    => __('Orders'),
-                'number'   => $customerClient->stats->number_orders,
+                'number'   => $customerClient->stats->number_orders ?? 0,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
@@ -220,7 +220,7 @@ trait WithCustomerSubNavigation
             ],
             [
                 'label'    => __('Delivery notes'),
-                'number'   => $customerClient->stats->number_delivery_notes,
+                'number'   => $customerClient->stats->number_delivery_notes ?? 0,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.index',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
@@ -232,7 +232,7 @@ trait WithCustomerSubNavigation
             ],
             [
                 'label'    => __('Invoices'),
-                'number'   => $customerClient->stats->number_invoices,
+                'number'   => $customerClient->stats->number_invoices ?? 0,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]

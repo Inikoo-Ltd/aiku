@@ -4,6 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { trans } from 'laravel-vue-i18n'
+import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage)
 
@@ -24,7 +25,9 @@ const updateData = (newVal: any) => {
 </script>
 
 <template>
-	<section class="w-full min-h-[100px] flex items-center justify-center">
+	<section class="w-full min-h-[100px] flex items-center justify-center"
+		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties)"
+	>
 		<!-- If no component selected -->
 		<div
 			v-if="!modelValue"
@@ -34,7 +37,7 @@ const updateData = (newVal: any) => {
 			<p class="text-sm">{{ trans("Please select or add a content block first.") }}</p>
 		</div>
 
-		<!-- If modelValue is present -->
+		<!-- If block is already selected (modelValue is present) -->
 		<component
 			v-else
 			class="w-full"
@@ -44,6 +47,7 @@ const updateData = (newVal: any) => {
 			@autoSave="() => updateData(modelValue)"
 			v-model="modelValue.data.fieldValue"
 		/>
+		<!-- <pre>{{ getStyles(modelValue?.data?.fieldValue?.container?.properties) }}</pre> -->
 	</section>
 </template>
 

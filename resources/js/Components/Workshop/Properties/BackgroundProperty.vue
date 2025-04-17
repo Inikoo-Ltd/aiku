@@ -132,7 +132,13 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                     <div v-else @click="() => (model.type = 'image',emits('update:modelValue', model))" class="flex absolute inset-0 bg-gray-200/70 hover:bg-gray-100/40 items-center justify-center cursor-pointer" />
                 </div>
             </div>
-            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)" :options="[{ name: 'image'}]" by="name" key="image1" />
+            <PureRadio
+                v-model="model.type"
+                @update:modelValue="() => emits('update:modelValue', model)"
+                :options="[{ name: 'image'}]"
+                by="name"
+                key="image1"
+            />
         </div>
         
         <!-- {{ model }} -->
@@ -186,11 +192,15 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
 
             </div>
             <!-- <div v-else class="h-8 w-8 rounded-md border border-gray-300 shadow" :style="{background: model.color}" /> -->
-
-            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)" :options="[{ name: 'color'}]" by="name" key="color2" />
+            <PureRadio
+                v-model="model.type"
+                @update:modelValue="() => emits('update:modelValue', model)"
+                :options="[{ name: 'color'}]"
+                by="name"
+                key="color2"
+            />
         </div>
     </div>
-    
 
     <Modal :isOpen="isOpenGallery" @onClose="() => isOpenGallery = false" width="w-3/4" >
         <GalleryManagement

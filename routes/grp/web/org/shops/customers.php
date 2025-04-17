@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\CRM\Customer\UI\CreateCustomer;
 use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
+use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformOrders;
@@ -57,7 +58,8 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('', IndexCustomerClients::class)->name('.aiku.index');
                 Route::get('create', CreateCustomerClient::class)->name('.create');
                 Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other-platform.index');
-                Route::get('/{customerClient}', ShowCustomerClient::class)->name('.aiku.show');
+                Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');
+                Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inPlatform'])->name('.edit');
                 
                 Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
                     Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
