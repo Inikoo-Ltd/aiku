@@ -19,8 +19,6 @@ trait WithOmegaData
 {
     public function getOmegaExportText(Invoice $invoice, $base_country = 'SK')
     {
-        define('ZERO_LITERAL', '0.000');
-        define('UNDEFINED_LITERAL', '(Nedefinované)');
 
         $surrogate_code = 'zGB';
         $surrogate = $invoice->external_invoicer_id ? true : false;
@@ -67,24 +65,24 @@ trait WithOmegaData
 
     private function calculateExchangeRate(Invoice $invoice, $surrogate)
     {
-        if ($invoice->currency->code == 'EUR') {
-            return 1;
-        }
+        $exchangeRate = null;
 
-        if ($surrogate) {
+        if ($invoice->currency->code == 'EUR') {
+            $exchangeRate = 1;
+        } elseif ($surrogate) {
             $eur = Currency::where('code', 'EUR')->first();
-            return $eur->exchanges()
+            $exchangeRate = $eur->exchanges()
                 ->whereDate('date', '<=', $invoice->date)
                 ->orderBy('date', 'desc')
                 ->first()->exchange;
-        }
-
-        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+        } elseif ($invoice->type == InvoiceTypeEnum::REFUND) {
             $originalInvoice = $invoice->originalInvoice;
-            return $this->parent instanceof Organisation ? $originalInvoice->org_exchange : $originalInvoice->grp_exchange;
+            $exchangeRate = $this->parent instanceof Organisation ? $originalInvoice->org_exchange : $originalInvoice->grp_exchange;
+        } else {
+            $exchangeRate = $this->parent instanceof Organisation ? $invoice->org_exchange : $invoice->grp_exchange;
         }
 
-        return $this->parent instanceof Organisation ? $invoice->org_exchange : $invoice->grp_exchange;
+        return $exchangeRate;
     }
 
     private function getInvoiceAddress(Invoice $invoice)
@@ -164,6 +162,7 @@ trait WithOmegaData
 
     private function generateHeaderRow(Invoice $invoice, $order, $store, $invoiceCodes, $exchange_rate, $_total_amount_exchange)
     {
+        $ZERO_LITERAL = '0.000';
         $header_data = [
             'R01',
             $invoiceCodes['numeric_code'],
@@ -187,13 +186,13 @@ trait WithOmegaData
             $_total_amount_exchange,
             19,
             23,
-            ZERO_LITERAL,
+            $ZERO_LITERAL,
             $invoice->net_amount + $invoice->shipping_amount + $invoice->charges_amount,
-            ZERO_LITERAL,
-            ZERO_LITERAL,
-            ZERO_LITERAL,
+            $ZERO_LITERAL,
+            $ZERO_LITERAL,
+            $ZERO_LITERAL,
             ($invoice->tax_amount == 0 ? '' : $invoice->tax_amount),
-            ($invoice->tax_amount == 0 ? '' : ZERO_LITERAL),
+            ($invoice->tax_amount == 0 ? '' : $ZERO_LITERAL),
             'Tomášková Andrea',
             '',
             '',
@@ -233,6 +232,8 @@ trait WithOmegaData
 
     private function generateInvoiceRow(Invoice $invoice, $store, $invoiceCodes, $_total_amount_exchange, $code_sum, $code_tax, $invoiceNetAmountWithoutDiscount, $exchange_rate)
     {
+        $UNDEFINED_LITERAL = '(Nedefinované)';
+
         $row_data = [
             'R02',
             0,
@@ -276,13 +277,13 @@ trait WithOmegaData
             $code_sum,
             '',
             '',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             '',
             '',
             '',
@@ -302,6 +303,8 @@ trait WithOmegaData
 
     private function generateShippingRow(Invoice $invoice, $store, $invoiceCodes, $code_sum, $code_tax, $exchange_rate)
     {
+        $UNDEFINED_LITERAL = '(Nedefinované)';
+
         $row_data = [
             'R02',
             0,
@@ -315,13 +318,13 @@ trait WithOmegaData
             $code_sum,
             '',
             '',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             '',
             '',
             '',
@@ -341,6 +344,8 @@ trait WithOmegaData
 
     private function generateChargesRow(Invoice $invoice, $store, $invoiceCodes, $code_sum, $code_tax, $exchange_rate)
     {
+        $UNDEFINED_LITERAL = '(Nedefinované)';
+
         $row_data = [
             'R02',
             0,
@@ -354,13 +359,13 @@ trait WithOmegaData
             $code_sum,
             '',
             '',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             '',
             '',
             '',
@@ -380,6 +385,8 @@ trait WithOmegaData
 
     private function generateTaxRow(Invoice $invoice, $store, $invoice_tax_code, $code_tax, $exchange_rate)
     {
+        $UNDEFINED_LITERAL = '(Nedefinované)';
+
         $row_data = [
             'R02',
             0,
@@ -393,13 +400,13 @@ trait WithOmegaData
             '04',
             '',
             '',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             'X',
-            UNDEFINED_LITERAL,
+            $UNDEFINED_LITERAL,
             '',
             '',
             '',
