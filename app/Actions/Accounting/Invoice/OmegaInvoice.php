@@ -50,6 +50,8 @@ class OmegaInvoice extends OrgAction
 
     public function getOmegaExportText(Invoice $invoice, $base_country = 'SK')
     {
+        define('ZERO_LITERAL', '0.000');
+        define('UNDEFINED_LITERAL', '(Nedefinované)');
 
         $surrogate_code = 'zGB';
 
@@ -91,29 +93,21 @@ class OmegaInvoice extends OrgAction
             'EE'
         );
 
-
         $store = $invoice->shop;
 
         $order = $invoice->order;
 
-
-
         if ($invoice->currency->code == 'EUR') {
             $exchange_rate = 1;
         } else {
-
-
             if ($surrogate) {
                 /** @var Currency $eur */
-                // TODO: i dont know this correct or not to get $exchange_rate like in aurora
                 $eur = Currency::where('code', 'EUR')->first();
                 $exchange_rate = $eur->exchanges()
                     ->whereDate('date', '<=', $invoice->date)
                     ->orderBy('date', 'desc')
                     ->first()->exchange;
-
             } else {
-
                 if ($invoice->type == InvoiceTypeEnum::REFUND) {
                     $orginalInvoice = $invoice->originalInvoice;
 
@@ -130,10 +124,6 @@ class OmegaInvoice extends OrgAction
                     }
                 }
             }
-
-
-
-
         }
 
         $invoiceAddress = $invoice->address;
@@ -150,61 +140,43 @@ class OmegaInvoice extends OrgAction
             $invoice_numeric_code_total    = 100;
             $invoice_numeric_code_shipping = 101;
             $invoice_numeric_code_charges  = 102;
-
         } else {
             $invoice_numeric_code          = 300;
             $invoice_numeric_code_total    = 200;
             $invoice_numeric_code_shipping = 201;
             $invoice_numeric_code_charges  = 202;
 
-
             if ($surrogate) {
-
                 $invoice_alpha_code     = $surrogate_code;
                 $invoice_alpha_code_bis = $surrogate_code.$store->code;
 
                 if ($invoice->type == InvoiceTypeEnum::REFUND) {
                     $invoice_alpha_code = 'zOD';
                 }
-
-
             } else {
-
                 $invoice_alpha_code = 'zOF';
-
-                // TODO: in aurora use $store->get('Store Code') instead of $store->get('Code') so i doubt about this
                 $invoice_alpha_code_bis = 'zOF'.$store->code;
-
 
                 if ($invoice->type == InvoiceTypeEnum::REFUND) {
                     $invoice_alpha_code     = 'zOD';
                     $invoice_alpha_code_bis = 'zOD'.$store->code;
                 }
-
             }
-
         }
 
-
         $_code = 200;
-
 
         if ($invoiceAddress->country_code == 'SK') {
             $_code = 100;
 
-            // TODO: i dont know where to get $invoice->get('Invoice Registration Number' like in aurora
             if ($invoice->shop->taxNumber != null) {
                 $code_tax = 'A1';
-
             } else {
                 $code_tax = 'D2';
-
             }
-
 
             $code_sum = '03';
         } elseif (in_array($invoiceAddress->country_code, $european_union_2alpha)) {
-
             if ($invoice_tax_code == 'S1'  or   $invoice_tax_code == 'XS1') {
                 $code_sum = '03';
                 $code_tax = 'A1';
@@ -212,17 +184,11 @@ class OmegaInvoice extends OrgAction
                 $code_sum = '14';
                 $code_tax = 'X';
             }
-
-
-
-
         } else {
-
             if ($invoice_tax_code == 'S1'  or   $invoice_tax_code == 'XS1') {
                 $code_sum = '03';
                 $code_tax = 'A1';
             } else {
-
                 $code_sum = '15t';
                 $code_tax = 'X';
             }
@@ -235,7 +201,6 @@ class OmegaInvoice extends OrgAction
             round($invoiceNetAmountWIthoutDiscount * $exchange_rate, 2) + round($invoice->shipping_amount * $exchange_rate, 2) + round($invoice->charges_amount * $exchange_rate, 2)
             + round($invoice->tax_amount * $exchange_rate, 2);
 
-
         $text                = '';
         $invoice_header_data = array(
             'R01',
@@ -245,7 +210,7 @@ class OmegaInvoice extends OrgAction
             $invoice->reference,
             $order->reference ?? '',
             $invoice->customer->name,
-            '', // TODO: i dont know where to get $invoice->get('Invoice Registration Number')
+            '',
             $invoice->shop->taxNumber->number,
             $invoice->date->format('d.m.Y'),
             '',
@@ -260,13 +225,13 @@ class OmegaInvoice extends OrgAction
             $_total_amount_exchange,
             19,
             23,
-            '0.000',
+            ZERO_LITERAL,
             $invoice->net_amount + $invoice->shipping_amount + $invoice->charges_amount,
-            '0.000',
-            '0.000',
-            '0.000',
+            ZERO_LITERAL,
+            ZERO_LITERAL,
+            ZERO_LITERAL,
             ($invoice->tax_amount == 0 ? '' : $invoice->tax_amount),
-            ($invoice->tax_amount == 0 ? '' : '0.000'),
+            ($invoice->tax_amount == 0 ? '' : ZERO_LITERAL),
             'Tomášková Andrea',
             '',
             '',
@@ -299,7 +264,6 @@ class OmegaInvoice extends OrgAction
             '',
             '',
             0
-
         );
 
         $invoice_header = "";
@@ -307,7 +271,6 @@ class OmegaInvoice extends OrgAction
             $invoice_header .= $header_item."\t";
         }
         $invoice_header .= "\r\n";
-
 
         $text .= $invoice_header;
 
@@ -336,10 +299,7 @@ class OmegaInvoice extends OrgAction
             '',
             '',
             '',
-            '',
             'X',
-
-
         );
 
         $invoice_row = "";
@@ -362,13 +322,13 @@ class OmegaInvoice extends OrgAction
             $code_sum,
             '',
             '',
-            '(Nedefinované)',
+            UNDEFINED_LITERAL,
             'X',
-            '(Nedefinované)',
+            UNDEFINED_LITERAL,
             'X',
-            '(Nedefinované)',
+            UNDEFINED_LITERAL,
             'X',
-            '(Nedefinované)',
+            UNDEFINED_LITERAL,
             '',
             '',
             '',
@@ -383,7 +343,6 @@ class OmegaInvoice extends OrgAction
             0
         );
 
-
         $invoice_row = "";
         foreach ($row_data as $column) {
             $invoice_row .= $column."\t";
@@ -392,8 +351,6 @@ class OmegaInvoice extends OrgAction
         $text        .= $invoice_row;
 
         if ($invoice->shipping_amount != 0) {
-
-
             $row_data = array(
                 'R02',
                 0,
@@ -407,13 +364,13 @@ class OmegaInvoice extends OrgAction
                 $code_sum,
                 '',
                 '',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 '',
                 '',
                 '',
@@ -434,13 +391,9 @@ class OmegaInvoice extends OrgAction
             }
             $invoice_row .= "\r\n";
             $text        .= $invoice_row;
-
         }
 
-
         if ($invoice->charges_amount != 0) {
-
-
             $row_data = array(
                 'R02',
                 0,
@@ -454,13 +407,13 @@ class OmegaInvoice extends OrgAction
                 $code_sum,
                 '',
                 '',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 '',
                 '',
                 '',
@@ -481,14 +434,11 @@ class OmegaInvoice extends OrgAction
             }
             $invoice_row .= "\r\n";
             $text        .= $invoice_row;
-
         }
-
 
         if ($invoice_tax_code == 'SK-SR23') {
             $invoice_tax_code = '23%';
         }
-
 
         if ($invoice->tax_amount != 0) {
             $row_data = array(
@@ -504,13 +454,13 @@ class OmegaInvoice extends OrgAction
                 '04',
                 '',
                 '',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 'X',
-                '(Nedefinované)',
+                UNDEFINED_LITERAL,
                 '',
                 '',
                 '',
@@ -531,13 +481,9 @@ class OmegaInvoice extends OrgAction
             }
             $invoice_row .= "\r\n";
             $text        .= $invoice_row;
-
         }
 
-
         return $text;
-
-
     }
 
 

@@ -235,10 +235,8 @@ class IndexInvoices extends OrgAction
             return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
         } elseif ($this->parent instanceof Shop) {
             //todo think about it
-            $permission = $request->user()->authTo("orders.{$this->shop->id}.view");
-
-            return $permission;
-        } elseif ($this->parent instanceof FulfilmentCustomer or $this->parent instanceof Fulfilment) {
+            return $request->user()->authTo("orders.{$this->shop->id}.view");
+        } elseif ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof Fulfilment) {
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->fulfilment->id}.view",
