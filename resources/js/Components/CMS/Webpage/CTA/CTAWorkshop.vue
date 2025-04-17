@@ -54,7 +54,15 @@ const emits = defineEmits<{
 					v-if="modelValue?.text"
 					v-model="modelValue.text"
 					@update:modelValue="() => emits('autoSave')"
-					class="mb-4" />
+					class="mb-4"
+					:uploadImageRoute="{
+                        name: webpageData.images_upload_route.name,
+                        parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                        }
+                    }"
+				/>
           <div class="flex justify-center">
 				<div
 					typeof="button"
