@@ -55,17 +55,10 @@ class OmegaInvoice extends OrgAction
 
         $surrogate = false;
 
-        // if($invoice->get('Invoice External Invoicer Key')>0){
-        //     $surrogate = true;
-        // }
         if ($invoice->external_invoicer_id) {
             $surrogate = true;
         }
 
-
-
-
-        // $invoice_tax_code =$invoice->get('Invoice Tax Code');
         $invoice_tax_code = $invoice->taxCategory->label;
 
         $european_union_2alpha = array(
@@ -99,11 +92,8 @@ class OmegaInvoice extends OrgAction
         );
 
 
-        // $store = get_object('Store', $invoice->get('Invoice Store Key'));
         $store = $invoice->shop;
 
-
-        // $order = get_object('Order', $invoice->get('Invoice Order Key'));
         $order = $invoice->order;
 
 
@@ -114,10 +104,8 @@ class OmegaInvoice extends OrgAction
 
 
             if ($surrogate) {
-                // $exchange_rate=get_historic_exchange($invoice->get('Invoice Currency'), 'EUR', gmdate('Y-m-d',strtotime($invoice->get('Invoice Date'))));
-
                 /** @var Currency $eur */
-                // TODO: i dont know this correct or not
+                // TODO: i dont know this correct or not to get $exchange_rate like in aurora
                 $eur = Currency::where('code', 'EUR')->first();
                 $exchange_rate = $eur->exchanges()
                     ->whereDate('date', '<=', $invoice->date)
@@ -125,7 +113,6 @@ class OmegaInvoice extends OrgAction
                     ->first()->exchange;
 
             } else {
-                // $exchange_rate = $invoice->get('Invoice Currency Exchange');
 
                 if ($invoice->type == InvoiceTypeEnum::REFUND) {
                     $orginalInvoice = $invoice->originalInvoice;
@@ -156,7 +143,6 @@ class OmegaInvoice extends OrgAction
             $invoice->tax_liability_at = $invoice->originalInvoice->tax_liability_at;
         }
 
-        // if ($base_country == $invoice->get('Invoice Address Country 2 Alpha Code')) {
         if ($base_country == $invoiceAddress->country_code) {
             $invoice_numeric_code          = 100;
             $invoice_alpha_code            = 'OF';
@@ -175,12 +161,8 @@ class OmegaInvoice extends OrgAction
             if ($surrogate) {
 
                 $invoice_alpha_code     = $surrogate_code;
-                // $invoice_alpha_code_bis = $surrogate_code.$store->get('Store Code');
                 $invoice_alpha_code_bis = $surrogate_code.$store->code;
 
-                // if ($invoice->get('Invoice Type') == 'Refund') {
-                //     $invoice_alpha_code = 'zOD';
-                // }
                 if ($invoice->type == InvoiceTypeEnum::REFUND) {
                     $invoice_alpha_code = 'zOD';
                 }
@@ -190,14 +172,10 @@ class OmegaInvoice extends OrgAction
 
                 $invoice_alpha_code = 'zOF';
 
-                // $invoice_alpha_code_bis = 'zOF'.$store->get('Store Code');
+                // TODO: in aurora use $store->get('Store Code') instead of $store->get('Code') so i doubt about this
                 $invoice_alpha_code_bis = 'zOF'.$store->code;
 
 
-                // if ($invoice->get('Invoice Type') == 'Refund') {
-                //     $invoice_alpha_code     = 'zOD';
-                //     $invoice_alpha_code_bis = 'zOD'.$store->get('Store Code');
-                // }
                 if ($invoice->type == InvoiceTypeEnum::REFUND) {
                     $invoice_alpha_code     = 'zOD';
                     $invoice_alpha_code_bis = 'zOD'.$store->code;
@@ -211,12 +189,10 @@ class OmegaInvoice extends OrgAction
         $_code = 200;
 
 
-        // if ($invoice->get('Invoice Address Country 2 Alpha Code') == 'SK') {
         if ($invoiceAddress->country_code == 'SK') {
             $_code = 100;
 
-            // if ($invoice->get('Invoice Registration Number') != '' or $invoice->get('Invoice Tax Number') != '') {
-            // TODO: i dont know where to get invoice registration number
+            // TODO: i dont know where to get $invoice->get('Invoice Registration Number' like in aurora
             if ($invoice->shop->taxNumber != null) {
                 $code_tax = 'A1';
 
@@ -227,7 +203,6 @@ class OmegaInvoice extends OrgAction
 
 
             $code_sum = '03';
-            // } elseif (in_array($invoice->get('Invoice Address Country 2 Alpha Code'), $european_union_2alpha)) {
         } elseif (in_array($invoiceAddress->country_code, $european_union_2alpha)) {
 
             if ($invoice_tax_code == 'S1'  or   $invoice_tax_code == 'XS1') {
@@ -251,26 +226,14 @@ class OmegaInvoice extends OrgAction
                 $code_sum = '15t';
                 $code_tax = 'X';
             }
-
-
-
-
         }
 
-        // $_total_amount_exchange =
-        //     round(($invoice->get('Invoice Items Net Amount') - $invoice->get('Invoice Net Amount Off')) * $exchange_rate, 2) + round($invoice->get('Invoice Shipping Net Amount') * $exchange_rate, 2) + round($invoice->get('Invoice Charges Net Amount') * $exchange_rate, 2)
-        //     + round(
-        //         $invoice->get('Invoice Total Tax Amount') * $exchange_rate, 2
-        //     );
-
-        // TODO: i dont know where i get $invoice->get('Invoice Net Amount Off') or maybe this no need because the net amount already discounted
+        $invoiceDiscountAmount = $invoice->stats->discounts_amount;
+        $invoiceNetAmountWIthoutDiscount = $invoice->net_amount - $invoiceDiscountAmount;
 
         $_total_amount_exchange =
-            round($invoice->net_amount * $exchange_rate, 2) + round($invoice->shipping_amount * $exchange_rate, 2) + round($invoice->charges_amount * $exchange_rate, 2)
-            + round(
-                $invoice->tax_amount * $exchange_rate,
-                2
-            );
+            round($invoiceNetAmountWIthoutDiscount * $exchange_rate, 2) + round($invoice->shipping_amount * $exchange_rate, 2) + round($invoice->charges_amount * $exchange_rate, 2)
+            + round($invoice->tax_amount * $exchange_rate, 2);
 
 
         $text                = '';
@@ -279,15 +242,10 @@ class OmegaInvoice extends OrgAction
             $invoice_numeric_code,
             $invoice_alpha_code,
             $invoice_alpha_code_bis,
-            // $invoice->get('Invoice Public ID'),
             $invoice->reference,
-            // $order->get('Order Public ID'),
             $order->reference ?? '',
-            // $invoice->get('Invoice Customer Name'),
             $invoice->customer->name,
-            // $invoice->get('Invoice Registration Number'),
-            '123', // dont know where to get this
-            // $invoice->get('Invoice Tax Number'),
+            '', // TODO: i dont know where to get $invoice->get('Invoice Registration Number')
             $invoice->shop->taxNumber->number,
             $invoice->date->format('d.m.Y'),
             '',
@@ -303,7 +261,6 @@ class OmegaInvoice extends OrgAction
             19,
             23,
             '0.000',
-            // $invoice->get('Invoice Items Net Amount') - $invoice->get('Invoice Net Amount Off') + $invoice->get('Invoice Shipping Net Amount') + $invoice->get('Invoice Charges Net Amount'),
             $invoice->net_amount + $invoice->shipping_amount + $invoice->charges_amount,
             '0.000',
             '0.000',
@@ -321,7 +278,6 @@ class OmegaInvoice extends OrgAction
             '',
             date('H:i:s'),
             '',
-            // 'Total '.$store->get('Code').' '.$invoice_tax_code, // dont know what difference store code and code
             'Total '.$store->code.' '.$invoice_tax_code,
             0,
             '',
@@ -331,10 +287,8 @@ class OmegaInvoice extends OrgAction
             0,
             'EJA',
             'José António Erika',
-            // $store->get('Code'),
             $store->code,
             0,
-            // $store->get('Code'),
             $store->code,
             'Tomášková Andrea',
             $invoice->reference,
@@ -356,11 +310,6 @@ class OmegaInvoice extends OrgAction
 
 
         $text .= $invoice_header;
-
-
-
-
-
 
         $row_data = array(
             'R02',
@@ -407,11 +356,8 @@ class OmegaInvoice extends OrgAction
             '',
             604,
             $invoice_numeric_code_total,
-            // round(($invoice->get('Invoice Items Net Amount') - $invoice->get('Invoice Net Amount Off')) * $exchange_rate, 2),
-            round($invoice->net_amount * $exchange_rate, 2),
-            // $invoice->get('Invoice Items Net Amount') - $invoice->get('Invoice Net Amount Off'),
-            $invoice->net_amount,
-            // 'Items '.$store->get('Code').' '.$invoice_tax_code,
+            round($invoiceNetAmountWIthoutDiscount * $exchange_rate, 2),
+            $invoiceNetAmountWIthoutDiscount,
             'Items '.$store->code.' '.$invoice_tax_code,
             $code_sum,
             '',
@@ -445,8 +391,6 @@ class OmegaInvoice extends OrgAction
         $invoice_row .= "\r\n";
         $text        .= $invoice_row;
 
-
-        // if ($invoice->get('Invoice Shipping Net Amount') != 0) {
         if ($invoice->shipping_amount != 0) {
 
 
@@ -457,11 +401,8 @@ class OmegaInvoice extends OrgAction
                 '',
                 604,
                 $invoice_numeric_code_shipping,
-                // round($invoice->get('Invoice Shipping Net Amount') * $exchange_rate, 2),
                 round($invoice->shipping_amount * $exchange_rate, 2),
-                // $invoice->get('Invoice Shipping Net Amount'),
                 $invoice->shipping_amount,
-                // 'Shipping '.$store->get('Code').' '.$invoice_tax_code,
                 'Shipping '.$store->code.' '.$invoice_tax_code,
                 $code_sum,
                 '',
@@ -497,7 +438,6 @@ class OmegaInvoice extends OrgAction
         }
 
 
-        // if ($invoice->get('Invoice Charges Net Amount') != 0) {
         if ($invoice->charges_amount != 0) {
 
 
@@ -508,11 +448,8 @@ class OmegaInvoice extends OrgAction
                 '',
                 604,
                 $invoice_numeric_code_charges,
-                // round($invoice->get('Invoice Charges Net Amount') * $exchange_rate, 2),
                 round($invoice->charges_amount * $exchange_rate, 2),
-                // $invoice->get('Invoice Charges Net Amount'),
                 $invoice->charges_amount,
-                // 'Charges '.$store->get('Code').' '.$invoice_tax_code,
                 'Charges '.$store->code.' '.$invoice_tax_code,
                 $code_sum,
                 '',
@@ -553,7 +490,6 @@ class OmegaInvoice extends OrgAction
         }
 
 
-        // if ($invoice->get('Invoice Total Tax Amount') != 0) {
         if ($invoice->tax_amount != 0) {
             $row_data = array(
                 'R02',
@@ -562,11 +498,8 @@ class OmegaInvoice extends OrgAction
                 '',
                 343,
                 223,
-                // round($invoice->get('Invoice Total Tax Amount') * $exchange_rate, 2),
                 round($invoice->tax_amount * $exchange_rate, 2),
-                // $invoice->get('Invoice Total Tax Amount'),
                 $invoice->tax_amount,
-                // 'Tax '.$store->get('Code').' '.$invoice_tax_code,
                 'Tax '.$store->code.' '.$invoice_tax_code,
                 '04',
                 '',
