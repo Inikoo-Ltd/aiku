@@ -9,17 +9,21 @@
 namespace App\Actions\Goods\MasterProductCategory;
 
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithAttachMediaToModel;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
 use App\Models\Inventory\Location;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UploadImageMasterProductCategory extends GrpAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithAttachMediaToModel;
 
     private MasterProductCategory $masterProductCategory;
 
@@ -27,6 +31,22 @@ class UploadImageMasterProductCategory extends GrpAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        $imageFile =  Arr::get($modelData, 'image');
+
+        $imageData = [
+            'path'         => $imageFile->getPathName(),
+            'originalName' => $imageFile->getClientOriginalName(),
+            'extension'    => $imageFile->guessClientExtension(),
+            'checksum'     => md5_file($imageFile->getPathName())
+        ];
+
+        $media = StoreMediaFromFile::run($masterProductCategory, $imageData, 'image');
+        $this->attachMediaToModel($masterProductCategory, $media, 'image');
+
+        UpdateMasterProductCategory::make()->action($masterProductCategory, [
+            'image_id' => $media->id
+        ]);
+
         return $masterProductCategory;
     }
 
@@ -43,7 +63,7 @@ class UploadImageMasterProductCategory extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'name'        => ['sometimes', 'max:250', 'string'],
+            'image'        => ['sometimes', 'mimes:jpg,jpeg,png']
         ];
 
         if (!$this->strict) {
