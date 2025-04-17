@@ -92,14 +92,14 @@ class ShowCustomerClient extends OrgAction
         }
         $subNavigation = null;
         if ($this->parent instanceof Customer) {
-            $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
+            // $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform) {
             if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
                 $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
             } else {
-                $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->customer, $request);
+                $subNavigation = $this->getCustomerClientSubNavigation($customerClient, $this->parent, $request);
             }
         }
 
@@ -108,6 +108,7 @@ class ShowCustomerClient extends OrgAction
             [
                 'title'       => __('customer client'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -126,8 +127,8 @@ class ShowCustomerClient extends OrgAction
                         $shopMeta,
                     ]),
                     'actions'       => [
-                        $this->canDelete ? $this->getDeleteActionIcon($request) : null,
-                        $this->canEdit ? $this->getEditActionIcon($request) : null,
+                        $this->canDelete ? $this->getDeleteActionIcon($request, '') : null,
+                        $this->canEdit ? $this->getEditActionIcon($request, 'Profile') : null,
                         [
                             'type'  => 'button',
                             'style' => 'create',
@@ -138,16 +139,6 @@ class ShowCustomerClient extends OrgAction
                                 'parameters' => [
                                     'palletDelivery' => 3
                                 ]
-                            ]
-                        ],
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => 'Edit Customer Client',
-                            'key'   => 'edit_customer_client',
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.edit',
-                                'parameters' => $request->route()->originalParameters()
                             ]
                         ],
                     ],
@@ -221,7 +212,7 @@ class ShowCustomerClient extends OrgAction
         return new CustomerClientResource($customerClient);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Customer|FulfilmentCustomer|CustomerHasPlatform $parent, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (CustomerClient $customerClient, array $routeParameters, string $suffix = null) {
             return [
@@ -308,7 +299,7 @@ class ShowCustomerClient extends OrgAction
                 )
             ),
 
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show'
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show'
             => array_merge(
                 (new ShowFulfilmentCustomerPlatform())->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
@@ -319,7 +310,7 @@ class ShowCustomerClient extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show',
                             'parameters' => $routeParameters
 
 
@@ -328,9 +319,9 @@ class ShowCustomerClient extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show'
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show'
             => array_merge(
-                (new ShowCustomerPlatform())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
+                (new ShowCustomerPlatform())->getBreadcrumbs($parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [
@@ -339,7 +330,7 @@ class ShowCustomerClient extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show',
                             'parameters' => $routeParameters
 
 
@@ -393,14 +384,14 @@ class ShowCustomerClient extends OrgAction
                     'parameters' => request()->route()->originalParameters()
                 ]
             ],
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show' => [
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => request()->route()->originalParameters()
                 ]
             ],
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show' => [
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,

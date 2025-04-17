@@ -51,7 +51,7 @@ class ShowFulfilmentInvoice extends OrgAction
     protected function getParent(ActionRequest $request): Organisation|null
     {
 
-        if(!$request->route()){
+        if (!$request->route()) {
             return null;
         }
 

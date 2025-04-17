@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
@@ -31,6 +32,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     use WithCRMAuthorisation;
 
     private Customer|CustomerClient $parent;
+    private CustomerHasPlatform $customerHasPlatform;
 
     public function handle(Customer|CustomerClient $parent, $prefix = null): LengthAwarePaginator
     {
@@ -47,7 +49,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     public function htmlResponse(LengthAwarePaginator $deliveryNotes, ActionRequest $request): Response
     {
         if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerHasPlatform);
         } elseif ($this->parent instanceof Customer && $this->parent->shop->type == ShopTypeEnum::B2B) {
             $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof Customer && $this->parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
@@ -81,6 +83,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
             'Org/Dispatching/DeliveryNotes',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
                 'title'       => __('delivery notes'),
@@ -110,12 +113,13 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customerClient);
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
@@ -130,14 +134,25 @@ class IndexDeliveryNotesInCustomers extends OrgAction
             ];
         };
 
-        return array_merge(
-            ShowCustomer::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
-            $headCrumb(
-                [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
-                    'parameters' => $routeParameters
-                ]
+        return match ($routeName) {
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.index' => array_merge(
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            default => array_merge(
+                ShowCustomer::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
             )
-        );
+        };
     }
 }

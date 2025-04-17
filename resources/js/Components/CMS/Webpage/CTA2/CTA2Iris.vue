@@ -31,7 +31,7 @@ const props = defineProps<{
 
 <template>
 	<div :style="getStyles(fieldValue.container.properties)">
-		<div class="relative isolate overflow-hidden px-6 py-24 text-center sm:px-16">
+		<div class="relative isolate px-6 py-24 text-center sm:px-16">
 			<section v-html="fieldValue.headline" />
 
 			<div class="mt-10 flex items-center justify-center gap-x-6">

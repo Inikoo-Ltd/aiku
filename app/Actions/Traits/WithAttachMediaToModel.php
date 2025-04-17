@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
+use App\Models\Goods\MasterProductCategory;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -21,7 +22,7 @@ use stdClass;
 
 trait WithAttachMediaToModel
 {
-    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product
+    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory
     {
 
 

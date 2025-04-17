@@ -178,7 +178,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.index');
-                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.show');
+                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
                 Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
             });
             Route::prefix('/orders')->as('.orders')->group(function () {

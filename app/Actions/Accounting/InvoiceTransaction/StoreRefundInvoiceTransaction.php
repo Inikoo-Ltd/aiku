@@ -84,7 +84,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'quantity', $quantity);
 
 
-        data_set($modelData, 'original_invoice_id', $refund->id);
+        data_set($modelData, 'invoice_id', $refund->id);
         data_set($modelData, 'group_id', $invoiceTransaction->group_id);
         data_set($modelData, 'organisation_id', $invoiceTransaction->organisation_id);
         data_set($modelData, 'shop_id', $invoiceTransaction->shop_id);
