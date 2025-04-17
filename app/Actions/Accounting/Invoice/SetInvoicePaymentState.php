@@ -36,7 +36,7 @@ class SetInvoicePaymentState extends OrgAction
         $paymentAt             = null;
         $runningPaymentsAmount = 0;
 
-        if (!$invoice->invoice_id) {
+        if (!$invoice->original_invoice_id) {
             $payments = $invoice->payments()
                 ->where('payments.status', PaymentStatusEnum::SUCCESS)
                 ->where('payments.type', '=', PaymentTypeEnum::PAYMENT)
@@ -60,7 +60,7 @@ class SetInvoicePaymentState extends OrgAction
         }
 
 
-        if (!$invoice->invoice_id) {
+        if (!$invoice->original_invoice_id) {
             $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
             if ($cutOffDate) {
                 $cutOffDate = Carbon::parse($cutOffDate);
