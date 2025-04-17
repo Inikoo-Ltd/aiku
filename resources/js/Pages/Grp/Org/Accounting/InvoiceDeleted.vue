@@ -96,6 +96,7 @@ const props = defineProps<{
     order_summary: FieldOrderSummary[][]
     recurring_bill_route: routeType
     invoice: InvoiceResource
+    invoice_transactions?: {}
     items: {}
     payments: {}
     details: {}
@@ -113,6 +114,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         items: TableInvoiceTransactions,
+        invoice_transactions: TableInvoiceTransactions,
         payments: TablePayments,
         details: ModelDetails,
         history: ModelChangelog,

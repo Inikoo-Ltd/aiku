@@ -48,6 +48,8 @@ class IndexOrders extends OrgAction
     use WithOrdersSubNavigation;
 
     private Group|Organisation|Shop|Customer|CustomerClient|Asset|ShopifyUser $parent;
+    private CustomerHasPlatform $customerHasPlatform;
+
     private string $bucket;
 
     protected function getElementGroups(Group|Organisation|Shop|Customer|CustomerClient|Asset $parent): array
@@ -289,7 +291,8 @@ class IndexOrders extends OrgAction
         }
         $subNavigation = null;
         if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
+            unset($navigation[OrdersTabsEnum::STATS->value]);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerHasPlatform);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -456,6 +459,7 @@ class IndexOrders extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(OrdersTabsEnum::values());
 
         return $this->handle(parent: $customerClient, prefix: OrdersTabsEnum::ORDERS->value);
@@ -503,6 +507,16 @@ class IndexOrders extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index' =>
+            array_merge(
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
                         'parameters' => $routeParameters
                     ]
                 )

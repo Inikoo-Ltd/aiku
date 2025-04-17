@@ -92,14 +92,14 @@ class ShowCustomerClient extends OrgAction
         }
         $subNavigation = null;
         if ($this->parent instanceof Customer) {
-            $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
+            // $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
         } elseif ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform) {
             if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
                 $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
             } else {
-                $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->customer, $request);
+                $subNavigation = $this->getCustomerClientSubNavigation($customerClient, $this->parent, $request);
             }
         }
 
@@ -108,6 +108,7 @@ class ShowCustomerClient extends OrgAction
             [
                 'title'       => __('customer client'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -221,7 +222,7 @@ class ShowCustomerClient extends OrgAction
         return new CustomerClientResource($customerClient);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Customer|FulfilmentCustomer|CustomerHasPlatform $parent, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (CustomerClient $customerClient, array $routeParameters, string $suffix = null) {
             return [
@@ -330,7 +331,7 @@ class ShowCustomerClient extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show'
             => array_merge(
-                (new ShowCustomerPlatform())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
+                (new ShowCustomerPlatform())->getBreadcrumbs($parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [

@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -190,15 +191,15 @@ trait WithCustomerSubNavigation
         ];
     }
 
-    protected function getCustomerClientSubNavigation(CustomerClient $customerClient): array
+    protected function getCustomerClientSubNavigation(CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform): array
     {
         return [
             [
                 'isAnchor' => true,
                 'label'    => __('Client'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.show',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
@@ -209,8 +210,8 @@ trait WithCustomerSubNavigation
                 'label'    => __('Orders'),
                 'number'   => $customerClient->stats->number_orders,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-shopping-cart'],
@@ -221,8 +222,8 @@ trait WithCustomerSubNavigation
                 'label'    => __('Delivery notes'),
                 'number'   => $customerClient->stats->number_delivery_notes,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.delivery_notes.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.index',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-truck'],
@@ -233,8 +234,8 @@ trait WithCustomerSubNavigation
                 'label'    => __('Invoices'),
                 'number'   => $customerClient->stats->number_invoices,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.invoices.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->ulid]
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-file-invoice'],
