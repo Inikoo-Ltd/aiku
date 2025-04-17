@@ -45,6 +45,7 @@ class IndexInvoiceTransactions extends OrgAction
                 'assets.shop_id as asset_shop_id',
                 'invoice_transactions.quantity',
                 'invoice_transactions.net_amount',
+                'invoice_transactions.id',
                 'invoice_transactions.recurring_bill_transaction_id',
                 'currencies.code as currency_code',
                 'currencies.id as currency_id'

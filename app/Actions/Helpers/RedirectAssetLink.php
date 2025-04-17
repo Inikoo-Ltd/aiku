@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Fulfilment;
+namespace App\Actions\Helpers;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;

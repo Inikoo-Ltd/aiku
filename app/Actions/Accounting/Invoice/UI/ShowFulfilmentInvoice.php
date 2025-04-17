@@ -19,7 +19,7 @@ use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\FulfilmentInvoiceTabsEnum;
-use App\Http\Resources\Accounting\FulfilmentInvoiceTransactionsResource;
+use App\Http\Resources\Accounting\InvoiceTransactionsGroupedByAssetResource;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -50,8 +50,15 @@ class ShowFulfilmentInvoice extends OrgAction
 
     protected function getParent(ActionRequest $request): Organisation|null
     {
-        $routeName = $request->route()->getName();
+
+        if(!$request->route()){
+            return null;
+        }
+
         $parent    = null;
+
+
+        $routeName = $request->route()->getName();
 
         if ($routeName == 'grp.org.accounting.invoices.show') {
             /** @var Organisation $organisation */
@@ -181,8 +188,8 @@ class ShowFulfilmentInvoice extends OrgAction
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))),
 
                 FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn () => FulfilmentInvoiceTransactionsResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => FulfilmentInvoiceTransactionsResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
                     fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))

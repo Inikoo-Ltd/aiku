@@ -111,4 +111,15 @@ class UpdateMasterProductCategory extends GrpAction
 
         return $this->handle($masterProductCategory, $this->validatedData);
     }
+
+    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory
+    {
+        $this->asAction        = true;
+        $this->masterProductCategory = $masterProductCategory;
+        $this->masterShop = $masterProductCategory->masterShop;
+
+        $this->initialisation($masterProductCategory->group, $request);
+
+        return $this->handle($masterProductCategory, $this->validatedData);
+    }
 }

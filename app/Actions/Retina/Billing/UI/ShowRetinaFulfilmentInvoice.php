@@ -9,20 +9,20 @@
 namespace App\Actions\Retina\Billing\UI;
 
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
-use App\Actions\Retina\Accounting\Invoice\Transaction\UI\IndexRetinaInvoiceTransactions;
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsGroupedByAsset;
 use App\Actions\Retina\Accounting\Payment\UI\IndexRetinaPayments;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Accounting\RetinaFulfilmentInvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
+use App\Http\Resources\Accounting\InvoiceTransactionsGroupedByAssetResource;
 use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
-use App\Http\Resources\Accounting\RetinaFulfilmentInvoiceTransactionsResource;
 use App\Models\Accounting\Invoice;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowRetinaInvoice extends RetinaAction
+class ShowRetinaFulfilmentInvoice extends RetinaAction
 {
     public function handle(Invoice $invoice): Invoice
     {
@@ -34,18 +34,20 @@ class ShowRetinaInvoice extends RetinaAction
         if ($this->customer->id == $request->route()->parameter('invoice')->customer_id) {
             return true;
         }
+
         return false;
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->initialisation($request)->withTab(RetinaFulfilmentInvoiceTabsEnum::values());
+
         return $this->handle($invoice);
     }
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
-        $toPayAmount   = round($invoice->total_amount - $invoice->payment_amount, 2);
+        $toPayAmount = round($invoice->total_amount - $invoice->payment_amount, 2);
 
         return Inertia::render(
             'Billing/RetinaInvoice',
@@ -102,9 +104,9 @@ class ShowRetinaInvoice extends RetinaAction
                             'price_total' => $invoice->insurance_amount
                         ],
                         [
-                            'label'            => __('Tax'),
-                            'information'      => '(vat)',
-                            'price_total'      => $invoice->tax_amount
+                            'label'       => __('Tax'),
+                            'information' => '(vat)',
+                            'price_total' => $invoice->tax_amount
                         ],
 
                     ],
@@ -116,7 +118,7 @@ class ShowRetinaInvoice extends RetinaAction
                     ],
                 ],
 
-                'exportPdfRoute' => [
+                'exportPdfRoute'          => [
                     'name'       => 'retina.fulfilment.billing.invoices.download',
                     'parameters' => [
                         'invoice' => $invoice->slug
@@ -128,7 +130,7 @@ class ShowRetinaInvoice extends RetinaAction
                         'invoice' => $invoice->slug
                     ]
                 ],
-                'box_stats'      => [
+                'box_stats'               => [
                     'customer'    => [
                         'route'        => [
                             'name'       => 'retina.fulfilment.billing.invoices.show',
@@ -144,8 +146,8 @@ class ShowRetinaInvoice extends RetinaAction
                         'phone'        => $invoice->customer->phone,
                     ],
                     'information' => [
-                        'recurring_bill'    => [
-                            'reference'     => $invoice->reference
+                        'recurring_bill' => [
+                            'reference' => $invoice->reference
                         ],
                         'routes'         => [
                         ],
@@ -158,22 +160,38 @@ class ShowRetinaInvoice extends RetinaAction
 
 
                 RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn () => RetinaFulfilmentInvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RetinaFulfilmentInvoiceTransactionsResource::collection(IndexRetinaInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
-                RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value
+                    ?
+                    fn() => tap(
+                        ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
+                        function ($resource) {
+                            $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                                'isRetina' => true
+                            ]));
+                        }
+                    )
+                    : Inertia::lazy(fn() => tap(
+                        ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
+                        function ($resource) {
+                            $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                                'isRetina' => true
+                            ]));
+                        }
+                    )
+                    ),
 
                 RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
+                    fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
 
 
             ]
         )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value))
             ->table(IndexInvoiceTransactions::make()->tableStructure(RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-            ->table(IndexRetinaInvoiceTransactions::make()->tableStructure($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value));
+            ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value));
     }
 
 
@@ -256,7 +274,7 @@ class ShowRetinaInvoice extends RetinaAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'invoice'      => $invoice->slug
+                        'invoice' => $invoice->slug
                     ]
 
                 ]
