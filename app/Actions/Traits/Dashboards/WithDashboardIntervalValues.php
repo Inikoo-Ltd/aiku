@@ -58,6 +58,8 @@ trait WithDashboardIntervalValues
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
                     $data['formatted_value'] = Number::delta($rawValue, $intervalsModel->{$field.'_'.$interval->value}.'_ly');
+
+                    $data['tooltip']         = Number::currency($intervalsModel->{$field.'_'.$interval->value.'_ly'}, Arr::get($options, 'currency'));
                     break;
                 default: // as DashboardDataType::NUMBER:
                     if (is_null($rawValue)) {
