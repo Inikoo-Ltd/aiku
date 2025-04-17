@@ -291,7 +291,7 @@ class IndexCustomerClients extends OrgAction
                 )
             ),
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.show' =>
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs(
                     $customerHasPlatform,
@@ -305,7 +305,7 @@ class IndexCustomerClients extends OrgAction
                 )
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show' =>
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowCustomerPlatform::make()->getBreadcrumbs(
                     $customerHasPlatform,
