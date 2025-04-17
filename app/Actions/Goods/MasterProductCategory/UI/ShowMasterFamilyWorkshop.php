@@ -104,6 +104,22 @@ class ShowMasterFamilyWorkshop extends GrpAction
                     'navigation' => MasterFamilyTabsEnum::navigation()
                 ],
 
+                'upload_image_route' => [
+                    'method' => 'post',
+                    'name'       => 'grp.models.master_product_image.upload',
+                    'parameters' => [
+                        'masterProductCategory' => $masterfamily->id
+                    ]
+                ],
+
+                'update_route' => [
+                    'method' => 'patch',
+                    'name'       => 'grp.models.master_product.update',
+                    'parameters' => [
+                        'masterProductCategory' => $masterfamily->id
+                    ]
+                ],
+
                 'family' => FamilyResource::make($masterfamily),
                 'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
                 'assets' => MasterProductsResource::collection($masterfamily->masterAssets()->get()),
