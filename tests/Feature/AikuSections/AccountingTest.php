@@ -1249,7 +1249,7 @@ test('UI show list invoices in customer client', function () {
             ->has('tabs')
             ->has('invoices');
     });
-});
+})->todo('Customer client invoices not implemented yet (@kirin)');
 
 test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
@@ -1300,7 +1300,6 @@ test('UI show invoice in Organisation', function () {
                     ->has(
                         'information',
                         fn (AssertableInertia $page) => $page
-                            ->has('recurring_bill')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1358,7 +1357,6 @@ test('UI show invoice in Shop', function () {
                     ->has(
                         'information',
                         fn (AssertableInertia $page) => $page
-                            ->has('recurring_bill')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )

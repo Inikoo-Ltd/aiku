@@ -58,6 +58,7 @@ class IndexInvoices extends OrgAction
 
     private Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop $parent;
     private string $bucket = '';
+    private CustomerHasPlatform $customerHasPlatform;
 
     public function handle(Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
     {
@@ -217,7 +218,7 @@ class IndexInvoices extends OrgAction
         $subNavigation = [];
 
         if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerHasPlatform);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -493,6 +494,7 @@ class IndexInvoices extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(InvoicesTabsEnum::values());
 
         return $this->handle(parent: $customer, prefix: InvoicesTabsEnum::INVOICES->value);
@@ -647,6 +649,15 @@ class IndexInvoices extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.invoices.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index' => array_merge(
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
                         'parameters' => $routeParameters
                     ]
                 )

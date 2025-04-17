@@ -22,7 +22,7 @@ const props = defineProps<{
   blockData?: Object
 }>()
 
-console.log(props)
+
 
 // Limit families to first 10 and create image index tracker
 const maxDisplay = 10

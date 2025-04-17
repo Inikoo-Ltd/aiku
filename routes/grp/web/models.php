@@ -134,6 +134,8 @@ use App\Actions\Fulfilment\StoredItem\SyncStoredItemPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
+use App\Actions\Goods\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Goods\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -265,9 +267,10 @@ Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.up
 Route::patch('customer-balance/{customer:id}', UpdateBalanceCustomer::class)->name('customer_balance.update')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
+Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
+Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
 
 /*
-
 Route::patch('/clocking/{clocking:id}', UpdateClocking::class)->name('clocking.update');
 Route::post('/clocking', StoreClocking::class)->name('clocking.store');
 Route::post('/working-place/{workplace:id}/clocking', StoreClocking::class)->name('workplace.clocking.store');
