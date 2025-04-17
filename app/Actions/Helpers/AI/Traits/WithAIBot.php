@@ -14,6 +14,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Response;
 use App\Models\Helpers\Chunk;
 use Cloudstudio\Ollama\Facades\Ollama;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -92,44 +93,68 @@ trait WithAIBot
         return $dotProduct / ($magnitudeA * $magnitudeB);
     }
 
-    public function promptTemplate($context, $question): string
+    public function askActionDeepseek(array $messages, $maxTokens = 800, $responseType = 'json_object', $stream = true)
     {
-        return "
-        **Role**
-        You are a Chatbot operating in a Retrieval-Augmented Generation (RAG) system. Your responsibility is to generate an accurate response to the user's query based strictly on the provided context.
+        $apiKey = config('askbot-laravel.deepseek_api_key');
+        $url = config('askbot-laravel.deepseek_api_url');
+        $model = config('askbot-laravel.model');
 
-        **Instructions**
-        - If the context does not contain enough information to answer the question, respond politely, for example: \"I'm sorry, but I don't have enough information to answer that question based on what I know.\"
-        - Do not include the question or context in your response.
-        - Avoid using phrases like \"Based on the provided context\" in your response.
+        $client = new Client();
 
-        **CONTEXT (JSON)**
-        {$context}
-        
-        **RESPONSE**
-        Provide a direct, concise, and accurate answer using only the information in the context above.
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'stream' => $stream,
+            'max_tokens' => $maxTokens,
+            'response_format' => [
+                'type' => $responseType
+            ]
+        ];
 
-        **QUESTION**
-        {$question}
+        $headers = [
+            'Authorization' => 'Bearer ' . $apiKey,
+            'Content-Type' => 'application/json',
+            'Accept' => $stream ? 'text/event-stream' : 'application/json',
+        ];
 
-        ";
+        $response = $client->post($url, [
+            'json' => $payload,
+            'headers' => $headers,
+        ]);
+
+        if ($stream) {
+            $stream = $response->getBody();
+            $result = '';
+            while (!$stream->eof()) {
+                $chunk = $stream->read(1024);
+                $lines = explode("\n", $chunk);
+
+                foreach ($lines as $line) {
+                    if (str_starts_with($line, 'data:')) {
+                        $data = trim(substr($line, 5));
+                        $decodedData = json_decode($data, true);
+                        if ($decodedData) {
+                            // Process the decoded data as needed
+                            if (isset($decodedData['choices'][0]['delta']['content'])) {
+                                $result .= $decodedData['choices'][0]['delta']['content'];
+                            }
+                        }
+                    }
+                }
+                flush();
+            }
+
+            return $result;
+
+        } else {
+            $body = $response->getBody();
+            $data = json_decode($body, true);
+
+            return Arr::get($data, 'choices.0.message.content', '');
+        }
     }
 
-    public function simplePrompt($question): string
-    {
-        return "
-        **Role**
-        You are a Chatbot Helpdesk Agent. Provide concise and accurate responses to user queries.
-
-        **RESPONSE**
-        Provide a direct, concise, and accurate answer. Avoid being verbose and get straight to the point, but ensure the response feels human.
-
-        **QUESTION**
-        {$question}
-        ";
-    }
-
-    public function askDeepseek($question): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function askDeepseek(array $messages)
     {
         $apiKey = config('askbot-laravel.deepseek_api_key');
         $baseUrl = config('askbot-laravel.deepseek_api_url');
@@ -137,10 +162,7 @@ trait WithAIBot
 
         $payload = [
             'model' => $model,
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a helpful assistant'],
-                ['role' => 'user', 'content' => $question],
-            ],
+            'messages' => $messages,
             'stream' => true,
             'max_tokens' => 800
         ];
@@ -163,7 +185,7 @@ trait WithAIBot
             $stream = $response->getBody();
 
             while (!$stream->eof()) {
-                $chunk = $stream->read(1024);
+                $chunk = $stream->read(32);
                 echo $chunk;
                 ob_flush();
                 flush();

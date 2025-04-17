@@ -35,13 +35,7 @@ const isModalFamiliesPreview = ref(false)
 const showPreviewFamilies = ref(props.web_block_types_families.data[0])
 console.log(props)
 const confirm = useConfirm();
-const handleImageUpload = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const file = target.files?.[0]
-    if (file) {
-        console.log('Uploaded:', file.name)
-    }
-}
+
 
 const familiesOption = ref(
     props.families.data.map((item) => ({
@@ -123,6 +117,28 @@ const confirmSave = (routes: routeType) => {
         },
     });
 };
+
+const onUpload = async (files: File[], clear: Function) => {
+    const file = files[0]
+    if (!file) return
+
+    const toBase64 = (file: File): Promise<string> =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.readAsDataURL(file)
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+        })
+    try {
+        const base64 = await toBase64(file)
+        departmentData.value.image = base64
+        isModalGallery.value = false
+    } catch (err) {
+        console.error('Failed to convert to base64:', err)
+    }
+}
+
+
 
 </script>
 
@@ -215,7 +231,13 @@ const confirmSave = (routes: routeType) => {
 
     <!-- Gallery Modal -->
     <Modal :isOpen="isModalGallery" @onClose="() => (isModalGallery = false)" width="w-3/4">
-        <GalleryManagement :uploadRoute="{ name: '', parameters: '' }" :closePopup="() => (isModalGallery = false)" />
+        <GalleryManagement 
+            :uploadRoute="{ name: '', parameters: '' }" 
+            :closePopup="() => (isModalGallery = false)" 
+            :submitUpload="onUpload" 
+            :maxSelected="1"
+            @submitSelectedImages="(e)=>{departmentData.image = e[0], isModalGallery = false}" 
+        />
     </Modal>
 
 
@@ -225,7 +247,7 @@ const confirmSave = (routes: routeType) => {
                 <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
             </button>
             <div class="flex-1 mx-4">
-                <component :is="getIrisComponent(showPreviewFamilies.code)" :fieldValue="{...showPreviewFamilies.data, family: familiesOption.filter((item) => item.show)}" />
+                <component  :is="getIrisComponent(showPreviewFamilies.code)" :fieldValue="{...showPreviewFamilies.data, family: familiesOption.filter((item) => item.show)}" />
             </div>
             <button @click="goToNext" aria-label="Next">
                 <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" />

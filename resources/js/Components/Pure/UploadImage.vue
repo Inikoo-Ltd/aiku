@@ -11,10 +11,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
 import { cloneDeep } from "lodash-es"
+import { router } from "@inertiajs/vue3"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
 
-const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string }>()
+const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string, content?: any }>()
 const emits = defineEmits<{
     (e: "update:modelValue", value: any): void
     (e: "onUpload", value: Files[]): void
@@ -26,6 +27,27 @@ const isOpenGalleryImages = ref(false)
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const addedFiles = ref<File[]>([])
+
+const setAlt = async (imageFile) => {
+    const payload = new FormData();
+    payload.append('image', imageFile);
+    payload.append('prompt', 'alt');
+
+    try {
+        const response = await axios.post(route("grp.ask-bot.vision.index"), payload, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        console.log("Alt text request successful:", response.data);
+        emits("update:modelValue",  response.data.content,['alt'])
+
+    } catch (error) {
+        console.error("Alt text request failed:", error);
+    }
+};
+
 
 const handleUpload = async () => {
     try {
@@ -41,6 +63,9 @@ const handleUpload = async () => {
         const updatedModelValue = { ...props.modelValue, ...cloneDeep(response.data.data[0].source) }
         emits("update:modelValue", updatedModelValue)
         emits("autoSave")
+        if (addedFiles.value.length > 0) {
+            setAlt(addedFiles.value[0]);
+        }
         addedFiles.value = []
     } catch (error) {
         console.log(error)

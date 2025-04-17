@@ -18,6 +18,10 @@ export interface Invoice {
     updated_at: string
     net: number
     payment: number
+    in_process: boolean
+    organisation_slug: string
+    shop_slug: string
+    customer_slug: string
 }
 
 export interface InvoiceResource {

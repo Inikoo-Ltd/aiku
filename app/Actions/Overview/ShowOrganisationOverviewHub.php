@@ -33,22 +33,21 @@ class ShowOrganisationOverviewHub extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
+
         return Inertia::render(
             'Overview/OverviewHub',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $routeName,
+                'breadcrumbs'     => $this->getBreadcrumbs(
                     $routeParameters
                 ),
-                'title'       => __('overview'),
-                'pageHead'    => [
-                    'icon'      => [
+                'title'           => __('overview'),
+                'pageHead'        => [
+                    'icon'  => [
                         'icon'  => ['fal', 'fa-mountains'],
                         'title' => __('overview')
                     ],
-                    'title'     => __('overview'),
+                    'title' => __('overview'),
                 ],
                 'dashboard_stats' => [
                     'setting' => [
@@ -56,21 +55,21 @@ class ShowOrganisationOverviewHub extends OrgAction
                     ],
                     'widgets' => [
                         'column_count' => 2,
-                        'components' => [
+                        'components'   => [
                             [
                                 'col_span' => 1,
                                 'row_span' => 10,
-                                'type' => 'overview_display',
-                                'data' => GetOrganisationOverview::run($this->organisation)
+                                'type'     => 'overview_display',
+                                'data'     => GetOrganisationOverview::run($this->organisation)
                             ],
                             [
                                 'col_span' => 1,
-                                'type' => 'operation_display',
+                                'type'     => 'operation_display',
 
                             ],
                             [
                                 'col_span' => 1,
-                                'type' => 'operation_display',
+                                'type'     => 'operation_display',
 
                             ]
 
@@ -81,7 +80,7 @@ class ShowOrganisationOverviewHub extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
         return
             array_merge(
@@ -91,10 +90,10 @@ class ShowOrganisationOverviewHub extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => $routeName,
+                                'name'       => 'grp.org.overview.hub',
                                 'parameters' => $routeParameters
                             ],
-                            'label'  => __('Overview'),
+                            'label' => __('Overview'),
                         ]
                     ]
                 ]

@@ -32,7 +32,15 @@ const emits = defineEmits<{
 			class="relative isolate px-6 py-24 text-center  l sm:px-16">
 			<Editor
 				v-model="modelValue.headline"
-				@update:modelValue="() => emits('autoSave')" />
+				@update:modelValue="() => emits('autoSave')"
+				:uploadImageRoute="{
+					name: webpageData.images_upload_route.name,
+					parameters: {
+						...webpageData.images_upload_route.parameters,
+						modelHasWebBlocks: blockData?.id,
+					}
+				}"
+			/>
 
 			<div class="mt-10 flex items-center justify-center gap-x-6">
 				<div

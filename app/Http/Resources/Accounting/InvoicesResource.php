@@ -35,6 +35,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $in_process
+ * @property mixed $organisation_code
  *
  */
 class InvoicesResource extends JsonResource
@@ -65,6 +66,7 @@ class InvoicesResource extends JsonResource
             'currency_code'     => $this->currency_code,
             'currency_symbol'   => $this->currency_symbol,
             'organisation_name' => $this->organisation_name,
+            'organisation_code' => $this->organisation_code,
             'organisation_slug' => $this->organisation_slug,
             'in_process'        => $this->in_process,
         ];
