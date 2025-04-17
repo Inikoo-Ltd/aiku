@@ -127,8 +127,8 @@ class ShowCustomerClient extends OrgAction
                         $shopMeta,
                     ]),
                     'actions'       => [
-                        $this->canDelete ? $this->getDeleteActionIcon($request) : null,
-                        $this->canEdit ? $this->getEditActionIcon($request) : null,
+                        $this->canDelete ? $this->getDeleteActionIcon($request, '') : null,
+                        $this->canEdit ? $this->getEditActionIcon($request, 'Profile') : null,
                         [
                             'type'  => 'button',
                             'style' => 'create',

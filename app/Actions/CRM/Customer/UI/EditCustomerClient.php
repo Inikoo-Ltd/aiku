@@ -61,6 +61,7 @@ class EditCustomerClient extends OrgAction
                     'blueprint' =>
                         [
                             [
+                                "label"  => __("Profile"),
                                 'title'  => __('contact'),
                                 'fields' => [
                                     'company_name' => [
