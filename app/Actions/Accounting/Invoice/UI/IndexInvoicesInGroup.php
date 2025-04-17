@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\InertiaTable\InertiaTable;
@@ -27,6 +28,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoicesInGroup extends OrgAction
 {
+    use WithGroupOverviewAuthorisation;
+
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

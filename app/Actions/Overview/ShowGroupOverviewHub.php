@@ -9,6 +9,7 @@
 namespace App\Actions\Overview;
 
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,10 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowGroupOverviewHub extends GrpAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("group-overview");
-    }
+    use WithGroupOverviewAuthorisation;
 
     public function asController(ActionRequest $request): ActionRequest
     {
