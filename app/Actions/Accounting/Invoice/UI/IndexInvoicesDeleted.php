@@ -29,7 +29,6 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -199,37 +198,6 @@ class IndexInvoicesDeleted extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-        if ($this->parent instanceof Organisation) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-            return $request->user()->authTo(["crm.{$this->shop->id}.view","accounting.{$this->shop->organisation_id}.view"]);
-        } elseif ($this->parent instanceof Shop) {
-            // TODO: raul need correct permission
-            // $permission = $request->user()->authTo("orders.{$this->shop->id}.view");
-
-            // return $permission;
-            return true;
-        } elseif ($this->parent instanceof FulfilmentCustomer or $this->parent instanceof Fulfilment) {
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        }
-
-        return false;
-    }
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
@@ -529,7 +497,7 @@ class IndexInvoicesDeleted extends OrgAction
                 )
             ),
 
-            'grp.overview.ordering.invoices.index' =>
+            'grp.overview.accounting.invoices.index' =>
             array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(
                     $routeParameters

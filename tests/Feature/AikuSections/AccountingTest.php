@@ -1079,7 +1079,7 @@ test('UI show list payments', function () {
 });
 
 test('UI show list invoices in group', function () {
-    $response = get(route('grp.overview.ordering.invoices.index'));
+    $response = get(route('grp.overview.accounting.invoices.index'));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
