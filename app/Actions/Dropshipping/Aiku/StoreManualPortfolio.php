@@ -30,10 +30,21 @@ class StoreManualPortfolio extends OrgAction
     public function handle(Customer $customer, array $modelData)
     {
         $platform = $customer->platforms()->where('type', PlatformTypeEnum::AIKU)->first();
+
         DB::transaction(function () use ($customer, $platform, $modelData) {
             foreach (Arr::get($modelData, 'products') as $product) {
+                if ($customer->is_fulfilment) {
+                    $product = [
+                        'stored_item_id' => $product
+                    ];
+                } else {
+                    $product = [
+                        'product_id' => $product
+                    ];
+                }
+
                 StorePortfolio::run($customer, [
-                    'product_id' => $product,
+                    ...$product,
                     'type' => PortfolioTypeEnum::MANUAL->value,
                     'platform_id' => $platform->id
                 ]);
