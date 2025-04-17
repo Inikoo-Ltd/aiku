@@ -11,15 +11,19 @@ use App\Actions\Accounting\Invoice\UI\EditInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowFulfilmentInvoice;
+use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\UI\ShowStandaloneFulfilmentInvoiceInProcess;
 use App\Actions\CRM\Customer\UI\EditCustomer;
+use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
+use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
+use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
@@ -68,6 +72,8 @@ use App\Actions\Fulfilment\StoredItemAudit\UI\IndexStoredItemAudits;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAudit;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
+use App\Actions\Ordering\Order\UI\IndexOrders;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexFulfilmentCustomersApproved::class)->name('index');
 Route::get('pending-approval', IndexFulfilmentCustomersPendingApproval::class)->name('pending_approval.index');
@@ -178,8 +184,24 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.aiku.index');
-                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
                 Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+                Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
+                Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inFulfilmentPlatform'])->name('.edit');
+
+                Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
+                    Route::get('', [IndexOrders::class, 'inFulfilmentCustomerClient'])->name('.index');
+                    Route::get('{order}', [ShowOrder::class, 'inFulfilmentCustomerClient'])->name('.show');
+                });
+
+                Route::prefix('{customerClient}/delivery_notes')->as('.show.delivery_notes')->group(function () {
+                    Route::get('', [IndexDeliveryNotesInCustomers::class,'inFulfilmentCustomerClient'])->name('.index');
+                    Route::get('{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClientInFulfilment'])->name('.show');
+                });
+
+                Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
+                    Route::get('', [IndexInvoices::class, 'inFulfilmentCustomerClient'])->name('.index');
+                    Route::get('{invoice}', [ShowInvoice::class, 'inFulfilmentCustomerClient'])->name('.show');
+                });
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
                 Route::get('', IndexFulfilmentCustomerPlatformOrders::class)->name('.index');
