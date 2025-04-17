@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
@@ -133,6 +134,13 @@ class EditCustomerClient extends OrgAction
     {
         $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
+        return $this->handle($customerClient, $request);
+    }
+
+    public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): Response
+    {
+        $this->parent = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request);
         return $this->handle($customerClient, $request);
     }
 

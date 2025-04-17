@@ -29,6 +29,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,6 +43,7 @@ class ShowInvoice extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
 
     private Organisation|Shop|CustomerClient $parent;
+    private CustomerHasPlatform $customerHasPlatform;
 
     public function handle(Invoice $invoice): Invoice
     {
@@ -75,7 +78,17 @@ class ShowInvoice extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($invoice);
+    }
+
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($invoice);
     }
