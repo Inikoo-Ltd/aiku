@@ -83,11 +83,12 @@ Route::get('/invoices/export', ExportInvoices::class)->name('invoices.export');
 
 Route::get('/invoices', IndexInvoices::class)->name('invoices.index');
 Route::get('/invoices/omega', [OmegaManyInvoice::class, 'inOrganisation'])->name('invoices.index.omega');
+
 Route::get('/invoices/{invoice}', ShowInvoice::class)->name('invoices.show');
 Route::get('/invoices/{invoice}/edit', [EditInvoice::class, 'inOrganisation'])->name('invoices.edit');
-
 Route::get('/invoices/{invoice}/refunds', [IndexRefunds::class, 'inInvoiceInOrganisation'])->name('invoices.show.refunds.index');
 Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrganisation'])->name('invoices.show.refunds.show');
+
 
 Route::get('/refunds', IndexRefunds::class)->name('refunds.index');
 

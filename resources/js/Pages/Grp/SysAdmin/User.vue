@@ -21,7 +21,7 @@ import { faRoad } from "@fas"
 import SysadminUserShowcase from '@/Components/Showcases/Grp/SysadminUserShowcase.vue'
 import UserPermissions from '@/Components/Sysadmin/UserPermissions.vue'
 import UserRoles from '@/Components/Sysadmin/UserRoles.vue'
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import type { Component } from 'vue'
 library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag)
@@ -30,7 +30,7 @@ const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChan
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase?: {}
     request_logs?: {}

@@ -13,15 +13,13 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsGrouped
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
-use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\FulfilmentInvoiceTabsEnum;
-use App\Http\Resources\Accounting\FulfilmentInvoiceTransactionsResource;
+use App\Http\Resources\Accounting\InvoiceTransactionsGroupedByAssetResource;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -32,7 +30,6 @@ use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -44,7 +41,34 @@ class ShowFulfilmentInvoice extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentShopAuthorisation;
 
-    private Organisation|Fulfilment|FulfilmentCustomer $parent;
+    private Organisation|Fulfilment|FulfilmentCustomer|null $parent;
+
+    public function __construct(ActionRequest $request)
+    {
+        $this->parent = $this->getParent($request);
+    }
+
+    protected function getParent(ActionRequest $request): Organisation|null
+    {
+
+        if(!$request->route()){
+            return null;
+        }
+
+        $parent    = null;
+
+
+        $routeName = $request->route()->getName();
+
+        if ($routeName == 'grp.org.accounting.invoices.show') {
+            /** @var Organisation $organisation */
+            $organisation = $request->route()->parameter('organisation');
+            $parent       = $organisation;
+        }
+
+
+        return $parent;
+    }
 
     public function handle(Invoice $invoice): Invoice
     {
@@ -92,8 +116,13 @@ class ShowFulfilmentInvoice extends OrgAction
         return $recurringBillRoute;
     }
 
-    public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
+
+    public function htmlResponse(Invoice $invoice, ActionRequest $request, $tab = null): Response
     {
+        if ($tab !== null) {
+            $this->tab = $tab;
+        }
+
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
@@ -113,6 +142,7 @@ class ShowFulfilmentInvoice extends OrgAction
                 'route'     => $this->getRecurringBillRoute($invoice)
             ]
         );
+
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -158,8 +188,8 @@ class ShowFulfilmentInvoice extends OrgAction
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))),
 
                 FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn () => FulfilmentInvoiceTransactionsResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => FulfilmentInvoiceTransactionsResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
                     fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
@@ -190,144 +220,8 @@ class ShowFulfilmentInvoice extends OrgAction
     }
 
 
-    public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
-    {
-        $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
-            return [
-                [
-
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Invoices').$suffixIndex,
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $invoice->reference,
-                        ],
-
-                    ],
-                    'suffix'         => $suffix
-
-                ],
-            ];
-        };
-
-        return match ($routeName) {
-            'grp.org.fulfilments.show.operations.invoices.show',
-            => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.all.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-            'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-            => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.all.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('All').')'
-                ),
-            ),
-            'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-            => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.unpaid_invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'invoice'])
-                        ]
-                    ],
-                    $suffix,
-                    ' ('.__('Unpaid').')'
-                ),
-            ),
-
-            'grp.org.fulfilments.show.crm.customers.show.invoices.show',
-            => array_merge(
-                ShowFulfilmentCustomer::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $invoice,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'invoice'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-            default => []
-        };
-    }
 
 
-    protected function getNavigation(?Invoice $invoice, string $routeName): ?array
-    {
-        if (!$invoice) {
-            return null;
-        }
 
-        return match ($routeName) {
-            'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-            'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-            'grp.org.fulfilments.show.operations.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'fulfilment'   => $this->parent->slug,
-                        'invoice'      => $invoice->slug
-                    ]
 
-                ]
-            ],
-            'grp.org.fulfilments.show.crm.customers.show.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'       => $invoice->organisation->slug,
-                        'fulfilment'         => $invoice->shop->fulfilment->slug,
-                        'fulfilmentCustomer' => $this->parent->slug,
-                        'invoice'            => $invoice->slug
-                    ]
-                ]
-            ],
-        };
-    }
 }

@@ -2,7 +2,7 @@
 import PureTimeline from '@/Components/Pure/PureTimeline.vue'
 
 import beePluginJsonExample from "@/Components/CMS/Website/Outboxes/Unlayer/beePluginJsonExample"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { routeType } from '@/types/route'
 

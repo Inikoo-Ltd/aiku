@@ -12,6 +12,7 @@ const props = defineProps<{
     options: any
     by?: string
     indexChecked?: number  // for initial checked if the value is an object
+    name?: string
 }>()
 
 const model = defineModel()
@@ -111,7 +112,7 @@ const layout = inject('layout', layoutStructure)
                         v-model="model"
                         :value="by ? option[by] : option"
                         :id="`${option.label}_${index}`"
-                        :name="`${option.label}_${index}`"
+                        :name="name"
                         :checked="indexChecked > -1 ? indexChecked === index : (option[by] || option) == model"
                         type="radio"
                         class="h-4 w-4 border-gray-300 focus:ring-0 focus:outline-none focus:ring-transparent cursor-pointer"

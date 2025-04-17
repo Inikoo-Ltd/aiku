@@ -8,7 +8,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from "vue"
 
-import { PageHeading as TSPageHeading } from "@/types/PageHeading"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import TablePortfolios from "@/Components/Tables/Grp/Org/Catalogue/TablePortfolios.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -20,7 +20,7 @@ import { routeType } from "@/types/route"
 
 const props = defineProps<{
 	title: string
-	pageHead: TSPageHeading
+	pageHead: PageHeadingTypes
 	tabs: TSTabs
 	products: {}
 	is_manual: boolean
@@ -58,13 +58,13 @@ const component = computed(() => {
 	
 		<template #other="{ action }">
 			<Button
-				v-if="!orderMode"
+				v-if="!orderMode && is_manual"
 				@click="onCreateOrder"
 				:label="'Create Order'"
 				:style="'create'"
 				 />
 			<Button
-				v-if="orderMode"
+				v-if="orderMode && is_manual"
 				@click="onCancelOrder"
 				:label="'Cancel'"
 				:style="'cancel'"

@@ -137,7 +137,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-        ) = createProduct($this->shop);
+    ) = createProduct($this->shop);
 
     $this->website = createWebsite($this->shop);
 
@@ -364,7 +364,7 @@ test('UI edit fulfilment', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.fulfilment.update')
                     ->where('parameters', [$this->fulfilment->id])
             )
@@ -531,7 +531,7 @@ test('UI show fulfilment customer', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->etc()
             )
@@ -548,7 +548,7 @@ test('UI show fulfilment customer web users', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->etc()
             )
@@ -571,7 +571,7 @@ test('UI show fulfilment customer web users (tab requests)', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->etc()
             )
@@ -589,7 +589,7 @@ test('UI show fulfilment customer (agreed prices tab)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             );
     });
@@ -610,7 +610,7 @@ test('UI show fulfilment customer (tab balance)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->etc()
             )
@@ -630,7 +630,7 @@ test('UI edit fulfilment customer', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.fulfilment-customer.update')
                     ->where('parameters', [$this->customer->fulfilmentCustomer->id])
             )
@@ -657,7 +657,7 @@ test('UI index fulfilment invoices all', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -675,7 +675,7 @@ test('UI show invoice (in Operation)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->invoice->reference)
                     ->etc()
             )
@@ -696,7 +696,7 @@ test('UI show invoice (in Fulfilment Customer)', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->invoice->reference)
                     ->etc()
             )
@@ -726,7 +726,7 @@ test('UI index fulfilment invoices unpaid', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -753,7 +753,7 @@ test('UI index fulfilment invoices paid', function () {
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -769,7 +769,7 @@ test('UI show fulfilment customer space sub navigation', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -787,7 +787,7 @@ test('UI show fulfilment customer create space', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'new space')
                     ->etc()
             )
@@ -804,7 +804,7 @@ test('UI show fulfilment customer edit space', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'edit space')
                     ->etc()
             )
@@ -821,7 +821,7 @@ test('UI show fulfilment customer space', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->space->reference)
                     ->etc()
             )
@@ -839,7 +839,7 @@ test('UI show fulfilment customer edit invoice', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Edit invoice')
                     ->etc()
             )
@@ -862,7 +862,7 @@ test('UI show fulfilment customer refund', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->refund->reference)
                     ->etc()
             )
@@ -887,7 +887,7 @@ test('UI show fulfilment customer stored item', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'new SKU')
                     ->etc()
             )
@@ -904,7 +904,7 @@ test('UI index refund', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Refunds')
                     ->has('subNavigation')
                     ->etc()
@@ -921,7 +921,7 @@ test('UI show fulfilment customer pallet sub navigation', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -939,7 +939,7 @@ test('UI show fulfilment customer delivery sub navigation', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -957,7 +957,7 @@ test('UI show fulfilment customer pallet return sub navigation', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -975,7 +975,7 @@ test('UI show fulfilment customer recurring bills sub navigation', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -993,7 +993,7 @@ test('UI show fulfilment customer invoice sub navigation', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -1020,7 +1020,7 @@ test('UI show fulfilment customer invoice sub navigation (tab in process)', func
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -1051,7 +1051,7 @@ test('UI show standalone invoice fulfilment customer', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $standaloneInvoice->reference)
                     ->has('subNavigation')
                     ->etc()
@@ -1080,7 +1080,7 @@ test('UI show recurring bills in fulfilment customer', function () {
             ->has('navigation')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->recurringBill->slug)
                     ->has('subNavigation')
                     ->etc()
@@ -1102,7 +1102,7 @@ test('UI Index pallets', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1122,7 +1122,7 @@ test('UI Index damaged pallets', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Damaged pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1142,7 +1142,7 @@ test('UI Index lost pallets', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Lost pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1162,7 +1162,7 @@ test('UI Index returned pallets', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Returned pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1180,7 +1180,7 @@ test('UI show pallet', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->pallet->reference)
                     ->etc()
             )
@@ -1203,7 +1203,7 @@ test('UI show pallet in fulfilment customer', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->pallet->reference)
                     ->etc()
             )
@@ -1220,7 +1220,7 @@ test('UI show pallet (Stored Items Tab)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->pallet->reference)
                     ->etc()
             )
@@ -1239,7 +1239,7 @@ test('UI edit pallet', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.pallet.update')
                     ->where('parameters', [$this->pallet->id])
             )
@@ -1258,7 +1258,7 @@ test('UI Index damaged pallets in warehouse', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Damaged pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1278,7 +1278,7 @@ test('UI Index returned pallets in warehouse', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Returned pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1298,7 +1298,7 @@ test('UI Index pallets in warehouse', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Pallets in warehouse')
                     ->has('subNavigation')
                     ->etc()
@@ -1318,7 +1318,7 @@ test('UI Index lost pallets in warehouse', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Lost pallets')
                     ->has('subNavigation')
                     ->etc()
@@ -1341,7 +1341,7 @@ test('UI Index pallet deliveries', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'fulfilment deliveries')
                     ->has('subNavigation')
                     ->has('actions')
@@ -1361,7 +1361,7 @@ test('UI show pallet delivery', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1379,7 +1379,7 @@ test('UI edit pallet delivery', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Edit Pallet Delivery')
                     ->etc()
             )
@@ -1396,7 +1396,7 @@ test('UI show pallet delivery (Services Tab)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1413,7 +1413,7 @@ test('UI show pallet delivery (Physical goods Tab)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1444,7 +1444,7 @@ test('UI show pallet delivery (confirmed)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1480,7 +1480,7 @@ test('UI show pallet delivery (received)', function (PalletDelivery $palletDeliv
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1509,7 +1509,7 @@ test('UI show pallet delivery (booking in)', function (PalletDelivery $palletDel
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1533,7 +1533,7 @@ test('UI show pallet delivery (booked in)', function (PalletDelivery $palletDeli
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->reference)
                     ->etc()
             )
@@ -1559,7 +1559,7 @@ test('UI Index pallet returns', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'returns')
                     ->has('subNavigation')
                     ->has('actions')
@@ -1578,7 +1578,7 @@ test('UI show pallet return', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1606,7 +1606,7 @@ test('UI show pallet return (physical goods tab)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1623,7 +1623,7 @@ test('UI show pallet return (services tab)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1650,7 +1650,7 @@ test('UI show pallet return (confirmed)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1672,7 +1672,7 @@ test('UI show pallet return (picking)', function (PalletReturn $palletReturn) {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1694,7 +1694,7 @@ test('UI show pallet return (picked)', function (PalletReturn $palletReturn) {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1716,7 +1716,7 @@ test('UI show pallet return (dispatched)', function (PalletReturn $palletReturn)
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1752,7 +1752,7 @@ test('UI show pallet return with stored items', function () {
             ->has('stored_items_count')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -1771,7 +1771,7 @@ test('UI show rental', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->rental->code)
                     ->etc()
             )
@@ -1789,7 +1789,7 @@ test('UI edit rental', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.rentals.update')
                     ->where('parameters', [
                         'rental' => $this->rental->id
@@ -1837,7 +1837,7 @@ test('UI edit rental agreement', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.rental-agreement.update')
                     ->where('parameters', ['rentalAgreement' => $this->rentalAgreement->id])
             )
@@ -1857,7 +1857,7 @@ test('UI billables dashboard', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'billables dashboard')
                     ->etc()
             )
@@ -1877,7 +1877,7 @@ test('UI show service', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->service->code)
                     ->etc()
             )
@@ -1895,7 +1895,7 @@ test('UI edit service', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.services.update')
                     ->where('parameters', [
                         'service' => $this->service->id
@@ -1925,7 +1925,7 @@ test('UI show physical goods', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->product->code)
                     ->etc()
             )
@@ -1943,7 +1943,7 @@ test('UI edit physical goods', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.product.update')
                     ->where('parameters', $this->product->id) //wrong route
             )
@@ -1972,7 +1972,7 @@ test('UI Index stored items', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('subNavigation')
                     ->etc()
             );
@@ -1989,7 +1989,7 @@ test('UI show stored item', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->storedItem->slug)
                     ->etc()
             )
@@ -2007,7 +2007,7 @@ test('UI edit stored item', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.stored-items.update')
                     ->where('parameters', $this->storedItem->id) //wrong route
             )
@@ -2024,7 +2024,7 @@ test('UI Index Recurring Bills', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'recurring bills')
                     ->has('subNavigation')
                     ->etc()
@@ -2042,7 +2042,7 @@ test('UI show Recurring Bill', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->recurringBill->slug)
                     ->etc()
             )
@@ -2065,7 +2065,7 @@ test('UI show Recurring Bill in operation (current)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $recurringBill->slug)
                     ->etc()
             )
@@ -2088,7 +2088,7 @@ test('UI show Recurring Bill in operation (former)', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $recurringBill->slug)
                     ->etc()
             )
@@ -2182,7 +2182,7 @@ test('UI show stored item audit', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', "Customer's SKUs audit")
                     ->has('subNavigation')
                     ->etc()
@@ -2287,7 +2287,7 @@ test('UI show stored item audit for pallet', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', "Audit")
                     ->has('subNavigation')
                     ->etc()

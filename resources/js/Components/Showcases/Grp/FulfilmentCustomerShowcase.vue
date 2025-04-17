@@ -40,6 +40,7 @@ import { faCheck, faTimes } from "@fas";
 import ModalRejected from "@/Components/Utils/ModalRejected.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue";
+import ModalBalance from "@/Components/Utils/ModalBalance.vue";
 
 library.add(
   faWallet,
@@ -107,6 +108,7 @@ const props = defineProps<{
       createRoute: routeType
       updated_at: string
     }
+    updateBalanceRoute: routeType
     recurring_bill: {
       route: routeType
       status: string // 'former' and 'current'
@@ -115,6 +117,7 @@ const props = defineProps<{
       total: number
       currency_code: string
     }
+
     status: string
     additional_data: {
       product: String
@@ -603,6 +606,11 @@ const isModalAddress = ref(false);
     :customerID="customerID"
     :customerName="customerName" />
 
+  <ModalBalance
+    v-model="isModalBalanceOpen"
+    :type="balanceModalType"
+    :updateBalanceRoute="data.updateBalanceRoute"
+  />
 
   <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
     <CustomerAddressManagementModal

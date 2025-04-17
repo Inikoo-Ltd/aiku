@@ -15,12 +15,12 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import {
   faFileMinus
 } from "@fal";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faFileMinus);
 
 const props = defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   data: object
   title: string
   invoiceExportOptions: {

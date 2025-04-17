@@ -8,7 +8,7 @@ import { capitalize } from "@/Composables/capitalize";
 import { computed, ref } from "vue";
 import type { Component } from "vue";
 
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume } from "@fal";
@@ -17,7 +17,7 @@ library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume);
 
 const props = defineProps<{
   title: string,
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   tabs: TSTabs
 
 

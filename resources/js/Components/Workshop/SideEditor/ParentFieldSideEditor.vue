@@ -60,7 +60,7 @@ const accordionKey = computed(() =>
             </div>
         </AccordionHeader>
 
-        <AccordionContent class="px-0">
+        <AccordionContent class="p-4">
             <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)"
                 :blueprint="blueprint" :uploadImageRoute="uploadImageRoute" />
 

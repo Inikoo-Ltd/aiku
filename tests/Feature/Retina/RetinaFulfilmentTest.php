@@ -12,6 +12,7 @@
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
@@ -69,6 +70,7 @@ use App\Models\Billables\Service;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\FulfilmentTransaction;
 use App\Models\Fulfilment\Pallet;
@@ -890,6 +892,13 @@ test('Delete retina customer delivery address', function () {
 });
 
 test('Store retina customer client', function () {
+    $customer = $this->fulfilmentCustomer->customer;
+    $platform = $customer->getMainPlatform();
+    if (!$platform) {
+        $platform       = Platform::where('code', 'aiku')->first();
+        AttachCustomerToPlatform::make()->action($customer, $platform, []);
+    }
+
     $customerClient = StoreRetinaCustomerClient::make()->action(
         $this->fulfilmentCustomer->customer,
         [
@@ -899,7 +908,8 @@ test('Store retina customer client', function () {
             'email'        => 'jowki@jowki.com',
             'phone'        => '123456789',
             'address'      => Address::factory()->definition(),
-            'status'       => true
+            'status'       => true,
+            'platform_id' => $platform->id,
         ]
     );
 

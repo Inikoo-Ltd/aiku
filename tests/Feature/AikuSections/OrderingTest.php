@@ -18,6 +18,7 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
@@ -61,6 +62,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
@@ -438,7 +440,17 @@ test('update order state to Finalised ', function (Order $order) {
 test('create customer client', function () {
     $shop           = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
     $customer       = StoreCustomer::make()->action($shop, Customer::factory()->definition());
-    $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
+    $platform       = Platform::where('code', 'aiku')->first();
+    AttachCustomerToPlatform::make()->action($customer, $platform, []);
+    $customerClient = StoreCustomerClient::make()->action(
+        $customer,
+        array_merge(
+            CustomerClient::factory()->definition(),
+            [
+                'platform_id' => $platform->id,
+            ]
+        )
+    );
     $this->assertModelExists($customerClient);
     expect($customerClient->shop->code)->toBe($shop->code)
         ->and($customerClient->customer->reference)->toBe($customer->reference);

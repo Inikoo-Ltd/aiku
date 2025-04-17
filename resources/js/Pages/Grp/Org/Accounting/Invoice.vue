@@ -38,14 +38,12 @@ import {
   faDraftingCompass,
   faEnvelope,
   faArrowCircleLeft,
-  faTrashAlt
+  faTrashAlt,faExpandArrows
 } from "@fal";
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck } from "@fas";
 import { faCheck } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
-import TableGroupedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableGroupedFulfilmentInvoiceTransactions.vue";
-import TableItemizedFulfilmentInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableItemizedFulfilmentInvoiceTransactions.vue";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
 
 import { Icon } from "@/types/Utils/Icon";
@@ -59,14 +57,14 @@ import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmat
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 
 
-library.add(faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt);
+library.add(faExpandArrows,faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt);
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
 
 const props = defineProps<{
   title: string,
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   tabs: {
     current: string
     navigation: {}
@@ -145,8 +143,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
   const components: Component = {
     invoice_transactions: TableInvoiceTransactions,
-    grouped_fulfilment_invoice_transactions: TableGroupedFulfilmentInvoiceTransactions,
-    itemized_fulfilment_invoice_transactions: TableItemizedFulfilmentInvoiceTransactions,
+    grouped_fulfilment_invoice_transactions: TableInvoiceTransactions,
+    itemized_fulfilment_invoice_transactions: TableInvoiceTransactions,
     payments: TablePayments,
     details: ModelDetails,
     history: ModelChangelog,

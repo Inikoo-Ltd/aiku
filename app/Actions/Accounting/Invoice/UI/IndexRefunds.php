@@ -85,7 +85,7 @@ class IndexRefunds extends OrgAction
         } elseif ($parent instanceof Group) {
             $queryBuilder->where('invoices.group_id', $parent->id);
         } elseif ($parent instanceof Invoice) {
-            $queryBuilder->where('invoices.invoice_id', $parent->id);
+            $queryBuilder->where('invoices.original_invoice_id', $parent->id);
         } elseif ($parent instanceof InvoiceCategory) {
             $queryBuilder->where('invoices.invoice_category_id', $parent->id);
         } else {
@@ -107,7 +107,7 @@ class IndexRefunds extends OrgAction
                 'invoices.created_at',
                 'invoices.updated_at',
                 'invoices.slug',
-                'invoices.invoice_id',
+                'invoices.original_invoice_id',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'shops.name as shop_name',

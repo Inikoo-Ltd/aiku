@@ -56,7 +56,7 @@ class IndexRefundInProcessTransactions extends OrgAction
             'net_amount',
             ], $commonSelect))->where('invoice_transactions.invoice_id', $invoice->id);
         } else {
-            $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.invoice_transaction_id', 'original_invoice_transaction.id')
+            $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.original_invoice_transaction_id', 'original_invoice_transaction.id')
             ->select(array_merge([
                 'original_invoice_transaction.id',
                 'original_invoice_transaction.updated_at',

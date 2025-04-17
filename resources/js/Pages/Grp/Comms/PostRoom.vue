@@ -8,7 +8,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, defineAsyncComponent, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import TableOutboxes from '@/Components/Tables/TableOutboxes.vue'
 import TableMailshots from '@/Components/Tables/TableMailshots.vue'
@@ -21,7 +21,7 @@ library.add(faTachometerAltFast, faInboxOut, faFolder, faEnvelope)
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase: object
     outboxes: object

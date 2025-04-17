@@ -5,7 +5,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { ref } from 'vue'
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import { RecurringBill } from '@/types/recurring_bill'
@@ -21,7 +21,7 @@ library.add(faReceipt)
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     data: {}
 
 }>()
