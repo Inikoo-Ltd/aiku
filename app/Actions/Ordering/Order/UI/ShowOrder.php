@@ -41,6 +41,8 @@ use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Purge;
 
@@ -49,6 +51,7 @@ class ShowOrder extends OrgAction
     use HasOrderingAuthorisation;
 
     private Shop|Customer|CustomerClient|Purge|CustomerHasPlatform $parent;
+    private CustomerHasPlatform $customerHasPlatform;
 
     public function handle(Order $order): Order
     {
@@ -58,7 +61,6 @@ class ShowOrder extends OrgAction
 
     public function inOrganisation(Organisation $organisation, Order $order, ActionRequest $request): Order
     {
-        $this->scope = $organisation;
         $this->initialisation($organisation, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -67,7 +69,6 @@ class ShowOrder extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Order
     {
         $this->parent = $shop;
-        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -77,7 +78,6 @@ class ShowOrder extends OrgAction
     public function inCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, ActionRequest $request): Order
     {
         $this->parent = $customer;
-        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -86,7 +86,6 @@ class ShowOrder extends OrgAction
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
     {
         $this->parent = $customerHasPlatform;
-        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -96,8 +95,18 @@ class ShowOrder extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
     {
         $this->parent = $customerClient;
-        $this->scope  = $shop;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
+
+        return $this->handle($order);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
+    {
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
@@ -106,7 +115,6 @@ class ShowOrder extends OrgAction
     public function inPurge(Organisation $organisation, Shop $shop, Purge $purge, Order $order, ActionRequest $request): Order
     {
         $this->parent = $purge;
-        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -534,6 +542,24 @@ class ShowOrder extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.show'
+            => array_merge(
+                (new ShowCustomerClient())->getBreadcrumbs($this->customerHasPlatform, 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
+                $headCrumb(
+                    $order,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
+                            'parameters' => Arr::except($routeParameters, ['order'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -633,7 +659,8 @@ class ShowOrder extends OrgAction
                     ]
 
                 ]
-            ]
+            ],
+            default => null
         };
     }
 }

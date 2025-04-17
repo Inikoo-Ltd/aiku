@@ -44,10 +44,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor')
 }
 
-// Accordion key
-const accordionKey = computed(() =>
-    Array.isArray(props.blueprint.key) ? props.blueprint.key.join('-') : props.blueprint.key
-)
+
 </script>
 
 <template>
