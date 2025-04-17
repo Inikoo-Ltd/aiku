@@ -60,7 +60,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other-platform.index');
                 Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');
                 Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inPlatform'])->name('.edit');
-                
+
                 Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
                     Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
                     Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
@@ -70,7 +70,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
                     Route::get('', [IndexDeliveryNotesInCustomers::class,'inCustomerClient'])->name('.index');
                     Route::get('{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClientInShop'])->name('.show');
                 });
-            
+
                 Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
                     Route::get('', [IndexInvoices::class, 'inCustomerClient'])->name('.index');
                     Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');

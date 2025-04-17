@@ -13,6 +13,9 @@ import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle, faArrowCircleLeft, faSeedling } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { Order } from "@/types/order";
+import { RouteParams } from "@/types/route-params";
+
 library.add(faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle, faArrowCircleLeft, faSeedling)
 
 
@@ -30,41 +33,26 @@ function refundRoute(invoice: Invoice) {
 
     switch (route().current()) {
       case 'grp.org.fulfilments.show.operations.invoices.show':
-        return route(
-          'grp.org.fulfilments.show.operations.invoices.show.refunds.show',
-          [
-            route().params["organisation"],
-            route().params["fulfilment"],
-            route().params["invoice"],
-            invoice.slug
-          ])
       case 'grp.org.fulfilments.show.operations.invoices.show.refunds.index':
+      case 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index':
+
         return route(
           'grp.org.fulfilments.show.operations.invoices.show.refunds.show',
           [
-            route().params["organisation"],
-            route().params["fulfilment"],
-            route().params["invoice"],
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).fulfilment,
+            (route().params as RouteParams).invoice,
             invoice.slug
           ])
-        case 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index':
-            return route(
-                'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show',
-                [
-                  route().params["organisation"],
-                  route().params["fulfilment"],
-                  route().params["fulfilmentCustomer"],
-                  route().params["invoice"],
-                  invoice.slug
-                ])
+
         case 'grp.org.fulfilments.show.crm.customers.show.invoices.index':
             if (invoice.parent_invoice?.slug) {
                 return route(
                     'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show',
                     [
-                      route().params["organisation"],
-                      route().params["fulfilment"],
-                      route().params["fulfilmentCustomer"],
+                      (route().params as RouteParams).organisation,
+                      (route().params as RouteParams).fulfilment,
+                      (route().params as RouteParams).fulfilmentCustomer,
                       invoice.parent_invoice?.slug,
                       invoice.slug
                     ])
@@ -76,12 +64,24 @@ function refundRoute(invoice: Invoice) {
     }
 }
 
+function organisationRoute(order: Order) {
+  return route(
+    'grp.org.overview.refunds.index',
+    [order.organisation_slug]);
+}
+
+function shopRoute(order: Order) {
+  return route(
+    'grp.org.shops.show.ordering.orders.index',
+    [order.organisation_slug,order.shop_slug]);
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: refund }">
-            <Link v-if="refundRoute(refund)" :href="refundRoute(refund)" class="primaryLink py-0.5">
+            <Link v-if="refundRoute(refund)" :href="refundRoute(refund) as string" class="primaryLink py-0.5">
                 {{ refund.slug }}
             </Link>
 
@@ -96,6 +96,19 @@ function refundRoute(invoice: Invoice) {
         <template #cell(in_process)="{ item: item }">
             <Icon :data="item['state_icon']" class="px-1" />
         </template>
+
+      <template #cell(organisation_code)="{ item: refund }">
+        <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
+          {{ refund["organisation_code"] }}
+        </Link>
+      </template>
+
+      <template #cell(shop_code)="{ item: refund }">
+        <Link v-tooltip='refund["shop_name"]' :href="shopRoute(refund)" class="secondaryLink">
+          {{ refund["shop_code"] }}
+        </Link>
+      </template>
+
 
         <!-- Column: Date -->
         <template #cell(date)="{ item }">

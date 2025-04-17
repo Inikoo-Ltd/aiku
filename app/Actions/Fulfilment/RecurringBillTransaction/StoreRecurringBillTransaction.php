@@ -29,9 +29,11 @@ class StoreRecurringBillTransaction extends OrgAction
 
     public function handle(RecurringBill $recurringBill, Space|Pallet|StoredItem|FulfilmentTransaction|HistoricAsset $item, array $modelData): RecurringBillTransaction
     {
+        $handlingPalletId=null;
         if (Arr::exists($modelData, 'pallet_id')) {
-            $palletId = Arr::pull($modelData, 'pallet_id');
+            $handlingPalletId = Arr::pull($modelData, 'pallet_id');
         }
+        $handlingDate=null;
         if (Arr::exists($modelData, 'handle_date')) {
             $handlingDate = Arr::pull($modelData, 'handle_date');
         }
@@ -65,27 +67,14 @@ class StoreRecurringBillTransaction extends OrgAction
             $unitCost = $item->price;
             data_set($modelData, 'item_id', $item->model_id);
 
-            if ($item->model_type == 'Service') {
-                if ($item->model->is_pallet_handling == true) {
-                    if ($palletId == null) {
-                        ValidationException::withMessages([
-                            'message' => [
-                                'pallet_id' => 'Pallet ID is required when handling a pallet',
-                            ]
-                        ]);
-                    }
-                    if ($handlingDate == null) {
-                        ValidationException::withMessages([
-                            'message' => [
-                                'handle_date' => 'Handling date is required when handling a pallet',
-                            ]
-                        ]);
-                    }
-                    data_set($modelData, 'data.pallet_id', $palletId);
-                    data_set($modelData, 'data.date', $handlingDate);
+            if ($item->model_type == 'Service' && $item->model->is_pallet_handling) {
+                if ($handlingPalletId ) {
+                    data_set($modelData, 'data.handling_service_pallet_id', $handlingPalletId);
+                }
+                if ($handlingDate) {
+                    data_set($modelData, 'data.handling_service_date', $handlingDate);
                 }
             }
-
         } elseif ($item instanceof Space) {
             $type            = 'Space';
             $assetId         = $item->rental->asset_id;
@@ -179,7 +168,6 @@ class StoreRecurringBillTransaction extends OrgAction
 
     public function asController(RecurringBill $recurringBill, HistoricAsset $historicAsset, ActionRequest $request): void
     {
-
         $this->initialisationFromFulfilment($recurringBill->fulfilment, $request);
 
         $this->handle($recurringBill, $historicAsset, $this->validatedData);

@@ -14,9 +14,14 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\GrpAction;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Goods\Catalogue\MasterProductsResource;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
+use App\Models\Web\WebBlockType;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -99,7 +104,26 @@ class ShowMasterFamilyWorkshop extends GrpAction
                     'navigation' => MasterFamilyTabsEnum::navigation()
                 ],
 
-                'data' => GetMasterProductCategoryShowcase::run($masterfamily)
+                'upload_image_route' => [
+                    'method' => 'post',
+                    'name'       => 'grp.models.master_product_image.upload',
+                    'parameters' => [
+                        'masterProductCategory' => $masterfamily->id
+                    ]
+                ],
+
+                'update_route' => [
+                    'method' => 'patch',
+                    'name'       => 'grp.models.master_product.update',
+                    'parameters' => [
+                        'masterProductCategory' => $masterfamily->id
+                    ]
+                ],
+
+                'family' => FamilyResource::make($masterfamily),
+                'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
+                'assets' => MasterProductsResource::collection($masterfamily->masterAssets()->get()),
+                'web_block_types_products' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get()),
             ]
         );
     }

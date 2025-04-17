@@ -571,7 +571,17 @@ class IndexInvoices extends OrgAction
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(InvoicesTabsEnum::values());
 
-        return $this->handle(parent: $customer, prefix: InvoicesTabsEnum::INVOICES->value);
+        return $this->handle(parent: $customerClient, prefix: InvoicesTabsEnum::INVOICES->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(InvoicesTabsEnum::values());
+
+        return $this->handle(parent: $customerClient, prefix: InvoicesTabsEnum::INVOICES->value);
     }
 
 
@@ -739,6 +749,16 @@ class IndexInvoices extends OrgAction
             'grp.org.accounting.invoice-categories.show.invoices.index' =>
             array_merge(
                 ShowInvoiceCategory::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                )
+            ),
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index' =>
+            array_merge(
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

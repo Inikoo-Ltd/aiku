@@ -15,6 +15,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
@@ -51,8 +52,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
         $query->with(['item']);
 
-        if ($this->customer->fulfilmentCustomer) {
+        if ($this->customer->is_fulfilment) {
             $query->where('item_type', class_basename(StoredItem::class));
+        } else {
+            $query->where('item_type', class_basename(Product::class));
         }
 
         return $query->withPaginator($prefix, tableName: request()->route()->getName())

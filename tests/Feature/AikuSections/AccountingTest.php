@@ -1395,8 +1395,9 @@ test('Delete invoice', function () {
         'deleted_note' => 'test'
     ]);
     $customer->refresh();
-    expect($invoice->trashed())->toBeTrue();
-    expect($customer->stats->number_invoices)->toBe(2);
+    expect($invoice->trashed())->toBeTrue()
+        ->and($customer->stats->number_invoices)->toBe(2);
+
     return $invoice;
 });
 

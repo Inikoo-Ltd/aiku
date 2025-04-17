@@ -20,8 +20,8 @@ trait WithInvoiceTransactionFulfilmentExtraData
 {
     public function getServicePalletInfo(array $data, bool $isRetina): ?array
     {
-        $palletId     = Arr::get($data, 'pallet_id');
-        $handlingDate = Arr::get($data, 'date');
+        $palletId     = Arr::get($data, 'handling_service_date');
+        $handlingDate = Arr::get($data, 'handling_service_pallet_id');
 
 
         $pallet = null;

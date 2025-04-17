@@ -160,32 +160,33 @@ class ShowRetinaFulfilmentInvoice extends RetinaAction
 
 
                 RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value
                     ?
-                    fn() => tap(
+                    fn () => tap(
                         ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
                         function ($resource) {
-                            $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                            $resource->collection->map(fn (ItemizedInvoiceTransactionsResource $item) => $item->additional([
                                 'isRetina' => true
                             ]));
                         }
                     )
-                    : Inertia::lazy(fn() => tap(
-                        ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
-                        function ($resource) {
-                            $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
-                                'isRetina' => true
-                            ]));
-                        }
-                    )
+                    : Inertia::lazy(
+                        fn () => tap(
+                            ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
+                            function ($resource) {
+                                $resource->collection->map(fn (ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                                    'isRetina' => true
+                                ]));
+                            }
+                        )
                     ),
 
                 RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value ?
-                    fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
-                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
+                    fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
 
 
             ]
