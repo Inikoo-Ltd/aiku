@@ -198,7 +198,7 @@ trait WithCustomerSubNavigation
                 'isAnchor' => true,
                 'label'    => __('Client'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [

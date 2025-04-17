@@ -654,7 +654,7 @@ class IndexInvoices extends OrgAction
                 )
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index' => array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
