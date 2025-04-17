@@ -32,6 +32,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -162,7 +163,8 @@ class ShowInvoice extends OrgAction
 
     public function getExportOptions(Invoice $invoice): array
     {
-        return [
+
+        $options = [
             [
                 'type'       => 'pdf',
                 'icon'       => 'fas fa-file-pdf',
@@ -173,8 +175,11 @@ class ShowInvoice extends OrgAction
                     'organisation' => $invoice->organisation->slug,
                     'invoice'      => $invoice->slug
                 ]
-            ],
-            [
+            ]
+        ];
+
+        if(Arr::get($invoice->organisation->settings,'invoice_export.show_isdoc')){
+            $options[]=[
                 'type'       => 'isDoc',
                 'icon'       => 'fas fa-hockey-puck',
                 'tooltip'    => __('Download Doc'),
@@ -184,9 +189,24 @@ class ShowInvoice extends OrgAction
                     'organisation' => $invoice->organisation->slug,
                     'invoice'      => $invoice->slug
                 ]
-            ]
+            ];
+        }
 
-        ];
+        if(Arr::get($invoice->organisation->settings,'invoice_export.show_omega')){
+            $options[]=[
+                'type'       => 'omega',
+                'icon'       => 'fas fa-omega',
+                'tooltip'    => __('Download Omega'),
+                'label'      => 'Omega',
+                'name'       => 'grp.org.accounting.invoices.show.omega',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ];
+        }
+
+        return $options;
     }
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response

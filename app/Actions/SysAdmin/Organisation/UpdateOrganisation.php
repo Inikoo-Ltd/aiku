@@ -28,7 +28,6 @@ class UpdateOrganisation extends OrgAction
 
     public function handle(Organisation $organisation, array $modelData): Organisation
     {
-
         if (Arr::has($modelData, 'ui_name')) {
             data_set($modelData, "settings.ui.name", Arr::pull($modelData, 'ui_name'));
         }
@@ -41,8 +40,12 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'google_drive_folder_key')) {
             data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
         }
-        if (Arr::has($modelData, 'show_isdoc_invoice')) {
-            data_set($modelData, "settings.show_isdoc_invoice", Arr::pull($modelData, 'show_isdoc_invoice'));
+        if (Arr::has($modelData, 'show_isdoc')) {
+            data_set($modelData, "settings.invoice_export.show_isdoc", Arr::pull($modelData, 'show_isdoc'));
+        }
+
+        if (Arr::has($modelData, 'show_omega')) {
+            data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
         }
 
 
@@ -105,14 +108,15 @@ class UpdateOrganisation extends OrgAction
             'contact_name'            => ['sometimes', 'string', 'max:255'],
             'google_client_id'        => ['sometimes', 'string'],
             'google_client_secret'    => ['sometimes', 'string'],
-            'show_isdoc_invoice'        => ['sometimes', 'boolean'],
+            'show_isdoc'              => ['sometimes', 'boolean'],
+            'show_omega'              => ['sometimes', 'boolean'],
             'google_drive_folder_key' => ['sometimes', 'string'],
             'address'                 => ['sometimes', 'required', new ValidAddress()],
             'language_id'             => ['sometimes', 'exists:languages,id'],
             'timezone_id'             => ['sometimes', 'exists:timezones,id'],
             'currency_id'             => ['sometimes', 'exists:currencies,id'],
-            'email'        => ['sometimes', 'nullable', 'email'],
-            'phone'        => ['sometimes', 'nullable', new Phone()],
+            'email'                   => ['sometimes', 'nullable', 'email'],
+            'phone'                   => ['sometimes', 'nullable', new Phone()],
             'logo'                    => [
                 'sometimes',
                 'nullable',
@@ -122,8 +126,8 @@ class UpdateOrganisation extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['source']          = ['sometimes', 'array'];
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules['source'] = ['sometimes', 'array'];
+            $rules           = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

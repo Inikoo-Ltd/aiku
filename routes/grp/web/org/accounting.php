@@ -8,6 +8,8 @@
 
 use App\Actions\Accounting\Invoice\ExportInvoices;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
+use App\Actions\Accounting\Invoice\OmegaInvoice;
+use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\Invoice\UI\EditInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
@@ -74,11 +76,13 @@ Route::get('/payments/{payment}', [ShowPayment::class, 'inOrganisation'])->name(
 Route::get('/payments/{payment}/edit', [EditPayment::class, 'inOrganisation'])->name('payments.edit');
 Route::get('/invoices/{invoice}/export', PdfInvoice::class)->name('invoices.download');
 Route::get('/invoices/{invoice}/is-doc', ISDocInvoice::class)->name('invoices.show.is_doc');
+Route::get('/invoices/{invoice}/omega', OmegaInvoice::class)->name('invoices.show.omega');
 
 Route::get('/invoices/export', ExportInvoices::class)->name('invoices.export');
 
 
 Route::get('/invoices', IndexInvoices::class)->name('invoices.index');
+Route::get('/invoices/omega', [OmegaManyInvoice::class, 'inOrganisation'])->name('invoices.index.omega');
 
 Route::get('/invoices/{invoice}', ShowInvoice::class)->name('invoices.show');
 Route::get('/invoices/{invoice}/edit', [EditInvoice::class, 'inOrganisation'])->name('invoices.edit');

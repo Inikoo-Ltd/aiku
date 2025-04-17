@@ -43,6 +43,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -208,9 +209,77 @@ class IndexInvoices extends OrgAction
         };
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($request->user() instanceof WebUser) {
+            return true;
+        }
+
+        if ($this->parent instanceof Organisation) {
+            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
+        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
+            return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
+        } elseif ($this->parent instanceof Shop) {
+            //todo think about it
+            return $request->user()->authTo("orders.{$this->shop->id}.view");
+        } elseif ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof Fulfilment) {
+            return $request->user()->authTo(
+                [
+                    "fulfilment-shop.{$this->fulfilment->id}.view",
+                    "accounting.{$this->fulfilment->organisation_id}.view"
+                ]
+            );
+        } elseif ($this->parent instanceof Group) {
+            return $request->user()->authTo("group-overview");
+        } elseif ($this->parent instanceof InvoiceCategory) {
+            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
+        }
+
+        return false;
+    }
+
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
         return InvoicesResource::collection($invoices);
+    }
+
+    public function getExportOptions(string $filter): array
+    {
+
+        $route = '';
+        $parameters = [];
+        if ($this->parent instanceof Organisation) {
+            $route = 'grp.org.accounting.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'filter'      => $filter,
+                'bucket'      => $this->bucket,
+                'type'      => 'invoice',
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $route = 'grp.org.shops.show.dashboard.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'shop'        => $this->shop->slug,
+                'filter'      => $filter,
+                'bucket'      => $this->bucket,
+                'type'      => 'invoice',
+            ];
+        } else {
+            return [];
+        }
+
+        return [
+            [
+                'type'       => 'omega',
+                'icon'       => 'fas fa-omega',
+                'tooltip'    => __('Download Omega'),
+                'label'      => 'Omega',
+                'name'       => $route,
+                'parameters' => $parameters,
+            ]
+
+        ];
     }
 
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
@@ -343,6 +412,11 @@ class IndexInvoices extends OrgAction
             ];
         }
 
+        if (Arr::get($request->input('between'), 'date')) {
+            $filter = request()->input('between')['date'];
+            $exportInvoiceOptions = $this->getExportOptions($filter);
+            $data['invoiceExportOptions'] = $exportInvoiceOptions;
+        }
 
 
         $inertiaRender = Inertia::render(
