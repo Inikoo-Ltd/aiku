@@ -362,7 +362,12 @@ class Customer extends Model implements HasMedia, Auditable
     public function platforms(): BelongsToMany
     {
         return $this->belongsToMany(Platform::class, 'customer_has_platforms')
-            ->withPivot('group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
+            ->withPivot('id', 'platform_id', 'group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
+    }
+
+    public function customerHasPlatforms(): HasMany
+    {
+        return $this->hasMany(CustomerHasPlatform::class);
     }
 
     public function getMainPlatform(): Platform|null

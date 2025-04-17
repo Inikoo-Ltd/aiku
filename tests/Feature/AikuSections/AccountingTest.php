@@ -39,6 +39,7 @@ use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -66,6 +67,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
@@ -1226,12 +1228,29 @@ test('UI show list invoices in customer client', function () {
     $this->withoutExceptionHandling();
     $shop = $this->shop;
     $customer = createCustomer($shop);
-    $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
-    $response = get(route('grp.org.shops.show.crm.customers.show.customer-clients.invoices.index', [
-        'organisation' => $this->organisation->slug,
-        'shop' => $shop->slug,
-        'customer' => $customer->slug,
-        'customerClient' => $customerClient->ulid]));
+    $platform = Platform::where('code', 'aiku')->first();
+    AttachCustomerToPlatform::make()->action($customer, $platform, []);
+
+    $customer->refresh();
+    $customerClient = StoreCustomerClient::make()->action($customer, array_merge(
+        CustomerClient::factory()->definition(),
+        [
+            'platform_id' => $platform->id,
+        ]
+    ));
+
+    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $platform->id)->first();
+
+    $response = get(route(
+        'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
+        [
+            $customer->organisation->slug,
+            $customer->shop->slug,
+            $customer->slug,
+            $customerHasPlatform->id,
+            $customerClient->ulid
+        ]
+    ));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
         $page
@@ -1249,7 +1268,7 @@ test('UI show list invoices in customer client', function () {
             ->has('tabs')
             ->has('invoices');
     });
-})->todo('Customer client invoices not implemented yet (@kirin)');
+});
 
 test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
