@@ -35,7 +35,7 @@ import {
   faScrollOld,
   faPhoneVolume,
   faRaygun,
-  faArrowCircleLeft,
+  faFileMinus,
   faEraser
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
@@ -82,7 +82,7 @@ library.add(
   faRaygun,
   faScrollOld,
   faUserCircle,
-  faArrowCircleLeft,
+  faFileMinus,
   faEraser
 );
 

@@ -430,7 +430,7 @@ class GetGroupOverview extends OrgAction
             ],
             [
                 'name'  => __('Refunds'),
-                'icon'  => 'fal fa-arrow-circle-left',
+                'icon'  => 'fal fa-file-minus',
                 'route' => route('grp.overview.accounting.refunds.index'),
                 'count' => $group->orderingStats->number_invoices_type_refund ?? 0
             ],

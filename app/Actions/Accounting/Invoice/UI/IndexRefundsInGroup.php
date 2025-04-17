@@ -68,6 +68,7 @@ class IndexRefundsInGroup extends OrgAction
                 'invoices.created_at',
                 'invoices.updated_at',
                 'invoices.slug',
+                'invoices.shop_id',
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'invoices.original_invoice_id',
@@ -139,11 +140,13 @@ class IndexRefundsInGroup extends OrgAction
         $title = __('Refunds');
 
         $icon = [
-            'icon'  => ['fal', 'fa-arrow-circle-left'],
+            'icon'  => ['fal', 'fa-file-minus'],
             'title' => __('refunds')
         ];
 
-        $afterTitle = null;
+        $afterTitle = [
+            'label' => __('Group').': '.$this->group->name
+        ];
         $iconRight  = null;
         $model      = null;
         $actions    = null;

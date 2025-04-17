@@ -97,7 +97,7 @@ class ShowInvoice extends OrgAction
     /**
      * Get structured invoice summary for display in the UI.
      *
-     * NOTE: Used in deleted invoices as well ShowInvoiceDeleted.php
+     * NOTE: Used in deleted invoices as well ShowDeletedInvoice.php
      *
      * Returns a multidimensional array with three sections:
      * 1. Product/service line items (conditionally showing services and rentals)

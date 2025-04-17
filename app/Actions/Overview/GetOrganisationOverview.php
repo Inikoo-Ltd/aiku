@@ -435,8 +435,14 @@ class GetOrganisationOverview extends OrgAction
             [
                 'name'  => __('Invoices'),
                 'icon'  => 'fal fa-file-invoice-dollar',
-                'route' => '',
-                'count' => $organisation->orderingStats->number_invoices ?? 0
+                'route' => route('grp.org.accounting.invoices.index', $organisation->slug),
+                'count' => $organisation->orderingStats->number_invoices_type_invoice ?? 0
+            ],
+            [
+                'name'  => __('Refunds'),
+                'icon'  => 'fal fa-file-minus',
+                'route' => route('grp.org.accounting.refunds.index', $organisation->slug),
+                'count' => $organisation->orderingStats->number_invoices_type_refund ?? 0
             ],
             [
                 'name'  => __('Payments'),

@@ -66,14 +66,14 @@ function refundRoute(invoice: Invoice) {
 
 function organisationRoute(order: Order) {
   return route(
-    'grp.org.overview.refunds.index',
+    'grp.org.accounting.refunds.index',
     [order.organisation_slug]);
 }
 
-function shopRoute(order: Order) {
+function shopRoute(invoice: Invoice) {
   return route(
-    'grp.org.shops.show.ordering.orders.index',
-    [order.organisation_slug,order.shop_slug]);
+    "grp.helpers.redirect_refunds_in_shop",
+    [invoice.shop_id]);
 }
 
 </script>

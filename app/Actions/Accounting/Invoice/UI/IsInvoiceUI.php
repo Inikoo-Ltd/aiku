@@ -463,7 +463,6 @@ trait IsInvoiceUI
                     $suffix
                 ),
             ),
-
             default => []
         };
     }

@@ -170,6 +170,7 @@ class IndexInvoices extends OrgAction
 
             $table->betweenDates(['date']);
 
+            $stats = null;
             $noResults = __("No invoices found");
             if ($parent instanceof Customer) {
                 $stats     = $parent->stats;
@@ -180,12 +181,11 @@ class IndexInvoices extends OrgAction
             } elseif ($parent instanceof InvoiceCategory) {
                 $stats     = $parent->stats;
                 $noResults = __("This invoice category hasn't been invoiced");
-            } else {
-                $stats = $parent->salesStats;
             }
 
             $table->withGlobalSearch();
-            if (!($parent instanceof OrgPaymentServiceProvider)) {
+
+            if ($stats) {
                 $table->withEmptyState(
                     [
                         'title' => $noResults,
@@ -209,34 +209,6 @@ class IndexInvoices extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-        if ($this->parent instanceof Organisation) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-            return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
-        } elseif ($this->parent instanceof Shop) {
-            //todo think about it
-            return $request->user()->authTo("orders.{$this->shop->id}.view");
-        } elseif ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof Fulfilment) {
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        }
-
-        return false;
-    }
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
@@ -246,8 +218,6 @@ class IndexInvoices extends OrgAction
     public function getExportOptions(string $filter): array
     {
 
-        $route = '';
-        $parameters = [];
         if ($this->parent instanceof Organisation) {
             $route = 'grp.org.accounting.invoices.index.omega';
             $parameters = [
@@ -366,6 +336,18 @@ class IndexInvoices extends OrgAction
             $icon  = [
                 'icon'  => ['fal', 'fa-file-invoice-dollar'],
                 'title' => __('invoice category')
+            ];
+        } elseif ($this->parent instanceof Organisation) {
+            $afterTitle = [
+                'label' => __('In organisation').': '.$this->parent->name
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $afterTitle = [
+                'label' => $this->parent->name
+            ];
+        } elseif ($this->parent instanceof Fulfilment) {
+            $afterTitle = [
+                'label' => $this->parent->shop->name,
             ];
         }
 

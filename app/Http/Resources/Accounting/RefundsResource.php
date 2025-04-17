@@ -60,13 +60,12 @@ class RefundsResource extends JsonResource
                 ]
                 : [
                     'tooltip' => __('Refunded'),
-                    'icon'    => 'fal fa-arrow-circle-left',
+                    'icon'    => 'fal fa-check',
                 ],
             'pay_status'          => $this->pay_status->typeIcon()[$this->pay_status->value],
             'tax_liability_at'    => $this->tax_liability_at,
             'paid_at'             => $this->paid_at,
-            'created_at'          => $this->created_at,
-            'updated_at'          => $this->updated_at,
+            'shop_id'             => $this->shop_id,
             'shop_slug'           => $this->shop_slug,
             'shop_code'           => $this->shop_code,
             'shop_name'           => $this->shop_name,

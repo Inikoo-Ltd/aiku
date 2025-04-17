@@ -273,6 +273,22 @@ class IndexDeletedInvoices extends OrgAction
                 'icon'  => ['fal', 'fa-file-invoice-dollar'],
                 'title' => __('invoice category')
             ];
+        } elseif ($this->parent instanceof Organisation) {
+            $afterTitle = [
+                'label' => __('In organisation').': '.$this->parent->name
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $afterTitle = [
+                'label' => $this->parent->name
+            ];
+        } elseif ($this->parent instanceof Fulfilment) {
+            $afterTitle = [
+                'label' => $this->parent->shop->name,
+            ];
+        } elseif ($this->parent instanceof Group) {
+            $afterTitle = [
+                'label' => __('In group').': '.$this->parent->name,
+            ];
         }
 
         $routeName       = $request->route()->getName();
@@ -367,7 +383,6 @@ class IndexDeletedInvoices extends OrgAction
                 ]
             ];
         };
-
         return match ($routeName) {
             'grp.org.shops.show.dashboard.invoices.deleted.index' =>
             array_merge(
