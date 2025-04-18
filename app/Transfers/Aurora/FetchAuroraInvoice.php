@@ -48,7 +48,22 @@ class FetchAuroraInvoice extends FetchAurora
 
         $data = [];
 
-        $data['foot_note'] = $this->auroraModelData->{'Invoice Message'};
+
+        //enum('Yes','No','Unknown','API_Down')
+        $taxNumberStaus = match ($this->auroraModelData->{'Invoice Tax Number Valid'}) {
+            'Yes' => 'valid',
+            'Invalid' => 'invalid',
+            default => 'unknown',
+        };
+
+
+        $customerName           = $this->auroraModelData->{'Invoice Customer Name'};
+        $customerContactName    = $this->auroraModelData->{'Invoice Customer Contact Name'};
+        $taxNumber              = $this->auroraModelData->{'Invoice Tax Number'};
+        $taxNumberStatus        = $taxNumberStaus;
+        $taxNumberValid         = $taxNumberStaus == 'valid';
+        $identityDocumentNumber = $this->auroraModelData->{'Invoice Registration Number'};
+
 
         $billingAddressData = $this->parseAddress(prefix: 'Invoice', auAddressData: $this->auroraModelData);
 
@@ -87,6 +102,8 @@ class FetchAuroraInvoice extends FetchAurora
         if ($footer === null) {
             $footer = '';
         }
+        $footer .= ' '.$this->auroraModelData->{'Invoice Message'};
+        $footer = trim($footer);
 
         $isVip = $this->auroraModelData->{'Invoice Customer Level Type'} == 'VIP';
 
@@ -151,25 +168,32 @@ class FetchAuroraInvoice extends FetchAurora
             'charges_amount'   => $this->auroraModelData->{'Invoice Charges Net Amount'},
             'insurance_amount' => $this->auroraModelData->{'Invoice Insurance Net Amount'},
 
-            'net_amount'           => $this->auroraModelData->{'Invoice Total Net Amount'},
-            'tax_amount'           => $this->auroraModelData->{'Invoice Total Tax Amount'},
-            'total_amount'         => $this->auroraModelData->{'Invoice Total Amount'},
-            'source_id'            => $this->organisation->id.':'.$this->auroraModelData->{'Invoice Key'},
-            'data'                 => $data,
-            'billing_address'      => new Address($billingAddressData),
-            'currency_id'          => $this->parseCurrencyID($this->auroraModelData->{'Invoice Currency'}),
-            'tax_category_id'      => $taxCategory->id,
-            'fetched_at'           => now(),
-            'last_fetched_at'      => now(),
-            'footer'               => $footer,
-            'invoice_category_id'  => $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'})?->id,
-            'is_vip'               => $isVip,
-            'as_organisation_id'   => $AsOrganisation?->id,
-            'as_employee_id'       => $asEmployeeID,
-            'external_invoicer_id' => $externalInvoicer,
-            'original_invoice_id'  => $originalInvoiceId,
-
+            'net_amount'               => $this->auroraModelData->{'Invoice Total Net Amount'},
+            'tax_amount'               => $this->auroraModelData->{'Invoice Total Tax Amount'},
+            'total_amount'             => $this->auroraModelData->{'Invoice Total Amount'},
+            'source_id'                => $this->organisation->id.':'.$this->auroraModelData->{'Invoice Key'},
+            'data'                     => $data,
+            'billing_address'          => new Address($billingAddressData),
+            'currency_id'              => $this->parseCurrencyID($this->auroraModelData->{'Invoice Currency'}),
+            'tax_category_id'          => $taxCategory->id,
+            'fetched_at'               => now(),
+            'last_fetched_at'          => now(),
+            'footer'                   => $footer,
+            'invoice_category_id'      => $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'})?->id,
+            'is_vip'                   => $isVip,
+            'as_organisation_id'       => $AsOrganisation?->id,
+            'as_employee_id'           => $asEmployeeID,
+            'external_invoicer_id'     => $externalInvoicer,
+            'original_invoice_id'      => $originalInvoiceId,
+            'customer_name'            => $customerName,
+            'customer_contact_name'    => $customerContactName,
+            'tax_number'               => $taxNumber,
+            'tax_number_status'        => $taxNumberStatus,
+            'tax_number_valid'         => $taxNumberValid,
+            'identity_document_number' => $identityDocumentNumber
         ];
+
+
         if ($order) {
             $this->parsedData['invoice']['order_id'] = $order->id;
         }

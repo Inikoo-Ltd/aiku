@@ -42,7 +42,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
             return null;
         }
 
-
         if ($invoice = Invoice::withTrashed()->where('source_id', $invoiceData['invoice']['source_id'])->first()) {
             try {
                 $invoice = UpdateInvoice::make()->action(
