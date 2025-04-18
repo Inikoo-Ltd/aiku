@@ -28,10 +28,34 @@ const locale = useLocaleStore();
 
 console.log(route().current())
 
-function refundRoute(invoice: Invoice) {
-  console.log(route().current())
+function refundRoute(refund: Invoice) {
 
     switch (route().current()) {
+      case 'grp.overview.accounting.refunds.index':
+      case 'grp.org.accounting.refunds.index':
+        return route(
+          'grp.org.accounting.refunds.show',
+          [
+            refund.organisation_slug,
+            refund.slug
+          ])
+      case 'grp.org.shops.show.dashboard.invoices.refunds.index':
+        return route(
+          'grp.org.shops.show.dashboard.invoices.refunds.show',
+          [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            refund.slug
+          ])
+      case 'grp.org.fulfilments.show.operations.invoices.refunds.index':
+        return route(
+          'grp.org.fulfilments.show.operations.invoices.refunds.show',
+          [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).fulfilment,
+            refund.slug
+          ])
+
       case 'grp.org.fulfilments.show.operations.invoices.show':
       case 'grp.org.fulfilments.show.operations.invoices.show.refunds.index':
       case 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index':
@@ -42,19 +66,19 @@ function refundRoute(invoice: Invoice) {
             (route().params as RouteParams).organisation,
             (route().params as RouteParams).fulfilment,
             (route().params as RouteParams).invoice,
-            invoice.slug
+            refund.slug
           ])
 
         case 'grp.org.fulfilments.show.crm.customers.show.invoices.index':
-            if (invoice.parent_invoice?.slug) {
+            if (refund.parent_invoice?.slug) {
                 return route(
                     'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show',
                     [
                       (route().params as RouteParams).organisation,
                       (route().params as RouteParams).fulfilment,
                       (route().params as RouteParams).fulfilmentCustomer,
-                      invoice.parent_invoice?.slug,
-                      invoice.slug
+                      refund.parent_invoice?.slug,
+                      refund.slug
                     ])
             } else {
                 return null
@@ -80,19 +104,13 @@ function shopRoute(invoice: Invoice) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(reference)="{ item: refund }">
-            <Link v-if="refundRoute(refund)" :href="refundRoute(refund) as string" class="primaryLink py-0.5">
-                {{ refund.slug }}
-            </Link>
 
-            <div v-else>
-                {{ refund.slug }}
-            </div>
-            
+        <template #cell(reference)="{ item: refund }">
+            <Link :href="refundRoute(refund) as string" class="primaryLink py-0.5">
+                {{ refund.reference }}
+            </Link>
         </template>
 
-    
-        <!-- Column: State -->
         <template #cell(in_process)="{ item: item }">
             <Icon :data="item['state_icon']" class="px-1" />
         </template>

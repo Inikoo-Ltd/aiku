@@ -19,7 +19,6 @@ use App\Enums\UI\Catalogue\ShopTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -151,131 +150,6 @@ class ShowShop extends OrgAction
                     ]
                 ]
             ],
-            // 'flatTreeMaps'        => [
-            //     [
-
-            //         [
-            //             'name'  => __('Customers'),
-            //             'icon'  => ['fal', 'fa-user-tie'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.crm.customers.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $fulfilment->shop->crmStats->number_customers
-            //             ],
-
-            //         ],
-            //         [
-            //             'name'  => __('Recurring bills'),
-            //             'icon'  => ['fal', 'fa-receipt'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $fulfilment->stats->number_recurring_bills
-            //             ],
-            //         ],
-            //         [
-            //             'name'  => __('Invoices'),
-            //             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.operations.invoices.all.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $fulfilment->shop->orderingStats->number_invoices
-            //             ],
-            //         ],
-
-
-            //     ],
-            //     [
-            //         [
-            //             'name'  => __('Pallets'),
-            //             'icon'  => ['fal', 'fa-pallet'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.operations.pallets.current.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $this->organisation->fulfilmentStats->number_pallets_status_storing +
-            //                     $this->organisation->fulfilmentStats->number_pallets_status_receiving +
-            //                     $this->organisation->fulfilmentStats->number_pallets_status_returning
-            //             ],
-            //         ],
-            //         [
-            //             'name'  => __("Customer'S SKUs"),
-            //             'icon'  => ['fal', 'fa-narwhal'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.operations.pallets.current.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $this->organisation->fulfilmentStats->number_stored_items
-            //             ],
-            //         ],
-
-            //     ],
-            //     [
-            //         [
-            //             'name'  => __('Deliveries'),
-            //             'icon'  => ['fal', 'fa-truck-couch'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $fulfilment->stats->number_pallet_deliveries
-            //             ],
-            //         ],
-            //         [
-            //             'name'  => __('Returns'),
-            //             'icon'  => ['fal', 'fa-sign-out'],
-            //             'route' => [
-            //                 'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-            //                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-            //             ],
-            //             'index' => [
-            //                 'number' => $this->organisation->fulfilmentStats->number_pallet_returns
-            //             ],
-            //         ],
-
-
-            //     ],
-            // ],
-            // 'scheduledActivities' => [
-            //     [
-            //         'icon'        => 'fal fa-pallet',
-            //         'title'       => __('pallets  '),
-            //         'description' => (
-            //             $this->organisation->fulfilmentStats->number_pallets_state_in_process
-            //                 + $this->organisation->fulfilmentStats->number_pallets_state_submitted
-            //                 + $this->organisation->fulfilmentStats->number_pallets_state_confirmed
-            //         ).' '.__('pending')
-            //     ],
-            //     [
-            //         'icon'        => 'fal fa-truck-couch',
-            //         'title'       => __('pallet delivery'),
-            //         'description' => (
-            //             $this->organisation->fulfilmentStats->number_pallet_deliveries_state_in_process
-            //                 + $this->organisation->fulfilmentStats->number_pallet_deliveries_state_submitted
-            //                 + $this->organisation->fulfilmentStats->number_pallet_deliveries_state_confirmed
-            //         ).' '.__('pending')
-            //     ],
-            //     [
-            //         'icon'        => 'fal fa-sign-out',
-            //         'title'       => __('pallet returns'),
-            //         'description' => (
-            //             $this->organisation->fulfilmentStats->number_pallet_returns_state_in_process
-            //                 + $this->organisation->fulfilmentStats->number_pallet_returns_state_submitted
-            //                 + $this->organisation->fulfilmentStats->number_pallet_returns_state_confirmed
-            //                 + $this->organisation->fulfilmentStats->number_pallet_returns_state_picking
-            //                 + $this->organisation->fulfilmentStats->number_pallet_returns_state_picked
-            //         ).' '.__('pending')
-            //     ],
-            // ]
         ];
     }
 
@@ -383,7 +257,7 @@ class ShowShop extends OrgAction
                             'icon'  => ['fal', 'fa-sticky-note'],
                             'route' => ['grp.crm.shops.show.delivery-notes.index', $shop->slug],
                             'index' => [
-                                'number' => $shop->orderingStats->number_deliveries
+                                'number' => $shop->orderingStats->number_delivery_notes
                             ]
                         ]
                     ]

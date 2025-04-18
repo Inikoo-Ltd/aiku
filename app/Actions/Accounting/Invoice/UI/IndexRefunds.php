@@ -26,7 +26,6 @@ use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -44,10 +43,10 @@ class IndexRefunds extends OrgAction
     use WithCustomerSubNavigation;
     use WithInvoicesSubNavigation;
 
-    private Invoice|Group|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent;
+    private Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent;
     private string $bucket;
 
-    public function handle(Invoice|Group|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -76,8 +75,6 @@ class IndexRefunds extends OrgAction
             $queryBuilder->where('invoices.customer_id', $parent->id);
         } elseif ($parent instanceof Order) {
             $queryBuilder->where('invoices.order_id', $parent->id);
-        } elseif ($parent instanceof Group) {
-            $queryBuilder->where('invoices.group_id', $parent->id);
         } elseif ($parent instanceof Invoice) {
             $queryBuilder->where('invoices.original_invoice_id', $parent->id);
         } elseif ($parent instanceof InvoiceCategory) {
@@ -131,7 +128,7 @@ class IndexRefunds extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Invoice|Group|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): Closure
+    public function tableStructure(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
@@ -144,13 +141,14 @@ class IndexRefunds extends OrgAction
             $noResults = __("No refunds found");
             $stats     = null;
             if ($parent instanceof Customer || $parent instanceof FulfilmentCustomer || $parent instanceof InvoiceCategory) {
-                $stats     = $parent->stats;
+                $stats = $parent->stats;
             } elseif ($parent instanceof Invoice) {
                 $stats     = $parent->stats;
                 $noResults = __("Invoice has not been refunded");
-            } elseif ($parent instanceof Group || $parent instanceof Organisation) {
-                $stats     = $parent->orderingStats;
+            } elseif ($parent instanceof Organisation) {
+                $stats = $parent->orderingStats;
             }
+            $table->betweenDates(['date']);
 
             $table->withGlobalSearch();
             if ($stats) {
@@ -164,8 +162,12 @@ class IndexRefunds extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'in_process', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'in_process', label: '', canBeHidden: false, type: 'icon');
+
+            if ($parent instanceof Organisation) {
+                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
+            }
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Fulfilment || $parent instanceof Shop || $parent instanceof Organisation) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
@@ -174,12 +176,6 @@ class IndexRefunds extends OrgAction
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
 
-            if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
-            }
-
-            $table->betweenDates(['date']);
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };
@@ -364,15 +360,6 @@ class IndexRefunds extends OrgAction
     }
 
 
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle(group());
-    }
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
@@ -421,7 +408,7 @@ class IndexRefunds extends OrgAction
     }
 
 
-    public function getBreadcrumbs(Invoice|Group|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent, string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = [], ?string $suffix = null) {
             return [

@@ -91,6 +91,8 @@ Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoic
 
 
 Route::get('/refunds', IndexRefunds::class)->name('refunds.index');
+Route::get('/refunds/{refund}', ShowRefund::class)->name('refunds.show');
+
 
 Route::get('/invoices-unpaid', [IndexInvoices::class, 'unpaid'])->name('unpaid_invoices.index');
 Route::get('/invoices-paid', [IndexInvoices::class, 'paid'])->name('paid_invoices.index');

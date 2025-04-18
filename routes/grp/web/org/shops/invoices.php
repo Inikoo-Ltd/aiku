@@ -22,6 +22,8 @@ Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoic
 Route::get('/omega', [OmegaManyInvoice::class, 'inShop'])->name('index.omega');
 
 Route::get('/refunds', [IndexRefunds::class,'inShop'])->name('refunds.index');
+Route::get('/refunds/{refund}', [ShowRefund::class, 'inShop'])->name('refunds.show');
+
 Route::get('/invoices-unpaid', [IndexInvoices::class, 'unpaidInShop'])->name('unpaid.index');
 Route::get('/invoices-paid', [IndexInvoices::class, 'paidInShop'])->name('paid.index');
 Route::get('/invoices-deleted', [IndexDeletedInvoices::class, 'inShop'])->name('deleted.index');
