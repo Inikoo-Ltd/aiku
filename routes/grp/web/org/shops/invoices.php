@@ -15,9 +15,9 @@ use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndexInvoices::class, 'inShop'])->name('index');
-Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inShop'])->name('invoices.show');
-Route::get('/invoices/{invoice}/refunds', [IndexRefunds::class, 'inInvoiceInShop'])->name('invoices.show.refunds.index');
-Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInShop'])->name('invoices.show.refunds.show');
+Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inShop'])->name('show');
+Route::get('/invoices/{invoice}/refunds', [IndexRefunds::class, 'inInvoiceInShop'])->name('show.refunds.index');
+Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInShop'])->name('show.refunds.show');
 
 Route::get('/omega', [OmegaManyInvoice::class, 'inShop'])->name('index.omega');
 
