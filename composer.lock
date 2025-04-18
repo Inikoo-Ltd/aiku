@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4fa7ab96b35d0db1c038e593bb485986",
+    "content-hash": "3880640106a74f3450dfd65314ca1b6a",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -119,16 +119,16 @@
         },
         {
             "name": "alibabacloud/credentials",
-            "version": "1.2.2",
+            "version": "1.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aliyun/credentials-php.git",
-                "reference": "410338b1831f7547a40071af3a9adea27b2fe6e5"
+                "reference": "f6d1986e7b7be8da781d0b99f24c92d9860ba0c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aliyun/credentials-php/zipball/410338b1831f7547a40071af3a9adea27b2fe6e5",
-                "reference": "410338b1831f7547a40071af3a9adea27b2fe6e5",
+                "url": "https://api.github.com/repos/aliyun/credentials-php/zipball/f6d1986e7b7be8da781d0b99f24c92d9860ba0c1",
+                "reference": "f6d1986e7b7be8da781d0b99f24c92d9860ba0c1",
                 "shasum": ""
             },
             "require": {
@@ -195,7 +195,7 @@
                 "issues": "https://github.com/aliyun/credentials-php/issues",
                 "source": "https://github.com/aliyun/credentials-php"
             },
-            "time": "2025-03-04T07:38:54+00:00"
+            "time": "2025-04-18T09:09:46+00:00"
         },
         {
             "name": "alibabacloud/darabonba-openapi",
@@ -1485,16 +1485,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.342.28",
+            "version": "3.342.29",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "16cec140483869b3d244a5995b55d5365465dc58"
+                "reference": "33f6d393834053b11a5fc10573a211d92e61c2db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/16cec140483869b3d244a5995b55d5365465dc58",
-                "reference": "16cec140483869b3d244a5995b55d5365465dc58",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/33f6d393834053b11a5fc10573a211d92e61c2db",
+                "reference": "33f6d393834053b11a5fc10573a211d92e61c2db",
                 "shasum": ""
             },
             "require": {
@@ -1576,9 +1576,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.342.28"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.342.29"
             },
-            "time": "2025-04-16T18:13:32+00:00"
+            "time": "2025-04-17T18:03:54+00:00"
         },
         {
             "name": "aws/aws-sdk-php-laravel",
@@ -5716,84 +5716,6 @@
                 "source": "https://github.com/inspector-apm/inspector-php/tree/3.12.0"
             },
             "time": "2025-03-07T10:14:49+00:00"
-        },
-        {
-            "name": "jackwh/laravel-new-relic",
-            "version": "v1.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/JackWH/laravel-new-relic.git",
-                "reference": "e74e554313f89dfdecef541d1b21a791a6999f43"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/JackWH/laravel-new-relic/zipball/e74e554313f89dfdecef541d1b21a791a6999f43",
-                "reference": "e74e554313f89dfdecef541d1b21a791a6999f43",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/contracts": "^9.0|^10.0|^11.0",
-                "illuminate/support": "^9.0|^10.0|^11.0",
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "driftingly/rector-laravel": "^1.2",
-                "larastan/larastan": "^2.9.0",
-                "laravel/pint": "^1.15",
-                "nunomaduro/collision": "^6.0|^8.0",
-                "orchestra/testbench": "^7.0|^9.0",
-                "pestphp/pest": "^1.21|^2.34",
-                "pestphp/pest-plugin-laravel": "^1.1|^2.3",
-                "phpstan/extension-installer": "^1.1",
-                "phpstan/phpstan-deprecation-rules": "^1.0",
-                "phpstan/phpstan-phpunit": "^1.0",
-                "phpunit/phpunit": "^9.5|^10.5",
-                "rector/rector": "^1.0",
-                "roave/security-advisories": "dev-latest",
-                "spatie/laravel-ray": "^1.26"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "NewRelicTransaction": "JackWH\\LaravelNewRelic\\Facades\\NewRelicTransaction"
-                    },
-                    "providers": [
-                        "JackWH\\LaravelNewRelic\\LaravelNewRelicServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "JackWH\\LaravelNewRelic\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jack Webb-Heller",
-                    "email": "hello@jwh.fyi",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Monitor your Laravel application performance with New Relic",
-            "homepage": "https://github.com/JackWH/laravel-new-relic",
-            "keywords": [
-                "JackWH",
-                "laravel",
-                "laravel-new-relic",
-                "monitoring",
-                "new relic",
-                "performance"
-            ],
-            "support": {
-                "issues": "https://github.com/JackWH/laravel-new-relic/issues",
-                "source": "https://github.com/JackWH/laravel-new-relic/tree/v1.1.0"
-            },
-            "time": "2024-05-10T10:38:39+00:00"
         },
         {
             "name": "jaybizzle/crawler-detect",
@@ -23006,7 +22928,7 @@
     ],
     "aliases": [],
     "minimum-stability": "beta",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -23022,6 +22944,6 @@
         "ext-zlib": "*",
         "ext-bcmath": "*"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
 }
