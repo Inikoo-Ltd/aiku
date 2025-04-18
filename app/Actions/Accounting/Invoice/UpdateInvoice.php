@@ -84,7 +84,7 @@ class UpdateInvoice extends OrgAction
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
             GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
 
-            if (Arr::has($changes, [
+            if (Arr::hasAny($changes, [
                 'reference',
                 'total_amount',
                 'type',
