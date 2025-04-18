@@ -40,8 +40,10 @@ class FetchAuroraInvoice extends FetchAurora
         }
         $this->parsedData['parent'] = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Invoice Customer Key'});
 
-
-        $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Invoice Order Key'});
+        $order = null;
+        if ($this->auroraModelData->{'Invoice Order Key'}) {
+            $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Invoice Order Key'});
+        }
 
 
         $data = [];
@@ -123,13 +125,11 @@ class FetchAuroraInvoice extends FetchAurora
 
         $originalInvoiceId = null;
         if ($type == 'refund') {
-
             if ($order) {
-                $invoice           = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
+                $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
                 if ($invoice) {
                     $originalInvoiceId = $invoice->id;
                 }
-
             }
         }
 
@@ -173,7 +173,6 @@ class FetchAuroraInvoice extends FetchAurora
         if ($order) {
             $this->parsedData['invoice']['order_id'] = $order->id;
         }
-
 
 
         if ($this->auroraModelData->{'Invoice Category Key'}) {
