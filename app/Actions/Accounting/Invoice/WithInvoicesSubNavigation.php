@@ -19,11 +19,12 @@ trait WithInvoicesSubNavigation
     protected function getInvoicesNavigation(Organisation|Shop|Fulfilment $parent): array
     {
         if ($parent instanceof Organisation) {
-            $routeName     = 'grp.org.accounting.invoices';
-            $param         = [$parent->slug];
-            $total         = $parent->orderingStats?->number_invoices_type_invoice ?? 10;
-            $numberUnpaid  = $parent->orderingStats?->number_unpaid_invoices ?? 0;
-            $numberRefunds = $parent->orderingStats?->number_invoices_type_refund ?? 0;
+            $routeName             = 'grp.org.accounting.invoices';
+            $param                 = [$parent->slug];
+            $total                 = $parent->orderingStats?->number_invoices_type_invoice ?? 10;
+            $numberUnpaid          = $parent->orderingStats?->number_unpaid_invoices ?? 0;
+            $numberRefunds         = $parent->orderingStats?->number_invoices_type_refund ?? 0;
+            $numberDeletedInvoices = $parent->orderingStats->number_deleted_invoices ?? 0;
 
             $allInvoicesRouteName     = $routeName.'.index';
             $refundsRouteName         = str_replace('invoices', 'refunds', $routeName).'.index';
@@ -35,6 +36,7 @@ trait WithInvoicesSubNavigation
             $param                    = [$parent->organisation->slug, $parent->slug];
             $numberUnpaid             = $parent->shop->orderingStats?->number_unpaid_invoices ?? 0;
             $numberRefunds            = $parent->shop->orderingStats?->number_invoices_type_refund ?? 0;
+            $numberDeletedInvoices    = $parent->shop->orderingStats->number_deleted_invoices ?? 0;
             $allInvoicesRouteName     = $routeName.'.all.index';
             $refundsRouteName         = $routeName.'.refunds.index';
             $unpaidRouteName          = $routeName.'.unpaid_invoices.index';
@@ -45,6 +47,7 @@ trait WithInvoicesSubNavigation
             $param                    = [$parent->organisation->slug, $parent->slug];
             $numberUnpaid             = $parent->orderingStats?->number_unpaid_invoices ?? 0;
             $numberRefunds            = $parent->orderingStats?->number_invoices_type_refund ?? 0;
+            $numberDeletedInvoices    = $parent->orderingStats->number_deleted_invoices ?? 0;
             $allInvoicesRouteName     = $routeName.'.index';
             $unpaidRouteName          = str_replace('invoices', 'invoices.unpaid', $routeName).'.index';
             $refundsRouteName         = str_replace('invoices', 'invoices.refunds', $routeName).'.index';
@@ -73,7 +76,7 @@ trait WithInvoicesSubNavigation
             ],
 
             [
-                "number" => 0,
+                "number" => $numberDeletedInvoices,
                 "label"  => __("Deleted Invoices"),
                 'align'  => 'right',
                 "route"  => [

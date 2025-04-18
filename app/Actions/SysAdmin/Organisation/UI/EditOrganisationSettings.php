@@ -46,13 +46,15 @@ class EditOrganisationSettings extends OrgAction
     public function htmlResponse(Organisation $organisation): Response
     {
 
+        $title = __('Organisation settings');
+
         return Inertia::render(
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Organisation settings'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title' => __('Organisation settings'),
+                    'title' => $title,
                 ],
                 "formData" => [
                     "blueprint" => [
@@ -103,6 +105,22 @@ class EditOrganisationSettings extends OrgAction
                                     "type"  => "avatar",
                                     "label" => __("logo"),
                                     "value" => $organisation->imageSources(320, 320),
+                                ],
+                            ],
+                        ],
+                        [
+                            "label"  => __("Invoice formats"),
+                            "icon"   => "fa-light fa-file-invoice",
+                            "fields" => [
+                                'show_isdoc' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Show ISDoc invoice'),
+                                    'value' => Arr::get($organisation->settings, 'invoice_export.show_isdoc', false),
+                                ],
+                                'show_omega' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Show Omega'),
+                                    'value' => Arr::get($organisation->settings, 'invoice_export.show_omega', false),
                                 ],
                             ],
                         ],

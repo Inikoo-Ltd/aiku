@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -65,9 +64,9 @@ class IndexRefundTransactions extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Invoice $parent, $prefix = null): Closure
+    public function tableStructure(Invoice $invoice, $prefix = null): Closure
     {
-        return IndexInvoiceTransactions::make()->tableStructure($parent, $prefix);
+        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, $prefix);
     }
 
 

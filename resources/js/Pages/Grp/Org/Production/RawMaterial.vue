@@ -9,14 +9,14 @@ import { computed, defineAsyncComponent, ref } from 'vue'
 import type { Component } from 'vue'
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     history?: {}
 

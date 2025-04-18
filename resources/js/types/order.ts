@@ -16,5 +16,7 @@ export interface Order {
     updated_at: string
     shop: string
     shop_slug: string
+    customer_slug: string
+    organisation_slug: string
 
 }

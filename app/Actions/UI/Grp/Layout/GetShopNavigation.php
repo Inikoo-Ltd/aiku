@@ -55,7 +55,7 @@ class GetShopNavigation
                         "label"   => __("Invoices"),
                         "tooltip" => __("Invoices"),
                         "icon"    => ["fal", "fa-file-invoice-dollar"],
-                        'root'    => 'grp.org.shops.show.dashboard.invoices.index',
+                        'root'    => 'grp.org.shops.show.dashboard.invoices',
                         "route"   => [
                             "name"       => "grp.org.shops.show.dashboard.invoices.index",
                             "parameters" => [$shop->organisation->slug, $shop->slug],

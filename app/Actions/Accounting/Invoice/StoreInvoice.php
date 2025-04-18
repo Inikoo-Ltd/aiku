@@ -28,6 +28,7 @@ use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class StoreInvoice extends OrgAction
@@ -45,6 +46,8 @@ class StoreInvoice extends OrgAction
      */
     public function handle(Customer|Order|RecurringBill $parent, array $modelData): Invoice
     {
+        data_set($modelData, 'uuid', Str::uuid());
+
         if (!Arr::has($modelData, 'footer')) {
             data_set($modelData, 'footer', $this->shop->invoice_footer);
         }
@@ -122,7 +125,7 @@ class StoreInvoice extends OrgAction
 
         if ($this->strict) {
             CategoriseInvoice::run($invoice);
-        } elseif ($invoice->invoiceCategory) { // run hydrators if category from fetch
+        } elseif ($invoice->invoiceCategory) { // run hydrators when category from fetch
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
@@ -195,6 +198,8 @@ class StoreInvoice extends OrgAction
             'date'             => ['sometimes', 'date'],
             'tax_liability_at' => ['sometimes', 'date'],
             'data'             => ['sometimes', 'array'],
+
+
             'sales_channel_id' => [
                 'sometimes',
                 'required',
@@ -216,6 +221,15 @@ class StoreInvoice extends OrgAction
             $rules['as_employee_id']       = ['sometimes', 'nullable', 'integer'];
             $rules['external_invoicer_id'] = ['sometimes', 'nullable', 'integer'];
 
+            $rules['customer_name']            = ['sometimes', 'nullable', 'string'];
+            $rules['customer_contact_name']    = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number']               = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number_status']        = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number_valid']         = ['sometimes', 'nullable', 'boolean'];
+            $rules['identity_document_type']   = ['sometimes', 'nullable', 'string'];
+            $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
+
+
             $rules['invoice_category_id']                = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']                    = ['sometimes', 'required', 'exists:tax_categories,id'];
             $rules['billing_address']                    = ['required', new ValidAddress()];
@@ -223,6 +237,8 @@ class StoreInvoice extends OrgAction
             $rules['deleted_note']                       = ['sometimes', 'string'];
             $rules['deleted_from_deleted_invoice_fetch'] = ['sometimes', 'boolean'];
             $rules['deleted_by']                         = ['sometimes', 'nullable', 'integer'];
+            $rules['original_invoice_id']                = ['sometimes', 'nullable', 'integer'];
+            $rules['order_id']                           = ['sometimes', 'nullable', 'integer'];
             $rules                                       = $this->orderingAmountNoStrictFields($rules);
             $rules                                       = $this->noStrictStoreRules($rules);
         }

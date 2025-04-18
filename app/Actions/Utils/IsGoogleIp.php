@@ -43,7 +43,7 @@ class IsGoogleIp
 
             $netmask     = str_replace('*', '0', $netmask);
             $netmask_dec = ip2long($netmask);
-            return ((ip2long($ip) & $netmask_dec) == (ip2long($range) & $netmask_dec));
+            return (ip2long($ip) & $netmask_dec) == (ip2long($range) & $netmask_dec);
         } else {
 
             $x = explode('.', $range);
@@ -59,7 +59,7 @@ class IsGoogleIp
             $wildcard_dec = pow(2, (32 - $netmask)) - 1;
             $netmask_dec  = ~$wildcard_dec;
 
-            return (($ip_dec & $netmask_dec) == ($range_dec & $netmask_dec));
+            return ($ip_dec & $netmask_dec) == ($range_dec & $netmask_dec);
         }
 
 

@@ -25,7 +25,6 @@ use App\Models\Accounting\PaymentAccount;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 
 class RefundToInvoice extends OrgAction
 {
@@ -105,7 +104,7 @@ class RefundToInvoice extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function afterValidator(Validator $validator): void
+    public function afterValidator(): void
     {
         $type = $this->get("type_refund") ?? 'payment';
         $totalRefund = -abs($this->get("amount"));

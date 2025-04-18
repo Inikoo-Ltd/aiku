@@ -11,14 +11,14 @@ import { capitalize } from "@/Composables/capitalize"
 
 import { faNarwhal } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import TableStoredItemsInWarehouse from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsInWarehouse.vue'
 library.add(faNarwhal)
 
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
 }>()
 
 </script>

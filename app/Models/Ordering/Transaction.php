@@ -170,7 +170,6 @@ class Transaction extends Model
         return $this->belongsTo(HistoricAsset::class);
     }
 
-
     public function getHistoricAssetWithTrashed(): HistoricAsset
     {
         return HistoricAsset::withTrashed()->where('id', $this->historic_asset_id)->first();

@@ -15,6 +15,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollectionCat
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransactions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
@@ -110,9 +111,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateDispatchedEmails::run($organisation);
 
 
-
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
-
             OrganisationHydrateInvoiceIntervals::run($organisation);
 
             OrganisationHydrateDepartments::run($organisation);
@@ -145,13 +144,10 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateTopUps::run($organisation);
             OrganisationHydrateCreditTransactions::run($organisation);
             OrganisationHydrateAdjustments::run($organisation);
-            //OrganisationHydrateOfferCampaigns::run($organisation);
-            //OrganisationHydrateOffers::run($organisation);
             OrganisationHydrateOrderHandling::run($organisation);
             OrganisationHydrateMailshots::run($organisation);
-
+            OrganisationHydrateDeletedInvoices::run($organisation);
         }
-
     }
 
 

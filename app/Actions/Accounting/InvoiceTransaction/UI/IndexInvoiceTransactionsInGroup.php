@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -26,8 +25,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceTransactionsInGroup extends OrgAction
 {
-    protected Group|Invoice $parent;
-
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -89,17 +86,7 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
 
     public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
-            if ($prefix) {
-                $table->name($prefix)->pageName($prefix.'Page');
-            }
-            $table->withModelOperations()->withGlobalSearch();
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->defaultSort('code');
-        };
+        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($prefix);
     }
 
     public function htmlResponse(LengthAwarePaginator $transactions, ActionRequest $request): Response
@@ -132,10 +119,9 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->parent);
+        return $this->handle(group());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

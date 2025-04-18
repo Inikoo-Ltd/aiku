@@ -11,7 +11,11 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAIBot;
+use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Actions\OrgAction;
+use Illuminate\Support\Facades\Response;
+use LLPhant\Chat\OpenAIChat;
+use LLPhant\OpenAIConfig;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 
@@ -19,61 +23,53 @@ class AskBot extends OrgAction
 {
     use AsController;
     use WithAIBot;
+    use WithPromptAI;
 
     public function handle($q)
     {
-
-        // $embedQ = Ollama::model(config('ollama-laravel.embedding_model'))->embeddings($q);
-
-        // if (!isset($embedQ['embedding'])) {
-        //     return ['error' => 'model not found', 'status' => 422];
-        // }
-
-        // $embeddingColumn = $this->get_embedding_size(config('llmdriver.driver'));
-        // $query = Chunk::query()
-        // ->orderBy('sort_order')
-        // ->orderBy('section_number')
-        // ->nearestNeighbors(
-        //     $embeddingColumn,
-        //     $embedQ['embedding'],
-        //     Distance::Cosine
-        // )
-        // ->get()
-        // ->chunk(100, function ($chunk) use ($embedQ, $embeddingColumn) {
-        //     return $chunk->filter(function ($item) use ($embedQ, $embeddingColumn) {
-        //         try {
-        //             $embedding = json_decode($item->{$embeddingColumn}, true);
-        //             $score = round($this->calculateCosineSimilarity($embedding, $embedQ['embedding']), 3);
-        //         } catch (\Exception $e) {
-        //             dd($e->getMessage());
-        //             return false;
-        //         }
-        //         return $score >= 0.56;
-        //     });
-        // });
-
-        // $resultMerge = $query->collapse();
-        // $parentRes = collect($resultMerge)
-        //     ->unique('id')
-        //     ->take(4);
-
-        // $finalRes = $this->getSiblings($parentRes);
-
-        // $context = [];
-
-        // foreach ($finalRes as $res) {
-        //     $context[] = [
-        //         'content' => $res->content,
-        //     ];
-        // }
-
-        // $prompt = $this->promptTemplate(json_encode($context), $q);
-
-        // return $response;
-
-        $q = $this->simplePrompt($q);
         if (config('askbot-laravel.ai_provider') == 'r1') {
-            return $this->askDeepseek($q);
+            return $this->askDeepseek($this->promptLessResponse($q));
+        } elseif (config('askbot-laravel.ai_provider') == 'openai') {
+            $config = new OpenAIConfig();
+            $chat = new OpenAIChat($config);
+
+            $stream = $chat->generateStreamOfText($q);
+
+            return Response::stream(function () use ($stream) {
+                try {
+                    while (!$stream->eof()) {
+                        $chunk = $stream->read(1024); // Increased buffer size
+
+                        if ($chunk !== false && $chunk !== '') {
+                            // Properly format as SSE message
+                            echo "data: " . json_encode(['choices' => [['delta' => ['content' => $chunk]]]]) . "\n\n";
+
+                            ob_flush();
+                            flush();
+
+                            // Check if client disconnected
+                            if (connection_aborted()) {
+                                break;
+                            }
+                        }
+                    }
+
+                    // Send completion event
+                    echo "event: data\n[done]\n\n";
+                    ob_flush();
+                    flush();
+                } finally {
+                    // Ensure stream is always closed
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+                }
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'Connection' => 'keep-alive',
+                'X-Accel-Buffering' => 'no',
+            ]);
         }
 
         return $this->askLlama($q);

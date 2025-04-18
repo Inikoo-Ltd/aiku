@@ -316,11 +316,11 @@ const isModalGallery = ref(false)
 		<div class="pt-8 p-4 md:col-span-3">
 			<!-- Header with responsive text sizes -->
 			<h3 class="text-base md:text-lg font-semibold leading-6">
-				All Sales:
+				{{ trans("All Sales") }}:
 				{{
 					useLocaleStore().currencyFormat(
-						data.product.data.currency_code ? data.product.data.currency_code : "usd",
-						data?.stats[0].amount 
+						data.product?.data?.currency_code ? data.product?.data?.currency_code : "usd",
+						data?.stats?.[0].amount 
 					)
 				}}
 			</h3>
@@ -381,7 +381,7 @@ const isModalGallery = ref(false)
 				v-if="props.data?.stats?.length > 6 && !showAllStats"
 				@click="showAllStats = true"
 				class="cursor-pointer border border-dashed border-gray-300 rounded-md mt-3 flex items-center justify-center p-4 w-full sm:w-40 mx-auto">
-				<span class="text-sm font-medium">Show more</span>
+				<span class="text-sm font-medium">{{ trans("Show more") }}</span>
 			</div>
 		</div>
 

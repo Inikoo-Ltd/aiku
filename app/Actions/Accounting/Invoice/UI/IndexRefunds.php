@@ -9,15 +9,12 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\WithInvoicesSubNavigation;
-use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Customer\UI\ShowCustomerClient;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
-use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Accounting\RefundsResource;
@@ -26,16 +23,15 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -47,10 +43,10 @@ class IndexRefunds extends OrgAction
     use WithCustomerSubNavigation;
     use WithInvoicesSubNavigation;
 
-    private Invoice|Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop $parent;
+    private Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent;
     private string $bucket;
 
-    public function handle(Invoice|Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -77,14 +73,10 @@ class IndexRefunds extends OrgAction
             $queryBuilder->where('invoices.customer_id', $parent->customer->id);
         } elseif ($parent instanceof Customer) {
             $queryBuilder->where('invoices.customer_id', $parent->id);
-        } elseif ($parent instanceof CustomerClient) {
-            $queryBuilder->where('invoices.customer_client_id', $parent->id);
         } elseif ($parent instanceof Order) {
             $queryBuilder->where('invoices.order_id', $parent->id);
-        } elseif ($parent instanceof Group) {
-            $queryBuilder->where('invoices.group_id', $parent->id);
         } elseif ($parent instanceof Invoice) {
-            $queryBuilder->where('invoices.invoice_id', $parent->id);
+            $queryBuilder->where('invoices.original_invoice_id', $parent->id);
         } elseif ($parent instanceof InvoiceCategory) {
             $queryBuilder->where('invoices.invoice_category_id', $parent->id);
         } else {
@@ -96,6 +88,7 @@ class IndexRefunds extends OrgAction
 
         $queryBuilder->defaultSort('-date')
             ->select([
+                'invoices.id',
                 'invoices.reference',
                 'invoices.in_process',
                 'invoices.total_amount',
@@ -103,10 +96,9 @@ class IndexRefunds extends OrgAction
                 'invoices.pay_status',
                 'invoices.date',
                 'invoices.type',
-                'invoices.created_at',
-                'invoices.updated_at',
+                'invoices.shop_id',
                 'invoices.slug',
-                'invoices.invoice_id',
+                'invoices.original_invoice_id',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'shops.name as shop_name',
@@ -137,7 +129,7 @@ class IndexRefunds extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Invoice|Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): Closure
+    public function tableStructure(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
@@ -148,39 +140,35 @@ class IndexRefunds extends OrgAction
 
 
             $noResults = __("No refunds found");
-            if ($parent instanceof Customer || $parent instanceof FulfilmentCustomer) {
-                $stats     = $parent->stats;
-                $noResults = __("Customer hasn't been invoiced");
-            } elseif ($parent instanceof CustomerClient) {
-                $stats     = $parent->stats;
-                $noResults = __("This customer client hasn't been invoiced");
+            $stats     = null;
+            if ($parent instanceof Customer || $parent instanceof FulfilmentCustomer || $parent instanceof InvoiceCategory) {
+                $stats = $parent->stats;
             } elseif ($parent instanceof Invoice) {
                 $stats     = $parent->stats;
-                $noResults = __("Invoice don't have any refunds");
-            } elseif ($parent instanceof Group) {
-                $stats     = $parent->orderingStats;
-                $noResults = __("This group hasn't been invoiced");
-            } elseif ($parent instanceof InvoiceCategory) {
-                $stats     = $parent->stats;
-                $noResults = __("This invoice category hasn't been invoiced");
-            } else {
-                $stats = $parent->salesStats;
+                $noResults = __("Invoice has not been refunded");
+            } elseif ($parent instanceof Organisation) {
+                $stats = $parent->orderingStats;
             }
+            $table->betweenDates(['date']);
 
-            $table
-                ->withGlobalSearch()
-                ->withEmptyState(
+            $table->withGlobalSearch();
+            if ($stats) {
+                $table->withEmptyState(
                     [
                         'title' => $noResults,
                         'count' => $stats->number_invoices ?? 0,
                     ]
                 );
-
+            }
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'in_process', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'in_process', label: '', canBeHidden: false, type: 'icon');
+
+            if ($parent instanceof Organisation) {
+                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
+            }
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Fulfilment || $parent instanceof Shop || $parent instanceof Organisation) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
@@ -189,51 +177,44 @@ class IndexRefunds extends OrgAction
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
 
-            if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
-            }
-
-            $table->betweenDates(['date']);
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };
     }
 
-    //    public function authorize(ActionRequest $request): bool
-    //    {
-    //
-    //        $routeName = $request->route()->getName();
-    //
-    //        if ($routeName == 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index') {
-    //            return $request->user()->authTo(
-    //                [
-    //                    "fulfilment-shop.{$this->fulfilment->id}.view",
-    //                    "accounting.{$this->fulfilment->organisation_id}.view"
-    //                ]
-    //            );
-    //        }
-    //
-    //
-    //
-    //
-    //
-    //        if ($this->parent instanceof Organisation) {
-    //            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    //        } elseif ($this->parent instanceof Customer or $this->parent instanceof CustomerClient) {
-    //            return $request->user()->authTo("crm.{$this->shop->id}.view");
-    //        } elseif ($this->parent instanceof Shop) {
-    //            return $request->user()->authTo("orders.{$this->shop->id}.view");
-    //        } elseif ($this->parent instanceof FulfilmentCustomer or $this->parent instanceof Fulfilment) {
-    //            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
-    //        } elseif ($this->parent instanceof Group) {
-    //            return $request->user()->authTo("group-overview");
-    //        } elseif ($this->parent instanceof InvoiceCategory) {
-    //            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    //        }
-    //
-    //        return false;
-    //    }
+    public function getExportOptions(string $filter): array
+    {
+        if ($this->parent instanceof Organisation) {
+            $route      = 'grp.org.accounting.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'filter'       => $filter,
+                'type'         => 'refund',
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $route      = 'grp.org.shops.show.dashboard.invoices.index.omega';
+            $parameters = [
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug,
+                'filter'       => $filter,
+                'type'         => 'refund',
+            ];
+        } else {
+            return [];
+        }
+
+        return [
+            [
+                'type'       => 'omega',
+                'icon'       => 'fas fa-file-code',
+                'tooltip'    => __('Download Omega'),
+                'label'      => 'Omega',
+                'name'       => $route,
+                'parameters' => $parameters,
+            ]
+
+        ];
+    }
 
 
     public function jsonResponse(LengthAwarePaginator $refunds): AnonymousResourceCollection
@@ -245,9 +226,7 @@ class IndexRefunds extends OrgAction
     {
         $subNavigation = [];
 
-        if ($this->parent instanceof CustomerClient) {
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent);
-        } elseif ($this->parent instanceof Customer) {
+        if ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
             } else {
@@ -263,7 +242,7 @@ class IndexRefunds extends OrgAction
         $title = __('Refunds');
 
         $icon = [
-            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'icon'  => ['fal', 'fa-file-minus'],
             'title' => __('refunds')
         ];
 
@@ -271,6 +250,7 @@ class IndexRefunds extends OrgAction
         $iconRight  = null;
         $model      = null;
         $actions    = null;
+
 
         if ($this->parent instanceof FulfilmentCustomer) {
             $icon       = ['fal', 'fa-user'];
@@ -281,18 +261,6 @@ class IndexRefunds extends OrgAction
             $afterTitle = [
 
                 'label' => __('invoices')
-            ];
-        } elseif ($this->parent instanceof CustomerClient) {
-            $iconRight  = $icon;
-            $afterTitle = [
-                'label' => $title
-            ];
-
-            $title = $this->parent->name;
-            $model = __('customer client');
-            $icon  = [
-                'icon'  => ['fal', 'fa-folder'],
-                'title' => __('customer client')
             ];
         } elseif ($this->parent instanceof Customer) {
             $iconRight  = $icon;
@@ -305,7 +273,6 @@ class IndexRefunds extends OrgAction
                 'title' => __('customer')
             ];
         } elseif ($this->parent instanceof Invoice) {
-
             $afterTitle = [
                 'label' => __('Refunds')
             ];
@@ -313,16 +280,36 @@ class IndexRefunds extends OrgAction
                 'icon' => 'fal fa-file-minus',
             ];
             $title      = $this->parent->reference;
-
+        } elseif ($this->parent instanceof Organisation) {
+            $afterTitle = [
+                'label' => __('In organisation').': '.$this->parent->name
+            ];
+        } elseif ($this->parent instanceof Shop) {
+            $afterTitle = [
+                'label' => $this->parent->name
+            ];
+        } elseif ($this->parent instanceof Fulfilment) {
+            $afterTitle = [
+                'label' => $this->parent->shop->name,
+            ];
         }
 
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
 
+        $invoiceExportOptions = [];
+
+        if (Arr::get($request->input('between'), 'date')) {
+            $filter                                       = request()->input('between')['date'];
+            $exportInvoiceOptions                         = $this->getExportOptions($filter);
+            $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
+        }
+
         return Inertia::render(
             'Org/Accounting/Refunds',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $routeName,
                     $routeParameters
                 ),
@@ -338,7 +325,7 @@ class IndexRefunds extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => RefundsResource::collection($refunds),
-
+                ...$invoiceExportOptions
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -353,33 +340,6 @@ class IndexRefunds extends OrgAction
         return $this->handle($organisation);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function unpaidInShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'unpaid';
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($shop);
-    }
-
-    public function unpaidFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'unpaid';
-        $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $this->handle($fulfilment);
-    }
-
-    public function paidFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'paid';
-        $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $this->handle($fulfilment);
-    }
 
     public function inInvoiceInOrganisation(Organisation $organisation, Invoice $invoice, ActionRequest $request): LengthAwarePaginator
     {
@@ -400,24 +360,6 @@ class IndexRefunds extends OrgAction
         return $this->handle($shop);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function allFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $this->handle($fulfilment);
-    }
-
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle(group());
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
@@ -452,10 +394,9 @@ class IndexRefunds extends OrgAction
     {
         $this->parent = $invoice;
         $this->initialisationFromFulfilment($fulfilment, $request);
+
         return $this->handle($invoice);
     }
-
-
 
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -468,7 +409,7 @@ class IndexRefunds extends OrgAction
     }
 
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent, string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = [], ?string $suffix = null) {
             return [
@@ -486,7 +427,6 @@ class IndexRefunds extends OrgAction
         };
 
 
-
         return match ($routeName) {
             'grp.org.accounting.refunds.index' =>
             array_merge(
@@ -498,12 +438,12 @@ class IndexRefunds extends OrgAction
                     ],
                 )
             ),
-            'grp.org.shops.show.ordering.refunds.index' =>
+            'grp.org.shops.show.dashboard.invoices.refunds.index' =>
             array_merge(
-                ShowOrderingDashboard::make()->getBreadcrumbs($routeParameters),
+                ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.ordering.refunds.index',
+                        'name'       => 'grp.org.shops.show.dashboard.invoices.refunds.index',
                         'parameters' => $routeParameters
                     ]
                 )
@@ -515,44 +455,8 @@ class IndexRefunds extends OrgAction
                 ShowFulfilmentCustomer::make()->getBreadcrumbs($routeParameters),
                 $headCrumb()
             ),
-            'grp.org.accounting.shops.show.invoices.index' =>
-            array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.shops.show.dashboard', $routeParameters),
-                $headCrumb()
-            ),
-            'grp.org.accounting.invoices.index' =>
-            array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('All').') ')
-                )
-            ),
-            'grp.org.accounting.invoices.unpaid_invoices.index' =>
-            array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Unpaid').') ')
-                )
-            ),
-            'grp.org.accounting.invoices.paid_invoices.index' =>
-            array_merge(
-                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Paid').') ')
-                )
-            ),
+
+
             'grp.org.fulfilments.show.operations.invoices.refunds.index' =>
             array_merge(
                 ShowFulfilment::make()->getBreadcrumbs(routeParameters: $routeParameters),
@@ -564,65 +468,11 @@ class IndexRefunds extends OrgAction
                     ''
                 )
             ),
-            'grp.org.fulfilments.show.operations.paid_invoices.index' =>
-            array_merge(
-                ShowFulfilment::make()->getBreadcrumbs(routeParameters: $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Paid').') ')
-                )
-            ),
-            'grp.org.fulfilments.show.operations.unpaid_invoices.index' =>
-            array_merge(
-                ShowFulfilment::make()->getBreadcrumbs(routeParameters: $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Unpaid').') ')
-                )
-            ),
-            'grp.org.shops.show.crm.customers.show.invoices.index' =>
-            array_merge(
-                ShowCustomer::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.invoices.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
 
-            'grp.org.shops.show.crm.customers.show.customer-clients.invoices.index' =>
-            array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.invoices.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
 
-            'grp.overview.ordering.invoices.index' =>
-            array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
             'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index' =>
             array_merge(
-                ShowInvoice::make()->getBreadcrumbs('grp.org.fulfilments.show.crm.customers.show.invoices.show', $routeParameters),
+                ShowInvoice::make()->getBreadcrumbs($parent, 'grp.org.fulfilments.show.crm.customers.show.invoices.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

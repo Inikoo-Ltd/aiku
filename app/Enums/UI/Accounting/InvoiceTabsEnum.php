@@ -16,24 +16,22 @@ enum InvoiceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case GROUPED                  = 'grouped';
-    case ITEMIZED               = 'itemized';
-    case HISTORY                = 'history';
-    case PAYMENTS               = 'payments';
+    case INVOICE_TRANSACTIONS = 'invoice_transactions';
+    case HISTORY = 'history';
+    case PAYMENTS = 'payments';
     case EMAIL = 'email';
-    case REFUNDS                = 'refunds';
+    case REFUNDS = 'refunds';
 
     public function blueprint(): array
     {
         return match ($this) {
-
-            InvoiceTabsEnum::REFUNDS     => [
+            InvoiceTabsEnum::REFUNDS => [
                 'title' => __('Refunds'),
                 'icon'  => 'fal fa-arrow-circle-left',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            InvoiceTabsEnum::PAYMENTS     => [
+            InvoiceTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
                 'type'  => 'icon',
                 'align' => 'right',
@@ -47,19 +45,15 @@ enum InvoiceTabsEnum: string
                 'type'  => 'icon'
             ],
 
-            InvoiceTabsEnum::HISTORY     => [
+            InvoiceTabsEnum::HISTORY => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
-            InvoiceTabsEnum::GROUPED => [
-                'title' => __('Itemized by rental/service'),
-                'icon'  => 'fal fa-bars',
-            ],
-            InvoiceTabsEnum::ITEMIZED => [
-                'title' => __('Itemised by pallets'),
+            InvoiceTabsEnum::INVOICE_TRANSACTIONS => [
+                'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
             ],
         };

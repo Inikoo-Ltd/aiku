@@ -13,7 +13,6 @@ import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
 import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
 import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
 import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
-import Department from '@/Components/CMS/Webpage/Department/DepartmentWorkshop.vue'
 import Overview from '@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'
 import Script from '@/Components/CMS/Webpage/Script/ScriptWorkShop.vue'
 import  CtaAurora1 from "@/Components/CMS/Webpage/CTAAurora1/CtaAurora1Workshop.vue"
@@ -33,6 +32,7 @@ import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
+import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -44,8 +44,7 @@ export const getComponent = (componentName: string) => {
         'cta1': CTA,
         'cta2': CTA2,
         'cta3': CTA3,
-        "department": Department,
-        'family': FamilyPageOffer,
+        'family-1': FamilyIris1,
         "iframe": Iframe,
         'images': ImageWorkshop,
         "overview_aurora": Overview,

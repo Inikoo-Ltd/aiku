@@ -8,14 +8,14 @@
   import { Head } from '@inertiajs/vue3'
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import { capitalize } from "@/Composables/capitalize"
-  import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
   import Table from '@/Components/Table/Table.vue'
   import TableCharges from '@/Components/Tables/Grp/Org/Catalogue/TableCharges.vue'
   
   const props = defineProps<{
       data: {}
       title: string
-      pageHead: TSPageHeading
+      pageHead: PageHeadingTypes
   }>()
   
   </script>

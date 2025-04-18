@@ -62,7 +62,7 @@ class DeletePalletReturn extends OrgAction
             $palletReturn->transactions()->delete();
 
             $this->update($palletReturn, [
-                'delete_comment' => Arr::get($modelData, 'delete_comment')
+                'deleted_note' => Arr::get($modelData, 'deleted_note')
             ]);
 
             $fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
