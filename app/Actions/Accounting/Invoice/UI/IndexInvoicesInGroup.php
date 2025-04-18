@@ -52,6 +52,7 @@ class IndexInvoicesInGroup extends OrgAction
         $queryBuilder->leftjoin('shops', 'invoices.shop_id', '=', 'shops.id');
         $queryBuilder->defaultSort('-date')
             ->select([
+                'invoices.id',
                 'invoices.reference',
                 'invoices.total_amount',
                 'invoices.net_amount',

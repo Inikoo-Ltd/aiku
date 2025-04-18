@@ -38,6 +38,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_slug
  * @property mixed $original_invoice_id
  * @property mixed $in_process
+ * @property mixed $id
+ * @property mixed $shop_id
+ * @property mixed $organisation_code
  *
  */
 class RefundsResource extends JsonResource
@@ -45,6 +48,7 @@ class RefundsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                  => $this->id,
             'slug'                => $this->slug,
             'reference'           => $this->reference,
             'total_amount'        => $this->total_amount,

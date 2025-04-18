@@ -36,6 +36,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_slug
  * @property mixed $in_process
  * @property mixed $organisation_code
+ * @property mixed $id
  *
  */
 class InvoicesResource extends JsonResource
@@ -43,6 +44,7 @@ class InvoicesResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                => $this->id,
             'slug'              => $this->slug,
             'reference'         => $this->reference,
             'total_amount'      => $this->total_amount,

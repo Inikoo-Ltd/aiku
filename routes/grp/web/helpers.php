@@ -8,14 +8,16 @@
 
 use App\Actions\Helpers\RedirectAssetLink;
 use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
-use App\Actions\Helpers\RedirectRefundsInShopLink;
+use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
+use App\Actions\Helpers\RedirectInvoicesInShopLink;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;
 
 Route::get('redirect-asset/{asset:id}', RedirectAssetLink::class)->name('redirect_asset');
 Route::get('redirect-deleted-invoices-in-shop/{shop:id}', RedirectDeletedInvoicesInShopLink::class)->name('redirect_deleted_invoices_in_shop');
-Route::get('redirect-refunds-in-shop/{shop:id}', RedirectRefundsInShopLink::class)->name('redirect_refunds_in_shop');
+Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::class)->name('redirect_invoices_in_shop');
+Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
 
 
 

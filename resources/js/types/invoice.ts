@@ -7,6 +7,7 @@ import { Address } from '@/types/PureComponent/Address'
 import { Icon } from '@/types/Utils/Icon'
 
 export interface Invoice {
+    id:number,
     slug:string,
     number: string,
     customer_id: string,

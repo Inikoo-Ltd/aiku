@@ -68,16 +68,15 @@ function organisationRoute(invoice: Invoice) {
 
 function shopRoute(invoice: Invoice) {
   return route(
-    "grp.org.shops.show.dashboard.invoices.index",
-    [invoice.organisation_slug, invoice.shop_slug]);
+    "grp.helpers.redirect_invoices_in_shop",
+    [invoice.id]);
 }
 
-function shopCustomer(invoice: Invoice) {
+function customerRoute(invoice: Invoice) {
   return route(
-    "grp.org.shops.show.crm.customers.show.invoices.index",
-    [invoice.organisation_slug, invoice.shop_slug, invoice.customer_slug]);
+    "grp.helpers.redirect_invoices_in_customer",
+    [invoice.id]);
 }
-
 </script>
 
 <template>
@@ -102,7 +101,7 @@ function shopCustomer(invoice: Invoice) {
     </template>
 
     <template #cell(customer_name)="{ item: invoice }">
-      <Link :href="shopCustomer(invoice)" class="secondaryLink">
+      <Link :href="customerRoute(invoice)" class="secondaryLink">
         {{ invoice["customer_name"] }}
       </Link>
     </template>

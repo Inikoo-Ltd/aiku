@@ -88,6 +88,7 @@ class IndexRefunds extends OrgAction
 
         $queryBuilder->defaultSort('-date')
             ->select([
+                'invoices.id',
                 'invoices.reference',
                 'invoices.in_process',
                 'invoices.total_amount',

@@ -39,9 +39,7 @@ use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -66,8 +64,6 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
@@ -1287,7 +1283,7 @@ test('UI show invoice in Shop', function () {
     $shop = $this->shop;
     $customer = createCustomer($shop);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
-    $response = get(route('grp.org.shops.show.dashboard.invoices.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
+    $response = get(route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
         $page->component('Org/Accounting/Invoice')

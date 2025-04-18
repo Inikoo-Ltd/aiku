@@ -96,8 +96,14 @@ function organisationRoute(order: Order) {
 
 function shopRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_refunds_in_shop",
-    [invoice.shop_id]);
+    "grp.helpers.redirect_invoices_in_shop",
+    [invoice.id]);
+}
+
+function customerRoute(invoice: Invoice) {
+  return route(
+    "grp.helpers.redirect_invoices_in_customer",
+    [invoice.id]);
 }
 
 </script>
@@ -124,6 +130,12 @@ function shopRoute(invoice: Invoice) {
       <template #cell(shop_code)="{ item: refund }">
         <Link v-tooltip='refund["shop_name"]' :href="shopRoute(refund)" class="secondaryLink">
           {{ refund["shop_code"] }}
+        </Link>
+      </template>
+
+      <template #cell(customer_name)="{ item: refund }">
+        <Link v-tooltip='refund["customer_name"]' :href="customerRoute(refund)" class="secondaryLink">
+          {{ refund["customer_name"] }}
         </Link>
       </template>
 
