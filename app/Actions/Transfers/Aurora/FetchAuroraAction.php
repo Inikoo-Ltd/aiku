@@ -30,6 +30,11 @@ class FetchAuroraAction extends FetchAction
             $this->fetchAll = (bool)$command->option('all');
         }
 
+        if (in_array($command->getName(), [
+                'fetch:invoices',
+            ]) and $command->option('only_refunds')) {
+            $this->onlyRefunds = (bool)$command->option('only_refunds');
+        }
 
         if (in_array($command->getName(), [
                 'fetch:orders',

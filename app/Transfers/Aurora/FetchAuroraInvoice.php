@@ -9,6 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Helpers\Address;
@@ -38,6 +39,9 @@ class FetchAuroraInvoice extends FetchAurora
             //            }
         }
         $this->parsedData['parent'] = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Invoice Customer Key'});
+
+
+        $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Invoice Order Key'});
 
 
         $data = [];
@@ -115,9 +119,24 @@ class FetchAuroraInvoice extends FetchAurora
             $externalInvoicer = 2;
         }
 
+        $type = strtolower($this->auroraModelData->{'Invoice Type'});
+
+        $originalInvoiceId = null;
+        if ($type == 'refund') {
+
+            if ($order) {
+                $invoice           = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
+                if ($invoice) {
+                    $originalInvoiceId = $invoice->id;
+                }
+
+            }
+        }
+
+
         $this->parsedData['invoice'] = [
             'reference'        => $this->auroraModelData->{'Invoice Public ID'},
-            'type'             => strtolower($this->auroraModelData->{'Invoice Type'}),
+            'type'             => $type,
             'created_at'       => $this->auroraModelData->{'Invoice Date'},
             'date'             => $this->auroraModelData->{'Invoice Date'},
             'tax_liability_at' => $taxLiabilityAt,
@@ -148,8 +167,14 @@ class FetchAuroraInvoice extends FetchAurora
             'as_organisation_id'   => $AsOrganisation?->id,
             'as_employee_id'       => $asEmployeeID,
             'external_invoicer_id' => $externalInvoicer,
+            'original_invoice_id'  => $originalInvoiceId,
 
         ];
+        if ($order) {
+            $this->parsedData['invoice']['order_id'] = $order->id;
+        }
+
+
 
         if ($this->auroraModelData->{'Invoice Category Key'}) {
             $invoiceCategory = $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'});

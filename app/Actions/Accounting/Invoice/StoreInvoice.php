@@ -125,7 +125,7 @@ class StoreInvoice extends OrgAction
 
         if ($this->strict) {
             CategoriseInvoice::run($invoice);
-        } elseif ($invoice->invoiceCategory) { // run hydrators if category from fetch
+        } elseif ($invoice->invoiceCategory) { // run hydrators when category from fetch
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
@@ -226,6 +226,8 @@ class StoreInvoice extends OrgAction
             $rules['deleted_note']                       = ['sometimes', 'string'];
             $rules['deleted_from_deleted_invoice_fetch'] = ['sometimes', 'boolean'];
             $rules['deleted_by']                         = ['sometimes', 'nullable', 'integer'];
+            $rules['original_invoice_id']                = ['sometimes', 'nullable', 'integer'];
+            $rules['order_id']                           = ['sometimes', 'nullable', 'integer'];
             $rules                                       = $this->orderingAmountNoStrictFields($rules);
             $rules                                       = $this->noStrictStoreRules($rules);
         }
