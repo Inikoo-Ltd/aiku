@@ -42,7 +42,8 @@ class OrganisationHydrateRegistrationIntervals
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'registrations_'
+            statField: 'registrations_',
+            dateField: 'registered_at'
         );
 
         $organisation->orderingIntervals()->update($stats);

@@ -42,7 +42,8 @@ class GroupHydrateRegistrationIntervals
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'registrations_'
+            statField: 'registrations_',
+            dateField: 'registered_at'
         );
 
         $group->orderingIntervals()->update($stats);
