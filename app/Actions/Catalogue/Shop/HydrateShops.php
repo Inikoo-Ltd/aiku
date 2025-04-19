@@ -29,6 +29,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamilies;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderHandling;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePaymentAccounts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePayments;
@@ -82,6 +83,7 @@ class HydrateShops
         ShopHydrateAdjustments::run($shop);
         ShopHydrateOrderHandling::run($shop);
         ShopHydrateDeletedInvoices::run($shop);
+        ShopHydrateOrderIntervals::run($shop);
 
     }
 

@@ -2,15 +2,15 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:40:27 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:40:27 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Ordering\UI;
 
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
@@ -54,6 +54,8 @@ class ShowOrdersBacklog extends OrgAction
 
         $currencyCode =  $parent->currency->code;
 
+        $icon = 'fal fa-tachometer-alt';
+
         $tabsBox = [
             [
                 'label' => __('In Basket'),
@@ -63,7 +65,7 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug' => 'in_basket',
                         'label' => $parent->orderHandlingStats->number_orders_state_creating,
                         'type' => 'number',
-                        'icon' => 'fal fa-tachometer-alt',
+                        'icon' => $icon,
                         'information' => [
                             'type' => 'currency',
                             'label' => $parent->orderHandlingStats->{"orders_state_creating_amount$currency"},
@@ -79,7 +81,7 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug' => 'submitted_paid',
                         'label' => $parent->orderHandlingStats->number_orders_state_submitted_paid,
                         'type' => 'number',
-                        'icon' => 'fal fa-tachometer-alt',
+                        'icon' => $icon,
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
                             'type' => 'currency'
@@ -89,7 +91,7 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug' => 'submitted_unpaid',
                         'label' => $parent->orderHandlingStats->number_orders_state_submitted_not_paid,
                         'type' => 'number',
-                        'icon' => 'fal fa-tachometer-alt',
+                        'icon' => $icon,
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
                             'type' => 'currency'
@@ -105,7 +107,7 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug' => 'picking',
                         'label' => $parent->orderHandlingStats->number_orders_state_handling,
                         'type' => 'number',
-                        'icon' => 'fal fa-tachometer-alt',
+                        'icon' => $icon,
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_handling_amount$currency"},
                             'type' => 'currency'
@@ -115,7 +117,7 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug' => 'blocked',
                         'label' => $parent->orderHandlingStats->number_orders_state_handling_blocked,
                         'type' => 'number',
-                        'icon' => 'fal fa-tachometer-alt',
+                        'icon' => $icon,
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_handling_blocked_amount$currency"},
                             'type' => 'currency',
