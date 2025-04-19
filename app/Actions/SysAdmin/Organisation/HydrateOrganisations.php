@@ -40,6 +40,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPaymentServiceProviders;
@@ -100,6 +101,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOrgStocks::run($organisation);
 
         OrganisationHydrateInvoices::run($organisation);
+        OrganisationHydrateOrderIntervals::run($organisation);
         OrganisationHydrateSales::run($organisation);
         OrganisationHydrateSubscription::run($organisation);
         OrganisationHydrateServices::run($organisation);

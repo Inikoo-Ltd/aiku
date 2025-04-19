@@ -7,7 +7,7 @@
  */
 
 
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowOrganisationDashboard::class)->name('show');

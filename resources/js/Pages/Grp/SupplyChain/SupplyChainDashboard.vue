@@ -13,7 +13,7 @@ import { capitalize } from "@/Composables/capitalize"
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList } from '@fal'
-import Dashboard from '@/Components/DataDisplay/Dashboard/Dashboard.vue'
+import Dashboard from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
 
 library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList)
 

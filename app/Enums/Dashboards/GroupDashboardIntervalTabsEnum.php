@@ -8,10 +8,11 @@
  *
 */
 
-namespace App\Enums\UI\Group;
+namespace App\Enums\Dashboards;
 
 use App\Enums\EnumHelperTrait;
 
+// todo Delete this
 enum GroupDashboardIntervalTabsEnum: string
 {
     use EnumHelperTrait;

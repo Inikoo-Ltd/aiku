@@ -25,7 +25,7 @@ import {
 import { Link } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import UserSubscribe from "@/Components/DataDisplay/Dashboard/Widget/UserSubscribe.vue"
 library.add(
 	faPaperPlane,
