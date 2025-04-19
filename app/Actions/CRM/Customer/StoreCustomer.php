@@ -32,7 +32,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
-use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Exception;
 use Illuminate\Console\Command;
@@ -82,7 +81,7 @@ class StoreCustomer extends OrgAction
         data_fill(
             $modelData,
             'status',
-            ((Arr::get($shop->settings, 'registration_type', 'open') == 'approval-only') or ($shop->type === ShopTypeEnum::FULFILMENT))
+            ((Arr::get($shop->settings, 'registration_type', 'open') == 'approval-only') || ($shop->type === ShopTypeEnum::FULFILMENT))
                 ?
                 CustomerStatusEnum::PENDING_APPROVAL
                 :
@@ -213,11 +212,6 @@ class StoreCustomer extends OrgAction
                     ]
                 ),
             ],
-            // TODO: Make less
-//            'phone'                    => [
-//                'nullable',
-//                $this->strict ? new Phone() : 'string:32',
-//            ],
             'phone'                    => [
                 'nullable', 'string:32'
             ],
@@ -230,7 +224,6 @@ class StoreCustomer extends OrgAction
             'timezone_id'              => ['nullable', 'exists:timezones,id'],
             'language_id'              => ['nullable', 'exists:languages,id'],
             'data'                     => ['sometimes', 'array'],
-            'created_at'               => ['sometimes', 'nullable', 'date'],
             'registered_at'            => ['sometimes', 'nullable', 'date'],
             'internal_notes'           => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
@@ -286,7 +279,7 @@ class StoreCustomer extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('contact_name') and !$this->get('company_name') and !$this->get('email')) {
+        if (!$this->get('contact_name') && !$this->get('company_name') && !$this->get('email')) {
             $validator->errors()->add('company_name', 'At least one of contact_name, company_name or email must be provided');
         }
     }
