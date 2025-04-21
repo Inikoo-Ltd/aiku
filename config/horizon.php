@@ -174,7 +174,7 @@ return [
 
         'normal'           => [
             'connection'      => 'redis',
-            'queue'           => ['default', 'aurora'],
+            'queue'           => ['default'],
             'balance'         => 'auto',
             'maxProcesses'    => 1,
             'maxTime'         => 0,
