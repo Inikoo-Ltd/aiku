@@ -158,13 +158,17 @@ export const resolveResponsiveValue = (
             const backgroundBase = properties?.background?.[screen] ?? properties?.background;
             const backgroundType = getVal(backgroundBase, ['type']);
             const backgroundColor = getVal(backgroundBase, ['color']);
+            const backgroundGradient = getVal(backgroundBase, ['gradient', 'value']);
             const backgroundImage = getVal(backgroundBase, ['image', 'original']);
 
-            return backgroundType === 'color'
-                ? backgroundColor
-                : backgroundImage
-                ? `url(${backgroundImage})`
-                : null;
+            if (!backgroundType) return null;
+            if (backgroundType === 'color') {
+                return backgroundColor
+            } else if (backgroundType === 'gradient') {
+                return backgroundGradient
+            } else {
+                return backgroundImage ? `url(${backgroundImage})` : null;
+            }
         })(),
 
         borderTop: getVal(properties?.border, ['top', 'value']) && properties?.border?.unit && properties?.border?.color

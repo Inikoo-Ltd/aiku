@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { inject, onBeforeMount, onMounted, ref } from 'vue'
+import { inject, onBeforeMount, onMounted, ref, watch } from 'vue'
 import Image from '@/Components/Image.vue'
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -16,12 +16,22 @@ import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import RadioButton from 'primevue/radiobutton'
 import { set } from 'lodash-es'
+
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import ColorGradientPicker from '@/Components/Utils/ColorGradientPicker.vue'
+
 library.add(faImage, faPalette)
 
 interface BackgroundProperty {
-    type: string
+    type: string  // 'color', 'image', 'gradient'
     color: string
     image: ImageData
+    gradient?: {
+        type: string  // 'linear', 'radial', 'conic'
+        angle: string  // '0deg', '45deg', '90deg', 'at center top', 'at center right'
+        colors: string[]  // ['rgba(0, 0, 0, 1)', 'rgba(255, 255, 255, 1)']
+        value: string  // 'linear-gradient(0deg, rgba(0, 0, 0, 1), rgba(255, 255, 255, 1))'
+    }
 }
 
 const props = defineProps<{
@@ -109,11 +119,14 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
         isLoadingSubmit.value = false;
     }
 }
+
+
+
 </script>
 
 <template>
-    <div v-if="model?.type" class="flex items-center justify-between gap-x-3 flex-wrap px-6 w-full relative">
-        <div class="relative flex items-center gap-x-2 py-1" >
+    <div v-if="model?.type" class="grid grid-cols-2 items-center justify-between gap-x-3 flex-wrap px-6 w-full relative">
+        <div class="relative flex items-center gap-x-2 py-1" v-tooltip="trans('Image background')">
             <div class="group rounded-md relative shadow-lg border border-gray-300">
                 <div class="relative h-12 w-12 cursor-pointer rounded overflow-hidden">
                     <Image
@@ -122,7 +135,6 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                         :alt="model?.image?.name"
                         :imageCover="true"
                         class="h-full"
-                        v-tooltip="trans('Image background')"
                     />
                     
                     <div v-if="model?.type === 'image'" @click="() => isOpenGallery = true" class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
@@ -132,6 +144,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                     <div v-else @click="() => (model.type = 'image',emits('update:modelValue', model))" class="flex absolute inset-0 bg-gray-200/70 hover:bg-gray-100/40 items-center justify-center cursor-pointer" />
                 </div>
             </div>
+
             <PureRadio
                 v-model="model.type"
                 @update:modelValue="() => emits('update:modelValue', model)"
@@ -143,7 +156,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
         
         <!-- {{ model }} -->
         <!-- List: Background Color -->
-        <div class="flex items-center gap-x-4 h-min" >
+        <div class="flex items-center gap-x-4 h-min" v-tooltip="trans('Color background')">
             <div class="relative h-12 aspect-square rounded-md shadow">
                 <ColorPicker
                     :color="model.color || '#111111'"
@@ -154,7 +167,6 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                         emits('update:modelValue', model)
                     }"
                     closeButton
-                    v-tooltip="trans('Color background')"
                     :isEditable="!model.color?.includes('var')"
                 >
                     <template #button>
@@ -183,7 +195,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                                 inputId="bg-color-picker-3"
                                 name="bg-color-picker"
                                 value="#111111" />
-                            <label class="cursor-pointer" for="bg-color-picker-3">{{ trans("Custom") }}</label>
+                            <label class="cursor-pointer" for="bg-color-picker-3">{{ trans("Custom solid") }}</label>
                         </div>
                     </template>
                 </ColorPicker>
@@ -198,6 +210,44 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                 :options="[{ name: 'color'}]"
                 by="name"
                 key="color2"
+            />
+        </div>
+
+        <!-- Section: gradient -->
+        <div class="col-span-2 flex items-center gap-x-4">
+            <Popover class="relative" v-slot="{ open: isOpen, close }">
+                <PopoverButton>
+                    <div class="group relative h-12 w-28 rounded-md overflow-hidden ring-1 ring-gray-100 ring-inset" :style="{
+                        background: model?.gradient?.value || 'linear-gradient(45deg, rgba(20, 20, 20, 1), rgba(240, 240, 240, 1))',
+                    }">
+                        <div class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
+                            <FontAwesomeIcon icon='fal fa-palette' class='text-white' fixed-width aria-hidden='true' />
+                        </div>
+                    </div>
+                </PopoverButton>
+
+                <Transition name="headlessui">
+                    <PopoverPanel class="top-[100%] absolute z-10 left-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 w-72">
+                        <ColorGradientPicker
+                            :data="model?.gradient"
+                            @onChange="(e) => {
+                                console.log('eewewewewewewew', e)
+                                model.type = 'gradient',
+                                model.gradient = e
+                                emits('update:modelValue', model)
+                            }"
+                        >
+                        </ColorGradientPicker>
+                    </PopoverPanel>
+                </Transition>
+            </Popover>
+
+            <PureRadio
+                v-model="model.type"
+                @update:modelValue="() => emits('update:modelValue', model)"
+                :options="[{ name: 'gradient'}]"
+                by="name"
+                key="color_gradient"
             />
         </div>
     </div>
