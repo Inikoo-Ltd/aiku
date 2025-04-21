@@ -61,6 +61,12 @@ const blueprint = [
 			},
 		],
 	},
+    
+    {
+        key: ["badge"],
+        label: "Badge Settings",
+        type: "inputSwitch",
+    },
     {
         key: ["name"],
         label: "Title",
@@ -74,7 +80,7 @@ const blueprint = [
     {
         key: ["priceMonthly"],
         label: "Price Monthly",
-        type: "text",
+        type: "inputSwitch",
     },
     {
         key: ["features"],
