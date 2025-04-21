@@ -47,12 +47,12 @@ class IndexInvoicesInGroup extends OrgAction
         $queryBuilder->where('invoices.type', InvoiceTypeEnum::INVOICE);
         $queryBuilder->whereNot('invoices.in_process', true);
         $queryBuilder->where('invoices.group_id', $group->id);
-
-
+        $queryBuilder->leftjoin('customers', 'invoices.customer_id', '=', 'customers.id');
         $queryBuilder->leftjoin('organisations', 'invoices.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftjoin('shops', 'invoices.shop_id', '=', 'shops.id');
         $queryBuilder->defaultSort('-date')
             ->select([
+                'invoices.id',
                 'invoices.reference',
                 'invoices.total_amount',
                 'invoices.net_amount',
@@ -63,6 +63,8 @@ class IndexInvoicesInGroup extends OrgAction
                 'invoices.updated_at',
                 'invoices.in_process',
                 'invoices.slug',
+                'customers.name as customer_name',
+                'customers.slug as customer_slug',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'shops.name as shop_name',
@@ -70,6 +72,7 @@ class IndexInvoicesInGroup extends OrgAction
                 'shops.code as shop_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                'organisations.code as organisation_code',
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
@@ -107,11 +110,14 @@ class IndexInvoicesInGroup extends OrgAction
                     ]
                 );
             }
+            $table->column(key: 'organisation_code', label: __('org'), canBeHidden: false, searchable: true);
+            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-            $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
+            $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+
+
             $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
@@ -128,7 +134,7 @@ class IndexInvoicesInGroup extends OrgAction
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
         $subNavigation = [];
-        $title = __('Invoices');
+        $title         = __('Invoices');
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
@@ -177,10 +183,10 @@ class IndexInvoicesInGroup extends OrgAction
     }
 
 
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup(group(), $request);
+
         return $this->handle(group());
     }
 
@@ -211,7 +217,5 @@ class IndexInvoicesInGroup extends OrgAction
                 ]
             )
         );
-
-
     }
 }

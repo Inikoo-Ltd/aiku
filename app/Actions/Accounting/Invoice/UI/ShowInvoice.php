@@ -29,7 +29,10 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -41,6 +44,7 @@ class ShowInvoice extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
 
     private Organisation|Shop|CustomerClient $parent;
+    private CustomerHasPlatform $customerHasPlatform;
 
     public function handle(Invoice $invoice): Invoice
     {
@@ -75,7 +79,17 @@ class ShowInvoice extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($invoice);
+    }
+
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($invoice);
     }
@@ -83,7 +97,7 @@ class ShowInvoice extends OrgAction
     /**
      * Get structured invoice summary for display in the UI.
      *
-     * NOTE: Used in deleted invoices as well ShowInvoiceDeleted.php
+     * NOTE: Used in deleted invoices as well ShowDeletedInvoice.php
      *
      * Returns a multidimensional array with three sections:
      * 1. Product/service line items (conditionally showing services and rentals)
@@ -149,7 +163,8 @@ class ShowInvoice extends OrgAction
 
     public function getExportOptions(Invoice $invoice): array
     {
-        return [
+
+        $options = [
             [
                 'type'       => 'pdf',
                 'icon'       => 'fas fa-file-pdf',
@@ -160,8 +175,11 @@ class ShowInvoice extends OrgAction
                     'organisation' => $invoice->organisation->slug,
                     'invoice'      => $invoice->slug
                 ]
-            ],
-            [
+            ]
+        ];
+
+        if (Arr::get($invoice->organisation->settings, 'invoice_export.show_isdoc')) {
+            $options[] = [
                 'type'       => 'isDoc',
                 'icon'       => 'fas fa-hockey-puck',
                 'tooltip'    => __('Download Doc'),
@@ -171,9 +189,24 @@ class ShowInvoice extends OrgAction
                     'organisation' => $invoice->organisation->slug,
                     'invoice'      => $invoice->slug
                 ]
-            ]
+            ];
+        }
 
-        ];
+        if (Arr::get($invoice->organisation->settings, 'invoice_export.show_omega')) {
+            $options[] = [
+                'type'       => 'omega',
+                'icon'       => 'fas fa-omega',
+                'tooltip'    => __('Download Omega'),
+                'label'      => 'Omega',
+                'name'       => 'grp.org.accounting.invoices.show.omega',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ];
+        }
+
+        return $options;
     }
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response

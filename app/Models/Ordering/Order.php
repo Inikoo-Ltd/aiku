@@ -9,6 +9,7 @@
 namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Accounting\Invoice;
@@ -117,6 +118,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $as_organisation_id Indicate if order is for an organisation in this group
  * @property int|null $as_employee_id Indicate if order is for an employee
  * @property int|null $platform_id
+ * @property OrderPayStatusEnum|null $pay_status
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -187,7 +189,7 @@ class Order extends Model implements HasMedia, Auditable
         'state'        => OrderStateEnum::class,
         'status'       => OrderStatusEnum::class,
         'handing_type' => OrderHandingTypeEnum::class,
-
+        'pay_status'   => OrderPayStatusEnum::class,
     ];
 
     protected $attributes = [

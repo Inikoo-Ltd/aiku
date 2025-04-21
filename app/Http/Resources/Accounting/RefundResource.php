@@ -24,14 +24,15 @@ class RefundResource extends JsonResource
         $invoice = $this;
 
         return [
-            'slug'                => $invoice->slug,
-            'reference'           => $invoice->reference,
-            'total_amount'        => $invoice->total_amount,
-            'net_amount'          => $invoice->net_amount,
-            'payment_amount'          => $invoice->payment_amount,
-            'in_process' => $invoice->in_process,
-            'date'                => $invoice->date,
-            'type'                => [
+            'id'               => $invoice->id,
+            'slug'             => $invoice->slug,
+            'reference'        => $invoice->reference,
+            'total_amount'     => $invoice->total_amount,
+            'net_amount'       => $invoice->net_amount,
+            'payment_amount'   => $invoice->payment_amount,
+            'in_process'       => $invoice->in_process,
+            'date'             => $invoice->date,
+            'type'             => [
                 'label' => $invoice->type->labels()[$invoice->type->value],
                 'icon'  => $invoice->type->typeIcon()[$invoice->type->value],
             ],

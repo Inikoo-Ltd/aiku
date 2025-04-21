@@ -19,6 +19,6 @@ Route::prefix("payments")
     ->name("payments.")
     ->group(__DIR__."/payments.php");
 
-Route::prefix("invoices")
+Route::prefix("statements")
     ->name("invoices.")
     ->group(__DIR__."/invoices.php");

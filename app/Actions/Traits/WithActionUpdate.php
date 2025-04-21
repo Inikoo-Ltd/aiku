@@ -29,9 +29,11 @@ trait WithActionUpdate
                     $value = json_encode($value);
                 }
             }
-            if (preg_match('/\./', $key) or $value) {
-                $data[preg_replace('/\./', '->', $key)] = $value;
+
+            if (str_contains($key, '.') || $value) {
+                $data[str_replace('.', '->', $key)] = $value;
             }
+
         }
 
         return $data;

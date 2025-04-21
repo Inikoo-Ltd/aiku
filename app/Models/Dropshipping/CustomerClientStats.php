@@ -101,6 +101,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_deleted_invoices
  * @property-read \App\Models\Dropshipping\CustomerClient $customerClient
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerClientStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerClientStats newQuery()

@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\HumanResources;
 
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -41,21 +41,22 @@ class ShowHumanResourcesDashboard
 
     public function htmlResponse(ActionRequest $request): Response
     {
+        $title = __('human resources');
         return Inertia::render(
             'Org/HumanResources/HumanResourcesDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('human resources'),
+                'title'       => $title,
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-user-hard-hat'],
-                        'title' => __('human resources')
+                        'title' => $title
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('human resources')
+                        'title' => $title
                     ],
-                    'title' => __('human resources'),
+                    'title' => $title,
                 ],
                 'stats'       => [
                     [

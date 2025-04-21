@@ -6,7 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInGroup;
+use App\Actions\Accounting\Invoice\UI\IndexRefundsInGroup;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
@@ -113,7 +115,6 @@ Route::name('crm.')->prefix('crm')->group(function () {
 Route::name('ordering.')->prefix('ordering')->group(function () {
     Route::get('/orders', IndexOrdersInGroup::class)->name('orders.index');
     Route::get('/purges', [IndexPurges::class, 'inGroup'])->name('purges.index');
-    Route::get('/invoices', IndexInvoicesInGroup::class)->name('invoices.index');
     Route::get('/delivery-notes', IndexDeliveryNotesInGroup::class)->name('delivery_notes.index');
     Route::get('/transactions', IndexInvoiceTransactionsInGroup::class)->name('transactions.index');
 });
@@ -142,6 +143,9 @@ Route::name('accounting.')->prefix('accounting')->group(function () {
     Route::get('/payment-accounts', [IndexPaymentAccounts::class, 'inGroup'])->name('payment-accounts.index');
     Route::get('/payments', [IndexPayments::class, 'inGroup'])->name('payments.index');
     Route::get('/customer-balances', [IndexCustomerBalances::class, 'inGroup'])->name('customer-balances.index');
+    Route::get('/invoices', IndexInvoicesInGroup::class)->name('invoices.index');
+    Route::get('/deleted-invoices', [IndexDeletedInvoices::class, 'inGroup'])->name('deleted_invoices.index');
+    Route::get('/refunds', IndexRefundsInGroup::class)->name('refunds.index');
 });
 
 

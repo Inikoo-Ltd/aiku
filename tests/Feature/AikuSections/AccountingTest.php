@@ -39,9 +39,7 @@ use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -66,8 +64,6 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
@@ -1079,7 +1075,7 @@ test('UI show list payments', function () {
 });
 
 test('UI show list invoices in group', function () {
-    $response = get(route('grp.overview.ordering.invoices.index'));
+    $response = get(route('grp.overview.accounting.invoices.index'));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1224,51 +1220,6 @@ test('UI show list invoices in customer', function () {
     });
 });
 
-test('UI show list invoices in customer client', function () {
-    $this->withoutExceptionHandling();
-    $shop = $this->shop;
-    $customer = createCustomer($shop);
-    $platform = Platform::where('code', 'aiku')->first();
-    AttachCustomerToPlatform::make()->action($customer, $platform, []);
-
-    $customer->refresh();
-    $customerClient = StoreCustomerClient::make()->action($customer, array_merge(
-        CustomerClient::factory()->definition(),
-        [
-            'platform_id' => $platform->id,
-        ]
-    ));
-
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $platform->id)->first();
-
-    $response = get(route(
-        'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
-        [
-            $customer->organisation->slug,
-            $customer->shop->slug,
-            $customer->slug,
-            $customerHasPlatform->id,
-            $customerClient->ulid
-        ]
-    ));
-
-    $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
-        $page
-            ->component('Org/Accounting/Invoices')
-            ->has('title')
-            ->has('breadcrumbs')
-            ->has('pageHead')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', $customerClient->name)
-                    ->has('subNavigation')
-                    ->etc()
-            )
-            ->has('tabs')
-            ->has('invoices');
-    });
-});
 
 test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
@@ -1332,7 +1283,7 @@ test('UI show invoice in Shop', function () {
     $shop = $this->shop;
     $customer = createCustomer($shop);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
-    $response = get(route('grp.org.shops.show.dashboard.invoices.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
+    $response = get(route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
         $page->component('Org/Accounting/Invoice')
@@ -1395,8 +1346,9 @@ test('Delete invoice', function () {
         'deleted_note' => 'test'
     ]);
     $customer->refresh();
-    expect($invoice->trashed())->toBeTrue();
-    expect($customer->stats->number_invoices)->toBe(2);
+    expect($invoice->trashed())->toBeTrue()
+        ->and($customer->stats->number_invoices)->toBe(2);
+
     return $invoice;
 });
 
@@ -1411,7 +1363,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Accounting/InvoicesDeleted')
+            ->component('Org/Accounting/DeletedInvoices')
             ->has('title')
             ->has('breadcrumbs')
             ->has('pageHead')
@@ -1419,7 +1371,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->has('subNavigation')
-                    ->where('title', 'Invoices')
+                    ->where('title', 'Deleted Invoices')
                     ->etc()
             )
             ->has('data');

@@ -9,7 +9,13 @@
 
 namespace App\Models\Accounting;
 
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 /**
  *
@@ -135,6 +141,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Currency|null $currency
+ * @property-read Group|null $group
+ * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
+ * @property-read Organisation|null $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals query()
@@ -144,5 +154,47 @@ class InvoiceCategorySalesIntervals extends Model
 {
     protected $table = 'invoice_category_sales_intervals';
     protected $guarded = [];
+
+    public function invoiceCategory(): BelongsTo
+    {
+        return $this->belongsTo(InvoiceCategory::class);
+    }
+
+    public function organisation(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Organisation::class, // Final model
+            InvoiceCategory::class,         // Intermediate model
+            'id',                // Foreign key on Shop
+            'id',                // Foreign key on Organisation
+            'invoice_category_id',           // Local key on this table
+            'organisation_id'    // Local key on Shop
+        );
+    }
+
+    public function group(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Group::class,        // Final model
+            InvoiceCategory::class,         // Intermediate model
+            'id',                // Foreign key on Shop
+            'id',                // Foreign key on Group
+            'invoice_category_id',           // Local key on this table
+            'group_id'           // Local key on Shop
+        );
+    }
+
+    public function currency(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Currency::class,    // Final model we want to reach
+            InvoiceCategory::class,        // Intermediate model
+            'id',               // Foreign key on Shop table
+            'id',               // Foreign key on Currency table
+            'invoice_category_id',          // Local key on this table
+            'currency_id'       // Local key on Shop table
+        );
+    }
+
 
 }

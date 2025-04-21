@@ -8,13 +8,15 @@
 
 use App\Actions\Accounting\Invoice\ExportInvoices;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
+use App\Actions\Accounting\Invoice\OmegaInvoice;
+use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\Invoice\UI\EditInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
-use App\Actions\Accounting\Invoice\UI\IndexInvoicesDeleted;
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
-use App\Actions\Accounting\Invoice\UI\ShowInvoiceDeleted;
+use App\Actions\Accounting\Invoice\UI\ShowDeletedInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Accounting\InvoiceCategory\UI\CreateInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UI\EditInvoiceCategory;
@@ -74,11 +76,13 @@ Route::get('/payments/{payment}', [ShowPayment::class, 'inOrganisation'])->name(
 Route::get('/payments/{payment}/edit', [EditPayment::class, 'inOrganisation'])->name('payments.edit');
 Route::get('/invoices/{invoice}/export', PdfInvoice::class)->name('invoices.download');
 Route::get('/invoices/{invoice}/is-doc', ISDocInvoice::class)->name('invoices.show.is_doc');
+Route::get('/invoices/{invoice}/omega', OmegaInvoice::class)->name('invoices.show.omega');
 
 Route::get('/invoices/export', ExportInvoices::class)->name('invoices.export');
 
 
 Route::get('/invoices', IndexInvoices::class)->name('invoices.index');
+Route::get('/invoices/omega', [OmegaManyInvoice::class, 'inOrganisation'])->name('invoices.index.omega');
 
 Route::get('/invoices/{invoice}', ShowInvoice::class)->name('invoices.show');
 Route::get('/invoices/{invoice}/edit', [EditInvoice::class, 'inOrganisation'])->name('invoices.edit');
@@ -87,12 +91,14 @@ Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoic
 
 
 Route::get('/refunds', IndexRefunds::class)->name('refunds.index');
+Route::get('/refunds/{refund}', ShowRefund::class)->name('refunds.show');
+
 
 Route::get('/invoices-unpaid', [IndexInvoices::class, 'unpaid'])->name('unpaid_invoices.index');
 Route::get('/invoices-paid', [IndexInvoices::class, 'paid'])->name('paid_invoices.index');
 
-Route::get('/invoices-deleted', IndexInvoicesDeleted::class)->name('deleted_invoices.index');
-Route::get('/invoices-deleted/{invoiceId}', ShowInvoiceDeleted::class)->name('deleted_invoices.show');
+Route::get('/invoices-deleted', IndexDeletedInvoices::class)->name('deleted_invoices.index');
+Route::get('/invoices-deleted/{invoiceSlug}', ShowDeletedInvoice::class)->name('deleted_invoices.show');
 
 Route::get('/invoice-categories', IndexInvoiceCategories::class)->name('invoice-categories.index');
 Route::get('/invoice-categories/create', CreateInvoiceCategory::class)->name('invoice-categories.create');

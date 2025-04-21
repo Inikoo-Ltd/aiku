@@ -7,7 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
-use App\Actions\Accounting\Invoice\UI\IndexInvoicesDeleted;
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowFulfilmentInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
@@ -37,7 +37,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('', ShowFulfilment::class)->name('dashboard');
 
 Route::prefix('pallets')->as('pallets.')->group(function () {
-
     Route::prefix('current')->as('current.')->group(function () {
         Route::get('', IndexPallets::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
@@ -45,17 +44,17 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
 
     Route::prefix('returned')->as('returned.')->group(function () {
-        Route::get('', [IndexReturnedPallets::class,'inFulfilment'])->name('index');
+        Route::get('', [IndexReturnedPallets::class, 'inFulfilment'])->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
     });
 
     Route::prefix('damaged')->as('damaged.')->group(function () {
-        Route::get('', [IndexDamagedPallets::class,'inFulfilment'])->name('index');
+        Route::get('', [IndexDamagedPallets::class, 'inFulfilment'])->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
     });
 
     Route::prefix('lost')->as('lost.')->group(function () {
-        Route::get('', [IndexLostPallets::class,'inFulfilment'])->name('index');
+        Route::get('', [IndexLostPallets::class, 'inFulfilment'])->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
     });
 });
@@ -64,7 +63,6 @@ Route::get('/stored-item-audits', IndexStoredItemAudits::class)->name('stored-it
 Route::get('/stored-item-audits/create', [CreateStoredItemAudit::class, 'inFulfilment'])->name('stored-item-audits.create');
 
 Route::get('/pallets/{pallet}', [ShowPallet::class, 'inFulfilment'])->name('pallets.show');
-//Route::get('/pallets/create', CreatePallet::class)->name('pallets.create');
 Route::get('/pallets/{pallet}/edit', [EditPallet::class, 'inFulfilment'])->name('pallets.edit');
 
 Route::get('deliveries', IndexPalletDeliveries::class)->name('pallet-deliveries.index');
@@ -91,8 +89,6 @@ Route::prefix('recurring_bills')->as('recurring_bills')->group(function () {
 
     Route::get('current/{recurringBill}', [ShowRecurringBill::class, 'current'])->name('.current.show');
     Route::get('former/{recurringBill}', [ShowRecurringBill::class, 'former'])->name('.former.show');
-
-
 });
 
 Route::get('accounting-dashboard', [ShowAccountingShopDashboard::class, 'inFulfilment'])->name('accounting.dashboard');
@@ -102,22 +98,21 @@ Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inFulfilment
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inFulfilment'])->name('accounting.customer_balances.index');
 
 
-Route::prefix('invoices')->as('invoices')->group(function () {
+Route::prefix('statements')->as('invoices')->group(function () {
     Route::get('', [IndexInvoices::class, 'inFulfilment'])->name('.all.index');
 
-    Route::get('/invoices-deleted', [IndexInvoicesDeleted::class, 'inFulfilment'])->name('.deleted_invoices.index');
+    Route::get('/invoices-deleted', [IndexDeletedInvoices::class, 'inFulfilment'])->name('.deleted_invoices.index');
 
     Route::get('/unpaid-invoices', [IndexInvoices::class, 'unpaidInFulfilment'])->name('.unpaid_invoices.index');
 
     Route::get('/paid-invoices', [IndexInvoices::class, 'paidInFulfilment'])->name('.paid_invoices.index');
-    Route::get('/refunds', [IndexRefunds::class,'inFulfilment'])->name('.refunds.index');
+    Route::get('/refunds', [IndexRefunds::class, 'inFulfilment'])->name('.refunds.index');
+    Route::get('/refunds/{refund}', [ShowRefund::class, 'inFulfilment'])->name('.refunds.show');
 
     Route::get('/{invoice}', ShowFulfilmentInvoice::class)->name('.show');
     Route::get('/{invoice}/refunds', [IndexRefunds::class, 'inFulfilmentInvoice'])->name('.show.refunds.index');
     Route::get('/{invoice}/refunds/{refund}', [ShowRefund::class, 'inFulfilmentInvoice'])->name('.show.refunds.show');
 });
-
-
 
 
 Route::prefix("comms")

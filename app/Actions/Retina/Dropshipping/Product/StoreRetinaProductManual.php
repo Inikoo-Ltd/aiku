@@ -9,12 +9,10 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
-use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Aiku\StoreManualPortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\CRM\Customer;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,12 +27,7 @@ class StoreRetinaProductManual extends RetinaAction
     public function handle(Customer $customer, array $modelData)
     {
         DB::transaction(function () use ($customer, $modelData) {
-            foreach (Arr::get($modelData, 'products') as $product) {
-                StorePortfolio::run($customer, [
-                    'product_id' => $product,
-                    'type' => PortfolioTypeEnum::MANUAL->value,
-                ]);
-            }
+            StoreManualPortfolio::run($customer, $modelData);
         });
     }
 

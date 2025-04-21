@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
@@ -18,7 +19,9 @@ use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -29,7 +32,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
-use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Exception;
 use Illuminate\Console\Command;
@@ -79,7 +81,7 @@ class StoreCustomer extends OrgAction
         data_fill(
             $modelData,
             'status',
-            ((Arr::get($shop->settings, 'registration_type', 'open') == 'approval-only') or ($shop->type === ShopTypeEnum::FULFILMENT))
+            ((Arr::get($shop->settings, 'registration_type', 'open') == 'approval-only') || ($shop->type === ShopTypeEnum::FULFILMENT))
                 ?
                 CustomerStatusEnum::PENDING_APPROVAL
                 :
@@ -144,9 +146,12 @@ class StoreCustomer extends OrgAction
 
         ShopHydrateCrmStats::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomers::dispatch($customer->shop)->delay($this->hydratorsDelay);
+        ShopHydrateRegistrationIntervals::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomerInvoices::dispatch($customer->shop)->delay($this->hydratorsDelay);
         GroupHydrateCustomers::dispatch($customer->group)->delay($this->hydratorsDelay);
+        GroupHydrateRegistrationIntervals::dispatch($customer->group)->delay($this->hydratorsDelay);
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
+        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
         CustomerRecordSearch::dispatch($customer);
 
@@ -207,11 +212,6 @@ class StoreCustomer extends OrgAction
                     ]
                 ),
             ],
-            // TODO: Make less
-//            'phone'                    => [
-//                'nullable',
-//                $this->strict ? new Phone() : 'string:32',
-//            ],
             'phone'                    => [
                 'nullable', 'string:32'
             ],
@@ -224,7 +224,6 @@ class StoreCustomer extends OrgAction
             'timezone_id'              => ['nullable', 'exists:timezones,id'],
             'language_id'              => ['nullable', 'exists:languages,id'],
             'data'                     => ['sometimes', 'array'],
-            'created_at'               => ['sometimes', 'nullable', 'date'],
             'registered_at'            => ['sometimes', 'nullable', 'date'],
             'internal_notes'           => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
@@ -280,7 +279,7 @@ class StoreCustomer extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('contact_name') and !$this->get('company_name') and !$this->get('email')) {
+        if (!$this->get('contact_name') && !$this->get('company_name') && !$this->get('email')) {
             $validator->errors()->add('company_name', 'At least one of contact_name, company_name or email must be provided');
         }
     }

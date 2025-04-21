@@ -8,6 +8,7 @@
 
 use App\Providers\ElasticSearchServiceProvider;
 use App\Providers\GDriveServiceProvider;
+use App\Providers\NumberMacroServiceProvider;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\ServiceProvider;
 
@@ -171,7 +172,8 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
         ElasticSearchServiceProvider::class,
-        GDriveServiceProvider::class
+        GDriveServiceProvider::class,
+        NumberMacroServiceProvider::class,
 
     ])->toArray(),
 

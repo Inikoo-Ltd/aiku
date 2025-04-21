@@ -38,6 +38,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_slug
  * @property mixed $original_invoice_id
  * @property mixed $in_process
+ * @property mixed $id
+ * @property mixed $shop_id
+ * @property mixed $organisation_code
  *
  */
 class RefundsResource extends JsonResource
@@ -45,6 +48,7 @@ class RefundsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                  => $this->id,
             'slug'                => $this->slug,
             'reference'           => $this->reference,
             'total_amount'        => $this->total_amount,
@@ -60,13 +64,12 @@ class RefundsResource extends JsonResource
                 ]
                 : [
                     'tooltip' => __('Refunded'),
-                    'icon'    => 'fal fa-arrow-circle-left',
+                    'icon'    => 'fal fa-check',
                 ],
             'pay_status'          => $this->pay_status->typeIcon()[$this->pay_status->value],
             'tax_liability_at'    => $this->tax_liability_at,
             'paid_at'             => $this->paid_at,
-            'created_at'          => $this->created_at,
-            'updated_at'          => $this->updated_at,
+            'shop_id'             => $this->shop_id,
             'shop_slug'           => $this->shop_slug,
             'shop_code'           => $this->shop_code,
             'shop_name'           => $this->shop_name,
@@ -75,6 +78,7 @@ class RefundsResource extends JsonResource
             'currency_code'       => $this->currency_code,
             'currency_symbol'     => $this->currency_symbol,
             'organisation_name'   => $this->organisation_name,
+            'organisation_code'   => $this->organisation_code,
             'organisation_slug'   => $this->organisation_slug,
             'original_invoice_id' => $this->original_invoice_id,
             'in_process'          => $this->in_process,

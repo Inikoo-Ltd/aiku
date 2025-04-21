@@ -60,6 +60,7 @@ class FetchAction implements ShouldBeUnique
     protected bool $onlyOrdersNoTransactions = false;
     protected ?int $fromDays = null;
     protected bool $orderDesc = false;
+    protected bool $onlyRefunds = false;
 
 
     public function __construct()

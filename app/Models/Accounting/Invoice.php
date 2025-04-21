@@ -100,6 +100,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $deleted_from_deleted_invoice_fetch This is used to prevent the invoice from being fetched and updated again in FetchAuroraDeletedInvoices
  * @property int|null $external_invoicer_id
  * @property string|null $uuid
+ * @property string|null $customer_name
+ * @property string|null $customer_contact_name
+ * @property string|null $tax_number
+ * @property bool|null $tax_number_status
+ * @property bool|null $tax_number_valid
+ * @property string|null $identity_document_type
+ * @property string|null $identity_document_number
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -143,17 +150,18 @@ class Invoice extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'type'             => InvoiceTypeEnum::class,
-        'pay_status'       => InvoicePayStatusEnum::class,
-        'data'             => 'array',
-        'payment_data'     => 'array',
-        'date'             => 'datetime',
-        'paid_at'          => 'datetime',
-        'tax_liability_at' => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
-        'grp_exchange'     => 'decimal:4',
-        'org_exchange'     => 'decimal:4',
+        'type'              => InvoiceTypeEnum::class,
+        'pay_status'        => InvoicePayStatusEnum::class,
+        'data'              => 'array',
+        'payment_data'      => 'array',
+        'date'              => 'datetime',
+        'paid_at'           => 'datetime',
+        'tax_liability_at'  => 'datetime',
+        'fetched_at'        => 'datetime',
+        'last_fetched_at'   => 'datetime',
+        'grp_exchange'      => 'decimal:4',
+        'org_exchange'      => 'decimal:4',
+        'tax_number_status' => 'boolean',
     ];
 
     protected $attributes = [

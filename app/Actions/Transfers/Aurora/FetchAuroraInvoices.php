@@ -27,7 +27,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
 
     public string $jobQueue = 'urgent';
 
-    public string $commandSignature = 'fetch:invoices {organisations?*} {--s|source_id=} {--S|shop= : Shop slug}  {--N|only_new : Fetch only new} {--w|with=* : Accepted values: transactions payments full} {--d|db_suffix=} {--r|reset} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
+    public string $commandSignature = 'fetch:invoices {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--U|only_refunds : Fetch only refunds}  {--N|only_new : Fetch only new} {--w|with=* : Accepted values: transactions payments full} {--d|db_suffix=} {--r|reset} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?Invoice
     {
@@ -41,7 +41,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
         if (!$invoiceData) {
             return null;
         }
-
 
         if ($invoice = Invoice::withTrashed()->where('source_id', $invoiceData['invoice']['source_id'])->first()) {
             try {
@@ -232,6 +231,11 @@ class FetchAuroraInvoices extends FetchAuroraAction
         } elseif ($this->onlyOrdersNoTransactions) {
             $query->whereNull('aiku_all_id');
         }
+
+        if ($this->onlyRefunds) {
+            $query->where('Invoice Type', 'Refund');
+        }
+
 
         if ($this->fromDays) {
             $query->where('Invoice Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));

@@ -7,6 +7,7 @@ import { Address } from '@/types/PureComponent/Address'
 import { Icon } from '@/types/Utils/Icon'
 
 export interface Invoice {
+    id:number,
     slug:string,
     number: string,
     customer_id: string,
@@ -18,6 +19,11 @@ export interface Invoice {
     updated_at: string
     net: number
     payment: number
+    in_process: boolean
+    organisation_slug: string
+    shop_slug: string
+    shop_id: string
+    customer_slug: string
 }
 
 export interface InvoiceResource {

@@ -14,6 +14,7 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsGrouped
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
@@ -24,11 +25,12 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
+use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowInvoiceDeleted extends OrgAction
+class ShowDeletedInvoice extends OrgAction
 {
     use IsInvoiceUI;
     use WithFulfilmentCustomerSubNavigation;
@@ -41,7 +43,7 @@ class ShowInvoiceDeleted extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, $invoiceSlug, ActionRequest $request): Invoice
+    public function asController(Organisation $organisation, string $invoiceSlug, ActionRequest $request): Invoice
     {
         $invoice = Invoice::onlyTrashed()->where('slug', $invoiceSlug)->first();
         if (!$invoice) {
@@ -106,13 +108,13 @@ class ShowInvoiceDeleted extends OrgAction
             'Org/Accounting/InvoiceDeleted',
             [
                 'title'       => __('Deleted Invoice'),
-                'breadcrumbs' => ShowInvoice::make()->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                     __('deleted')
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($invoice, $request),
                     'next'     => $this->getNext($invoice, $request),
                 ],
@@ -194,59 +196,71 @@ class ShowInvoiceDeleted extends OrgAction
             return null;
         }
 
-        // $isInvoice = $invoice->type === InvoiceTypeEnum::INVOICE;
-
         return match ($routeName) {
-            'grp.org.accounting.invoices.show', 'grp.org.accounting.invoices.all_invoices.show', 'grp.org.accounting.invoices.unpaid_invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
             'grp.org.accounting.deleted_invoices.show' => [
                 'label' => $invoice->reference,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
                         'organisation' => $invoice->organisation->slug,
-                        'invoiceId'      => $invoice->slug
+                        'invoiceSlug'  => $invoice->slug
                     ]
 
-                ]
-            ],
-            'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-            'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-            'grp.org.fulfilments.show.operations.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'fulfilment'   => $this->parent->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
-
-            //  'grp.org.fulfilments.show.crm.customers.show.refund.show'
-            'grp.org.fulfilments.show.crm.customers.show.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'       => $invoice->organisation->slug,
-                        'fulfilment'         => $invoice->shop->fulfilment->slug,
-                        'fulfilmentCustomer' => $this->parent->slug,
-                        'invoice'            => $invoice->slug
-                    ]
                 ]
             ],
         };
     }
+
+
+    public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
+    {
+        $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
+            return [
+                [
+
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => $routeParameters['index'],
+                            'label' => __('Invoices').$suffixIndex,
+                        ],
+                        'model' => [
+                            'route' => $routeParameters['model'],
+                            'label' => $invoice->reference,
+                        ],
+
+                    ],
+                    'suffix'         => $suffix
+
+                ],
+            ];
+        };
+
+
+        return match ($routeName) {
+            'grp.org.accounting.deleted_invoices.show',
+            => array_merge(
+                ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
+                $headCrumb(
+                    $invoice,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.accounting.deleted_invoices.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.accounting.invoices.show',
+                            'parameters' => [$routeParameters['organisation'], $routeParameters['invoiceSlug']]
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Deleted invoices').')'
+                ),
+            ),
+
+            default => []
+        };
+    }
+
+
 }

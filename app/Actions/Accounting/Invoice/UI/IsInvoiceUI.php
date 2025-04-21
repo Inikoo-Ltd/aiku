@@ -294,7 +294,7 @@ trait IsInvoiceUI
 
                 ]
             ],
-            'grp.org.shops.show.dashboard.invoices.invoices.show' => [
+            'grp.org.shops.show.dashboard.invoices.show' => [
                 'label' => $invoice->reference,
                 'route' => [
                     'name'       => $routeName,
@@ -463,7 +463,6 @@ trait IsInvoiceUI
                     $suffix
                 ),
             ),
-
             default => []
         };
     }
