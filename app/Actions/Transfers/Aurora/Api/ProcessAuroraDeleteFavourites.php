@@ -33,6 +33,34 @@ class ProcessAuroraDeleteFavourites extends OrgAction
     }
 
 
+    public function action(Organisation $organisation, array $modelData): array
+    {
+        $this->asAction = true;
+        $fetcher        = $this->fetcher;// hack to avoid reset of attributes in initialisation
+        $this->initialisation($organisation, $modelData);
+        $this->fetcher = $fetcher;
+        $validatedData = $this->validatedData;
+
+        $favourite = Favourite::where('source_id', $organisation->id.':'.$validatedData['id'])->first();
+        $res = [
+            'status'  => 'error',
+            'message' => 'Favourite not found',
+            'model'   => 'DeleteFavourite'
+        ];
+        if ($favourite) {
+            UnFavourite::make()->action($favourite, Arr::only($validatedData, 'unfavourited_at'));
+            $res = [
+                'status' => 'ok',
+                'id'     => $favourite->source_id,
+                'model'  => 'DeleteFavourite',
+            ];
+        }
+
+        return $res;
+
+    }
+
+
     /**
      * @throws \Exception
      */

@@ -10,7 +10,7 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
-use App\Enums\Helpers\FetchRecord\FetchRecordTypeEnum;
+use App\Enums\Transfers\FetchRecord\FetchRecordTypeEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Transfers\SourceOrganisationService;

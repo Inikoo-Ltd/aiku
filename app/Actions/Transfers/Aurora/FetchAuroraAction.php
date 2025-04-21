@@ -9,9 +9,11 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Transfers\FetchAction;
-use App\Enums\Helpers\Fetch\FetchTypeEnum;
+use App\Enums\Transfers\Fetch\FetchTypeEnum;
+use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Transfers\FetchStack;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 
@@ -198,7 +200,7 @@ class FetchAuroraAction extends FetchAction
     /**
      * @throws \Exception
      */
-    public function asJob(int $organisationID, int $organisationSourceId, array $with): void
+    public function asJob(int $organisationID, int $organisationSourceId, array $with, ?int $fetchStackId = null): void
     {
         $organisation = Organisation::find($organisationID);
         if (!$organisation) {
@@ -210,6 +212,18 @@ class FetchAuroraAction extends FetchAction
         $this->organisationSource->initialisation($organisation);
 
         $this->handle($this->organisationSource, $organisationSourceId);
+
+        if ($fetchStackId) {
+            $fetchStack = FetchStack::find($fetchStackId);
+            if ($fetchStack) {
+                $fetchStack->update(
+                    [
+                        'finish_fetch_at' => now(),
+                        'state'           => FetchStackStateEnum::SUCCESS
+                    ]
+                );
+            }
+        }
     }
 
     /**

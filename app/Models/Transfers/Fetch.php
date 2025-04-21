@@ -6,14 +6,14 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Models\Helpers;
+namespace App\Models\Transfers;
 
-use App\Enums\Helpers\Fetch\FetchTypeEnum;
+use App\Enums\Transfers\Fetch\FetchTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * App\Models\Helpers\Fetch
+ * App\Models\Transfers\Fetch
  *
  * @property int $id
  * @property FetchTypeEnum $type
@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\FetchRecord> $records
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Transfers\FetchRecord> $records
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fetch newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fetch newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fetch query()
