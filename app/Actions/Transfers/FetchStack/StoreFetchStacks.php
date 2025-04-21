@@ -25,7 +25,7 @@ class StoreFetchStacks
     /**
      * @throws \Exception
      */
-    public function handle(?Command $command): void
+    public function handle(?Command $command=null): void
     {
         /** @var Organisation $organisation */
         foreach (Organisation::where('type', OrganisationTypeEnum::SHOP)->get() as $organisation) {
