@@ -32,7 +32,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             'align'             => 'right'
         ];
 
-        $inBasketLabel = __('In basket');
+        $inBasketLabel = __('In basketxxx');
 
         $columns = array_merge(
             [
@@ -53,7 +53,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_shop_currency' => [
-                    'formatted_value'   => $inBasketLabel,
+                    'formatted_value'   => $inBasketLabel.' CCC',
                     'currency_type'     => 'shop',
                     'data_display_type' => 'full',
                     'sortable'          => true,
@@ -74,7 +74,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency' => [
-                    'formatted_value'   => $inBasketLabel,
+                    'formatted_value'   => $inBasketLabel.' BBB',
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
                     'sortable'          => true,
@@ -83,9 +83,9 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
+                    'formatted_value'   => $inBasketLabel.' AAA',
                     'currency_type'     => 'org',
-                    'data_display_type' => 'full',
+                    'data_display_type' => 'minified',
                     'sortable'          => true,
                     'align'             => 'right'
                 ]
