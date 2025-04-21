@@ -22,6 +22,9 @@ class ProcessFetchStacks
      */
     public function handle(): void
     {
+
+        StoreFetchStacks::run();
+
         foreach (FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)->orderBy('submitted_at')->get() as $fetchStack) {
             $fetchStack->update([
                 'state'            => FetchStackStateEnum::SEND_TO_QUEUE,

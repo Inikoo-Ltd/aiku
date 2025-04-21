@@ -29,7 +29,8 @@ class StoreFetchStacks
     {
         /** @var Organisation $organisation */
         foreach (Organisation::where('type', OrganisationTypeEnum::SHOP)->get() as $organisation) {
-            $command->line('Processing '.$organisation->name);
+            $command?->line('Processing '.$organisation->name);
+
             $this->setSource($organisation);
             $data = [];
 
@@ -54,7 +55,7 @@ class StoreFetchStacks
                 DB::connection('aurora')->table('Stack Aiku Dimension')->where('Stack Aiku Key', $key)->delete();
             }
 
-            $command->info("Processed: ".count($data));
+            $command?->info("Processed: ".count($data));
         }
     }
 
