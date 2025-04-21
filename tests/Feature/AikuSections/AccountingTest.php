@@ -13,6 +13,7 @@ use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
 use App\Actions\Accounting\Invoice\OmegaInvoice;
+use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
@@ -69,6 +70,7 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -1563,4 +1565,18 @@ test('export omega invoice', function () {
     $invoice = Invoice::first();
     $result = OmegaInvoice::run($invoice);
     expect($result)->toStartWith('R00');
+});
+
+test('export omega invoice (many)', function () {
+    $shop = $this->shop;
+    $customer = createCustomer($shop);
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+    $result = OmegaManyInvoice::run($invoice->organisation, $invoice->shop, [
+        'filter' => $invoice->date->format('Ymd').'-'.$invoice->date->format('Ymd'),
+        'bucket' => 'all',
+        'type'  => 'invoice',
+    ]);
+
+    expect($result)->toBeInstanceOf(StreamedResponse::class);
 });
