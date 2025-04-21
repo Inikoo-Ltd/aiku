@@ -20,12 +20,14 @@ class FetchAuroraCustomer extends FetchAurora
 {
     protected function parseModel(): void
     {
-        $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Customer Store Key'});
+        $shop= $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Customer Store Key'});
 
-        if ($this->parsedData['shop']->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
 
+
+        $this->parsedData['shop']=$shop;
 
         $status = CustomerStatusEnum::APPROVED->value;
         $state  = CustomerStateEnum::ACTIVE->value;
