@@ -49,10 +49,7 @@ class NumberMacroServiceProvider extends ServiceProvider
                 return '--';
             }
 
-            $percentage = Number::percentage($current, $previous, 2);
-            return $current > $previous ? "+$percentage" : "-$percentage";
-
-
+            return Number::percentage($current, $previous, 2);
         });
 
     }
