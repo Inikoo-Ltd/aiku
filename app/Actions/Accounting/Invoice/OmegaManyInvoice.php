@@ -22,13 +22,14 @@ use Illuminate\Support\Carbon;
 
 class OmegaManyInvoice extends OrgAction
 {
-    public function handle(array $modelData): Response
+    public function handle(Organisation $organisation, ?Shop $shop = null, array $modelData): Response
     {
+
 
         $filter  = Arr::pull($modelData, 'filter', 'all');
         $filename = 'omega-invoice-'. $filter .'.txt';
 
-        $query = Invoice::where('organisation_id', $this->organisation->id);
+        $query = Invoice::where('organisation_id', $organisation->id);
 
         if ($filter != 'all') {
             [$start, $end] = explode('-', $filter);
@@ -51,7 +52,7 @@ class OmegaManyInvoice extends OrgAction
             $query->where('pay_status', InvoicePayStatusEnum::from($bucket));
         }
 
-        if (isset($this->shop) && $this->shop->id) {
+        if ($shop && $shop->id) {
             $query->where('shop_id', $this->shop->id);
         }
 
@@ -81,7 +82,7 @@ class OmegaManyInvoice extends OrgAction
         $this->initialisationFromShop($shop, $request);
         $modelData = $this->validatedData;
 
-        return $this->handle($modelData);
+        return $this->handle(organisation: $organisation, shop: $shop, modelData: $modelData);
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
@@ -90,7 +91,7 @@ class OmegaManyInvoice extends OrgAction
 
         $modelData = $this->validatedData;
 
-        return $this->handle($modelData);
+        return $this->handle(organisation: $organisation, shop: null, modelData: $modelData);
     }
 
     public function rules(): array
