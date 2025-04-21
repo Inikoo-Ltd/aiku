@@ -61,6 +61,9 @@ class ProcessFetchStack
     use WithOrganisationSource;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(FetchStack $fetchStack, $bg = false): void
     {
         $organisation = $fetchStack->organisation;

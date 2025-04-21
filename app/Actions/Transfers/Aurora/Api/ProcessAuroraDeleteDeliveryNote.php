@@ -24,9 +24,9 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
     public function rules(): array
     {
         return [
-            'id'              => ['required', 'integer'],
-            'bg'              => ['sometimes', 'boolean'],
-            'delay'           => ['sometimes', 'integer']
+            'id'    => ['required', 'integer'],
+            'bg'    => ['sometimes', 'boolean'],
+            'delay' => ['sometimes', 'integer']
         ];
     }
 
@@ -34,7 +34,7 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, ActionRequest $request): array
+    public function handle(Organisation $organisation, array $modelData): array
     {
         $res = [
             'status'  => 'error',
@@ -42,13 +42,10 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
             'model'   => 'DeleteDeliverNote'
         ];
 
-        $this->initialisation($organisation, $request);
-        $validatedData = $this->validatedData;
 
-        $deliveryNote = DeliveryNote::where('source_id', $organisation->id.':'.$validatedData['id'])->first();
+        $deliveryNote = DeliveryNote::where('source_id', $organisation->id.':'.$modelData['id'])->first();
 
         if ($deliveryNote) {
-
             ForceDeleteDeliveryNote::make()->action($deliveryNote);
 
             $res = [
@@ -59,6 +56,29 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
         }
 
         return $res;
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function action(Organisation $organisation, array $modelData): array
+    {
+        $this->initialisation($organisation, $modelData);
+
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+        $validatedData = $this->validatedData;
+
+        return $this->handle($organisation, $this->validatedData);
     }
 
 }
