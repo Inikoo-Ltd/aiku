@@ -23,16 +23,9 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         $organisation = $this;
 
 
-        $deltaLabel = [
-            'currency_type'     => 'always',
-            'data_display_type' => 'always',
-            'formatted_value'   => 'Δ 1Y',
-            'tooltip'           => __('Change versus 1 Year ago'),
-            'sortable'          => true,
-            'align'             => 'right'
-        ];
 
-        $inBasketLabel = __('In basketxxx');
+
+        $inBasketLabel = __('In basket');
 
         $columns = array_merge(
             [
@@ -70,7 +63,14 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 ]
             ],
             [
-                'baskets_created_shop_currency_delta' => $deltaLabel
+                'baskets_created_shop_currency_delta' => [
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'always',
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
             ],
             [
                 'baskets_created_org_currency' => [
@@ -91,7 +91,15 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 ]
             ],
             [
-                'baskets_created_org_currency_delta' => $deltaLabel
+                'baskets_created_org_currency_delta' =>
+                    [
+                        'data_display_type' => 'always',
+                        'currency_type'     => 'org',
+                        'formatted_value'   => 'Δ 1Y',
+                        'tooltip'           => __('Change versus 1 Year ago'),
+                        'sortable'          => true,
+                        'align'             => 'right'
+                    ]
             ],
             [
                 'invoices' => [
@@ -112,7 +120,14 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 ]
             ],
             [
-                'invoices_delta' => $deltaLabel
+                'invoices_delta' => [
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
             ],
             [
                 'sales_shop_currency' => [
@@ -133,7 +148,14 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 ]
             ],
             [
-                'sales_shop_currency_delta' => $deltaLabel,
+                'sales_shop_currency_delta' => [
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'always',
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ],
             ],
             [
                 'sales_org_currency' => [
@@ -154,7 +176,14 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 ]
             ],
             [
-                'sales_org_currency_delta' => $deltaLabel,
+                'sales_org_currency_delta' => [
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'always',
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ],
             ],
         );
 

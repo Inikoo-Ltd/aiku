@@ -223,8 +223,7 @@ const showDashboardColumn = (column: any) => {
 				>
 				<!-- {{column.data_display_type}} -->
 					<Column
-					v-if="!column.data_display_type || column.data_display_type === 'always' ? true : column.data_display_type === props.settings.data_display_type.value"
-						xxv-if="showDashboardColumn(column)"
+						v-if="showDashboardColumn(column)"
 						:sortable="column.sortable"
 						:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
 						:field="colSlug"

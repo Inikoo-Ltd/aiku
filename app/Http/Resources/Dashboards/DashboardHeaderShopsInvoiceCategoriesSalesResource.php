@@ -24,31 +24,41 @@ class DashboardHeaderShopsInvoiceCategoriesSalesResource extends JsonResource
 
 
         $deltaLabel = [
-            'formatted_value' => 'Δ 1Y',
-            'tooltip'         => __('Change versus 1 Year ago')
+            'currency_type'     => 'always',
+            'data_display_type' => 'always',
+            'formatted_value'   => 'Δ 1Y',
+            'tooltip'           => __('Change versus 1 Year ago')
         ];
 
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => __('Category'),
-                    'align' => 'left'
+                    'formatted_value'   => __('Category'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
+                    'align'             => 'left'
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => __('Category'),
-                    'align' => 'left'
+                    'formatted_value'   => __('Category'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'align'             => 'left'
                 ]
             ],
             [
                 'refunds' => [
-                    'formatted_value' => __('Refunds')
+                    'formatted_value'   => __('Refunds'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'refunds_minified' => [
-                    'formatted_value' => __('Refunds')
+                    'formatted_value'   => __('Refunds'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
@@ -56,7 +66,9 @@ class DashboardHeaderShopsInvoiceCategoriesSalesResource extends JsonResource
             ],
             [
                 'invoices' => [
-                    'formatted_value' => __('Invoices')
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
@@ -64,17 +76,24 @@ class DashboardHeaderShopsInvoiceCategoriesSalesResource extends JsonResource
             ],
             [
                 'invoices_minified' => [
-                    'formatted_value' => __('Invoices')
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+
                 ]
             ],
             [
                 'sales_invoice_category_currency' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'currency_type'     => 'category',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'sales_invoice_category_currency_minified' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'currency_type'     => 'category',
+                    'data_display_type' => 'minified',
                 ]
             ],
             [
@@ -82,12 +101,16 @@ class DashboardHeaderShopsInvoiceCategoriesSalesResource extends JsonResource
             ],
             [
                 'sales_org_currency' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'sales_org_currency_minified' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value' => __('Sales'),
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'minified',
                 ]
             ],
             [

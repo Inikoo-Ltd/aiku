@@ -41,6 +41,8 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         };
     }
 
+
+
     public function table(Organisation $organisation): array
     {
 
