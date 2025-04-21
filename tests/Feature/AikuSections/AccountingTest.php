@@ -11,6 +11,8 @@
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
+use App\Actions\Accounting\Invoice\ISDocInvoice;
+use App\Actions\Accounting\Invoice\OmegaInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
@@ -1545,4 +1547,20 @@ test('delete payment service provider', function () {
 test('hydrate invoice categories', function () {
     $this->artisan('hydrate:invoice_categories')->assertExitCode(0);
     HydrateInvoiceCategories::run(InvoiceCategory::first());
+});
+
+
+test('export isdoc invoice', function () {
+    $invoice = Invoice::first();
+    $invoice->update([
+        'uuid' => Str::uuid(),
+    ]);
+    $result = ISDocInvoice::run($invoice);
+    expect($result)->toStartWith('<?xml');
+});
+
+test('export omega invoice', function () {
+    $invoice = Invoice::first();
+    $result = OmegaInvoice::run($invoice);
+    expect($result)->toStartWith('R00');
 });

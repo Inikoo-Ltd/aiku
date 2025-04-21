@@ -163,6 +163,7 @@ trait WithOmegaData
     private function generateHeaderRow(Invoice $invoice, $order, $store, $invoiceCodes, $exchange_rate, $_total_amount_exchange)
     {
         $ZERO_LITERAL = '0.000';
+        $taxNumber = $invoice->shop->taxNumber->number ?? '';
         $header_data = [
             'R01',
             $invoiceCodes['numeric_code'],
@@ -172,7 +173,7 @@ trait WithOmegaData
             $order->reference ?? '',
             $invoice->customer->name,
             '',
-            $invoice->shop->taxNumber->number,
+            $taxNumber,
             $invoice->date->format('d.m.Y'),
             '',
             $invoice->tax_liability_at->format('d.m.Y'),
