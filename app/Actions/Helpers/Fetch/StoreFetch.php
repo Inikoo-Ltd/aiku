@@ -8,7 +8,7 @@
 
 namespace App\Actions\Helpers\Fetch;
 
-use App\Models\Helpers\Fetch;
+use App\Models\Transfers\Fetch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -17,13 +17,10 @@ class StoreFetch
     use AsAction;
     use WithAttributes;
 
-    private bool $asAction = false;
 
     public function handle(array $modelData): Fetch
     {
-        /** @var Fetch $fetch */
-        $fetch = Fetch::create($modelData);
-        return $fetch;
+        return Fetch::create($modelData);
     }
 
 }

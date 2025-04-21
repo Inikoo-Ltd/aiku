@@ -22,13 +22,12 @@ use Illuminate\Support\Carbon;
 
 class OmegaManyInvoice extends OrgAction
 {
-    public function handle(array $modelData): Response
+    public function handle(Organisation $organisation, array $modelData, ?Shop $shop = null): Response
     {
+        $filter   = Arr::pull($modelData, 'filter', 'all');
+        $filename = 'omega-invoice-'.$filter.'.txt';
 
-        $filter  = Arr::pull($modelData, 'filter', 'all');
-        $filename = 'omega-invoice-'. $filter .'.txt';
-
-        $query = Invoice::where('organisation_id', $this->organisation->id);
+        $query = Invoice::where('organisation_id', $organisation->id);
 
         if ($filter != 'all') {
             [$start, $end] = explode('-', $filter);
@@ -39,10 +38,9 @@ class OmegaManyInvoice extends OrgAction
             $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
 
             $query->whereBetween('date', [$start, $end]);
-
         }
 
-        $type = Arr::pull($modelData, 'type', 'invoice');
+        $type   = Arr::pull($modelData, 'type', 'invoice');
         $bucket = Arr::pull($modelData, 'bucket', 'all');
 
         $query = $query->where('type', $type);
@@ -51,28 +49,35 @@ class OmegaManyInvoice extends OrgAction
             $query->where('pay_status', InvoicePayStatusEnum::from($bucket));
         }
 
-        if (isset($this->shop) && $this->shop->id) {
-            $query->where('shop_id', $this->shop->id);
+        if ($shop && $shop->id) {
+            $query->where('shop_id', $shop->id);
         }
 
 
         set_time_limit(0);
         ini_set('max_execution_time', 0);
 
-        return response()->streamDownload(function () use ($query) {
-
-            $page = 1;
-            $perPage = 100;
-            do {
-                $chunk = $query->forPage($page, $perPage)->get();
-                foreach ($chunk as $invoice) {
-                    echo OmegaInvoice::run($invoice);
-                    ob_flush();
-                    flush();
-                }
-                $page++;
-            } while ($chunk->isNotEmpty());
-        }, $filename);
+        return response()->stream(
+            function () use ($query) {
+                $page    = 1;
+                $perPage = 100;
+                do {
+                    $chunk = $query->forPage($page, $perPage)->get();
+                    foreach ($chunk as $invoice) {
+                        echo OmegaInvoice::run($invoice);
+                        ob_flush();
+                        flush();
+                    }
+                    $page++;
+                } while ($chunk->isNotEmpty());
+            },
+            200,
+            [
+                'Content-Type'        => 'text/plain',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                'X-Accel-Buffering'   => 'no'
+            ]
+        );
     }
 
 
@@ -81,7 +86,7 @@ class OmegaManyInvoice extends OrgAction
         $this->initialisationFromShop($shop, $request);
         $modelData = $this->validatedData;
 
-        return $this->handle($modelData);
+        return $this->handle(organisation: $organisation, shop: $shop, modelData: $modelData);
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
@@ -90,7 +95,7 @@ class OmegaManyInvoice extends OrgAction
 
         $modelData = $this->validatedData;
 
-        return $this->handle($modelData);
+        return $this->handle(organisation: $organisation, shop: null, modelData: $modelData);
     }
 
     public function rules(): array
