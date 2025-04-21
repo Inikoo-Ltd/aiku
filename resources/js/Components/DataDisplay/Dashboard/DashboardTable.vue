@@ -154,7 +154,7 @@ watch(() => props.tableData.current_tab, (newValueTab) => {
 }, { immediate: true })
 const compTableBody = computed(() => {
 	if (props.settings.shop_state_type?.value === 'open') {
-		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'open')
+		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'active')
 	}
 
 	return props.tableData.tables[props.tableData.current_tab].body;
@@ -190,7 +190,7 @@ const showDashboardColumn = (column: any) => {
 
 <template>
 	<div class="relative bg-white mb-3 p-4 border border-gray-200">
-		<!-- <pre>{{ props.tableData.tables.shops.body.length }}</pre> -->
+
 
 		<div class="">
 			<!-- Section: Tabs -->
@@ -241,8 +241,6 @@ const showDashboardColumn = (column: any) => {
 						
 						<template #body="{ data }">
 							<div class="flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
-								<!-- <pre>{{ column.data_display_type }}</pre> -->
-								<!-- <pre>{{ data.columns?.[colSlug]?.[intervals.value] }}</pre> -->
 								<Transition name="spin-to-right">
 									<component
 										:key="intervals.value"

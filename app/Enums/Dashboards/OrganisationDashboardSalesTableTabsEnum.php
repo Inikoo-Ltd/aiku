@@ -46,6 +46,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
     public function table(Organisation $organisation): array
     {
 
+
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderShopsInvoiceCategoriesSalesResource::make($organisation)->toJson(), true)

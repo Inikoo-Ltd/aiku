@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -56,7 +57,7 @@ class DashboardShopSalesResource extends JsonResource
 
         return [
             'slug'    => $shop->slug,
-            'state'   => $shop->state,
+            'state'   => $shop->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
             'columns' => $columns
 
 

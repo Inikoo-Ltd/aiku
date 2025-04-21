@@ -10,6 +10,8 @@ namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Actions\Utils\Abbreviate;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
+use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,12 +27,12 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
 
         $columns = array_merge(
             [
-                'invoiceCategory' => [
+                'label' => [
                     'formatted_value' => $invoiceCategory->name
                 ]
             ],
             [
-                'shop_minified' => [
+                'label_minified' => [
                     'formatted_value' => Abbreviate::run($invoiceCategory->name),
                     'tooltip'         => $invoiceCategory->name
                 ]
@@ -52,7 +54,7 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
 
         return [
             'slug'    => $invoiceCategory->slug,
-            'state'   => $invoiceCategory->state,
+            'state'   => $invoiceCategory->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
             'columns' => $columns
 
 

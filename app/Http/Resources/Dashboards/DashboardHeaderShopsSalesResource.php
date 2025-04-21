@@ -74,7 +74,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency' => [
-                    'formatted_value'   => $inBasketLabel.' BBB',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
                     'sortable'          => true,
@@ -83,7 +83,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel.' AAA',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
