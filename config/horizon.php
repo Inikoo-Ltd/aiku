@@ -219,7 +219,7 @@ return [
         ],
         'universal-search' => [
             'connection'      => 'redis',
-            'queue'           => ['universal-search', 'analytics'],
+            'queue'           => ['universal-search'],
             'balance'         => 'auto',
             'maxProcesses'    => 20,
             'maxTime'         => 0,
@@ -246,9 +246,23 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'analytics'           => [
+            'connection'      => 'redis',
+            'queue'           => ['analytics'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 20,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 128,
+            'tries'           => 2,
+            'timeout'         => 120,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'low-priority'     => [
             'connection'          => 'redis',
-            'queue'               => ['low-priority', 'analytics'],
+            'queue'               => ['low-priority'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -285,16 +299,19 @@ return [
     'environments' => [
         'production' => [
             'normal'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 256),
+                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 32),
             ],
             'aurora'           => [
-                'maxProcesses' => env('HORIZON_NORMAL_AURORA', 32),
+                'maxProcesses' => env('HORIZON_AURORA_WORKERS', 12),
+            ],
+            'analytics'           => [
+                'maxProcesses' => env('HORIZON_ANALYTICS_WORKERS', 12),
             ],
             'sales'            => [
-                'maxProcesses' => env('HORIZON_SALES_WORKERS', 256),
+                'maxProcesses' => env('HORIZON_SALES_WORKERS', 64),
             ],
             'universal-search' => [
-                'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 64),
+                'maxProcesses' => env('HORIZON_UNIVERSAL_SEARCH_WORKERS', 16),
             ],
             'urgent'           => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 16),
