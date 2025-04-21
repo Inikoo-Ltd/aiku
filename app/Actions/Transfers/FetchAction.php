@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 14 Apr 2024 15:24:40 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Sun, 14 Apr 2024 15:24:40 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -153,6 +153,11 @@ class FetchAction implements ShouldBeUnique
     public function recordError($organisationSource, $e, $modelData, $modelType = null, $errorOn = null): void
     {
 
+        \Sentry\captureException($e);
+
+        if(!$organisationSource->fetch){
+            return;
+        }
 
         $this->number_errors++;
 
