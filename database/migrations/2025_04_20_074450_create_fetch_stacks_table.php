@@ -25,10 +25,10 @@ return new class () extends Migration {
             $table->jsonb('result');
             $table->jsonb('errors');
             $table->dateTimeTz('submitted_at')->index();
-            $table->dateTimeTz('send_to_queue_at')->index();
-            $table->dateTimeTz('start_fetch_at')->index();
-            $table->dateTimeTz('finish_fetch_at')->nullable()->index();
-            $table->dateTimeTz('error_at')->nullable();
+            $table->dateTimeTz('send_to_queue_at')->nullable()->index();
+            $table->dateTimeTz('start_fetch_at')->nullable()->index();
+            $table->dateTimeTz('finish_fetch_at')->nullable()->nullable()->index();
+            $table->dateTimeTz('error_at')->nullable()->nullable();
             $table->timestampsTz();
             $table->softDeletesTz();
         });
