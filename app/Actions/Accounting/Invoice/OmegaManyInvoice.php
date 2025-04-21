@@ -53,7 +53,7 @@ class OmegaManyInvoice extends OrgAction
         }
 
         if ($shop && $shop->id) {
-            $query->where('shop_id', $this->shop->id);
+            $query->where('shop_id', $shop->id);
         }
 
 
