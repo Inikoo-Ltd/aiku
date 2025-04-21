@@ -18,6 +18,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraCustomerClient;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraCustomerNote;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteCustomerClient;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteDeliveryNote;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteFavourites;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteInvoice;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeliveryNote;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDepartment;
@@ -42,6 +43,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraProspect;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPurchaseOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPurge;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraShop;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraStock;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockDelivery;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockFamily;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraSupplier;
@@ -125,6 +127,8 @@ class ProcessFetchStack
             'DeliveryNote' => ProcessAuroraDeliveryNote::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'PurchaseOrder' => ProcessAuroraPurchaseOrder::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'Customer' => ProcessAuroraCustomer::make()->action($organisation, $modelData),
+            'Stock' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'DeleteFavourite' => ProcessAuroraDeleteFavourites::make()->action($organisation, $modelData),
             default => null,
         };
 
