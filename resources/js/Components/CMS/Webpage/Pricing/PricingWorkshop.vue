@@ -50,28 +50,24 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 					:style="getBackgroundStyle(tier.background)">
 					<div>
 						<div class="flex items-center justify-between gap-x-4">
-							<h3
-								:id="tier.id"
-								:class="[
-									tier.mostPopular ? 'text-indigo-600' : 'text-gray-900',
-									'text-lg/8 font-semibold',
-								]">
-								{{ tier.name }}
-							</h3>
+							<Editor
+							v-model="tier.title"
+							@update:modelValue="() => emits('autoSave')" />
+
 							<p
-								v-if="tier.mostPopular"
+								v-if="tier.badge.show"
 								class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs/5 font-semibold text-indigo-600">
-								Most popular
+								{{tier.badge.text}}
 							</p>
 						</div>
 						<Editor
 							v-model="tier.description"
 							@update:modelValue="() => emits('autoSave')" />
-						<p class="mt-6 flex items-baseline gap-x-1">
+						<p v-if="tier.priceMonthly.show" class="mt-6 flex items-baseline gap-x-1">
 							<span class="text-4xl font-semibold tracking-tight text-gray-900">{{
-								tier.priceMonthly
+								tier.priceMonthly.text
 							}}</span>
-							<span class="text-sm/6 font-semibold text-gray-600">/month</span>
+							<!-- <span class="text-sm/6 font-semibold text-gray-600">/month</span> -->
 						</p>
 						<ul role="list" class="mt-8 space-y-3 text-sm/6 text-gray-600">
 							<li
