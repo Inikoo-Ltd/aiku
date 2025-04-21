@@ -57,9 +57,13 @@ trait WithDashboardIntervalValues
                     $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
-                    $data['formatted_value'] = Number::delta($rawValue, $intervalsModel->{$field.'_'.$interval->value}.'_ly');
-
-                    $data['tooltip']         = Number::currency($intervalsModel->{$field.'_'.$interval->value.'_ly'}, Arr::get($options, 'currency'));
+                    $lyValue = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
+                    $data['formatted_value'] = Number::delta($rawValue, $lyValue);
+                    if (Arr::get($options, 'currency') && $interval->value != 'all') {
+                        $data['tooltip'] = Number::currency($lyValue, Arr::get($options, 'currency'));
+                    } else {
+                        $data['tooltip'] = $lyValue;
+                    }
                     break;
                 default: // as DashboardDataType::NUMBER:
                     if (is_null($rawValue)) {
