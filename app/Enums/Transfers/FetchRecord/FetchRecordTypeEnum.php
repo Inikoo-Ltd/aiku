@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Helpers\FetchRecord;
+namespace App\Enums\Transfers\FetchRecord;
 
 use App\Enums\EnumHelperTrait;
 

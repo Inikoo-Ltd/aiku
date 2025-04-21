@@ -10,7 +10,7 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Procurement\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Procurement\StockDeliveryItem\UpdateStockDeliveryItem;
-use App\Enums\Helpers\FetchRecord\FetchRecordTypeEnum;
+use App\Enums\Transfers\FetchRecord\FetchRecordTypeEnum;
 use App\Models\Procurement\StockDelivery;
 use App\Models\Procurement\StockDeliveryItem;
 use App\Transfers\SourceOrganisationService;

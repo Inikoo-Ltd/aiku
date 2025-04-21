@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Helpers;
+namespace App\Models\Transfers;
 
 use Illuminate\Database\Eloquent\Model;
 
