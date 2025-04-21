@@ -31,7 +31,6 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -186,19 +185,19 @@ class IndexRefunds extends OrgAction
     {
         if ($this->parent instanceof Organisation) {
             $route      = 'grp.org.accounting.invoices.index.omega';
-            $parameters = [
+            $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'filter'       => $filter,
                 'type'         => 'refund',
-            ];
+            ]);
         } elseif ($this->parent instanceof Shop) {
             $route      = 'grp.org.shops.show.dashboard.invoices.index.omega';
-            $parameters = [
+            $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'shop'         => $this->shop->slug,
                 'filter'       => $filter,
                 'type'         => 'refund',
-            ];
+            ]);
         } else {
             return [];
         }
@@ -299,11 +298,10 @@ class IndexRefunds extends OrgAction
 
         $invoiceExportOptions = [];
 
-        if (Arr::get($request->input('between'), 'date')) {
-            $filter                                       = request()->input('between')['date'];
-            $exportInvoiceOptions                         = $this->getExportOptions($filter);
-            $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
-        }
+        $filter                                       = request()->input('between')['date'] ?? null;
+        $exportInvoiceOptions                         = $this->getExportOptions($filter);
+        $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
+
 
         return Inertia::render(
             'Org/Accounting/Refunds',

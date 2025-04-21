@@ -19,30 +19,35 @@ use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\ValidationException;
 
 class OmegaManyInvoice extends OrgAction
 {
     public function handle(array $modelData): Response
     {
 
-        $filter  = Arr::pull($modelData, 'filter', []);
+        $filter  = Arr::pull($modelData, 'filter', 'all');
         $filename = 'omega-invoice-'. $filter .'.txt';
 
-        [$start, $end] = explode('-', $filter);
+        $query = Invoice::where('organisation_id', $this->organisation->id);
 
-        $start = trim($start).' 00:00:00';
-        $end   = trim($end).' 23:59:59';
-        $start = Carbon::createFromFormat('Ymd H:i:s', $start)->format('Y-m-d H:i:s');
-        $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
+        if ($filter != 'all') {
+            [$start, $end] = explode('-', $filter);
+
+            $start = trim($start).' 00:00:00';
+            $end   = trim($end).' 23:59:59';
+            $start = Carbon::createFromFormat('Ymd H:i:s', $start)->format('Y-m-d H:i:s');
+            $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
+
+            $query->whereBetween('date', [$start, $end]);
+
+        }
 
         $type = Arr::pull($modelData, 'type', 'invoice');
         $bucket = Arr::pull($modelData, 'bucket', 'all');
-        $query = Invoice::where('organisation_id', $this->organisation->id)
-            ->whereBetween('date', [$start, $end])
-            ->where('type', $type);
 
-        if ($type != 'refund' && $bucket !== 'all') {
+        $query = $query->where('type', $type);
+
+        if ($type != 'refund' && $bucket != 'all') {
             $query->where('pay_status', InvoicePayStatusEnum::from($bucket));
         }
 
@@ -50,6 +55,9 @@ class OmegaManyInvoice extends OrgAction
             $query->where('shop_id', $this->shop->id);
         }
 
+
+        set_time_limit(0);
+        ini_set('max_execution_time', 0);
 
         return response()->streamDownload(function () use ($query) {
 
@@ -64,10 +72,7 @@ class OmegaManyInvoice extends OrgAction
                 }
                 $page++;
             } while ($chunk->isNotEmpty());
-        }, $filename, [
-            'Content-Type' => 'text/plain',
-            'Content-Disposition' => 'inline; filename="'.$filename.'"',
-        ]);
+        }, $filename);
     }
 
 
@@ -91,26 +96,10 @@ class OmegaManyInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'filter' => 'required|string',
+            'filter' => 'string',
             'bucket' => 'string',
-            'type'   => 'required|string',
+            'type'   => 'string',
         ];
-    }
-
-    public function afterValidator(): void
-    {
-
-        $filter = $this->get("filter");
-
-        if (!str_contains($filter, '-')) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'filter' => 'The filter must be in the format YYYYMMDD-YYYYMMDD',
-                    ]
-                ]
-            );
-        }
     }
 
 }
