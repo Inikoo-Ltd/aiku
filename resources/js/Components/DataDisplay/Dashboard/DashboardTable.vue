@@ -21,6 +21,7 @@ import { faTriangle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Link } from "@inertiajs/vue3"
+import column from "@/Components/SpreadSheets/Column.vue";
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -158,6 +159,33 @@ const compTableBody = computed(() => {
 
 	return props.tableData.tables[props.tableData.current_tab].body;
 })
+
+
+const showDashboardColumn = (column: any) => {
+
+
+  const data_display_type=props.settings.data_display_type.value;
+  const currency_type=props.settings.currency_type.value;
+
+  let show=true;
+
+
+  if(column.data_display_type!='always'){
+   if( column.data_display_type!==data_display_type){
+      return false;
+    }
+  }
+
+  if(column.currency_type!='always'){
+    if(column.currency_type!==currency_type){
+      return false;
+    }
+  }
+
+  return show;
+
+}
+
 </script>
 
 <template>
@@ -195,7 +223,7 @@ const compTableBody = computed(() => {
 				>
 				<!-- {{column.data_display_type}} -->
 					<Column
-						v-if="!column.data_display_type || column.data_display_type === 'always' ? true : column.data_display_type === props.settings.data_display_type.value"
+						v-if="showDashboardColumn(column)"
 						:sortable="column.sortable"
 						:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
 						:field="colSlug"
@@ -253,7 +281,7 @@ const compTableBody = computed(() => {
 							:key="colSlug"
 						>
 							<Column
-								v-if="!column.data_display_type || column.data_display_type === 'always' ? true : column.data_display_type === props.settings.data_display_type.value"
+								v-if="showDashboardColumn(column)"
 								:sortable="column.sortable"
 								:sortField="`${column.key}.${intervals.value}.formatted_value`"
 								:field="column.key"
