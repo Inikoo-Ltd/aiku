@@ -182,23 +182,27 @@ class IndexRefunds extends OrgAction
         };
     }
 
-    public function getExportOptions(string $filter): array
+    public function getExportOptions(?string $filter): array
     {
+        if (!Arr::get($this->organisation->settings, 'invoice_export.show_omega')) {
+            return [];
+        }
+
         if ($this->parent instanceof Organisation) {
             $route      = 'grp.org.accounting.invoices.index.omega';
-            $parameters = [
+            $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'filter'       => $filter,
                 'type'         => 'refund',
-            ];
+            ]);
         } elseif ($this->parent instanceof Shop) {
             $route      = 'grp.org.shops.show.dashboard.invoices.index.omega';
-            $parameters = [
+            $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'shop'         => $this->shop->slug,
                 'filter'       => $filter,
                 'type'         => 'refund',
-            ];
+            ]);
         } else {
             return [];
         }
@@ -206,7 +210,7 @@ class IndexRefunds extends OrgAction
         return [
             [
                 'type'       => 'omega',
-                'icon'       => 'fas fa-file-code',
+                'icon'       => 'fas fa-omega',
                 'tooltip'    => __('Download Omega'),
                 'label'      => 'Omega',
                 'name'       => $route,
@@ -299,11 +303,10 @@ class IndexRefunds extends OrgAction
 
         $invoiceExportOptions = [];
 
-        if (Arr::get($request->input('between'), 'date')) {
-            $filter                                       = request()->input('between')['date'];
-            $exportInvoiceOptions                         = $this->getExportOptions($filter);
-            $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
-        }
+        $filter                                       = request()->input('between')['date'] ?? null;
+        $exportInvoiceOptions                         = $this->getExportOptions($filter);
+        $invoiceExportOptions['invoiceExportOptions'] = $exportInvoiceOptions;
+
 
         return Inertia::render(
             'Org/Accounting/Refunds',

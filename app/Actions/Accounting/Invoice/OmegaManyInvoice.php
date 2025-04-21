@@ -19,39 +19,69 @@ use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\ValidationException;
 
 class OmegaManyInvoice extends OrgAction
 {
-    public array $invoices = [];
-    public function handle(): string
+    public function handle(array $modelData): Response
     {
-        $invoices = $this->invoices;
 
-        $text = '';
-        foreach ($invoices as $invoice) {
-            $text .= OmegaInvoice::run($invoice) . "\n";
+        $filter  = Arr::pull($modelData, 'filter', 'all');
+        $filename = 'omega-invoice-'. $filter .'.txt';
+
+        $query = Invoice::where('organisation_id', $this->organisation->id);
+
+        if ($filter != 'all') {
+            [$start, $end] = explode('-', $filter);
+
+            $start = trim($start).' 00:00:00';
+            $end   = trim($end).' 23:59:59';
+            $start = Carbon::createFromFormat('Ymd H:i:s', $start)->format('Y-m-d H:i:s');
+            $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
+
+            $query->whereBetween('date', [$start, $end]);
+
         }
 
-        return $text;
+        $type = Arr::pull($modelData, 'type', 'invoice');
+        $bucket = Arr::pull($modelData, 'bucket', 'all');
+
+        $query = $query->where('type', $type);
+
+        if ($type != 'refund' && $bucket != 'all') {
+            $query->where('pay_status', InvoicePayStatusEnum::from($bucket));
+        }
+
+        if (isset($this->shop) && $this->shop->id) {
+            $query->where('shop_id', $this->shop->id);
+        }
+
+
+        set_time_limit(0);
+        ini_set('max_execution_time', 0);
+
+        return response()->streamDownload(function () use ($query) {
+
+            $page = 1;
+            $perPage = 100;
+            do {
+                $chunk = $query->forPage($page, $perPage)->get();
+                foreach ($chunk as $invoice) {
+                    echo OmegaInvoice::run($invoice);
+                    ob_flush();
+                    flush();
+                }
+                $page++;
+            } while ($chunk->isNotEmpty());
+        }, $filename);
     }
 
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
-
         $modelData = $this->validatedData;
 
-        $omegaText = $this->handle();
-
-        $filter  = Arr::pull($modelData, 'filter', []);
-
-        $filename = 'omega-invoice-'. $filter .'.txt';
-
-        return response($omegaText, 200)
-            ->header('Content-Type', 'text/plain')
-            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+        return $this->handle($modelData);
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
@@ -60,81 +90,16 @@ class OmegaManyInvoice extends OrgAction
 
         $modelData = $this->validatedData;
 
-        $omegaText = $this->handle();
-
-        $filter  = Arr::pull($modelData, 'filter', []);
-
-
-        $filename = 'omega-invoice-'. $filter .'.txt';
-
-        return response($omegaText, 200)
-            ->header('Content-Type', 'text/plain')
-            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+        return $this->handle($modelData);
     }
 
     public function rules(): array
     {
         return [
-            'filter' => 'required|string',
+            'filter' => 'string',
             'bucket' => 'string',
-            'type'   => 'required|string',
+            'type'   => 'string',
         ];
-    }
-
-    public function afterValidator(): void
-    {
-
-        $filter = $this->get("filter");
-
-        if (!str_contains($filter, '-')) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'filter' => 'The filter must be in the format YYYYMMDD-YYYYMMDD',
-                    ]
-                ]
-            );
-        }
-
-        [$start, $end] = explode('-', $filter);
-
-        $start = trim($start).' 00:00:00';
-        $end   = trim($end).' 23:59:59';
-        $start = Carbon::createFromFormat('Ymd H:i:s', $start)->format('Y-m-d H:i:s');
-        $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
-
-        $type = $this->get("type", 'invoice');
-        $invoices = [];
-        $query = Invoice::where('organisation_id', $this->organisation->id)
-            ->whereBetween('date', [$start, $end])
-            ->where('type', $type);
-
-        if ($type != 'refund' && $this->get('bucket') !== 'all') {
-            $query->where('pay_status', InvoicePayStatusEnum::from($this->get('bucket')));
-        }
-
-        if (isset($this->shop) && $this->shop->id) {
-            $query->where('shop_id', $this->shop->id);
-        }
-
-        $query->chunk(100, function ($chunk) use (&$invoices) {
-            foreach ($chunk as $invoice) {
-                $invoices[] = $invoice;
-            }
-        });
-
-        if (count($invoices) > 3000) {
-            throw ValidationException::withMessages(
-                [
-                    'message' => [
-                        'amount' => 'The number of invoices is too large, please reduce the date range',
-                    ]
-                ]
-            );
-        }
-
-        $this->invoices = $invoices;
-
     }
 
 }

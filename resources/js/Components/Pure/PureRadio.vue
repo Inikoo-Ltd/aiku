@@ -35,12 +35,11 @@ const layout = inject('layout', layoutStructure)
                 <div v-if="mode === 'compact'">
                     <RadioGroup class="mt-2"
                         v-model="model"
-                        :by="by ?? 'name'"
                     >
                         <RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
                         <div class="flex gap-x-1.5 gap-y-1 flex-wrap">
                             <RadioGroupOption as="template" v-for="(option, index) in options" :key="option.value"
-                                :value="option" v-slot="{ active, checked }">
+                                :value="by ? option[by] : option" v-slot="{ active, checked }">
                                 <div
                                     :class="[
                                         'cursor-pointer focus:outline-none flex items-center justify-center rounded-md py-3 px-3 text-sm font-medium capitalize',
@@ -120,15 +119,17 @@ const layout = inject('layout', layoutStructure)
                             color: layout?.app?.theme?.[0] || '#4F46E5'
                         }"
                     />
-                    <label v-if="option.value || option.label" :for="`${option.label}_${index}`" class="flex items-center gap-x-1.5 cursor-pointer">
-                        <p class="text-sm font-medium leading-6 text-gray-700 capitalize">
-                            {{ option.value }}
-                        </p>
-                        <span v-if="option.label" class="font-light text-sm text-gray-400 capitalize">
-                            {{ option.label }}
-                            <!-- d -->
-                        </span>
-                    </label>
+                    <slot name="label" :label="option.label" :option="option" :index="index">
+                        <label v-if="option.value || option.label" :for="`${option.label}_${index}`" class="flex items-center gap-x-1.5 cursor-pointer">
+                            <p class="text-sm font-medium leading-6 text-gray-700 capitalize">
+                                {{ option.value }}
+                            </p>
+                            <span v-if="option.label" class="font-light text-sm text-gray-400 capitalize">
+                                {{ option.label }}
+                                <!-- d -->
+                            </span>
+                        </label>
+                    </slot>
                 </div>
             </div>
         </fieldset>

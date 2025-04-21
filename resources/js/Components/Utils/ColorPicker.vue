@@ -86,6 +86,10 @@ const opacityToHexCode = (opacity: number) => {
                 <div @click="overlayPanel.hide()" class="absolute -top-5 -right-10 mt-1 mr-1">
                     <FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
                 </div>
+                
+                <slot name="after-main-picker">
+                    
+                </slot>
             </div>
         </OverlayPanel>
     </div>

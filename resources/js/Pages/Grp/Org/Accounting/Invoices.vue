@@ -21,8 +21,9 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import { Icon } from "@/types/Utils/Icon";
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faOmega } from '@fas'
 
-library.add(faFileMinus, faArrowCircleLeft);
+library.add(faFileMinus, faArrowCircleLeft, faOmega);
 
 const props = defineProps<{
   pageHead: PageHeadingTypes

@@ -44,6 +44,30 @@ class ISDocInvoice extends OrgAction
         $shop        = $invoice->shop;
         $shopAddress = $shop->address;
 
+        $accountingSupplierParty = new Party(
+            new PartyIdentification($shop->id),
+            new PartyName($shop->name),
+            new PostalAddress(
+                $shopAddress->address_line_1,
+                $shopAddress->address_line_2,
+                $shopAddress->locality,
+                $shopAddress->postal_code,
+                new Country($shopAddress->country->code, $shopAddress->country->name)
+            )
+        );
+
+        $accountingSupplierParty->setContact(
+            (new Contact())->setName($shop->contact_name)
+                ->setTelephone($shop->phone)
+                ->setElectronicMail($shop->email)
+        );
+
+        if ($shop->taxNumber) {
+            $accountingSupplierParty->setPartyTaxScheme(
+                new PartyTaxScheme($shop->taxNumber->number, $shop->taxNumber->getType($shopAddress->country)->value)
+            );
+        }
+
         $isDocInvoice = new InvoiceISDoc(
             $invoice->reference,
             $invoice->uuid,
@@ -51,24 +75,7 @@ class ISDocInvoice extends OrgAction
             $invoice->tax_amount > 0,
             $invoice->currency->code,
             new AccountingSupplierParty(
-                (new Party(
-                    new PartyIdentification($shop->id),
-                    new PartyName($shop->name),
-                    new PostalAddress(
-                        $shopAddress->address_line_1,
-                        $shopAddress->address_line_2,
-                        $shopAddress->locality,
-                        $shopAddress->postal_code,
-                        new Country($shopAddress->country->code, $shopAddress->country->name)
-                    )
-                ))->setContact(
-                    (new Contact())->setName($shop->contact_name)
-                        ->setTelephone($shop->phone)
-                        ->setElectronicMail($shop->email)
-                )
-                    ->setPartyTaxScheme(
-                        new PartyTaxScheme($shop->taxNumber->number, $shop->taxNumber->getType($shop->country)->value)
-                    )
+                $accountingSupplierParty
             )
         );
 

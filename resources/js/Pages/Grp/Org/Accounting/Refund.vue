@@ -40,9 +40,9 @@ import {
   faFileMinus,
   faUndoAlt,
   faStarHalfAlt,
-  faArrowCircleLeft
+  faArrowCircleLeft,
 } from "@fal";
-import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft } from "@fas";
+import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck } from "@fas";
 import { faCheck, faTrash } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -59,7 +59,9 @@ import invoice from "@/Pages/Grp/Org/Accounting/Invoice.vue";
 
 library.add(
   faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,
-  faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt);
+  faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt, faOmega,
+  faHockeyPuck
+);
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
@@ -125,7 +127,8 @@ const props = defineProps<{
   items: {}
   payments: {}
   details: {}
-  history: {}
+  history: {},
+  invoiceExportOptions?: {}
   layout: {
     group: {}
   }
@@ -256,12 +259,22 @@ console.log(props.pageHead);
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
 
-    <!-- Button: PDF -->
     <template #otherBefore>
-      <a v-if="exportPdfRoute?.name" :href="route(exportPdfRoute.name, exportPdfRoute.parameters)" target="_blank"
-         class="mt-4 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
-        <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
-      </a>
+      <div v-if="props.invoiceExportOptions?.length" class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
+        <a v-for="exportOption in props.invoiceExportOptions"
+           :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
+           target="_blank"
+           class="w-auto mt-0 sm:flex-none text-base"
+           v-tooltip="exportOption.tooltip"
+        >
+          <Button
+            :label="exportOption.label"
+            :icon="exportOption.icon"
+            type="tertiary"
+            class="rounded-none border-transparent"
+          />
+        </a>
+      </div>
     </template>
 
     <!-- Button: delete Refund -->
