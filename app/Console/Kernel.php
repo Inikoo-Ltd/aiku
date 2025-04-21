@@ -4,7 +4,7 @@ namespace App\Console;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopSellers;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
-use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStatus;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Helpers\Intervals\ResetMonthlyIntervals;
@@ -28,8 +28,8 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'ShopHydrateTopSellers',
         );
 
-        $schedule->job(FulfilmentCustomerHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'FulfilmentCustomerHydrateStatus',
+        $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'FulfilmentCustomersHydrateStatus',
         );
 
         $schedule->job(ResetYearIntervals::makeJob())->yearlyOn(1, 1, '00:00')->timezone('UTC')->sentryMonitor(

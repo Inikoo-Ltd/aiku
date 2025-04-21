@@ -13,24 +13,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentCustomerHydrateStatus
+class FulfilmentCustomerHydrateStatus implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private FulfilmentCustomer $fulfilmentCustomer;
-
-    public function __construct(FulfilmentCustomer $fulfilmentCustomer)
+    public function getJobUniqueId(FulfilmentCustomer $fulfilmentCustomer): string
     {
-        $this->fulfilmentCustomer = $fulfilmentCustomer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->fulfilmentCustomer->id))->dontRelease()];
+        return $fulfilmentCustomer->id;
     }
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void
@@ -62,15 +55,14 @@ class FulfilmentCustomerHydrateStatus
 
     protected function getStatusWhenActiveRentalAgreement(FulfilmentCustomer $fulfilmentCustomer): FulfilmentCustomerStatusEnum
     {
-
         $status = FulfilmentCustomerStatusEnum::ACTIVE;
 
         $createdAt = $fulfilmentCustomer->rentalAgreement->created_at;
         if ($createdAt->lessThan($createdAt->addMonths(3))
-            or $fulfilmentCustomer->number_pallets_status_storing
-            or $fulfilmentCustomer->number_pallets_status_returning
-            or $fulfilmentCustomer->number_pallets_status_receiving
-            or $fulfilmentCustomer->number_recurring_bills_status_current
+            || $fulfilmentCustomer->number_pallets_status_storing
+            || $fulfilmentCustomer->number_pallets_status_returning
+            || $fulfilmentCustomer->number_pallets_status_receiving
+            || $fulfilmentCustomer->number_recurring_bills_status_current
 
         ) {
             return FulfilmentCustomerStatusEnum::ACTIVE;
@@ -86,18 +78,5 @@ class FulfilmentCustomerHydrateStatus
         return $status;
     }
 
-    public string $commandSignature = 'hydrate:fulfilment_customers_status';
-
-    public function asCommand(): int
-    {
-        foreach (
-            FulfilmentCustomer::where('status', '!=', FulfilmentCustomerStatusEnum::LOST)
-                ->get() as $fulfilmentCustomer
-        ) {
-            $this->handle($fulfilmentCustomer);
-        }
-
-        return 0;
-    }
 
 }
