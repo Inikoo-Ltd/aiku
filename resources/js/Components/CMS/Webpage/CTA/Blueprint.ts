@@ -9,7 +9,7 @@ export default {
 				{
 					key : ['source'],
 					label: "Image",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn : ["desktop"],
 					type: "upload_image",
 				},
 				{

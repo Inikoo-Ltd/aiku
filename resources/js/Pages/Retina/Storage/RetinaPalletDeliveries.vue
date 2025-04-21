@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlus } from "@fas"
 import { faSeedling, faShare, faSpellCheck, faCheck, faCheckDouble, faCross } from "@fal"
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
@@ -27,7 +27,7 @@ library.add(faPlus, faSeedling, faShare, faSpellCheck, faCheck, faCheckDouble, f
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: Navigation

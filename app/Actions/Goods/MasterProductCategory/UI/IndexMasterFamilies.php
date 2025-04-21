@@ -11,12 +11,13 @@ namespace App\Actions\Goods\MasterProductCategory\UI;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Goods\Catalogue\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,22 +27,33 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterFamilies extends GrpAction
+class IndexMasterFamilies extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
 
-    private MasterShop $parent;
+    private Group|MasterShop|MasterProductCategory $parent;
+
 
     public function asController(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterShop;
-        $group = group();
-        $this->initialisation($group, $request);
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle(parent: $masterShop);
     }
 
-    public function handle(MasterShop $parent, $prefix = null): LengthAwarePaginator
+    public function inGroup(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = group();
+        $group        = $this->parent;
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle(parent: $group);
+    }
+
+
+    public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -56,6 +68,14 @@ class IndexMasterFamilies extends GrpAction
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
+        } elseif ($parent instanceof MasterProductCategory) {
+            if ($parentType == 'department') {
+                $queryBuilder->where('master_product_categories.master_department_id', $parent->id);
+            } else {
+                $queryBuilder->where('master_product_categories.master_sub_department_id', $parent->id);
+            }
+        } else {
+            $queryBuilder->where('master_product_categories.group_id', $parent->id);
         }
 
         return $queryBuilder
@@ -77,9 +97,9 @@ class IndexMasterFamilies extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -91,12 +111,12 @@ class IndexMasterFamilies extends GrpAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title'       => __("No families found"),
+                        'title' => __("No master families found"),
                     ],
                 );
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -111,16 +131,16 @@ class IndexMasterFamilies extends GrpAction
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
         }
-        $title = $this->parent->name;
-        $model = '';
-        $icon  = [
+        $title      = $this->parent->name;
+        $model      = '';
+        $icon       = [
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('master shop')
         ];
         $afterTitle = [
-            'label'     => __('Families')
+            'label' => __('Families')
         ];
-        $iconRight    = [
+        $iconRight  = [
             'icon' => 'fal fa-folder-tree',
         ];
 
@@ -128,6 +148,7 @@ class IndexMasterFamilies extends GrpAction
             'Goods/MasterFamilies',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -166,7 +187,7 @@ class IndexMasterFamilies extends GrpAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -185,7 +206,7 @@ class IndexMasterFamilies extends GrpAction
         return match ($routeName) {
             'grp.goods.catalogue.shops.show.families.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($routeName, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,

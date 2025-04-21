@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateCustomerClient extends OrgAction
 {
+    private CustomerHasPlatform|Customer $scope;
+
     public function handle(Customer $customer, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -32,20 +35,20 @@ class CreateCustomerClient extends OrgAction
                 ),
                 'title'       => __('new client'),
                 'pageHead'    => [
-                    'title'        => __('new client'),
-                    'icon'         => [
+                    'title'   => __('new client'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('client')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
-                                    'shops.show.customers.create' => 'shops.show.customers.index',
-                                    default                       => preg_replace('/create$/', 'index', $request->route()->getName())
+                                    'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create' => preg_replace('/create$/', 'aiku.index', $request->route()->getName()),
+                                    default => preg_replace('/create$/', 'index', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
@@ -66,11 +69,11 @@ class CreateCustomerClient extends OrgAction
                                         'type'  => 'input',
                                         'label' => __('contact name')
                                     ],
-                                    'email' => [
+                                    'email'        => [
                                         'type'  => 'input',
                                         'label' => __('email')
                                     ],
-                                    'phone' => [
+                                    'phone'        => [
                                         'type'  => 'input',
                                         'label' => __('phone')
                                     ],
@@ -93,12 +96,20 @@ class CreateCustomerClient extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => [
-                        'name'      => 'grp.models.customer.client.store',
-                        'parameters' => [
-                            'customer'     => $customer->id
+                    'route'     => $this->scope instanceof CustomerHasPlatform
+                        ? [
+                            'name'       => 'grp.models.customer.platform-client.store',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                                'platform' => $this->scope->platform_id
                             ]
-                    ]
+                        ]
+                        : [
+                            'name'       => 'grp.models.customer.client.store',
+                            'parameters' => [
+                                'customer' => $customer->id
+                            ]
+                        ]
                 ]
 
             ]
@@ -111,27 +122,48 @@ class CreateCustomerClient extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
     {
+        $this->scope = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($customer, $request);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            IndexCustomerClients::make()->getBreadcrumbs(
-                routeName: preg_replace('/create$/', 'index', $routeName),
-                routeParameters: $routeParameters,
-            ),
-            [
+        return match ($routeName) {
+            'grp.org.shops.show.crm.customers.show.customer-clients.create' =>
+            array_merge(
+                IndexCustomerClients::make()->getBreadcrumbs(
+                    routeName: preg_replace('/create$/', 'index', $routeName),
+                    routeParameters: $routeParameters,
+                ),
                 [
-                    'type'          => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __('Creating Client'),
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __('Creating Client'),
+                        ]
                     ]
                 ]
-            ]
-        );
+            ),
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create' =>
+            array_merge(
+                IndexCustomerClients::make()->getBreadcrumbs(
+                    routeName: preg_replace('/create$/', 'aiku.index', $routeName),
+                    routeParameters: $routeParameters,
+                ),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __('Creating Client'),
+                        ]
+                    ]
+                ]
+            ),
+            default => []
+        };
     }
 }

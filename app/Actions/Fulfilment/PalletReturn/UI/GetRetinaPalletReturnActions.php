@@ -84,7 +84,7 @@ class GetRetinaPalletReturnActions
     {
         $actions = [];
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $actions = [
+            $actions[] = [
                 [
                     'type'    => 'button',
                     'style'   => 'tertiary',
@@ -100,8 +100,7 @@ class GetRetinaPalletReturnActions
         }
 
         if ($palletReturn->pallets()->count() > 0) {
-            $actions = array_merge(
-                $actions,
+            $actions[] =
                 [
                     'type'     => 'button',
                     'style'    => 'save',
@@ -116,8 +115,8 @@ class GetRetinaPalletReturnActions
                             'palletReturn' => $palletReturn->id
                         ]
                     ]
-                ]
-            );
+                ];
+
         }
 
         return $actions;

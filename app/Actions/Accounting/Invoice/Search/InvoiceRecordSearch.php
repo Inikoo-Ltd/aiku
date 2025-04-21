@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\Search;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,28 +29,7 @@ class InvoiceRecordSearch
             return;
         }
 
-        $shop = $invoice->shop;
-
-        if ($shop->type == ShopTypeEnum::FULFILMENT) {
-            $route = [
-                'name'          => 'grp.org.fulfilments.show.operations.invoices.show',
-                'parameters'    => [
-                    $invoice->organisation->slug,
-                    $invoice->shop->slug,
-                    $invoice->slug
-                ]
-            ];
-        } else {
-            $route = [
-                'name'          => 'grp.org.accounting.invoices.show',
-                'parameters'    => [
-                    $invoice->organisation->slug,
-                    $invoice->slug
-                ]
-            ];
-        }
-
-
+        $shop                = $invoice->shop;
         $universalSearchData = [
             'group_id'          => $invoice->group_id,
             'organisation_id'   => $invoice->organisation_id,
@@ -59,44 +39,38 @@ class InvoiceRecordSearch
             'customer_id'       => $invoice->customer_id,
             'customer_slug'     => $invoice->slug,
             'sections'          => ['accounting', 'ordering'],
-            'haystack_tier_1'   => trim($invoice->reference . ' ' . $invoice->customer->name),
+            'haystack_tier_1'   => trim($invoice->reference.' '.$invoice->customer_name),
             'keyword'           => $invoice->reference,
             'result'            => [
-                'route'     => $route,
-                'routes' => [
-                    'ordering' => [
-                        'name'          => 'grp.org.shops.show.ordering.orders.show',
-                        'parameters'    => [
-                            $invoice->organisation->slug,
-                            $invoice->shop->slug,
-                            $invoice->slug
-                        ]
-                    ]
+                'route' => [
+                    'name'       => 'grp.org.redirect.invoices',
+                    'parameters' => [$invoice->id]
                 ],
-                'description'     => [
-                    'label'   => $invoice->customer->name,
+
+                'description' => [
+                    'label' => $invoice->customer_name,
                 ],
-                'code'         => [
+                'code'        => [
                     'label' => $invoice->reference,
                 ],
-                'icon'      => [
-                    'icon' => 'fal fa-file-invoice-dollar',
+                'icon'        => [
+                    'icon' => $invoice->type == InvoiceTypeEnum::INVOICE ? 'fal fa-file-invoice-dollar' : 'fal fa-file-minus',
                 ],
-                'meta'      => [
+                'meta'        => [
                     [
-                        'label' => $invoice->type,
+                        'label'   => $invoice->type,
                         'tooltip' => __('Type')
                     ],
                     [
-                        'type'  => 'date',
-                        'label' => $invoice->created_at,
+                        'type'    => 'date',
+                        'label'   => $invoice->date,
                         'tooltip' => __('Date')
                     ],
                     [
-                        'type'   => 'currency',
-                        'code'   => $invoice->currency->code,
-                        'label'  => 'Total: ',
-                        'amount' => $invoice->total_amount,
+                        'type'    => 'currency',
+                        'code'    => $invoice->currency->code,
+                        'label'   => 'Total: ',
+                        'amount'  => $invoice->total_amount,
                         'tooltip' => __('Total amount')
                     ],
                 ],

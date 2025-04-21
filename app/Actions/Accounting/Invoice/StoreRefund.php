@@ -28,9 +28,8 @@ class StoreRefund extends OrgAction
      */
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
-
-        $count = $invoice->refunds->count() + 1;
-        $reference = $invoice->reference . '-refund-' . $count;
+        $count     = $invoice->refunds->count() + 1;
+        $reference = $invoice->reference.'-refund-'.$count;
 
         data_set($modelData, 'reference', $reference);
         data_set($modelData, 'type', InvoiceTypeEnum::REFUND);
@@ -42,7 +41,7 @@ class StoreRefund extends OrgAction
         data_set($modelData, 'org_net_amount', 0);
         data_set($modelData, 'tax_amount', 0);
         data_set($modelData, 'in_process', true);
-        data_set($modelData, 'invoice_id', $invoice->id);
+        data_set($modelData, 'original_invoice_id', $invoice->id);
         data_set($modelData, 'customer_id', $invoice->customer_id);
         data_set($modelData, 'currency_id', $invoice->currency_id);
         data_set($modelData, 'tax_category_id', $invoice->tax_category_id);
@@ -70,12 +69,9 @@ class StoreRefund extends OrgAction
 
     public function rules(): array
     {
-        return[
+        return [
 
         ];
-
-
-
     }
 
     /**

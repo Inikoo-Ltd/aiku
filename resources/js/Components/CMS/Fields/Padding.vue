@@ -1,47 +1,53 @@
 <script setup lang="ts">
-import { onMounted, inject } from 'vue'
+import { onMounted } from 'vue'
 import PaddingMarginProperty from '@/Components/Workshop/Properties/PaddingMarginProperty.vue'
 import { trans } from 'laravel-vue-i18n'
-import { cloneDeep, defaultsDeep } from 'lodash-es'
-import { isPlainObject } from 'lodash-es'
+import { cloneDeep, isPlainObject } from 'lodash-es'
 
-const emit = defineEmits(['update:modelValue'])
-
-const model = defineModel<{
-  unit?: string
-  top?: { value: number | null }
-  left?: { value: number | null }
-  right?: { value: number | null }
-  bottom?: { value: number | null }
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: PaddingMarginModel): void
 }>()
 
+interface SideValue {
+  value: number | null
+}
 
-// Default values
-const localModel = {
-  unit: "px",
+interface PaddingMarginModel {
+  unit?: string
+  top?: SideValue
+  left?: SideValue
+  right?: SideValue
+  bottom?: SideValue
+}
+
+const model = defineModel<PaddingMarginModel>()
+
+const defaultModel: Required<PaddingMarginModel> = {
+  unit: 'px',
   top: { value: null },
   left: { value: null },
   right: { value: null },
-  bottom: { value: null }
+  bottom: { value: null },
 }
-
-
 
 onMounted(() => {
   if (!isPlainObject(model.value)) return
 
-  for (const key in localModel) {
-    if (!(key in model.value)) {
-      // @ts-ignore
-      model.value[key] = cloneDeep(localModel[key])
+  for (const key in defaultModel) {
+    const k = key as keyof PaddingMarginModel
+    if (!(k in model.value!)) {
+      model.value![k] = cloneDeep(defaultModel[k])
     }
   }
 })
-
 </script>
 
 <template>
   <div class="pb-3">
-    <PaddingMarginProperty :modelValue="model" :scope="trans('Padding')" @update:modelValue="(val) => emit('update:modelValue',val)"/>
+    <PaddingMarginProperty
+      :modelValue="model || defaultModel"
+      :scope="trans('Padding')"
+      @update:modelValue="val => emit('update:modelValue', val)"
+    />
   </div>
 </template>

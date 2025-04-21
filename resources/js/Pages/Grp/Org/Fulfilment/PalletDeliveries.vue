@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TablePalletDeliveries from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveries.vue"
 import TablePalletUploads from "@/Components/Tables/TablePalletUploads.vue"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
@@ -20,7 +20,7 @@ import { useTabChange } from "@/Composables/tab-change"
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: Navigation

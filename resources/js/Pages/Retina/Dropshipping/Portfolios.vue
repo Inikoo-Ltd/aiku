@@ -8,32 +8,38 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from "vue"
 
-import { PageHeading as TSPageHeading } from "@/types/PageHeading"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import TablePortfolios from "@/Components/Tables/Grp/Org/Catalogue/TablePortfolios.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { routeType } from "@/types/route"
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
 const props = defineProps<{
 	title: string
-	pageHead: TSPageHeading
+	pageHead: PageHeadingTypes
 	tabs: TSTabs
 	products: {}
 	is_manual: boolean
+	order_route: routeType
 }>()
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const productRoute = ref()
 const selectedChildProducts = ref<any[]>([])
+const tablePortfoliosRef = ref(null)
+const orderMode = ref(false)
 
-const handleUpdateSelected = (selected: any[]) => {
-	console.log("selected", selected)
+const onCreateOrder = () => {
+	orderMode.value = true
+}
 
-	selectedChildProducts.value = selected
+const onCancelOrder = () => {
+	orderMode.value = false
 }
 
 const component = computed(() => {
@@ -44,65 +50,28 @@ const component = computed(() => {
 
 	return components[currentTab.value]
 })
-
-const onSubmitProduct = (action: any) => {
-	console.log("action", action.route)
-	console.log("selectedChildProducts", selectedChildProducts.value)
-
-	router.post(
-		route(action.route.name, action.route.parameters),
-		{
-			product_ids: selectedChildProducts.value.map((sel) => sel.item_id),
-		},
-		{
-			headers: {
-				Authorization: `Bearer ${window.sessionToken}`,
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			onStart: () => {
-				/* isLoadingSubmit.value = true */
-			},
-			onSuccess: () => {
-				notify({
-					title: trans("Success"),
-					text:
-						trans("Successfully added") +
-						` ${selectedChildProducts.value.length} ` +
-						trans("products"),
-					type: "success",
-				})
-				selectedChildProducts.value = []
-			},
-			onError: () => {
-				notify({
-					title: trans("Failed"),
-					text: trans("Something went wrong. Try again."),
-					type: "error",
-				})
-			},
-			onFinish: () => {
-				/* isLoadingSubmit.value = false */
-			},
-		}
-	)
-}
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #button-create-order="{ action }">
+	
+		<template #other="{ action }">
 			<Button
-				@click="() => onSubmitProduct(action)"
-				:label="action.label"
-				:icon="action.icon" />
+				v-if="!orderMode && is_manual"
+				@click="onCreateOrder"
+				:label="'Create Order'"
+				:style="'create'"
+				 />
+			<Button
+				v-if="orderMode && is_manual"
+				@click="onCancelOrder"
+				:label="'Cancel'"
+				:style="'cancel'"
+			 />
 		</template>
 	</PageHeading>
 	<!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 	<!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-	<TablePortfolios
-		:data="props.products"
-		:tab="'products'"
-		:is_manual
-		@update-selectedProducts="handleUpdateSelected" />
+	<TablePortfolios :data="props.products" :tab="'products'" :is_manual :orderMode="orderMode" :order_route />
 </template>

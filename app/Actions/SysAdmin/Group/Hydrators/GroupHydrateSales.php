@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 05 Apr 2024 11:19:04 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Fri, 05 Apr 2024 11:19:04 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -49,20 +49,20 @@ class GroupHydrateSales implements ShouldBeUnique
 
         $stats     = $this->getIntervalsData(
             stats: $stats,
-            dateField: 'created_at',
             queryBase: $queryBase,
             statField: 'baskets_created_grp_currency_',
+            dateField: 'created_at',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $stats     = $this->getIntervalsData(
             stats: $stats,
-            dateField: 'updated_at',
             queryBase: $queryBase,
             statField: 'baskets_updated_grp_currency_',
+            dateField: 'updated_at',
             intervals: $intervals,
-            doPreviousPeriods: $doPreviousIntervals
+            doPreviousPeriods: $doPreviousPeriods
         );
 
 

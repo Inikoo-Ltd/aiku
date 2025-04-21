@@ -8,7 +8,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, defineAsyncComponent, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import Popover from '@/Components/Popover.vue'
 
@@ -28,7 +28,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase?: {
         stats: {}

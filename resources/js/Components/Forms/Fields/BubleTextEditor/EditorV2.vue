@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
+/* import type DataTable from "@/models/table" */
 import Select from 'primevue/select'
 import { useFontFamilyList } from '@/Composables/useFont'
+
 import TiptapToolbarButton from "@/Components/Forms/Fields/BubleTextEditor/TiptapToolbarButton.vue"
 import TiptapToolbarGroup from "@/Components/Forms/Fields/BubleTextEditor/TiptapToolbarGroup.vue"
 import Paragraph from "@tiptap/extension-paragraph"
@@ -37,10 +39,13 @@ import { Color } from '@tiptap/extension-color'
 import FontSize from 'tiptap-extension-font-size'
 import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
+import PureColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
+import ColorPicker from 'primevue/colorpicker';
 import suggestion from './Variables/suggestion'
 import ImageResize from 'tiptap-extension-resize-image';
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
+
 import {
     faUndo,
     faRedo,
@@ -54,6 +59,7 @@ import {
     faUnderline,
     faStrikethrough,
     faImage,
+    faVideo,
     faMinus,
     faList,
     faListOl,
@@ -62,9 +68,11 @@ import {
     faAlignRight,
     faFileVideo,
     faPaintBrushAlt,
+    faText,
     faTextSize,
     faDraftingCompass,
     faExternalLink,
+    faTimesCircle,
 } from "@far"
 import { faEraser, faTint } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -76,11 +84,11 @@ import TiptapTableDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapT
 import TiptapImageDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapImageDialog.vue"
 import { Plugin } from "prosemirror-state"
 import Variabel from "./Variables/Variables"
+import CustomLink from "./CustomLink/CustomLink.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
 import { faTable } from "@fal"
-import { CustomImage } from "./CustomResizeImage/CustomImageSetting"
 
 const props = withDefaults(defineProps<{
     modelValue: string | null,
@@ -129,9 +137,7 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
-        CustomImage,
-        /* Image, */
-        /* ImageResize, */
+        ImageResize,
         History,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...", // Fallback to default placeholder
@@ -216,6 +222,7 @@ const editorInstance = useEditor({
         TableHeader,
         TableCell,
         Gapcursor,
+        Image,
         TextStyle,
         FontSize.configure({
             types: ['textStyle'],
@@ -283,51 +290,10 @@ function updateLink(value?: string) {
 }
 
 
-function insertImage(url: string, alt = 'image_editor', float: 'left' | 'right' | 'none' = 'left') {
-  editorInstance.value.commands.insertContentAt(editorInstance.value.state.selection.from, {
-    type: 'image',
-    attrs: {
-      src: url,
-      alt,
-      float,
-      width: '300px',
-    },
-  });
+function insertImage(url: string) {
+    //function alt by ai
+    editorInstance.value?.chain().focus().setImage({ src: url, alt :"image" }).run()
 }
-
-
-/* function setImageFloat(direction) {
-  const editor = editorInstance.value;
-  if (!editor) return;
-
-  const { state, view } = editor;
-  const { selection } = state;
-  const pos = selection.from;
-
-  let found = false;
-
-  state.doc.descendants((node, posHere) => {
-    if (found) return false;
-
-    if (node.type.name === 'image') {
-      const end = posHere + node.nodeSize;
-      if (pos >= posHere && pos <= end) {
-        // Update style (float)
-        view.dispatch(
-          state.tr.setNodeMarkup(posHere, undefined, {
-            ...node.attrs,
-            float: direction,
-          })
-        );
-        found = true;
-        return false;
-      }
-    }
-    return true;
-  });
-} */
-
-
 
 function insertYoutubeVideo(url: string) {
     editorInstance.value?.commands.setYoutubeVideo({
@@ -439,7 +405,7 @@ defineExpose({
                                 </div>
                                 <div
                                     class="w-min h-32 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
-                                    <div v-for="fontsize in ['8', '9', '12', '14', '16','18', '20', '24', '28', '36', '44', '52', '64']"
+                                    <div v-for="fontsize in ['8', '9', '12', '14', '16', '20', '24', '28', '36', '44', '52', '64']"
                                         :key="fontsize"
                                         class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100"
                                         :class="{ 'bg-indigo-600 text-white': parseInt(editorInstance?.getAttributes('textStyle').fontSize, 10) === parseInt(fontsize) }"
@@ -561,7 +527,7 @@ defineExpose({
                         <TiptapToolbarButton v-if="toogle.includes('image')" label="Image"
                             @click="() => { showAddImageDialog = true, showDialog = true }">
                             <FontAwesomeIcon :icon="faImage" class="h-5 w-5" />
-                        </TiptapToolbarButton>]
+                        </TiptapToolbarButton>
 
                         <TiptapToolbarButton v-if="toogle.includes('video')" label="Youtube Video"
                             @click="() => { showAddYoutubeDialog = true, showDialog = true }">
@@ -751,6 +717,15 @@ defineExpose({
     font-family: "Inter", sans-serif;
 }
 
+.editor-class p {
+    display: block;
+    margin-block-start: 0em;
+    margin-block-end: 0em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    unicode-bidi: isolate;
+}
+
 :deep(.ProseMirror) {
     @apply focus:outline-none px-0 py-0 min-h-[10px] relative;
 }
@@ -765,10 +740,10 @@ defineExpose({
 
 :deep(.editor-class p) {
     display: block;
-    margin-block-start: 0;
-    margin-block-end: 0;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
+    margin-block-start: 0em;
+    margin-block-end: 0em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
     unicode-bidi: isolate;
 }
 
@@ -836,28 +811,12 @@ defineExpose({
 }
 
 :deep(.ProseMirror h3) {
-    margin-block-end: 0;
+    margin-block-end: 0em;
 }
 
 /* :deep(.ProseMirror img) {
-  @apply mr-6 w-full max-w-[480px] max-h-[320px] object-contain object-center;
+    @apply mr-6 w-full max-w-[480px] max-h-[320px] object-contain object-center;
 } */
-
-
-/* Float kiri */
-:deep(.ProseMirror img[style*="float:left"]) {
-    margin-right: 1em;
-    margin-bottom: 1em;
-    max-width: 300px;
-}
-
-/* Float kanan */
-:deep(.ProseMirror img[style*="float:right"]) {
-    margin-left: 1em;
-  margin-bottom: 1em;
-  max-width: 300px;
-}
-
 
 :deep(.ProseMirror img.ProseMirror-selectednode),
 :deep(.ProseMirror div[data-youtube-video]) {
@@ -899,24 +858,5 @@ defineExpose({
 
 :deep(.ProseMirror-focused .ProseMirror-gapcursor) {
     @apply block;
-}
-
-@media screen and (max-width: 768px) {
-  :deep(.ProseMirror img) {
-    width: 100% !important;
-    height: auto !important;
-    max-width: 100% !important;
-    float: none !important;
-    margin: 0 auto !important;
-    display: block !important;
-    aspect-ratio: 16 / 9 !important;
-  }
-
-  :deep(.ProseMirror div[style*="float:left"]),
-  :deep(.ProseMirror div[style*="float:right"]) {
-    float: none !important;
-    width: 100% !important;
-    margin: 0 auto !important;
-  }
 }
 </style>

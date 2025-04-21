@@ -15,6 +15,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
@@ -51,8 +52,10 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
 
         $query->with(['item']);
 
-        if ($this->customer->fulfilmentCustomer) {
+        if ($this->customer->is_fulfilment) {
             $query->where('item_type', class_basename(StoredItem::class));
+        } else {
+            $query->where('item_type', class_basename(Product::class));
         }
 
         return $query->withPaginator($prefix, tableName: request()->route()->getName())
@@ -133,21 +136,15 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                                 ]
                             ]
                         ] : [],
-                        $this->customer->is_dropshipping && isset($this->platform) && ($this->platformUser instanceof WebUser) ? [
-                            'type' => 'button',
-                            'style' => 'create',
-                            'key' => 'create-order',
-                            'label' => 'Create Order',
-                            'route' => [
-                                'name' => 'retina.models.customer.order.platform.store',
-                                'parameters' => [
-                                    'customer' => $this->customer->id,
-                                    'platform' => $this->platform->id
-                                ]
-                            ]
-                        ] : [],
                     ]
                 ],
+                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::AIKU ? [
+                    'name' => 'retina.models.customer.order.platform.store',
+                    'parameters' => [
+                        'customer' => $this->customer->id,
+                        'platform' => $this->platform->id
+                    ]
+                ] : [],
                 'tabs' => [
                     'current' => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
@@ -179,6 +176,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 

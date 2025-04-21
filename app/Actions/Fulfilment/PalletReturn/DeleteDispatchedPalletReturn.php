@@ -25,7 +25,6 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,7 +43,6 @@ class DeleteDispatchedPalletReturn extends OrgAction
 
     private bool $action = false;
     private FulfilmentCustomer $fulfilmentCustomer;
-    private PalletReturn $palletReturn;
 
 
     public function handle(PalletReturn $palletReturn, array $modelData = []): void
@@ -143,7 +141,7 @@ class DeleteDispatchedPalletReturn extends OrgAction
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
     }
 
-    public function asController(Organisation $organisation, PalletReturn $palletReturn, ActionRequest $request): void
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): void
     {
         $this->fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);

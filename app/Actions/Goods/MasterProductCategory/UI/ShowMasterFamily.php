@@ -78,14 +78,15 @@ class ShowMasterFamily extends GrpAction
                         'title' => __('department')
                     ],
                     'actions' => [
-                        $this->canEdit ? [
+                        [
                             'type'  => 'button',
                             'style' => 'edit',
+                            'label' => 'blueprint',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false,
+                        ],
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',

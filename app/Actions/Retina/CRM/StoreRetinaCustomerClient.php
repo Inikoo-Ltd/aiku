@@ -16,6 +16,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -62,6 +63,13 @@ class StoreRetinaCustomerClient extends RetinaAction
      */
     public function asController(ActionRequest $request): CustomerClient
     {
+        $this->initialisation($request);
+        return $this->handle($this->customer, $this->validatedData);
+    }
+
+    public function inPlatform(Platform $platform, ActionRequest $request): CustomerClient
+    {
+        $this->set('platform_id', $platform->id);
         $this->initialisation($request);
         return $this->handle($this->customer, $this->validatedData);
     }

@@ -681,7 +681,7 @@ test('UI show invoice (in Operation)', function () {
             )
             ->has('box_stats')
             ->has('order_summary')
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has('tabs');
     });
 });
@@ -702,7 +702,7 @@ test('UI show invoice (in Fulfilment Customer)', function () {
             )
             ->has('box_stats')
             ->has('order_summary')
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has('tabs');
     });
 });

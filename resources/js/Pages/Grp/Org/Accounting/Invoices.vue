@@ -17,13 +17,15 @@ import {
   faArrowCircleLeft
 } from "@fal";
 import { useTabChange } from '@/Composables/tab-change'
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
+import { Icon } from "@/types/Utils/Icon";
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faFileMinus, faArrowCircleLeft);
 
 const props = defineProps<{
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   data: object
   title: string
   tabs?: {
@@ -33,6 +35,14 @@ const props = defineProps<{
   invoices?: object
   refunds?: object
   in_process?: {}
+  invoiceExportOptions: {
+    type: string
+    name: string
+    label: string
+    parameters: any
+    tooltip: string
+    icon: Icon
+  }[]
 }>()
 
 
@@ -57,7 +67,25 @@ if (props.tabs) {
 
 <template>
     <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <div v-if="props.invoiceExportOptions?.length" class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
+                <a v-for="exportOption in props.invoiceExportOptions"
+                :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
+                target="_blank"
+                class="w-auto mt-0 sm:flex-none text-base"
+                v-tooltip="exportOption.tooltip"
+                >
+                <Button
+                    :label="exportOption.label"
+                    :icon="exportOption.icon"
+                    type="tertiary"
+                    class="rounded-none border-transparent"
+                />
+                </a>
+            </div>
+        </template>
+    </PageHeading>
     <template v-if="props.tabs">
         <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
         <component :is="component" :data="props[currentTab]" :resource="props[currentTab]" :tab="currentTab" :name="currentTab"></component>

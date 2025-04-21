@@ -40,7 +40,6 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -65,7 +64,6 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
@@ -1077,7 +1075,7 @@ test('UI show list payments', function () {
 });
 
 test('UI show list invoices in group', function () {
-    $response = get(route('grp.overview.ordering.invoices.index'));
+    $response = get(route('grp.overview.accounting.invoices.index'));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1222,34 +1220,6 @@ test('UI show list invoices in customer', function () {
     });
 });
 
-test('UI show list invoices in customer client', function () {
-    $this->withoutExceptionHandling();
-    $shop = $this->shop;
-    $customer = createCustomer($shop);
-    $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
-    $response = get(route('grp.org.shops.show.crm.customers.show.customer-clients.invoices.index', [
-        'organisation' => $this->organisation->slug,
-        'shop' => $shop->slug,
-        'customer' => $customer->slug,
-        'customerClient' => $customerClient->ulid]));
-
-    $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
-        $page
-            ->component('Org/Accounting/Invoices')
-            ->has('title')
-            ->has('breadcrumbs')
-            ->has('pageHead')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', $customerClient->name)
-                    ->has('subNavigation')
-                    ->etc()
-            )
-            ->has('tabs')
-            ->has('invoices');
-    });
-});
 
 test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
@@ -1282,7 +1252,7 @@ test('UI show invoice in Organisation', function () {
                     ->has('navigation')
             )
             ->has('order_summary', 3)
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
@@ -1300,7 +1270,6 @@ test('UI show invoice in Organisation', function () {
                     ->has(
                         'information',
                         fn (AssertableInertia $page) => $page
-                            ->has('recurring_bill')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1314,7 +1283,7 @@ test('UI show invoice in Shop', function () {
     $shop = $this->shop;
     $customer = createCustomer($shop);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
-    $response = get(route('grp.org.shops.show.dashboard.invoices.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
+    $response = get(route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
         $page->component('Org/Accounting/Invoice')
@@ -1340,7 +1309,7 @@ test('UI show invoice in Shop', function () {
                     ->has('navigation')
             )
             ->has('order_summary', 3)
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
@@ -1358,7 +1327,6 @@ test('UI show invoice in Shop', function () {
                     ->has(
                         'information',
                         fn (AssertableInertia $page) => $page
-                            ->has('recurring_bill')
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1378,8 +1346,9 @@ test('Delete invoice', function () {
         'deleted_note' => 'test'
     ]);
     $customer->refresh();
-    expect($invoice->trashed())->toBeTrue();
-    expect($customer->stats->number_invoices)->toBe(2);
+    expect($invoice->trashed())->toBeTrue()
+        ->and($customer->stats->number_invoices)->toBe(2);
+
     return $invoice;
 });
 
@@ -1394,7 +1363,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Accounting/InvoicesDeleted')
+            ->component('Org/Accounting/DeletedInvoices')
             ->has('title')
             ->has('breadcrumbs')
             ->has('pageHead')
@@ -1402,7 +1371,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->has('subNavigation')
-                    ->where('title', 'Invoices')
+                    ->where('title', 'Deleted Invoices')
                     ->etc()
             )
             ->has('data');

@@ -44,9 +44,7 @@ trait WithProcessAurora
 
             $delay = (int) Arr::get($validatedData, 'delay', 0);
 
-            (new $this->fetcher())::dispatch($organisation->id, Arr::get($validatedData, 'id'), $with)
-                ->withTimeout(1200)
-                ->delay($delay);
+            (new $this->fetcher())::dispatch($organisation->id, Arr::get($validatedData, 'id'), $with)->delay($delay);
 
             return [
                 'organisation' => $organisation->slug,

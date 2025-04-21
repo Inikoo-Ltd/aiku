@@ -20,7 +20,7 @@ import { set, get } from 'lodash-es'
 import ToggleSwitch from 'primevue/toggleswitch';
 
 import { routeType } from "@/types/route"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 
 import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBoothCurtain } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -35,7 +35,7 @@ import Toggle from '@/Components/Pure/Toggle.vue'
 library.add(faBrowser, faPresentation, faCube, faText, faHeart, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, falHeart, faLowVision)
 
 const props = defineProps<{
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     title: string
     uploadImageRoute: routeType
     data: {

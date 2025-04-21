@@ -156,6 +156,7 @@ class FetchAuroraCustomer extends FetchAurora
                 'status'              => $status,
                 'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Customer Key'},
                 'created_at'          => $this->auroraModelData->{'Customer First Contacted Date'},
+                'registered_at'       => $this->auroraModelData->{'Customer First Contacted Date'},
                 'contact_address'     => $billingAddress,
                 'tax_number'          => $taxNumber,
                 'email_subscriptions' => $emailSubscriptions,

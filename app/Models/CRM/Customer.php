@@ -124,6 +124,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions
+ * @property-read Collection<int, \App\Models\CRM\CustomerHasPlatform> $customerHasPlatforms
  * @property-read Collection<int, \App\Models\CRM\CustomerNote> $customerNotes
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
@@ -362,7 +363,12 @@ class Customer extends Model implements HasMedia, Auditable
     public function platforms(): BelongsToMany
     {
         return $this->belongsToMany(Platform::class, 'customer_has_platforms')
-            ->withPivot('group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
+            ->withPivot('id', 'platform_id', 'group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
+    }
+
+    public function customerHasPlatforms(): HasMany
+    {
+        return $this->hasMany(CustomerHasPlatform::class);
     }
 
     public function getMainPlatform(): Platform|null
