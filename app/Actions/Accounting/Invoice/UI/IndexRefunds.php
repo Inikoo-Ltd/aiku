@@ -31,6 +31,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -183,6 +184,10 @@ class IndexRefunds extends OrgAction
 
     public function getExportOptions(?string $filter): array
     {
+        if (!Arr::get($this->organisation->settings, 'invoice_export.show_omega')) {
+            return [];
+        }
+
         if ($this->parent instanceof Organisation) {
             $route      = 'grp.org.accounting.invoices.index.omega';
             $parameters = array_filter([
