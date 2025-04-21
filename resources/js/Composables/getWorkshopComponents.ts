@@ -11,6 +11,7 @@ import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
 import CTA3 from '@/Components/CMS/Webpage/CTA3/CTA3Workshop.vue'
 import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
 import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
+import Timeline from '@/Components/CMS/Webpage/Timeline/TimelineWorkshop.vue'
 import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
 import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
 import Overview from '@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'
@@ -68,6 +69,7 @@ export const getComponent = (componentName: string) => {
         'button' : Button,
         'column-layout-2': ColumnWorkshop,
         'disclosure': DisclosureWorkshop,
+        'timeline' : Timeline
     }
     return components[componentName] ?? NotFoundComponents
 }

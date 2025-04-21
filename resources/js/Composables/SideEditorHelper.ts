@@ -36,6 +36,7 @@ import TextHeader from '@/Components/CMS/Fields/TextHeader.vue'
 import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
 import ColorProperty from '@/Components/Workshop/Properties/ColorProperty.vue'
 import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
+import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -71,7 +72,8 @@ export const getComponent = (componentName: string) => {
         "color" : ColorProperty, //done
         "column-layout" : ColumnComponentPicker,
         "disclosure" : Disclosure,
-        "inputSwitch" : TextInputSwitch
+        "inputSwitch" : TextInputSwitch,
+        "timeline" : TimelineArray
     }
     
     return components[componentName] ?? NotFoundComponents

@@ -1,0 +1,82 @@
+{
+	"scope": "webpage",
+	"slug": "timeline",
+	"code": "timeline",
+	"name": "timeline",
+	"icon": ["fal", "text"],
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"border": {
+						"top": { "value": 0 },
+						"left": { "value": 0 },
+						"right": { "value": 0 },
+						"bottom": { "value": 0 },
+						"unit": "px",
+						"color": "#000000",
+						"rounded": {
+							"unit": "px",
+							"topleft": { "value": 0 },
+							"topright": { "value": 0 },
+							"bottomleft": { "value": 0 },
+							"bottomright": { "value": 0 }
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#ffffff",
+						"image": {
+							"original": null
+						}
+					},
+					"margin": {
+						"top": { "value": 0 },
+						"left": { "value": 0 },
+						"right": { "value": 0 },
+						"bottom": { "value": 0 },
+						"unit": "px"
+					},
+					"padding": {
+						"top": { "value": 0 },
+						"left": { "value": 0 },
+						"right": { "value": 0 },
+						"bottom": { "value": 0 },
+						"unit": "px"
+					},
+					"dimension": {
+						"width": { "unit": "%", "value": "100" },
+						"height": { "unit": "%", "value": "100" }
+					}
+				}
+			},
+			"timeline": [
+                {
+                  "title": "Fact Finder",
+                  "time": "",
+                  "description": "The “Fact Finder” provides Total Fulfilment with an overview of your fulfilment requirements and allows us to produce a bespoke quote. Questions are related to your inventory, expected volumes of sales and storage and anything that may be unique to your business.",
+                  "icon": ["fal","info-circle"]
+                },
+                {
+                  "title": "Quote",
+                  "time": "Within 24 hours",
+                  "description": "Within 24 hours of receiving the completed “Fact Finder”, Total Fulfilment will provide you with a bespoke quote for the required fulfilment services.",
+                  "icon": ["fal","file-invoice-dollar"]
+                },
+                {
+                  "title": "Terms and Conditions",
+                  "time": "",
+                  "description": "Following acceptance of the quote, terms and conditions will be agreed and payment services activated.",
+                  "icon": ["fal","file-contract"]
+                },
+                {
+                  "title": "Creation of TF Hub",
+                  "time": "",
+                  "description": "You will now be given access to your TF Hub. A demonstration will be provided by Total Fulfilment and you will have the chance to explore all the ecommerce fulfilment features before going live.",
+                  "icon": ["fal","cubes"]
+                }
+              ]
+              
+		}
+	}
+}
