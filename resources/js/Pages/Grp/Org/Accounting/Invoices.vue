@@ -73,7 +73,6 @@ if (props.tabs) {
             <div v-if="props.invoiceExportOptions?.length" class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
                 <a v-for="exportOption in props.invoiceExportOptions"
                 :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
-                target="_blank"
                 class="w-auto mt-0 sm:flex-none text-base"
                 v-tooltip="exportOption.tooltip"
                 >
