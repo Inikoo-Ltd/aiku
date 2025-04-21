@@ -181,7 +181,7 @@ class IndexRefunds extends OrgAction
         };
     }
 
-    public function getExportOptions(string $filter): array
+    public function getExportOptions(?string $filter): array
     {
         if ($this->parent instanceof Organisation) {
             $route      = 'grp.org.accounting.invoices.index.omega';
@@ -205,7 +205,7 @@ class IndexRefunds extends OrgAction
         return [
             [
                 'type'       => 'omega',
-                'icon'       => 'fas fa-file-code',
+                'icon'       => 'fas fa-omega',
                 'tooltip'    => __('Download Omega'),
                 'label'      => 'Omega',
                 'name'       => $route,

@@ -42,7 +42,7 @@ import {
   faStarHalfAlt,
   faArrowCircleLeft
 } from "@fal";
-import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft } from "@fas";
+import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega } from "@fas";
 import { faCheck, faTrash } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -59,7 +59,7 @@ import invoice from "@/Pages/Grp/Org/Accounting/Invoice.vue";
 
 library.add(
   faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,
-  faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt);
+  faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt, faOmega);
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
