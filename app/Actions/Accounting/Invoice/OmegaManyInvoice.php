@@ -22,12 +22,10 @@ use Illuminate\Support\Carbon;
 
 class OmegaManyInvoice extends OrgAction
 {
-    public function handle(Organisation $organisation, ?Shop $shop = null, array $modelData): Response
+    public function handle(Organisation $organisation, array $modelData, ?Shop $shop = null): Response
     {
-
-
-        $filter  = Arr::pull($modelData, 'filter', 'all');
-        $filename = 'omega-invoice-'. $filter .'.txt';
+        $filter   = Arr::pull($modelData, 'filter', 'all');
+        $filename = 'omega-invoice-'.$filter.'.txt';
 
         $query = Invoice::where('organisation_id', $organisation->id);
 
@@ -40,10 +38,9 @@ class OmegaManyInvoice extends OrgAction
             $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
 
             $query->whereBetween('date', [$start, $end]);
-
         }
 
-        $type = Arr::pull($modelData, 'type', 'invoice');
+        $type   = Arr::pull($modelData, 'type', 'invoice');
         $bucket = Arr::pull($modelData, 'bucket', 'all');
 
         $query = $query->where('type', $type);
@@ -60,20 +57,27 @@ class OmegaManyInvoice extends OrgAction
         set_time_limit(0);
         ini_set('max_execution_time', 0);
 
-        return response()->streamDownload(function () use ($query) {
-
-            $page = 1;
-            $perPage = 100;
-            do {
-                $chunk = $query->forPage($page, $perPage)->get();
-                foreach ($chunk as $invoice) {
-                    echo OmegaInvoice::run($invoice);
-                    ob_flush();
-                    flush();
-                }
-                $page++;
-            } while ($chunk->isNotEmpty());
-        }, $filename);
+        return response()->stream(
+            function () use ($query) {
+                $page    = 1;
+                $perPage = 100;
+                do {
+                    $chunk = $query->forPage($page, $perPage)->get();
+                    foreach ($chunk as $invoice) {
+                        echo OmegaInvoice::run($invoice);
+                        ob_flush();
+                        flush();
+                    }
+                    $page++;
+                } while ($chunk->isNotEmpty());
+            },
+            200,
+            [
+                'Content-Type'        => 'text/plain',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                'X-Accel-Buffering'   => 'no'
+            ]
+        );
     }
 
 
