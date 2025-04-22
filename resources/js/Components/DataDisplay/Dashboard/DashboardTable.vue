@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
-import { faTriangle } from "@fas"
+import { faTriangle, faEquals } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Link } from "@inertiajs/vue3"
@@ -180,6 +180,36 @@ const updateToggle = async (key: string, value: string) => {
 	// 	)
 	// }
 }
+
+const getIntervalChangesIcon = (change: string) => {
+	if (change === 'increase') {
+		return {
+			icon: faTriangle
+		}
+	} else if (change === 'decrease') {
+		return {
+			icon: faTriangle,
+			class: 'rotate-180'
+		}
+	} else if (change === 'no_change') {
+		return {
+			icon: faEquals,
+		}
+	} else {
+		return null
+	}
+}
+const getIntervalStateColor = (state: string) => {
+	if (state === 'positive') {
+		return 'text-green-500'
+	} else if (state === 'negative') {
+		return 'text-red-500'
+	} else if (state === 'neutral') {
+		return 'text-gray-400'
+	} else {
+		return null
+	}
+}
 </script>
 
 <template>
@@ -226,7 +256,7 @@ const updateToggle = async (key: string, value: string) => {
 						:field="colSlug"
 					>
 						<template #header>
-							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
+							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
 								:class="column.align === 'left' ? '' : 'justify-end text-right'"
 								v-tooltip="column.tooltip"
 							>
@@ -251,12 +281,12 @@ const updateToggle = async (key: string, value: string) => {
 									>
 										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 										<FontAwesomeIcon
-											v-if="data.columns?.[colSlug]?.[intervals.value]?.change"
-											:icon="faTriangle"
+											v-if="data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change"
+											:icon="getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.icon"
 											class="text-sm"
 											:class="[
-												data.columns?.[colSlug]?.[intervals.value]?.change == 'increase' ? '' : 'rotate-180',
-												data.columns?.[colSlug]?.[intervals.value]?.state == 'positive' ? 'text-green-500' : 'text-red-500',
+												getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.class,
+												getIntervalStateColor(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.state),
 											]"
 											fixed-width
 											aria-hidden="true"
