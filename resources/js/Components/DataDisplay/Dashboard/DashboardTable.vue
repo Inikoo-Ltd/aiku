@@ -23,6 +23,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Link } from "@inertiajs/vue3"
 import column from "@/Components/SpreadSheets/Column.vue";
 import axios from "axios"
+import { debounce } from "lodash"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -94,12 +95,16 @@ const props = defineProps<{
 			value: string
 		}
 	}
+	currentTab: string
 }>()
+
+const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
 console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
+console.log('%c Settings ', 'background: blue; color: white', props.settings);
 
 
 
@@ -142,44 +147,21 @@ const showDashboardColumn = (column: any) => {
 
 }
 
-
-const updateToggle = async (key: string, value: string) => {
-	// if (isAxios) {  // use Axios ()
-		// isLoadingToggle.value = valLoading
-		// isLoadingOnTable.value = true
-		await axios.patch(route("grp.models.profile.update"), {
-			settings: {
-				[key]: value,
-			},
-		}).then(() => {
-			// isLoadingToggle.value = null
-			props.settings[key].value = value
-		}).catch(() => {
-
-		})
-		// isLoadingToggle.value = null
+// Section: update Tab of the table
+const debStoreTab = debounce((tab: string) => {
+	axios.patch(route("grp.models.profile.update"), {
+		settings: {
+			[props.idTable]: tab,
+		},
+	}).then(() => {
 		// isLoadingOnTable.value = false
-	// } else {  // use Inertia
-	// 	router.patch(
-	// 		route("grp.models.profile.update"),
-	// 		{
-	// 			settings: {
-	// 				[key]: value,
-	// 			},
-	// 		},
-	// 		{
-	// 			onStart: () => {
-	// 				isLoadingToggle.value = valLoading
-	// 				isLoadingOnTable.value = true
-	// 			},
-	// 			onFinish: () => {
-	// 				isLoadingToggle.value = null
-	// 				isLoadingOnTable.value = false
-	// 			},
-	// 			preserveScroll: true,
-	// 		}
-	// 	)
-	// }
+	}).catch(() => {
+		// isLoadingOnTable.value = false
+	})
+}, 800)
+const updateTab = (value: string) => {
+	emits('onChangeTab', value)
+	debStoreTab(value)
 }
 
 const getIntervalChangesIcon = (change: string) => {
@@ -223,9 +205,8 @@ const getIntervalStateColor = (state: string) => {
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
 						@click="() => (
-							updateToggle(idTable, tabSlug),
-							tableData.current_tab = tabSlug,
-							'dashboardTabActive = tabSlug'
+							updateTab(tabSlug),
+							tableData.current_tab = tabSlug
 						)"
 						:key="tabSlug"
 						:value="tabSlug"
@@ -277,7 +258,7 @@ const getIntervalStateColor = (state: string) => {
 									]"
 									:is="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? Link : 'div'"
 									:href="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? route(data.columns?.[colSlug]?.[intervals.value]?.route_target.name, data.columns?.[colSlug]?.[intervals.value]?.route_target.parameters) : '#'"
-									v-tooltip="`${data.columns?.[colSlug]?.[intervals.value]?.tooltip}`"
+									v-tooltip="`${data.columns?.[colSlug]?.tooltip ?? data.columns?.[colSlug]?.[intervals.value]?.tooltip ?? ''}`"
 								>
 									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 									<FontAwesomeIcon

@@ -110,6 +110,19 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 		)
 	}
 }
+
+// Section: update data_display_type (minified, full)
+const debStoreDataDisplayType = debounce((value: string) => {
+	axios.patch(route("grp.models.profile.update"), {
+		settings: {
+			data_display_type: value,
+		},
+	})
+}, 1500)
+const updateDataDisplayType = (value: string) => {
+	props.settings.data_display_type.value = value
+	debStoreDataDisplayType(value)
+}
 </script>
 
 <template>
@@ -176,14 +189,14 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 				</div>
 
 				<div class="flex items-center gap-x-8">
-					<!-- Toggle: data_display_type -->
+					<!-- Toggle: data_display_type (minified, full) -->
 					<div v-if="settings.data_display_type" class="flex items-center space-x-4">
 						<p v-tooltip="settings.data_display_type.options[0].tooltip" class="" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-medium' : 'opacity-50', ]">
 							{{ settings.data_display_type.options[0].label }}
 						</p>
 						<ToggleSwitch
 							:modelValue="settings.data_display_type.value"
-							@update:modelValue="(value: any) => updateToggle(settings.data_display_type.id, value, `left_data_display_type`, false)"
+							@update:modelValue="(value: any) => updateDataDisplayType(value)"
 							:falseValue="settings.data_display_type.options[0].value"
 							:trueValue="settings.data_display_type.options[1]?.value"
 							:disabled="`left_data_display_type` === isLoadingToggle"

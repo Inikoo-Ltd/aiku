@@ -7,6 +7,7 @@ import { inject, ref, computed, provide } from "vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTriangle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { set } from "lodash"
 library.add(faTriangle)
 
 const props = defineProps<{
@@ -44,18 +45,21 @@ provide("dashboardTabActive", dashboardTabActive)
 
 <template>
 	<div>
-		<!-- Dashboard: {{ dashboardTabActive }} -->
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 		/>
-		
+
 		<DashboardTable
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
+			@onChangeTab="(val) => {
+				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
+			}"
 		/>
 
 		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
