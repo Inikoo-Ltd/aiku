@@ -36,7 +36,6 @@ class ShowOrganisationDashboard extends OrgAction
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
-        $settings     = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []); // <-- to delete
 
         $dashboard = [
             'super_blocks' => [
@@ -55,7 +54,7 @@ class ShowOrganisationDashboard extends OrgAction
                         [
                             'id'          => 'sales_table',
                             'type'        => 'table',
-                            'current_tab' => Arr::get($settings, 'sales_table_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values())),
+                            'current_tab' => Arr::get($userSettings, 'sales_table_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values())),
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
                             'charts'      => []

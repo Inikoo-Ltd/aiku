@@ -11,81 +11,30 @@ library.add(faTriangle)
 
 const props = defineProps<{
 	dashboard?: {
-		settings?: {}[]
-		interval_options?: Array<{ label: string; value: string }>
-		table?: {}[]
-		total?: {}[]
-		widgets?: {}[]
-		currency_code?: string
-		current?: string
-		total_tooltip?:{}[]
+		super_blocks: {
+			settings: {
+				[key: string]: {  // 'data_display_type' || 'shop_state_type' || 'currency_type'
+					align: string
+					id: string
+					options: {
+						label: string
+						value: string
+						tooltip?: string
+					}[]
+					type: string
+					value: string
+				}
+			}
+			interval_options?: Array<{ label: string; value: string }>
+			table?: {}[]
+			total?: {}[]
+			widgets?: {}[]
+			currency_code?: string
+			current?: string
+			total_tooltip?:{}[]
+		}[]
 	}
-	// checked?: boolean
-	// tableType?: string
 }>()
-
-// const layout = inject("layout")
-// const locale = inject("locale")
-// const checked = ref(props.checked || false)
-
-
-// const isOrganisation = ref(false)
-/* .filter((org) => {
-			if (props.dashboard.settings.key_shop) {
-                return org.state !== "closed";
-            }
-            return true;
-		}) */
-
-/* const tableDatas = computed(() => {
-    const isShopOpen = props.dashboard.settings.db_settings.selected_shop_open === "open";
-
-    if (props.tableType === "org") {
-        return props.dashboard.table
-            .filter((item) => {
-                return isShopOpen ? item.state !== "closed" : true;
-            })
-            .map((org) => ({
-                name: org.name,
-                code: org.code,
-                interval_percentages: org.interval_percentages,
-                sales: org.interval_percentages?.sales?.amount || 0,
-				invoices: org.interval_percentages?.invoices?.amount || 0,
-				sales_percentage: org.interval_percentages?.sales?.percentage || 0,
-				invoices_percentage: org.interval_percentages?.invoices?.percentage || 0,
-                route: org.route,
-                currency: org.currency_code,
-            }));
-    } else {
-        return props.dashboard.table
-            .filter((org) => org.type !== "agent") 
-            .map((org) => ({
-                name: org.name,
-                code: org.code,
-                interval_percentages: org.interval_percentages,
-                sales: org.interval_percentages?.sales?.amount || 0,
-				invoices: org.interval_percentages?.invoices?.amount || 0,
-				sales_percentage: org.interval_percentages?.sales?.percentage || 0,
-				invoices_percentage: org.interval_percentages?.invoices?.percentage || 0,
-                currency: org.currency_code,
-            }));
-    }
-}); */
-
-/* const dashboardTable = [
-	{
-		tab_label: "Overview",
-		tab_slug: "overview",
-		type: "table",  // 
-		data: tableDatas.value
-	},
-	{
-		tab_label: "Profile",
-		tab_slug: "profile",
-		type: "xxx",  // 
-		data: null
-	},
-] */
 
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
@@ -98,6 +47,7 @@ provide("dashboardTabActive", dashboardTabActive)
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 		/>
 		
 		<DashboardTable
