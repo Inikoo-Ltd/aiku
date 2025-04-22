@@ -22,98 +22,147 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
         /** @var Organisation $organisation */
         $organisation = $this;
 
+        $inBasketLabel = __('In basket');
 
-        $deltaLabel = [
-            'formatted_value' => 'Δ 1Y',
-            'tooltip'         => __('Change versus 1 Year ago')
-        ];
+        $labelDelta = __('Change versus 1 Year ago');
 
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value'   => __('Organisation'),
                     'align'             => 'left',
+                    'currency_type'     => 'always',
                     'data_display_type' => 'full',
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => __('Organisation'),
-                    'align'           => 'left',
+                    'formatted_value'   => __('Organisation'),
+                    'align'             => 'left',
+                    'currency_type'     => 'always',
                     'data_display_type' => 'minified',
                 ]
-            ],
-            [
-                'baskets_created_shop_currency' => [
-                    'formatted_value' => __('In basket'),
-                    'sortable'        => true,
-                ]
-            ],
-            [
-                'baskets_created_shop_currency_minified' => [
-                    'formatted_value' => __('In basket'),
-                    'sortable'        => true,
-                    'data_display_type' => 'minified',
-                ]
-            ],
-            [
-                'baskets_created_shop_currency_delta' => $deltaLabel
             ],
             [
                 'baskets_created_org_currency' => [
-                    'formatted_value' => __('In basket')
+                    'formatted_value'   => $inBasketLabel.' a',
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value' => __('In basket'),
+                    'formatted_value'   => $inBasketLabel.' b',
+                    'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                 ]
             ],
             [
-                'baskets_created_org_currency_delta' => $deltaLabel
+                'baskets_created_org_currency_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $labelDelta,
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
+            ],
+            [
+                'baskets_created_grp_currency' => [
+                    'formatted_value'   => $inBasketLabel.' c',
+                    'currency_type'     => 'grp',
+                    'data_display_type' => 'full',
+                ]
+            ],
+            [
+                'baskets_created_grp_currency_minified' => [
+                    'formatted_value'   => $inBasketLabel.' d',
+                    'currency_type'     => 'grp',
+                    'data_display_type' => 'minified',
+                ]
+            ],
+            [
+                'baskets_created_grp_currency_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $labelDelta,
+                    'currency_type'     => 'grp',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
             ],
             [
                 'invoices' => [
-                    'formatted_value' => __('Invoices')
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'invoices_minified' => [
-                    'formatted_value' => __('Invoices'),
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
                     'data_display_type' => 'minified',
                 ]
             ],
             [
-                'invoices_delta' => $deltaLabel
-            ],
-            [
-                'sales_shop_currency' => [
-                    'formatted_value' => __('Sales')
+                'invoices_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $labelDelta,
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right'
                 ]
-            ],
-            [
-                'sales_shop_currency_minified' => [
-                    'formatted_value' => __('Sales'),
-                    'data_display_type' => 'minified',
-                ]
-            ],
-            [
-                'sales_shop_currency_delta' => $deltaLabel,
             ],
             [
                 'sales_org_currency' => [
-                    'formatted_value' => __('Sales')
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'org',
+                    'data_display_type' => 'full',
                 ]
             ],
             [
                 'sales_org_currency_minified' => [
-                    'formatted_value' => __('Sales'),
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                 ]
             ],
             [
-                'sales_org_currency_delta' => $deltaLabel,
+                'sales_org_currency_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $labelDelta,
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ],
+            ],
+            [
+                'sales_grp_currency' => [
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'grp',
+                    'data_display_type' => 'full',
+
+                ]
+            ],
+            [
+                'sales_grp_currency_minified' => [
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'grp',
+                    'data_display_type' => 'minified',
+                ]
+            ],
+            [
+                'sales_grp_currency_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $labelDelta,
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ],
             ],
         );
 

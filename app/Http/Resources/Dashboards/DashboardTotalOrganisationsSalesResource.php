@@ -23,10 +23,10 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         $group = $this;
 
 
-        $baskets_created_grp_currency = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency');
+        $baskets_created_grp_currency       = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency');
         $baskets_created_grp_currency_delta = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency_delta');
 
-        $baskets_created_org_currency = [
+        $baskets_created_org_currency       = [
             'baskets_created_org_currency' => $baskets_created_grp_currency['baskets_created_grp_currency']
         ];
         $baskets_created_org_currency_delta = [
@@ -38,7 +38,7 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             'baskets_created_org_currency_minified' => $baskets_created_grp_currency_minified['baskets_created_grp_currency_minified']
         ];
 
-        $sales_grp_currency = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency');
+        $sales_grp_currency       = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency');
         $sales_grp_currency_delta = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency_delta');
 
         $sales_org_currency = [
@@ -50,7 +50,6 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         ];
 
 
-
         $sales_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency_minified');
         $sales_org_currency_minified = [
             'sales_org_currency_minified' => $sales_grp_currency_minified['sales_grp_currency_minified']
@@ -59,15 +58,15 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $group->name,
-                    'align'           => 'left'
+                    'formatted_value'   => $group->name,
+                    'align'             => 'left'
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => $group->code,
-                    'tooltip'         => $group->name,
-                    'align'           => 'left'
+                    'formatted_value'   => $group->code,
+                    'tooltip'           => $group->name,
+                    'align'             => 'left'
                 ]
             ],
             $baskets_created_org_currency,

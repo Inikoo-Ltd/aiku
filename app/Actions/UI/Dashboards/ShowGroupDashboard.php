@@ -58,7 +58,7 @@ class ShowGroupDashboard extends OrgAction
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => GroupDashboardSalesTableTabsEnum::tables($group),
-                            'charts'      => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
+                            'charts'      => [] // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
 
                         ]
                     ]
