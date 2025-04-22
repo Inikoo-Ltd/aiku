@@ -17,11 +17,12 @@ import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
-import { faTriangle } from "@fas"
+import { faTriangle, faEquals } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Link } from "@inertiajs/vue3"
 import column from "@/Components/SpreadSheets/Column.vue";
+import axios from "axios"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -99,59 +100,13 @@ const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 // console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
 console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
 
-// const compTableHeaderColumns = computed<Header>(() => {
-// 	if (props.settings.data_display_type.value === 'minified') {
-// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
-// 			if (key.includes('minified')) {
-// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
-// 			}
-
-// 			return newObj;
-// 		}, {});
-
-// 		return aaa;
-// 	} else {
-// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].header.columns).reduce((newObj, key) => {
-// 			if (!key.includes('minified')) {
-// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].header.columns[key];
-// 			}
-
-// 			return newObj;
-// 		}, {});
-
-// 		return aaa;
-// 	}
-// })
-// const compTableTotalColumns = computed(() => {
-// 	if (props.settings.data_display_type.value === 'minified') {
-// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
-// 			if (key.includes('minified')) {
-// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
-// 			}
-
-// 			return newObj;
-// 		}, {});
-
-// 		return aaa;
-// 	} else {
-// 		const aaa = Object.keys(props.tableData.tables[props.tableData.current_tab].totals.columns).reduce((newObj, key) => {
-// 			if (!key.includes('minified')) {
-// 				newObj[key] = props.tableData.tables[props.tableData.current_tab].totals.columns[key];
-// 			}
-
-// 			return newObj;
-// 		}, {});
-
-// 		return aaa;
-// 	}
-// })
 
 
 // Section: show/hide setting shop state
-const dashboardTabActive = inject("dashboardTabActive", ref(''))
-watch(() => props.tableData.current_tab, (newValueTab) => {
-	dashboardTabActive.value = newValueTab
-}, { immediate: true })
+// const dashboardTabActive = inject("dashboardTabActive", ref(''))
+// watch(() => props.tableData.current_tab, (newValueTab) => {
+// 	dashboardTabActive.value = newValueTab
+// }, { immediate: true })
 const compTableBody = computed(() => {
 	if (props.settings.shop_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'active')
@@ -165,7 +120,7 @@ const showDashboardColumn = (column: any) => {
 
 
   const data_display_type=props.settings.data_display_type.value;
-  const currency_type=props.settings.currency_type.value;
+  const currency_type=props.settings.currency_type?.value;
 
   let show=true;
 
@@ -186,11 +141,79 @@ const showDashboardColumn = (column: any) => {
 
 }
 
+
+const updateToggle = async (key: string, value: string) => {
+	// if (isAxios) {  // use Axios ()
+		// isLoadingToggle.value = valLoading
+		// isLoadingOnTable.value = true
+		await axios.patch(route("grp.models.profile.update"), {
+			settings: {
+				[key]: value,
+			},
+		}).then(() => {
+			// isLoadingToggle.value = null
+			props.settings[key].value = value
+		}).catch(() => {
+
+		})
+		// isLoadingToggle.value = null
+		// isLoadingOnTable.value = false
+	// } else {  // use Inertia
+	// 	router.patch(
+	// 		route("grp.models.profile.update"),
+	// 		{
+	// 			settings: {
+	// 				[key]: value,
+	// 			},
+	// 		},
+	// 		{
+	// 			onStart: () => {
+	// 				isLoadingToggle.value = valLoading
+	// 				isLoadingOnTable.value = true
+	// 			},
+	// 			onFinish: () => {
+	// 				isLoadingToggle.value = null
+	// 				isLoadingOnTable.value = false
+	// 			},
+	// 			preserveScroll: true,
+	// 		}
+	// 	)
+	// }
+}
+
+const getIntervalChangesIcon = (change: string) => {
+	if (change === 'increase') {
+		return {
+			icon: faTriangle
+		}
+	} else if (change === 'decrease') {
+		return {
+			icon: faTriangle,
+			class: 'rotate-180'
+		}
+	} else if (change === 'no_change') {
+		return {
+			icon: faEquals,
+		}
+	} else {
+		return null
+	}
+}
+const getIntervalStateColor = (state: string) => {
+	if (state === 'positive') {
+		return 'text-green-500'
+	} else if (state === 'negative') {
+		return 'text-red-500'
+	} else if (state === 'neutral') {
+		return 'text-gray-400'
+	} else {
+		return null
+	}
+}
 </script>
 
 <template>
 	<div class="relative bg-white mb-3 p-4 border border-gray-200">
-
 
 		<div class="">
 			<!-- Section: Tabs -->
@@ -198,7 +221,11 @@ const showDashboardColumn = (column: any) => {
 				<TabList>
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
-						@click="() => (tableData.current_tab = tabSlug, dashboardTabActive = tabSlug)"
+						@click="() => (
+							updateToggle('sales_table_tab', tabSlug, `sales_table_tab`, false),
+							tableData.current_tab = tabSlug,
+							'dashboardTabActive = tabSlug'
+						)"
 						:key="tabSlug"
 						:value="tabSlug"
 					>
@@ -221,7 +248,7 @@ const showDashboardColumn = (column: any) => {
 					v-for="(column, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
 					:key="colSlug"
 				>
-				<!-- {{column.data_display_type}} -->
+					<!-- {{column.data_display_type}} -->
 					<Column
 						v-if="showDashboardColumn(column)"
 						:sortable="column.sortable"
@@ -229,7 +256,7 @@ const showDashboardColumn = (column: any) => {
 						:field="colSlug"
 					>
 						<template #header>
-							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2"
+							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
 								:class="column.align === 'left' ? '' : 'justify-end text-right'"
 								v-tooltip="column.tooltip"
 							>
@@ -246,20 +273,20 @@ const showDashboardColumn = (column: any) => {
 										:key="intervals.value"
 										class="px-2"
 										:class="[
-											data.route?.name ? 'cursor-pointer hover:underline' : '',
+											data.route_target?.name ? 'cursor-pointer hover:underline' : '',
 										]"
-										:is="data.route?.name ? Link : 'div'"
-										:href="data.route?.name ? route(data.route.name, data.route.parameters) : '#'"
+										:is="data.route_target?.name ? Link : 'div'"
+										:href="data.route_target?.name ? route(data.route_target.name, data.route_target.parameters) : '#'"
 										v-tooltip="data.tooltip"
 									>
 										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 										<FontAwesomeIcon
-											v-if="data.columns?.[colSlug]?.[intervals.value]?.change"
-											:icon="faTriangle"
+											v-if="data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change"
+											:icon="getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.icon"
 											class="text-sm"
 											:class="[
-												data.columns?.[colSlug]?.[intervals.value]?.change == 'increase' ? '' : 'rotate-180',
-												data.columns?.[colSlug]?.[intervals.value]?.state == 'positive' ? 'text-green-500' : 'text-red-500',
+												getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.class,
+												getIntervalStateColor(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.state),
 											]"
 											fixed-width
 											aria-hidden="true"
@@ -312,7 +339,6 @@ const showDashboardColumn = (column: any) => {
 </template>
 <style scoped>
 :deep(.p-tab) {
-	/* padding: 0.5rem 1rem; */
 	@apply py-2.5 px-3 md:py-4 md:px-4;
 }
 

@@ -26,7 +26,7 @@ const props = defineProps<{
 		value: string
 	}
 	settings: {
-		[key: string]: {  // 'data_display_type'
+		[key: string]: {  // 'data_display_type' || 'shop_state_type' || 'currency_type'
 			align: string
 			id: string
 			options: {
@@ -38,16 +38,18 @@ const props = defineProps<{
 			value: string
 		}
 	}
+	currentTab: string
 }>()
 
-const dashboardTabActive = inject("dashboardTabActive", ref(''))
-const compShowShopStateSetting = computed(() => {
-	if (dashboardTabActive.value === "shops") {
-		return true
-	}
+// const dashboardTabActive = inject("dashboardTabActive", ref(''))
+// const compShowShopStateSetting = computed(() => {
+// 	if (dashboardTabActive.value === "shops") {
+// 		return true
+// 	}
 
-	return false
-})
+// 	return false
+// })
+
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
@@ -159,6 +161,7 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 				</div>
 			</nav>
 
+			<!-- Button: advanced settings -->
 			<div
 				v-tooltip="trans('Open advanced settings')"
 				@click="isSectionVisible = !isSectionVisible"
@@ -166,96 +169,80 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 				:class="isSectionVisible ? 'bg-indigo-200 text-indigo-500 border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
 				<FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-2xl" />
 			</div>
-
-			<!-- Mobile: Interval Dropdown -->
 		</div>
 		
 		<transition name="slide-to-right">
 			<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
-				<!-- Toggle: Align left (open/closed) -->
-				<template v-for="setting, indexSetting in settings" :key="indexSetting">
-					<template v-if="setting.id === 'shop_state' ? compShowShopStateSetting : true">
-						<div v-if="setting.align !== 'right'" class="flex items-center space-x-4">
-							<template v-if="setting.type === 'toggle'">
-								<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-									{{ setting.options[0].label }}
-								</p>
-								<ToggleSwitch
-									:modelValue="setting.value"
-									@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`, true)"
-									:falseValue="setting.options[0].value"
-									:trueValue="setting.options[1]?.value"
-									:disabled="`left${indexSetting}` === isLoadingToggle"
-								/>
-								<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
-									{{ setting.options[1]?.label }}
-								</p>
-							</template>
-							<template v-if="setting.type === 'radio'">
-								<PureRadio
-									mode="compact"
-									label="label"
-									:modelValue="setting.value"
-									@update:modelValue="(value: any) => updateToggle(setting.id, value, `left${indexSetting}`)"
-									:options="setting.options"
-									:disabled="`left${indexSetting}` === isLoadingToggle"
-								/>
-							</template>
-						</div>
-					</template>
-				</template>
 
-				<!-- Toggle: Align right (minified/full) -->
-				<template v-for="setting, indexSetting in settings" :key="indexSetting">
-					<div v-if="setting.align === 'right'" class="flex items-center space-x-4">
-						<template v-if="setting.type === 'toggle'">
-							<p v-tooltip="setting.options[0].tooltip" class="" :class="[ setting.options[0].value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[0].label }}
+				<div class="flex items-center space-x-4">
+					<!-- Toggle: shop_state -->
+					<Transition name="slide-to-right">
+						<div v-if="settings.shop_state_type && currentTab === 'shops' " class="flex items-center space-x-4">
+							<p v-tooltip="settings.shop_state_type.options[0].tooltip" class="" :class="[ settings.shop_state_type.options[0].value === settings.shop_state_type.value ? 'font-medium' : 'opacity-50', ]">
+								{{ settings.shop_state_type.options[0].label }}
 							</p>
 							<ToggleSwitch
-								:modelValue="setting.value"
-								@update:modelValue="(value: any) => updateToggle(setting.id, value, `right${indexSetting}`, true)"
-								:falseValue="setting.options[0].value"
-								:trueValue="setting.options[1]?.value"
-								:disabled="`right${indexSetting}` === isLoadingToggle"
+								:modelValue="settings.shop_state_type.value"
+								@update:modelValue="(value: any) => updateToggle(settings.shop_state_type.id, value, `left_shop_state_type`, false)"
+								:falseValue="settings.shop_state_type.options[0].value"
+								:trueValue="settings.shop_state_type.options[1]?.value"
+								:disabled="`left_shop_state_type` === isLoadingToggle"
 							/>
-							<p v-tooltip="setting.options[1]?.tooltip" class="" :class="[ setting.options[1]?.value === setting.value ? 'font-medium' : 'opacity-50', ]">
-								{{ setting.options[1]?.label }}
+							<p v-tooltip="settings.shop_state_type.options[1]?.tooltip" class="" :class="[ settings.shop_state_type.options[1]?.value === settings.shop_state_type.value ? 'font-medium' : 'opacity-50', ]">
+								{{ settings.shop_state_type.options[1]?.label }}
 							</p>
-						</template>
+						</div>
+					</Transition>
+				</div>
 
-						<template v-if="setting.type === 'radio'">
-
-							<RadioGroup class="mt-2 relative"
-								:modelValue="setting.value"
-								@update:modelValue="(value: any) => updateToggle(setting.id, value, `right${indexSetting}`)"
-							>
-								<div v-if="`right${indexSetting}` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center">
-									<LoadingIcon class="text-white text-xl m-auto" />
-								</div>
-
-								<RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
-								<div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden">
-									<RadioGroupOption
-										as="template" v-for="(option, index) in setting.options"
-										:key="option.value"
-										:value="option.value"
-										v-slot="{ active, checked }"
-									>
-										<div :class="[
-												'cursor-pointer focus:outline-none flex items-center justify-center py-3 px-3 text-sm font-medium capitalize',
-												checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
-											]"
-											v-tooltip="option.tooltip"
-										>
-											<RadioGroupLabel as="span">{{ option.label }}</RadioGroupLabel>
-										</div>
-									</RadioGroupOption>
-								</div>
-							</RadioGroup>
-						</template>
+				<div class="flex items-center gap-x-8">
+					<!-- Toggle: data_display_type -->
+					<div v-if="settings.data_display_type" class="flex items-center space-x-4">
+						<p v-tooltip="settings.data_display_type.options[0].tooltip" class="" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-medium' : 'opacity-50', ]">
+							{{ settings.data_display_type.options[0].label }}
+						</p>
+						<ToggleSwitch
+							:modelValue="settings.data_display_type.value"
+							@update:modelValue="(value: any) => updateToggle(settings.data_display_type.id, value, `left_data_display_type`, false)"
+							:falseValue="settings.data_display_type.options[0].value"
+							:trueValue="settings.data_display_type.options[1]?.value"
+							:disabled="`left_data_display_type` === isLoadingToggle"
+						/>
+						<p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-medium' : 'opacity-50', ]">
+							{{ settings.data_display_type.options[1]?.label }}
+						</p>
 					</div>
-				</template>
+
+					<!-- Toggle: currency_type -->
+					<div v-if="settings.currency_type" class="flex items-center space-x-4">
+						<RadioGroup class="relative"
+							:modelValue="settings.currency_type.value"
+							@update:modelValue="(value: any) => updateToggle(settings.currency_type.id, value, `right_currency_type`)"
+						>
+							<div v-if="`right_currency_type` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center">
+								<LoadingIcon class="text-white text-xl m-auto" />
+							</div>
+							<RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
+							<div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden">
+								<RadioGroupOption
+									as="template" v-for="(option, index) in settings.currency_type.options"
+									:key="option.value"
+									:value="option.value"
+									v-slot="{ active, checked }"
+								>
+									<div :class="[
+											'cursor-pointer focus:outline-none flex items-center justify-center py-3 px-3 text-sm font-medium capitalize',
+											checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
+										]"
+										v-tooltip="option.tooltip"
+									>
+										<RadioGroupLabel as="span">{{ option.label }}</RadioGroupLabel>
+									</div>
+								</RadioGroupOption>
+							</div>
+						</RadioGroup>
+					</div>
+				</div>
 			</div>
 		</transition>
 	</div>
