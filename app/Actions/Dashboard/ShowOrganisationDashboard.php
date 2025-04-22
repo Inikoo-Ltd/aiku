@@ -54,7 +54,7 @@ class ShowOrganisationDashboard extends OrgAction
                     ],
                     'settings'  => [
 
-                        'shop_state_type' => $this->dashboardShopStateTypeSettings($userSettings, 'left'),
+                        'model_state_type' => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type'    => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'   => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],

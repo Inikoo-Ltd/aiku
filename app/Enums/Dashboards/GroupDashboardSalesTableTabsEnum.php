@@ -49,6 +49,8 @@ enum GroupDashboardSalesTableTabsEnum: string
         };
     }
 
+
+
     public function table(Group $group): array
     {
         $header = match ($this) {

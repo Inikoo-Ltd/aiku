@@ -62,7 +62,6 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->toJson(), true)
         };
 
-
         return [
             'header' => $header,
             'body'   => $body,

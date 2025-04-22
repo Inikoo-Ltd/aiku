@@ -10,6 +10,7 @@ namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardHeaderOrganisationsInvoiceCategoriesSalesResource extends JsonResource
@@ -19,8 +20,8 @@ class DashboardHeaderOrganisationsInvoiceCategoriesSalesResource extends JsonRes
 
     public function toArray($request): array
     {
-        /** @var Group $group */
-        $group = $this;
+        /** @var Organisation|Group $model */
+        $model = $this;
 
 
         $deltaLabel = [
@@ -97,7 +98,7 @@ class DashboardHeaderOrganisationsInvoiceCategoriesSalesResource extends JsonRes
 
 
         return [
-            'slug'    => $group->slug,
+            'slug'    => $model->slug,
             'columns' => $columns
 
 

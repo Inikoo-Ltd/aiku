@@ -14,7 +14,7 @@ const props = defineProps<{
 		id: string  //  organisation_dashboard_tab
 		super_blocks: {
 			settings: {
-				[key: string]: {  // 'data_display_type' || 'shop_state_type' || 'currency_type'
+				[key: string]: {  // 'data_display_type' || 'model_state_type' || 'currency_type'
 					align: string
 					id: string
 					options: {

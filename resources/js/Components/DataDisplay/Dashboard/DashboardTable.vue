@@ -109,7 +109,7 @@ console.log('%c Tables ', 'background: red; color: white', props.tableData.table
 // 	dashboardTabActive.value = newValueTab
 // }, { immediate: true })
 const compTableBody = computed(() => {
-	if (props.settings.shop_state_type?.value === 'open') {
+	if (props.settings.model_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'active')
 	}
 

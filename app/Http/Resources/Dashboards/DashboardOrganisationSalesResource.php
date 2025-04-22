@@ -39,12 +39,18 @@ class DashboardOrganisationSalesResource extends JsonResource
             $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency'),
             $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency_minified'),
             $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency_delta'),
+            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_grp_currency'),
+            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_grp_currency_minified'),
+            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_grp_currency_delta'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
             $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency'),
             $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_minified'),
             $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_delta'),
+            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_grp_currency'),
+            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_grp_currency_minified'),
+            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_grp_currency_delta'),
         );
 
 

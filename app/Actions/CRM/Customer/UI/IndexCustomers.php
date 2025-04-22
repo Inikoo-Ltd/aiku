@@ -192,6 +192,7 @@ class IndexCustomers extends OrgAction
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['registered_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -214,6 +215,7 @@ class IndexCustomers extends OrgAction
                 }
             }
 
+            $table->betweenDates(['registered_at']);
 
             $isDropshipping = false;
             if ($parent instanceof Shop && $parent->type == ShopTypeEnum::DROPSHIPPING) {
