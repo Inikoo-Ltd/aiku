@@ -21,7 +21,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Organisation|Group $model */
-        $model = $this;
+        $model = $this->resource;
 
         $deltaLabel = __('Change versus 1 Year ago');
 
@@ -30,85 +30,81 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 
 
         $shopColumns = [
-            [
-                'label' => [
-                    'formatted_value'   => __('Shop'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'full',
-                    'align'             => 'left'
-                ]
+
+            'label' => [
+                'formatted_value'   => __('Shop'),
+                'currency_type'     => 'always',
+                'data_display_type' => 'full',
+                'align'             => 'left'
             ],
-            [
-                'label_minified' => [
-                    'formatted_value'   => __('Shop'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'minified',
-                    'align'             => 'left'
-                ]
-            ],
+
+
+            'label_minified' => [
+                'formatted_value'   => __('Shop'),
+                'currency_type'     => 'always',
+                'data_display_type' => 'minified',
+                'align'             => 'left'
+            ]
+
         ];
 
         $basketShopCurrency = [
-            [
-                'baskets_created_shop_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'shop',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'baskets_created_shop_currency' => [
+                'formatted_value'   => $inBasketLabel,
+                'currency_type'     => 'shop',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'baskets_created_shop_currency_minified' => [
-                    'formatted_value'   => '▪ '.__('In basket'),
-                    'currency_type'     => 'shop',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+
+            'baskets_created_shop_currency_minified' => [
+                'formatted_value'   => '▪ '.__('In basket'),
+                'currency_type'     => 'shop',
+                'data_display_type' => 'minified',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'baskets_created_shop_currency_delta' => [
-                    'currency_type'     => 'shop',
+
+            'baskets_created_shop_currency_delta' => [
+                'currency_type'     => 'shop',
+                'data_display_type' => 'always',
+                'formatted_value'   => 'Δ 1Y',
+                'tooltip'           => $deltaLabel,
+                'sortable'          => true,
+                'align'             => 'right'
+            ]
+
+        ];
+
+        $basketOrgCurrency = [
+
+            'baskets_created_org_currency' => [
+                'formatted_value'   => $inBasketLabel,
+                'currency_type'     => 'org',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
+            ],
+
+            'baskets_created_org_currency_minified' => [
+                'formatted_value'   => $inBasketLabel,
+                'currency_type'     => 'org',
+                'data_display_type' => 'minified',
+                'sortable'          => true,
+                'align'             => 'right'
+            ],
+
+            'baskets_created_org_currency_delta' =>
+                [
                     'data_display_type' => 'always',
+                    'currency_type'     => 'org',
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaLabel,
                     'sortable'          => true,
                     'align'             => 'right'
-                ]
-            ],
-        ];
-
-        $basketOrgCurrency = [
-            [
-                'baskets_created_org_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
-            ],
-            [
-                'baskets_created_org_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
-            ],
-            [
-                'baskets_created_org_currency_delta' =>
-                    [
-                        'data_display_type' => 'always',
-                        'currency_type'     => 'org',
-                        'formatted_value'   => 'Δ 1Y',
-                        'tooltip'           => $deltaLabel,
-                        'sortable'          => true,
-                        'align'             => 'right'
-                    ]
-            ],
+                ],
         ];
 
         $basketGrpCurrency = [
@@ -144,162 +140,142 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $registrationColumns = [
-            [
-                'registrations' => [
-                    'formatted_value'   => __('Registrations'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'registrations' => [
+                'formatted_value'   => __('Registrations'),
+                'currency_type'     => 'always',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'registrations_minified' => [
-                    'formatted_value'   => __('Registrations'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'registrations_minified' => [
+                'formatted_value'   => __('Registrations'),
+                'currency_type'     => 'always',
+                'data_display_type' => 'minified',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'registrations_delta' => [
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'always',
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaLabel,
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+            'registrations_delta'    => [
+                'currency_type'     => 'always',
+                'data_display_type' => 'always',
+                'formatted_value'   => 'Δ 1Y',
+                'tooltip'           => $deltaLabel,
+                'sortable'          => true,
+                'align'             => 'right'
+
             ],
         ];
 
         $invoicesColumns = [
-            [
-                'invoices' => [
-                    'formatted_value'   => __('Invoices'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'invoices'          => [
+                'formatted_value'   => __('Invoices'),
+                'currency_type'     => 'always',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'invoices_minified' => [
-                    'formatted_value'   => __('Invoices'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+            'invoices_minified' => [
+                'formatted_value'   => __('Invoices'),
+                'currency_type'     => 'always',
+                'data_display_type' => 'minified',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'invoices_delta' => [
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'always',
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaLabel,
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
-            ],
+            'invoices_delta'    => [
+                'currency_type'     => 'always',
+                'data_display_type' => 'always',
+                'formatted_value'   => 'Δ 1Y',
+                'tooltip'           => $deltaLabel,
+                'sortable'          => true,
+                'align'             => 'right'
+            ]
+
         ];
 
         $salesShopCurrency = [
-            [
-                'sales_shop_currency' => [
-                    'currency_type'     => 'shop',
-                    'data_display_type' => 'full',
-                    'formatted_value'   => __('Sales'),
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'sales_shop_currency'          => [
+                'currency_type'     => 'shop',
+                'data_display_type' => 'full',
+                'formatted_value'   => __('Sales'),
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'sales_shop_currency_minified' => [
-                    'currency_type'     => 'shop',
-                    'data_display_type' => 'minified',
-                    'formatted_value'   => __('Sales'),
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+            'sales_shop_currency_minified' => [
+                'currency_type'     => 'shop',
+                'data_display_type' => 'minified',
+                'formatted_value'   => __('Sales'),
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'sales_shop_currency_delta' => [
-                    'currency_type'     => 'shop',
-                    'data_display_type' => 'always',
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaLabel,
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ],
+            'sales_shop_currency_delta'    => [
+                'currency_type'     => 'shop',
+                'data_display_type' => 'always',
+                'formatted_value'   => 'Δ 1Y',
+                'tooltip'           => $deltaLabel,
+                'sortable'          => true,
+                'align'             => 'right'
             ],
+
         ];
 
         $salesOrgCurrency = [
-            [
-                'sales_org_currency' => [
-                    'formatted_value'   => __('Sales'),
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'sales_org_currency'          => [
+                'formatted_value'   => __('Sales'),
+                'currency_type'     => 'org',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'sales_org_currency_minified' => [
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'minified',
-                    'formatted_value'   => __('Sales'),
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+            'sales_org_currency_minified' => [
+                'currency_type'     => 'org',
+                'data_display_type' => 'minified',
+                'formatted_value'   => __('Sales'),
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'sales_org_currency_delta' => [
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'always',
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaLabel,
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ],
+            'sales_org_currency_delta'    => [
+                'currency_type'     => 'org',
+                'data_display_type' => 'always',
+                'formatted_value'   => 'Δ 1Y',
+                'tooltip'           => $deltaLabel,
+                'sortable'          => true,
+                'align'             => 'right'
             ],
         ];
 
         $salesGrpCurrency = [
-            [
-                'sales_grp_currency' => [
-                    'formatted_value'   => __('Sales'),
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'sales_grp_currency'          => [
+                'formatted_value'   => __('Sales'),
+                'currency_type'     => 'grp',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'sales_grp_currency_minified' => [
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'minified',
-                    'formatted_value'   => __('Sales'),
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+            'sales_grp_currency_minified' => [
+                'currency_type'     => 'grp',
+                'data_display_type' => 'minified',
+                'formatted_value'   => __('Sales'),
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'sales_grp_currency_delta' => [
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'always',
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaLabel,
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ],
+            'sales_grp_currency_delta'    => [
+                'currency_type'     => 'grp',
+                'data_display_type' => 'always',
+                'formatted_value'   => 'Δ 1Y',
+                'tooltip'           => $deltaLabel,
+                'sortable'          => true,
+                'align'             => 'right'
             ],
         ];
 
 
-        $columns = [$shopColumns];
+        $columns = $shopColumns;
+
 
         if ($model instanceof Organisation) {
             $columns = array_merge($columns, $basketShopCurrency);
