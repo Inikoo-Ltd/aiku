@@ -155,7 +155,7 @@ class FetchAction implements ShouldBeUnique
 
         \Sentry\captureException($e);
 
-        if(!$organisationSource->fetch){
+        if (!$organisationSource->fetch) {
             return;
         }
 

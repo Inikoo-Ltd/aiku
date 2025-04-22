@@ -52,7 +52,7 @@ class UpdateOrder extends OrgAction
                 }
             }
 
-            if(Arr::hasAny($changedFields,['reference','state','net_amount','payment_amount','date'])){
+            if (Arr::hasAny($changedFields, ['reference','state','net_amount','payment_amount','date'])) {
                 OrderRecordSearch::dispatch($order);
             }
 

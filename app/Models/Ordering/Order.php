@@ -119,6 +119,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $as_employee_id Indicate if order is for an employee
  * @property int|null $platform_id
  * @property OrderPayStatusEnum|null $pay_status
+ * @property \Illuminate\Support\Carbon|null $updated_by_customer_at
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
