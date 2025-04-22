@@ -13,7 +13,7 @@ use App\Actions\Dashboard\IndexOrganisationsSalesTable;
 use App\Actions\Dashboard\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
-use App\Http\Resources\Dashboards\DashboardHeaderOrganisationsInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInGroupSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalGroupInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalGroupShopsSalesResource;
@@ -35,16 +35,16 @@ enum GroupDashboardSalesTableTabsEnum: string
     {
         return match ($this) {
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => [
-                'title' => __('Sales per organisation'),
+                'title' => __('Organisations'),
                 'icon'  => 'fal fa-city',
             ],
             GroupDashboardSalesTableTabsEnum::SHOPS => [
-                'title' => __('Sales per shop'),
-                'icon'  => 'fal fa-city',
+                'title' => __('Shops'),
+                'icon'  => 'fal fa-store-alt',
             ],
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
-                'title' => __('Sales per invoice category'),
-                'icon'  => 'fal fa-site-map',
+                'title' => __('Invoice categories'),
+                'icon'  => 'fal fa-sitemap',
             ],
         };
     }
@@ -52,10 +52,11 @@ enum GroupDashboardSalesTableTabsEnum: string
 
     public function table(Group $group): array
     {
+
         $header = match ($this) {
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardHeaderOrganisationsSalesResource::make($group)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
-            GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderOrganisationsInvoiceCategoriesSalesResource::make($group)->toJson(), true)
+            GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)->toJson(), true)
         };
 
         $body = match ($this) {
@@ -69,6 +70,8 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalGroupShopsSalesResource::make($group)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($group)->toJson(), true)
         };
+
+
 
 
         return [

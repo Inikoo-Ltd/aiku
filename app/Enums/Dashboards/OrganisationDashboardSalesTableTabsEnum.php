@@ -12,7 +12,7 @@ use App\Actions\Accounting\InvoiceCategory\IndexInvoiceCategoriesSalesTable;
 use App\Actions\Dashboard\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
-use App\Http\Resources\Dashboards\DashboardHeaderShopsInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopsSalesResource;
@@ -31,11 +31,11 @@ enum OrganisationDashboardSalesTableTabsEnum: string
     {
         return match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => [
-                'title' => __('Sales per shop'),
-                'icon'  => 'fal fa-store',
+                'title' => __('Shop'),
+                'icon'  => 'fal fa-store-alt',
             ],
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
-                'title' => __('Sales per invoice category'),
+                'title' => __('Invoice categories'),
                 'icon'  => 'fal fa-sitemap',
             ],
         };
@@ -49,7 +49,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
 
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderShopsInvoiceCategoriesSalesResource::make($organisation)->toJson(), true)
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInOrganisationSalesResource::make($organisation)->toJson(), true)
         };
 
         $body = match ($this) {

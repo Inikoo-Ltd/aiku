@@ -9,7 +9,8 @@
 namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInGroupSalesResource;
+use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -67,7 +68,11 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
         }
         $shops = $this->handle($parent);
 
-        return json_decode(DashboardInvoiceCategoriesSalesResource::collection($shops)->toJson(), true);
+        if ($parent instanceof Group) {
+            return json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($shops)->toJson(), true);
+        } else {
+            return json_decode(DashboardInvoiceCategoriesInOrganisationSalesResource::collection($shops)->toJson(), true);
+        }
     }
 
 }

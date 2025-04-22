@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 15 Mar 2025 13:08:28 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 22 Apr 2025 17:05:50 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -23,21 +23,15 @@ use Illuminate\Support\Facades\Cache;
  * @property mixed $slug
  * @property mixed $state
  */
-class DashboardShopSalesResource extends JsonResource
+class DashboardShopSalesInGroupResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-    protected string $shopCurrencyCode;
     protected string $organisationCurrencyCode;
 
 
     public function toArray($request): array
     {
-        $currencyShopId = $this->shop_currency_id;
-        $shopCurrencyCode = Cache::remember('currency_code_'.$currencyShopId, 3600 * 24 * 30, function () use ($currencyShopId) {
-            return Currency::find($currencyShopId)->code;
-        });
-        $this->shopCurrencyCode = $shopCurrencyCode;
 
 
         $currencyOrganisationId = $this->organisation_currency_id;
@@ -89,24 +83,22 @@ class DashboardShopSalesResource extends JsonResource
                     ...$routeTargets['shops']
                 ]
             ],
-            $this->getDashboardTableColumn($this, 'baskets_created_shop_currency'),
-            $this->getDashboardTableColumn($this, 'baskets_created_shop_currency_minified'),
-            $this->getDashboardTableColumn($this, 'baskets_created_shop_currency_delta'),
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency'),
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified'),
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_delta'),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency'),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified'),
             $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
             $this->getDashboardTableColumn($this, 'registrations', $routeTargets['registrations']),
             $this->getDashboardTableColumn($this, 'registrations_minified', $routeTargets['registrations']),
             $this->getDashboardTableColumn($this, 'registrations_delta'),
-            $this->getDashboardTableColumn($this, 'sales_shop_currency'),
-            $this->getDashboardTableColumn($this, 'sales_shop_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_shop_currency_delta'),
             $this->getDashboardTableColumn($this, 'sales_org_currency'),
             $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
             $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency_minified'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
 
 

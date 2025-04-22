@@ -67,14 +67,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'align'             => 'right'
             ],
 
-            'baskets_created_shop_currency_delta' => [
-                'currency_type'     => 'shop',
-                'data_display_type' => 'always',
-                'formatted_value'   => 'Δ 1Y',
-                'tooltip'           => $deltaLabel,
-                'sortable'          => true,
-                'align'             => 'right'
-            ]
 
         ];
 
@@ -96,46 +88,23 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'align'             => 'right'
             ],
 
-            'baskets_created_org_currency_delta' =>
-                [
-                    'data_display_type' => 'always',
-                    'currency_type'     => 'org',
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaLabel,
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ],
         ];
 
         $basketGrpCurrency = [
-            [
-                'baskets_created_grp_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
+
+            'baskets_created_grp_currency'          => [
+                'formatted_value'   => $inBasketLabel,
+                'currency_type'     => 'grp',
+                'data_display_type' => 'full',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
-            [
-                'baskets_created_grp_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'align'             => 'right'
-                ]
-            ],
-            [
-                'baskets_created_grp_currency_delta' =>
-                    [
-                        'data_display_type' => 'always',
-                        'currency_type'     => 'grp',
-                        'formatted_value'   => 'Δ 1Y',
-                        'tooltip'           => $deltaLabel,
-                        'sortable'          => true,
-                        'align'             => 'right'
-                    ]
+            'baskets_created_grp_currency_minified' => [
+                'formatted_value'   => $inBasketLabel,
+                'currency_type'     => 'grp',
+                'data_display_type' => 'minified',
+                'sortable'          => true,
+                'align'             => 'right'
             ],
         ];
 

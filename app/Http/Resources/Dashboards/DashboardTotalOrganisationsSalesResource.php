@@ -24,14 +24,11 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
 
 
         $baskets_created_grp_currency       = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency');
-        $baskets_created_grp_currency_delta = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency_delta');
 
         $baskets_created_org_currency       = [
             'baskets_created_org_currency' => $baskets_created_grp_currency['baskets_created_grp_currency']
         ];
-        $baskets_created_org_currency_delta = [
-            'baskets_created_org_currency_delta' => $baskets_created_grp_currency_delta['baskets_created_grp_currency_delta']
-        ];
+
 
         $baskets_created_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency_minified');
         $baskets_created_org_currency_minified = [
@@ -71,10 +68,11 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             ],
             $baskets_created_org_currency,
             $baskets_created_org_currency_minified,
-            $baskets_created_org_currency_delta,
             $baskets_created_grp_currency,
             $baskets_created_grp_currency_minified,
-            $baskets_created_grp_currency_delta,
+            $this->getDashboardTableColumn($group->orderingIntervals, 'registrations'),
+            $this->getDashboardTableColumn($group->orderingIntervals, 'registrations_minified'),
+            $this->getDashboardTableColumn($group->orderingIntervals, 'registrations_delta'),
             $this->getDashboardTableColumn($group->orderingIntervals, 'invoices'),
             $this->getDashboardTableColumn($group->orderingIntervals, 'invoices_minified'),
             $this->getDashboardTableColumn($group->orderingIntervals, 'invoices_delta'),

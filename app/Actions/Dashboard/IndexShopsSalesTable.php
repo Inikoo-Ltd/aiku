@@ -9,7 +9,8 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Dashboards\DashboardShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardShopSalesInGroupResource;
+use App\Http\Resources\Dashboards\DashboardShopSalesInOrganisationResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -44,7 +45,9 @@ class IndexShopsSalesTable extends OrgAction
                'shops.slug',
                'shops.type',
                'shops.state',
-               'shops.organisation_id'
+               'shops.organisation_id',
+               'shop_sales_intervals.*',
+               'shop_ordering_intervals.*',
            ]);
         if ($parent instanceof Group) {
             $queryBuilder->selectRaw('\''.$parent->currency->code.'\' as group_currency_code');
@@ -70,8 +73,13 @@ class IndexShopsSalesTable extends OrgAction
         }
         $shops = $this->handle($parent);
 
+        if ($parent instanceof Group) {
+            return json_decode(DashboardShopSalesInGroupResource::collection($shops)->toJson(), true);
+        } else {
+            return json_decode(DashboardShopSalesInOrganisationResource::collection($shops)->toJson(), true);
+        }
 
-        return json_decode(DashboardShopSalesResource::collection($shops)->toJson(), true);
+
     }
 
 }
