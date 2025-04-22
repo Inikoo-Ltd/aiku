@@ -20,17 +20,39 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
     public function handle(Group|Organisation $parent)
     {
         $queryBuilder = QueryBuilder::for(InvoiceCategory::class);
+        $queryBuilder->leftJoin('invoice_category_sales_intervals', 'invoice_categories.id', 'invoice_category_sales_intervals.invoice_category_id');
+        $queryBuilder->leftJoin('invoice_category_ordering_intervals', 'invoice_categories.id', 'invoice_category_ordering_intervals.invoice_category_id');
+        $queryBuilder->leftJoin('organisations', 'invoice_categories.organisation_id', 'organisations.id');
+
+
         if (class_basename($parent) == 'Organisation') {
-            $queryBuilder->where('organisation_id', $parent->id);
+            $queryBuilder->where('invoice_categories.organisation_id', $parent->id);
         } else {
-            $queryBuilder->where('group_id', $parent->id);
+            $queryBuilder->where('invoice_categories.group_id', $parent->id);
         }
 
 
-        return $queryBuilder
+        $queryBuilder
             ->defaultSort('invoice_categories.name')
-            ->select(['id', 'name', 'slug', 'state', 'invoice_categories.currency_id', 'invoice_categories.organisation_id'])
-            ->allowedSorts(['name', 'state'])
+            ->select([
+                'invoice_categories.id',
+                'invoice_categories.name',
+                'invoice_categories.slug',
+                'invoice_categories.state',
+                'invoice_categories.currency_id as category_currency_id',
+                'organisations.currency_id as organisation_currency_id',
+                'invoice_categories.organisation_id',
+                'invoice_category_sales_intervals.*',
+                'invoice_category_ordering_intervals.*',
+            ]);
+
+        if ($parent instanceof Group) {
+            $queryBuilder->selectRaw('\''.$parent->currency->code.'\' as group_currency_code');
+        } else {
+            $queryBuilder->selectRaw('\''.$parent->group->currency->code.'\' as group_currency_code');
+        }
+
+        return $queryBuilder->allowedSorts(['name', 'state'])
             ->withPaginator(null)
             ->withQueryString();
     }
