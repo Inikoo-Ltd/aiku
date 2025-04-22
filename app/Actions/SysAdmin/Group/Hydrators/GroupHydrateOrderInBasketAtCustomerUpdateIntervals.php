@@ -1,27 +1,26 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 17-03-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 23 Apr 2025 01:36:29 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateBasket;
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
-use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateOrderIntervals implements ShouldBeUnique
+class GroupHydrateOrderInBasketAtCustomerUpdateIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
     use WithIntervalUniqueJob;
+    use WithHydrateBasket;
 
     public string $jobQueue = 'sales';
 
@@ -32,17 +31,14 @@ class GroupHydrateOrderIntervals implements ShouldBeUnique
 
     public function handle(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        $stats = [];
-
-        $queryBase = Order::where('group_id', $group->id)->selectRaw(' count(*) as  sum_aggregate');
-        $stats     = $this->getIntervalsData(
-            stats: $stats,
-            queryBase: $queryBase,
-            statField: 'orders_',
-            intervals: $intervals,
-            doPreviousPeriods: $doPreviousPeriods
+        $group->orderingIntervals()->update(
+            $this->getBasketCountStats('created_at', $group, $intervals, $doPreviousPeriods),
         );
-        $group->orderingIntervals()->update($stats);
+
+
+        $group->salesIntervals()->update(
+            $this->getBasketNetAmountStats('created_at', 'grp', $group, $intervals, $doPreviousPeriods),
+        );
     }
 
 }
