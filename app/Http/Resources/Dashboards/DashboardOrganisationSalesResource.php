@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -56,7 +58,7 @@ class DashboardOrganisationSalesResource extends JsonResource
 
         return [
             'slug'    => $organisation->slug,
-            'state'   => $organisation->state,
+            'state'   => 'active',
             'columns' => $columns
 
 

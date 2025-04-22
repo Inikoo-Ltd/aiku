@@ -124,9 +124,9 @@ const compTableBody = computed(() => {
 
 const showDashboardColumn = (column: any) => {
 
-
   const data_display_type=props.settings.data_display_type.value;
   const currency_type=props.settings.currency_type?.value;
+
 
   let show=true;
 
