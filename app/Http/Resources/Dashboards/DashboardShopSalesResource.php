@@ -39,6 +39,18 @@ class DashboardShopSalesResource extends JsonResource
                             'shop' => $shop->slug,
                         ],
                 ],
+                'key_interval' => 'between[date]', // this is ?between[date] in url
+            ],
+            'registrations' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.crm.customers.index',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop' => $shop->slug,
+                        'tab' => 'customers',
+                    ],
+                ],
+                'key_interval' => 'between[registered_at]',
             ],
             'shops' => [
                 'route_target' => [
@@ -76,8 +88,8 @@ class DashboardShopSalesResource extends JsonResource
             $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices', $routeTargets['invoices']),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices_delta'),
-            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations'),
-            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_minified'),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations', $routeTargets['registrations']),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_minified', $routeTargets['registrations']),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_delta'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'sales_shop_currency'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'sales_shop_currency_minified'),

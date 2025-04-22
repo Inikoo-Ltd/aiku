@@ -74,15 +74,18 @@ trait WithDashboardIntervalValues
                     break;
             }
 
-            if (Arr::get($routeTarget, 'route_target')) {
-                $routeTarget['route_target']['parameters'] = array_merge(
-                    $routeTarget['route_target']['parameters'] ?? [],
+            $routeTargetData = Arr::get($routeTarget, 'route_target');
+            $keyInterval = Arr::get($routeTarget, 'key_interval');
+
+            if ($routeTargetData && $keyInterval) {
+                $routeTargetData['parameters'] = array_merge(
+                    $routeTargetData['parameters'] ?? [],
                     [
-                        'between[date]' => $this->getDateIntervalFilter($interval->value),
+                        $keyInterval => $this->getDateIntervalFilter($interval->value),
                     ]
                 );
 
-                $data['route_target'] = $routeTarget['route_target'];
+                $data['route_target'] = $routeTargetData;
             }
 
             return [$interval->value => $data];
