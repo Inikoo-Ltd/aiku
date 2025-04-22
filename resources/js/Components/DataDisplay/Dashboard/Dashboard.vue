@@ -11,6 +11,7 @@ library.add(faTriangle)
 
 const props = defineProps<{
 	dashboard?: {
+		id: string  //  organisation_dashboard_tab
 		super_blocks: {
 			settings: {
 				[key: string]: {  // 'data_display_type' || 'shop_state_type' || 'currency_type'
@@ -51,6 +52,7 @@ provide("dashboardTabActive", dashboardTabActive)
 		/>
 		
 		<DashboardTable
+			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"

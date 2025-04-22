@@ -65,6 +65,7 @@ interface Tables {
 }
 
 const props = defineProps<{
+	idTable: string  //  organisation_dashboard_tab
 	tableData: {
 		charts: []
 		current_tab: string  // 'shops'
@@ -222,7 +223,7 @@ const getIntervalStateColor = (state: string) => {
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
 						@click="() => (
-							updateToggle('sales_table_tab', tabSlug, `sales_table_tab`, false),
+							updateToggle(idTable, tabSlug),
 							tableData.current_tab = tabSlug,
 							'dashboardTabActive = tabSlug'
 						)"
@@ -268,31 +269,29 @@ const getIntervalStateColor = (state: string) => {
 						
 						<template #body="{ data }">
 							<div class="flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
-								<Transition name="spin-to-right">
-									<component
-										:key="intervals.value"
-										class="px-2"
+								<component
+									:key="intervals.value"
+									class="px-2"
+									:class="[
+										data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? 'cursor-pointer hover:underline' : '',
+									]"
+									:is="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? Link : 'div'"
+									:href="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? route(data.columns?.[colSlug]?.[intervals.value]?.route_target.name, data.columns?.[colSlug]?.[intervals.value]?.route_target.parameters) : '#'"
+									v-tooltip="`${data.columns?.[colSlug]?.[intervals.value]?.tooltip}`"
+								>
+									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
+									<FontAwesomeIcon
+										v-if="data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change"
+										:icon="getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.icon"
+										class="text-sm"
 										:class="[
-											data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? 'cursor-pointer hover:underline' : '',
+											getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.class,
+											getIntervalStateColor(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.state),
 										]"
-										:is="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? Link : 'div'"
-										:href="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? route(data.columns?.[colSlug]?.[intervals.value]?.route_target.name, data.columns?.[colSlug]?.[intervals.value]?.route_target.parameters) : '#'"
-										v-tooltip="`${data.columns?.[colSlug]?.[intervals.value]?.tooltip}`"
-									>
-										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
-										<FontAwesomeIcon
-											v-if="data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change"
-											:icon="getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.icon"
-											class="text-sm"
-											:class="[
-												getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.class,
-												getIntervalStateColor(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.state),
-											]"
-											fixed-width
-											aria-hidden="true"
-										/>
-									</component>
-								</Transition>
+										fixed-width
+										aria-hidden="true"
+									/>
+								</component>
 							</div>
 						</template>
 					</Column>
@@ -302,24 +301,17 @@ const getIntervalStateColor = (state: string) => {
 				<ColumnGroup type="footer">
 					<Row>
 						<template
-							v-for="(column, colSlug) in props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns"
+							v-for="(column, colSlug) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
 							:key="colSlug"
 						>
 							<Column
 								v-if="showDashboardColumn(column)"
-								:sortable="column.sortable"
-								:sortField="`${column.key}.${intervals.value}.formatted_value`"
-								:field="column.key"
 							>
 								<template #footer>
 									<div class="px-2 flex relative"
 										:class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
 									>
-										<transition name="spin-to-right">
-											<div :key="intervals.value">
-												{{ column[intervals.value]?.formatted_value ?? column?.formatted_value }}
-											</div>
-										</transition>
+										{{ props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug].formatted_value }}
 									</div>
 								</template>
 							</Column>
@@ -332,7 +324,6 @@ const getIntervalStateColor = (state: string) => {
 				<LoadingIcon />
 			</div>
 
-			<!-- <pre>{{ tableData.tables[tableData.current_tab] }}</pre> -->
 
 		</div>
 	</div>
