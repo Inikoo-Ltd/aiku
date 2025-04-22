@@ -10,6 +10,7 @@ namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,18 +24,47 @@ class DashboardShopSalesResource extends JsonResource
         /** @var Shop $shop */
         $shop = $this;
 
+        $routeTargets = [
+            'invoices' => [
+                    'route_target' => $shop->type == ShopTypeEnum::FULFILMENT ? [
+                        'name' => 'grp.org.shops.show.dashboard.fulfilment.index',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop' => $shop->slug,
+                        ],
+                    ] : [
+                        'name' => 'grp.org.shops.show.dashboard.invoices.index',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop' => $shop->slug,
+                        ],
+                ],
+            ],
+            'shops' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.dashboard.show',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop' => $shop->slug,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $shop->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['shops']
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $shop->code,
                     'tooltip'         => $shop->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['shops']
                 ]
             ],
             $this->getDashboardTableColumn($shop->salesIntervals, 'baskets_created_shop_currency'),
@@ -43,8 +73,8 @@ class DashboardShopSalesResource extends JsonResource
             $this->getDashboardTableColumn($shop->salesIntervals, 'baskets_created_org_currency'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'baskets_created_org_currency_minified'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'baskets_created_org_currency_delta'),
-            $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices'),
-            $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'invoices_delta'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'sales_shop_currency'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'sales_shop_currency_minified'),

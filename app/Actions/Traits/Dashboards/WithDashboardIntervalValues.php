@@ -27,17 +27,16 @@ trait WithDashboardIntervalValues
         ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals|OrganisationOrderingIntervals|OrganisationSalesIntervals|GroupOrderingIntervals|GroupSalesIntervals $intervalsModel,
         string $field,
         DashboardDataType $dataType,
-        array $options = []
+        array $options = [],
+        array $routeTarget = []
     ): array {
-        return collect(DateIntervalEnum::cases())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options) {
+        return collect(DateIntervalEnum::cases())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options, $routeTarget) {
             $rawValue = $intervalsModel->{$field.'_'.$interval->value} ?? 0;
 
 
             $data = [
                 'raw_value' => $rawValue,
                 'tooltip'   => '',
-                // 'change'   => 'increase',  // TODO
-                // 'state'    => 'positive'  // TODO
             ];
 
             switch ($dataType) {
@@ -64,10 +63,7 @@ trait WithDashboardIntervalValues
                     } else {
                         $data['tooltip'] = $lyValue;
                     }
-                    [
-                        'change' => $data['change'],
-                        'state'  => $data['state'],
-                    ] = Number::deltaIcon($rawValue, $lyValue, Arr::get($options, 'delta_icon_inverse', false));
+                    $data['delta_icon'] = Number::deltaIcon($rawValue, $lyValue, Arr::get($options, 'inverse_delta', false));
                     break;
                 default: // as DashboardDataType::NUMBER:
                     if (is_null($rawValue)) {
@@ -78,13 +74,54 @@ trait WithDashboardIntervalValues
                     break;
             }
 
+            if (Arr::get($routeTarget, 'route_target')) {
+                $routeTarget['route_target']['parameters'] = array_merge(
+                    $routeTarget['route_target']['parameters'] ?? [],
+                    [
+                        'between[date]' => $this->getDateIntervalFilter($interval->value),
+                    ]
+                );
+
+                $data['route_target'] = $routeTarget;
+            }
+
             return [$interval->value => $data];
         })->toArray();
     }
 
+    private function getDateIntervalFilter($interval): string
+    {
+        $intervals = [
+            '1y' => now()->subYear(),
+            '1q' => now()->subQuarter(),
+            '1m' => now()->subMonth(),
+            '1w' => now()->subWeek(),
+            '3d' => now()->subDays(3),
+            '1d' => now()->subDay(),
+            'ytd' => now()->startOfYear(),
+            'tdy' => now()->startOfDay(),
+            'qtd' => now()->startOfQuarter(),
+            'mtd' => now()->startOfMonth(),
+            'wtd' => now()->startOfWeek(),
+            'lm' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            'lw' => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
+            'ld' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+        ];
+
+        if (!isset($intervals[$interval])) {
+            return '';
+        }
+
+        $start = is_array($intervals[$interval]) ? $intervals[$interval][0] : $intervals[$interval];
+        $end = is_array($intervals[$interval]) ? $intervals[$interval][1] : now();
+
+        return str_replace('-', '', $start->toDateString()) . '-' . str_replace('-', '', $end->toDateString());
+    }
+
     public function getDashboardTableColumn(
         ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals|OrganisationOrderingIntervals|OrganisationSalesIntervals|GroupOrderingIntervals|GroupSalesIntervals $intervalsModel,
-        string $columnFingerprint
+        string $columnFingerprint,
+        array $routeTarget = []
     ): array {
         $originalColumnFingerprint = $columnFingerprint;
 
@@ -119,6 +156,8 @@ trait WithDashboardIntervalValues
             $options['currency'] = $intervalsModel->organisation->currency->code;
         } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
             $options['currency'] = $intervalsModel->group->currency->code;
+        } elseif (str_ends_with($columnFingerprint, '_inverse_delta')) {
+            $options['inverse_delta'] = true;
         }
 
 
@@ -128,6 +167,7 @@ trait WithDashboardIntervalValues
                 $columnFingerprint,
                 $dataType,
                 $options,
+                $routeTarget
             )
         ];
     }

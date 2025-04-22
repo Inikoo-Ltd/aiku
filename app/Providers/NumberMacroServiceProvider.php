@@ -8,6 +8,7 @@
 
 namespace App\Providers;
 
+use App\Enums\UI\Dashboard\DashboardDeltaIconType;
 use Illuminate\Support\Number;
 use Illuminate\Support\ServiceProvider;
 
@@ -61,33 +62,21 @@ class NumberMacroServiceProvider extends ServiceProvider
 
         Number::macro('deltaIcon', function ($current, $previous, $inverse = false) {
 
-            $data = [
-                'change' => '',
-                'state'  => '',
-            ];
+            $data = DashboardDeltaIconType::NO_CHANGE->icon();
+
+            $increase = $inverse ? DashboardDeltaIconType::DECREASE->iconInverse() : DashboardDeltaIconType::INCREASE->icon();
+            $decrease = $inverse ? DashboardDeltaIconType::INCREASE->iconInverse() : DashboardDeltaIconType::DECREASE->icon();
 
             if ($current != 0 && $previous != 0) {
                 if ($current > $previous) {
-                    $data = [
-                        'change' => $inverse ? 'decrease' : 'increase',
-                        'state'  => $inverse ? 'negative' : 'positive',
-                    ];
+                    $data = $increase;
                 } elseif ($current < $previous) {
-                    $data = [
-                        'change' => $inverse ? 'increase' : 'decrease',
-                        'state'  => $inverse ? 'positive' : 'negative',
-                    ];
+                    $data = $decrease;
                 }
             } elseif ($previous == 0 && $current > 0) {
-                $data = [
-                    'change' => $inverse ? 'decrease' : 'increase',
-                    'state'  => $inverse ? 'negative' : 'positive',
-                ];
+                $data = $increase;
             } elseif ($previous == 0 && $current < 0) {
-                $data = [
-                    'change' => $inverse ? 'increase' : 'decrease',
-                    'state'  => $inverse ? 'positive' : 'negative',
-                ];
+                $data = $decrease;
             }
 
             return $data;
