@@ -220,7 +220,7 @@ const updateTab = (value: string) => {
 						</template>
 						
 						<template #body="{ data }">
-							<div class="flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
+							<div class="px-2 flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
 								<DashboardCell
 									:cell="data.columns?.[colSlug]?.[intervals.value] ?? data.columns[colSlug]"
 								/>
@@ -266,7 +266,12 @@ const updateTab = (value: string) => {
 									<div class="px-2 flex relative"
 										:class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
 									>
-										{{ props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug].formatted_value }}
+										<DashboardCell
+											:cell="
+												props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]
+												?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]
+											"
+										/>
 									</div>
 								</template>
 							</Column>

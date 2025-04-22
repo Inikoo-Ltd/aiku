@@ -171,7 +171,7 @@ const updateDataDisplayType = (value: string) => {
 					<!-- Toggle: model_state -->
 					<Transition name="slide-to-right">
 						<div v-if="settings.model_state_type && currentTab === 'shops' " class="flex items-center space-x-4">
-							<p v-tooltip="settings.model_state_type.options[0].tooltip" class="" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-medium' : 'opacity-50', ]">
+							<p v-tooltip="settings.model_state_type.options[0].tooltip" class="" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
 								{{ settings.model_state_type.options[0].label }}
 							</p>
 							<ToggleSwitch
@@ -181,7 +181,7 @@ const updateDataDisplayType = (value: string) => {
 								:trueValue="settings.model_state_type.options[1]?.value"
 								:disabled="`left_model_state_type` === isLoadingToggle"
 							/>
-							<p v-tooltip="settings.model_state_type.options[1]?.tooltip" class="" :class="[ settings.model_state_type.options[1]?.value === settings.model_state_type.value ? 'font-medium' : 'opacity-50', ]">
+							<p v-tooltip="settings.model_state_type.options[1]?.tooltip" class="" :class="[ settings.model_state_type.options[1]?.value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
 								{{ settings.model_state_type.options[1]?.label }}
 							</p>
 						</div>
@@ -191,7 +191,7 @@ const updateDataDisplayType = (value: string) => {
 				<div class="flex items-center gap-x-8">
 					<!-- Toggle: data_display_type (minified, full) -->
 					<div v-if="settings.data_display_type" class="flex items-center space-x-4">
-						<p v-tooltip="settings.data_display_type.options[0].tooltip" class="" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-medium' : 'opacity-50', ]">
+						<p v-tooltip="settings.data_display_type.options[0].tooltip" class="" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
 							{{ settings.data_display_type.options[0].label }}
 						</p>
 						<ToggleSwitch
@@ -201,7 +201,7 @@ const updateDataDisplayType = (value: string) => {
 							:trueValue="settings.data_display_type.options[1]?.value"
 							:disabled="`left_data_display_type` === isLoadingToggle"
 						/>
-						<p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-medium' : 'opacity-50', ]">
+						<p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
 							{{ settings.data_display_type.options[1]?.label }}
 						</p>
 					</div>

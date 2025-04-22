@@ -55,15 +55,14 @@ const getIntervalStateColor = (state?: string) => {
 
 <template>
     <component
-        class="px-2"
+        class="tabular-nums"
         :class="[
             cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
         ]"
         :is="cell?.route_target?.name ? Link : 'div'"
         :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.parameters) : '#'"
-        v-tooltip="`${cell?.tooltip ?? ''}`"
     >
-        {{ cell?.formatted_value }}
+        <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
         <FontAwesomeIcon
             v-if="cell?.delta_icon?.change"
             :icon="getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
