@@ -10,9 +10,7 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,26 +42,6 @@ class GroupHydrateSales implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        // basket
-        $queryBase = Order::where('group_id', $group->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
-
-        $stats     = $this->getIntervalsData(
-            stats: $stats,
-            queryBase: $queryBase,
-            statField: 'baskets_created_grp_currency_',
-            dateField: 'created_at',
-            intervals: $intervals,
-            doPreviousPeriods: $doPreviousPeriods
-        );
-
-        $stats     = $this->getIntervalsData(
-            stats: $stats,
-            queryBase: $queryBase,
-            statField: 'baskets_updated_grp_currency_',
-            dateField: 'updated_at',
-            intervals: $intervals,
-            doPreviousPeriods: $doPreviousPeriods
-        );
 
 
         $group->salesIntervals()->update($stats);
