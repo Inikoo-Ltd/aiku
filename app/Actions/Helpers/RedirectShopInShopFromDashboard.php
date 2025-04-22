@@ -1,10 +1,12 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 18 Apr 2025 00:10:49 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 22-04-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
+*/
 
 namespace App\Actions\Helpers;
 
@@ -15,7 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectInvoicesInShopFromDashboard extends OrgAction
+class RedirectShopInShopFromDashboard extends OrgAction
 {
     public function handle(Shop $shop): ?RedirectResponse
     {
@@ -29,11 +31,10 @@ class RedirectInvoicesInShopFromDashboard extends OrgAction
     private function getFulfilmentRedirects(Shop $shop): RedirectResponse
     {
         return Redirect::route(
-            'grp.org.fulfilments.show.operations.invoices.invoices.index',
+            'grp.org.fulfilments.show.operations.dashboard',
             [
                 $shop->organisation->slug,
                 $shop->fulfilment->slug,
-                'between[date]' => $this->get('between', ''),
             ]
         );
     }
@@ -41,11 +42,10 @@ class RedirectInvoicesInShopFromDashboard extends OrgAction
     private function getShopRedirects(Shop $shop): RedirectResponse
     {
         return Redirect::route(
-            'grp.org.shops.show.dashboard.invoices.index',
+            'grp.org.shops.show.dashboard.show',
             [
                 $shop->organisation->slug,
                 $shop->slug,
-                'between[date]' => $this->get('between', ''),
             ]
         );
     }

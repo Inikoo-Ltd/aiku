@@ -58,10 +58,12 @@ trait WithDashboardIntervalValues
                 case DashboardDataType::DELTA_LAST_YEAR:
                     $lyValue = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
                     $data['formatted_value'] = Number::delta($rawValue, $lyValue);
-                    if (Arr::get($options, 'currency') && $interval->value != 'all') {
-                        $data['tooltip'] = Number::currency($lyValue, Arr::get($options, 'currency'));
-                    } else {
-                        $data['tooltip'] = $lyValue;
+                    if ($interval->value != 'all') {
+                        if (Arr::get($options, 'currency')) {
+                            $data['tooltip'] = Number::currency($lyValue, Arr::get($options, 'currency'));
+                        } else {
+                            $data['tooltip'] = $lyValue;
+                        }
                     }
                     $data['delta_icon'] = Number::deltaIcon($rawValue, $lyValue, Arr::get($options, 'inverse_delta', false));
                     break;
@@ -75,13 +77,11 @@ trait WithDashboardIntervalValues
             }
 
             $routeTargetData = Arr::get($routeTarget, 'route_target');
-            $keyInterval = Arr::get($routeTarget, 'key_interval');
-
-            if ($routeTargetData && $keyInterval) {
+            if ($routeTargetData) {
                 $routeTargetData['parameters'] = array_merge(
                     $routeTargetData['parameters'] ?? [],
                     [
-                        $keyInterval => $this->getDateIntervalFilter($interval->value),
+                        'between' => $this->getDateIntervalFilter($interval->value),
                     ]
                 );
 
