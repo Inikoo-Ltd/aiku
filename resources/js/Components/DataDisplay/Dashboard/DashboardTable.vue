@@ -17,13 +17,13 @@ import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
-import { faTriangle, faEquals } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Link } from "@inertiajs/vue3"
 import column from "@/Components/SpreadSheets/Column.vue";
 import axios from "axios"
 import { debounce } from "lodash"
+import DashboardCell from "./DashboardCell.vue"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -164,35 +164,6 @@ const updateTab = (value: string) => {
 	debStoreTab(value)
 }
 
-const getIntervalChangesIcon = (change: string) => {
-	if (change === 'increase') {
-		return {
-			icon: faTriangle
-		}
-	} else if (change === 'decrease') {
-		return {
-			icon: faTriangle,
-			class: 'rotate-180'
-		}
-	} else if (change === 'no_change') {
-		return {
-			icon: faEquals,
-		}
-	} else {
-		return null
-	}
-}
-const getIntervalStateColor = (state: string) => {
-	if (state === 'positive') {
-		return 'text-green-500'
-	} else if (state === 'negative') {
-		return 'text-red-500'
-	} else if (state === 'neutral') {
-		return 'text-gray-400'
-	} else {
-		return null
-	}
-}
 </script>
 
 <template>
@@ -250,7 +221,10 @@ const getIntervalStateColor = (state: string) => {
 						
 						<template #body="{ data }">
 							<div class="flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
-								<component
+								<DashboardCell
+									:cell="data.columns?.[colSlug]?.[intervals.value] ?? data.columns[colSlug]"
+								/>
+								<!-- <component
 									:key="intervals.value"
 									class="px-2"
 									:class="[
@@ -272,7 +246,7 @@ const getIntervalStateColor = (state: string) => {
 										fixed-width
 										aria-hidden="true"
 									/>
-								</component>
+								</component> -->
 							</div>
 						</template>
 					</Column>
