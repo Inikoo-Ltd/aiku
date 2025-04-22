@@ -4,7 +4,7 @@ import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ToggleSwitch from "primevue/toggleswitch"
-import { get } from "lodash"
+import { debounce, get } from "lodash"
 import axios from "axios"
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
 
@@ -53,42 +53,22 @@ const props = defineProps<{
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
-// const page = usePage()
-// const tabDashboardInterval = computed(() => {
-// 	const currentUrl = new URL(page.url, window.location.origin)
-// 	return currentUrl.searchParams.get("tab_dashboard_interval")
-// })
-
-// watch(
-// 	tabDashboardInterval,
-// 	(newVal, oldVal) => {
-// 		console.log("tab_dashboard_interval changed from", oldVal, "to", newVal)
-// 	},
-// 	{ immediate: true }
-// )
 
 // Section: Interval
-const isLoadingInterval = ref<string | null>(null)
-const updateInterval = (interval_code: string) => {
-	router.patch(
+const storeIntervalCode = debounce((interval_code) => {
+	axios.patch(
 		route("grp.models.profile.update"),
 		{
 			settings: {
 				selected_interval: interval_code,
 			},
-		},
-		{
-			onStart: () => {
-				isLoadingOnTable.value = true
-				isLoadingInterval.value = interval_code
-			},
-			onFinish: () => {
-				isLoadingInterval.value = null
-				isLoadingOnTable.value = false
-			},
-			preserveScroll: true,
 		}
 	)
+}, 1500)
+const isLoadingInterval = ref<string | null>(null)
+const updateInterval = (interval_code: string) => {
+	props.intervals.value = interval_code
+	storeIntervalCode(interval_code)
 }
 
 const isLoadingToggle = ref<string | null>(null)
