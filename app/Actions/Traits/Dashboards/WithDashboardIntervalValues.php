@@ -64,6 +64,10 @@ trait WithDashboardIntervalValues
                     } else {
                         $data['tooltip'] = $lyValue;
                     }
+                    [
+                        'change' => $data['change'],
+                        'state'  => $data['state'],
+                    ] = Number::deltaIcon($rawValue, $lyValue, Arr::get($options, 'delta_icon_inverse', false));
                     break;
                 default: // as DashboardDataType::NUMBER:
                     if (is_null($rawValue)) {
