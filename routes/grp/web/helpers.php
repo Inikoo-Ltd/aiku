@@ -9,6 +9,7 @@
 use App\Actions\Helpers\RedirectAssetLink;
 use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
+use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
@@ -19,6 +20,8 @@ Route::get('redirect-deleted-invoices-in-shop/{shop:id}', RedirectDeletedInvoice
 Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::class)->name('redirect_invoices_in_shop');
 Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
 
+
+Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

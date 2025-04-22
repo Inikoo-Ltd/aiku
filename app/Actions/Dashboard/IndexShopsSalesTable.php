@@ -19,23 +19,32 @@ class IndexShopsSalesTable extends OrgAction
 {
     public function handle(Group|Organisation $parent)
     {
-
         $queryBuilder = QueryBuilder::for(Shop::class);
+        $queryBuilder->leftJoin('shop_sales_intervals', 'shops.id', 'shop_sales_intervals.shop_id');
+        $queryBuilder->leftJoin('shop_ordering_intervals', 'shops.id', 'shop_ordering_intervals.shop_id');
+
         if (class_basename($parent) == 'Organisation') {
             $queryBuilder->where('organisation_id', $parent->id);
         } else {
             $queryBuilder->where('group_id', $parent->id);
         }
-        
 
 
         return $queryBuilder
             ->defaultSort('shops.code')
-            ->select(['code', 'id', 'name', 'slug', 'type', 'state','shops.currency_id','shops.organisation_id'])
+            ->select([
+                'shops.id',
+                'code',
+                'name',
+                'slug',
+                'type',
+                'state',
+                'shops.currency_id',
+                'shops.organisation_id'
+            ])
             ->allowedSorts(['code', 'name', 'type', 'state'])
             ->withPaginator(null)
             ->withQueryString();
-
     }
 
 

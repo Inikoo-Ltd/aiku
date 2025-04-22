@@ -30,6 +30,7 @@ class ShowGroupDashboard extends OrgAction
 
     public function handle(Group $group, ActionRequest $request): Response
     {
+
         $userSettings = $request->user()->settings;
 
         $currentTab = Arr::get($userSettings, 'group_dashboard_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values()));
@@ -67,6 +68,7 @@ class ShowGroupDashboard extends OrgAction
 
             ]
         ];
+
 
         return Inertia::render(
             'Dashboard/GrpDashboard',
