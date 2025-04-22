@@ -41,7 +41,6 @@ class UpdateOrder extends OrgAction
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (count($changes) > 0) {
-            OrderRecordSearch::dispatch($order);
             if (array_key_exists('state', $changedFields)) {
                 $this->orderHydrators($order);
             }
@@ -52,6 +51,11 @@ class UpdateOrder extends OrgAction
                     PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
                 }
             }
+
+            if(Arr::hasAny($changedFields,['reference','state','net_amount','payment_amount','date'])){
+                OrderRecordSearch::dispatch($order);
+            }
+
         }
 
         return $order;
