@@ -277,7 +277,7 @@ const getIntervalStateColor = (state: string) => {
 										]"
 										:is="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? Link : 'div'"
 										:href="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? route(data.columns?.[colSlug]?.[intervals.value]?.route_target.name, data.columns?.[colSlug]?.[intervals.value]?.route_target.parameters) : '#'"
-										v-tooltip="data.columns?.[colSlug]?.[intervals.value]?.tooltip"
+										v-tooltip="`${data.columns?.[colSlug]?.[intervals.value]?.tooltip}`"
 									>
 										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 										<FontAwesomeIcon
