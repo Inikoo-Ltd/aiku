@@ -49,8 +49,51 @@ class NumberMacroServiceProvider extends ServiceProvider
                 return '--';
             }
 
-            return Number::percentage($current, $previous, 2);
+            return percentage(
+                $current - $previous,
+                $previous,
+                1,
+                'NA',
+                '%',
+                true
+            );
         });
+
+        Number::macro('deltaIcon', function ($current, $previous, $inverse = false) {
+
+            $data = [
+                'change' => '',
+                'state'  => '',
+            ];
+
+            if ($current != 0 && $previous != 0) {
+                if ($current > $previous) {
+                    $data = [
+                        'change' => $inverse ? 'decrease' : 'increase',
+                        'state'  => $inverse ? 'negative' : 'positive',
+                    ];
+                } elseif ($current < $previous) {
+                    $data = [
+                        'change' => $inverse ? 'increase' : 'decrease',
+                        'state'  => $inverse ? 'positive' : 'negative',
+                    ];
+                }
+            } elseif ($previous == 0 && $current > 0) {
+                $data = [
+                    'change' => $inverse ? 'decrease' : 'increase',
+                    'state'  => $inverse ? 'negative' : 'positive',
+                ];
+            } elseif ($previous == 0 && $current < 0) {
+                $data = [
+                    'change' => $inverse ? 'increase' : 'decrease',
+                    'state'  => $inverse ? 'positive' : 'negative',
+                ];
+            }
+
+            return $data;
+        });
+
+
 
     }
 }
