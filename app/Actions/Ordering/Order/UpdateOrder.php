@@ -37,20 +37,24 @@ class UpdateOrder extends OrgAction
         $oldPlatform   = $order->platform;
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
+        $order->refresh();
 
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (count($changes) > 0) {
-            OrderRecordSearch::dispatch($order);
             if (array_key_exists('state', $changedFields)) {
                 $this->orderHydrators($order);
             }
             if (array_key_exists('platform_id', $changedFields)) {
-                if ($order->platform_id) {
+                if ($order->platform) {
                     PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
                 } elseif ($oldPlatform) {
                     PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
                 }
+            }
+
+            if (Arr::hasAny($changedFields, ['reference', 'state', 'net_amount', 'payment_amount', 'date'])) {
+                OrderRecordSearch::dispatch($order);
             }
         }
 

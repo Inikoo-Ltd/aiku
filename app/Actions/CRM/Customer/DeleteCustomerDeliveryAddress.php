@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Customer;
 
-use App\Actions\Helpers\Address\Hydrators\AddressHydrateUsage;
 use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -28,11 +27,7 @@ class DeleteCustomerDeliveryAddress extends OrgAction
     public function handle(Customer $customer, Address $address): Customer
     {
         $customer->addresses()->detach($address->id);
-
-        AddressHydrateUsage::dispatch($address);
-
         $address->delete();
-
         $customer->refresh();
         return $customer;
     }
@@ -67,13 +62,4 @@ class DeleteCustomerDeliveryAddress extends OrgAction
         $this->handle($customer, $address);
     }
 
-    public function fromRetina(Customer $customer, Address $address, ActionRequest $request): Customer
-    {
-        $this->address = $address;
-        $customer      = $request->user()->customer;
-
-        $this->initialisation($request->get('website')->organisation, $request);
-
-        return $this->handle($customer, $address);
-    }
 }

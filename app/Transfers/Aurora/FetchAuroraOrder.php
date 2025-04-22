@@ -25,7 +25,6 @@ class FetchAuroraOrder extends FetchAurora
 {
     protected function parseModel(): void
     {
-
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Order Store Key'});
 
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
@@ -181,18 +180,18 @@ class FetchAuroraOrder extends FetchAurora
         }
 
 
-
         $this->parsedData["order"] = [
-            'date'            => $date,
-            'submitted_at'    => $this->parseDatetime($this->auroraModelData->{'Order Submitted by Customer Date'}),
-            'in_warehouse_at' => $this->parseDatetime($this->auroraModelData->{'Order Send to Warehouse Date'}),
-            'packed_at'       => $this->parseDatetime($this->auroraModelData->{'Order Packed Date'}),
-            'finalised_at'    => $this->parseDatetime($this->auroraModelData->{'Order Packed Done Date'}),
-            'dispatched_at'   => $this->parseDatetime($this->auroraModelData->{'Order Dispatched Date'}),
-            'handing_type'    => $handingType,
-            'billing_locked'  => $billingLocked,
-            'delivery_locked' => $deliveryLocked,
-            'tax_category_id' => $taxCategory->id,
+            'date'                   => $date,
+            'submitted_at'           => $this->parseDatetime($this->auroraModelData->{'Order Submitted by Customer Date'}),
+            'in_warehouse_at'        => $this->parseDatetime($this->auroraModelData->{'Order Send to Warehouse Date'}),
+            'packed_at'              => $this->parseDatetime($this->auroraModelData->{'Order Packed Date'}),
+            'finalised_at'           => $this->parseDatetime($this->auroraModelData->{'Order Packed Done Date'}),
+            'dispatched_at'          => $this->parseDatetime($this->auroraModelData->{'Order Dispatched Date'}),
+            'updated_by_customer_at' => $this->parseDatetime($this->auroraModelData->{'Order Last Updated by Customer'}),
+            'handing_type'           => $handingType,
+            'billing_locked'         => $billingLocked,
+            'delivery_locked'        => $deliveryLocked,
+            'tax_category_id'        => $taxCategory->id,
 
             "reference"          => $this->auroraModelData->{'Order Public ID'},
             'customer_reference' => (string)$this->auroraModelData->{'Order Customer Purchase Order ID'},
@@ -216,7 +215,6 @@ class FetchAuroraOrder extends FetchAurora
             'net_amount'   => $this->auroraModelData->{'Order Total Net Amount'},
             'tax_amount'   => $this->auroraModelData->{'Order Total Tax Amount'},
             'total_amount' => $totalAmount,
-
 
             'fetched_at'      => now(),
             'last_fetched_at' => now(),
@@ -254,8 +252,6 @@ class FetchAuroraOrder extends FetchAurora
         }
 
 
-
-
         if ($billingAddressData['address_line_1'] == '' and
             $billingAddressData['address_line_2'] == '' and
             $billingAddressData['sorting_code'] == '' and
@@ -280,18 +276,13 @@ class FetchAuroraOrder extends FetchAurora
             $deliveryAddressData['country_id'] == $billingAddressData['country_id']
 
         ) {
-
             $deliveryAddressData = $billingAddressData;
         }
-
-
 
 
         $this->parsedData['order']["billing_address"] = new Address($billingAddressData);
 
         if ($handingType == OrderHandingTypeEnum::SHIPPING) {
-
-
             $this->parsedData['order']["delivery_address"] = new Address(
                 $deliveryAddressData,
             );

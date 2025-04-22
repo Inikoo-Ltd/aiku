@@ -23,6 +23,15 @@ import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { RouteParams } from "@/types/route-params";
 
+interface Action {
+  disabled?: boolean;
+  route?: {
+    name: string;
+    parameters?: any;
+    method?: string;
+  };
+}
+
 library.add(faPlus, faCheckDouble, faShare, faCross);
 
 defineProps<{
@@ -88,41 +97,61 @@ function palletDeliveryRoute(palletDelivery: PalletDelivery) {
 }
 
 function customerRoute(palletDelivery: PalletDelivery) {
-  switch (route().current()) {
-    case "grp.org.fulfilments.show.operations.pallet-deliveries.index":
-      if (palletDelivery?.customer_slug) {
-        return route(
-          "grp.org.fulfilments.show.crm.customers.show",
-          [
-            route().params["organisation"],
-            route().params["fulfilment"],
-            palletDelivery.customer_slug
-          ]);
-      }
-    default:
-      return null;
+
+  if(palletDelivery?.customer_slug && route().current()=='grp.org.fulfilments.show.operations.pallet-deliveries.index'){
+    return route(
+      "grp.org.fulfilments.show.crm.customers.show",
+      [
+        (route().params as RouteParams).organisation,
+        (route().params as RouteParams).fulfilment,
+        palletDelivery.customer_slug
+      ]);
+  }else{
+    return null;
   }
+
 }
 
-
 const onClickNewPalletDelivery = (action: Action) => {
-  if (action.disabled) openModal.value = true;
-  else {
-    const href = action.route?.name ? route(action.route?.name, action.route?.parameters) : action.route?.name ? route(action.route?.name, action.route?.parameters) : "#";
-    const method = action.route?.method ?? "get";
-    router[method](
-      href,
-      {
-        onBefore: () => {
-          loading.value = true;
-        },
-        onerror: () => {
-          loading.value = false;
-        }
-      });
+  if (action.disabled) {
+    openModal.value = true;
+    return;
+  }
+
+  let href = "#";
+  if (action.route?.name) {
+    href = route(action.route.name, action.route.parameters);
+  }
+
+  const method = action.route?.method ?? "get";
+
+  const options = {
+    onBefore: () => {
+      loading.value = true;
+    },
+    onError: () => {
+      loading.value = false;
+    }
+  };
+
+  switch (method) {
+    case "get":
+      router.get(href, {}, options);
+      break;
+    case "post":
+      router.post(href, {}, options);
+      break;
+    case "put":
+      router.put(href, {}, options);
+      break;
+    case "patch":
+      router.patch(href, {}, options);
+      break;
+    case "delete":
+      router.delete(href, { data: {}, ...options });
+      break;
   }
 };
-
 
 const isLoading = ref<string | boolean>(false);
 const onClickReceived = (receivedRoute: routeType) => {
@@ -162,7 +191,7 @@ const onClickReceived = (receivedRoute: routeType) => {
 
     <!-- Column: Customer -->
     <template #cell(customer_name)="{ item: palletDelivery }">
-      <Link v-if="customerRoute(palletDelivery)" :href="customerRoute(palletDelivery)" class="secondaryLink">
+      <Link v-if="customerRoute(palletDelivery)" :href="customerRoute(palletDelivery) as string" class="secondaryLink">
         {{ palletDelivery["customer_name"] }}
       </Link>
       <div v-else>
@@ -172,7 +201,7 @@ const onClickReceived = (receivedRoute: routeType) => {
 
     <!-- Column: Customer Reference -->
     <template #cell(customer_reference)="{ item: palletDelivery }">
-      <Link v-if="customerRoute(palletDelivery)" :href="customerRoute(palletDelivery)" class="secondaryLink">
+      <Link v-if="customerRoute(palletDelivery)" :href="customerRoute(palletDelivery) as string" class="secondaryLink">
         {{ palletDelivery.customer_reference }}
       </Link>
 
@@ -186,7 +215,7 @@ const onClickReceived = (receivedRoute: routeType) => {
       <Icon :data="palletDelivery['state_icon']" class="px-1" />
     </template>
 
-    <!-- Column: Estiamted Delivery Date -->
+    <!-- Column: Estimated Delivery Date -->
     <template #cell(estimated_delivery_date)="{ item: palletDelivery }">
       <div>
         {{ useFormatTime(palletDelivery.estimated_delivery_date) }}
@@ -223,7 +252,7 @@ const onClickReceived = (receivedRoute: routeType) => {
 
           <div
             class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-            Contact Suport<span aria-hidden="true">&rarr;</span>
+            Contact Support<span aria-hidden="true">&rarr;</span>
           </div>
         </div>
       </div>

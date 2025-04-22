@@ -29,7 +29,7 @@ class GroupHydrateRegistrationIntervals implements ShouldBeUnique
         return $this->getUniqueJobWithInterval($group, $intervals, $doPreviousPeriods);
     }
 
-    public function handle(Group $group): void
+    public function handle(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $stats = [];
 
@@ -38,7 +38,9 @@ class GroupHydrateRegistrationIntervals implements ShouldBeUnique
             stats: $stats,
             queryBase: $queryBase,
             statField: 'registrations_',
-            dateField: 'registered_at'
+            dateField: 'registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $group->orderingIntervals()->update($stats);
