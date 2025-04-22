@@ -94,18 +94,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $currency_id
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
- * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
- * @property string $goods_amount
- * @property string $services_amount
- * @property string $charges_amount
- * @property string|null $shipping_amount
- * @property string|null $insurance_amount
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $gross_amount Total asserts amount (excluding charges and shipping) before discounts
+ * @property numeric $goods_amount
+ * @property numeric $services_amount
+ * @property numeric $charges_amount
+ * @property numeric|null $shipping_amount
+ * @property numeric|null $insurance_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string $tax_amount
- * @property string $total_amount
+ * @property numeric $tax_amount
+ * @property numeric $total_amount
  * @property numeric $payment_amount
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $fetched_at
@@ -114,9 +114,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
- * @property bool $is_vip Indicate if order is for a VIP customer
- * @property int|null $as_organisation_id Indicate if order is for an organisation in this group
- * @property int|null $as_employee_id Indicate if order is for an employee
+ * @property bool $is_vip Indicate if an order is for a VIP customer
+ * @property int|null $as_organisation_id Indicate if an order is for an organisation in this group
+ * @property int|null $as_employee_id Indicate if an order is for an employee
  * @property int|null $platform_id
  * @property OrderPayStatusEnum|null $pay_status
  * @property \Illuminate\Support\Carbon|null $updated_by_customer_at
@@ -183,9 +183,23 @@ class Order extends Model implements HasMedia, Auditable
         'settled_at'             => 'datetime',
         'fetched_at'             => 'datetime',
         'last_fetched_at'        => 'datetime',
-        'grp_exchange'           => 'decimal:4',
-        'org_exchange'           => 'decimal:4',
-        'payment_amount'         => 'decimal:2',
+
+
+        'grp_exchange' => 'decimal:4',
+        'org_exchange' => 'decimal:4',
+
+        'gross_amount'     => 'decimal:2',
+        'goods_amount'     => 'decimal:2',
+        'services_amount'  => 'decimal:2',
+        'charges_amount'   => 'decimal:2',
+        'shipping_amount'  => 'decimal:2',
+        'insurance_amount' => 'decimal:2',
+        'net_amount'       => 'decimal:2',
+        'grp_net_amount'   => 'decimal:2',
+        'org_net_amount'   => 'decimal:2',
+        'tax_amount'       => 'decimal:2',
+        'total_amount'     => 'decimal:2',
+        'payment_amount'   => 'decimal:2',
 
 
         'state'        => OrderStateEnum::class,
