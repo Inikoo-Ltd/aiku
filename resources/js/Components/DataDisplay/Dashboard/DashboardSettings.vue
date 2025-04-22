@@ -38,6 +38,7 @@ const props = defineProps<{
 			value: string
 		}
 	}
+	currentTab: string
 }>()
 
 // const dashboardTabActive = inject("dashboardTabActive", ref(''))
@@ -175,21 +176,23 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 
 				<div class="flex items-center space-x-4">
 					<!-- Toggle: shop_state -->
-					<div v-if="settings.shop_state_type && " class="flex items-center space-x-4">
-						<p v-tooltip="settings.shop_state_type.options[0].tooltip" class="" :class="[ settings.shop_state_type.options[0].value === settings.shop_state_type.value ? 'font-medium' : 'opacity-50', ]">
-							{{ settings.shop_state_type.options[0].label }}
-						</p>
-						<ToggleSwitch
-							:modelValue="settings.shop_state_type.value"
-							@update:modelValue="(value: any) => updateToggle(settings.shop_state_type.id, value, `left_shop_state_type`, false)"
-							:falseValue="settings.shop_state_type.options[0].value"
-							:trueValue="settings.shop_state_type.options[1]?.value"
-							:disabled="`left_shop_state_type` === isLoadingToggle"
-						/>
-						<p v-tooltip="settings.shop_state_type.options[1]?.tooltip" class="" :class="[ settings.shop_state_type.options[1]?.value === settings.shop_state_type.value ? 'font-medium' : 'opacity-50', ]">
-							{{ settings.shop_state_type.options[1]?.label }}
-						</p>
-					</div>
+					<Transition name="slide-to-right">
+						<div v-if="settings.shop_state_type && currentTab === 'shops' " class="flex items-center space-x-4">
+							<p v-tooltip="settings.shop_state_type.options[0].tooltip" class="" :class="[ settings.shop_state_type.options[0].value === settings.shop_state_type.value ? 'font-medium' : 'opacity-50', ]">
+								{{ settings.shop_state_type.options[0].label }}
+							</p>
+							<ToggleSwitch
+								:modelValue="settings.shop_state_type.value"
+								@update:modelValue="(value: any) => updateToggle(settings.shop_state_type.id, value, `left_shop_state_type`, false)"
+								:falseValue="settings.shop_state_type.options[0].value"
+								:trueValue="settings.shop_state_type.options[1]?.value"
+								:disabled="`left_shop_state_type` === isLoadingToggle"
+							/>
+							<p v-tooltip="settings.shop_state_type.options[1]?.tooltip" class="" :class="[ settings.shop_state_type.options[1]?.value === settings.shop_state_type.value ? 'font-medium' : 'opacity-50', ]">
+								{{ settings.shop_state_type.options[1]?.label }}
+							</p>
+						</div>
+					</Transition>
 				</div>
 
 				<div class="flex items-center gap-x-8">
