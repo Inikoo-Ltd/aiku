@@ -27,10 +27,10 @@ class DashboardShopSalesResource extends JsonResource
         $routeTargets = [
             'invoices' => [
                     'route_target' => $shop->type == ShopTypeEnum::FULFILMENT ? [
-                        'name' => 'grp.org.shops.show.dashboard.fulfilment.index',
+                        'name' => 'grp.org.fulfilments.show.operations.invoices.all.index',
                         'parameters' => [
                             'organisation' => $shop->organisation->slug,
-                            'shop' => $shop->slug,
+                            'fulfilment' => $shop->fulfilment->slug,
                         ],
                     ] : [
                         'name' => 'grp.org.shops.show.dashboard.invoices.index',

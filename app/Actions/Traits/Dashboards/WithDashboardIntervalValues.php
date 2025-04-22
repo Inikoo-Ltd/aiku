@@ -82,7 +82,7 @@ trait WithDashboardIntervalValues
                     ]
                 );
 
-                $data['route_target'] = $routeTarget;
+                $data['route_target'] = $routeTarget['route_target'];
             }
 
             return [$interval->value => $data];

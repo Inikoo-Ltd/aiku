@@ -273,11 +273,11 @@ const getIntervalStateColor = (state: string) => {
 										:key="intervals.value"
 										class="px-2"
 										:class="[
-											data.route_target?.name ? 'cursor-pointer hover:underline' : '',
+											data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? 'cursor-pointer hover:underline' : '',
 										]"
-										:is="data.route_target?.name ? Link : 'div'"
-										:href="data.route_target?.name ? route(data.route_target.name, data.route_target.parameters) : '#'"
-										v-tooltip="data.tooltip"
+										:is="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? Link : 'div'"
+										:href="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? route(data.columns?.[colSlug]?.[intervals.value]?.route_target.name, data.columns?.[colSlug]?.[intervals.value]?.route_target.parameters) : '#'"
+										v-tooltip="data.columns?.[colSlug]?.[intervals.value]?.tooltip"
 									>
 										{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
 										<FontAwesomeIcon
