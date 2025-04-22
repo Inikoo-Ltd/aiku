@@ -10,11 +10,11 @@ namespace App\Actions\Traits\Dashboards\Settings;
 
 use Illuminate\Support\Arr;
 
-trait WithDashboardShopStateTypeSettings
+trait WithDashboardModelStateTypeSettings
 {
-    public function dashboardShopStateTypeSettings(array $settings, string $align = 'right'): array
+    public function dashboardModelStateTypeSettings(array $settings, string $align = 'right'): array
     {
-        $id = 'shop_state';
+        $id = 'model_state';
 
         return [
             'id'      => $id,
@@ -25,13 +25,13 @@ trait WithDashboardShopStateTypeSettings
             'options' => [
                 [
                     'value'   => 'open',
-                    'label'   => __('Open only'),
-                    'tooltip' => __('Only show shops that are open')
+                    'label'   => __('Active only'),
+                    'tooltip' => __('Only show active')
                 ],
                 [
                     'value'   => 'closed',
-                    'label'   => __('All shops including closed'),
-                    'tooltip' => __('Show all shops including closed')
+                    'label'   => __('Show all'),
+                    'tooltip' => __('Show all shops including inactive ones')
                 ]
             ]
         ];

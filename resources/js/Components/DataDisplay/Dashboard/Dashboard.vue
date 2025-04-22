@@ -13,7 +13,7 @@ const props = defineProps<{
 	dashboard?: {
 		super_blocks: {
 			settings: {
-				[key: string]: {  // 'data_display_type' || 'shop_state_type' || 'currency_type'
+				[key: string]: {  // 'data_display_type' || 'model_state_type' || 'currency_type'
 					align: string
 					id: string
 					options: {

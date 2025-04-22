@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -23,16 +24,13 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowGroupDashboard extends OrgAction
 {
     use WithDashboard;
-
-    // <-- to delete
-
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
+    use WithDashboardCurrencyTypeSettings;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
-        $settings     = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []);
 
         $currentTab = Arr::get($userSettings, 'group_dashboard_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values()));
         if (!in_array($currentTab, GroupDashboardSalesTableTabsEnum::values())) {
@@ -49,8 +47,9 @@ class ShowGroupDashboard extends OrgAction
                         'value'   => Arr::get($userSettings, 'selected_interval', 'all')  // fix this
                     ],
                     'settings'  => [
-                        'model_state'       => $this->dashboardShopStateTypeSettings($settings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($settings),
+                        'model_state_type' => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'    => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'   => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
                     'blocks'    => [
                         [
