@@ -9,55 +9,67 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Models\SysAdmin\Organisation;
+use App\Models\Helpers\Currency;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Cache;
 
+/**
+ * @property mixed $name
+ * @property mixed $code
+ * @property mixed $organisation_currency_id
+ */
 class DashboardOrganisationSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
+    protected string $organisationCurrencyCode;
 
 
     public function toArray($request): array
     {
-        /** @var Organisation $organisation */
-        $organisation = $this;
+
+        $currencyOrganisationId = $this->organisation_currency_id;
+
+
+        $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
+            return Currency::find($currencyOrganisationId)->code;
+        });
+        $this->organisationCurrencyCode = $organisationCurrencyCode;
+
 
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $organisation->name,
+                    'formatted_value' => $this->name,
                     'align'           => 'left'
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => $organisation->code,
-                    'tooltip'         => $organisation->name,
+                    'formatted_value' => $this->code,
+                    'tooltip'         => $this->name,
                     'align'           => 'left'
                 ]
             ],
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency_minified'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_org_currency_delta'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_grp_currency'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_grp_currency_minified'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'baskets_created_grp_currency_delta'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_minified'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_org_currency_delta'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_grp_currency'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_grp_currency_minified'),
-            $this->getDashboardTableColumn($organisation->salesIntervals, 'sales_grp_currency_delta'),
+            $this->getDashboardTableColumn($this, 'baskets_created_org_currency'),
+            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified'),
+            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_delta'),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency'),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified'),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_delta'),
+            $this->getDashboardTableColumn($this, 'invoices'),
+            $this->getDashboardTableColumn($this, 'invoices_minified'),
+            $this->getDashboardTableColumn($this, 'invoices_delta'),
+            $this->getDashboardTableColumn($this, 'sales_org_currency'),
+            $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
+            $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency_minified'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
 
 
         return [
-            'slug'    => $organisation->slug,
+            'slug'    => $this->slug,
             'state'   => 'active',
             'columns' => $columns
 

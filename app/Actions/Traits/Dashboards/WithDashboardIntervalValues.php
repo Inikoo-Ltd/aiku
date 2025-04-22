@@ -10,21 +10,13 @@ namespace App\Actions\Traits\Dashboards;
 
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Dashboard\DashboardDataType;
-use App\Models\Accounting\InvoiceCategoryOrderingIntervals;
-use App\Models\Accounting\InvoiceCategorySalesIntervals;
-use App\Models\Catalogue\ShopOrderingIntervals;
-use App\Models\Catalogue\ShopSalesIntervals;
-use App\Models\SysAdmin\GroupOrderingIntervals;
-use App\Models\SysAdmin\GroupSalesIntervals;
-use App\Models\SysAdmin\OrganisationOrderingIntervals;
-use App\Models\SysAdmin\OrganisationSalesIntervals;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Number;
 
 trait WithDashboardIntervalValues
 {
     private function getIntervalValues(
-        ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals|OrganisationOrderingIntervals|OrganisationSalesIntervals|GroupOrderingIntervals|GroupSalesIntervals $intervalsModel,
+        $intervalsModel,
         string $field,
         DashboardDataType $dataType,
         array $options = [],
@@ -122,7 +114,7 @@ trait WithDashboardIntervalValues
     }
 
     public function getDashboardTableColumn(
-        ShopOrderingIntervals|ShopSalesIntervals|InvoiceCategoryOrderingIntervals|InvoiceCategorySalesIntervals|OrganisationOrderingIntervals|OrganisationSalesIntervals|GroupOrderingIntervals|GroupSalesIntervals $intervalsModel,
+        $intervalsModel,
         string $columnFingerprint,
         array $routeTarget = []
     ): array {
@@ -150,18 +142,37 @@ trait WithDashboardIntervalValues
 
 
         if (str_ends_with($columnFingerprint, '_shop_currency')) {
-            $options['currency'] = $intervalsModel->currency->code;
+            $shopCurrencyCode = $intervalsModel->shopCurrencyCode;
+            if (!$shopCurrencyCode) {
+                $shopCurrencyCode = $intervalsModel->shop->currency->code;
+            }
+            $options['currency'] = $shopCurrencyCode;
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_shop_currency'));
         } elseif (str_ends_with($columnFingerprint, '_invoice_category_currency')) {
-            $options['currency'] = $intervalsModel->invoiceCategory->currency->code;
+            $invoiceCategoryCurrencyCode = $intervalsModel->group_currency_code;
+            if (!$invoiceCategoryCurrencyCode) {
+                $invoiceCategoryCurrencyCode = $intervalsModel->invoiceCategory->currency->code;
+            }
+
+            $options['currency'] = $invoiceCategoryCurrencyCode;
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
-            $options['currency'] = $intervalsModel->organisation->currency->code;
+            $organisationCurrencyCode = $intervalsModel->organisationCurrencyCode;
+            if (!$organisationCurrencyCode) {
+                $organisationCurrencyCode = $intervalsModel->organisation->currency->code;
+            }
+            $options['currency'] = $organisationCurrencyCode;
         } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
-            $options['currency'] = $intervalsModel->group->currency->code;
+            $groupCurrencyCode = $intervalsModel->group_currency_code;
+            if (!$groupCurrencyCode) {
+                $groupCurrencyCode = $intervalsModel->group->currency->code;
+            }
+
+            $options['currency'] = $groupCurrencyCode;
         } elseif (str_ends_with($columnFingerprint, '_inverse_delta')) {
             $options['inverse_delta'] = true;
         }
+
 
 
         return [
