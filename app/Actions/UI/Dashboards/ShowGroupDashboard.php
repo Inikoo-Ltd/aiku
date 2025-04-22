@@ -22,20 +22,28 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowGroupDashboard extends OrgAction
 {
-    use WithDashboard; // <-- to delete
+    use WithDashboard;
+
+    // <-- to delete
+
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
-        $settings = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []);
+        $settings     = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []);
+
+        $currentTab = Arr::get($userSettings, 'group_dashboard_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values()));
+        if (!in_array($currentTab, GroupDashboardSalesTableTabsEnum::values())) {
+            $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
+        }
 
 
         $dashboard = [
             'super_blocks' => [
                 [
-                    'id'        => 'main_sales',
+                    'id'        => 'group_dashboard_tab',
                     'intervals' => [
                         'options' => $this->dashboardIntervalOption(),
                         'value'   => Arr::get($userSettings, 'selected_interval', 'all')  // fix this
@@ -46,12 +54,12 @@ class ShowGroupDashboard extends OrgAction
                     ],
                     'blocks'    => [
                         [
-                            'id'   => 'sales_table',
-                            'type' => 'table',
-                            'current_tab' => Arr::get($settings, 'sales_table_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values())),
-                            'tabs' => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables' => GroupDashboardSalesTableTabsEnum::tables($group),
-                            'charts' => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
+                            'id'          => 'sales_table',
+                            'type'        => 'table',
+                            'current_tab' => $currentTab,
+                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
+                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group),
+                            'charts'      => [] // <-- to do (refactor) need to call OrganisationDashboardSalesChartsEnum
 
                         ]
                     ]
@@ -65,8 +73,8 @@ class ShowGroupDashboard extends OrgAction
             'Dashboard/GrpDashboard',
             [
                 'title'       => __('Dashboard Group'),
-                'breadcrumbs'     => $this->getBreadcrumbs(__('Dashboard')),
-                'dashboard'       => $dashboard
+                'breadcrumbs' => $this->getBreadcrumbs(__('Dashboard')),
+                'dashboard'   => $dashboard
             ]
         );
     }
