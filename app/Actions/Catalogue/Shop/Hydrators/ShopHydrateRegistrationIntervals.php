@@ -9,34 +9,28 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateRegistrationIntervals
+class ShopHydrateRegistrationIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Shop $shop;
-
-    public function __construct(Shop $shop)
+    public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->shop = $shop;
+        return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
     }
 
-    public function getJobMiddleware(): array
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        return [(new WithoutOverlapping($this->shop->id))->dontRelease()];
-    }
-
-    public function handle(Shop $shop): void
-    {
-
         $stats = [];
 
         $queryBase = Customer::where('shop_id', $shop->id)->selectRaw('count(*) as  sum_aggregate');
@@ -44,7 +38,9 @@ class ShopHydrateRegistrationIntervals
             stats: $stats,
             queryBase: $queryBase,
             statField: 'registrations_',
-            dateField: 'registered_at'
+            dateField: 'registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $shop->orderingIntervals()->update($stats);

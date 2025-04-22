@@ -24,6 +24,7 @@ import ScriptBlueprint from '@/Components/CMS/Webpage/Script/Blueprint'
 import WowsbarBannerBlueprint from '@/Components/CMS/Webpage/WowsbarBanner/Blueprint'
 import SeeAlsoBlueprint from '@/Components/CMS/Webpage/SeeAlso/Blueprint'
 import PricingBlueprint from '@/Components/CMS/Webpage/Pricing/Blueprint'
+import TimelineBlueprint from '@/Components/CMS/Webpage/Timeline/Blueprint'
 import TextColumn from '@/Components/CMS/Webpage/TextColumn/Blueprint'
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Blueprint'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Blueprint'
@@ -66,7 +67,8 @@ export const getBlueprint = (componentName: string) => {
         'button' : Button.blueprint,
         'column-layout-2': ColumnLayout2Blueprint.blueprint,
         'disclosure': DisclosureBlueprint.blueprint,
-        'family-1' : FamilyBluprint.blueprint
+        'family-1' : FamilyBluprint.blueprint,
+        'timeline' : TimelineBlueprint.blueprint,
     }
     return components[componentName] ?? []
 }

@@ -11,12 +11,15 @@ namespace App\Actions\Helpers\Intervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -51,6 +54,11 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
+            GroupHydrateRegistrationIntervals::dispatch(
+                group: $group,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
         }
     }
 
@@ -64,6 +72,12 @@ trait WithResetIntervals
             );
 
             OrganisationHydrateInvoiceIntervals::dispatch(
+                organisation: $organisation,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            OrganisationHydrateRegistrationIntervals::dispatch(
                 organisation: $organisation,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -90,6 +104,12 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
+
+            ShopHydrateRegistrationIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
         }
 
         foreach (
@@ -105,6 +125,12 @@ trait WithResetIntervals
             )->delay(now()->addMinute())->onQueue('low-priority');
 
             ShopHydrateInvoiceIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinute())->onQueue('low-priority');
+
+            ShopHydrateRegistrationIntervals::dispatch(
                 shop: $shop,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods

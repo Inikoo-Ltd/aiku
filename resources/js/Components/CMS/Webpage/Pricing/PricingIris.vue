@@ -48,17 +48,17 @@ const emits = defineEmits<{
 								{{ tier.name }}
 							</h3>
 							<p
-								v-if="tier.mostPopular"
+								v-if="tier.badge.show"
 								class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs/5 font-semibold text-indigo-600">
-								Most popular
+								{{tier.badge.text}}
 							</p>
 						</div>
 						<p class="mt-4 text-sm/6 text-gray-600">{{ tier.description }}</p>
-						<p class="mt-6 flex items-baseline gap-x-1">
+						<p v-if="tier.priceMonthly.show" class="mt-6 flex items-baseline gap-x-1">
 							<span class="text-4xl font-semibold tracking-tight text-gray-900">{{
-								tier.priceMonthly
+								tier.priceMonthly.text
 							}}</span>
-							<span class="text-sm/6 font-semibold text-gray-600">/month</span>
+							<!-- <span class="text-sm/6 font-semibold text-gray-600">/month</span> -->
 						</p>
 						<ul role="list" class="mt-8 space-y-3 text-sm/6 text-gray-600">
 							<li

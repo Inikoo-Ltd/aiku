@@ -21,8 +21,9 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import { Icon } from "@/types/Utils/Icon";
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faOmega } from '@fas'
 
-library.add(faFileMinus, faArrowCircleLeft);
+library.add(faFileMinus, faArrowCircleLeft, faOmega);
 
 const props = defineProps<{
   pageHead: PageHeadingTypes
@@ -72,7 +73,6 @@ if (props.tabs) {
             <div v-if="props.invoiceExportOptions?.length" class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
                 <a v-for="exportOption in props.invoiceExportOptions"
                 :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
-                target="_blank"
                 class="w-auto mt-0 sm:flex-none text-base"
                 v-tooltip="exportOption.tooltip"
                 >

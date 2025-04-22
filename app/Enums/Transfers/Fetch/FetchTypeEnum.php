@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Helpers\Fetch;
+namespace App\Enums\Transfers\Fetch;
 
 use App\Enums\EnumHelperTrait;
 

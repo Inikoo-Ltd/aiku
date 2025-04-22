@@ -71,7 +71,6 @@ class StoreRentalAgreement extends OrgAction
         );
 
 
-
         foreach ($clauses as $clauseData) {
             foreach ($clauseData as $data) {
                 $data['state'] = match ($rentalAgreement->state) {
@@ -85,7 +84,7 @@ class StoreRentalAgreement extends OrgAction
         $webUser = $this->fulfilmentCustomer->customer->webUsers()->first();
 
         $password = null;
-        if (!$webUser and $this->shop->website and Arr::get($modelData, 'username')) {
+        if (!$webUser && $this->shop->website && Arr::get($modelData, 'username')) {
             $password = Str::random(8);
 
             $webUser = StoreWebUser::make()->action($fulfilmentCustomer->customer, [
@@ -97,7 +96,7 @@ class StoreRentalAgreement extends OrgAction
         }
 
 
-        if ($this->sendEmail and $password) {
+        if ($this->sendEmail && $password) {
             $webUser?->notify(new SendEmailRentalAgreementCreated($password));
         }
 
@@ -141,8 +140,7 @@ class StoreRentalAgreement extends OrgAction
         ];
 
         if (
-            $this->shop->website and
-            $this->fulfilmentCustomer->customer->webUsers()->count() == 0) {
+            $this->shop->website && $this->fulfilmentCustomer->customer->webUsers()->count() == 0) {
             $rules['username'] = [
                 'sometimes',
                 'nullable',

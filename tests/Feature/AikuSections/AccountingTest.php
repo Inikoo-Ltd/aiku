@@ -11,6 +11,9 @@
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
+use App\Actions\Accounting\Invoice\ISDocInvoice;
+use App\Actions\Accounting\Invoice\OmegaInvoice;
+use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
@@ -67,6 +70,7 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -186,8 +190,8 @@ test('create other org payment service provider account', function () {
 
     expect($organisation->accountingStats->number_payment_accounts)->toBe(1);
 
-    $paymentServiceProvider    = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
-    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+    $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
+    $paymentAccount         = StoreOrgPaymentServiceProviderAccount::make()->action(
         $organisation,
         $paymentServiceProvider,
         [
@@ -223,7 +227,7 @@ test('create payment account', function ($orgPaymentServiceProvider) {
 })->depends('add payment service provider to organisation');
 
 test('update payment account shop', function (PaymentAccount $paymentAccount) {
-    $shop     = $this->shop;
+    $shop               = $this->shop;
     $paymentAccountShop = StorePaymentAccountShop::make()->action(
         $paymentAccount,
         $shop,
@@ -298,7 +302,7 @@ test(
 
 test('UI create payment', function () {
     $this->withoutExceptionHandling();
-    $response                  = get(
+    $response = get(
         route(
             'grp.org.accounting.payments.create',
             [$this->organisation->slug]
@@ -322,7 +326,7 @@ test('UI create payment', function () {
 
 test('UI show payment', function (Payment $payment) {
     $this->withoutExceptionHandling();
-    $response                  = get(
+    $response = get(
         route(
             'grp.org.accounting.payments.show',
             [$this->organisation->slug, $payment->id]
@@ -346,7 +350,7 @@ test('UI show payment', function (Payment $payment) {
 
 test('UI edit payment', function (Payment $payment) {
     $this->withoutExceptionHandling();
-    $response                  = get(
+    $response = get(
         route(
             'grp.org.accounting.payments.edit',
             [$this->organisation->slug, $payment->id]
@@ -645,11 +649,11 @@ test('UI create invoice categories', function () {
 
 test('store invoice category', function () {
     $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
-        'name'  => 'Test Inv Cate',
-        'state' => InvoiceCategoryStateEnum::ACTIVE,
-        'type'  => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'name'        => 'Test Inv Cate',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
         'currency_id' => $this->organisation->currency_id,
-        'priority' => 1
+        'priority'    => 1
     ]);
 
     $invoiceCategory->refresh();
@@ -1037,7 +1041,7 @@ test('UI create payment account', function () {
 
 test('UI edit payment account', function () {
     $paymentAccount = $this->organisation->paymentAccounts->first();
-    $response = get(route('grp.org.accounting.payment-accounts.edit', [$this->organisation->slug, $paymentAccount->slug]));
+    $response       = get(route('grp.org.accounting.payment-accounts.edit', [$this->organisation->slug, $paymentAccount->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($paymentAccount) {
         $page
@@ -1155,7 +1159,7 @@ test('UI show list unpaid invoices', function () {
 
 test('UI show list invoices in shop', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $response = get(route('grp.org.shops.show.dashboard.invoices.index', [$this->organisation->slug, $shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -1177,7 +1181,7 @@ test('UI show list invoices in shop', function () {
 
 test('UI show list unpaid invoices in shop', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $response = get(route('grp.org.shops.show.dashboard.invoices.unpaid.index', [$this->organisation->slug, $shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -1199,7 +1203,7 @@ test('UI show list unpaid invoices in shop', function () {
 
 test('UI show list invoices in customer', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $customer = createCustomer($shop);
     $response = get(route('grp.org.shops.show.crm.customers.show.invoices.index', [$this->organisation->slug, $shop->slug, $customer->slug]));
 
@@ -1223,9 +1227,9 @@ test('UI show list invoices in customer', function () {
 
 test('UI show invoice in Organisation', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $customer = createCustomer($shop);
-    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     $response = get(route('grp.org.accounting.invoices.show', [$this->organisation->slug, $invoice->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
@@ -1280,9 +1284,9 @@ test('UI show invoice in Organisation', function () {
 
 test('UI show invoice in Shop', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $customer = createCustomer($shop);
-    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     $response = get(route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $shop->slug, $invoice->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($invoice) {
@@ -1337,9 +1341,9 @@ test('UI show invoice in Shop', function () {
 
 test('Delete invoice', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $customer = createCustomer($shop);
-    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     expect($customer->stats->number_invoices)->toBe(3);
 
     $invoice = DeleteInvoice::make()->action($invoice, [
@@ -1354,7 +1358,7 @@ test('Delete invoice', function () {
 
 test('UI index invoices deleted', function (Invoice $invoice) {
     $this->withoutExceptionHandling();
-    $response                  = get(
+    $response = get(
         route(
             'grp.org.shops.show.dashboard.invoices.deleted.index',
             [$this->organisation->slug, $invoice->shop->slug]
@@ -1380,7 +1384,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
 
 test('UI show invoices deleted', function (Invoice $invoice) {
     $this->withoutExceptionHandling();
-    $response                  = get(
+    $response = get(
         route(
             'grp.org.accounting.deleted_invoices.show',
             [$this->organisation->slug, $invoice->slug]
@@ -1408,10 +1412,9 @@ test('UI show invoices deleted', function (Invoice $invoice) {
 })->depends('Delete invoice');
 
 
-
 test('Store invoice refund', function () {
     $this->withoutExceptionHandling();
-    $shop = $this->shop;
+    $shop     = $this->shop;
     $customer = createCustomer($shop);
 
     $orgStocks = [
@@ -1420,7 +1423,7 @@ test('Store invoice refund', function () {
         ]
     ];
 
-    $productData = array_merge(
+    $productData        = array_merge(
         Product::factory()->definition(),
         [
             'org_stocks' => $orgStocks,
@@ -1428,8 +1431,8 @@ test('Store invoice refund', function () {
             'unit'       => 'unit'
         ]
     );
-    $product = StoreProduct::make()->action($shop, $productData);
-    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $product            = StoreProduct::make()->action($shop, $productData);
+    $invoice            = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     $invoiceTransaction = StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
         'date'            => now(),
         'tax_category_id' => $invoice->tax_category_id,
@@ -1536,7 +1539,7 @@ test('delete payment service provider', function () {
     /** @var Group $group */
     $group = $this->group;
     expect($group->paymentServiceProviders()->count())->toBe(12);
-    $paymentServiceProvider    = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
+    $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
     DeletePaymentServiceProvider::make()->action($paymentServiceProvider);
     $group->refresh();
     expect($group->paymentServiceProviders()->count())->toBe(11);
@@ -1545,4 +1548,34 @@ test('delete payment service provider', function () {
 test('hydrate invoice categories', function () {
     $this->artisan('hydrate:invoice_categories')->assertExitCode(0);
     HydrateInvoiceCategories::run(InvoiceCategory::first());
+});
+
+
+test('export isdoc invoice', function () {
+    $invoice = Invoice::first();
+    $invoice->update([
+        'uuid' => Str::uuid(),
+    ]);
+    $result = ISDocInvoice::run($invoice);
+    expect($result)->toStartWith('<?xml');
+});
+
+test('export omega invoice', function () {
+    $invoice = Invoice::first();
+    $result  = OmegaInvoice::run($invoice);
+    expect($result)->toStartWith('R00');
+});
+
+test('export omega invoice (many)', function () {
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+    $result = OmegaManyInvoice::run($invoice->organisation, [
+        'filter' => $invoice->date->format('Ymd').'-'.$invoice->date->format('Ymd'),
+        'bucket' => 'all',
+        'type'   => 'invoice',
+    ], $invoice->shop);
+
+    expect($result)->toBeInstanceOf(StreamedResponse::class);
 });

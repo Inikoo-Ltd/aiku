@@ -23,6 +23,7 @@ import TextContentIris from "@/Components/CMS/Webpage/Text/TextContentIris.vue"
 import CtaAurora1Iris from "@/Components/CMS/Webpage/CTAAurora1/CtaAurora1Iris.vue"
 import Overview2Iris from "@/Components/CMS/Webpage/Overview2/Overview2Iris.vue"
 import Pricing from "@/Components/CMS/Webpage/Pricing/PricingIris.vue"
+import Timeline from "@/Components/CMS/Webpage/Timeline/TimelineIris.vue"
 import TextColumnIris from "@/Components/CMS/Webpage/TextColumn/TextColumnIris.vue"
 import Topbar1FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentIris.vue"
 import Topbar2FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentIris.vue"
@@ -67,7 +68,8 @@ const components: Record<string, Component> = {
     'column-layout-2': ColumnIris,
     'disclosure': DisclosureIris,
     'family-1' : FamilyIris1,
-    'product-1' : ProductIris1
+    'product-1' : ProductIris1,
+    'timeline': Timeline
 }
 
 

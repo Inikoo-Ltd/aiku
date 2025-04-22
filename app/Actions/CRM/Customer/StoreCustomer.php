@@ -27,6 +27,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -153,6 +154,11 @@ class StoreCustomer extends OrgAction
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
         OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+        ShopHydrateRegistrationIntervals::dispatch($customer->shop, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        GroupHydrateRegistrationIntervals::dispatch($customer->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+
         CustomerRecordSearch::dispatch($customer);
 
 
@@ -213,7 +219,8 @@ class StoreCustomer extends OrgAction
                 ),
             ],
             'phone'                    => [
-                'nullable', 'string:32'
+                'nullable',
+                'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
             'contact_website'          => ['sometimes', 'nullable', 'active_url'],
@@ -229,12 +236,12 @@ class StoreCustomer extends OrgAction
             'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
 
-            'email_subscriptions' => ['sometimes', 'array'],
-            'email_subscriptions.is_subscribed_to_newsletter' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_marketing' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_abandoned_cart' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
+            'email_subscriptions'                                    => ['sometimes', 'array'],
+            'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_abandoned_cart'    => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_reorder_reminder'  => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_low_stock'  => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
@@ -250,10 +257,9 @@ class StoreCustomer extends OrgAction
         ];
 
         if (!$this->strict) {
-
-            $rules['is_vip'] = ['sometimes', 'boolean'];
-            $rules['as_organisation_id'] = ['sometimes','nullable', 'integer'];
-            $rules['as_employee_id'] = ['sometimes','nullable', 'integer'];
+            $rules['is_vip']             = ['sometimes', 'boolean'];
+            $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
 
             $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['email']           = [

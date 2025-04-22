@@ -16,8 +16,9 @@ import {
   faFileMinus
 } from "@fal";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { faOmega } from '@fas'
 
-library.add(faFileMinus);
+library.add(faFileMinus, faOmega);
 
 const props = defineProps<{
   pageHead: PageHeadingTypes

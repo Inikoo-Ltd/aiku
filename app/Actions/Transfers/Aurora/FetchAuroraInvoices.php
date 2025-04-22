@@ -57,36 +57,33 @@ class FetchAuroraInvoices extends FetchAuroraAction
                 return null;
             }
         } else {
-            if ($invoiceData['invoice']['data']['foot_note'] == '') {
-                unset($invoiceData['invoice']['data']['foot_note']);
+            try {
+                $invoice = StoreInvoice::make()->action(
+                    parent: $invoiceData['parent'],
+                    modelData: $invoiceData['invoice'],
+                    hydratorsDelay: $this->hydratorsDelay,
+                    strict: false,
+                    audit: false
+                );
+
+                Invoice::enableAuditing();
+                $this->saveMigrationHistory(
+                    $invoice,
+                    Arr::except($invoiceData['invoice'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                );
+
+
+                $this->recordNew($organisationSource);
+
+                $sourceData = explode(':', $invoice->source_id);
+                DB::connection('aurora')->table('Invoice Dimension')
+                    ->where('Invoice Key', $sourceData[1])
+                    ->update(['aiku_id' => $invoice->id]);
+            } catch (Exception|Throwable $e) {
+                $this->recordError($organisationSource, $e, $invoiceData['invoice'], 'Invoice', 'store');
+
+                return null;
             }
-            //   try {
-            $invoice = StoreInvoice::make()->action(
-                parent: $invoiceData['parent'],
-                modelData: $invoiceData['invoice'],
-                hydratorsDelay: $this->hydratorsDelay,
-                strict: false,
-                audit: false
-            );
-
-            Invoice::enableAuditing();
-            $this->saveMigrationHistory(
-                $invoice,
-                Arr::except($invoiceData['invoice'], ['fetched_at', 'last_fetched_at', 'source_id'])
-            );
-
-
-            $this->recordNew($organisationSource);
-
-            $sourceData = explode(':', $invoice->source_id);
-            DB::connection('aurora')->table('Invoice Dimension')
-                ->where('Invoice Key', $sourceData[1])
-                ->update(['aiku_id' => $invoice->id]);
-            //            } catch (Exception|Throwable $e) {
-            //                $this->recordError($organisationSource, $e, $invoiceData['invoice'], 'Invoice', 'store');
-            //
-            //                return null;
-            //            }
         }
 
 

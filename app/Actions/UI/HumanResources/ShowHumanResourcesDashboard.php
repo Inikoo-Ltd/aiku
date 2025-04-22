@@ -41,21 +41,22 @@ class ShowHumanResourcesDashboard
 
     public function htmlResponse(ActionRequest $request): Response
     {
+        $title = __('human resources');
         return Inertia::render(
             'Org/HumanResources/HumanResourcesDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('human resources'),
+                'title'       => $title,
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-user-hard-hat'],
-                        'title' => __('human resources')
+                        'title' => $title
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('human resources')
+                        'title' => $title
                     ],
-                    'title' => __('human resources'),
+                    'title' => $title,
                 ],
                 'stats'       => [
                     [

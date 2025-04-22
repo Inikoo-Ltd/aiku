@@ -14,47 +14,35 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithProcessAurora
 {
-    public function rules(): array
+    public function handle(Organisation $organisation, $modelData): array
     {
-        return [
-            'id'   => ['required', 'integer'],
-            'with' => ['sometimes', 'string'],
-            'bg'   => ['sometimes', 'boolean'],
-            'delay' => ['sometimes', 'integer']
-        ];
-    }
-
-
-    /**
-     * @throws \Exception
-     */
-    public function asController(Organisation $organisation, ActionRequest $request): array
-    {
-        $this->initialisation($organisation, $request);
-        $validatedData = $this->validatedData;
-
         $with = [];
-        if ($withArgs = Arr::get($validatedData, 'with', '')) {
+        if ($withArgs = Arr::get($modelData, 'with', '')) {
             $with = explode(',', $withArgs);
         }
 
+        $id = Arr::get($modelData, 'id');
 
-        if (Arr::get($validatedData, 'bg', false)) {
+        $dispatch = Arr::get($modelData, 'bg', false);
 
+        if ($dispatch) {
+            $delay = (int)Arr::get($modelData, 'delay', 0);
 
-            $delay = (int) Arr::get($validatedData, 'delay', 0);
-
-            (new $this->fetcher())::dispatch($organisation->id, Arr::get($validatedData, 'id'), $with)->delay($delay);
+            (new $this->fetcher())::dispatch(
+                $organisation->id,
+                $id,
+                $with,
+                Arr::get($modelData, 'fetch_stack_id')
+            )->delay($delay);
 
             return [
                 'organisation' => $organisation->slug,
                 'model'        => class_basename($this->fetcher),
-                'id'           => Arr::get($validatedData, 'id'),
+                'id'           => $id,
                 'date'         => now('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s')
             ];
         } else {
-            $model = (new $this->fetcher())::make()->action($organisation->id, Arr::get($validatedData, 'id'), $with);
-
+            $model = (new $this->fetcher())::make()->action($organisation->id, $id, $with);
             if ($model) {
                 return [
                     'status' => 'ok',
@@ -69,5 +57,36 @@ trait WithProcessAurora
                 ];
             }
         }
+    }
+
+
+    public function rules(): array
+    {
+        return [
+            'id'             => ['required', 'integer'],
+            'with'           => ['sometimes', 'string'],
+            'bg'             => ['sometimes', 'boolean'],
+            'delay'          => ['sometimes', 'integer'],
+            'fetch_stack_id' => ['sometimes', 'integer']
+        ];
+    }
+
+
+    public function action(Organisation $organisation, array $modelData): array
+    {
+        $this->asAction = true;
+        $fetcher        = $this->fetcher;// hack to avoid reset of attributes in initialisation
+        $this->initialisation($organisation, $modelData);
+        $this->fetcher = $fetcher;
+
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+
+    public function asController(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $this->validatedData);
     }
 }

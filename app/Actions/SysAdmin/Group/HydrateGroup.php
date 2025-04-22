@@ -40,6 +40,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
@@ -193,6 +194,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
+        GroupHydrateRegistrationIntervals::run($group);
 
 
     }

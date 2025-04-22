@@ -207,25 +207,28 @@ class IndexInvoices extends OrgAction
         return InvoicesResource::collection($invoices);
     }
 
-    public function getExportOptions(string $filter): array
+    public function getExportOptions(?string $filter): array
     {
+        if (!Arr::get($this->organisation->settings, 'invoice_export.show_omega')) {
+            return [];
+        }
         if ($this->parent instanceof Organisation) {
             $route      = 'grp.org.accounting.invoices.index.omega';
-            $parameters = [
+            $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'filter'       => $filter,
                 'bucket'       => $this->bucket,
                 'type'         => 'invoice',
-            ];
-        } elseif ($this->parent instanceof Shop) {
+            ]);
+        } elseif ($this->parent instanceof Shop || $this->parent instanceof Fulfilment) {
             $route      = 'grp.org.shops.show.dashboard.invoices.index.omega';
-            $parameters = [
+            $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'shop'         => $this->shop->slug,
                 'filter'       => $filter,
                 'bucket'       => $this->bucket,
                 'type'         => 'invoice',
-            ];
+            ]);
         } else {
             return [];
         }
@@ -371,11 +374,9 @@ class IndexInvoices extends OrgAction
             ];
         }
 
-        if (Arr::get($request->input('between'), 'date')) {
-            $filter                       = request()->input('between')['date'];
-            $exportInvoiceOptions         = $this->getExportOptions($filter);
-            $data['invoiceExportOptions'] = $exportInvoiceOptions;
-        }
+        $filter                       = request()->input('between')['date'] ?? null;
+        $exportInvoiceOptions         = $this->getExportOptions($filter);
+        $data['invoiceExportOptions'] = $exportInvoiceOptions;
 
         $inertiaRender = Inertia::render(
             'Org/Accounting/Invoices',
