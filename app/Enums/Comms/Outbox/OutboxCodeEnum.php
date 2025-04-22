@@ -41,6 +41,7 @@ enum OutboxCodeEnum: string
     case PALLET_RETURN_DISPATCHED = 'pallet_return_dispatched';
     case INVITE = 'invite';
     case TEST = 'test';
+    case NEW_CONTACTER = 'new_contacter';
 
 
     public function type(): OutboxTypeEnum
@@ -65,7 +66,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::NEW_CONTACTER
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,

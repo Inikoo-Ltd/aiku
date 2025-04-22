@@ -28,6 +28,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
 use App\Models\CRM\Appointment;
+use App\Models\CRM\Contacter;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
@@ -669,6 +670,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function outboxPushIntervals(): HasOne
     {
         return $this->hasOne(ShopOutboxPushIntervals::class);
+    }
+
+    public function contacters(): HasMany
+    {
+        return $this->hasMany(Contacter::class);
     }
 
 }

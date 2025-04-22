@@ -432,4 +432,9 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
     }
+
+    public function contacters(): HasMany
+    {
+        return $this->hasMany(Contacter::class);
+    }
 }
