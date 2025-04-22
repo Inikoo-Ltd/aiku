@@ -25,7 +25,7 @@ trait WithAIBot
         return config("llmdriver.drivers.$driver.$key");
     }
 
-    public function get_embedding_size(string $embedding_driver): string
+    public function getEmbeddingSize(string $embedding_driver): string
     {
         $embeddingModel = $this->driverHelper($embedding_driver, 'models.embedding_model');
 
@@ -93,32 +93,35 @@ trait WithAIBot
         return $dotProduct / ($magnitudeA * $magnitudeB);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function askActionDeepseek(array $messages, $maxTokens = 800, $responseType = 'json_object', $stream = true)
     {
         $apiKey = config('askbot-laravel.deepseek_api_key');
-        $url = config('askbot-laravel.deepseek_api_url');
-        $model = config('askbot-laravel.model');
+        $url    = config('askbot-laravel.deepseek_api_url');
+        $model  = config('askbot-laravel.model');
 
         $client = new Client();
 
         $payload = [
-            'model' => $model,
-            'messages' => $messages,
-            'stream' => $stream,
-            'max_tokens' => $maxTokens,
+            'model'           => $model,
+            'messages'        => $messages,
+            'stream'          => $stream,
+            'max_tokens'      => $maxTokens,
             'response_format' => [
                 'type' => $responseType
             ]
         ];
 
         $headers = [
-            'Authorization' => 'Bearer ' . $apiKey,
-            'Content-Type' => 'application/json',
-            'Accept' => $stream ? 'text/event-stream' : 'application/json',
+            'Authorization' => 'Bearer '.$apiKey,
+            'Content-Type'  => 'application/json',
+            'Accept'        => $stream ? 'text/event-stream' : 'application/json',
         ];
 
         $response = $client->post($url, [
-            'json' => $payload,
+            'json'    => $payload,
             'headers' => $headers,
         ]);
 
@@ -131,13 +134,11 @@ trait WithAIBot
 
                 foreach ($lines as $line) {
                     if (str_starts_with($line, 'data:')) {
-                        $data = trim(substr($line, 5));
+                        $data        = trim(substr($line, 5));
                         $decodedData = json_decode($data, true);
-                        if ($decodedData) {
+                        if ($decodedData && isset($decodedData['choices'][0]['delta']['content'])) {
                             // Process the decoded data as needed
-                            if (isset($decodedData['choices'][0]['delta']['content'])) {
-                                $result .= $decodedData['choices'][0]['delta']['content'];
-                            }
+                            $result .= $decodedData['choices'][0]['delta']['content'];
                         }
                     }
                 }
@@ -145,7 +146,6 @@ trait WithAIBot
             }
 
             return $result;
-
         } else {
             $body = $response->getBody();
             $data = json_decode($body, true);
@@ -154,30 +154,33 @@ trait WithAIBot
         }
     }
 
-    public function askDeepseek(array $messages)
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function askDeepseek(array $messages): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $apiKey = config('askbot-laravel.deepseek_api_key');
+        $apiKey  = config('askbot-laravel.deepseek_api_key');
         $baseUrl = config('askbot-laravel.deepseek_api_url');
-        $model = config('askbot-laravel.model');
+        $model   = config('askbot-laravel.model');
 
         $payload = [
-            'model' => $model,
-            'messages' => $messages,
-            'stream' => true,
+            'model'      => $model,
+            'messages'   => $messages,
+            'stream'     => true,
             'max_tokens' => 800
         ];
 
         $client = new Client([
             'base_uri' => $baseUrl,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-                'Accept' => 'text/event-stream',
+            'headers'  => [
+                'Authorization' => 'Bearer '.$apiKey,
+                'Content-Type'  => 'application/json',
+                'Accept'        => 'text/event-stream',
             ],
         ]);
 
         $response = $client->post('', [
-            'json' => $payload,
+            'json'   => $payload,
             'stream' => true,
         ]);
 
@@ -191,39 +194,42 @@ trait WithAIBot
                 flush();
             }
         }, 200, [
-            'Content-Type' => 'text/event-stream',
+            'Content-Type'  => 'text/event-stream',
             'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
+            'Connection'    => 'keep-alive',
         ]);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function askLlama($question): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $response = Ollama::model(config('ollama-laravel.model'))
-        ->prompt($question)
-        ->stream(true)
-        ->ask();
+            ->prompt($question)
+            ->stream(true)
+            ->ask();
 
         return Response::stream(function () use ($response) {
             Ollama::processStream($response->getBody(), function ($data) {
-                echo 'data: ' . json_encode(
-                    [
-                        'choices' => [
-                            [
-                                'delta' => [
-                                    'content' => $data['response']
+                echo 'data: '.json_encode(
+                        [
+                            'choices' => [
+                                [
+                                    'delta' => [
+                                        'content' => $data['response']
+                                    ]
                                 ]
                             ]
                         ]
-                    ]
-                ) . "\n\n";
+                    )."\n\n";
                 ob_flush();
                 flush();
             });
         }, 200, [
-            'Content-Type' => 'text/event-stream',
+            'Content-Type'  => 'text/event-stream',
             'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
+            'Connection'    => 'keep-alive',
         ]);
     }
 
