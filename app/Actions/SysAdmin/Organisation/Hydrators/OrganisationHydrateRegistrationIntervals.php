@@ -9,32 +9,27 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateRegistrationIntervals
+class OrganisationHydrateRegistrationIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'urgent';
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->organisation = $organisation;
+        return $this->getUniqueJobWithInterval($organisation, $intervals, $doPreviousPeriods);
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
-    }
-
-    public function handle(Organisation $organisation): void
+    public function handle(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $stats = [];
 
@@ -43,7 +38,9 @@ class OrganisationHydrateRegistrationIntervals
             stats: $stats,
             queryBase: $queryBase,
             statField: 'registrations_',
-            dateField: 'registered_at'
+            dateField: 'registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
 
         $organisation->orderingIntervals()->update($stats);

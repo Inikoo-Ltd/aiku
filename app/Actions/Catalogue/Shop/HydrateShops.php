@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
@@ -84,6 +85,7 @@ class HydrateShops
         ShopHydrateOrderHandling::run($shop);
         ShopHydrateDeletedInvoices::run($shop);
         ShopHydrateOrderIntervals::run($shop);
+        ShopHydrateRegistrationIntervals::run($shop);
 
     }
 

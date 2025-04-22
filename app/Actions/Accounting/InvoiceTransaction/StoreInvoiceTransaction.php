@@ -85,11 +85,11 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        $intervals = DateIntervalEnum::allExceptHistorical();
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
+        AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
     }

@@ -41,6 +41,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPaymentServiceProviders;
@@ -112,6 +113,7 @@ class HydrateOrganisations extends HydrateModel
 
 
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
+            OrganisationHydrateRegistrationIntervals::run($organisation);
             OrganisationHydrateInvoiceIntervals::run($organisation);
 
             OrganisationHydrateDepartments::run($organisation);

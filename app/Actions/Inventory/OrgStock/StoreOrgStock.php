@@ -51,7 +51,7 @@ class StoreOrgStock extends OrgAction
         data_set($modelData, 'name', $stock->name);
         data_set($modelData, 'unit_value', $stock->unit_value);
 
-        $orgStock = DB::transaction(function () use ($stock, $modelData, $organisation, $parent) {
+        $orgStock = DB::transaction(function () use ($stock, $modelData, $parent) {
             /** @var OrgStock $orgStock */
             $orgStock = $stock->orgStocks()->create($modelData);
             $orgStock->stats()->create();
@@ -93,7 +93,7 @@ class StoreOrgStock extends OrgAction
 
         if (!$this->strict) {
             $rules['discontinued_in_organisation_at'] = ['sometimes', 'nullable', 'date'];
-            $rules = $this->noStrictStoreRules($rules);
+            $rules                                    = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
@@ -102,9 +102,6 @@ class StoreOrgStock extends OrgAction
 
     public function prepareForValidation(): void
     {
-
-
-
         $state = match ($this->stock->state) {
             StockStateEnum::ACTIVE => OrgStockStateEnum::ACTIVE,
             StockStateEnum::DISCONTINUING => OrgStockStateEnum::DISCONTINUING,
