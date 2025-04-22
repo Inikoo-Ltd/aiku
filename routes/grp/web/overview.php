@@ -29,7 +29,7 @@ use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\PostRoom\UI\IndexPostRooms;
 use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
-use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
@@ -107,7 +107,7 @@ Route::name('web.')->prefix('web')->group(function () {
 });
 
 Route::name('crm.')->prefix('crm')->group(function () {
-    Route::get('/customers', [IndexCustomers::class, 'inGroup'])->name('customers.index');
+    Route::get('/customers', [IndexCustomersInOverview::class, 'inGroup'])->name('customers.index');
     Route::get('/web-users', [IndexWebUsers::class, 'inGroup'])->name('web-users.index');
     Route::get('/prospects', [IndexProspects::class, 'inGroup'])->name('prospects.index');
 });

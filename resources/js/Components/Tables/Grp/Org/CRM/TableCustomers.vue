@@ -32,6 +32,9 @@ function customerRoute(customer: FulfilmentCustomer) {
                 [customer.slug]);
         case "grp.overview.crm.customers.index":
             return null;
+        case "grp.org.overview.customers.index":
+        case "grp.org.overview.crm.customers.index":
+            return null;
         default:
             return route(
                 "grp.org.shops.show.crm.customers.show",

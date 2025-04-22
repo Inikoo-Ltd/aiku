@@ -231,7 +231,7 @@ class GetOrganisationOverview extends OrgAction
             [
                 'name'  => __('Customers'),
                 'icon'  => 'fal fa-user',
-                'route' => '',
+                'route' => route('grp.org.overview.customers.index', $organisation->slug),
                 'count' => $organisation->crmStats->number_customers ?? 0
             ],
             [
