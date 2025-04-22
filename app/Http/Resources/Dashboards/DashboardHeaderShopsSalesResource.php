@@ -23,6 +23,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         $organisation = $this;
 
 
+        $deltaLabel = __('Change versus 1 Year ago');
 
 
         $inBasketLabel = __('In basket');
@@ -46,7 +47,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_shop_currency' => [
-                    'formatted_value'   => $inBasketLabel.' CCC',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'shop',
                     'data_display_type' => 'full',
                     'sortable'          => true,
@@ -67,7 +68,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                     'currency_type'     => 'shop',
                     'data_display_type' => 'always',
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'tooltip'           => $deltaLabel,
                     'sortable'          => true,
                     'align'             => 'right'
                 ]
@@ -96,10 +97,38 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                         'data_display_type' => 'always',
                         'currency_type'     => 'org',
                         'formatted_value'   => 'Δ 1Y',
-                        'tooltip'           => __('Change versus 1 Year ago'),
+                        'tooltip'           => $deltaLabel,
                         'sortable'          => true,
                         'align'             => 'right'
                     ]
+            ],
+            [
+                'registrations' => [
+                    'formatted_value'   => __('Registrations'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
+            ],
+            [
+                'registrations_minified' => [
+                    'formatted_value'   => __('Registrations'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
+            ],
+            [
+                'registrations_delta' => [
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $deltaLabel,
+                    'sortable'          => true,
+                    'align'             => 'right'
+                ]
             ],
             [
                 'invoices' => [
@@ -124,7 +153,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'tooltip'           => $deltaLabel,
                     'sortable'          => true,
                     'align'             => 'right'
                 ]
@@ -152,7 +181,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                     'currency_type'     => 'shop',
                     'data_display_type' => 'always',
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'tooltip'           => $deltaLabel,
                     'sortable'          => true,
                     'align'             => 'right'
                 ],
@@ -180,7 +209,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                     'currency_type'     => 'org',
                     'data_display_type' => 'always',
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => __('Change versus 1 Year ago'),
+                    'tooltip'           => $deltaLabel,
                     'sortable'          => true,
                     'align'             => 'right'
                 ],
