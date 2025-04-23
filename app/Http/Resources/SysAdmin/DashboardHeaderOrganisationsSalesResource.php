@@ -48,6 +48,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'baskets_created_org_currency',
                 ]
             ],
             [
@@ -55,6 +57,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'baskets_created_org_currency',
                 ]
             ],
             [
@@ -62,6 +66,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'baskets_created_grp_currency',
                 ]
             ],
             [
@@ -69,6 +75,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'grp',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'baskets_created_grp_currency',
                 ]
             ],
             [
@@ -76,6 +84,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Registrations'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'registrations',
                 ]
             ],
             [
@@ -83,6 +93,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Registrations'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'registrations',
                 ]
             ],
             [
@@ -92,7 +104,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'align'             => 'right'
+                    'align'             => 'right',
+                    'scope'             => 'registrations_delta',
                 ]
             ],
             [
@@ -100,6 +113,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Invoices'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'invoices',
                 ]
             ],
             [
@@ -107,6 +122,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Invoices'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'invoices',
                 ]
             ],
             [
@@ -116,7 +133,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'align'             => 'right'
+                    'align'             => 'right',
+                    'scope'             => 'invoices_delta',
                 ]
             ],
             [
@@ -124,6 +142,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ]
             ],
             [
@@ -131,6 +151,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ]
             ],
             [
@@ -140,7 +162,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'align'             => 'right'
+                    'align'             => 'right',
+                    'scope'             => 'sales_org_currency_delta',
                 ],
             ],
             [
@@ -148,7 +171,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
-
+                    'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ]
             ],
             [
@@ -156,6 +180,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ]
             ],
             [
@@ -165,7 +191,8 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'align'             => 'right'
+                    'align'             => 'right',
+                    'scope'             => 'sales_grp_currency_delta',
                 ],
             ],
         );
