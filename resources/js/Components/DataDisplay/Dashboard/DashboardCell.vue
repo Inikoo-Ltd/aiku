@@ -66,7 +66,7 @@ const getIntervalStateColor = (state?: string) => {
         <FontAwesomeIcon
             v-if="cell?.delta_icon?.change"
             :icon="getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
-            class="text-sm"
+            class="text-xxs md:text-sm"
             :class="[
                 getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
                 getIntervalStateColor(cell?.delta_icon?.state),

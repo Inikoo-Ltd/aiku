@@ -45,28 +45,28 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             ],
             [
                 'baskets_created_org_currency' => [
-                    'formatted_value'   => $inBasketLabel.' a',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
                 ]
             ],
             [
                 'baskets_created_org_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel.' b',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                 ]
             ],
             [
                 'baskets_created_grp_currency' => [
-                    'formatted_value'   => $inBasketLabel.' c',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
                 ]
             ],
             [
                 'baskets_created_grp_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel.' d',
+                    'formatted_value'   => $inBasketLabel,
                     'currency_type'     => 'grp',
                     'data_display_type' => 'minified',
                 ]
