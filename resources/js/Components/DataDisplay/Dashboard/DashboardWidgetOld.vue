@@ -5,7 +5,7 @@ const props = defineProps<{
 	widgetsData: {
 		column_count?: number
 		components: {
-			type: string // 'basic'
+			type: string
 			col_span?: number
 			row_span?: number
 			visual?: {}
@@ -49,9 +49,6 @@ const props = defineProps<{
   grid-auto-rows: minmax(0, auto);
 }
 
-.widget-item {
-  height: 500px;
-}
 
 @media (max-width: 768px) {
   .grid-container {
@@ -60,8 +57,5 @@ const props = defineProps<{
     gap: 1rem;
   }
 
-  .widget-item {
-    width: 100%;
-  }
 }
 </style>
