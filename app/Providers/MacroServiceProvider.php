@@ -25,7 +25,9 @@ class MacroServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        //
+        // This method is intentionally left empty as all macro registrations
+        // are handled in the boot() method. The register() method would normally
+        // be used for binding services into the container, which is not needed here.
     }
 
 
