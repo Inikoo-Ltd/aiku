@@ -7,16 +7,11 @@
 <script setup lang="ts">
 import { provide, ref } from "vue"
 import { faChevronDown } from "@far"
-import { faPlay, faTriangle } from "@fas"
+import { faPlay, faTriangle ,faSortDown, faSortUp } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
-import { faSortDown, faSortUp } from "@fas"
-import DashboardOld from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import { faSitemap } from "@fal"
-import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
-import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
-import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
 import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
@@ -83,49 +78,13 @@ const props = defineProps<{
 }>()
 
 
-
-const checked = ref(true)
-
-console.log('11 ewewqq', props.dashboard)
-console.log('22 ewewqq', props.dashboard_stats)
-
 const isLoadingOnTable = ref(false)
 provide('isLoadingOnTable', isLoadingOnTable)
 </script>
 
 <template>
 	<Head :title="trans('Dashboard')" />
-	<!-- <pre>{{ props.dashboard?.super_blocks?.[0].settings }}</pre> -->
+	<Dashboard :dashboard="props.dashboard" />
 
-	<Dashboard
-		:dashboard="props.dashboard"
-	/>
-
-	<!-- <DashboardSettings
-		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-		:settings="props.dashboard?.super_blocks?.[0].settings"
-	/>
-	
-	<DashboardTable
-		:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
-		:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-		:settings="props.dashboard?.super_blocks?.[0].settings"
-	/>
-
-	<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" /> -->
-	
-	<!-- {{ props.dashboard?.super_blocks?.[0].blocks[0] }} -->
-
-	<!-- <div class="grid grid-cols-12 m-3 gap-4 border-t-4 border-red-500 mt-12 pt-12"> -->
-
-				<!-- <div class="col-span-12">
-					<DashboardOld 
-						:dashboard="dashboard_stats"
-						:checked="checked"
-						tableType="org"/>	
-				</div> -->
-		
-
-	<!-- </div> -->
 </template>
 

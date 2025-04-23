@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, withDefaults, ref, onMounted, computed } from "vue"
+import { ref, computed } from "vue"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { Pie } from "vue-chartjs"
 import { trans } from "laravel-vue-i18n"
@@ -17,31 +17,6 @@ import { useLocaleStore } from "@/Stores/locale"
 
 const locale = useLocaleStore()
 
-// Props definition
-/* const props = defineProps<{
-	widget: {
-        prospectStats: {
-            customers: {
-                label: string;
-                count: number;
-                cases: {
-                    [key: string]: {
-                        value: string;
-                        count: number;
-                        label: string;
-                        icon: {
-                            icon: string | string[];
-                            tooltip: string;
-                            class: string;
-                            color: string;
-                        };
-                    };
-                };
-            };
-        };
-    }
-}>() */
-//example data from BE
 const dummyData = {
 	prospectStats: {
 		customers: {
