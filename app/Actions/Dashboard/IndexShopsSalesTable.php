@@ -9,7 +9,8 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Dashboards\DashboardShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardShopSalesInGroupResource;
+use App\Http\Resources\Dashboards\DashboardShopSalesInOrganisationResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -19,22 +20,46 @@ class IndexShopsSalesTable extends OrgAction
 {
     public function handle(Group|Organisation $parent)
     {
-
         $queryBuilder = QueryBuilder::for(Shop::class);
+        $queryBuilder->leftJoin('shop_sales_intervals', 'shops.id', 'shop_sales_intervals.shop_id');
+        $queryBuilder->leftJoin('shop_ordering_intervals', 'shops.id', 'shop_ordering_intervals.shop_id');
+        $queryBuilder->leftJoin('organisations', 'shops.organisation_id', 'organisations.id');
+
+
+
         if (class_basename($parent) == 'Organisation') {
             $queryBuilder->where('organisation_id', $parent->id);
         } else {
-            $queryBuilder->where('group_id', $parent->id);
+            $queryBuilder->where('shops.group_id', $parent->id);
         }
 
 
+        $queryBuilder
+           ->defaultSort('shops.code')
+           ->select([
+               'shops.id',
+               'shops.currency_id as shop_currency_id',
+               'organisations.currency_id as organisation_currency_id',
+               'shops.code',
+               'shops.name',
+               'shops.slug',
+               'shops.type',
+               'shops.state',
+               'shops.organisation_id',
+               'shop_sales_intervals.*',
+               'shop_ordering_intervals.*',
+           ]);
+        if ($parent instanceof Group) {
+            $queryBuilder->selectRaw('\''.$parent->currency->code.'\' as group_currency_code');
+        } else {
+            $queryBuilder->selectRaw('\''.$parent->group->currency->code.'\' as group_currency_code');
+        }
 
-        return $queryBuilder
-            ->defaultSort('shops.code')
-            ->select(['code', 'id', 'name', 'slug', 'type', 'state','shops.currency_id','shops.organisation_id'])
-            ->allowedSorts(['code', 'name', 'type', 'state'])
-            ->withPaginator(null)
-            ->withQueryString();
+
+        return $queryBuilder->allowedSorts(['code', 'name', 'type', 'state'])
+        ->withPaginator(null)
+        ->withQueryString();
+
 
     }
 
@@ -48,7 +73,13 @@ class IndexShopsSalesTable extends OrgAction
         }
         $shops = $this->handle($parent);
 
-        return json_decode(DashboardShopSalesResource::collection($shops)->toJson(), true);
+        if ($parent instanceof Group) {
+            return json_decode(DashboardShopSalesInGroupResource::collection($shops)->toJson(), true);
+        } else {
+            return json_decode(DashboardShopSalesInOrganisationResource::collection($shops)->toJson(), true);
+        }
+
+
     }
 
 }

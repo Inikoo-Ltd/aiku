@@ -6,93 +6,63 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\SysAdmin;
+namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\Group;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DashboardHeaderOrganisationsSalesResource extends JsonResource
+class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
 
     public function toArray($request): array
     {
-        /** @var Organisation $organisation */
-        $organisation = $this;
+        /** @var Group $group */
+        $group = $this;
 
-        $inBasketLabel = __('In basket');
 
-        $labelDelta = __('Change versus 1 Year ago');
+        $deltaTooltip = __('Change versus 1 Year ago');
 
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value'   => __('Organisation'),
+                    'formatted_value'   => __('Category'),
                     'align'             => 'left',
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
+
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value'   => __('Organisation'),
+                    'formatted_value'   => __('Category'),
                     'align'             => 'left',
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
                 ]
             ],
             [
-                'baskets_created_org_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'full',
-                ]
-            ],
-            [
-                'baskets_created_org_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'minified',
-                ]
-            ],
-            [
-                'baskets_created_grp_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'full',
-                ]
-            ],
-            [
-                'baskets_created_grp_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'minified',
-                ]
-            ],
-            [
-                'registrations' => [
-                    'formatted_value'   => __('Registrations'),
+                'refunds' => [
+                    'formatted_value'   => __('Refunds'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
                 ]
             ],
             [
-                'registrations_minified' => [
-                    'formatted_value'   => __('Registrations'),
+                'refunds_minified' => [
+                    'formatted_value'   => __('Refunds'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
                 ]
             ],
             [
-                'registrations_delta' => [
+                'refunds_delta' => [
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $labelDelta,
+                    'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
-                    'sortable'          => true,
-                    'align'             => 'right'
                 ]
             ],
             [
@@ -112,13 +82,13 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             [
                 'invoices_delta' => [
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $labelDelta,
+                    'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
-                    'sortable'          => true,
-                    'align'             => 'right'
                 ]
             ],
+
+
             [
                 'sales_org_currency' => [
                     'formatted_value'   => __('Sales'),
@@ -136,19 +106,17 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             [
                 'sales_org_currency_delta' => [
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $labelDelta,
-                    'currency_type'     => 'always',
+                    'tooltip'           => $deltaTooltip,
+                    'currency_type'     => 'org',
                     'data_display_type' => 'always',
-                    'sortable'          => true,
-                    'align'             => 'right'
                 ],
             ],
+
             [
                 'sales_grp_currency' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
-
                 ]
             ],
             [
@@ -161,21 +129,18 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             [
                 'sales_grp_currency_delta' => [
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $labelDelta,
-                    'currency_type'     => 'always',
+                    'tooltip'           => $deltaTooltip,
+                    'currency_type'     => 'grp',
                     'data_display_type' => 'always',
-                    'sortable'          => true,
-                    'align'             => 'right'
                 ],
             ],
+
         );
 
 
         return [
-            'slug'    => $organisation->slug,
+            'slug'    => $group->slug,
             'columns' => $columns
-
-
         ];
     }
 }

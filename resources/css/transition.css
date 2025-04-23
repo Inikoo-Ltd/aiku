@@ -155,6 +155,22 @@
     opacity: 0;
 }
 
+/* Transition name="spin-to-up" */
+.spin-to-up-enter-active,
+.spin-to-up-leave-active {
+    transition: all 0.1s ease;
+}
+.spin-to-up-enter-from{
+    position: absolute;
+    opacity: 0;
+    transform: translateY(100%);
+}
+.spin-to-up-leave-to {
+    position: absolute;
+    opacity: 100;
+    transform: translateY(-100%);
+}
+
 /* Transition name="spin-to-down" */
 .spin-to-down-enter-active,
 .spin-to-down-leave-active {

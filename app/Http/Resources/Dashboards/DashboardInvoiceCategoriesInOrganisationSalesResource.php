@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Cache;
  * @property mixed $name
  * @property mixed $organisation_currency_id
  */
-class DashboardInvoiceCategoriesSalesResource extends JsonResource
+class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 

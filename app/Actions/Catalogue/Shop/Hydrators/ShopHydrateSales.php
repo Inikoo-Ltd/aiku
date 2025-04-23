@@ -65,7 +65,7 @@ class ShopHydrateSales implements ShouldBeUnique
         // basket
         $queryBase = Order::where('shop_id', $shop->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(net_amount) as  sum_aggregate');
 
-        $stats = $this->getIntervalsData(
+        $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_created_',
@@ -74,7 +74,7 @@ class ShopHydrateSales implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $stats = $this->getIntervalsData(
+        $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_updated_',
@@ -85,7 +85,7 @@ class ShopHydrateSales implements ShouldBeUnique
 
         $queryBase = Order::where('shop_id', $shop->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
 
-        $stats = $this->getIntervalsData(
+        $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_created_grp_currency_',
@@ -94,7 +94,7 @@ class ShopHydrateSales implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $stats = $this->getIntervalsData(
+        $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_updated_grp_currency_',
@@ -105,7 +105,7 @@ class ShopHydrateSales implements ShouldBeUnique
 
         $queryBase = Order::where('shop_id', $shop->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(org_net_amount) as  sum_aggregate');
 
-        $stats = $this->getIntervalsData(
+        $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_created_org_currency_',
@@ -114,7 +114,7 @@ class ShopHydrateSales implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $stats = $this->getIntervalsData(
+        $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_updated_org_currency_',
@@ -125,6 +125,7 @@ class ShopHydrateSales implements ShouldBeUnique
 
         $shop->salesIntervals()->update($stats);
     }
+
 
 
 }

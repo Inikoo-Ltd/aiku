@@ -269,7 +269,6 @@ class ShowShop extends OrgAction
 
                 ShopTabsEnum::SHOWCASE->value => $this->tab == ShopTabsEnum::SHOWCASE->value
                     ? fn () => $this->getDashboard($shop)
-                    // : Inertia::lazy(fn () => ShopResource::make($shop)),
                     : Inertia::lazy(fn () => $this->getDashboard($shop)),
 
                 ShopTabsEnum::HISTORY->value => $this->tab == ShopTabsEnum::HISTORY->value ?

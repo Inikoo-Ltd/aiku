@@ -9,11 +9,11 @@
 namespace App\Actions\Traits\Dashboards;
 
 use App\Actions\Traits\Dashboards\Settings\WithDashboardDataDisplayTypeSettings;
-use App\Actions\Traits\Dashboards\Settings\WithDashboardShopStateTypeSettings;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardModelStateTypeSettings;
 
 trait WithDashboardSettings
 {
-    use WithDashboardShopStateTypeSettings;
+    use WithDashboardModelStateTypeSettings;
     use WithDashboardDataDisplayTypeSettings;
 
 

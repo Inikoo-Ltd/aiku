@@ -39,7 +39,7 @@ import {
   faEraser
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue";
+import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
 
 defineProps<{
   title: string

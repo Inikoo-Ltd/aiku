@@ -29,9 +29,8 @@ class SetOrderPayments extends OrgAction
 
     protected function handle(Order $order): Order
     {
-        $payStatus             = OrderPayStatusEnum::UNPAID;
-        $runningPaymentsAmount = 0;
-
+        $runningPaymentsAmount=0;
+        $payStatus=OrderPayStatusEnum::UNPAID;
         /** @var Payment $payment */
         foreach (
             $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment
@@ -44,7 +43,6 @@ class SetOrderPayments extends OrgAction
 
         $order->update(
             [
-                'pay_status'     => $payStatus,
                 'payment_amount' => $runningPaymentsAmount
             ]
         );

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 16 Mar 2025 21:39:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 22 Apr 2025 18:17:04 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -22,23 +22,16 @@ use Illuminate\Support\Facades\Cache;
  * @property mixed $name
  * @property mixed $organisation_currency_id
  */
-class DashboardInvoiceCategoriesSalesResource extends JsonResource
+class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
 
-    protected string $categoryCurrencyCode;
     protected string $organisationCurrencyCode;
 
     public function toArray($request): array
     {
 
-
-        $currencyCategoryId = $this->category_currency_id;
-        $categoryCurrencyCode = Cache::remember('currency_code_'.$currencyCategoryId, 3600 * 24 * 30, function () use ($currencyCategoryId) {
-            return Currency::find($currencyCategoryId)->code;
-        });
-        $this->categoryCurrencyCode = $categoryCurrencyCode;
 
         $currencyOrganisationId = $this->organisation_currency_id;
         $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
@@ -46,16 +39,48 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
         });
         $this->organisationCurrencyCode = $organisationCurrencyCode;
 
+        $routeTargets = [
+            // 'refunds' => [
+            //     'route_target' => [
+            //         'name' => 'grp.accounting.refunds.index',
+            //         'parameters' => [
+            //             'organisation' => $this->slug,
+            //         ],
+            //         'key_date_filter' => 'between[date]',
+            //     ],
+            // ],
+            // 'registrations' => [
+            //     'route_target' => [
+            //         'name' => 'grp.org.overview.customers.index',
+            //         'parameters' => [
+            //             'organisation' => $this->slug,
+            //         ],
+            //         'key_date_filter' => 'between[registered_at]',
+            //     ],
+            // ],
+            'invoiceCategories' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $this->name
+                    'formatted_value' => $this->name,
+                    ...$routeTargets['invoiceCategories'],
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name
+                    'tooltip'         => $this->name,
+                    ...$routeTargets['invoiceCategories'],
                 ]
             ],
             $this->getDashboardTableColumn($this, 'refunds'),
@@ -64,12 +89,12 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
             $this->getDashboardTableColumn($this, 'invoices'),
             $this->getDashboardTableColumn($this, 'invoices_minified'),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
-            $this->getDashboardTableColumn($this, 'sales_invoice_category_currency'),
-            $this->getDashboardTableColumn($this, 'sales_invoice_category_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_invoice_category_currency_delta'),
             $this->getDashboardTableColumn($this, 'sales_org_currency'),
             $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
             $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency_minified'),
+            $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
 
 

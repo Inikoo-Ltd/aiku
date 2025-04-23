@@ -88,6 +88,7 @@ class HydrateShops
         ShopHydrateDeletedInvoices::run($shop);
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateRegistrationIntervals::run($shop);
+        ShopHydrateOrderIntervals::run($shop);
 
         ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);
         ShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($shop);

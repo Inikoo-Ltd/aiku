@@ -50,7 +50,7 @@ trait WithDashboardCurrencyTypeSettings
 
     private function getOrganisationOptions(Organisation $organisation, array $settings): array
     {
-        $shopState = Arr::get($settings, 'shop_state', 'open');
+        $shopState = Arr::get($settings, 'model_state', 'open');
         if ($shopState == 'open') {
             $currencyIds = $organisation->shops()->whereIn('state', [
                 ShopStateEnum::OPEN,

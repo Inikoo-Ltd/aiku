@@ -36,18 +36,25 @@ class ShowOrganisationDashboard extends OrgAction
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
-        $settings     = Arr::get($request->user()->settings, 'ui.state.organisation_dashboard', []); // <-- to delete
+
+        $currentTab= Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values()));
+        if(!in_array($currentTab, OrganisationDashboardSalesTableTabsEnum::values())){
+            $currentTab=Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
+        }
+
+
 
         $dashboard = [
             'super_blocks' => [
                 [
-                    'id'        => 'main_sales',
+                    'id'        => 'organisation_dashboard_tab',
                     'intervals' => [
                         'options' => $this->dashboardIntervalOption(),
                         'value'   => Arr::get($userSettings, 'selected_interval', 'all')  // fix this
                     ],
                     'settings'  => [
-                        'shop_state_type' => $this->dashboardShopStateTypeSettings($userSettings, 'left'),
+
+                        'model_state_type' => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type'    => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'   => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
@@ -55,7 +62,7 @@ class ShowOrganisationDashboard extends OrgAction
                         [
                             'id'          => 'sales_table',
                             'type'        => 'table',
-                            'current_tab' => Arr::get($settings, 'sales_table_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values())),
+                            'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
                             'charts'      => []

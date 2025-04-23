@@ -8,6 +8,7 @@
 
 namespace App\Providers;
 
+use App\Enums\UI\Dashboard\DashboardDeltaIconType;
 use Illuminate\Support\Number;
 use Illuminate\Support\ServiceProvider;
 
@@ -49,10 +50,61 @@ class NumberMacroServiceProvider extends ServiceProvider
                 return '--';
             }
 
-            return Number::percentage($current, $previous);
+            return percentage(
+                $current - $previous,
+                $previous,
+                1,
+                'NA',
+                '%',
+                true
+            );
+        });
+
+        Number::macro('rawDelta', function ($current, $previous) {
+
+            if (!is_numeric($current)) {
+                $current = 0;
+            }
+            if (!is_numeric($previous)) {
+                $previous = 0;
+            }
+
+            if ($current == $previous) {
+                return 0;
+            }
+
+            if ($previous == 0) {
+                return ($current > 0) ? 9999999 : 0;
+            } else {
+                return $current / $previous;
+            }
 
 
         });
+
+        Number::macro('deltaIcon', function ($current, $previous, $inverse = false) {
+
+            $data = DashboardDeltaIconType::NO_CHANGE->icon();
+
+            $increase = $inverse ? DashboardDeltaIconType::DECREASE->iconInverse() : DashboardDeltaIconType::INCREASE->icon();
+            $decrease = $inverse ? DashboardDeltaIconType::INCREASE->iconInverse() : DashboardDeltaIconType::DECREASE->icon();
+
+            if ($current != 0 && $previous != 0) {
+                if ($current > $previous) {
+                    $data = $increase;
+                } elseif ($current < $previous) {
+                    $data = $decrease;
+                }
+            } elseif ($previous == 0 && $current > 0) {
+                $data = $increase;
+            } elseif ($previous == 0 && $current < 0) {
+                $data = $decrease;
+            }
+
+            return $data;
+        });
+
+
 
     }
 }
