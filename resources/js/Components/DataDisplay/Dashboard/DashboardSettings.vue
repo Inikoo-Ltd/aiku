@@ -111,6 +111,19 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
 	}
 }
 
+// Section: update currency_type (grp, org)
+const debStoreCurrencyType = debounce((value: string) => {
+	axios.patch(route("grp.models.profile.update"), {
+		settings: {
+			currency_type: value,
+		},
+	})
+}, 1500)
+const updateCurrencyType = (value: string) => {
+	props.settings.currency_type.value = value
+	debStoreCurrencyType(value)
+}
+
 // Section: update data_display_type (minified, full)
 const debStoreDataDisplayType = debounce((value: string) => {
 	axios.patch(route("grp.models.profile.update"), {
@@ -210,7 +223,7 @@ const updateDataDisplayType = (value: string) => {
 					<div v-if="settings.currency_type" class="flex items-center space-x-4">
 						<RadioGroup class="relative"
 							:modelValue="settings.currency_type.value"
-							@update:modelValue="(value: any) => updateToggle(settings.currency_type.id, value, `right_currency_type`)"
+							@update:modelValue="(value: any) => updateCurrencyType(value)"
 						>
 							<div v-if="`right_currency_type` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center">
 								<LoadingIcon class="text-white text-xl m-auto" />
