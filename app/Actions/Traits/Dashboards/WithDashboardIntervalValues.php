@@ -56,7 +56,7 @@ trait WithDashboardIntervalValues
                         if (Arr::get($options, 'currency')) {
                             $data['tooltip'] = Number::currency($lyValue, Arr::get($options, 'currency'));
                         } else {
-                            $data['tooltip'] = $lyValue;
+                            $data['tooltip'] = Number::format($lyValue);
                         }
                     }
                     $data['delta_icon'] = Number::deltaIcon($rawValue, $lyValue, Arr::get($options, 'inverse_delta', false));
