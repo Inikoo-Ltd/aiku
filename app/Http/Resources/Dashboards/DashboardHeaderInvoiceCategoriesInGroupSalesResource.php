@@ -60,7 +60,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                 ]
             ],
             [
-                'refunds_delta' => [
+                'refunds_inverse_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',

@@ -59,7 +59,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                 ]
             ],
             [
-                'refunds_delta' => [
+                'refunds_inverse_delta' => [
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'formatted_value'   => 'Δ 1Y',

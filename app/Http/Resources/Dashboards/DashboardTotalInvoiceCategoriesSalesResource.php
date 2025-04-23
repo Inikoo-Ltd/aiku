@@ -85,7 +85,7 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
             ],
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds', $routeTargets['refunds']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_minified', $routeTargets['refunds']),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_delta'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_inverse_delta'),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices', $routeTargets['invoices']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),

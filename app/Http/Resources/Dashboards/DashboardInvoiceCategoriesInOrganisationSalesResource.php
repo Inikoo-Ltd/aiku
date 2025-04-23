@@ -94,7 +94,7 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
             ],
             $this->getDashboardTableColumn($this, 'refunds', $routeTargets['refunds']),
             $this->getDashboardTableColumn($this, 'refunds_minified', $routeTargets['refunds']),
-            $this->getDashboardTableColumn($this, 'refunds_delta'),
+            $this->getDashboardTableColumn($this, 'refunds_inverse_delta'),
             $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
