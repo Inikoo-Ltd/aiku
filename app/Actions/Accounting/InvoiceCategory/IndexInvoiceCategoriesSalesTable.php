@@ -42,6 +42,7 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
                 'invoice_categories.state',
                 'invoice_categories.currency_id as category_currency_id',
                 'organisations.currency_id as organisation_currency_id',
+                'organisations.slug as organisation_slug',
                 'invoice_categories.organisation_id',
                 'invoice_category_sales_intervals.*',
                 'invoice_category_ordering_intervals.*',

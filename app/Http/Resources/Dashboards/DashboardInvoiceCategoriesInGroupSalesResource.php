@@ -39,16 +39,48 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
         });
         $this->organisationCurrencyCode = $organisationCurrencyCode;
 
+        $routeTargets = [
+            // 'refunds' => [
+            //     'route_target' => [
+            //         'name' => 'grp.accounting.refunds.index',
+            //         'parameters' => [
+            //             'organisation' => $this->slug,
+            //         ],
+            //         'key_date_filter' => 'between[date]',
+            //     ],
+            // ],
+            // 'registrations' => [
+            //     'route_target' => [
+            //         'name' => 'grp.org.overview.customers.index',
+            //         'parameters' => [
+            //             'organisation' => $this->slug,
+            //         ],
+            //         'key_date_filter' => 'between[registered_at]',
+            //     ],
+            // ],
+            'invoiceCategories' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $this->name
+                    'formatted_value' => $this->name,
+                    ...$routeTargets['invoiceCategories'],
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name
+                    'tooltip'         => $this->name,
+                    ...$routeTargets['invoiceCategories'],
                 ]
             ],
             $this->getDashboardTableColumn($this, 'refunds'),

@@ -38,25 +38,50 @@ class DashboardTotalGroupInvoiceCategoriesSalesResource extends JsonResource
             'sales_invoice_category_currency_minified' => $sales_grp_currency_minified['sales_grp_currency_minified']
         ];
 
+        $routeTargets = [
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.overview.accounting.invoices.index',
+                    'parameters' => [],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'refunds' => [
+                'route_target' => [
+                    'name' => 'grp.overview.accounting.refunds.index',
+                    'parameters' => [],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'group' => [
+                'route_target' => [
+                    'name' => 'grp.dashboard.show',
+                    'parameters' => [],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $group->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['group']
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $group->code,
                     'tooltip'         => $group->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['group']
                 ]
             ],
-            $this->getDashboardTableColumn($group->orderingIntervals, 'refunds'),
-            $this->getDashboardTableColumn($group->orderingIntervals, 'refunds_minified'),
+            $this->getDashboardTableColumn($group->orderingIntervals, 'refunds', $routeTargets['refunds']),
+            $this->getDashboardTableColumn($group->orderingIntervals, 'refunds_minified', $routeTargets['refunds']),
             $this->getDashboardTableColumn($group->orderingIntervals, 'refunds_delta'),
-            $this->getDashboardTableColumn($group->orderingIntervals, 'invoices'),
-            $this->getDashboardTableColumn($group->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($group->orderingIntervals, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($group->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($group->orderingIntervals, 'invoices_delta'),
             $sales_invoice_category_currency,
             $sales_invoice_category_currency_minified,

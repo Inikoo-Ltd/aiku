@@ -56,12 +56,42 @@ class DashboardTotalShopsSalesResource extends JsonResource
             'sales_shop_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified']
         ];
 
+        $routeTargets = [
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoices.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'registrations' => [
+                'route_target' => [
+                    'name' => 'grp.org.overview.customers.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[registered_at]',
+                ],
+            ],
+            'organisation' => [
+                'route_target' => [
+                    'name' => 'grp.org.dashboard.show',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value'   => $organisation->name,
                     'align'             => 'left',
                     'data_display_type' => 'full',
+                    ...$routeTargets['organisation'],
                 ]
             ],
             [
@@ -70,6 +100,7 @@ class DashboardTotalShopsSalesResource extends JsonResource
                     'tooltip'           => $organisation->name,
                     'align'             => 'left',
                     'data_display_type' => 'minified',
+                    ...$routeTargets['organisation'],
                 ]
             ],
             $baskets_created_shop_currency,
@@ -78,11 +109,11 @@ class DashboardTotalShopsSalesResource extends JsonResource
             $baskets_created_org_currency,
             $baskets_created_org_currency_minified,
             $baskets_created_org_currency_delta,
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'registrations'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'registrations_minified'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'registrations', $routeTargets['registrations']),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'registrations_minified', $routeTargets['registrations']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'registrations_delta'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
             $sales_shop_currency,
             $sales_shop_currency_minified,
