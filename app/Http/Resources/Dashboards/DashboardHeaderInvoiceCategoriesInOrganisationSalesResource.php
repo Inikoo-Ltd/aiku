@@ -47,6 +47,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Refunds'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -54,6 +55,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Refunds'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -61,7 +63,8 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaTooltip
+                    'tooltip'           => $deltaTooltip,
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -69,6 +72,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Invoices'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -76,6 +80,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Invoices'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
 
                 ]
             ],
@@ -85,14 +90,15 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
+                    'sortable'          => true,
                 ]
             ],
-
             [
                 'sales_invoice_category_currency' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'category',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -100,6 +106,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'category',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -108,6 +115,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
+                    'sortable'          => true,
                 ],
             ],
             [
@@ -115,6 +123,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -122,6 +131,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
                 ]
             ],
             [
@@ -130,6 +140,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
+                    'sortable'          => true,
                 ],
             ],
         );

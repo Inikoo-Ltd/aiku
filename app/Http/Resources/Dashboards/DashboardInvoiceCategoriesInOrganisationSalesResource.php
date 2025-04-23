@@ -46,23 +46,57 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
         });
         $this->organisationCurrencyCode = $organisationCurrencyCode;
 
+        $routeTargets = [
+            'refunds' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show.refunds.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show.invoices.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'invoiceCategories' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $this->name
+                    'formatted_value' => $this->name,
+                    ...$routeTargets['invoiceCategories']
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name
+                    'tooltip'         => $this->name,
+                    ...$routeTargets['invoiceCategories']
                 ]
             ],
-            $this->getDashboardTableColumn($this, 'refunds'),
-            $this->getDashboardTableColumn($this, 'refunds_minified'),
+            $this->getDashboardTableColumn($this, 'refunds', $routeTargets['refunds']),
+            $this->getDashboardTableColumn($this, 'refunds_minified', $routeTargets['refunds']),
             $this->getDashboardTableColumn($this, 'refunds_delta'),
-            $this->getDashboardTableColumn($this, 'invoices'),
-            $this->getDashboardTableColumn($this, 'invoices_minified'),
+            $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
             $this->getDashboardTableColumn($this, 'sales_invoice_category_currency'),
             $this->getDashboardTableColumn($this, 'sales_invoice_category_currency_minified'),
