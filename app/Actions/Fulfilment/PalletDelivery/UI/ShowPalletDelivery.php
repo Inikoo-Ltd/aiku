@@ -134,12 +134,7 @@ class ShowPalletDelivery extends OrgAction
             $rentalList = RentalsResource::collection(IndexFulfilmentRentals::run($palletDelivery->fulfilment, 'rentals'))->toArray($request);
         }
 
-        $palletPriceTotal = 0;
-        foreach ($palletDelivery->pallets as $pallet) {
-            $discount         = $pallet->rentalAgreementClause ? $pallet->rentalAgreementClause->percentage_off / 100 : null;
-            $rentalPrice      = $pallet->rental->price ?? 0;
-            $palletPriceTotal += $rentalPrice - $rentalPrice * $discount;
-        }
+
 
         $showGrossAndDiscount = $palletDelivery->gross_amount !== $palletDelivery->net_amount;
 
@@ -301,32 +296,7 @@ class ShowPalletDelivery extends OrgAction
                     ]
                 ],
 
-                // 'uploadRoutes' => [
-                //     'upload'  => [
-                //         'name'       => 'grp.models.pallet-delivery.pallet.upload',
-                //         'parameters' => [
-                //             'palletDelivery' => $palletDelivery->id
-                //         ]
-                //     ],
-                //     'history' => [
-                //         'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.history',
-                //         'parameters' => [
-                //             'organisation'       => $palletDelivery->organisation->slug,
-                //             'fulfilment'         => $palletDelivery->fulfilment->slug,
-                //             'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->id,
-                //             'palletDelivery'     => $palletDelivery->reference
-                //         ]
-                //     ],
-                //     'download' => [
-                //         'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.templates',
-                //         'parameters' => [
-                //             'organisation'       => $palletDelivery->organisation->slug,
-                //             'fulfilment'         => $palletDelivery->fulfilment->slug,
-                //             'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
-                //             'palletDelivery'     => $palletDelivery->reference
-                //         ]
-                //     ],
-                // ],
+
 
                 'locationRoute' => [
                     'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
@@ -395,12 +365,6 @@ class ShowPalletDelivery extends OrgAction
                     'recurring_bill'      => $recurringBillData,
                     'order_summary'       => [
                         [
-                            // [
-                            //     'label'       => __('Pallets'),
-                            //     'quantity'    => $palletDelivery->stats->number_pallets ?? 0,
-                            //     'price_base'  => __('Multiple'),
-                            //     'price_total' => $palletPriceTotal ?? 0
-                            // ],
                             [
                                 'label'       => __('Services'),
                                 'quantity'    => $palletDelivery->stats->number_services ?? 0,
@@ -427,20 +391,7 @@ class ShowPalletDelivery extends OrgAction
                                 'price_total' => $palletDelivery->discount_amount
                             ],
                         ] : [],
-                        $showGrossAndDiscount
-                            ? [
-                            [
-                                'label'       => __('Net'),
-                                'information' => '',
-                                'price_total' => $palletDelivery->net_amount
-                            ],
-                            [
-                                'label'       => __('Tax').' '.$palletDelivery->taxCategory->rate * 100 .'%',
-                                'information' => '',
-                                'price_total' => $palletDelivery->tax_amount
-                            ],
-                        ]
-                            : [
+                        [
                             [
                                 'label'       => __('Net'),
                                 'information' => '',
@@ -460,24 +411,6 @@ class ShowPalletDelivery extends OrgAction
                         ],
 
                         'currency' => CurrencyResource::make($palletDelivery->currency),
-                        // // 'number_pallets'               => $palletDelivery->stats->number_pallets,
-                        // // 'number_services'              => $palletDelivery->stats->number_services,
-                        // // 'number_physical_goods'        => $palletDelivery->stats->number_physical_goods,
-                        // 'pallets_price'                => 0,  // TODO
-                        // 'physical_goods_price'         => $physicalGoodsNet,
-                        // 'services_price'               => $servicesNet,
-                        // 'total_pallets_price'          => 0,  // TODO
-                        // // 'total_services_price'         => $palletDelivery->stats->total_services_price,
-                        // // 'total_physical_goods_price'   => $palletDelivery->stats->total_physical_goods_price,
-                        // 'shipping'                     => [
-                        //     'tooltip'           => __('Shipping fee to your address using DHL service.'),
-                        //     'fee'               => 11111, // TODO
-                        // ],
-                        // 'tax'                      => [
-                        //     'tooltip'           => __('Tax is based on 10% of total order.'),
-                        //     'fee'               => 99999, // TODO
-                        // ],
-                        // 'total_price'                  => $palletDelivery->stats->total_price
                     ]
                 ],
                 'notes_data'         => GetNotesData::run(model: $palletDelivery),

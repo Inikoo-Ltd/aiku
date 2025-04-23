@@ -101,29 +101,6 @@ class ShowPalletDeliveryDeleted extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         }
 
-        $pdfButton    = [
-            'type'   => 'button',
-            'style'  => 'tertiary',
-            'label'  => 'PDF',
-            'target' => '_blank',
-            'icon'   => 'fal fa-file-pdf',
-            'key'    => 'action',
-            'route'  => [
-                'name'       => 'grp.models.pallet-delivery.pdf',
-                'parameters' => [
-                    'palletDelivery' => $palletDelivery->id
-                ]
-            ]
-        ];
-
-        $actions = [];
-        if (!in_array($palletDelivery->state, [
-                PalletDeliveryStateEnum::IN_PROCESS,
-                PalletDeliveryStateEnum::SUBMITTED
-            ])) {
-            $actions = array_merge($actions, [$pdfButton]);
-        }
-
 
         $showGrossAndDiscount = $palletDelivery->gross_amount !== $palletDelivery->net_amount;
 
@@ -192,13 +169,13 @@ class ShowPalletDeliveryDeleted extends OrgAction
 
                 'help_articles' => [
                     [
-                        'label'         => __('How to add a pallet'),
-                        'type'          => 'video',
-                        'description'   => __('Learn how to add a pallet to a pallet delivery'),
-                        'url'           => 'https://drive.google.com/file/d/1egAxAHT6eTDy3xz2xWfnto4-TbL4oIht/view'
+                        'label'       => __('How to add a pallet'),
+                        'type'        => 'video',
+                        'description' => __('Learn how to add a pallet to a pallet delivery'),
+                        'url'         => 'https://drive.google.com/file/d/1egAxAHT6eTDy3xz2xWfnto4-TbL4oIht/view'
                     ]
                 ],
-                'tabs' => [
+                'tabs'          => [
                     'current'    => $this->tab,
                     'navigation' => PalletDeliveryTabsEnum::navigation($palletDelivery)
                 ],
@@ -209,26 +186,7 @@ class ShowPalletDeliveryDeleted extends OrgAction
                     'delivery_state'      => PalletDeliveryStateEnum::stateIcon()[$palletDelivery->state->value],
                     'recurring_bill'      => $recurringBillData,
                     'order_summary'       => [
-                        // [
-                        //     // [
-                        //     //     'label'       => __('Pallets'),
-                        //     //     'quantity'    => $palletDelivery->stats->number_pallets ?? 0,
-                        //     //     'price_base'  => __('Multiple'),
-                        //     //     'price_total' => $palletPriceTotal ?? 0
-                        //     // ],
-                        //     [
-                        //         'label'       => __('Services'),
-                        //         'quantity'    => $palletDelivery->stats->number_services ?? 0,
-                        //         'price_base'  => __('Multiple'),
-                        //         'price_total' => $palletDelivery->services_amount
-                        //     ],
-                        //     [
-                        //         'label'       => __('Physical Goods'),
-                        //         'quantity'    => $palletDelivery->stats->number_physical_goods ?? 0,
-                        //         'price_base'  => __('Multiple'),
-                        //         'price_total' => $palletDelivery->goods_amount
-                        //     ],
-                        // ],
+
 
                         $showGrossAndDiscount ? [
                             [
@@ -242,20 +200,7 @@ class ShowPalletDeliveryDeleted extends OrgAction
                                 'price_total' => $palletDelivery->discount_amount
                             ],
                         ] : [],
-                        $showGrossAndDiscount
-                            ? [
-                            [
-                                'label'       => __('Net'),
-                                'information' => '',
-                                'price_total' => $palletDelivery->net_amount
-                            ],
-                            [
-                                'label'       => __('Tax').' '.$palletDelivery->taxCategory->rate * 100 .'%',
-                                'information' => '',
-                                'price_total' => $palletDelivery->tax_amount
-                            ],
-                        ]
-                            : [
+                        [
                             [
                                 'label'       => __('Net'),
                                 'information' => '',
@@ -348,9 +293,9 @@ class ShowPalletDeliveryDeleted extends OrgAction
         return new PalletDeliveryResource($palletDelivery);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (PalletDelivery $palletDelivery, array $routeParameters, string $suffix) {
+        $headCrumb = function (PalletDelivery $palletDelivery, array $routeParameters) {
             return [
                 [
                     'type'           => 'modelWithIndex',
@@ -396,8 +341,7 @@ class ShowPalletDeliveryDeleted extends OrgAction
                                 ['organisation', 'fulfilment', 'fulfilmentCustomer', 'palletDelivery']
                             )
                         ]
-                    ],
-                    $suffix
+                    ]
                 )
             ),
             default => []
