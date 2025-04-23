@@ -206,7 +206,8 @@ const updateTab = (value: string) => {
 						:sortable="columnHeader.sortable"
 						:sortField="`columns.${colSlug}.${intervals.value}.raw_value`"
 						:field="colSlug"
-						:frozen="colIndex === 1"
+						:frozen="columnHeader.frozen"
+						:alignFrozen="columnHeader.alignFrozen"
 					>
 						<template #header>
 							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
