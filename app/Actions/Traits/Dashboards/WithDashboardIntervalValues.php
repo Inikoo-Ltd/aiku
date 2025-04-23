@@ -70,10 +70,11 @@ trait WithDashboardIntervalValues
 
             $routeTargetData = Arr::get($routeTarget, 'route_target');
             if ($routeTargetData) {
+                $keyDateFilter = Arr::get($routeTargetData, 'key_date_filter', 'between');
                 $routeTargetData['parameters'] = array_merge(
                     $routeTargetData['parameters'] ?? [],
                     [
-                        'between' => $this->getDateIntervalFilter($interval->value),
+                        $keyDateFilter => $this->getDateIntervalFilter($interval->value),
                     ]
                 );
 
