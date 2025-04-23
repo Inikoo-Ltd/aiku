@@ -198,55 +198,32 @@ const updateTab = (value: string) => {
 				
 				<!-- Column (looping) -->
 				<template
-					v-for="(column, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
+					v-for="(columnHeader, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
 					:key="colSlug"
 				>
 					<!-- {{column.data_display_type}} -->
 					<Column
-						v-if="showDashboardColumn(column)"
-						:sortable="column.sortable"
-						:sortField="`columns.${colSlug}.${intervals.value}.formatted_value`"
+						v-if="showDashboardColumn(columnHeader)"
+						:sortable="columnHeader.sortable"
+						:sortField="`columns.${colSlug}.${intervals.value}.raw_value`"
 						:field="colSlug"
 					>
 						<template #header>
 							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
-								:class="column.align === 'left' ? '' : 'justify-end text-right'"
-								v-tooltip="column.tooltip"
+								:class="columnHeader.align === 'left' ? '' : 'justify-end text-right'"
+								v-tooltip="columnHeader.tooltip"
 							>
-								<FontAwesomeIcon v-if="column.icon" :icon="column.icon" class="" fixed-width aria-hidden="true" />
-								<span class="leading-5">{{ column.formatted_value }}</span>
-								<FontAwesomeIcon v-if="column.iconRight" :icon="column.iconRight" class="" fixed-width aria-hidden="true" />
+								<FontAwesomeIcon v-if="columnHeader.icon" :icon="columnHeader.icon" class="" fixed-width aria-hidden="true" />
+								<span class="leading-5">{{ columnHeader.formatted_value }}</span>
+								<FontAwesomeIcon v-if="columnHeader.iconRight" :icon="columnHeader.iconRight" class="" fixed-width aria-hidden="true" />
 							</div>
 						</template>
 						
-						<template #body="{ data }">
-							<div class="px-2 flex relative" :class="[ column.align === 'left' ? '' : 'justify-end text-right', ]" >
+						<template #body="{ data: dataBody }">
+							<div class="px-2 flex relative" :class="[ columnHeader.align === 'left' ? '' : 'justify-end text-right', ]" >
 								<DashboardCell
-									:cell="data.columns?.[colSlug]?.[intervals.value] ?? data.columns[colSlug]"
+									:cell="dataBody.columns?.[colSlug]?.[intervals.value] ?? dataBody.columns[colSlug]"
 								/>
-								<!-- <component
-									:key="intervals.value"
-									class="px-2"
-									:class="[
-										data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? 'cursor-pointer hover:underline' : '',
-									]"
-									:is="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? Link : 'div'"
-									:href="data.columns?.[colSlug]?.[intervals.value]?.route_target?.name ? route(data.columns?.[colSlug]?.[intervals.value]?.route_target.name, data.columns?.[colSlug]?.[intervals.value]?.route_target.parameters) : '#'"
-									v-tooltip="`${data.columns?.[colSlug]?.tooltip ?? data.columns?.[colSlug]?.[intervals.value]?.tooltip ?? ''}`"
-								>
-									{{ data.columns?.[colSlug]?.[intervals.value]?.formatted_value ?? data.columns[colSlug]?.formatted_value }}
-									<FontAwesomeIcon
-										v-if="data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change"
-										:icon="getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.icon"
-										class="text-sm"
-										:class="[
-											getIntervalChangesIcon(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.change)?.class,
-											getIntervalStateColor(data.columns?.[colSlug]?.[intervals.value]?.delta_icon?.state),
-										]"
-										fixed-width
-										aria-hidden="true"
-									/>
-								</component> -->
 							</div>
 						</template>
 					</Column>
