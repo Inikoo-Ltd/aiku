@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaDropshipping extends RetinaAction
 {
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): ActionRequest
     {
         $this->initialisation($request);
 
@@ -76,7 +76,7 @@ class ShowRetinaDropshipping extends RetinaAction
                     ]
                 ],
                 'aikuConnectRoute' => [
-                    'isAuthenticated' => $customer->platforms()->where('type', PlatformTypeEnum::AIKU->value)->exists(),
+                    'isAuthenticated' => $customer->platforms()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
                     'url'       => route('retina.models.dropshipping.aiku.store')
                 ]
             ]

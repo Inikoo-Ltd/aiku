@@ -7,8 +7,9 @@
  * copyright 2025
 */
 
-namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
+namespace App\Actions\Fulfilment\StoredItem\UI;
 
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -27,7 +28,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
+class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
@@ -47,7 +48,7 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
 
         $query = QueryBuilder::for(StoredItem::class);
 
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $query->where('stored_items.fulfilment_customer_id', $customerHasPlatform->customer->fulfilmentCustomer->id);
         } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->leftJoin('shopify_user_has_products', function ($join) {
@@ -81,7 +82,7 @@ class IndexFulfilmentCustomerPlatformPortfolios extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $this->customerHasPlatform->customer->fulfilmentCustomer, $request);
+        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
         $icon          = ['fal', 'fa-user'];
         $title         = $this->customerHasPlatform->customer->name;
         $iconRight     = [

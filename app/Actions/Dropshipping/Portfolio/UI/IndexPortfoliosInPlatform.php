@@ -7,8 +7,10 @@
  * copyright 2025
 */
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Dropshipping\Portfolio\UI;
 
+use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
+use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -28,7 +30,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexCustomerPlatformPortfolios extends OrgAction
+class IndexPortfoliosInPlatform extends OrgAction
 {
     use WithCustomerPlatformSubNavigation;
 
@@ -48,7 +50,7 @@ class IndexCustomerPlatformPortfolios extends OrgAction
 
         $query = QueryBuilder::for(Portfolio::class);
 
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
             $query->where('portfolios.type', PortfolioTypeEnum::MANUAL);
         } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
@@ -72,7 +74,7 @@ class IndexCustomerPlatformPortfolios extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $this->customerHasPlatform->customer, $request);
+        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
         $icon          = ['fal', 'fa-user'];
         $title         = $this->customerHasPlatform->customer->name;
         $iconRight     = [

@@ -33,7 +33,7 @@ class FetchAuroraOrder extends FetchAurora
 
         $platform = null;
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $platform = Platform::where('type', PlatformTypeEnum::AIKU)->first();
+            $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
         $deliveryData = [];

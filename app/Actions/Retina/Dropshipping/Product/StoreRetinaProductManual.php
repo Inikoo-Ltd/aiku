@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
-use App\Actions\Dropshipping\Aiku\StoreManualPortfolio;
+use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
@@ -24,10 +24,13 @@ class StoreRetinaProductManual extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer, array $modelData)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Customer $customer, array $modelData): void
     {
         DB::transaction(function () use ($customer, $modelData) {
-            StoreManualPortfolio::run($customer, $modelData);
+            StoreMultipleManualPortfolios::run($customer, $modelData);
         });
     }
 
@@ -43,6 +46,9 @@ class StoreRetinaProductManual extends RetinaAction
         return true;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Customer $customer, ActionRequest $request): void
     {
         $this->initialisation($request);

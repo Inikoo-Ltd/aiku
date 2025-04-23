@@ -7,8 +7,10 @@
  * copyright 2025
 */
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Dropshipping\Platform\UI;
 
+use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerPlatformsResource;
@@ -26,7 +28,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexCustomerPlatforms extends OrgAction
+class IndexPlatformsInCustomer extends OrgAction
 {
     use WithCustomerSubNavigation;
 
@@ -71,12 +73,12 @@ class IndexCustomerPlatforms extends OrgAction
             'label' => __('Channels')
         ];
 
-        $enableAiku  = !$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first();
-        $aikuChannel = Platform::where('type', PlatformTypeEnum::AIKU)->first();
+        $enableAiku  = !$this->parent->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+        $aikuChannel = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
         $actions = [];
 
-        if (!$this->parent->platforms()->where('type', PlatformTypeEnum::AIKU)->first() && $aikuChannel) {
+        if (!$this->parent->platforms()->where('type', PlatformTypeEnum::MANUAL)->first() && $aikuChannel) {
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
@@ -135,7 +137,7 @@ class IndexCustomerPlatforms extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Codex'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }

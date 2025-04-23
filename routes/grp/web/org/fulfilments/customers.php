@@ -24,14 +24,12 @@ use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\EditFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformCustomerClients;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformOrders;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformPortfolios;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatforms;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
@@ -51,6 +49,7 @@ use App\Actions\Fulfilment\PalletDelivery\UI\ShowPalletDeliveryDeleted;
 use App\Actions\Fulfilment\PalletReturn\ExportPalletReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\ExportPalletReturnStoredItem;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPalletReturns;
+use App\Actions\Fulfilment\PalletReturn\UI\IndexPalletReturnsInPlatform;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowPalletReturnDeleted;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowStoredItemReturn;
@@ -65,6 +64,7 @@ use App\Actions\Fulfilment\Space\UI\ShowSpace;
 use App\Actions\Fulfilment\StoredItem\UI\CreateStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\EditStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
+use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAudit;
 use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPallet;
@@ -174,12 +174,12 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     });
 
     Route::prefix('platforms')->as('.platforms')->group(function () {
-        Route::get('', IndexFulfilmentCustomerPlatforms::class)->name('.index');
+        Route::get('', IndexPlatformsInFulfilmentCustomer::class)->name('.index');
         Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
             Route::get('', ShowFulfilmentCustomerPlatform::class);
 
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
-                Route::get('', IndexFulfilmentCustomerPlatformPortfolios::class)->name('.index');
+                Route::get('', IndexStoredItemsInFulfilmentCustomerPlatform::class)->name('.index');
                 Route::get('/{storedItem}', [ShowStoredItem::class, 'inPlatformInFulfilmentCustomer'])->name('.show')->withoutScopedBindings();
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
@@ -204,7 +204,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
                 });
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
-                Route::get('', IndexFulfilmentCustomerPlatformOrders::class)->name('.index');
+                Route::get('', IndexPalletReturnsInPlatform::class)->name('.index');
                 Route::get('/{palletReturn}', [ShowStoredItemReturn::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
             });
         });

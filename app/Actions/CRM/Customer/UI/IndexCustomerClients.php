@@ -166,10 +166,10 @@ class IndexCustomerClients extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($scope->fulfilmentCustomer, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform && $this->shop->type == ShopTypeEnum::FULFILMENT) {
             $scope         = $this->parent->customer;
-            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
+            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
             $scope         = $this->parent->customer;
-            $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $this->parent->customer, $request);
+            $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $request);
         } else {
             $scope         = $this->parent;
             $subNavigation = $this->getCustomerDropshippingSubNavigation($scope, $request);

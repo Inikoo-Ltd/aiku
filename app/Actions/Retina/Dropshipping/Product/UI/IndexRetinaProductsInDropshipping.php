@@ -22,7 +22,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexRetinaDropshippingProducts extends RetinaAction
+class IndexRetinaProductsInDropshipping extends RetinaAction
 {
     public function handle(ShopifyUser|Customer|TiktokUser|WebUser $scope): ShopifyUser|Customer|TiktokUser|WebUser
     {
@@ -58,6 +58,7 @@ class IndexRetinaDropshippingProducts extends RetinaAction
         return $this->handle($this->platformUser);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPupil(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser|WebUser|Customer
     {
         $this->asAction = true;

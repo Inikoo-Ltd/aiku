@@ -15,21 +15,26 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreManualPortfolio extends OrgAction
+class StoreMultipleManualPortfolios extends OrgAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer, array $modelData)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Customer $customer, array $modelData): void
     {
-        $platform = $customer->platforms()->where('type', PlatformTypeEnum::AIKU)->first();
+        /** @var Platform $platform */
+        $platform = $customer->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
 
         DB::transaction(function () use ($customer, $platform, $modelData) {
             foreach (Arr::get($modelData, 'products') as $product) {
@@ -45,7 +50,7 @@ class StoreManualPortfolio extends OrgAction
 
                 StorePortfolio::run($customer, [
                     ...$product,
-                    'type' => PortfolioTypeEnum::MANUAL->value,
+                    'type'        => PortfolioTypeEnum::MANUAL->value,
                     'platform_id' => $platform->id
                 ]);
             }
@@ -59,6 +64,9 @@ class StoreManualPortfolio extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Customer $customer, ActionRequest $request): void
     {
         $this->initialisationFromShop($customer->shop, $request);

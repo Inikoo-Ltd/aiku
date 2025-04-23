@@ -38,7 +38,6 @@ class ShowCustomerPlatform extends OrgAction
 
     public function htmlResponse(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
     {
-        $customer   = $customerHasPlatform->customer;
         $navigation = CustomerPlatformTabsEnum::navigation();
 
         $actions = [];
@@ -58,7 +57,7 @@ class ShowCustomerPlatform extends OrgAction
                         'icon'  => 'fal fa-user',
                     ],
                     'model'         => __('Platform'),
-                    'subNavigation' => $this->getCustomerPlatformSubNavigation($customerHasPlatform, $customer, $request),
+                    'subNavigation' => $this->getCustomerPlatformSubNavigation($customerHasPlatform, $request),
                     'title'         => $customerHasPlatform->platform->name,
                     'afterTitle'    => [
                         'label' => '('.$customerHasPlatform->customer->name.')',

@@ -41,7 +41,7 @@ class FetchAuroraCustomerClient extends FetchAurora
             $deactivated_at = $metadata->deactivated_date;
         }
 
-        $manualPlatform = Platform::where('type', PlatformTypeEnum::AIKU)->first();
+        $manualPlatform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
         $this->parsedData['customer_client'] =
             [

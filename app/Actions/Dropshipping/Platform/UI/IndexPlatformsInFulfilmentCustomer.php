@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
+namespace App\Actions\Dropshipping\Platform\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
@@ -28,7 +28,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexFulfilmentCustomerPlatforms extends OrgAction
+class IndexPlatformsInFulfilmentCustomer extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
 
@@ -73,7 +73,7 @@ class IndexFulfilmentCustomerPlatforms extends OrgAction
             'label' => __('Channels')
         ];
 
-        $enableAiku = !$this->parent->customer->platforms()->where('type', PlatformTypeEnum::AIKU)->first();
+        $enableAiku = !$this->parent->customer->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
 
         return Inertia::render(
             'Org/Fulfilment/FulfilmentCustomerPlatforms',

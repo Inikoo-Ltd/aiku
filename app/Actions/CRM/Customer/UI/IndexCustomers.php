@@ -134,7 +134,6 @@ class IndexCustomers extends OrgAction
             'number_invoices_type_invoice',
             'last_invoiced_at',
             'sales_all',
-            // 'invoiced_net_amount',
             'invoiced_org_net_amount',
             'invoiced_grp_net_amount',
             'platform_name',
@@ -263,8 +262,7 @@ class IndexCustomers extends OrgAction
             if ($isDropshipping) {
                 $table->column(key: 'number_current_customer_clients', label: '', icon: 'fal fa-users', tooltip: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'number_current_portfolios', label: '', icon: 'fal fa-chess-board', tooltip: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                    // ->column(key: 'platforms', label: __('Platforms'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'platform_name', label: __('Platforms'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'platform_name', label: __('channels'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')

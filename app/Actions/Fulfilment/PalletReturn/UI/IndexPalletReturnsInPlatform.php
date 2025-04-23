@@ -7,8 +7,9 @@
  * copyright 2025
 */
 
-namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
+namespace App\Actions\Fulfilment\PalletReturn\UI;
 
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
@@ -29,7 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use UnexpectedValueException;
 
-class IndexFulfilmentCustomerPlatformOrders extends OrgAction
+class IndexPalletReturnsInPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
     private CustomerHasPlatform $customerHasPlatform;
@@ -57,7 +58,7 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $queryBuilder->where('pallet_returns.fulfilment_customer_id', $customerHasPlatform->customer->fulfilmentCustomer->id);
         } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
@@ -93,9 +94,9 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -105,25 +106,6 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Customer' => [
-                            'title'       => __("No clients found"),
-                            'description' => __("You can add your client 🤷🏽‍♂️"),
-                            'count'       => $parent->stats->number_customer_clients,
-                            'action'      => [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new client'),
-                                'label'   => __('client'),
-                                'route'   => [
-                                    'name'       => 'retina.dropshipping.client.create',
-                                ]
-                            ]
-                        ],
-                        default => null
-                    }
-                )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
@@ -140,7 +122,7 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders')
         ];
-        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $this->customerHasPlatform->customer->fulfilmentCustomer, $request);
+        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
 
         if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
@@ -161,7 +143,6 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
             'Org/Fulfilment/FulfilmentCustomerPlatformOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
                 'title'       => __('orders'),
@@ -175,10 +156,10 @@ class IndexFulfilmentCustomerPlatformOrders extends OrgAction
                 'data'        => PalletReturnsResource::collection($orders),
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs($routeName, $routeParameters): array
+    public function getBreadcrumbs($routeParameters): array
     {
         return
             array_merge(

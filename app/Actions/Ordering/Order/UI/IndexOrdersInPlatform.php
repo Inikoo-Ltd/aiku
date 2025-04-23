@@ -7,8 +7,10 @@
  * copyright 2025
 */
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
+use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Ordering\OrdersResource;
@@ -27,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use UnexpectedValueException;
 
-class IndexCustomerPlatformOrders extends OrgAction
+class IndexOrdersInPlatform extends OrgAction
 {
     use WithCustomerPlatformSubNavigation;
     private CustomerHasPlatform $customerHasPlatform;
@@ -53,7 +55,7 @@ class IndexCustomerPlatformOrders extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Order::class);
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::AIKU) {
+        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $queryBuilder->where('orders.customer_id', $customerHasPlatform->customer->id);
         } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
@@ -124,7 +126,6 @@ class IndexCustomerPlatformOrders extends OrgAction
         ];
         $subNavigation = $this->getCustomerPlatformSubNavigation(
             $this->customerHasPlatform,
-            $this->customerHasPlatform->customer,
             $request
         );
 

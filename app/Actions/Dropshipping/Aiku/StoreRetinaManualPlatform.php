@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreRetinaAikuPlatform extends OrgAction
+class StoreRetinaManualPlatform extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -27,7 +27,7 @@ class StoreRetinaAikuPlatform extends OrgAction
 
     public function handle(Customer $customer): void
     {
-        AttachCustomerToPlatform::make()->action($customer, Platform::where('type', PlatformTypeEnum::AIKU->value)->first(), []);
+        AttachCustomerToPlatform::make()->action($customer, Platform::where('type', PlatformTypeEnum::MANUAL->value)->first(), []);
     }
 
     public function authorize(ActionRequest $request): bool

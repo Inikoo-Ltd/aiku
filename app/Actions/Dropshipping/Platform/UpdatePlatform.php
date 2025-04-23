@@ -11,11 +11,14 @@ namespace App\Actions\Dropshipping\Platform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Platform;
-use Illuminate\Validation\Rule;
+use App\Rules\IUnique;
 
 class UpdatePlatform extends OrgAction
 {
     use WithActionUpdate;
+
+
+    private Platform $platform;
 
     public function handle(Platform $platform, array $modelData): Platform
     {
@@ -28,13 +31,25 @@ class UpdatePlatform extends OrgAction
     public function rules(): array
     {
         return [
-            'code' => ['sometimes', 'required', Rule::unique('platforms', 'code')],
+            'code' => ['sometimes', 'required',
+                       new IUnique(
+                           table: 'platforms',
+                           extraConditions: [
+                               [
+                                   'column'   => 'id',
+                                   'operator' => '!=',
+                                   'value'    => $this->platform->id
+                               ]
+                           ]
+                       ),
+            ],
             'name' => ['sometimes', 'required']
         ];
     }
 
     public function action(Platform $platform, array $modelData): Platform
     {
+        $this->platform = $platform;
         $this->initialisationFromGroup($platform->group, $modelData);
 
         return $this->handle($platform, $modelData);

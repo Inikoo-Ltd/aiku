@@ -46,11 +46,7 @@ class ShowStoredItem extends OrgAction
         if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof CustomerHasPlatform) {
             $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
 
-            return
-                (
-                    $request->user()->tokenCan('root') ||
-                    $request->user()->authTo("human-resources.{$this->organisation->id}.view")
-                );
+            return $request->user()->tokenCan('root') || $request->user()->authTo("human-resources.{$this->organisation->id}.view");
         } elseif ($this->parent instanceof Warehouse) {
             $this->canEdit       = $request->user()->authTo("fulfilment.{$this->warehouse->id}.stored-items.edit");
             return $request->user()->authTo("fulfilment.{$this->warehouse->id}.stored-items.view");
@@ -96,7 +92,7 @@ class ShowStoredItem extends OrgAction
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform) {
-            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
+            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         }
         return Inertia::render(
             'Org/Fulfilment/StoredItem',

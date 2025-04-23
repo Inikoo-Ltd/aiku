@@ -15,12 +15,9 @@ use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
-use App\Actions\CRM\Customer\UI\IndexCustomerPlatformOrders;
-use App\Actions\CRM\Customer\UI\IndexCustomerPlatformPortfolios;
-use App\Actions\CRM\Customer\UI\IndexCustomerPlatforms;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\CRM\Customer\UI\IndexPortfolios;
 use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
+use App\Actions\CRM\Customer\UI\IndexPortfolios;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
@@ -30,7 +27,10 @@ use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInCustomer;
+use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\Ordering\Order\UI\IndexOrders;
+use App\Actions\Ordering\Order\UI\IndexOrdersInPlatform;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexCustomers::class)->name('index');
@@ -48,11 +48,11 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('.invoices.show');
 
     Route::prefix('/platforms')->as('.platforms')->group(function () {
-        Route::get('', IndexCustomerPlatforms::class)->name('.index');
+        Route::get('', IndexPlatformsInCustomer::class)->name('.index');
         Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
             Route::get('', ShowCustomerPlatform::class);
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
-                Route::get('', IndexCustomerPlatformPortfolios::class)->name('.index');
+                Route::get('', IndexPortfoliosInPlatform::class)->name('.index');
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
                 Route::get('', IndexCustomerClients::class)->name('.aiku.index');
@@ -78,7 +78,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
-                Route::get('', IndexCustomerPlatformOrders::class)->name('.index');
+                Route::get('', IndexOrdersInPlatform::class)->name('.index');
                 Route::get('/{order}', [ShowOrder::class, 'inPlatformInCustomer'])->name('.show');
             });
         });

@@ -91,15 +91,13 @@ class ShowCustomerClient extends OrgAction
             ];
         }
         $subNavigation = null;
-        if ($this->parent instanceof Customer) {
-            // $subNavigation = $this->getCustomerClientSubNavigation($customerClient);
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
+        if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerHasPlatform) {
             if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
-                $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $this->parent->customer->fulfilmentCustomer, $request);
+                $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
             } else {
-                $subNavigation = $this->getCustomerClientSubNavigation($customerClient, $this->parent, $request);
+                $subNavigation = $this->getCustomerClientSubNavigation($customerClient, $this->parent);
             }
         }
 
@@ -127,7 +125,7 @@ class ShowCustomerClient extends OrgAction
                         $shopMeta,
                     ]),
                     'actions'       => [
-                        $this->canDelete ? $this->getDeleteActionIcon($request, '') : null,
+                        $this->canDelete ? $this->getDeleteActionIcon($request) : null,
                         $this->canEdit ? $this->getEditActionIcon($request, 'Profile') : null,
                         [
                             'type'  => 'button',
@@ -151,8 +149,8 @@ class ShowCustomerClient extends OrgAction
                 ],
 
                 CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
-                    fn () => GetCustomerClientShowcase::run($customerClient)
-                    : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
+                    fn() => GetCustomerClientShowcase::run($customerClient)
+                    : Inertia::lazy(fn() => GetCustomerClientShowcase::run($customerClient)),
 
                 // CustomerTabsEnum::ORDERS->value => $this->tab == CustomerTabsEnum::ORDERS->value ?
                 //     fn () => OrderResource::collection(IndexOrders::run($customer))
@@ -377,21 +375,7 @@ class ShowCustomerClient extends OrgAction
 
                 ]
             ],
-            'grp.org.fulfilments.show.crm.customers.show.customer-clients.show' => [
-                'label' => $customerClient->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => request()->route()->originalParameters()
-                ]
-            ],
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show' => [
-                'label' => $customerClient->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => request()->route()->originalParameters()
-                ]
-            ],
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' => [
+            'grp.org.fulfilments.show.crm.customers.show.customer-clients.show', 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,

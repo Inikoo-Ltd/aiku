@@ -115,7 +115,7 @@ class FetchAuroraCustomers extends FetchAuroraAction
 
             if ($customer->shop->type == ShopTypeEnum::DROPSHIPPING) {
 
-                $platform = Platform::where('type', PlatformTypeEnum::AIKU)->first();
+                $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
                 if (!$customer->platforms()->where('platform_id', $platform->id)->exists()) {
                     AttachCustomerToPlatform::make()->action($customer, $platform, [

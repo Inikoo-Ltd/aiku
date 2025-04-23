@@ -39,7 +39,7 @@ class FetchAuroraPortfolio extends FetchAurora
 
         $this->parsedData['customer'] = $customer;
 
-        $platform = Platform::where('type', PlatformTypeEnum::AIKU)->first();
+        $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
         $this->parsedData['portfolio'] = [
             'platform_id'     => $platform->id,

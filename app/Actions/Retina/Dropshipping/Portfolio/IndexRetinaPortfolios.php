@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Product\UI;
+namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
@@ -29,7 +29,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexRetinaDropshippingPortfolio extends RetinaAction
+class IndexRetinaPortfolios extends RetinaAction
 {
     public function handle(ShopifyUser|TiktokUser|Customer|WebUser $scope, $prefix = null): LengthAwarePaginator
     {
@@ -87,6 +87,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
         return $this->handle($this->platformUser);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $this->asAction = true;
@@ -98,7 +99,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
         $manual = false;
-        if (isset($this->platform) && $this->platform->type == PlatformTypeEnum::AIKU) {
+        if (isset($this->platform) && $this->platform->type == PlatformTypeEnum::MANUAL) {
             $manual = true;
         }
 
@@ -138,7 +139,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
                         ] : [],
                     ]
                 ],
-                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::AIKU ? [
+                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name' => 'retina.models.customer.order.platform.store',
                     'parameters' => [
                         'customer' => $this->customer->id,
@@ -155,7 +156,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
         )->table($this->tableStructure(prefix: 'products'));
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null, $canEdit = false, string $bucket = null, $sales = true): \Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -176,7 +177,7 @@ class IndexRetinaDropshippingPortfolio extends RetinaAction
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'action', label: __('action'), canBeHidden: false);
         };
     }
 
