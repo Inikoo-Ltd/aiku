@@ -171,7 +171,7 @@ const updateTab = (value: string) => {
 
 		<div class="">
 			<!-- Section: Tabs -->
-			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-sm md:text-base pb-2">
+			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-xs md:text-base pb-2">
 				<TabList>
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
@@ -189,7 +189,7 @@ const updateTab = (value: string) => {
 			</Tabs>
 
 			<!-- Section: Table -->
-			<DataTable :value="compTableBody" removableSort>
+			<DataTable :value="compTableBody" removableSort scrollable >
 				<template #empty>
 					<div class="flex items-center justify-center h-full text-center">
 						{{ trans("No data available.") }}
@@ -201,12 +201,12 @@ const updateTab = (value: string) => {
 					v-for="(columnHeader, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
 					:key="colSlug"
 				>
-					<!-- {{column.data_display_type}} -->
 					<Column
 						v-if="showDashboardColumn(columnHeader)"
 						:sortable="columnHeader.sortable"
 						:sortField="`columns.${colSlug}.${intervals.value}.raw_value`"
 						:field="colSlug"
+						:frozen="colIndex === 1"
 					>
 						<template #header>
 							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
@@ -287,5 +287,10 @@ const updateTab = (value: string) => {
 ::v-deep .p-datatable-column-footer {
 	font-weight: 400 !important;
 	color: #474545 !important;
+}
+
+:deep(.p-datatable-scrollable .p-datatable-frozen-column) {
+    position: sticky;
+    background: var(--p-datatable-header-cell-background);
 }
 </style>
