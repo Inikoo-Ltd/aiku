@@ -406,4 +406,68 @@ test('UI index customer client order', function () {
             )
             ->has('data');
     });
+
+    return $customerClient;
 });
+
+test('UI index customer client porfolios', function (CustomerClient $customerClient) {
+    $this->withoutExceptionHandling();
+    $customer = $customerClient->customer;
+
+    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index', [
+        $customer->organisation->slug,
+        $customer->shop->slug,
+        $customer->slug,
+        $customerHasPlatform->id,
+
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+        $page
+            ->component('Org/Shop/CRM/Portfolios')
+            ->has('title')
+            ->has('breadcrumbs', 5)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $customer->name)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+
+    return $customerClient;
+})->depends('UI index customer client order');
+
+test('UI index customer platforms', function (CustomerClient $customerClient) {
+    $this->withoutExceptionHandling();
+    $customer = $customerClient->customer;
+
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.index', [
+        $customer->organisation->slug,
+        $customer->shop->slug,
+        $customer->slug,
+
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+        $page
+            ->component('Org/Shop/CRM/CustomerPlatforms')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $customer->name)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+
+    return $customerClient;
+})->depends('UI index customer client order');
