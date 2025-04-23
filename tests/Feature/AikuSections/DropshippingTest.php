@@ -363,3 +363,47 @@ test('UI get section route client dropshipping', function (CustomerClient $custo
         ->and($sectionScope->code)->toBe(AikuSectionEnum::DROPSHIPPING->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 })->depends('create customer client');
+
+
+test('UI index customer client order', function () {
+    $this->withoutExceptionHandling();
+    $platform       = Platform::where('code', 'aiku')->first();
+
+    $customer = AttachCustomerToPlatform::make()->action(
+        $this->customer,
+        $platform,
+        []
+    );
+
+    $customerClient = StoreCustomerClient::make()->action(
+        $this->customer,
+        array_merge(CustomerClient::factory()->definition(), [
+            'platform_id' => $platform->id,
+        ])
+    );
+
+    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.orders.index', [
+        $customer->organisation->slug,
+        $customer->shop->slug,
+        $customer->slug,
+        $customerHasPlatform->id,
+
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+        $page
+            ->component('Org/Shop/CRM/CustomerPlatformOrders')
+            ->has('title')
+            ->has('breadcrumbs', 5)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $customer->name)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
