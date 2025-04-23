@@ -48,8 +48,9 @@ trait WithDashboardIntervalValues
                     $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
-                    $lyValue = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
+                    $lyValue                 = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
                     $data['formatted_value'] = Number::delta($rawValue, $lyValue);
+                    $data['raw_value']       = Number::rawDelta($rawValue, $lyValue);
                     if ($interval->value != 'all') {
                         if (Arr::get($options, 'currency')) {
                             $data['tooltip'] = Number::currency($lyValue, Arr::get($options, 'currency'));
@@ -70,7 +71,7 @@ trait WithDashboardIntervalValues
 
             $routeTargetData = Arr::get($routeTarget, 'route_target');
             if ($routeTargetData) {
-                $keyDateFilter = Arr::get($routeTargetData, 'key_date_filter', 'between');
+                $keyDateFilter                 = Arr::get($routeTargetData, 'key_date_filter', 'between');
                 $routeTargetData['parameters'] = array_merge(
                     $routeTargetData['parameters'] ?? [],
                     [
@@ -88,20 +89,20 @@ trait WithDashboardIntervalValues
     private function getDateIntervalFilter($interval): string
     {
         $intervals = [
-            '1y' => now()->subYear(),
-            '1q' => now()->subQuarter(),
-            '1m' => now()->subMonth(),
-            '1w' => now()->subWeek(),
-            '3d' => now()->subDays(3),
-            '1d' => now()->subDay(),
+            '1y'  => now()->subYear(),
+            '1q'  => now()->subQuarter(),
+            '1m'  => now()->subMonth(),
+            '1w'  => now()->subWeek(),
+            '3d'  => now()->subDays(3),
+            '1d'  => now()->subDay(),
             'ytd' => now()->startOfYear(),
             'tdy' => now()->startOfDay(),
             'qtd' => now()->startOfQuarter(),
             'mtd' => now()->startOfMonth(),
             'wtd' => now()->startOfWeek(),
-            'lm' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
-            'lw' => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
-            'ld' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+            'lm'  => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            'lw'  => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
+            'ld'  => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
         ];
 
         if (!isset($intervals[$interval])) {
@@ -109,9 +110,9 @@ trait WithDashboardIntervalValues
         }
 
         $start = is_array($intervals[$interval]) ? $intervals[$interval][0] : $intervals[$interval];
-        $end = is_array($intervals[$interval]) ? $intervals[$interval][1] : now();
+        $end   = is_array($intervals[$interval]) ? $intervals[$interval][1] : now();
 
-        return str_replace('-', '', $start->toDateString()) . '-' . str_replace('-', '', $end->toDateString());
+        return str_replace('-', '', $start->toDateString()).'-'.str_replace('-', '', $end->toDateString());
     }
 
     public function getDashboardTableColumn(
@@ -173,7 +174,6 @@ trait WithDashboardIntervalValues
         } elseif (str_ends_with($columnFingerprint, '_inverse_delta')) {
             $options['inverse_delta'] = true;
         }
-
 
 
         return [

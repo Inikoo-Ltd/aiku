@@ -60,6 +60,28 @@ class NumberMacroServiceProvider extends ServiceProvider
             );
         });
 
+        Number::macro('rawDelta', function ($current, $previous) {
+
+            if (!is_numeric($current)) {
+                $current = 0;
+            }
+            if (!is_numeric($previous)) {
+                $previous = 0;
+            }
+
+            if ($current == $previous) {
+                return 0;
+            }
+
+            if ($previous == 0) {
+                return ($current > 0) ? 9999999 : 0;
+            } else {
+                return $current / $previous;
+            }
+
+
+        });
+
         Number::macro('deltaIcon', function ($current, $previous, $inverse = false) {
 
             $data = DashboardDeltaIconType::NO_CHANGE->icon();
