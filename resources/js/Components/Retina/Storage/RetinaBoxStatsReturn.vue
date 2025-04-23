@@ -63,7 +63,7 @@ const computedEnabled = computed({
     const address = props.box_stats.fulfilment_customer.address?.address_customer?.value;
 
     if (!newValue) {
-      // If NOT collection, reset to selected address
+      // If NOT collection, reset to the selected address
       const filterDataAddress = { ...address };
       delete filterDataAddress.formatted_address;
       delete filterDataAddress.country;
@@ -243,34 +243,34 @@ const disableBeforeToday = (date: Date) => {
     <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 py-5 px-3"
                    :tooltip="trans('Detail')" :label="capitalize(data_pallet.state)" icon="fal fa-truck-couch">
       <!-- Field: Reference -->
-      <div as="a" v-if="box_stats.fulfilment_customer.customer.reference"
+      <dl as="a" v-if="box_stats.fulfilment_customer.customer.reference"
            class="flex items-center w-fit flex-none gap-x-2">
         <dt v-tooltip="'Company name'" class="flex-none">
           <span class="sr-only">Reference</span>
           <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-gray-500">{{ box_stats.fulfilment_customer.customer.reference }}</dd>
-      </div>
+      </dl>
       <!-- Field: Contact name -->
-      <div v-if="box_stats.fulfilment_customer.customer.contact_name"
+      <dl v-if="box_stats.fulfilment_customer.customer.contact_name"
            class="flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Contact name'" class="flex-none">
           <span class="sr-only">Contact name</span>
           <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-gray-500">{{ box_stats.fulfilment_customer.customer.contact_name }}</dd>
-      </div>
+      </dl>
       <!-- Field: Company name -->
-      <div v-if="box_stats.fulfilment_customer.customer.company_name"
+      <dl v-if="box_stats.fulfilment_customer.customer.company_name"
            class="flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Company name'" class="flex-none">
           <span class="sr-only">Company name</span>
           <FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-gray-500">{{ box_stats.fulfilment_customer.customer.company_name }}</dd>
-      </div>
+      </dl>
       <!-- Estimated Delivery Date -->
-      <div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
+      <dl class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
         <dt class="flex-none">
           <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
           <FontAwesomeIcon :icon="['fal', 'calendar-day']" :class="box_stats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
@@ -301,11 +301,11 @@ const disableBeforeToday = (date: Date) => {
             {{ data_pallet?.estimated_delivery_date ? useFormatTime(data_pallet?.estimated_delivery_date) : trans("Not Set") }}
           </dd>
         </div>
-      </div>
+      </dl>
       <!-- Delivery Address / Collection by Section -->
       <div class="flex flex-col w-full gap-y-2 mb-1">
         <!-- Top Row: Icon dan Switch -->
-        <div class="flex items-center gap-x-2">
+        <dl class="flex items-center gap-x-2">
           <dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
             <span class="sr-only">Delivery address</span>
             <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -324,7 +324,7 @@ const disableBeforeToday = (date: Date) => {
               {{ trans("Collection") }}
             </SwitchLabel>
           </SwitchGroup>
-        </div>
+        </dl>
 
         <div v-if="data_pallet.is_collection" class="w-full">
           <span class="block mb-1">{{ trans("Collection by:") }}</span>
@@ -395,7 +395,7 @@ const disableBeforeToday = (date: Date) => {
         />
       </div>
       <div class="border-t border-gray-300 pt-1">
-        <div class="flex items-center w-full flex-none gap-x-2" :class="box_stats.delivery_state.class">
+        <dl class="flex items-center w-full flex-none gap-x-2" :class="box_stats.delivery_state.class">
           <dt class="flex-none">
             <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
             <FontAwesomeIcon
@@ -404,7 +404,7 @@ const disableBeforeToday = (date: Date) => {
               fixed-width aria-hidden="true" />
           </dt>
           <dd class="">{{ box_stats?.delivery_state?.tooltip }}</dd>
-        </div>
+        </dl>
       </div>
     </BoxStatPallet>
 
