@@ -46,6 +46,7 @@ class IndexShopsSalesTable extends OrgAction
                'shops.type',
                'shops.state',
                'shops.organisation_id',
+               'organisations.slug as organisation_slug',
                'shop_sales_intervals.*',
                'shop_ordering_intervals.*',
            ]);

@@ -45,6 +45,15 @@ class DashboardOrganisationSalesResource extends JsonResource
                     'key_date_filter' => 'between[date]',
                 ],
             ],
+            'inBasket' => [
+                'route_target' => [
+                    'name' => 'grp.org.overview.orders_in_basket.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
             'registrations' => [
                 'route_target' => [
                     'name' => 'grp.org.overview.customers.index',
@@ -82,10 +91,10 @@ class DashboardOrganisationSalesResource extends JsonResource
                     ...$routeTargets['organisations']
                 ]
             ],
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency'),
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified'),
-            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency'),
-            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified'),
+            $this->getDashboardTableColumn($this, 'baskets_created_org_currency', $routeTargets['inBasket']),
+            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified', $routeTargets['inBasket']),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency', $routeTargets['inBasket']),
+            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified', $routeTargets['inBasket']),
             $this->getDashboardTableColumn($this, 'registrations', $routeTargets['registrations']),
             $this->getDashboardTableColumn($this, 'registrations_minified', $routeTargets['registrations']),
             $this->getDashboardTableColumn($this, 'registrations_delta'),
@@ -99,7 +108,6 @@ class DashboardOrganisationSalesResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_grp_currency_minified'),
             $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
-
 
         return [
             'slug'    => $this->slug,

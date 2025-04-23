@@ -277,6 +277,12 @@ class GetGroupOverview extends OrgAction
     {
         return [
             [
+                'name'  => __('Orders in Basket'),
+                'icon'  => 'fal fa-shopping-basket',
+                'route' => route('grp.overview.ordering.orders_in_basket.index'),
+                'count' => $group->orderingStats->number_orders_state_creating ?? 0
+            ],
+            [
                 'name'  => __('Orders'),
                 'icon'  => 'fal fa-shopping-cart',
                 'route' => route('grp.overview.ordering.orders.index'),

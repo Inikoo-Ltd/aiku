@@ -22,14 +22,43 @@ class DashboardTotalGroupShopsSalesResource extends JsonResource
         /** @var Group $group */
         $group = $this;
 
+        $routeTargets = [
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.overview.accounting.invoices.index',
+                    'parameters' => [],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'registrations' => [
+                'route_target' => [
+                    'name' => 'grp.overview.crm.customers.index',
+                    'parameters' => [],
+                    'key_date_filter' => 'between[registered_at]',
+                ],
+            ],
+            'inBasket' => [
+                'route_target' => [
+                    'name' => 'grp.overview.ordering.orders_in_basket.index',
+                    'parameters' => [],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'group' => [
+                'route_target' => [
+                    'name' => 'grp.dashboard.show',
+                    'parameters' => [],
+                ],
+            ],
+        ];
 
-        $baskets_created_grp_currency       = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency');
 
+        $baskets_created_grp_currency       = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency', $routeTargets['inBasket']);
         $baskets_created_org_currency       = [
             'baskets_created_org_currency' => $baskets_created_grp_currency['baskets_created_grp_currency']
         ];
 
-        $baskets_created_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency_minified');
+        $baskets_created_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency_minified', $routeTargets['inBasket']);
         $baskets_created_org_currency_minified = [
             'baskets_created_org_currency_minified' => $baskets_created_grp_currency_minified['baskets_created_grp_currency_minified']
         ];
@@ -49,29 +78,6 @@ class DashboardTotalGroupShopsSalesResource extends JsonResource
         $sales_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency_minified');
         $sales_org_currency_minified = [
             'sales_org_currency_minified' => $sales_grp_currency_minified['sales_grp_currency_minified']
-        ];
-
-        $routeTargets = [
-            'invoices' => [
-                'route_target' => [
-                    'name' => 'grp.overview.accounting.invoices.index',
-                    'parameters' => [],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
-            'registrations' => [
-                'route_target' => [
-                    'name' => 'grp.overview.crm.customers.index',
-                    'parameters' => [],
-                    'key_date_filter' => 'between[registered_at]',
-                ],
-            ],
-            'group' => [
-                'route_target' => [
-                    'name' => 'grp.dashboard.show',
-                    'parameters' => [],
-                ],
-            ],
         ];
 
         $columns = array_merge(

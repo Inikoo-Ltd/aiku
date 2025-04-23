@@ -64,19 +64,26 @@ function shopRoute(order: Order) {
 
 
 function customerRoute(order: Order) {
-
-  if(route().current()=='grp.overview.ordering.orders.index'){
-    return route(
-      "grp.org.shops.show.crm.customers.show",
-      [order.organisation_slug, order.shop_slug, order.customer_slug]);
-  }else{
-    return route(
-      "grp.org.shops.show.crm.customers.show",
-      [
-        (route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.customer_slug]);
-  }
-
-
+    let routeCurr = route().current();
+    switch (routeCurr) {
+        case "grp.overview.ordering.orders.index":
+        case "grp.org.overview.orders_in_basket.index":
+        case 'grp.org.overview.orders.index':
+        case "grp.overview.ordering.orders_in_basket.index":
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [order.organisation_slug, order.shop_slug, order.customer_slug]
+            );
+        default:
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    order.customer_slug
+                ]
+            );
+    }
 }
 
 
