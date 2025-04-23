@@ -49,6 +49,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'sortable'          => true,
                     'data_display_type' => 'full',
+                    'scope'             => 'refunds',
                 ]
             ],
             [
@@ -57,6 +58,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'sortable'          => true,
                     'data_display_type' => 'minified',
+                    'scope'             => 'refunds',
                 ]
             ],
             [
@@ -66,6 +68,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'sortable'          => true,
                     'data_display_type' => 'always',
+                    'scope'             => 'refunds',
                 ]
             ],
             [
@@ -74,6 +77,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'sortable'          => true,
                     'data_display_type' => 'full',
+                    'scope'             => 'invoices',
                 ]
             ],
             [
@@ -82,6 +86,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'sortable'          => true,
                     'data_display_type' => 'minified',
+                    'scope'             => 'invoices',
                 ]
             ],
             [
@@ -91,6 +96,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'always',
                     'sortable'          => true,
                     'data_display_type' => 'always',
+                    'scope'             => 'invoices',
                 ]
             ],
             [
@@ -99,6 +105,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
                     'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ]
             ],
             [
@@ -107,6 +114,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ]
             ],
             [
@@ -116,6 +124,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'org',
                     'data_display_type' => 'always',
                     'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ],
             ],
             [
@@ -124,6 +133,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
                     'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ]
             ],
             [
@@ -132,6 +142,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'grp',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ]
             ],
             [
@@ -141,6 +152,7 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'currency_type'     => 'grp',
                     'data_display_type' => 'always',
                     'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ],
             ],
         );
