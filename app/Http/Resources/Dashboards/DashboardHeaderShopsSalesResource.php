@@ -60,7 +60,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 
 
             'baskets_created_shop_currency_minified' => [
-                'formatted_value'   => '▪ '.__('In basket'),
+                'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
