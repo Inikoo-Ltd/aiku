@@ -37,6 +37,11 @@ function orderRoute(order: Order) {
       return route(
         "grp.org.shops.show.crm.show.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop,  (route().params as RouteParams).customer, order.slug]);
+    case "grp.org.overview.orders_in_basket.index":
+    case "grp.overview.ordering.orders_in_basket.index":
+        return route(
+            "grp.org.shops.show.ordering.orders.show",
+            [order.organisation_slug, order.shop_slug, order.slug]);  
     case "grp.org.shops.show.ordering.orders.index":
       return route(
         "grp.org.shops.show.ordering.orders.show",
