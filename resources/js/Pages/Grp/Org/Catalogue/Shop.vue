@@ -25,7 +25,6 @@ import { useTabChange } from "@/Composables/tab-change";
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ShopShowcase from "@/Components/Showcases/Grp/ShopShowcase.vue";
-import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
@@ -52,7 +51,6 @@ const component = computed(() => {
 
   const components = {
     showcase: ShopShowcase,
-    dashboard: CatalogueDashboard,
     history: TableHistories
   };
   return components[currentTab.value];

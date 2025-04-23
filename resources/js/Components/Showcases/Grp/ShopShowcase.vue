@@ -7,9 +7,7 @@
 <script setup lang="ts">
 import Dashboard from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
 
-
-
-const props = defineProps<{
+defineProps<{
     data: {
         dashboard_stats: {}
     }
