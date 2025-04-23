@@ -35,30 +35,62 @@ class DashboardOrganisationSalesResource extends JsonResource
         });
         $this->organisationCurrencyCode = $organisationCurrencyCode;
 
+        $routeTargets = [
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoices.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'registrations' => [
+                'route_target' => [
+                    'name' => 'grp.org.overview.customers.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[registered_at]',
+                ],
+            ],
+            'organisations' => [
+                'route_target' => [
+                    'name' => 'grp.org.dashboard.show',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                ],
+            ],
+        ];
+
 
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $this->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['organisations']
+
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $this->code,
                     'tooltip'         => $this->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['organisations']
                 ]
             ],
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency'),
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified'),
             $this->getDashboardTableColumn($this, 'baskets_created_grp_currency'),
             $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified'),
-            $this->getDashboardTableColumn($this, 'registrations'),
-            $this->getDashboardTableColumn($this, 'registrations_minified'),
+            $this->getDashboardTableColumn($this, 'registrations', $routeTargets['registrations']),
+            $this->getDashboardTableColumn($this, 'registrations_minified', $routeTargets['registrations']),
             $this->getDashboardTableColumn($this, 'registrations_delta'),
-            $this->getDashboardTableColumn($this, 'invoices'),
-            $this->getDashboardTableColumn($this, 'invoices_minified'),
+            $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
             $this->getDashboardTableColumn($this, 'sales_org_currency'),
             $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
