@@ -139,31 +139,29 @@ const updateDataDisplayType = (value: string) => {
 </script>
 
 <template>
-	<div class="relative px-4 mt-4">
+	<div class="relative px-1 md:px-4 md:mt-4">
 		<div class="mb-2 flex justify-between gap-x-2">
 			<!-- Section: Period options list -->
-			<nav class="isolate rounded border p-1 hidden sm:flex w-fit" aria-label="Tabs">
-				<div class="flex w-fit">
-					<div
-						v-for="(interval, idxInterval) in intervals.options"
-						:key="idxInterval"
-						@click="updateInterval(interval.value)"
-						:class="[
-							interval.value === intervals.value
-								? 'bg-indigo-500 text-white font-medium'
-								: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
-						]"
-						v-tooltip="interval.label"
-						class="relative flex-1 rounded py-1.5 px-4 text-center w-fit text-sm cursor-pointer select-none">
-						<span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
-							{{ interval.value }}
-						</span>
-						<span
-							class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-							:class="isLoadingInterval === interval.value ? '' : 'opacity-0'">
-							<LoadingIcon />
-						</span>
-					</div>
+			<nav class="isolate rounded border p-1 flex flex-wrap w-full" aria-label="Tabs">
+				<div
+					v-for="(interval, idxInterval) in intervals.options"
+					:key="idxInterval"
+					@click="updateInterval(interval.value)"
+					:class="[
+						interval.value === intervals.value
+							? 'bg-indigo-500 text-white font-medium'
+							: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
+					]"
+					v-tooltip="interval.label"
+					class="relative flex-1 rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
+					<span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
+						{{ interval.value }}
+					</span>
+					<span
+						class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+						:class="isLoadingInterval === interval.value ? '' : 'opacity-0'">
+						<LoadingIcon />
+					</span>
 				</div>
 			</nav>
 
@@ -180,11 +178,11 @@ const updateDataDisplayType = (value: string) => {
 		<transition name="slide-to-right">
 			<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
 
-				<div class="flex items-center space-x-4">
+				<div class="flex items-center gap-x-4 text-sm md:text-base">
 					<!-- Toggle: model_state -->
 					<Transition name="slide-to-right">
-						<div v-if="settings.model_state_type && currentTab === 'shops' " class="flex items-center space-x-4">
-							<p v-tooltip="settings.model_state_type.options[0].tooltip" class="" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+						<div v-if="settings.model_state_type && currentTab === 'shops' " class="flex items-center gap-x-4">
+							<p v-tooltip="settings.model_state_type.options[0].tooltip" class="leading-none" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
 								{{ settings.model_state_type.options[0].label }}
 							</p>
 							<ToggleSwitch
@@ -201,9 +199,9 @@ const updateDataDisplayType = (value: string) => {
 					</Transition>
 				</div>
 
-				<div class="flex items-center gap-x-8">
+				<div class="flex items-center gap-x-8 text-sm md:text-base">
 					<!-- Toggle: data_display_type (minified, full) -->
-					<div v-if="settings.data_display_type" class="flex items-center space-x-4">
+					<div v-if="settings.data_display_type" class="flex items-center gap-x-4">
 						<p v-tooltip="settings.data_display_type.options[0].tooltip" class="" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
 							{{ settings.data_display_type.options[0].label }}
 						</p>
@@ -220,7 +218,7 @@ const updateDataDisplayType = (value: string) => {
 					</div>
 
 					<!-- Toggle: currency_type -->
-					<div v-if="settings.currency_type" class="flex items-center space-x-4">
+					<div v-if="settings.currency_type" class="flex items-center gap-x-4">
 						<RadioGroup class="relative"
 							:modelValue="settings.currency_type.value"
 							@update:modelValue="(value: any) => updateCurrencyType(value)"
@@ -237,7 +235,7 @@ const updateDataDisplayType = (value: string) => {
 									v-slot="{ active, checked }"
 								>
 									<div :class="[
-											'cursor-pointer focus:outline-none flex items-center justify-center py-3 px-3 text-sm font-medium capitalize',
+											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium capitalize',
 											checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
 										]"
 										v-tooltip="option.tooltip"

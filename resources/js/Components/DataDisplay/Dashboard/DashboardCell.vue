@@ -55,7 +55,7 @@ const getIntervalStateColor = (state?: string) => {
 
 <template>
     <component
-        class="tabular-nums"
+        class="tabular-nums text-xs md:text-base"
         :class="[
             cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
         ]"
