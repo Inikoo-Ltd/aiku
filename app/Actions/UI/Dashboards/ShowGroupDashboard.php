@@ -13,7 +13,6 @@ use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
-use App\Enums\Dashboards\GroupDashboardIntervalTabsEnum;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
@@ -83,7 +82,7 @@ class ShowGroupDashboard extends OrgAction
     public function asController(ActionRequest $request): Response
     {
         $group = group();
-        $this->initialisationFromGroup($group, $request)->withTabDashboardInterval(GroupDashboardIntervalTabsEnum::values());
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
     }

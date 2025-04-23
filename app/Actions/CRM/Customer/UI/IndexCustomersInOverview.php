@@ -10,15 +10,10 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
-use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
-use App\Enums\CRM\Customer\CustomerStateEnum;
-use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\UI\CRM\CustomersTabsEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
@@ -38,7 +33,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexCustomersInOverview extends OrgAction
 {
     use WithCustomersSubNavigation;
-    // use WithGroupOverviewAuthorisation;
 
     private Group|Shop|Organisation $parent;
 
@@ -176,7 +170,7 @@ class IndexCustomersInOverview extends OrgAction
     {
         $navigation = CustomersTabsEnum::navigation();
         unset($navigation[CustomersTabsEnum::DASHBOARD->value]);
-        
+
         $this->tab = $request->get('tab', array_key_first($navigation));
 
         $subNavigation = [];

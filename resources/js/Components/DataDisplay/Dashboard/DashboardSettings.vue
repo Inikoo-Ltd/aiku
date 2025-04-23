@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { inject, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -7,13 +7,10 @@ import ToggleSwitch from "primevue/toggleswitch"
 import { debounce, get } from "lodash"
 import axios from "axios"
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCog } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-import PureRadio from "@/Components/Pure/PureRadio.vue"
-import { options } from "marked"
 library.add(faCog)
 
 const props = defineProps<{
@@ -41,14 +38,7 @@ const props = defineProps<{
 	currentTab: string
 }>()
 
-// const dashboardTabActive = inject("dashboardTabActive", ref(''))
-// const compShowShopStateSetting = computed(() => {
-// 	if (dashboardTabActive.value === "shops") {
-// 		return true
-// 	}
 
-// 	return false
-// })
 
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))

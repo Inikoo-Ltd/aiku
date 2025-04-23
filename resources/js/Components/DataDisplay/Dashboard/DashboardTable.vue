@@ -3,24 +3,15 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Row from "primevue/row"
 import ColumnGroup from "primevue/columngroup"
-import { ref, computed, inject, watch } from "vue"
-// import { useLocaleStore } from "@/Stores/locale"
+import { ref, computed, inject } from "vue"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
-// import { Link } from "@inertiajs/vue3"
-// import { router } from "@inertiajs/vue3"
-// import { data } from "@/Components/CMS/Website/Product/ProductTemplates/Product1/Descriptor"
 import { trans } from "laravel-vue-i18n"
-// import DeltaItemDashboard from "../../Utils/DeltaItemDashboard.vue"
-// import LabelItemDashboard from "@/Components/Utils/LabelItemDashboard.vue"
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { Link } from "@inertiajs/vue3"
-import column from "@/Components/SpreadSheets/Column.vue";
 import axios from "axios"
 import { debounce } from "lodash"
 import DashboardCell from "./DashboardCell.vue"
@@ -102,17 +93,10 @@ const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
-// console.log('dashboard table new', props.tableData.tables[props.tableData.current_tab])
 console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
 console.log('%c Settings ', 'background: blue; color: white', props.settings);
 
 
-
-// Section: show/hide setting shop state
-// const dashboardTabActive = inject("dashboardTabActive", ref(''))
-// watch(() => props.tableData.current_tab, (newValueTab) => {
-// 	dashboardTabActive.value = newValueTab
-// }, { immediate: true })
 const compTableBody = computed(() => {
 	if (props.settings.model_state_type?.value === 'open') {
 		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'active')

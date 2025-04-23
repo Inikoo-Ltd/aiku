@@ -2,9 +2,7 @@
 import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
-import { inject, ref, computed, provide } from "vue"
-
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { ref, provide } from "vue"
 import { faTriangle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from "lodash"
@@ -63,24 +61,6 @@ provide("dashboardTabActive", dashboardTabActive)
 		/>
 
 		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
-		
-		<!-- <DashboardSettings
-			v-if="props.dashboard?.settings"
-			:intervalOptions="props.dashboard?.interval_options"
-			:tableType="tableType"
-			:settings="props.dashboard?.settings" />
 
-		<DashboardTable
-			v-if="props.dashboard?.table"
-			:dashboardTable="props.dashboard.table"
-			:locale="locale"
-			:tableType="props.tableType"
-			:totalAmount="props.dashboard.total"
-			:current="props.dashboard.current"
-			:settings="props.dashboard?.settings"
-			:currency_code="props.dashboard?.currency_code"
-			:total_tooltip="props.dashboard?.total_tooltip" />
-
-		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" /> -->
 	</div>
 </template>
