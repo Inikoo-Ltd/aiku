@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Cache;
  * @property mixed $organisation_currency_id
  * @property mixed $slug
  * @property mixed $state
+ * @property mixed $organisation_slug
  */
 class DashboardShopSalesInOrganisationResource extends JsonResource
 {

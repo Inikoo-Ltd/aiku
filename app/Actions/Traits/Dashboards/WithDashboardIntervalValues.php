@@ -8,13 +8,18 @@
 
 namespace App\Actions\Traits\Dashboards;
 
+use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
+use App\Actions\Traits\WithDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Dashboard\DashboardDataType;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Number;
 
 trait WithDashboardIntervalValues
 {
+
+
     private function getIntervalValues(
         $intervalsModel,
         string $field,
@@ -31,6 +36,7 @@ trait WithDashboardIntervalValues
                 'tooltip'   => '',
                 'scope' => 'baskets_created_org_currency', // TODO
             ];
+
 
             switch ($dataType) {
                 case DashboardDataType::NUMBER_MINIFIED:
@@ -70,13 +76,17 @@ trait WithDashboardIntervalValues
                     break;
             }
 
+
             $routeTargetData = Arr::get($routeTarget, 'route_target');
             if ($routeTargetData) {
                 $keyDateFilter                 = Arr::get($routeTargetData, 'key_date_filter', 'between');
+
+
+
                 $routeTargetData['parameters'] = array_merge(
                     $routeTargetData['parameters'] ?? [],
                     [
-                        $keyDateFilter => $this->getDateIntervalFilter($interval->value),
+                        $keyDateFilter => DashboardIntervalFilters::run($interval)
                     ]
                 );
 
@@ -87,40 +97,9 @@ trait WithDashboardIntervalValues
         })->toArray();
     }
 
-    private function getDateIntervalFilter($interval): string
+
+    public function getDashboardTableColumn($intervalsModel, string $columnFingerprint, array $routeTarget = []): array
     {
-        $intervals = [
-            '1y'  => now()->subYear(),
-            '1q'  => now()->subQuarter(),
-            '1m'  => now()->subMonth(),
-            '1w'  => now()->subWeek(),
-            '3d'  => now()->subDays(3),
-            '1d'  => now()->subDay(),
-            'ytd' => now()->startOfYear(),
-            'tdy' => now()->startOfDay(),
-            'qtd' => now()->startOfQuarter(),
-            'mtd' => now()->startOfMonth(),
-            'wtd' => now()->startOfWeek(),
-            'lm'  => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
-            'lw'  => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
-            'ld'  => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
-        ];
-
-        if (!isset($intervals[$interval])) {
-            return '';
-        }
-
-        $start = is_array($intervals[$interval]) ? $intervals[$interval][0] : $intervals[$interval];
-        $end   = is_array($intervals[$interval]) ? $intervals[$interval][1] : now();
-
-        return str_replace('-', '', $start->toDateString()).'-'.str_replace('-', '', $end->toDateString());
-    }
-
-    public function getDashboardTableColumn(
-        $intervalsModel,
-        string $columnFingerprint,
-        array $routeTarget = []
-    ): array {
         $originalColumnFingerprint = $columnFingerprint;
 
 
@@ -188,5 +167,7 @@ trait WithDashboardIntervalValues
             )
         ];
     }
+
+
 
 }
