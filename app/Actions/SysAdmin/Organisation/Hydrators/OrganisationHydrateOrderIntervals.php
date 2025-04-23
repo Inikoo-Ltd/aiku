@@ -10,52 +10,38 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateOrderIntervals
+class OrganisationHydrateOrderIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
     public string $jobQueue = 'sales';
 
-    private Organisation $organisation;
-
-    public function __construct(Organisation $organisation)
+    public function getJobUniqueId(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $this->organisation = $organisation;
+        return $this->getUniqueJobWithInterval($organisation, $intervals, $doPreviousPeriods);
     }
 
-    public function getJobMiddleware(): array
+    public function handle(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        return [(new WithoutOverlapping($this->organisation->id))->dontRelease()];
-    }
-
-    public function handle(Organisation $organisation): void
-    {
-
         $stats = [];
 
-        $queryBase = Order::where('organisation_id', $organisation->id)->where('state', OrderStateEnum::CREATING)->selectRaw(' count(*) as  sum_aggregate');
+        $queryBase = Order::where('organisation_id', $organisation->id)->selectRaw(' count(*) as  sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
-            dateField: 'created_at',
             queryBase: $queryBase,
-            statField: 'baskets_created_'
+            statField: 'orders_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
         );
-
-        $stats     = $this->getIntervalsData(
-            stats: $stats,
-            dateField: 'updated_at',
-            queryBase: $queryBase,
-            statField: 'baskets_updated_'
-        );
-
 
         $organisation->orderingIntervals()->update($stats);
     }

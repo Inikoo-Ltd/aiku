@@ -33,6 +33,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
@@ -195,6 +197,9 @@ class HydrateGroup extends HydrateModel
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
         GroupHydrateRegistrationIntervals::run($group);
+
+        GroupHydrateOrderInBasketAtCustomerUpdateIntervals::run($group);
+        GroupHydrateOrderInBasketAtCreatedIntervals::run($group);
 
 
     }

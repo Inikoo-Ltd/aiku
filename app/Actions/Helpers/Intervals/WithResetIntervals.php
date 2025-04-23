@@ -11,14 +11,23 @@ namespace App\Actions\Helpers\Intervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -59,6 +68,23 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
+
+            GroupHydrateOrderIntervals::dispatch(
+                group: $group,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+            GroupHydrateOrderInBasketAtCreatedIntervals::dispatch(
+                group: $group,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
+                group: $group,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
         }
     }
 
@@ -78,6 +104,24 @@ trait WithResetIntervals
             );
 
             OrganisationHydrateRegistrationIntervals::dispatch(
+                organisation: $organisation,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            OrganisationHydrateOrderIntervals::dispatch(
+                organisation: $organisation,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            OrganisationHydrateOrderInBasketAtCreatedIntervals::dispatch(
+                organisation: $organisation,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
                 organisation: $organisation,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -110,6 +154,24 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
+
+            ShopHydrateOrderIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            ShopHydrateOrderInBasketAtCreatedIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
         }
 
         foreach (
@@ -131,6 +193,24 @@ trait WithResetIntervals
             )->delay(now()->addMinute())->onQueue('low-priority');
 
             ShopHydrateRegistrationIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinute())->onQueue('low-priority');
+
+            ShopHydrateOrderIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinute())->onQueue('low-priority');
+
+            ShopHydrateOrderInBasketAtCreatedIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinute())->onQueue('low-priority');
+
+            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
                 shop: $shop,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods

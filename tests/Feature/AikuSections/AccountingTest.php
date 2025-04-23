@@ -316,7 +316,7 @@ test('UI create payment', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'new payment')
                     ->etc()
             )
@@ -340,7 +340,7 @@ test('UI show payment', function (Payment $payment) {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $payment->reference)
                     ->etc()
             )
@@ -364,7 +364,7 @@ test('UI edit payment', function (Payment $payment) {
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $payment->reference)
                     ->etc()
             )
@@ -626,7 +626,7 @@ test('UI index invoice categories', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoice Categories')
                     ->etc()
             )
@@ -674,7 +674,7 @@ test('UI show invoice category', function (InvoiceCategory $invoiceCategory) {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $invoiceCategory->name)
                     ->etc()
             );
@@ -691,7 +691,7 @@ test('UI show invoice in invoice category', function (InvoiceCategory $invoiceCa
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $invoiceCategory->name)
                     ->etc()
             );
@@ -738,7 +738,7 @@ test('UI show accounting dashboard', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'accounting')
                     ->etc()
             )
@@ -758,7 +758,7 @@ test('UI show list payment service providers', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Payment Service Providers')
                     ->etc()
             )
@@ -780,7 +780,7 @@ test('UI show organisation payment service provider', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $orgPaymentServiceProvider->slug)
                     ->etc()
             )
@@ -802,7 +802,7 @@ test('UI show organisation payment service provider (payment accounts tab)', fun
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $orgPaymentServiceProvider->slug)
                     ->etc()
             )
@@ -823,7 +823,7 @@ test('UI show organisation payment service provider (payments tab)', function ()
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $orgPaymentServiceProvider->slug)
                     ->etc()
             )
@@ -850,7 +850,7 @@ test('UI index payment account shops', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('subNavigation')
                     ->where('title', 'Payment Account Shops')
                     ->etc()
@@ -871,7 +871,7 @@ test('UI show organisation payment service provider (history tab)', function () 
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $orgPaymentServiceProvider->slug)
                     ->etc()
             )
@@ -897,7 +897,7 @@ test('UI show list payment accounts in organisation payment service provider', f
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Payment Accounts')
                     ->etc()
             )
@@ -922,7 +922,7 @@ test('UI show payment account in organisation payment service provider', functio
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $paymentAccount->name)
                     ->has('actions')
                     ->etc()
@@ -944,7 +944,7 @@ test('UI show payment account in organisation payment service provider (stats ta
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $paymentAccount->name)
                     ->has('actions')
                     ->etc()
@@ -991,7 +991,7 @@ test('UI show payment account in organisation payment service provider (history 
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $paymentAccount->name)
                     ->has('actions')
                     ->etc()
@@ -1011,7 +1011,7 @@ test('UI show list payment accounts', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Payment Accounts')
                     ->etc()
             )
@@ -1030,7 +1030,7 @@ test('UI create payment account', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'new payment account')
                     ->has('actions')
                     ->etc()
@@ -1051,7 +1051,7 @@ test('UI edit payment account', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $paymentAccount->code)
                     ->etc()
             )
@@ -1070,7 +1070,7 @@ test('UI show list payments', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'payments')
                     ->etc()
             )
@@ -1089,7 +1089,7 @@ test('UI show list invoices in group', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->etc()
             )
@@ -1108,7 +1108,7 @@ test('UI show list invoices', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -1128,7 +1128,7 @@ test('UI show list paid invoices', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -1148,7 +1148,7 @@ test('UI show list unpaid invoices', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -1170,7 +1170,7 @@ test('UI show list invoices in shop', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -1192,7 +1192,7 @@ test('UI show list unpaid invoices in shop', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->has('subNavigation')
                     ->etc()
@@ -1214,7 +1214,7 @@ test('UI show list invoices in customer', function () {
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -1238,20 +1238,20 @@ test('UI show invoice in Organisation', function () {
             ->has('breadcrumbs')
             ->has(
                 'navigation',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('previous')
                     ->has('next')
             )
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('model', 'invoice')
                     ->where('title', $invoice->reference)
                     ->etc()
             )
             ->has(
                 'tabs',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('current')
                     ->has('navigation')
             )
@@ -1259,10 +1259,10 @@ test('UI show invoice in Organisation', function () {
             ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has(
                         'customer',
-                        fn(AssertableInertia $page) => $page
+                        fn (AssertableInertia $page) => $page
                             ->has('slug')
                             ->has('reference')
                             ->has('route')
@@ -1273,7 +1273,7 @@ test('UI show invoice in Organisation', function () {
                     )
                     ->has(
                         'information',
-                        fn(AssertableInertia $page) => $page
+                        fn (AssertableInertia $page) => $page
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1295,20 +1295,20 @@ test('UI show invoice in Shop', function () {
             ->has('breadcrumbs')
             ->has(
                 'navigation',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('previous')
                     ->has('next')
             )
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('model', 'invoice')
                     ->where('title', $invoice->reference)
                     ->etc()
             )
             ->has(
                 'tabs',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('current')
                     ->has('navigation')
             )
@@ -1316,10 +1316,10 @@ test('UI show invoice in Shop', function () {
             ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has(
                         'customer',
-                        fn(AssertableInertia $page) => $page
+                        fn (AssertableInertia $page) => $page
                             ->has('slug')
                             ->has('reference')
                             ->has('route')
@@ -1330,7 +1330,7 @@ test('UI show invoice in Shop', function () {
                     )
                     ->has(
                         'information',
-                        fn(AssertableInertia $page) => $page
+                        fn (AssertableInertia $page) => $page
                             ->has('paid_amount')
                             ->has('pay_amount')
                     )
@@ -1373,7 +1373,7 @@ test('UI index invoices deleted', function (Invoice $invoice) {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('subNavigation')
                     ->where('title', 'Deleted Invoices')
                     ->etc()
@@ -1399,7 +1399,7 @@ test('UI show invoices deleted', function (Invoice $invoice) {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $invoice->reference)
                     ->etc()
             )
@@ -1486,7 +1486,7 @@ test('UI index customer balances', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Customer Balances')
                     ->etc()
             )
