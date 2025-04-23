@@ -10,6 +10,7 @@ namespace App\Actions\Overview;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithOrganisationOverviewAuthorisation;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -18,10 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrganisationOverviewHub extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo('org-reports.'.$this->organisation->id);
-    }
+    use WithOrganisationOverviewAuthorisation;
+
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
     {

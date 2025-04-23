@@ -31,7 +31,6 @@ defineProps<{
 const locale = useLocaleStore();
 
 function orderRoute(order: Order) {
-  console.log(route().current());
   switch (route().current()) {
     case "grp.org.shops.show.crm.show.orders.index":
       return route(
@@ -61,15 +60,20 @@ function orderRoute(order: Order) {
 
 function shopRoute(order: Order) {
   return route(
-    "shops.show",
-    [order.shop_slug]);
+    "grp.org.shops.show.ordering.backlog",
+    [order.organisation_slug,order.shop_slug]);
 }
 
-
+function organisationRoute(order: Order) {
+  return route(
+    "grp.org.overview.orders_in_basket.index",
+    [order.organisation_slug]);
+}
 
 
 function customerRoute(order: Order) {
     let routeCurr = route().current();
+    console.log(routeCurr)
     switch (routeCurr) {
         case "grp.overview.ordering.orders.index":
         case "grp.org.overview.orders_in_basket.index":
@@ -96,37 +100,42 @@ function customerRoute(order: Order) {
 
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
-    <!-- Column: Reference -->
+
+    <template #cell(organisation_code)="{ item: order }" >
+      <Link :href="organisationRoute(order)" class="secondaryLink">
+        {{ order["organisation_code"] }}
+      </Link>
+    </template>
+
+    <template #cell(shop_code)="{ item: order }">
+      <Link :href="shopRoute(order)" class="secondaryLink">
+        {{ order["shop_code"] }}
+      </Link>
+    </template>
+
     <template #cell(state)="{ item: order }">
       <Icon :data="order.state_icon" />
     </template>
 
-    <!-- Column: Reference -->
     <template #cell(reference)="{ item: order }">
       <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}
       </Link>
     </template>
 
-    <!-- Column: Customer -->
     <template #cell(customer_name)="{ item: order }">
       <Link :href="customerRoute(order)" class="secondaryLink">
         {{ order["customer_name"] }}
       </Link>
     </template>
 
-    <!-- Column: Shop -->
-    <template #cell(shop)="{ item: order }">
-      <Link :href="shopRoute(order)">
-        {{ order["shop"] }}
-      </Link>
-    </template>
 
-    <!-- Column: Date -->
+
     <template #cell(date)="{ item: order }">
       <div class="text-right">
         {{ useFormatTime(order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
       </div>
     </template>
+
   </Table>
 </template>
