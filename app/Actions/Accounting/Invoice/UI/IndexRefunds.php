@@ -9,6 +9,8 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\WithInvoicesSubNavigation;
+use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
+use App\Actions\Accounting\InvoiceCategory\WithInvoiceCategorySubNavigation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -42,6 +44,8 @@ class IndexRefunds extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithCustomerSubNavigation;
     use WithInvoicesSubNavigation;
+    use WithInvoiceCategorySubNavigation;
+
 
     private Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent;
     private string $bucket;
@@ -240,6 +244,8 @@ class IndexRefunds extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof Shop || $this->parent instanceof Fulfilment || $this->parent instanceof Organisation) {
             $subNavigation = $this->getInvoicesNavigation($this->parent);
+        } elseif ($this->parent instanceof InvoiceCategory) {
+            $subNavigation = $this->getInvoiceCategoryNavigation($this->parent);
         }
 
 
@@ -351,6 +357,15 @@ class IndexRefunds extends OrgAction
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inInvoiceCategory(Organisation $organisation, InvoiceCategory $invoiceCategory, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $invoiceCategory;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($invoiceCategory);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -481,6 +496,17 @@ class IndexRefunds extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ]
+                )
+            ),
+
+            'grp.org.accounting.invoice-categories.show.refunds.index' =>
+            array_merge(
+                ShowInvoiceCategory::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
                 )
             ),
 

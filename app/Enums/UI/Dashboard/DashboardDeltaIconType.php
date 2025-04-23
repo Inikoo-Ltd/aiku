@@ -42,11 +42,11 @@ enum DashboardDeltaIconType: string
         return match ($this) {
             DashboardDeltaIconType::DECREASE => [
                 'change' => 'increase',
-                'state' => 'positive',
+                'state' => 'negative',
             ],
             DashboardDeltaIconType::INCREASE => [
                 'change' => 'decrease',
-                'state' => 'negative',
+                'state' => 'positive',
             ],
             DashboardDeltaIconType::NO_CHANGE => [
                 'change' => 'no_change',

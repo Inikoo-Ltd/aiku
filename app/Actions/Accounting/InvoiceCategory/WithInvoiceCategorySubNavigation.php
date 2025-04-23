@@ -41,6 +41,20 @@ trait WithInvoiceCategorySubNavigation
                     'tooltip' => __('Invoices')
                 ]
             ],
+            [
+                "label"    => __('Refunds'),
+                "route"     => [
+                    "name"       => 'grp.org.accounting.invoice-categories.show.refunds.index',
+                    "parameters" => [
+                        'organisation' => $invoiceCategory->organisation->slug,
+                        'invoiceCategory' => $invoiceCategory->slug
+                    ],
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-arrow-circle-left'],
+                    'tooltip' => __('Refunds')
+                ]
+            ],
 
             // [
             //     "number"   => $numberUnpaid,

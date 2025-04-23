@@ -36,7 +36,8 @@ import {
   faPhoneVolume,
   faRaygun,
   faFileMinus,
-  faEraser
+  faEraser,
+  faShoppingBasket
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
@@ -83,7 +84,8 @@ library.add(
   faScrollOld,
   faUserCircle,
   faFileMinus,
-  faEraser
+  faEraser,
+  faShoppingBasket
 );
 
 

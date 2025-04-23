@@ -55,7 +55,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'shop',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'baskets_created_shop_currency',
             ],
 
 
@@ -64,7 +65,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'baskets_created_shop_currency',
             ],
 
 
@@ -77,7 +79,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'org',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'baskets_created_org_currency',
             ],
 
             'baskets_created_org_currency_minified' => [
@@ -85,7 +88,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'org',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'baskets_created_org_currency',
             ],
 
         ];
@@ -97,14 +101,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'grp',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'baskets_created_grp_currency',
             ],
             'baskets_created_grp_currency_minified' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'grp',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'baskets_created_grp_currency',
             ],
         ];
 
@@ -115,7 +121,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'registrations',
             ],
 
             'registrations_minified' => [
@@ -123,7 +130,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'registrations',
             ],
             'registrations_delta'    => [
                 'currency_type'     => 'always',
@@ -131,8 +139,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
-                'align'             => 'right'
-
+                'align'             => 'right',
+                'scope'             => 'registrations',
             ],
         ];
 
@@ -143,14 +151,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'invoices',
             ],
             'invoices_minified' => [
                 'formatted_value'   => __('Invoices'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'invoices',
             ],
             'invoices_delta'    => [
                 'currency_type'     => 'always',
@@ -158,7 +168,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'invoices',
             ]
 
         ];
@@ -170,14 +181,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'data_display_type' => 'full',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_shop_currency',
             ],
             'sales_shop_currency_minified' => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_shop_currency',
             ],
             'sales_shop_currency_delta'    => [
                 'currency_type'     => 'shop',
@@ -185,7 +198,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_shop_currency',
             ],
 
         ];
@@ -197,14 +211,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'org',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_org_currency',
             ],
             'sales_org_currency_minified' => [
                 'currency_type'     => 'org',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_org_currency',
             ],
             'sales_org_currency_delta'    => [
                 'currency_type'     => 'org',
@@ -212,7 +228,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_org_currency',
             ],
         ];
 
@@ -223,14 +240,16 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'currency_type'     => 'grp',
                 'data_display_type' => 'full',
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_grp_currency',
             ],
             'sales_grp_currency_minified' => [
                 'currency_type'     => 'grp',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_grp_currency',
             ],
             'sales_grp_currency_delta'    => [
                 'currency_type'     => 'grp',
@@ -238,7 +257,8 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
-                'align'             => 'right'
+                'align'             => 'right',
+                'scope'             => 'sales_grp_currency',
             ],
         ];
 

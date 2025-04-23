@@ -40,24 +40,26 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
         $this->organisationCurrencyCode = $organisationCurrencyCode;
 
         $routeTargets = [
-            // 'refunds' => [
-            //     'route_target' => [
-            //         'name' => 'grp.accounting.refunds.index',
-            //         'parameters' => [
-            //             'organisation' => $this->slug,
-            //         ],
-            //         'key_date_filter' => 'between[date]',
-            //     ],
-            // ],
-            // 'registrations' => [
-            //     'route_target' => [
-            //         'name' => 'grp.org.overview.customers.index',
-            //         'parameters' => [
-            //             'organisation' => $this->slug,
-            //         ],
-            //         'key_date_filter' => 'between[registered_at]',
-            //     ],
-            // ],
+            'refunds' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show.refunds.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoice-categories.show.invoices.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation_slug,
+                        'invoiceCategory' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
             'invoiceCategories' => [
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoice-categories.show',
@@ -83,11 +85,11 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
                     ...$routeTargets['invoiceCategories'],
                 ]
             ],
-            $this->getDashboardTableColumn($this, 'refunds'),
-            $this->getDashboardTableColumn($this, 'refunds_minified'),
-            $this->getDashboardTableColumn($this, 'refunds_delta'),
-            $this->getDashboardTableColumn($this, 'invoices'),
-            $this->getDashboardTableColumn($this, 'invoices_minified'),
+            $this->getDashboardTableColumn($this, 'refunds', $routeTargets['refunds']),
+            $this->getDashboardTableColumn($this, 'refunds_minified', $routeTargets['refunds']),
+            $this->getDashboardTableColumn($this, 'refunds_inverse_delta'),
+            $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
             $this->getDashboardTableColumn($this, 'sales_org_currency'),
             $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),

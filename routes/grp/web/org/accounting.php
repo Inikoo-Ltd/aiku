@@ -105,6 +105,8 @@ Route::get('/invoice-categories/create', CreateInvoiceCategory::class)->name('in
 Route::get('/invoice-categories/{invoiceCategory}', ShowInvoiceCategory::class)->name('invoice-categories.show');
 Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index');
 
+Route::get('/invoice-categories/{invoiceCategory}/refunds', [IndexRefunds::class, 'inInvoiceCategory'])->name('invoice-categories.show.refunds.index');
+
 Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::class)->name('invoice-categories.edit');
 
 Route::get('/customer-balances', [IndexCustomerBalances::class, 'inOrganisation'])->name('balances.index');

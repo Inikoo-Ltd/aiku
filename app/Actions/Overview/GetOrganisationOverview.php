@@ -253,9 +253,15 @@ class GetOrganisationOverview extends OrgAction
     {
         return [
             [
+                'name'  => __('Orders in Basket'),
+                'icon'  => 'fal fa-shopping-basket',
+                'route' => route('grp.org.overview.orders_in_basket.index', $organisation->slug),
+                'count' => $organisation->orderingStats->number_orders_state_creating ?? 0
+            ],
+            [
                 'name'  => __('Orders'),
                 'icon'  => 'fal fa-shopping-cart',
-                'route' => '',
+                'route' => route('grp.org.overview.orders.index', $organisation->slug),
                 'count' => $organisation->orderingStats->number_orders ?? 0
             ],
             [

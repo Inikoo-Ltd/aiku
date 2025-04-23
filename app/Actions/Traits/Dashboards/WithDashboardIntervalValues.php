@@ -29,6 +29,7 @@ trait WithDashboardIntervalValues
             $data = [
                 'raw_value' => $rawValue,
                 'tooltip'   => '',
+                'scope' => 'baskets_created_org_currency', // TODO
             ];
 
             switch ($dataType) {
@@ -171,8 +172,9 @@ trait WithDashboardIntervalValues
             }
 
             $options['currency'] = $groupCurrencyCode;
-        } elseif (str_ends_with($columnFingerprint, '_inverse_delta')) {
+        } elseif (str_ends_with($columnFingerprint, '_inverse')) {
             $options['inverse_delta'] = true;
+            $columnFingerprint        = substr($columnFingerprint, 0, -strlen('_inverse'));
         }
 
 

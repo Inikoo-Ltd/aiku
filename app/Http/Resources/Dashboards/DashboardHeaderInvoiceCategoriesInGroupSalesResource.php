@@ -47,36 +47,46 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                 'refunds' => [
                     'formatted_value'   => __('Refunds'),
                     'currency_type'     => 'always',
+                    'sortable'          => true,
                     'data_display_type' => 'full',
+                    'scope'             => 'refunds',
                 ]
             ],
             [
                 'refunds_minified' => [
                     'formatted_value'   => __('Refunds'),
                     'currency_type'     => 'always',
+                    'sortable'          => true,
                     'data_display_type' => 'minified',
+                    'scope'             => 'refunds',
                 ]
             ],
             [
-                'refunds_delta' => [
+                'refunds_inverse_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
+                    'sortable'          => true,
                     'data_display_type' => 'always',
+                    'scope'             => 'refunds',
                 ]
             ],
             [
                 'invoices' => [
                     'formatted_value'   => __('Invoices'),
                     'currency_type'     => 'always',
+                    'sortable'          => true,
                     'data_display_type' => 'full',
+                    'scope'             => 'invoices',
                 ]
             ],
             [
                 'invoices_minified' => [
                     'formatted_value'   => __('Invoices'),
                     'currency_type'     => 'always',
+                    'sortable'          => true,
                     'data_display_type' => 'minified',
+                    'scope'             => 'invoices',
                 ]
             ],
             [
@@ -84,16 +94,18 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
+                    'sortable'          => true,
                     'data_display_type' => 'always',
+                    'scope'             => 'invoices',
                 ]
             ],
-
-
             [
                 'sales_org_currency' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ]
             ],
             [
@@ -101,6 +113,8 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ]
             ],
             [
@@ -109,14 +123,17 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'org',
                     'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'scope'             => 'sales_org_currency',
                 ],
             ],
-
             [
                 'sales_grp_currency' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ]
             ],
             [
@@ -124,6 +141,8 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ]
             ],
             [
@@ -132,9 +151,10 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'grp',
                     'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'scope'             => 'sales_grp_currency',
                 ],
             ],
-
         );
 
 

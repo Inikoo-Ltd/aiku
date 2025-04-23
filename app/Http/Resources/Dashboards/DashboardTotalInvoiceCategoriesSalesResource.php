@@ -38,25 +38,56 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
             'sales_invoice_category_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified']
         ];
 
+        $routeTargets = [
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.invoices.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'refunds' => [
+                'route_target' => [
+                    'name' => 'grp.org.accounting.refunds.index',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+            ],
+            'organisation' => [
+                'route_target' => [
+                    'name' => 'grp.org.dashboard.show',
+                    'parameters' => [
+                        'organisation' => $this->slug,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $organisation->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['organisation']
                 ]
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $organisation->code,
                     'tooltip'         => $organisation->name,
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    ...$routeTargets['organisation']
                 ]
             ],
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_minified'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_delta'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices'),
-            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds', $routeTargets['refunds']),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_minified', $routeTargets['refunds']),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'refunds_inverse_delta'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices', $routeTargets['invoices']),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
             $sales_invoice_category_currency,
             $sales_invoice_category_currency_minified,
