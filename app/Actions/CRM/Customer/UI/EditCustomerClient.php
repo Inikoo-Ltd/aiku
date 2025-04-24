@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
@@ -120,25 +121,22 @@ class EditCustomerClient extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $shop = $request->route()->parameter('shop');
-        return $request->user()->authTo("crm.{$shop->id}.edit");
+        return $request->user()->authTo("crm.$shop->id.edit");
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): Response
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $this->parent = $customer;
-        $this->initialisationFromShop($shop, $request);
-        return $this->handle($customerClient, $request);
-    }
-
-    public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): Response
-    {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
         $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
         return $this->handle($customerClient, $request);
     }
 
-    public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): Response
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);
         return $this->handle($customerClient, $request);

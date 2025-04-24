@@ -78,7 +78,7 @@ class IndexPortfoliosInPlatform extends OrgAction
             'Org/Shop/CRM/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->customerHasPlatform,
+                    $this->customerHasPlatform->platform,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -124,10 +124,10 @@ class IndexPortfoliosInPlatform extends OrgAction
         return $this->handle($customerHasPlatform);
     }
 
-    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Platform $platform, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowPlatformInCustomer::make()->getBreadcrumbs($customerHasPlatform, $routeName, $routeParameters),
+            ShowPlatformInCustomer::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
             [
                 [
                     'type'   => 'simple',

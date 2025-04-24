@@ -18,6 +18,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -34,8 +35,9 @@ class IndexOrdersInPlatform extends OrgAction
     use WithCustomerPlatformSubNavigation;
     private CustomerHasPlatform $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -148,6 +150,7 @@ class IndexOrdersInPlatform extends OrgAction
             'Org/Shop/CRM/CustomerPlatformOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->customerHasPlatform->platform,
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
@@ -165,11 +168,11 @@ class IndexOrdersInPlatform extends OrgAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs($routeName, $routeParameters): array
+    public function getBreadcrumbs(Platform $platform, $routeName, $routeParameters): array
     {
         return
             array_merge(
-                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
+                ShowPlatformInCustomer::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

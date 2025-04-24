@@ -51,7 +51,7 @@ trait WithCustomerPlatformSubNavigation
             $subNavigation[] = [
                 'label'    => __('Clients'),
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],
