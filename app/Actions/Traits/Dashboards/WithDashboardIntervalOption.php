@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits\Dashboards;
 
+use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Enums\DateIntervals\DateIntervalEnum;
 
 trait WithDashboardIntervalOption
@@ -16,9 +17,10 @@ trait WithDashboardIntervalOption
     {
         return collect(DateIntervalEnum::cases())->map(function ($interval) {
             return [
-                'label'      => $interval->labels()[$interval->value],
-                'labelShort' => $interval->shortLabels()[$interval->value],
-                'value'      => $interval->value
+                'label'               => $interval->labels()[$interval->value],
+                'labelShort'          => $interval->shortLabels()[$interval->value],
+                'value'               => $interval->value,
+                'route_interval_args' => DashboardIntervalFilters::run($interval)
             ];
         })->toArray();
     }
