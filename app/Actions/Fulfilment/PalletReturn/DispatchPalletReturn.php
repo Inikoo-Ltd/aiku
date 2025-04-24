@@ -70,7 +70,10 @@ class DispatchPalletReturn extends OrgAction
             });
         }
         $this->update($palletReturn, $modelData);
-        CalculateRecurringBillTotals::run($palletReturn->recurringBill);
+
+        if ($recurringBill = $palletReturn->recurringBill) {
+            CalculateRecurringBillTotals::run($recurringBill);
+        }
 
         if ($palletReturn->platform?->type === PlatformTypeEnum::SHOPIFY) {
             DispatchFulfilmentOrderShopify::run($palletReturn);

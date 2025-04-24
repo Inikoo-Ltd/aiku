@@ -16,7 +16,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SetPalletDeliveryStateAsNotReceivedIfPalletsNotReceived
+class AutomaticallySetPalletDeliveryStateAsNotReceivedIfAllPalletsNotReceived
 {
     use WithActionUpdate;
     use AsAction;
