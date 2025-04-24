@@ -966,7 +966,7 @@ const isLoading = ref<string | boolean>(false)
                                                 class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'  // if type = icon
-                                                        : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.align === 'right'
+                                                        : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
                                                             ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
                                                             : 'px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
@@ -985,6 +985,12 @@ const isLoading = ref<string | boolean>(false)
                                                     </template>
                                                     <template v-else-if="column.type === 'date'">
                                                         <span class="whitespace-nowrap">{{  useFormatTime(item[column.key]) }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'date_hm'">
+                                                        <span class="whitespace-nowrap">{{  useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'date_hms'">
+                                                        <span class="whitespace-nowrap">{{  useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
                                                     </template>
                                                     <template v-else>
                                                         {{ item[column.key] }}
