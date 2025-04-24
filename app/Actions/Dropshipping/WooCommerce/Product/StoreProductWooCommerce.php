@@ -11,7 +11,8 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ class StoreProductWooCommerce extends OrgAction
             foreach (Arr::get($modelData, 'products') as $product) {
                 $portfolio = StorePortfolio::run($wooCommerceUser->customer, [
                     'product_id' => $product,
-                    'type' => PortfolioTypeEnum::WOOCOMMERCE->value,
+                    'platform_id' => Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first()->id,
                 ]);
 
                 // HandleApiProductToWooCommerce::dispatch($wooCommerceUser, [$portfolio->id]);

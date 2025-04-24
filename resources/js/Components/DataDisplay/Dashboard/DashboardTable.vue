@@ -71,8 +71,13 @@ const props = defineProps<{
 		}
 	}
 	intervals: {
-		options: {}[]
+		options: {
+            label: string
+            value: string
+            labelShort: string
+        }[]
 		value: string
+		range_interval: string
 	}
 	settings: {
 		[key: string]: {  // 'data_display_type'
@@ -207,6 +212,7 @@ const updateTab = (value: string) => {
 						<template #body="{ data: dataBody }">
 							<div class="px-2 flex relative" :class="[ columnHeader.align === 'left' ? '' : 'justify-end text-right', ]" >
 								<DashboardCell
+									:interval="intervals"
 									:cell="dataBody.columns?.[colSlug]?.[intervals.value] ?? dataBody.columns[colSlug]"
 								/>
 							</div>
@@ -229,6 +235,7 @@ const updateTab = (value: string) => {
 										:class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
 									>
 										<DashboardCell
+											:interval="intervals"
 											:cell="
 												props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]
 												?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]

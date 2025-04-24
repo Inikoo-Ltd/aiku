@@ -171,8 +171,8 @@ class ShowPalletDeliveryDeleted extends OrgAction
                     [
                         'label'       => __('How to add a pallet'),
                         'type'        => 'video',
-                        'description' => __('Learn how to add a pallet to a pallet delivery'),
-                        'url'         => 'https://drive.google.com/file/d/1egAxAHT6eTDy3xz2xWfnto4-TbL4oIht/view'
+                        'description' => __('Learn how to add a pallet to a delivery'),
+                        'url'         => 'https://youtu.be/9T7IvRs_bA0'
                     ]
                 ],
                 'tabs'          => [

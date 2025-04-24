@@ -84,6 +84,12 @@ class UpdatePortfolio extends OrgAction
         return $rules;
     }
 
+    public function asController(Portfolio $portfolio, ActionRequest $request): Portfolio
+    {
+        $this->initialisationFromShop($portfolio->shop, $request);
+
+        return $this->handle($portfolio, $this->validatedData);
+    }
 
     public function action(Portfolio $portfolio, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Portfolio
     {

@@ -8,12 +8,14 @@
 
 namespace App\Actions\UI\Dashboards;
 
+use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -37,6 +39,7 @@ class ShowGroupDashboard extends OrgAction
             $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
         }
 
+        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $dashboard = [
             'super_blocks' => [
@@ -44,7 +47,8 @@ class ShowGroupDashboard extends OrgAction
                     'id'        => 'group_dashboard_tab',
                     'intervals' => [
                         'options' => $this->dashboardIntervalOption(),
-                        'value'   => Arr::get($userSettings, 'selected_interval', 'all')  // fix this
+                        'value'   => Arr::get($userSettings, 'selected_interval', 'all'),  // fix this
+                        'range_interval'    => DashboardIntervalFilters::run($saved_interval)
                     ],
                     'settings'  => [
                         'model_state_type' => $this->dashboardModelStateTypeSettings($userSettings, 'left'),

@@ -10,7 +10,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
@@ -38,17 +37,16 @@ class IndexRetinaPortfolios extends RetinaAction
         if ($scope instanceof ShopifyUser) {
             $customer = $scope->customer;
             $query->where('customer_id', $customer->id);
-            $query->where('type', PortfolioTypeEnum::SHOPIFY);
         } elseif ($scope instanceof TiktokUser) {
             $customer = $scope->customer;
             $query->where('customer_id', $customer->id);
-            $query->where('type', PortfolioTypeEnum::TIKTOK);
         } elseif ($scope instanceof WebUser) {
             $query->where('customer_id', $scope->customer->id);
-            $query->where('type', PortfolioTypeEnum::MANUAL);
         } elseif ($scope instanceof Customer) {
             $query->where('customer_id', $scope->id);
         }
+
+        $query->where('platform_id', $this->platform->id);
 
         $query->with(['item']);
 

@@ -16,11 +16,9 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -133,11 +131,11 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): Portfolio
+    public function asController(Customer $customer, ActionRequest $request): Portfolio
     {
         $this->customer = $customer;
 
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
     }

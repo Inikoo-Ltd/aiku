@@ -13,7 +13,6 @@ use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -82,7 +81,6 @@ class GetApiProductsFromShopify extends OrgAction
 
                             $portfolio = StorePortfolio::make()->action($shopifyUser->customer, [
                                 'stored_item_id' => $storedItem->id,
-                                'type' => PortfolioTypeEnum::SHOPIFY,
                                 'platform_id' => $platform->id
                             ]);
                         }

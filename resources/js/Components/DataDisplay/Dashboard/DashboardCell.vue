@@ -3,18 +3,30 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTriangle, faEquals } from "@fas"
 import { Link } from "@inertiajs/vue3"
 
+interface RouteTarget {
+    name?: string
+    parameters?: any
+    key_date_filter?: string
+}
+
 const props = defineProps<{
     cell: {
-        route_target?: {
-            name?: string
-            parameters?: any
-        }
+        route_target?: RouteTarget
         tooltip?: string
         formatted_value?: string
         delta_icon?: {
             change?: string
             state?: string
         }
+    }
+    interval: {
+        options: {
+            label: string
+            value: string
+            labelShort: string
+        }[]
+        value: string
+        range_interval: string
     }
 }>()
 
@@ -51,6 +63,18 @@ const getIntervalStateColor = (state?: string) => {
 		return ''
 	}
 }
+
+// To take key_date_filter from route_target
+const generateRouteParameter = (route_target: RouteTarget) => {
+    if (route_target?.key_date_filter) {
+        return {
+            ...route_target?.parameters,
+            [route_target?.key_date_filter]: props.interval.range_interval
+        }
+    } 
+    
+    return route_target?.parameters
+}
 </script>
 
 <template>
@@ -60,7 +84,7 @@ const getIntervalStateColor = (state?: string) => {
             cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
         ]"
         :is="cell?.route_target?.name ? Link : 'div'"
-        :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.parameters) : '#'"
+        :href="cell?.route_target?.name ? route(cell?.route_target.name, generateRouteParameter(cell?.route_target)) : '#'"
     >
         <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
         <FontAwesomeIcon
