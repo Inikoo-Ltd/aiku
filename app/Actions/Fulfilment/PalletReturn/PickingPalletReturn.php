@@ -37,16 +37,20 @@ class PickingPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
-        $modelData[Str::replace('-', '_', PalletReturnStateEnum::PICKING->value).'_at']     = now();
-        $modelData['state']                                                                 = PalletReturnStateEnum::PICKING;
+        $modelData[Str::replace('-', '_', PalletReturnStateEnum::PICKING->value).'_at'] = now();
+        $modelData['state']                                                             = PalletReturnStateEnum::PICKING;
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             foreach ($palletReturn->pallets as $pallet) {
-                UpdatePallet::run($pallet, [
-                    'state'  => PalletStateEnum::PICKING,
-                    'status' => PalletStatusEnum::RETURNING,
-                    'picking_at' => now()
-                ]);
+                UpdatePallet::run(
+                    pallet: $pallet,
+                    modelData: [
+                        'state'      => PalletStateEnum::PICKING,
+                        'status'     => PalletStatusEnum::RETURNING,
+                        'picking_at' => now()
+                    ],
+                    hydrateParents: false,
+                );
 
                 $palletReturn->pallets()->syncWithoutDetaching([
                     $pallet->id => [
@@ -66,6 +70,7 @@ class PickingPalletReturn extends OrgAction
 
         SendPalletReturnNotification::run($palletReturn);
         PalletReturnRecordSearch::dispatch($palletReturn);
+
         return $palletReturn;
     }
 
@@ -74,6 +79,7 @@ class PickingPalletReturn extends OrgAction
         if ($this->asAction) {
             return true;
         }
+
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
     }
 

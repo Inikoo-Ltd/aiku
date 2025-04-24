@@ -9,14 +9,8 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
-use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\RecurringBillTransaction\UpdateRecurringBillTransaction;
-use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePallets;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
@@ -31,14 +25,17 @@ class ReturnPallet extends OrgAction
 
     private Pallet $pallet;
 
-    public function handle(Pallet $pallet): Pallet
+    public function handle(Pallet $pallet, bool $calculateParentTotals = true): Pallet
     {
-        $pallet = UpdatePallet::make()->action($pallet, [
-            'state'  => PalletStateEnum::DISPATCHED,
-            'status' => PalletStatusEnum::RETURNED,
-            'dispatched_at' => now()
-        ]);
-
+        $pallet = UpdatePallet::run(
+            pallet: $pallet,
+            modelData: [
+                'state'         => PalletStateEnum::DISPATCHED,
+                'status'        => PalletStatusEnum::RETURNED,
+                'dispatched_at' => now(),
+            ],
+            hydrateParents: false
+        );
 
         $recurringBillTransactionData = DB::table('recurring_bill_transactions')
             ->select('recurring_bill_transactions.id')
@@ -47,20 +44,15 @@ class ReturnPallet extends OrgAction
             ->where('recurring_bill_id', $pallet->current_recurring_bill_id)
             ->first();
         if ($recurringBillTransactionData) {
-
             $recurringBillTransaction = RecurringBillTransaction::find($recurringBillTransactionData->id);
-            UpdateRecurringBillTransaction::make()->action($recurringBillTransaction, [
-                'end_date' => now()
-            ]);
+            UpdateRecurringBillTransaction::make()->action(
+                recurringBillTransaction: $recurringBillTransaction,
+                modelData: [
+                    'end_date' => now()
+                ],
+                calculateParentTotals: $calculateParentTotals
+            );
         }
-
-
-        GroupHydratePallets::dispatch($pallet->group);
-        OrganisationHydratePallets::dispatch($pallet->organisation);
-        FulfilmentCustomerHydratePallets::dispatch($pallet->fulfilmentCustomer);
-        FulfilmentHydratePallets::dispatch($pallet->fulfilment);
-        WarehouseHydratePallets::dispatch($pallet->warehouse);
-        PalletRecordSearch::dispatch($pallet);
 
         return $pallet;
     }
@@ -82,12 +74,12 @@ class ReturnPallet extends OrgAction
         return $this->handle($pallet);
     }
 
-    public function action(Pallet $pallet): Pallet
+    public function action(Pallet $pallet, bool $calculateParentTotals = true): Pallet
     {
-        $this->pallet         = $pallet;
-        $this->asAction       = true;
+        $this->pallet   = $pallet;
+        $this->asAction = true;
         $this->initialisationFromFulfilment($pallet->fulfilment, []);
 
-        return $this->handle($pallet);
+        return $this->handle($pallet, $calculateParentTotals);
     }
 }

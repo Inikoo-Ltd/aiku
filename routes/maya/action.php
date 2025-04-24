@@ -72,7 +72,7 @@ Route::patch('pallet-delivery/{palletDelivery:id}/booked-in', SetPalletDeliveryA
 Route::patch('pallet-return/{palletReturn:id}/confirm', [ConfirmPalletReturn::class, 'maya'])->name('pallet-return.confirm');
 Route::patch('pallet-return/{palletReturn:id}/start-picking', [PickingPalletReturn::class, 'maya'])->name('pallet-return.picking');
 Route::patch('pallet-return/{palletReturn:id}/picked', [PickedPalletReturn::class, 'maya'])->name('pallet-return.picked');
-Route::patch('pallet-return/{palletReturn:id}/dispatch', [DispatchPalletReturn::class, 'maya'])->name('pallet-return.dispatch');
+Route::patch('pallet-return/{palletReturn:id}/dispatch', DispatchPalletReturn::class)->name('pallet-return.dispatch');
 
 
 //pallet Return pallet
