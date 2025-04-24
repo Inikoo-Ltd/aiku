@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
-use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDeliveryStateFromItems;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,23 +25,14 @@ class BookInPallet extends OrgAction
 {
     use WithActionUpdate;
 
-
-    private Pallet $pallet;
-
     public function handle(Pallet $pallet, array $modelData): Pallet
     {
         data_set($modelData, 'state', PalletStateEnum::BOOKED_IN);
         data_set($modelData, 'booked_in_at', now());
         data_set($modelData, 'set_as_not_received_at', null);
 
-
-
         $pallet             = $this->update($pallet, $modelData, ['data']);
         $pallet->refresh();
-
-        if ($pallet->palletDelivery) {
-            UpdatePalletDeliveryStateFromItems::run($pallet->palletDelivery);
-        }
 
         PalletDeliveryHydratePallets::dispatch($pallet->palletDelivery);
         LocationHydratePallets::dispatch($pallet->location);
