@@ -12,7 +12,6 @@ namespace App\Actions\Dropshipping\Aiku;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
@@ -50,7 +49,6 @@ class StoreMultipleManualPortfolios extends OrgAction
 
                 StorePortfolio::run($customer, [
                     ...$product,
-                    'type'        => PortfolioTypeEnum::MANUAL->value,
                     'platform_id' => $platform->id
                 ]);
             }
