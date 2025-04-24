@@ -16,38 +16,32 @@ use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdatePalletDeliveryStateFromItems
+class SetPalletDeliveryStateAsNotReceivedIfPalletsNotReceived
 {
     use WithActionUpdate;
     use AsAction;
 
     public function handle(PalletDelivery $palletDelivery): PalletDelivery
     {
-        $palletStateBookedInCount    = $palletDelivery->pallets()->where('state', PalletStateEnum::BOOKED_IN)->count();
-        $palletStateNotReceivedCount = $palletDelivery->pallets()->where('state', PalletStateEnum::NOT_RECEIVED)->count();
-        $palletStateReceivedCount    = $palletDelivery->pallets()->where('state', PalletStateEnum::RECEIVED)->count();
-        $palletReceivedCount         = $palletStateReceivedCount + $palletStateNotReceivedCount + $palletStateBookedInCount;
-        $palletNotInRentalCount      = $palletDelivery->pallets()
-            ->where('state', '!=', PalletStateEnum::NOT_RECEIVED)->whereNull('rental_id')->count();
-
 
         if (in_array($palletDelivery->state->value, [
             PalletDeliveryStateEnum::RECEIVED->value,
             PalletDeliveryStateEnum::CONFIRMED->value,
             PalletDeliveryStateEnum::NOT_RECEIVED->value,
 
-        ])) {
-            if ($palletReceivedCount == 0) {
-                return $palletDelivery;
-            }
+        ])   ) {
+
+
+            $palletStateBookedInCount    = $palletDelivery->pallets()->where('state', PalletStateEnum::BOOKED_IN)->count();
+            $palletStateNotReceivedCount = $palletDelivery->pallets()->where('state', PalletStateEnum::NOT_RECEIVED)->count();
+            $palletStateReceivedCount    = $palletDelivery->pallets()->where('state', PalletStateEnum::RECEIVED)->count();
+            $palletReceivedCount         = $palletStateReceivedCount + $palletStateNotReceivedCount + $palletStateBookedInCount;
 
             if ($palletReceivedCount == $palletStateNotReceivedCount) {
                 return NotReceivedPalletDelivery::run($palletDelivery);
             }
 
-            if ($palletNotInRentalCount > 0) {
-                return $palletDelivery;
-            }
+
         }
 
 

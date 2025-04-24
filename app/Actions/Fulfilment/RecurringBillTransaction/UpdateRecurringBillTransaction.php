@@ -20,11 +20,11 @@ class UpdateRecurringBillTransaction extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(RecurringBillTransaction $recurringBillTransaction, array $modelData, bool $isFulfilmentTransactionUpdated = false): RecurringBillTransaction
+    public function handle(RecurringBillTransaction $recurringBillTransaction, array $modelData, bool $isFulfilmentTransactionUpdated = false, bool $calculateParentTotals = true): RecurringBillTransaction
     {
         if (Arr::exists($modelData, 'net_amount')) {
             $netAmount = Arr::get($modelData, 'net_amount');
-            $quantity = $netAmount / $recurringBillTransaction->unit_cost;
+            $quantity  = $netAmount / $recurringBillTransaction->unit_cost;
             data_set($modelData, 'quantity', $quantity);
         }
 
@@ -41,7 +41,10 @@ class UpdateRecurringBillTransaction extends OrgAction
             $recurringBillTransaction = CalculateRecurringBillTransactionCurrencyExchangeRates::make()->action($recurringBillTransaction);
         }
 
-        CalculateRecurringBillTotals::run($recurringBillTransaction->recurringBill);
+        if ($calculateParentTotals) {
+            CalculateRecurringBillTotals::run($recurringBillTransaction->recurringBill);
+        }
+
 
         return $recurringBillTransaction;
     }
@@ -49,12 +52,11 @@ class UpdateRecurringBillTransaction extends OrgAction
     public function rules(): array
     {
         return [
-            'quantity' => ['sometimes', 'numeric', 'min:0'],
+            'quantity'   => ['sometimes', 'numeric', 'min:0'],
             'net_amount' => ['sometimes', 'numeric', 'min:0'],
-            'end_date' => ['sometimes', 'date'],
+            'end_date'   => ['sometimes', 'date'],
         ];
     }
-
 
 
     public function asController(RecurringBillTransaction $recurringBillTransaction, ActionRequest $actionRequest): void
@@ -64,12 +66,12 @@ class UpdateRecurringBillTransaction extends OrgAction
         $this->handle($recurringBillTransaction, $this->validatedData);
     }
 
-    public function action(RecurringBillTransaction $recurringBillTransaction, array $modelData, bool $isFulfilmentTransactionUpdated = false): RecurringBillTransaction
+    public function action(RecurringBillTransaction $recurringBillTransaction, array $modelData, bool $isFulfilmentTransactionUpdated = false, bool $calculateParentTotals = true): RecurringBillTransaction
     {
         $this->asAction = true;
         $this->initialisationFromFulfilment($recurringBillTransaction->fulfilment, $modelData);
 
-        return $this->handle($recurringBillTransaction, $this->validatedData, $isFulfilmentTransactionUpdated);
+        return $this->handle($recurringBillTransaction, $this->validatedData, $isFulfilmentTransactionUpdated, $calculateParentTotals);
     }
 
 }

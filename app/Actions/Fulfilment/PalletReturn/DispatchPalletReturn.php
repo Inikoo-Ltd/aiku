@@ -15,6 +15,7 @@ use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
 use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
+use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
@@ -42,20 +43,21 @@ class DispatchPalletReturn extends OrgAction
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         $modelData['dispatched_at'] = now();
-        $modelData['state'] = PalletReturnStateEnum::DISPATCHED;
+        $modelData['state']         = PalletReturnStateEnum::DISPATCHED;
 
         /** @var Pallet $pallet */
-
-
         $pallets = $palletReturn->pallets()
             ->whereNot('status', PalletStatusEnum::INCIDENT->value)
             ->get();
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $palletReturn = DB::transaction(function () use ($palletReturn, $pallets, $modelData) {
+            $palletReturn = DB::transaction(function () use ($palletReturn, $pallets) {
                 /** @var Pallet $pallet */
                 foreach ($pallets as $pallet) {
-                    $pallet = ReturnPallet::make()->action($pallet, $modelData);
+                    $pallet = ReturnPallet::make()->action(
+                        pallet: $pallet,
+                        calculateParentTotals: false
+                    );
 
                     $palletReturn->pallets()->syncWithoutDetaching([
                         $pallet->id => [
@@ -63,11 +65,12 @@ class DispatchPalletReturn extends OrgAction
                         ]
                     ]);
                 }
+
                 return $palletReturn;
             });
         }
         $this->update($palletReturn, $modelData);
-
+        CalculateRecurringBillTotals::run($palletReturn->recurringBill);
 
         if ($palletReturn->platform?->type === PlatformTypeEnum::SHOPIFY) {
             DispatchFulfilmentOrderShopify::run($palletReturn);
@@ -103,16 +106,6 @@ class DispatchPalletReturn extends OrgAction
      * @throws \Throwable
      */
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
-    {
-        $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
-
-        return $this->handle($palletReturn, $this->validatedData);
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 

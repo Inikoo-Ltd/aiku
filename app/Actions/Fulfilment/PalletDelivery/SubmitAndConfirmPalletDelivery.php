@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Http\Resources\Fulfilment\PalletDeliveryResource;
-use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,8 +25,7 @@ class SubmitAndConfirmPalletDelivery extends OrgAction
 
     public function handle(PalletDelivery $palletDelivery): PalletDelivery
     {
-
-        $palletDelivery = SubmitPalletDelivery::make()->action($palletDelivery);
+        $palletDelivery = SubmitPalletDelivery::run($palletDelivery);
         $palletDelivery = ConfirmPalletDelivery::make()->action($palletDelivery);
         return SetPalletDeliveryDate::run($palletDelivery);
     }
@@ -39,10 +37,6 @@ class SubmitAndConfirmPalletDelivery extends OrgAction
         }
 
         if ($this->asAction) {
-            return true;
-        }
-
-        if ($request->user() instanceof WebUser) {
             return true;
         }
 

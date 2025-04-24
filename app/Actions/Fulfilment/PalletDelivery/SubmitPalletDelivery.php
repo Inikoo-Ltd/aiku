@@ -24,14 +24,10 @@ use App\Http\Resources\Fulfilment\PalletDeliveryResource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Lorisleiva\Actions\ActionRequest;
 
 class SubmitPalletDelivery extends OrgAction
 {
     use WithActionUpdate;
-
-
-    private PalletDelivery $palletDelivery;
 
     public function handle(PalletDelivery $palletDelivery): PalletDelivery
     {
@@ -70,41 +66,11 @@ class SubmitPalletDelivery extends OrgAction
         return $palletDelivery;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->palletDelivery->state != PalletDeliveryStateEnum::IN_PROCESS) {
-            return false;
-        }
 
-        if ($this->asAction) {
-            return true;
-        }
-
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-    }
 
     public function jsonResponse(PalletDelivery $palletDelivery): JsonResource
     {
         return new PalletDeliveryResource($palletDelivery);
-    }
-
-    public function asController(PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
-    {
-        $this->palletDelivery = $palletDelivery;
-        $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);
-        return $this->handle($palletDelivery);
-    }
-
-    public function action(PalletDelivery $palletDelivery): PalletDelivery
-    {
-        $this->asAction       = true;
-        $this->palletDelivery = $palletDelivery;
-        $this->initialisationFromFulfilment($palletDelivery->fulfilment, []);
-        return $this->handle($palletDelivery);
     }
 
 

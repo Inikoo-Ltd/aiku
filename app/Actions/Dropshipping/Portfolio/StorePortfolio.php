@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
@@ -97,7 +96,6 @@ class StorePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'type'           => ['sometimes', Rule::enum(PortfolioTypeEnum::class)],
             'status'         => 'sometimes|boolean',
             'last_added_at'  => 'sometimes|date',
         ];
