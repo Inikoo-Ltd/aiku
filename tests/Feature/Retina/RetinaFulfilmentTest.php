@@ -64,6 +64,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
@@ -550,14 +551,14 @@ test('Process Pallet Delivery (from aiku)', function (PalletDelivery $palletDeli
 
 
     foreach ($palletDelivery->pallets as $pallet) {
-        $pallet = BookInPallet::make()->action($pallet, ['location_id' => $this->location->id]);
+        BookInPallet::make()->action($pallet, ['location_id' => $this->location->id]);
     }
 
 
 
 
     $palletDelivery = SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
-    $pallet->refresh();
+    $pallet=$palletDelivery->pallets->first();
 
     expect($pallet->location)->toBeInstanceOf(Location::class)
         ->and($pallet->location->id)->toBe($this->location->id)
@@ -781,7 +782,7 @@ test('Cancel Retina Pallet Return', function (PalletReturn $palletReturn) {
     return $palletReturn;
 })->depends('Submit Retina Pallet Return');
 
-test('Create Retina Pallet Return (with stored item)', function (PalletReturn $palletReturn) {
+test('Create Retina Pallet Return (with stored item)', function () {
     $fulfilmentCustomer = $this->fulfilmentCustomer;
 
     $palletReturn = StoreRetinaPalletReturn::make()->action(
@@ -825,14 +826,14 @@ test('Update Retina Customer', function () {
     $customer = UpdateRetinaCustomer::make()->action(
         $this->fulfilmentCustomer->customer,
         [
-            'contact_name' => 'Jowko'
+            'contact_name' => 'John'
         ]
     );
 
     $customer->refresh();
 
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->contact_name)->toBe('Jowko');
+        ->and($customer->contact_name)->toBe('John');
 
     return $customer;
 });
@@ -871,7 +872,7 @@ test('Update retina customer delivery address', function () {
 });
 
 test('Delete retina customer delivery address', function () {
-    $customer = UpdateRetinaCustomerDeliveryAddress::make()->action(
+    UpdateRetinaCustomerDeliveryAddress::make()->action(
         $this->fulfilmentCustomer->customer,
         [
             'delivery_address_id' => 5
@@ -895,7 +896,7 @@ test('Store retina customer client', function () {
     $customer = $this->fulfilmentCustomer->customer;
     $platform = $customer->getMainPlatform();
     if (!$platform) {
-        $platform       = Platform::where('code', 'aiku')->first();
+        $platform       = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         AttachCustomerToPlatform::make()->action($customer, $platform, []);
     }
 
@@ -903,9 +904,9 @@ test('Store retina customer client', function () {
         $this->fulfilmentCustomer->customer,
         [
             'reference'    => 'ref1',
-            'contact_name' => 'Jowki',
-            'company_name' => 'Jowki.inc',
-            'email'        => 'jowki@jowki.com',
+            'contact_name' => 'Acme',
+            'company_name' => 'Acme.inc',
+            'email'        => 'acme@acme.com',
             'phone'        => '123456789',
             'address'      => Address::factory()->definition(),
             'status'       => true,
@@ -917,8 +918,8 @@ test('Store retina customer client', function () {
 
     expect($customerClient)->toBeInstanceOf(CustomerClient::class)
         ->and($customerClient->reference)->toBe('ref1')
-        ->and($customerClient->contact_name)->toBe('Jowki')
-        ->and($customerClient->company_name)->toBe('Jowki.inc');
+        ->and($customerClient->contact_name)->toBe('Acme')
+        ->and($customerClient->company_name)->toBe('Acme.inc');
 
     return $customerClient;
 });
@@ -927,19 +928,19 @@ test('Store retina web user', function () {
     $webUser = StoreRetinaWebUser::make()->action(
         $this->fulfilmentCustomer->customer,
         [
-            'contact_name' => 'Jowkiwi',
-            'username'     => 'jowkisii',
-            'email'        => 'jowki@jowki.com',
-            'password'     => 'jokoooo'
+            'contact_name' => 'Sunshine',
+            'username'     => 'camel',
+            'email'        => 'acme@acme.com',
+            'password'     => 'joko'
         ]
     );
 
     $webUser->refresh();
 
     expect($webUser)->toBeInstanceOf(WebUser::class)
-        ->and($webUser->contact_name)->toBe('Jowkiwi')
-        ->and($webUser->username)->toBe('jowkisii')
-        ->and($webUser->email)->toBe('jowki@jowki.com');
+        ->and($webUser->contact_name)->toBe('Sunshine')
+        ->and($webUser->username)->toBe('camel')
+        ->and($webUser->email)->toBe('acme@acme.com');
 
     return $webUser;
 });
@@ -948,14 +949,14 @@ test('update retina web user', function (WebUser $webUser) {
     $webUser = UpdateRetinaWebUser::make()->action(
         $webUser,
         [
-            'username' => 'jowkowsi',
+            'username' => 'amelia',
         ]
     );
 
     $webUser->refresh();
 
     expect($webUser)->toBeInstanceOf(WebUser::class)
-        ->and($webUser->username)->toBe('jowkowsi');
+        ->and($webUser->username)->toBe('amelia');
 
     return $webUser;
 })->depends('Store retina web user');
