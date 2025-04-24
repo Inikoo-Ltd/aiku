@@ -8,16 +8,8 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
-use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
-use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
-use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
-use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePallets;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -42,43 +34,29 @@ class UpdatePallet extends OrgAction
 
     public function handle(Pallet $pallet, array $modelData, bool $hydrateParents = true): Pallet
     {
-        $originalType = $pallet->type;
-        $pallet       = $this->update($pallet, $modelData, ['data']);
-        $pallet->refresh();
+        $originalType  = $pallet->type;
+        $oldLocationId = $pallet->location_id;
 
+        $pallet = $this->update($pallet, $modelData, ['data']);
 
-        $oldLocation = $pallet->location;
+        $changes = $pallet->getChanges();
 
-        if (Arr::hasAny($pallet->getChanges(), ['state'])) {
-
-            if ($pallet->pallet_return_id && $hydrateParents) {
-                AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
-            }
-
-            GroupHydratePallets::dispatch($pallet->group)->delay($this->hydratorsDelay);
-            OrganisationHydratePallets::dispatch($pallet->organisation)->delay($this->hydratorsDelay);
-            FulfilmentCustomerHydratePallets::dispatch($pallet->fulfilmentCustomer)->delay($this->hydratorsDelay);
-            FulfilmentHydratePallets::dispatch($pallet->fulfilment)->delay($this->hydratorsDelay);
-            WarehouseHydratePallets::dispatch($pallet->warehouse)->delay($this->hydratorsDelay);
-
+        if ($hydrateParents && $pallet->pallet_return_id && Arr::has($modelData, 'state')) {
+            AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
         }
 
-        if (Arr::hasAny($pallet->getChanges(), ['state','location_id'])) {
-            if ($oldLocation) {
-                LocationHydratePallets::dispatch($oldLocation)->delay($this->hydratorsDelay); //Hydrate Old Location
-            }
-            if ($pallet->location) {
-                LocationHydratePallets::dispatch($pallet->location)->delay($this->hydratorsDelay); //Hydrate New Location
-            }
-        }
+        RunPalletPostUpdateHydrators::dispatch(
+            $pallet,
+            [
+                'type'        => $originalType,
+                'location_id' => $oldLocationId
+            ],
+            $changes,
+            $this->hydratorsDelay
+        );
 
 
-        if ($originalType !== $pallet->type) {
-            SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
-        }
-        PalletRecordSearch::dispatch($pallet);
-
-        return $pallet->refresh();
+        return $pallet;
     }
 
     public function authorize(ActionRequest $request): bool
