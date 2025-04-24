@@ -56,10 +56,10 @@ class ConfirmPalletDelivery extends OrgAction
                     ),
                     'state'  => PalletStateEnum::SUBMITTED,
                     'status' => PalletStatusEnum::RECEIVING
-                ]);
+                ], false);
                 $pallet->generateSlug();
 
-                PalletRecordSearch::run($pallet);
+                PalletRecordSearch::dispatch($pallet);
             }
         }
 
@@ -74,7 +74,7 @@ class ConfirmPalletDelivery extends OrgAction
                 UpdatePallet::run($pallet, [
                     'state'     => PalletStateEnum::CONFIRMED,
                     'status'    => PalletStatusEnum::RECEIVING,
-                ]);
+                ], false);
             }
         }
 

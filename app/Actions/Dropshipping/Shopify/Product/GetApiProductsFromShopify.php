@@ -21,7 +21,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -67,7 +66,7 @@ class GetApiProductsFromShopify extends OrgAction
                     $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
                         ->where('reference', $product['handle'])->first();
                     $storedItemShopify = $storedItem?->shopifyPortfolio;
-                    Log::info($storedItem);
+
                     if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                         if (!$storedItem) {
                             $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
