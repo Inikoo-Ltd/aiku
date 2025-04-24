@@ -9,6 +9,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -175,7 +176,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
+                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

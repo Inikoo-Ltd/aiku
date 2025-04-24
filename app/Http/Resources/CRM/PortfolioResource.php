@@ -34,11 +34,8 @@ class PortfolioResource extends JsonResource
             'routes'                 => [
                 'delete_route' => [
                     'method'     => 'delete',
-                    'name'       => 'grp.models.org.shop.customer.portfolio.delete',
+                    'name'       => 'grp.models.portfolio.delete',
                     'parameters' => [
-                        'organisation' => $portfolio->organisation_id,
-                        'shop'         => $portfolio->shop_id,
-                        'customer'     => $portfolio->customer_id,
                         'portfolio'    => $portfolio->id
                     ]
                 ]

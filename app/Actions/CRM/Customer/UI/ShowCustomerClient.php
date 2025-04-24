@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
@@ -149,8 +150,8 @@ class ShowCustomerClient extends OrgAction
                 ],
 
                 CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
-                    fn() => GetCustomerClientShowcase::run($customerClient)
-                    : Inertia::lazy(fn() => GetCustomerClientShowcase::run($customerClient)),
+                    fn () => GetCustomerClientShowcase::run($customerClient)
+                    : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
 
                 // CustomerTabsEnum::ORDERS->value => $this->tab == CustomerTabsEnum::ORDERS->value ?
                 //     fn () => OrderResource::collection(IndexOrders::run($customer))
@@ -319,7 +320,7 @@ class ShowCustomerClient extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show'
             => array_merge(
-                (new ShowCustomerPlatform())->getBreadcrumbs($parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
+                (new ShowPlatformInCustomer())->getBreadcrumbs($parent, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [

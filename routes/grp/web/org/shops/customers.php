@@ -20,7 +20,6 @@ use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
 use App\Actions\CRM\Customer\UI\IndexPortfolios;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
-use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
@@ -28,6 +27,7 @@ use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInCustomer;
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\IndexOrdersInPlatform;
@@ -47,10 +47,10 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('/invoices', [IndexInvoices::class, 'inCustomer'])->name('.invoices.index');
     Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('.invoices.show');
 
-    Route::prefix('/platforms')->as('.platforms')->group(function () {
+    Route::prefix('/channels')->as('.platforms')->group(function () {
         Route::get('', IndexPlatformsInCustomer::class)->name('.index');
-        Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
-            Route::get('', ShowCustomerPlatform::class);
+        Route::prefix('/{platform}')->as('.show')->group(function () {
+            Route::get('', ShowPlatformInCustomer::class);
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
                 Route::get('', IndexPortfoliosInPlatform::class)->name('.index');
             });

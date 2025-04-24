@@ -12,39 +12,39 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
-use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
-use App\Http\Resources\Ordering\TransactionsResource;
-use App\Http\Resources\Sales\OrderResource;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Http\Resources\Ordering\TransactionsResource;
+use App\Http\Resources\Sales\OrderResource;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
+use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrder extends OrgAction
 {
@@ -526,7 +526,7 @@ class ShowOrder extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.orders.show'
             => array_merge(
-                (new ShowCustomerPlatform())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
+                (new ShowPlatformInCustomer())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
                 $headCrumb(
                     $order,
                     [

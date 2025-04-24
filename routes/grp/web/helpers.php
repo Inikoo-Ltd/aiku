@@ -12,6 +12,7 @@ use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
+use App\Actions\Helpers\RedirectPortfolioItemLink;
 use App\Actions\Helpers\RedirectShopInShopFromDashboard;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
@@ -26,6 +27,9 @@ Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustom
 Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');
 Route::get('redirect-customers-from-dashboard/{shop:id}', RedirectCustomersInShopFromDashboard::class)->name('redirect_customers_from_dashboard');
 Route::get('redirect-shops-from-dashboard/{shop:id}', RedirectShopInShopFromDashboard::class)->name('redirect_shops_from_dashboard');
+
+Route::get('redirect-portfolio-item/{portfolio:id}', RedirectPortfolioItemLink::class)->name('redirect_portfolio_item');
+
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

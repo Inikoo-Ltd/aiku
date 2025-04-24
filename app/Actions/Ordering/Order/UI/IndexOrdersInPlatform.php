@@ -9,8 +9,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Ordering\OrdersResource;
@@ -169,7 +169,7 @@ class IndexOrdersInPlatform extends OrgAction
     {
         return
             array_merge(
-                ShowCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
+                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

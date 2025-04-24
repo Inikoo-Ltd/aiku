@@ -13,7 +13,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\CRM\CustomerPlatformsResource;
+use App\Http\Resources\CRM\PlatformsInCustomerResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -52,7 +52,14 @@ class IndexPlatformsInCustomer extends OrgAction
 
         return $query
             ->defaultSort('customer_has_platforms.id')
-            ->select(['customer_has_platforms.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
+            ->select([
+                'customer_has_platforms.id as customer_has_platform_id',
+                'platforms.id',
+                'platforms.slug',
+                'platforms.code',
+                'platforms.name',
+                'platforms.type'
+            ])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -96,7 +103,7 @@ class IndexPlatformsInCustomer extends OrgAction
         }
 
         return Inertia::render(
-            'Org/Shop/CRM/CustomerPlatforms',
+            'Org/Shop/CRM/PlatformsInCustomer',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -112,7 +119,7 @@ class IndexPlatformsInCustomer extends OrgAction
                     'actions'       => $actions
 
                 ],
-                'data'        => CustomerPlatformsResource::collection($platforms),
+                'data'        => PlatformsInCustomerResource::collection($platforms),
                 'platforms'   => PlatformsResource::collection($this->parent->group->platforms),
                 'enableAiku'  => $enableAiku,
                 'attachRoute' => [
@@ -137,7 +144,7 @@ class IndexPlatformsInCustomer extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('Codex'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }

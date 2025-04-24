@@ -7,20 +7,23 @@
  * copyright 2025
 */
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Dropshipping\Platform\UI;
 
+use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowCustomerPlatform extends OrgAction
+class ShowPlatformInCustomer extends OrgAction
 {
     use WithCustomerPlatformSubNavigation;
 
@@ -29,9 +32,12 @@ class ShowCustomerPlatform extends OrgAction
         return $customerHasPlatform;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): CustomerHasPlatform
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): CustomerHasPlatform
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
+
+        $customerHasPlatform=CustomerHasPlatform::where('customer_id',$customer->id)->where('platform_id',$platform->id)->first();
+
 
         return $this->handle($customerHasPlatform);
     }
@@ -56,7 +62,7 @@ class ShowCustomerPlatform extends OrgAction
                         'title' => __('platform'),
                         'icon'  => 'fal fa-user',
                     ],
-                    'model'         => __('Platform'),
+                    'model'         => __('Platform xx'),
                     'subNavigation' => $this->getCustomerPlatformSubNavigation($customerHasPlatform, $request),
                     'title'         => $customerHasPlatform->platform->name,
                     'afterTitle'    => [
@@ -114,12 +120,7 @@ class ShowCustomerPlatform extends OrgAction
                     ],
                     'model' => [
                         'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show',
-                        'parameters' => [
-                            'organisation'     => $routeParameters['organisation'],
-                            'shop'             => $routeParameters['shop'],
-                            'customer'         => $routeParameters['customer'],
-                            'customerHasPlatform' => $customerHasPlatform->id
-                        ]
+                        'parameters' => $routeParameters
                     ]
                 ]
             )

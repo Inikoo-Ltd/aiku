@@ -11,6 +11,12 @@ namespace App\Http\Resources\Platform;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $id
+ * @property mixed $code
+ * @property mixed $name
+ * @property mixed $type
+ */
 class PlatformsResource extends JsonResource
 {
     public function toArray($request): array

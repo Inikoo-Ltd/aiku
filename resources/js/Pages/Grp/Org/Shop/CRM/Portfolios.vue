@@ -18,7 +18,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 
-const props = defineProps<{
+defineProps<{
     data: {}
     title: string
     pageHead: PageHeadingTypes
@@ -32,7 +32,7 @@ const portfoliosList = ref([])
 const selectedPortfolio = ref<number | null>(null)
 const errorMessage = ref(null)
 
-// Method: Get portofolios list
+// Method: Get portfolios list
 const getPortfoliosList = async () => {
     isLoadingFetch.value = true
     try {

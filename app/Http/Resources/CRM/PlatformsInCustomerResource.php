@@ -17,17 +17,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $code
  * @property mixed $name
  * @property mixed $type
+ * @property mixed $slug
  */
-class CustomerPlatformsResource extends JsonResource
+class PlatformsInCustomerResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'customer_has_platform_id' => $this->customer_has_platform_id,
+            'slug'                     => $this->slug,
             'id'                       => $this->id,
             'code'                     => $this->code,
             'name'                     => $this->name,
-            'type'                     => $this->type
+            'type'                     => $this->type,
+            'customer_has_platform_id' => $this->customer_has_platform_id
         ];
     }
 }

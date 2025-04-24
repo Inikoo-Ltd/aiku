@@ -9,17 +9,15 @@
 
 namespace App\Actions\Dropshipping\Portfolio\UI;
 
-use App\Actions\CRM\Customer\UI\ShowCustomerPlatform;
 use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\CRM\PortfolioResource;
+use App\Http\Resources\CRM\PortfoliosResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -40,7 +38,7 @@ class IndexPortfoliosInPlatform extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('stored_items.reference', $value);
+                $query->whereStartWith('portfolio.reference', $value);
             });
         });
 
@@ -49,23 +47,13 @@ class IndexPortfoliosInPlatform extends OrgAction
         }
 
         $query = QueryBuilder::for(Portfolio::class);
+        $query->where('portfolios.customer_id', $customerHasPlatform->customer_id);
+        $query->where('portfolios.platform_id', $customerHasPlatform->platform_id);
 
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
-            $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
-            $query->where('portfolios.type', PortfolioTypeEnum::MANUAL);
-        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
-            $query->where('portfolios.type', PortfolioTypeEnum::SHOPIFY);
-        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::TIKTOK) {
-            $query->where('portfolios.customer_id', $customerHasPlatform->customer->id);
-            $query->where('portfolios.type', PortfolioTypeEnum::TIKTOK);
-        }
 
-        $query->where('item_type', class_basename(Product::class));
 
         return $query
             ->defaultSort('portfolios.reference')
-            ->with('item')
             ->allowedSorts(['reference', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -102,7 +90,7 @@ class IndexPortfoliosInPlatform extends OrgAction
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'        => PortfolioResource::collection($portfolios),
+                'data'        => PortfoliosResource::collection($portfolios),
             ]
         )->table($this->tableStructure());
     }
@@ -127,8 +115,9 @@ class IndexPortfoliosInPlatform extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -138,7 +127,7 @@ class IndexPortfoliosInPlatform extends OrgAction
     public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowCustomerPlatform::make()->getBreadcrumbs($customerHasPlatform, $routeName, $routeParameters),
+            ShowPlatformInCustomer::make()->getBreadcrumbs($customerHasPlatform, $routeName, $routeParameters),
             [
                 [
                     'type'   => 'simple',

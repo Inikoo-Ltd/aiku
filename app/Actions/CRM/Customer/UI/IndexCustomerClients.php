@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
@@ -307,7 +308,7 @@ class IndexCustomerClients extends OrgAction
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
-                ShowCustomerPlatform::make()->getBreadcrumbs(
+                ShowPlatformInCustomer::make()->getBreadcrumbs(
                     $customerHasPlatform,
                     $routeName,
                     $routeParameters
