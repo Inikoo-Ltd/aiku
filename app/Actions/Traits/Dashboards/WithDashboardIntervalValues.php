@@ -8,18 +8,13 @@
 
 namespace App\Actions\Traits\Dashboards;
 
-use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
-use App\Actions\Traits\WithDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Dashboard\DashboardDataType;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Number;
 
 trait WithDashboardIntervalValues
 {
-
-
     private function getIntervalValues(
         $intervalsModel,
         string $field,

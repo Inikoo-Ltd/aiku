@@ -13,7 +13,6 @@ namespace App\Actions\Traits;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Number;
 

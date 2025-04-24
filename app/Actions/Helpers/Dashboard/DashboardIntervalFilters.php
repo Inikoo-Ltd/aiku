@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 23 Apr 2025 21:30:19 Malaysia Time, Kuala Lumpur, Malaysia
@@ -34,7 +35,7 @@ class DashboardIntervalFilters
             default => null
         };
 
-        if ($startDate==null) {
+        if ($startDate == null) {
             return '';
         }
 

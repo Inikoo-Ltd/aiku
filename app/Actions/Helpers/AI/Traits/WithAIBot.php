@@ -213,7 +213,7 @@ trait WithAIBot
         return Response::stream(function () use ($response) {
             Ollama::processStream($response->getBody(), function ($data) {
                 echo 'data: '.json_encode(
-                        [
+                    [
                             'choices' => [
                                 [
                                     'delta' => [
@@ -222,7 +222,7 @@ trait WithAIBot
                                 ]
                             ]
                         ]
-                    )."\n\n";
+                )."\n\n";
                 ob_flush();
                 flush();
             });

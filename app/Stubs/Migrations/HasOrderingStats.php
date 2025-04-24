@@ -64,6 +64,28 @@ trait HasOrderingStats
         return $table;
     }
 
+    public function ordersStatsFieldsDown(Blueprint $table): Blueprint
+    {
+        $table->dropColumn('last_order_created_at');
+        $table->dropColumn('last_order_submitted_at');
+        $table->dropColumn('last_order_dispatched_at');
+        $table->dropColumn('number_orders');
+
+        foreach (OrderStateEnum::cases() as $case) {
+            $table->dropColumn('number_orders_state_'.$case->snake());
+        }
+
+        foreach (OrderStatusEnum::cases() as $case) {
+            $table->dropColumn('number_orders_status_'.$case->snake());
+        }
+
+        foreach (OrderHandingTypeEnum::cases() as $case) {
+            $table->dropColumn('number_orders_handing_type_'.$case->snake());
+        }
+
+        return $table;
+    }
+
     public function invoicesStatsFields(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_invoices')->default(0);

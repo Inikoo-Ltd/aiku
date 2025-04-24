@@ -491,7 +491,7 @@ class ShowOrder extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.customer-clients.orders.show'
             => array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs($order->customer,'grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($order->customer, 'grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
                 $headCrumb(
                     $order,
                     [

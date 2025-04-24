@@ -30,7 +30,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $customer_id
  * @property int|null $item_id
  * @property string|null $reference This is the reference that the customer uses to identify the product
- * @property PortfolioTypeEnum $type
  * @property bool $status
  * @property string|null $last_added_at
  * @property string|null $last_removed_at
@@ -43,6 +42,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $source_id
  * @property string|null $item_type
  * @property int|null $platform_id
+ * @property string|null $item_code no normal field used for improve performance on UI search
+ * @property string|null $item_name no normal field used for improve performance on UI search
+ * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group

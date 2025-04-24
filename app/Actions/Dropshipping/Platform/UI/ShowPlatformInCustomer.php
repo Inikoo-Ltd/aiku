@@ -36,7 +36,7 @@ class ShowPlatformInCustomer extends OrgAction
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
 
-        $customerHasPlatform=CustomerHasPlatform::where('customer_id',$customer->id)->where('platform_id',$platform->id)->first();
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
 
 
         return $this->handle($customerHasPlatform);

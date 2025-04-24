@@ -39,13 +39,13 @@ class ShowOrganisationDashboard extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab= Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values()));
-        if(!in_array($currentTab, OrganisationDashboardSalesTableTabsEnum::values())){
-            $currentTab=Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
+        $currentTab = Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values()));
+        if (!in_array($currentTab, OrganisationDashboardSalesTableTabsEnum::values())) {
+            $currentTab = Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
         }
-        
+
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-        
+
         $dashboard = [
             'super_blocks' => [
                 [
