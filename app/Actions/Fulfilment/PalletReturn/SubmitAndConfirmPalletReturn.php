@@ -29,9 +29,7 @@ class SubmitAndConfirmPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-
-
-        $palletReturn = SubmitPalletReturn::run($palletReturn);
+        $palletReturn = SubmitPalletReturn::run($palletReturn, []);
 
         return ConfirmPalletReturn::make()->action($palletReturn);
     }
@@ -59,17 +57,18 @@ class SubmitAndConfirmPalletReturn extends OrgAction
     {
         $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
+
         return $this->handle($palletReturn);
     }
 
     public function action(PalletReturn $palletReturn): PalletReturn
     {
-        $this->asAction = true;
+        $this->asAction     = true;
         $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, []);
+
         return $this->handle($palletReturn);
     }
-
 
 
 }
