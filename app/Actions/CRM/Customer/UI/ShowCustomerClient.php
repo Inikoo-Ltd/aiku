@@ -153,56 +153,10 @@ class ShowCustomerClient extends OrgAction
                     fn () => GetCustomerClientShowcase::run($customerClient)
                     : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
 
-                // CustomerTabsEnum::ORDERS->value => $this->tab == CustomerTabsEnum::ORDERS->value ?
-                //     fn () => OrderResource::collection(IndexOrders::run($customer))
-                //     : Inertia::lazy(fn () => OrderResource::collection(IndexOrders::run($customer))),
 
-                /*
-                CustomerTabsEnum::PRODUCTS->value => $this->tab == CustomerTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexDropshippingRetinaProducts::run($customer))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexDropshippingRetinaProducts::run($customer))),
-                */
-
-                // CustomerTabsEnum::DISPATCHED_EMAILS->value => $this->tab == CustomerTabsEnum::DISPATCHED_EMAILS->value ?
-                //     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))
-                //     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))),
-                // CustomerTabsEnum::WEB_USERS->value => $this->tab == CustomerTabsEnum::WEB_USERS->value ?
-                //     fn () => WebUsersResource::collection(IndexWebUsers::run($customer))
-                //     : Inertia::lazy(
-                //         fn () => WebUsersResource::collection(IndexWebUsers::run($customer))
-                //     ),
 
             ]
         );
-        // ->table(IndexOrders::make()->tableStructure($customer))
-        //     //    ->table(IndexDropshippingRetinaProducts::make()->tableStructure($customer))
-        //     ->table(IndexDispatchedEmails::make()->tableStructure($customer))
-        //     ->table(
-        //         IndexWebUsers::make()->tableStructure(
-        //             parent: $customer,
-        //             modelOperations: [
-        //                 'createLink' => [
-        //                     [
-        //                         'type'    => 'button',
-        //                         'style'   => 'create',
-        //                         'tooltip' => __('Create new web user'),
-        //                         'label'   => __('Create Web User'),
-        //                         'route'   => [
-        //                             'method'     => 'get',
-        //                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.web-users.create',
-        //                             'parameters' => [
-        //                                 $customer->organisation->slug,
-        //                                 $customer->shop->slug,
-        //                                 $customer->slug
-        //                             ]
-        //                         ]
-        //                     ]
-        //                 ]
-        //             ],
-        //             prefix: CustomerTabsEnum::WEB_USERS->value,
-        //             canEdit: $this->canEdit
-        //         )
-        //     );
     }
 
 

@@ -83,6 +83,7 @@ class ShowOrder extends OrgAction
         return $this->handle($order);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
     {
         $this->parent = $customerHasPlatform;
@@ -490,7 +491,7 @@ class ShowOrder extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.customer-clients.orders.show'
             => array_merge(
-                (new ShowCustomerClient())->getBreadcrumbs('grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($order->customer,'grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
                 $headCrumb(
                     $order,
                     [
