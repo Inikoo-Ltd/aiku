@@ -13,7 +13,8 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class StoreRetinaProductShopify extends RetinaAction
             foreach (Arr::get($modelData, 'products') as $product) {
                 $portfolio = StorePortfolio::run($shopifyUser->customer, [
                     'product_id' => $product,
-                    'type' => PortfolioTypeEnum::SHOPIFY->value,
+                    'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
                 ]);
 
                 HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);

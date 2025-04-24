@@ -13,9 +13,10 @@ use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
@@ -65,7 +66,7 @@ class GetProductsFromTiktokApi extends OrgAction
                     if (!$portfolio) {
                         $portfolio = StorePortfolio::make()->action($tiktokUser->customer, [
                             'stored_item_id' => $storedItem->id,
-                            'type' => PortfolioTypeEnum::TIKTOK
+                            'platform_id' => Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first()->id,
                         ]);
                     }
 
