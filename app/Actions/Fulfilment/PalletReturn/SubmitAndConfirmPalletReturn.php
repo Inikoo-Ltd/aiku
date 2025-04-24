@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
-use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,7 +31,7 @@ class SubmitAndConfirmPalletReturn extends OrgAction
     {
 
 
-        $palletReturn = SubmitPalletReturn::make()->action($palletReturn);
+        $palletReturn = SubmitPalletReturn::run($palletReturn);
 
         return ConfirmPalletReturn::make()->action($palletReturn);
     }
@@ -46,9 +45,6 @@ class SubmitAndConfirmPalletReturn extends OrgAction
             return false;
         }
 
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
 
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
     }
