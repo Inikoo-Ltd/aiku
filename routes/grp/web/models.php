@@ -61,6 +61,7 @@ use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -289,6 +290,10 @@ Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->g
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
 });
 
+Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();
+Route::post('customer/{customer:id}/portfolio', StorePortfolio::class)->name('portfolio.store')->withoutScopedBindings();
+Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
+
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
@@ -348,9 +353,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('/shop/{shop:id}/product/', [StoreProduct::class, 'inShop'])->name('show.product.store');
     Route::delete('/shop/{shop:id}/product/{product:id}', [DeleteProduct::class, 'inShop'])->name('shop.product.delete');
-
-    Route::delete('shop/{shop:id}/customer/{customer:id}/portfolio/{portfolio:id}', DeletePortfolio::class)->name('shop.customer.portfolio.delete')->withoutScopedBindings();
-    Route::post('shop/{shop:id}/customer/{customer:id}/portfolio', StorePortfolio::class)->name('shop.customer.portfolio.store')->withoutScopedBindings();
 
     Route::post('product/{product:id}/images', UploadImagesToProduct::class)->name('product.images.store')->withoutScopedBindings();
     Route::post('product/{product:id}/images/attach', AttachImagesToProduct::class)->name('product.images.attach')->withoutScopedBindings();
@@ -759,4 +761,3 @@ require_once __DIR__."/models/sys_admin/user.php";
 require_once __DIR__."/models/fulfilment/fulfilment_customer.php";
 require_once __DIR__."/models/fulfilment/stored_item_audit.php";
 require_once __DIR__."/models/fulfilment/stored_item_audit_delta.php";
-
