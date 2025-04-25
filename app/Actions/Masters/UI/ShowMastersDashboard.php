@@ -36,10 +36,8 @@ class ShowMastersDashboard extends GrpAction
     }
 
 
-    public function htmlResponse(ActionRequest $request): Response
+    public function htmlResponse(): Response
     {
-
-
         return Inertia::render(
             'Masters/MastersDashboard',
             [
