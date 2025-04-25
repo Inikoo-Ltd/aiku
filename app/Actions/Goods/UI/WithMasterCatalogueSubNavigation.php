@@ -9,51 +9,9 @@
 namespace App\Actions\Goods\UI;
 
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Group;
 
 trait WithMasterCatalogueSubNavigation
 {
-    protected function getMasterCatalogueSubNavigation(Group $group): array
-    {
-        return [
-            [
-                'route'    => [
-                    'name'       => 'grp.masters.shops.index',
-                    'parameters' => []
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-home'],
-                    'tooltip' => __('Homepage')
-                ]
-            ],
-            [
-                'number'   => $group->goodsStats->number_current_master_product_categories_type_family,
-                'label'    => __('Families'),
-                'route'    => [
-                    'name'       => 'grp.masters.families.index',
-                    'parameters' => []
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-folder-open'],
-                    'tooltip' => __('Master Families')
-                ]
-            ],
-            [
-                'number' => $group->goodsStats->number_current_master_assets_type_product,
-                'label'  => __('Products'),
-
-                'route'    => [
-                    'name'       => 'grp.masters.products.index',
-                    'parameters' => []
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-cube'],
-                    'tooltip' => __('Master Assets')
-                ]
-            ]
-        ];
-    }
-
     protected function getMasterShopNavigation(MasterShop $masterShop): array
     {
         return [

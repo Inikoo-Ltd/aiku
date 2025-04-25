@@ -25,19 +25,31 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_name
  * @property int $number_current_families
  * @property int $number_current_products
+ * @property mixed $master_shop_slug
+ * @property mixed $master_shop_code
+ * @property mixed $master_shop_name
+ * @property mixed $master_department_slug
+ * @property mixed $master_department_name
+ * @property mixed $master_department_code
+ * @property mixed $id
  */
 class MasterFamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'                 => $this->id,
-            'slug'               => $this->slug,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'description'              => $this->description,
-            'created_at'               => $this->created_at,
-            'updated_at'               => $this->updated_at,
+            'id'                     => $this->id,
+            'slug'                   => $this->slug,
+            'code'                   => $this->code,
+            'name'                   => $this->name,
+            'description'            => $this->description,
+            'master_shop_slug'       => $this->master_shop_slug,
+            'master_shop_code'       => $this->master_shop_code,
+            'master_shop_name'       => $this->master_shop_name,
+            'master_department_slug' => $this->master_department_slug,
+            'master_department_code' => $this->master_department_code,
+            'master_department_name' => $this->master_department_name,
+
         ];
     }
 }

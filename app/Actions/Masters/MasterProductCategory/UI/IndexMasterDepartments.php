@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterDepartmentsResource;
@@ -44,7 +45,6 @@ class IndexMasterDepartments extends OrgAction
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
-
         $group        = group();
         $this->parent = $group;
         $this->initialisationFromGroup($group, $request);
@@ -65,24 +65,30 @@ class IndexMasterDepartments extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
+        $queryBuilder->select([
+            'master_product_categories.id',
+            'master_product_categories.slug',
+            'master_product_categories.code',
+            'master_product_categories.name',
+            'master_product_categories.status',
+            'master_product_categories.description',
+            'master_product_categories.created_at',
+            'master_product_categories.updated_at',
+        ]);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
         } else {
             $queryBuilder->where('master_product_categories.group_id', $parent->id);
+            $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_product_categories.master_shop_id');
+            $queryBuilder->addSelect([
+                'master_shops.slug as master_shop_slug',
+                'master_shops.code as master_shop_code',
+                'master_shops.name as master_shop_name',
+            ]);
         }
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->select([
-                'master_product_categories.id',
-                'master_product_categories.slug',
-                'master_product_categories.code',
-                'master_product_categories.name',
-                'master_product_categories.status',
-                'master_product_categories.description',
-                'master_product_categories.created_at',
-                'master_product_categories.updated_at',
-            ])
             ->where('master_product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
@@ -90,9 +96,9 @@ class IndexMasterDepartments extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|MasterShop $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -108,6 +114,11 @@ class IndexMasterDepartments extends OrgAction
                     ],
                 );
 
+
+            if ($parent instanceof Group) {
+                $table->column('master_shop_code', __('Shop'), sortable: true);
+            }
+
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
         };
@@ -120,11 +131,10 @@ class IndexMasterDepartments extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterDepartments, ActionRequest $request): Response
     {
-
-        $model      = '';
+        $model = '';
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
-            $title      = $this->parent->name;
+            $title         = $this->parent->name;
 
             $icon       = [
                 'icon'  => ['fal', 'fa-store-alt'],
@@ -136,16 +146,16 @@ class IndexMasterDepartments extends OrgAction
             $iconRight  = [
                 'icon' => 'fal fa-folder-tree',
             ];
-        }else{
-            $title      = __('Master departments');
-            $icon       = [
+        } else {
+            $title         = __('Master departments');
+            $icon          = [
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => $title
             ];
-            $afterTitle = [
+            $afterTitle    = [
                 'label' => __('In group')
             ];
-            $iconRight  = [
+            $iconRight     = [
                 'icon' => 'fal fa-city',
             ];
             $subNavigation = null;
@@ -171,7 +181,7 @@ class IndexMasterDepartments extends OrgAction
                 ],
                 'data'        => MasterDepartmentsResource::collection($masterDepartments),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->parent));
     }
 
     public function getBreadcrumbs(MasterShop|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -191,6 +201,17 @@ class IndexMasterDepartments extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.masters.departments.index' =>
+            array_merge(
+                ShowMastersDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
             'grp.masters.shops.show.departments.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),

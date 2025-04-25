@@ -34,20 +34,20 @@ Route::get('/families/{masterFamily}', [ShowMasterFamily::class, 'inGroup'])->na
 Route::prefix('/shops/{masterShop}')->as('shops.show')->group(function () {
     Route::get('', ShowMasterShop::class)->name('');
     Route::prefix('departments')->as('.departments.')->group(function () {
-        Route::get('index', IndexMasterDepartments::class)->name('index');
+        Route::get('', IndexMasterDepartments::class)->name('index');
         Route::get('{masterDepartment}', ShowMasterDepartment::class)->name('show');
         Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
     });
     Route::prefix('families')->as('.families.')->group(function () {
-        Route::get('index', IndexMasterFamilies::class)->name('index');
+        Route::get('', IndexMasterFamilies::class)->name('index');
         Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
         Route::get('/families/{masterFamily}/blueprint', ShowMasterFamilyWorkshop::class)->name('blueprint');
     });
     Route::prefix('sub-departments')->as('.sub-departments.')->group(function () {
-        Route::get('index', IndexMasterSubDepartments::class)->name('index');
+        Route::get('', IndexMasterSubDepartments::class)->name('index');
         Route::get('{masterSubDepartment}', ShowMasterSubDepartment::class)->name('show');
     });
     Route::prefix('products')->as('.products.')->group(function () {
-        Route::get('index', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
+        Route::get('', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
     });
 });

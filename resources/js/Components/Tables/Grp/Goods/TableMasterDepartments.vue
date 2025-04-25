@@ -32,10 +32,23 @@ function departmentRoute(masterDepartment: MasterDepartment) {
   }
 }
 
+function masterShopRoute(masterDepartment: MasterDepartment) {
+  return route('grp.masters.shops.show',
+    {
+      masterShop: masterDepartment.master_shop_slug
+    }
+  )
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+      <template #cell(master_shop_code)="{ item: department }">
+        <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string" class="secondaryLink">
+          {{ department["master_shop_code"] }}
+        </Link>
+      </template>
         <template #cell(code)="{ item: department }">
             <Link :href="departmentRoute(department) as string" class="primaryLink">
                 {{ department["code"] }}

@@ -105,7 +105,6 @@ class IndexMasterShops extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $masterShops, ActionRequest $request): Response
     {
-        $subNavigation = $this->getMasterCatalogueSubNavigation($this->group);
 
         return Inertia::render(
             'Masters/MasterShops',
@@ -118,7 +117,6 @@ class IndexMasterShops extends GrpAction
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('master shops')
                     ],
-                    'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterShopsResource::collection($masterShops),
 

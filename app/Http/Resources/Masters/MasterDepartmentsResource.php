@@ -9,36 +9,38 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property string $slug
- * @property string $shop_slug
- * @property string $department_slug
- * @property string $code
- * @property string $name
- * @property mixed $state
- * @property string $description
+ * @property mixed $id
+ * @property mixed $slug
+ * @property mixed $code
+ * @property mixed $name
+ * @property mixed $description
  * @property mixed $created_at
  * @property mixed $updated_at
- * @property mixed $shop_code
- * @property mixed $shop_name
- * @property int $number_current_families
- * @property int $number_current_products
+ * @property mixed $master_shop_slug
+ * @property mixed $master_shop_code
+ * @property mixed $master_shop_name
  */
 class MasterDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var MasterProductCategory $masterDepartment */
+        $masterDepartment = $this;
+
         return [
-            'id'                 => $this->id,
-            'slug'               => $this->slug,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'image'               => $this->imageSources(720, 480),
-            'description'              => $this->description,
-            'created_at'               => $this->created_at,
-            'updated_at'               => $this->updated_at
+            'id'               => $this->id,
+            'slug'             => $this->slug,
+            'code'             => $this->code,
+            'name'             => $this->name,
+            'image'            => $masterDepartment->imageSources(720, 480),
+            'description'      => $this->description,
+            'master_shop_slug' => $this->master_shop_slug,
+            'master_shop_code' => $this->master_shop_code,
+            'master_shop_name' => $this->master_shop_name,
         ];
     }
 }

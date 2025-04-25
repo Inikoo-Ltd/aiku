@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
@@ -66,6 +67,20 @@ class IndexMasterFamilies extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
+        $queryBuilder->where('master_product_categories.type', ProductCategoryTypeEnum::FAMILY);
+
+        $queryBuilder->select([
+            'master_product_categories.id',
+            'master_product_categories.slug',
+            'master_product_categories.code',
+            'master_product_categories.name',
+            'master_product_categories.status',
+            'master_product_categories.description',
+            'master_product_categories.created_at',
+            'master_product_categories.updated_at',
+        ]);
+
+
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
         } elseif ($parent instanceof MasterProductCategory) {
@@ -76,30 +91,29 @@ class IndexMasterFamilies extends OrgAction
             }
         } else {
             $queryBuilder->where('master_product_categories.group_id', $parent->id);
+            $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_product_categories.master_shop_id');
+            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_product_categories.master_department_id');
+            $queryBuilder->addSelect([
+                'departments.slug as master_department_slug',
+                'departments.code as master_department_code',
+                'departments.name as master_department_name',
+                'master_shops.slug as master_shop_slug',
+                'master_shops.code as master_shop_code',
+                'master_shops.name as master_shop_name',
+            ]);
         }
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->select([
-                'master_product_categories.id',
-                'master_product_categories.slug',
-                'master_product_categories.code',
-                'master_product_categories.name',
-                'master_product_categories.status',
-                'master_product_categories.description',
-                'master_product_categories.created_at',
-                'master_product_categories.updated_at',
-            ])
-            ->where('master_product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -114,6 +128,13 @@ class IndexMasterFamilies extends OrgAction
                         'title' => __("No master families found"),
                     ],
                 );
+
+            if ($parent instanceof Group) {
+                $table->column('master_shop_code', __('Shop'), sortable: true);
+                $table->column('master_department_code', __('Department'), sortable: true);
+            }
+
+
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
@@ -154,7 +175,6 @@ class IndexMasterFamilies extends OrgAction
             $iconRight  = [
                 'icon' => 'fal fa-city',
             ];
-
         }
 
 
@@ -177,7 +197,7 @@ class IndexMasterFamilies extends OrgAction
                 ],
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->parent));
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -197,6 +217,17 @@ class IndexMasterFamilies extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.masters.families.index' =>
+            array_merge(
+                ShowMastersDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
             'grp.masters.shops.show.families.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),

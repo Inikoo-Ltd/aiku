@@ -8,10 +8,10 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
@@ -34,7 +34,7 @@ class IndexMasterAssets extends GrpAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("goods.{$this->group->id}.view");
+        return $request->user()->authTo("masters.{$this->group->id}.view");
     }
 
     public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
@@ -51,35 +51,60 @@ class IndexMasterAssets extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
+        $queryBuilder->select(
+            [
+                'master_assets.id',
+                'master_assets.code',
+                'master_assets.name',
+                'master_assets.slug',
+                'master_assets.status',
+                'master_assets.price',
+            ]
+        );
         if ($parent instanceof Group) {
             $queryBuilder->where('master_assets.group_id', $parent->id);
+            $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_assets.master_shop_id');
+            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
+            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
+
+            $queryBuilder->addSelect([
+                'families.slug as master_family_slug',
+                'families.code as master_family_code',
+                'families.name as master_family_name',
+                'departments.slug as master_department_slug',
+                'departments.code as master_department_code',
+                'departments.name as master_department_name',
+                'master_shops.slug as master_shop_slug',
+                'master_shops.code as master_shop_code',
+                'master_shops.name as master_shop_name',
+            ]);
         } elseif ($parent instanceof MasterShop) {
-            $queryBuilder->where('master_assets.master_shop', $parent->id);
+            $queryBuilder->where('master_assets.master_shop_id', $parent->id);
+            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
+            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
+            $queryBuilder->addSelect([
+                'families.slug as master_family_slug',
+                'families.code as master_family_code',
+                'families.name as master_family_name',
+                'departments.slug as master_department_slug',
+                'departments.code as master_department_code',
+                'departments.name as master_department_name'
+            ]);
         } else {
             abort(419);
         }
 
         return $queryBuilder
             ->defaultSort('master_assets.code')
-            ->select(
-                [
-                    'master_assets.id',
-                    'master_assets.code',
-                    'master_assets.name',
-                    'master_assets.slug',
-                    'master_assets.status',
-                    'master_assets.price',
-                ]
-            )
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null)
+    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null): \Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -92,8 +117,15 @@ class IndexMasterAssets extends GrpAction
                     [
                         'title' => __("No master shops found"),
                     ],
-                )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                );
+
+            if ($parent instanceof Group) {
+                $table->column('master_shop_code', __('Shop'), sortable: true);
+                $table->column('master_department_code', __('Department'), sortable: true);
+                $table->column('master_family_code', __('Family'), sortable: true);
+            }
+
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
@@ -115,10 +147,10 @@ class IndexMasterAssets extends GrpAction
                 'icon'  => ['fal', 'fa-cube'],
                 'title' => $title
             ];
-            $afterTitle = [
+            $afterTitle    = [
                 'label' => __('In group')
             ];
-            $iconRight  = [
+            $iconRight     = [
                 'icon' => 'fal fa-city',
             ];
         } elseif ($this->parent instanceof MasterShop) {
@@ -138,7 +170,7 @@ class IndexMasterAssets extends GrpAction
         }
 
         return Inertia::render(
-            'Masters/MasterShops',
+            'Masters/MasterProducts',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
@@ -157,7 +189,7 @@ class IndexMasterAssets extends GrpAction
                 'data'        => MasterProductsResource::collection($masterAssets),
 
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->parent));
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -179,7 +211,7 @@ class IndexMasterAssets extends GrpAction
         return match ($routeName) {
             'grp.masters.products.index' =>
             array_merge(
-                ShowGoodsDashboard::make()->getBreadcrumbs(),
+                ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

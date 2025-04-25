@@ -250,7 +250,7 @@ class GetGroupNavigation
     {
         return [
             'label'   => __('Masters'),
-            'icon'    => ['fal', 'fa-ruler-combined'],
+            'icon'    => ['fal', 'fa-ruler-triangle'],
             'root'    => 'grp.masters.',
             'route'   => [
                 'name' => 'grp.masters.dashboard'
@@ -259,7 +259,7 @@ class GetGroupNavigation
                 'subSections' => [
                     [
                         'label' => __('Shops'),
-                        'tooltip'=>__('Master shops'),
+                        'tooltip' => __('Master shops'),
                         'icon'  => ['fal', 'fa-store-alt'],
                         'root'  => 'grp.masters.shops.',
                         'route' => [
@@ -270,7 +270,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Departments'),
-                        'tooltip'=>__('Master departments'),
+                        'tooltip' => __('Master departments'),
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'root'  => 'grp.masters.departments.',
                         'route' => [
@@ -281,7 +281,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Families'),
-                        'tooltip'=>__('Master families'),
+                        'tooltip' => __('Master families'),
                         'icon'  => ['fal', 'fa-folder'],
                         'root'  => 'grp.masters.families.',
                         'route' => [
@@ -292,7 +292,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Products'),
-                        'tooltip'=>__('Master products'),
+                        'tooltip' => __('Master products'),
                         'icon'  => ['fal', 'fa-cube'],
                         'root'  => 'grp.masters.products.',
                         'route' => [

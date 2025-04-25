@@ -4,7 +4,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-export interface MasterDepartment {
+export interface MasterFamily {
     slug: string
     code: string,
     name: string,
@@ -13,4 +13,7 @@ export interface MasterDepartment {
     master_shop_slug: string
     master_shop_code: string
     master_shop_name: string
+    master_department_slug: string
+    master_department_code: string
+    master_department_name: string
 }
