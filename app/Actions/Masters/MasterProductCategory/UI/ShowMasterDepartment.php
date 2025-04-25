@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
@@ -17,10 +17,8 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;

@@ -2,18 +2,18 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 28 Dec 2024 01:14:27 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 25 Mar 2023 01:57:22 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterShop\Hydrators;
+namespace App\Actions\Masters\MasterShop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Goods\MasterShop;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterShopHydrateMasterFamilies
+class MasterShopHydrateMasterDepartments
 {
     use AsAction;
     use WithEnumStats;
@@ -33,8 +33,8 @@ class MasterShopHydrateMasterFamilies
     public function handle(MasterShop $masterShop): void
     {
         $stats = [
-            'number_master_product_categories_type_family' => $masterShop->getMasterFamilies()->count(),
-            'number_current_master_product_categories_type_family' => $masterShop->getMasterFamilies()->where('status', true)->count(),
+            'number_master_product_categories_type_department' => $masterShop->getMasterDepartments()->count(),
+            'number_current_master_product_categories_type_department' => $masterShop->getMasterDepartments()->where('status', true)->count(),
         ];
 
 

@@ -6,10 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterShop;
+namespace App\Actions\Masters\MasterShop;
 
-use App\Actions\Goods\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\HydrateModel;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Goods\MasterShop;
 use Illuminate\Console\Command;

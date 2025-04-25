@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterShop\UI;
+namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
@@ -38,10 +38,12 @@ class ShowMasterShop extends GrpAction
     {
         $subNavigation = $this->getMasterShopNavigation($masterShop);
 
+        $title = __('Master shop');
+
         return Inertia::render(
-            'Goods/MasterShop',
+            'Masters/MasterShop',
             [
-                'title'       => __('Master shop'),
+                'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterShop,
                     $request->route()->getName(),
@@ -53,24 +55,12 @@ class ShowMasterShop extends GrpAction
 
                 'pageHead' => [
                     'title'         => $masterShop->name,
+                    'model'         => $title,
                     'icon'          => [
-                        'title' => __('Master shop'),
+                        'title' => $title,
                         'icon'  => 'fal fa-store-alt'
                     ],
                     'subNavigation' => $subNavigation,
-                    // 'actions' => [
-                    //     $this->canEdit ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'edit',
-                    //         'label' => __('settings'),
-                    //         'icon'  => 'fal fa-sliders-h',
-                    //         'route' => [
-                    //             'name'       => 'grp.org.shops.show.settings.edit',
-                    //             'parameters' => $request->route()->originalParameters()
-                    //         ]
-                    //     ] : false,
-
-                    // ]
                 ],
                 'tabs'     => [
                     'current'    => $this->tab,
@@ -79,8 +69,8 @@ class ShowMasterShop extends GrpAction
 
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?
-                    fn () => MasterShopResource::make($masterShop)
-                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)),
+                    fn() => MasterShopResource::make($masterShop)
+                    : Inertia::lazy(fn() => MasterShopResource::make($masterShop)),
             ]
         );
     }
@@ -111,7 +101,7 @@ class ShowMasterShop extends GrpAction
                                 'route' => [
                                     'name'       => 'grp.masters.shops.show',
                                     'parameters' => [
-                                       $masterShop->slug
+                                        $masterShop->slug
                                     ]
                                 ],
                                 'label' => $masterShop->code,

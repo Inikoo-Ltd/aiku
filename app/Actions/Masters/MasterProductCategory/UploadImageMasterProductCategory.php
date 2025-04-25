@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterProductCategory;
+namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\StoreMediaFromFile;

@@ -6,12 +6,12 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterAsset\UI;
+namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Http\Resources\Goods\Catalogue\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterAsset;
@@ -109,14 +109,18 @@ class IndexMasterAssets extends GrpAction
         $title = __('master products');
 
         if ($this->parent instanceof Group) {
-            $subNavigation = $this->getMasterCatalogueSubNavigation($this->group);
+            $subNavigation = null;
             $model         = '';
             $icon          = [
                 'icon'  => ['fal', 'fa-cube'],
                 'title' => $title
             ];
-            $afterTitle    = null;
-            $iconRight     = null;
+            $afterTitle = [
+                'label' => __('In group')
+            ];
+            $iconRight  = [
+                'icon' => 'fal fa-city',
+            ];
         } elseif ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
             $title         = $this->parent->name;
@@ -134,7 +138,7 @@ class IndexMasterAssets extends GrpAction
         }
 
         return Inertia::render(
-            'Goods/MasterShops',
+            'Masters/MasterShops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,

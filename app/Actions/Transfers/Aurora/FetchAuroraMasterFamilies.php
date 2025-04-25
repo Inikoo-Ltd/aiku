@@ -8,8 +8,8 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Goods\MasterProductCategory\StoreMasterProductCategory;
-use App\Actions\Goods\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Models\Goods\MasterProductCategory;
 use App\Transfers\SourceOrganisationService;
 use Exception;

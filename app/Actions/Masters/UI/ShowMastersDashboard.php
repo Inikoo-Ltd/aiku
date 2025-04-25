@@ -81,9 +81,9 @@ class ShowMastersDashboard extends GrpAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.goods.dashboard'
+                                'name' => 'grp.masters.dashboard'
                             ],
-                            'label' => __('Goods'),
+                            'label' => __('Masters'),
                         ]
                     ]
                 ]

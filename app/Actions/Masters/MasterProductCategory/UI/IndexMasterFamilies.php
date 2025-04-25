@@ -6,11 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
-use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Goods\Catalogue\MasterFamiliesResource;
@@ -128,24 +128,38 @@ class IndexMasterFamilies extends OrgAction
     public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
     {
         $subNavigation = null;
-        if ($this->parent instanceof MasterShop) {
-            $subNavigation = $this->getMasterShopNavigation($this->parent);
-        }
-        $title      = $this->parent->name;
-        $model      = '';
-        $icon       = [
+        $title         = $this->parent->name;
+        $model         = '';
+        $icon          = [
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('master shop')
         ];
-        $afterTitle = [
+        $afterTitle    = [
             'label' => __('Families')
         ];
-        $iconRight  = [
+        $iconRight     = [
             'icon' => 'fal fa-folder-tree',
         ];
+        if ($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        } elseif ($this->parent instanceof Group) {
+            $title      = __('Master families');
+            $icon       = [
+                'icon'  => ['fal', 'fa-folder'],
+                'title' => $title
+            ];
+            $afterTitle = [
+                'label' => __('In group')
+            ];
+            $iconRight  = [
+                'icon' => 'fal fa-city',
+            ];
+
+        }
+
 
         return Inertia::render(
-            'Goods/MasterFamilies',
+            'Masters/MasterFamilies',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
@@ -159,29 +173,8 @@ class IndexMasterFamilies extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    // 'actions'       => [
-                    //     $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.index' ? [
-                    //         'type'    => 'button',
-                    //         'style'   => 'create',
-                    //         'tooltip' => __('new department'),
-                    //         'label'   => __('department'),
-                    //         'route'   => [
-                    //             'name'       => 'grp.org.shops.show.catalogue.departments.create',
-                    //             'parameters' => $request->route()->originalParameters()
-                    //         ]
-                    //     ] : false,
-                    //     class_basename($this->parent) == 'Collection' ? [
-                    //         'type'     => 'button',
-                    //         'style'    => 'secondary',
-                    //         'key'      => 'attach-department',
-                    //         'icon'     => 'fal fa-plus',
-                    //         'tooltip'  => __('Attach department to this collection'),
-                    //         'label'    => __('Attach department'),
-                    //     ] : false
-                    // ],
                     'subNavigation' => $subNavigation,
                 ],
-                // 'routes'      => $routes,
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
         )->table($this->tableStructure());

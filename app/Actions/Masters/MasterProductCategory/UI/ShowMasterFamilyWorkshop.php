@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;

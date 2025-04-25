@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterShop\Hydrators;
+namespace App\Actions\Masters\MasterShop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Shop\ShopStateEnum;

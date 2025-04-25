@@ -8,17 +8,14 @@
  *
 */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
-use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\GrpAction;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
-use App\Http\Resources\CRM\CustomersResource;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
 use Inertia\Inertia;

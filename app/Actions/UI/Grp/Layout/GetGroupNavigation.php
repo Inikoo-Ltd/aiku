@@ -259,6 +259,7 @@ class GetGroupNavigation
                 'subSections' => [
                     [
                         'label' => __('Shops'),
+                        'tooltip'=>__('Master shops'),
                         'icon'  => ['fal', 'fa-store-alt'],
                         'root'  => 'grp.masters.shops.',
                         'route' => [
@@ -269,7 +270,8 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Departments'),
-                        'icon'  => ['fal', 'fa-folders'],
+                        'tooltip'=>__('Master departments'),
+                        'icon'  => ['fal', 'fa-folder-tree'],
                         'root'  => 'grp.masters.departments.',
                         'route' => [
                             'name'       => 'grp.masters.departments.index',
@@ -279,6 +281,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Families'),
+                        'tooltip'=>__('Master families'),
                         'icon'  => ['fal', 'fa-folder'],
                         'root'  => 'grp.masters.families.',
                         'route' => [
@@ -289,6 +292,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Products'),
+                        'tooltip'=>__('Master products'),
                         'icon'  => ['fal', 'fa-cube'],
                         'root'  => 'grp.masters.products.',
                         'route' => [

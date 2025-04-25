@@ -6,11 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterProductCategory;
+namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\Goods\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
-use App\Actions\Goods\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;

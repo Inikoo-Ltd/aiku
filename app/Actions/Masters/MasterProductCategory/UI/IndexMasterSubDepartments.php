@@ -2,22 +2,21 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 29 Dec 2024 03:09:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sun, 29 Dec 2024 03:11:24 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
-use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Goods\Catalogue\MasterDepartmentsResource;
+use App\Http\Resources\Goods\Catalogue\MasterSubDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,22 +26,22 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterDepartments extends GrpAction
+class IndexMasterSubDepartments extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
 
-    private MasterShop|Group $parent;
+    private MasterShop $parent;
 
     public function asController(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterShop;
-        $group        = group();
+        $group = group();
         $this->initialisation($group, $request);
 
         return $this->handle(parent: $masterShop);
     }
 
-    public function handle(Group|MasterShop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(MasterShop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -57,8 +56,6 @@ class IndexMasterDepartments extends GrpAction
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        } else {
-            $queryBuilder->where('master_product_categories.group_id', $parent->id);
         }
 
         return $queryBuilder
@@ -73,7 +70,7 @@ class IndexMasterDepartments extends GrpAction
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
             ])
-            ->where('master_product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
+            ->where('master_product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -94,48 +91,47 @@ class IndexMasterDepartments extends GrpAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title' => __("No master departments found"),
+                        'title'       => __("No sub departments found"),
                     ],
                 );
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $masterDepartments): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $masterSubDepartments): AnonymousResourceCollection
     {
-        return MasterDepartmentsResource::collection($masterDepartments);
+        return MasterSubDepartmentsResource::collection($masterSubDepartments);
     }
 
-    public function htmlResponse(LengthAwarePaginator $masterDepartments, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $masterSubDepartments, ActionRequest $request): Response
     {
         $subNavigation = null;
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
         }
-        $title      = $this->parent->name;
-        $model      = '';
-        $icon       = [
+        $title = $this->parent->name;
+        $model = '';
+        $icon  = [
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('master shop')
         ];
         $afterTitle = [
-            'label' => __('Departments')
+            'label'     => __('Sub Departments')
         ];
-        $iconRight  = [
+        $iconRight    = [
             'icon' => 'fal fa-folder-tree',
         ];
 
         return Inertia::render(
-            'Goods/MasterDepartments',
+            'Masters/MasterSubDepartments',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Departments'),
+                'title'       => __('Sub Departments'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -165,12 +161,12 @@ class IndexMasterDepartments extends GrpAction
                     'subNavigation' => $subNavigation,
                 ],
                 // 'routes'      => $routes,
-                'data'        => MasterDepartmentsResource::collection($masterDepartments),
+                'data'        => MasterSubDepartmentsResource::collection($masterSubDepartments),
             ]
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(MasterShop|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -178,7 +174,7 @@ class IndexMasterDepartments extends GrpAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Master departments'),
+                        'label' => __('Master sub departments'),
                         'icon'  => 'fal fa-bars'
                     ],
                     'suffix' => $suffix
@@ -187,9 +183,9 @@ class IndexMasterDepartments extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.masters.shops.show.departments.index' =>
+            'grp.masters.shops.show.sub-departments.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
+                ShowMasterShop::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

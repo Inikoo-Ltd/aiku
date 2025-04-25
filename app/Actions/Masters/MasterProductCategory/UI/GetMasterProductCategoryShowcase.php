@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Models\Goods\MasterProductCategory;

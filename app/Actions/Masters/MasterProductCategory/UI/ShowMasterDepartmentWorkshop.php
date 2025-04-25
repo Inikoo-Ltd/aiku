@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Goods\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
@@ -19,10 +19,8 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Goods\Catalogue\MasterDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\MasterProductCategory;
 use App\Models\Goods\MasterShop;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Web\WebBlockType;
 use Inertia\Inertia;
 use Inertia\Response;

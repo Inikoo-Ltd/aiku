@@ -8,11 +8,11 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Goods\MasterShop\Hydrators\MasterShopHydrateShops;
-use App\Actions\Helpers\Address\UpdateAddress;
-use App\Actions\OrgAction;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateUniversalSearch;
+use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -28,8 +28,8 @@ use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Rules\File;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShop extends OrgAction
 {

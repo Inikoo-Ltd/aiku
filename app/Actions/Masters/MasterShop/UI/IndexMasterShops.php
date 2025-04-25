@@ -6,11 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\MasterShop\UI;
+namespace App\Actions\Masters\MasterShop\UI;
 
-use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Http\Resources\Goods\Catalogue\MasterShopsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\MasterShop;
@@ -30,7 +30,7 @@ class IndexMasterShops extends GrpAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("goods.{$this->group->id}.view");
+        return $request->user()->authTo("masters.{$this->group->id}.view");
     }
 
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
@@ -108,7 +108,7 @@ class IndexMasterShops extends GrpAction
         $subNavigation = $this->getMasterCatalogueSubNavigation($this->group);
 
         return Inertia::render(
-            'Goods/MasterShops',
+            'Masters/MasterShops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
                 'title'       => __('master shops'),
@@ -148,7 +148,7 @@ class IndexMasterShops extends GrpAction
         };
 
         return array_merge(
-            ShowGoodsDashboard::make()->getBreadcrumbs(),
+            ShowMastersDashboard::make()->getBreadcrumbs(),
             $headCrumb(
                 $suffix
             ),

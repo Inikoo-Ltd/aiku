@@ -12,6 +12,7 @@ defineProps<{
     data: object,
     tab?: string
 }>()
+
 </script>
 
 <template>
