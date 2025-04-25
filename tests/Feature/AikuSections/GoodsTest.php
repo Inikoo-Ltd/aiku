@@ -430,7 +430,7 @@ test("UI Create Stock in Stock Family Group", function () {
 
 test("UI Index Master Shops", function () {
     $response = get(
-        route("grp.goods.catalogue.shops.index")
+        route("grp.masters.shops.index")
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -481,7 +481,7 @@ test('create master shop', function () {
 test("UI Show master shop", function (MasterShop $masterShop) {
     $this->withoutExceptionHandling();
     $response  = get(
-        route("grp.goods.catalogue.shops.show", [$masterShop->slug])
+        route("grp.masters.shops.show", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) use ($masterShop) {
         $page
@@ -558,7 +558,7 @@ test('assign master shop to shop', function () {
 
 test("UI Index Master Departments", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.goods.catalogue.shops.show.departments.index", [$masterShop->slug])
+        route("grp.masters.shops.show.departments.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -576,7 +576,7 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
 
 test("UI Index Master Families", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.goods.catalogue.shops.show.families.index", [$masterShop->slug])
+        route("grp.masters.shops.show.families.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -594,7 +594,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
 
 test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.goods.catalogue.shops.show.sub-departments.index", [$masterShop->slug])
+        route("grp.masters.shops.show.sub-departments.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page

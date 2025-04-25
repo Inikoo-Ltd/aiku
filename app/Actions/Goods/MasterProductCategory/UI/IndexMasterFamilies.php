@@ -204,7 +204,7 @@ class IndexMasterFamilies extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.goods.catalogue.shops.show.families.index' =>
+            'grp.masters.shops.show.families.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

@@ -21,13 +21,13 @@ defineProps<{
 
 
 function familyRoute(family: Family) {
-  if (route().current() == "grp.goods.catalogue.families.index") {
+  if (route().current() == "grp.masters.families.index") {
     return route(
-      "grp.goods.catalogue.families.show",
+      "grp.masters.families.show",
       { masterFamily: family.slug });
   } else {
     return route(
-      "grp.goods.catalogue.shops.show.families.show",
+      "grp.masters.shops.show.families.show",
       { masterShop: (route().params as RouteParams).masterShop, masterFamily: family.slug });
   }
 

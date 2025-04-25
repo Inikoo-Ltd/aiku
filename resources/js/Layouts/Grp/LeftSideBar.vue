@@ -11,7 +11,6 @@ import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
 import { useLogoutAuth } from "@/Composables/useAppMethod"
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { faSignOutAlt,faSensor } from "@fal"
@@ -19,12 +18,11 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-// import Popover from "@/Components/Popover.vue"
 library.add(faChevronLeft, faSignOutAlt,faSensor)
 
 const layout = inject('layout', layoutStructure)
 
-// Set LeftSidebar value to local storage
+// Set the LeftSidebar value to local storage
 const handleToggleLeftBar = () => {
     if (typeof window !== "undefined") {
         localStorage.setItem('leftSideBar', (!layout.leftSidebar.show).toString())
@@ -90,12 +88,6 @@ const onLogoutAuth = () => {
                         <div class="w-full rounded-md" :class="[open ? 'bg-black/25' : '']">
                             <NavigationSimple :nav="logoutData" />
                         </div>
-                        <!-- <Button icon="far fa-door-open" label="LogoutRetina" type="tertiary">
-                            <div class="text-gray-100">
-                                <FontAwesomeIcon icon="far fa-door-open" fixed-width aria-hidden='true' size="lg" />
-                                LogoutRetina
-                            </div>
-                        </Button> -->
                     </PopoverButton>
 
                     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" >

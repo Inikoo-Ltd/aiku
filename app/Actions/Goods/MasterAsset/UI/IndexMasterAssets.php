@@ -173,7 +173,7 @@ class IndexMasterAssets extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.catalogue.products.index' =>
+            'grp.masters.products.index' =>
             array_merge(
                 ShowGoodsDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
@@ -184,7 +184,7 @@ class IndexMasterAssets extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.goods.catalogue.shops.show.products.index' =>
+            'grp.masters.shops.show.products.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

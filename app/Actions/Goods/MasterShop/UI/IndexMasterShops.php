@@ -134,7 +134,7 @@ class IndexMasterShops extends GrpAction
                     'type'   => 'simple',
                     'simple' => [
                         'route'  => [
-                            'name'       => 'grp.goods.catalogue.shops.index',
+                            'name'       => 'grp.masters.shops.index',
                             'parameters' => []
                         ],
                         'label'  => __('Master shops'),

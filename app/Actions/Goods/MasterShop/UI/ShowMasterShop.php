@@ -101,7 +101,7 @@ class ShowMasterShop extends GrpAction
                         'modelWithIndex' => [
                             'index' => [
                                 'route' => [
-                                    'name'       => 'grp.goods.catalogue.shops.index',
+                                    'name'       => 'grp.masters.shops.index',
                                     'parameters' => []
                                 ],
                                 'label' => __('Master shops'),
@@ -109,7 +109,7 @@ class ShowMasterShop extends GrpAction
                             ],
                             'model' => [
                                 'route' => [
-                                    'name'       => 'grp.goods.catalogue.shops.show',
+                                    'name'       => 'grp.masters.shops.show',
                                     'parameters' => [
                                        $masterShop->slug
                                     ]
@@ -147,10 +147,10 @@ class ShowMasterShop extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.goods.catalogue.shops.show' => [
+            'grp.masters.shops.show' => [
                 'label' => $masterShop->name,
                 'route' => [
-                    'name'       => 'grp.goods.catalogue.shops.show',
+                    'name'       => 'grp.masters.shops.show',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]

@@ -187,7 +187,7 @@ class IndexMasterDepartments extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.catalogue.shops.show.departments.index' =>
+            'grp.masters.shops.show.departments.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

@@ -18,7 +18,7 @@ trait WithMasterCatalogueSubNavigation
         return [
             [
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.shops.index',
+                    'name'       => 'grp.masters.shops.index',
                     'parameters' => []
                 ],
                 'leftIcon' => [
@@ -30,7 +30,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $group->goodsStats->number_current_master_product_categories_type_family,
                 'label'    => __('Families'),
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.families.index',
+                    'name'       => 'grp.masters.families.index',
                     'parameters' => []
                 ],
                 'leftIcon' => [
@@ -43,7 +43,7 @@ trait WithMasterCatalogueSubNavigation
                 'label'  => __('Products'),
 
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.products.index',
+                    'name'       => 'grp.masters.products.index',
                     'parameters' => []
                 ],
                 'leftIcon' => [
@@ -62,7 +62,7 @@ trait WithMasterCatalogueSubNavigation
                 'label'    => __($masterShop->name),
 
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.shops.show',
+                    'name'       => 'grp.masters.shops.show',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -78,7 +78,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_department,
                 'label'    => __('Departments'),
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.shops.show.departments.index',
+                    'name'       => 'grp.masters.shops.show.departments.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -93,7 +93,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_family,
                 'label'    => __('Families'),
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.shops.show.families.index',
+                    'name'       => 'grp.masters.shops.show.families.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -108,7 +108,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_assets_type_product,
                 'label'    => __('Products'),
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.shops.show.products.index',
+                    'name'       => 'grp.masters.shops.show.products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -124,7 +124,7 @@ trait WithMasterCatalogueSubNavigation
                 'label'    => __('Subs'),
                 'tooltip'  => __('Sub Departments'),
                 'route'    => [
-                    'name'       => 'grp.goods.catalogue.shops.show.sub-departments.index',
+                    'name'       => 'grp.masters.shops.show.sub-departments.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]

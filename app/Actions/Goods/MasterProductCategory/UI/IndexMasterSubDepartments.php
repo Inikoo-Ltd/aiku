@@ -77,9 +77,9 @@ class IndexMasterSubDepartments extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -183,7 +183,7 @@ class IndexMasterSubDepartments extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.catalogue.shops.show.sub-departments.index' =>
+            'grp.masters.shops.show.sub-departments.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(

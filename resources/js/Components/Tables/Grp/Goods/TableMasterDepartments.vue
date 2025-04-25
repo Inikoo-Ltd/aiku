@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
+import { RouteParams } from "@/types/route-params";
 
 defineProps<{
     data: object,
@@ -18,8 +19,8 @@ defineProps<{
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: department }">
-            <Link :href="route('grp.goods.catalogue.shops.show.departments.show', 
-            { masterShop: route().params['masterShop'], masterDepartment: department.slug })" class="primaryLink">
+            <Link :href="route('grp.masters.shops.show.departments.show',
+            { masterShop: (route().params as RouteParams).masterShop, masterDepartment: department.slug })" class="primaryLink">
                 {{ department["code"] }}
             </Link>
         </template>

@@ -1,7 +1,7 @@
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Sat, 23 Mar 2024 04:25:24 Malaysia Time, Mexico City, Mexico
-  - Copyright (c) 2024, Raul A Perusquia Flores
+  - Created: Fri, 25 Apr 2025 13:37:55 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2025, Raul A Perusquia Flores
   -->
 
 <script setup>
@@ -10,11 +10,11 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue';
 import { capitalize } from "@/Composables/capitalize"
 import {library} from '@fortawesome/fontawesome-svg-core';
-import {faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList} from '@fal';
+import {faBooks} from '@fal';
+library.add(faBooks);
 
 defineProps(['title', 'pageHead', 'flatTreeMaps']);
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList);
 
 </script>
 

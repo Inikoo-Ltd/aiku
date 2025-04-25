@@ -7,23 +7,18 @@
 <script setup lang="ts">
 import {Link} from '@inertiajs/vue3';
 import Table from '@/Components/Table/Table.vue';
+import { MasterShop } from "@/types/master-shop";
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
 
-function masterShopRoute(masterShop: {}) {
-    switch (route().current()) {
-        case 'grp.goods.catalogue.shops.index':
-            return route(
-                'grp.goods.catalogue.shops.show',
-                [masterShop.slug]);
-
-    }
+function masterShopRoute(masterShop: MasterShop) {
+  return route(
+    'grp.masters.shops.show',
+    [masterShop.slug]);
 }
-
-
 
 
 </script>
@@ -31,7 +26,7 @@ function masterShopRoute(masterShop: {}) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: masterShop }">
-            <Link :href="masterShopRoute(masterShop)" class="primaryLink">
+            <Link :href="masterShopRoute(masterShop) as string" class="primaryLink">
                 {{ masterShop['code'] }}
             </Link>
         </template>

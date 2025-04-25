@@ -31,190 +31,277 @@ class GetGroupNavigation
 
         ];
 
+        if ($user->hasPermissionTo('masters.view')) {
+            $groupNavigation['masters'] = $this->getMastersNavs();
+        }
+
         if ($user->hasPermissionTo('goods.view')) {
-            $groupNavigation['goods'] = [
-                'label'   => __('Goods'),
-                'icon'    => ['fal', 'fa-cloud-rainbow'],
-                'root'    => 'grp.goods.',
-                'route'   => [
-                    'name' => 'grp.goods.dashboard'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label' => __('SKUs families'),
-                            'icon'  => ['fal', 'fa-boxes-alt'],
-                            'root'  => 'grp.goods.stock-families.',
-                            'route' => [
-                                'name'       => 'grp.goods.stock-families.index',
-                                'parameters' => []
-
-                            ]
-                        ],
-                        [
-                            'label' => 'SKUs',
-                            'icon'  => ['fal', 'fa-box'],
-                            'root'  => 'grp.goods.stocks.',
-                            'route' => [
-                                'name'       => 'grp.goods.stocks.active_stocks.index',
-                                'parameters' => []
-
-                            ]
-                        ],
-                        [
-                            'label' => 'Trade Units',
-                            'icon'  => ['fal', 'fa-atom'],
-                            'root'  => 'grp.goods.trade-units.',
-                            'route' => [
-                                'name'       => 'grp.goods.trade-units.index',
-                                'parameters' => []
-
-                            ]
-                        ],
-                        [
-                            'label' => 'Ingredients',
-                            'icon'  => ['fal', 'fa-atom'],
-                            'root'  => 'grp.goods.ingredients.',
-                            'route' => [
-                                'name'       => 'grp.goods.ingredients.index',
-                                'parameters' => []
-
-                            ]
-                        ],
-
-                    ]
-                ]
-
-            ];
+            $groupNavigation['goods'] = $this->getMGoodsNavs();
         }
 
         if ($user->hasPermissionTo('supply-chain.view')) {
-            $groupNavigation['supply-chain'] = [
-                'label'   => __('Supply Chain'),
-                'icon'    => ['fal', 'fa-box-usd'],
-                'root'    => 'grp.supply-chain.',
-                'route'   => [
-                    'name' => 'grp.supply-chain.dashboard'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'icon'  => ['fal', 'fa-chart-network'],
-                            'root'  => 'grp.supply-chain.dashboard',
-                            'route' => [
-                                'name'       => 'grp.supply-chain.dashboard',
-                            ]
-                        ],
-                        [
-                            'label' => __('agents'),
-                            'icon'  => ['fal', 'fa-people-arrows'],
-                            'root'  => 'grp.supply-chain.agents.',
-                            'route' => [
-                                'name' => 'grp.supply-chain.agents.index',
-
-                            ]
-                        ],
-                        [
-                            'label' => __('suppliers'),
-                            'icon'  => ['fal', 'fa-person-dolly'],
-                            'root'  => 'grp.supply-chain.suppliers.',
-                            'route' => [
-                                'name' => 'grp.supply-chain.suppliers.index',
-
-                            ]
-                        ],
-                        [
-                            'label' => __('supplier products'),
-                            'icon'  => ['fal', 'fa-box-usd'],
-                            'root'  => 'grp.supply-chain.supplier_products.',
-                            'route' => [
-                                'name' => 'grp.supply-chain.supplier_products.index',
-
-                            ]
-                        ],
-
-                    ]
-                ]
-            ];
+            $groupNavigation['supply-chain'] = $this->getSupplyChainNavs();
         }
 
-
         if ($user->hasPermissionTo('organisations.view')) {
-            $groupNavigation['organisations'] = [
-                'label'   => __('Organisations'),
-                'icon'    => ['fal', 'fa-building'],
-                'root'    => 'grp.organisations.',
-                'route'   => [
-                    'name' => 'grp.organisations.index'
-                ],
-                'topMenu' => []
-            ];
+            $groupNavigation['organisations'] = $this->getOrganisationsNavs();
         }
 
         if ($user->hasPermissionTo('group-overview')) {
-            $groupNavigation['overview'] = [
-                'label'   => __('Overview'),
-                'icon'    => ['fal', 'fa-mountains'],
-                'root'    => 'grp.overview.',
-                'route'   => [
-                    'name' => 'grp.overview.hub'
-                ],
-                'topMenu' => []
-            ];
+            $groupNavigation['overview'] = $this->getOverviewNavs();
         }
 
         if ($user->hasPermissionTo('sysadmin.view')) {
-            $groupNavigation['sysadmin'] = [
-                'label'   => __('sysadmin'),
-                'icon'    => ['fal', 'fa-users-cog'],
-                'root'    => 'grp.sysadmin.',
-                'route'   => [
-                    'name' => 'grp.sysadmin.dashboard'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label' => __('users'),
-                            'icon'  => ['fal', 'fa-user-circle'],
-                            'root'  => 'grp.sysadmin.users.',
-                            'route' => [
-                                'name' => 'grp.sysadmin.users.index',
-
-                            ]
-                        ],
-                        [
-                            'label' => __('guests'),
-                            'icon'  => ['fal', 'fa-user-alien'],
-                            'root'  => 'grp.sysadmin.guests.',
-                            'route' => [
-                                'name' => 'grp.sysadmin.guests.index',
-
-                            ]
-                        ],
-                        [
-                            'label' => __('analytics'),
-                            'icon'  => ['fal', 'fa-analytics'],
-                            'root'  => 'grp.sysadmin.analytics.',
-                            'route' => [
-                                'name' => 'grp.sysadmin.analytics.dashboard',
-
-                            ]
-                        ],
-                        [
-                            'label' => __('system settings'),
-                            'icon'  => ['fal', 'fa-cog'],
-                            'root'  => 'grp.sysadmin.settings.',
-                            'route' => [
-                                'name' => 'grp.sysadmin.settings.edit',
-
-                            ]
-                        ],
-                    ]
-                ]
-            ];
+            $groupNavigation['sysadmin'] = $this->getSysAdminNavs();
         }
 
-
         return $groupNavigation;
+    }
+
+    private function getSupplyChainNavs(): array
+    {
+        return [
+            'label'   => __('Supply Chain'),
+            'icon'    => ['fal', 'fa-box-usd'],
+            'root'    => 'grp.supply-chain.',
+            'route'   => [
+                'name' => 'grp.supply-chain.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'icon'  => ['fal', 'fa-chart-network'],
+                        'root'  => 'grp.supply-chain.dashboard',
+                        'route' => [
+                            'name' => 'grp.supply-chain.dashboard',
+                        ]
+                    ],
+                    [
+                        'label' => __('agents'),
+                        'icon'  => ['fal', 'fa-people-arrows'],
+                        'root'  => 'grp.supply-chain.agents.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.agents.index',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('suppliers'),
+                        'icon'  => ['fal', 'fa-person-dolly'],
+                        'root'  => 'grp.supply-chain.suppliers.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.suppliers.index',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('supplier products'),
+                        'icon'  => ['fal', 'fa-box-usd'],
+                        'root'  => 'grp.supply-chain.supplier_products.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.supplier_products.index',
+
+                        ]
+                    ],
+
+                ]
+            ]
+        ];
+    }
+
+    private function getOrganisationsNavs(): array
+    {
+        return [
+            'label'   => __('Organisations'),
+            'icon'    => ['fal', 'fa-building'],
+            'root'    => 'grp.organisations.',
+            'route'   => [
+                'name' => 'grp.organisations.index'
+            ],
+            'topMenu' => []
+        ];
+    }
+
+    private function getOverviewNavs(): array
+    {
+        return [
+            'label'   => __('Overview'),
+            'icon'    => ['fal', 'fa-mountains'],
+            'root'    => 'grp.overview.',
+            'route'   => [
+                'name' => 'grp.overview.hub'
+            ],
+            'topMenu' => []
+        ];
+    }
+
+    private function getSysAdminNavs(): array
+    {
+        return [
+            'label'   => __('sysadmin'),
+            'icon'    => ['fal', 'fa-users-cog'],
+            'root'    => 'grp.sysadmin.',
+            'route'   => [
+                'name' => 'grp.sysadmin.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('users'),
+                        'icon'  => ['fal', 'fa-user-circle'],
+                        'root'  => 'grp.sysadmin.users.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.users.index',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('guests'),
+                        'icon'  => ['fal', 'fa-user-alien'],
+                        'root'  => 'grp.sysadmin.guests.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.guests.index',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('analytics'),
+                        'icon'  => ['fal', 'fa-analytics'],
+                        'root'  => 'grp.sysadmin.analytics.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.analytics.dashboard',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('system settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'grp.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.settings.edit',
+
+                        ]
+                    ],
+                ]
+            ]
+        ];
+    }
+
+
+    private function getMGoodsNavs(): array
+    {
+        return [
+            'label'   => __('Goods'),
+            'icon'    => ['fal', 'fa-cloud-rainbow'],
+            'root'    => 'grp.goods.',
+            'route'   => [
+                'name' => 'grp.goods.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('SKUs families'),
+                        'icon'  => ['fal', 'fa-boxes-alt'],
+                        'root'  => 'grp.goods.stock-families.',
+                        'route' => [
+                            'name'       => 'grp.goods.stock-families.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => 'SKUs',
+                        'icon'  => ['fal', 'fa-box'],
+                        'root'  => 'grp.goods.stocks.',
+                        'route' => [
+                            'name'       => 'grp.goods.stocks.active_stocks.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => 'Trade Units',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.goods.trade-units.',
+                        'route' => [
+                            'name'       => 'grp.goods.trade-units.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => 'Ingredients',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.goods.ingredients.',
+                        'route' => [
+                            'name'       => 'grp.goods.ingredients.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+
+                ]
+            ]
+
+        ];
+    }
+
+    private function getMastersNavs(): array
+    {
+        return [
+            'label'   => __('Masters'),
+            'icon'    => ['fal', 'fa-ruler-combined'],
+            'root'    => 'grp.masters.',
+            'route'   => [
+                'name' => 'grp.masters.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('Shops'),
+                        'icon'  => ['fal', 'fa-store-alt'],
+                        'root'  => 'grp.masters.shops.',
+                        'route' => [
+                            'name'       => 'grp.masters.shops.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => __('Departments'),
+                        'icon'  => ['fal', 'fa-folders'],
+                        'root'  => 'grp.masters.departments.',
+                        'route' => [
+                            'name'       => 'grp.masters.departments.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => __('Families'),
+                        'icon'  => ['fal', 'fa-folder'],
+                        'root'  => 'grp.masters.families.',
+                        'route' => [
+                            'name'       => 'grp.masters.families.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => __('Products'),
+                        'icon'  => ['fal', 'fa-cube'],
+                        'root'  => 'grp.masters.products.',
+                        'route' => [
+                            'name'       => 'grp.masters.products.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+
+
+                ]
+            ]
+
+        ];
     }
 }

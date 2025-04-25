@@ -2,20 +2,26 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 29 Dec 2024 03:14:17 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Fri, 25 Apr 2025 13:06:04 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\UI;
+namespace App\Actions\Masters\UI;
 
-use App\Actions\OrgAction;
+use App\Actions\GrpAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Actions\UI\WithInertia;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowGoodsDashboard extends OrgAction
+class ShowMastersDashboard extends GrpAction
 {
+    use AsAction;
+    use WithInertia;
+
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo("goods.{$this->group->id}.view");
@@ -24,7 +30,7 @@ class ShowGoodsDashboard extends OrgAction
 
     public function asController(ActionRequest $request): ActionRequest
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisation(app('group'), $request);
 
         return $request;
     }
@@ -33,45 +39,31 @@ class ShowGoodsDashboard extends OrgAction
     public function htmlResponse(ActionRequest $request): Response
     {
 
-        $title = __('Goods');
 
         return Inertia::render(
-            'Goods/GoodsDashboard',
+            'Masters/MastersDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs(),
-                'title'        => $title,
+                'title'        => __('masters'),
                 'pageHead'     => [
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-cloud-rainbow'],
-                        'title' => $title
+                        'icon'  => ['fal', 'fa-ruler-combined'],
+                        'title' => __('masters')
                     ],
-                    'title' => __('goods strategy'),
+                    'title' => __('master catalogue'),
                 ],
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('SKUs families'),
-                            'icon'  => ['fal', 'fa-boxes-alt'],
+                            'name'  => 'Master Shops',
+                            'icon'  => ['fal', 'fa-books'],
                             'route' => [
-                                'name'       => 'grp.goods.stock-families.index',
+                                'name'       => 'grp.masters.shops.index',
                                 'parameters' => []
                             ],
                             'index' => [
-                                'number' => $this->group->goodsStats->number_stock_families
+                                'number' => $this->group->goodsStats->number_master_shops
                             ]
-
-                        ],
-                        [
-                            'name'  => 'SKUs',
-                            'icon'  => ['fal', 'fa-box'],
-                            'route' => [
-                                'name'       => 'grp.goods.stocks.index',
-                                'parameters' => []
-                            ],
-                            'index' => [
-                                'number' => $this->group->goodsStats->number_stocks
-                            ]
-
                         ]
                     ]
                 ],
