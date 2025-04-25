@@ -20,30 +20,46 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import Tag from '@/Components/Tag.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faArrowLeft, faArrowRight } from "@fas"
+import { debounce } from 'lodash'
 
-defineProps<{
+const props = defineProps<{
     data: {}
     title: string
     pageHead: PageHeadingTypes
+    customer: {}
 }>()
 
 const layout = inject('layout', layoutStructure)
+const locale = inject('locale', null)
 
 const isLoadingSubmit = ref(false)
 const isLoadingFetch = ref(false)
-const portfoliosList = ref([])
 const selectedPortfolio = ref<number | null>(null)
-const errorMessage = ref(null)
+const errorMessage = ref<any>(null)
 
 // Method: Get portfolios list
-const getPortfoliosList = async () => {
+const queryPortfolio = ref('')
+const portfoliosList = ref([])
+const portfoliosMeta = ref()
+const portfoliosLinks = ref()
+const getPortfoliosList = async (url?: string) => {
     isLoadingFetch.value = true
     try {
-        const response = await axios.get(route("grp.org.shops.show.crm.customers.show.portfolios.filtered-products", { "organisation": layout?.currentParams?.organisation, "shop": layout?.currentParams?.shop, "customer": layout?.currentParams?.customer }))
-
+        const urlToFetch = url || route('grp.org.shops.show.crm.customers.show.portfolios.filtered-products', {
+            "organisation": layout?.currentParams?.organisation,
+            "shop": layout?.currentParams?.shop,
+            "customer": layout?.currentParams?.customer,
+            "filter[global]": queryPortfolio.value
+        })
+        const response = await axios.get(urlToFetch)
+        // filter[global]=GATOR GRIPZ%20
         portfoliosList.value = response.data.data
+        portfoliosMeta.value = response?.data.meta || null
+        portfoliosLinks.value = response?.data.links || null
         isLoadingFetch.value = false
-    } catch (error) {
+    } catch {
         isLoadingFetch.value = false
         notify({
             title: "Something went wrong.",
@@ -54,16 +70,16 @@ const getPortfoliosList = async () => {
 }
 
 // Method: Submit the selected item
-const onSubmitAddItem = async (url: string, close: Function, idProduct: number) => {
-    router.post(url, {
-        product_id: idProduct
+const onSubmitAddItem = async (close: Function, idProduct: number) => {
+    router.post(route('grp.models.customer.portfolio.store', { customer: props.customer?.id} ), {
+        products: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
         onError: (error) => {
             errorMessage.value = error
             notify({
                 title: "Something went wrong.",
-                text: error.product_id || undefined,
+                text: error.products || undefined,
                 type: "error"
             })
         },
@@ -75,118 +91,7 @@ const onSubmitAddItem = async (url: string, close: Function, idProduct: number) 
     })
 }
 
-const selectedProduct = ref([])
-const productsFake = [
-    {
-        id: 1,
-        name: 'Zip Tote Basket',
-        code: 'White and black',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-01.jpg',
-        imageAlt: 'Front of zip tote bag with white canvas, black canvas straps and handle, and black zipper pulls.',
-        price: '$140',
-    },
-    {
-        id: 2,
-        name: 'Leather Long Wallet',
-        code: 'Brown',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-02.jpg',
-        imageAlt: 'Front of leather long wallet in brown color.',
-        price: '$85',
-    },
-    {
-        id: 3,
-        name: 'Canvas Backpack',
-        code: 'Gray',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-03.jpg',
-        imageAlt: 'Front of canvas backpack in gray color.',
-        price: '£5.42 (£0.2/ball)',
-    },
-    {
-        id: 4,
-        name: 'Wool Hat',
-        code: 'Black',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-04.jpg',
-        imageAlt: 'Front of wool hat in black color.',
-        price: '£7.42 (£0.62/letter)',
-    },
-    {
-        id: 5,
-        name: 'Silk Scarf',
-        code: 'Red',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/category-page-04-image-card-01.jpg',
-        imageAlt: 'Front of silk scarf in red color.',
-        price: '$60',
-    },
-    {
-        id: 6,
-        name: 'Leather Belt',
-        code: 'Tan',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/category-page-04-image-card-06.jpg',
-        imageAlt: 'Front of leather belt in tan color.',
-        price: '$50',
-    },
-    {
-        id: 1,
-        name: 'Zip Tote Basket',
-        code: 'White and black',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-01.jpg',
-        imageAlt: 'Front of zip tote bag with white canvas, black canvas straps and handle, and black zipper pulls.',
-        price: '$140',
-    },
-    {
-        id: 2,
-        name: 'Leather Long Wallet',
-        code: 'Brown',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-02.jpg',
-        imageAlt: 'Front of leather long wallet in brown color.',
-        price: '$85',
-    },
-    {
-        id: 3,
-        name: 'Canvas Backpack',
-        code: 'Gray',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-03.jpg',
-        imageAlt: 'Front of canvas backpack in gray color.',
-        price: '£5.42 (£0.2/ball)',
-    },
-    {
-        id: 4,
-        name: 'Wool Hat',
-        code: 'Black',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-related-product-04.jpg',
-        imageAlt: 'Front of wool hat in black color.',
-        price: '£7.42 (£0.62/letter)',
-    },
-    {
-        id: 5,
-        name: 'Silk Scarf',
-        code: 'Red',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/category-page-04-image-card-01.jpg',
-        imageAlt: 'Front of silk scarf in red color.',
-        price: '$60',
-    },
-    {
-        id: 6,
-        name: 'Leather Belt',
-        code: 'Tan',
-        href: '#',
-        imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/category-page-04-image-card-06.jpg',
-        imageAlt: 'Front of leather belt in tan color.',
-        price: '$50',
-    },
-]
-
+const selectedProduct = ref<{}[]>([])
 const selectProduct = (item: any) => {
     const index = selectedProduct.value?.indexOf(item);
     if (index === -1) {
@@ -202,6 +107,8 @@ watch(isOpenModalPortfolios, (newVal) => {
         getPortfoliosList()
     }
 })
+
+const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
 </script>
 
 <template>
@@ -226,47 +133,84 @@ watch(isOpenModalPortfolios, (newVal) => {
             
             <div class="mb-2">
                 <PureInput
-                    modelValue="444"
+                    v-model="queryPortfolio"
+                    @update:modelValue="() => debounceGetPortfoliosList()"
+                    :placeholder="trans('Input to search')"
                 />
             </div>
             
             <div class="h-[500px] grid grid-cols-5 text-base font-normal">
                 <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
-                    <div class="font-semibold text-lg py-1">Suggestions</div>
+                    <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
                 </div>
 
                 <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
-                    <div class="font-semibold text-lg py-1">Product</div>
+                    <div class="font-semibold text-lg py-1">{{ trans("Product") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                    <!-- Products list -->
-                    <div class="h-[400px] overflow-auto py-2">
+                    <div class="h-[400px] overflow-auto py-2 relative">
+                        <!-- Products list -->
                         <div class="grid grid-cols-3 gap-3">
-                            <div
-                                v-show="!isLoadingFetch"
-                                v-for="(item, index) in portfoliosList"
-                                :key="index"
-                                @click="() => selectProduct(item)"
-                                class="h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
-                                :class="selectedProduct.includes(item) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
-                            >
-                                <img :src="item.imageSrc" class="w-16 h-16 object-cover" alt="" />
-                                <div class="flex flex-col justify-between">
-                                    <div>
-                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                        <div class="text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                            <template v-if="!isLoadingFetch">
+                                <template v-if="portfoliosList.length > 0">
+                                    <div
+                                        v-for="(item, index) in portfoliosList"
+                                        :key="index"
+                                        @click="() => selectProduct(item)"
+                                        class="h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
+                                        :class="selectedProduct.includes(item) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
+                                    >
+                                        <img :src="item.imageSrc" class="w-16 h-16 object-cover" alt="" />
+                                        <div class="flex flex-col justify-between">
+                                            <div>
+                                                <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                                                <div class="text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                            </div>
+                                            <div class="text-xs text-gray-500">{{ item.price || 'no price' }}</div>
+                                        </div>
                                     </div>
-                                    <div class="text-xs text-gray-500">{{ item.price || 'no price' }}</div>
+                                </template>
+                                <div v-else class="text-center text-gray-500 col-span-3">
+                                    {{ trans("No products found") }}
                                 </div>
-                            </div>
+                            </template>
+
                             <div
-                                v-show="isLoadingFetch"
+                                v-else
                                 v-for="(item, index) in 6"
                                 :key="index"
                                 class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
                             >
                             </div>
                         </div>
+
+                        <!-- Pagination -->
+                        <div v-if="portfoliosLinks?.previous || portfoliosLinks?.next" class="mt-2 mx-auto flex justify-center gap-x-2">
+                            <div :class="{
+                                'cursor-not-allowed text-gray-400': !portfoliosLinks?.previous,
+                                'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.previous
+                            }" :dusk="portfoliosLinks?.previous ? 'pagination-simple-previous' : null"
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
+                                @click="() => portfoliosLinks?.previous ? getPortfoliosList(portfoliosLinks?.previous) : false"
+                            >
+                                <FontAwesomeIcon :icon="faArrowLeft" class="" fixed-width aria-hidden="true" />
+                                <span class="hidden sm:inline ml-2">{{ trans('Prev') }}</span>
+                            </div>
+
+                            <div class="flex items-center">{{ portfoliosMeta?.current_page }}/{{portfoliosMeta?.from}}</div>
+
+                            <div :class="{
+                                'cursor-not-allowed text-gray-400': !portfoliosLinks?.next,
+                                'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.next
+                            }" :dusk="portfoliosLinks?.next ? 'pagination-simple-previous' : null"
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
+                                @click="() => portfoliosLinks?.next ? getPortfoliosList(portfoliosLinks?.next) : false"
+                            >
+                                <span class="hidden sm:inline ml-2">{{ trans('Next') }}</span>
+                                <FontAwesomeIcon :icon="faArrowRight" class="" fixed-width aria-hidden="true" />
+                            </div>
+                        </div>
+
 
                         <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
                             <li
@@ -287,7 +231,10 @@ watch(isOpenModalPortfolios, (newVal) => {
                     
                     <div class="mt-4">
                         <Button
-                            label="Add"
+                            @click="() => onSubmitAddItem(() => isOpenModalPortfolios = false, selectedProduct.map(item => item.id))"
+                            :disabled="selectedProduct.length < 1"
+                            v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                            :label="`${trans('Submit')} (${selectedProduct.length} ${trans('portfolios')})`"
                             type="primary"
                             full
                         />

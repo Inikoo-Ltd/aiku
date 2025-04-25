@@ -91,6 +91,7 @@ class IndexPortfoliosInPlatform extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => PortfoliosResource::collection($portfolios),
+                'customer'      => $this->customerHasPlatform->customer,
             ]
         )->table($this->tableStructure());
     }
