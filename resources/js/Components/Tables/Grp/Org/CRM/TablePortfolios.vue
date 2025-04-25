@@ -71,7 +71,7 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
     <template #cell(created_at)="{ item: portfolio }">
       <div class="text-gray-500">{{ useFormatTime(portfolio["created_at"], {
         localeCode: locale.language.code,
-        formatTime: "Ymd"
+        formatTime: "hm"
       }) }}
       </div>
     </template>

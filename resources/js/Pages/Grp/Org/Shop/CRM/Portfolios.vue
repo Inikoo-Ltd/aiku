@@ -23,6 +23,7 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowLeft, faArrowRight } from "@fas"
 import { debounce } from 'lodash'
+import Pagination from '@/Components/Table/Pagination.vue'
 
 const props = defineProps<{
     data: {}
@@ -36,7 +37,6 @@ const locale = inject('locale', null)
 
 const isLoadingSubmit = ref(false)
 const isLoadingFetch = ref(false)
-const selectedPortfolio = ref<number | null>(null)
 const errorMessage = ref<any>(null)
 
 // Method: Get portfolios list
@@ -54,7 +54,6 @@ const getPortfoliosList = async (url?: string) => {
             "filter[global]": queryPortfolio.value
         })
         const response = await axios.get(urlToFetch)
-        // filter[global]=GATOR GRIPZ%20
         portfoliosList.value = response.data.data
         portfoliosMeta.value = response?.data.meta || null
         portfoliosLinks.value = response?.data.links || null
@@ -68,6 +67,7 @@ const getPortfoliosList = async (url?: string) => {
         })
     }
 }
+const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
 
 // Method: Submit the selected item
 const onSubmitAddItem = async (close: Function, idProduct: number) => {
@@ -84,7 +84,17 @@ const onSubmitAddItem = async (close: Function, idProduct: number) => {
             })
         },
         onSuccess: () => {
-            router.reload({only: ['data']}),
+            router.reload({only: ['data']})
+            queryPortfolio.value = ''
+            selectedProduct.value = []
+            portfoliosList.value = []
+            portfoliosMeta.value = null
+            portfoliosLinks.value = null
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfuly added portfolios"),
+                type: "success"
+            })
             close()
         },
         onFinish: () => isLoadingSubmit.value = false
@@ -108,7 +118,6 @@ watch(isOpenModalPortfolios, (newVal) => {
     }
 })
 
-const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
 </script>
 
 <template>
@@ -128,14 +137,16 @@ const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
 
     <TablePortfolios :data="data" />
 
-    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" class="w-full max-w-5xl">
+    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <div class="">
-            
+            <div class="mx-auto text-center text-2xl font-semibold pb-4">
+                {{ trans("Add portfolios") }}
+            </div>
             <div class="mb-2">
                 <PureInput
                     v-model="queryPortfolio"
                     @update:modelValue="() => debounceGetPortfoliosList()"
-                    :placeholder="trans('Input to search')"
+                    :placeholder="trans('Input to search portfolios')"
                 />
             </div>
             
@@ -150,7 +161,7 @@ const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
                     <div class="border-t border-gray-300 mb-1"></div>
                     <div class="h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
-                        <div class="grid grid-cols-3 gap-3">
+                        <div class="grid grid-cols-3 gap-3 pb-2">
                             <template v-if="!isLoadingFetch">
                                 <template v-if="portfoliosList.length > 0">
                                     <div
@@ -185,7 +196,16 @@ const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
                         </div>
 
                         <!-- Pagination -->
-                        <div v-if="portfoliosLinks?.previous || portfoliosLinks?.next" class="mt-2 mx-auto flex justify-center gap-x-2">
+                        <Pagination
+                            v-if="portfoliosMeta"
+                            :on-click="getPortfoliosList"
+                            :has-data="true"
+                            :meta="portfoliosMeta"
+                            xexportLinks="queryBuilderProps.exportLinks"
+                            :per-page-options="[]"
+                            xon-per-page-change="onPerPageChange"
+                        />
+                        <!-- <div v-if="portfoliosLinks?.previous || portfoliosLinks?.next" class="mt-2 mx-auto flex justify-center gap-x-2">
                             <div :class="{
                                 'cursor-not-allowed text-gray-400': !portfoliosLinks?.previous,
                                 'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.previous
@@ -209,7 +229,7 @@ const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
                                 <span class="hidden sm:inline ml-2">{{ trans('Next') }}</span>
                                 <FontAwesomeIcon :icon="faArrowRight" class="" fixed-width aria-hidden="true" />
                             </div>
-                        </div>
+                        </div> -->
 
 
                         <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
@@ -237,6 +257,7 @@ const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
                             :label="`${trans('Submit')} (${selectedProduct.length} ${trans('portfolios')})`"
                             type="primary"
                             full
+                            :loading="isLoadingSubmit"
                         />
                         
                     </div>
