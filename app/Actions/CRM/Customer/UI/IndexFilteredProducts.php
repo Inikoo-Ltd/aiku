@@ -53,8 +53,9 @@ class IndexFilteredProducts extends OrgAction
         } elseif (class_basename($parent) == 'Customer') {
             $queryBuilder->where('products.shop_id', $parent->shop_id)
             ->whereNotIn('products.id', function ($subQuery) use ($parent, $platform) {
-                $subQuery->select('product_id')
+                $subQuery->select('item_id')
                     ->from('portfolios')
+                    ->where('item_type', class_basename(Product::class))
                     ->where('customer_id', $parent->id)
                     ->where('platform_id', $platform->id);
             });
