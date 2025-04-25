@@ -7,7 +7,6 @@
   <script setup lang="ts">
   import { Head } from '@inertiajs/vue3'
   import PageHeading from '@/Components/Headings/PageHeading.vue'
-  import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
   import TableMasterFamilies from "@/Components/Tables/Grp/Goods/TableMasterFamilies.vue"
   import { capitalize } from "@/Composables/capitalize"
   import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown,faHome } from '@fal'
@@ -15,7 +14,7 @@
   import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
   library.add( faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown ,faHome)
   
-  const props = defineProps<{
+  defineProps<{
       pageHead: PageHeadingTypes
       title: string
       data: {}
