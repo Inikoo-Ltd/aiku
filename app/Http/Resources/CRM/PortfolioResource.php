@@ -25,6 +25,7 @@ class PortfolioResource extends JsonResource
         $portfolio = $this;
 
         return [
+            'item_id'                => $portfolio->item_id,
             'reference'              => $portfolio->reference,
             'product_name'           => $portfolio->item->name,
             'product_code'           => $portfolio->item->code,
