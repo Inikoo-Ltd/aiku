@@ -53,7 +53,7 @@ class ShowPlatformInCustomer extends OrgAction
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerHasPlatform,
+                    $customerHasPlatform->customer,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -79,7 +79,7 @@ class ShowPlatformInCustomer extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Customer $customer, string $routeName, array $routeParameters): array
     {
         $headCrumb = function (Customer $customer, array $routeParameters, string $suffix = '') {
             return [
@@ -102,8 +102,6 @@ class ShowPlatformInCustomer extends OrgAction
                 ],
             ];
         };
-
-        $customer = $customerHasPlatform->customer;
 
         return array_merge(
             ShowCustomer::make()->getBreadcrumbs(

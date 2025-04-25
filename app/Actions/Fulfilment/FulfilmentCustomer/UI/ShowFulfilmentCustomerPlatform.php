@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
+use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -76,7 +77,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(Customer $customer, array $routeParameters): array
     {
         $headCrumb = function (FulfilmentCustomer $fulfilmentCustomer, array $routeParameters, string $suffix = '') {
             return [
@@ -100,7 +101,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             ];
         };
 
-        $fulfilmentCustomer = $customerHasPlatform->customer->fulfilmentCustomer;
+        $fulfilmentCustomer = $customer->fulfilmentCustomer;
 
         return array_merge(
             ShowFulfilmentCustomer::make()->getBreadcrumbs(
@@ -112,7 +113,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 
                     'index' => [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
                     ],
                     'model' => [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show',
@@ -120,7 +121,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                             'organisation'        => $routeParameters['organisation'],
                             'fulfilment'          => $routeParameters['fulfilment'],
                             'fulfilmentCustomer'  => $routeParameters['fulfilmentCustomer'],
-                            'customerHasPlatform' => $customerHasPlatform->id
+                            'platform' => $routeParameters['platform']
                         ]
                     ]
                 ]

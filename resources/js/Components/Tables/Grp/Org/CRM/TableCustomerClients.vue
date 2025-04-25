@@ -34,7 +34,7 @@ function customerRoute(customer: FulfilmentCustomer) {
         case "grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index":
             return route(
                 "grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["customerHasPlatform"], customer.ulid])
+                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["platform"], customer.ulid])
         case "grp.org.fulfilments.show.crm.customers.show.customer-clients.index":
             return route(
                 "grp.org.fulfilments.show.crm.customers.show.customer-clients.show",

@@ -18,6 +18,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -34,8 +35,10 @@ class IndexOrdersInPlatform extends OrgAction
     use WithCustomerPlatformSubNavigation;
     private CustomerHasPlatform $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -55,6 +58,7 @@ class IndexOrdersInPlatform extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Order::class);
+
         if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $queryBuilder->where('orders.customer_id', $customerHasPlatform->customer->id);
         } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
@@ -66,6 +70,7 @@ class IndexOrdersInPlatform extends OrgAction
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
+
         $queryBuilder->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
 
@@ -169,7 +174,7 @@ class IndexOrdersInPlatform extends OrgAction
     {
         return
             array_merge(
-                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
+                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform->customer, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

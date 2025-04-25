@@ -22,6 +22,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -45,8 +46,10 @@ class IndexCustomerClients extends OrgAction
 
     private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+
         $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -218,7 +221,7 @@ class IndexCustomerClients extends OrgAction
                                     'organisation'        => $scope->organisation->slug,
                                     'shop'                => $scope->shop->slug,
                                     'customer'            => $scope->slug,
-                                    'customerHasPlatform' => $this->parent->id
+                                    'platform' => $this->parent->platform->slug
                                 ]
                             ]
                         ]
@@ -260,9 +263,9 @@ class IndexCustomerClients extends OrgAction
             ];
         };
 
-        $customerHasPlatform = null;
-        if (isset($routeParameters['customerHasPlatform'])) {
-            $customerHasPlatform = CustomerHasPlatform::where('id', ($routeParameters['customerHasPlatform']))->first();
+        $customer = null;
+        if (isset($routeParameters['platform'])) {
+            $customer = Customer::where('slug', $routeParameters['customer'])->first();
         }
 
         return match ($routeName) {
@@ -295,13 +298,13 @@ class IndexCustomerClients extends OrgAction
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs(
-                    $customerHasPlatform,
+                    $customer,
                     $routeParameters
                 ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'customerHasPlatform'])
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
                     ]
                 )
             ),
@@ -309,14 +312,14 @@ class IndexCustomerClients extends OrgAction
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowPlatformInCustomer::make()->getBreadcrumbs(
-                    $customerHasPlatform,
+                    $customer,
                     $routeName,
                     $routeParameters
                 ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'customerHasPlatform'])
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'platform'])
                     ]
                 )
             ),
