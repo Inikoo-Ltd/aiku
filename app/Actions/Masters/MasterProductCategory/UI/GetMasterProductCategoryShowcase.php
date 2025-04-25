@@ -11,7 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Http\Resources\Catalogue\FamilyResource;
-use App\Models\Goods\MasterProductCategory;
+use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetMasterProductCategoryShowcase

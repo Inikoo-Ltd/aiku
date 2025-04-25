@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -39,13 +39,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
- * @property-read LaravelCollection<int, \App\Models\Goods\MasterAsset> $masterAssets
- * @property-read LaravelCollection<int, \App\Models\Goods\MasterProductCategory> $masterProductCategories
- * @property-read \App\Models\Goods\MasterShopOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Goods\MasterShopOrderingStats|null $orderingStats
- * @property-read \App\Models\Goods\MasterShopSalesIntervals|null $salesIntervals
- * @property-read \App\Models\Goods\MasterShopStats|null $stats
- * @property-read LaravelCollection<int, \App\Models\Goods\MasterShopTimeSeries> $timeSeries
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories
+ * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
+ * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
+ * @property-read \App\Models\Masters\MasterShopSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Masters\MasterShopStats|null $stats
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterShopTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop onlyTrashed()

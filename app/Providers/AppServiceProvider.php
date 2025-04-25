@@ -127,9 +127,9 @@ class AppServiceProvider extends ServiceProvider
 
                 // Goods
                 'Ingredient'                    => 'App\Models\Goods\Ingredient',
-                'MasterAsset'                   => 'App\Models\Goods\MasterAsset',
-                'MasterProductCategory'         => 'App\Models\Goods\MasterProductCategory',
-                'MasterShop'                    => 'App\Models\Goods\MasterShop',
+                'MasterAsset'                   => 'App\Models\Masters\MasterAsset',
+                'MasterProductCategory'         => 'App\Models\Masters\MasterProductCategory',
+                'MasterShop'                    => 'App\Models\Masters\MasterShop',
                 'Stock'                         => 'App\Models\Goods\Stock',
                 'StockFamily'                   => 'App\Models\Goods\StockFamily',
                 'TradeUnit'                     => 'App\Models\Goods\TradeUnit',

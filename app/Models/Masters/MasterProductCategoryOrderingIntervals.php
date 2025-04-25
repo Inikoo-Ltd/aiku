@@ -2,19 +2,20 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 30 Dec 2024 12:48:10 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sat, 28 Dec 2024 13:53:48 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  *
  *
  * @property int $id
- * @property int $master_asset_id
+ * @property int $master_product_category_id
  * @property int $invoices_all
  * @property int $invoices_1y
  * @property int $invoices_1q
@@ -212,14 +213,20 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingIntervals newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingIntervals newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingIntervals query()
+ * @property-read \App\Models\Masters\MasterProductCategory $masterProductCategory
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingIntervals newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingIntervals newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingIntervals query()
  * @mixin \Eloquent
  */
-class MasterAssetOrderingIntervals extends Model
+class MasterProductCategoryOrderingIntervals extends Model
 {
-    protected $table = 'master_asset_ordering_intervals';
+    protected $table = 'master_product_category_ordering_intervals';
+
     protected $guarded = [];
 
+    public function masterProductCategory(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class);
+    }
 }

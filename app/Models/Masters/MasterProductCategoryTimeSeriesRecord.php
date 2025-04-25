@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
 

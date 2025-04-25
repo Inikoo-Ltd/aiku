@@ -2,19 +2,20 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 28 Dec 2024 13:55:40 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sat, 28 Dec 2024 17:59:48 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  *
  *
  * @property int $id
- * @property int $master_product_category_id
+ * @property int $master_shop_id
  * @property string|null $last_order_created_at
  * @property string|null $last_order_submitted_at
  * @property string|null $last_order_dispatched_at
@@ -98,14 +99,20 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingStats newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingStats newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingStats query()
+ * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats query()
  * @mixin \Eloquent
  */
-class MasterProductCategoryOrderingStats extends Model
+class MasterShopOrderingStats extends Model
 {
-    protected $table = 'master_product_category_ordering_stats';
+    protected $table = 'master_shop_ordering_stats';
 
     protected $guarded = [];
+
+    public function masterShop(): BelongsTo
+    {
+        return $this->belongsTo(MasterShop::class);
+    }
 }

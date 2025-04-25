@@ -12,7 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;

@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,7 +46,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_master_assets_type_shipping_zone
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\MasterShop $masterShop
+ * @property-read \App\Models\Masters\MasterShop $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats query()

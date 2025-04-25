@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\UI;
 
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 
 trait WithMasterCatalogueSubNavigation

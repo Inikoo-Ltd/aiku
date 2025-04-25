@@ -11,7 +11,7 @@ namespace App\Actions\Masters\MasterShop\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;

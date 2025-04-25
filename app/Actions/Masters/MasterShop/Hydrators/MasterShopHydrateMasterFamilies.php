@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterShop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 

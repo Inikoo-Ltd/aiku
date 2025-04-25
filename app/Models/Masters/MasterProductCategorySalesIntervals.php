@@ -6,16 +6,16 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * App\Models\Catalogue\MasterShopSalesIntervals
+ * App\Models\Catalogue\MasterProductCategorySalesIntervals
  *
  * @property int $id
- * @property int $master_shop_id
+ * @property int $master_product_category_id
  * @property string $sales_grp_currency_all
  * @property string $sales_grp_currency_1y
  * @property string $sales_grp_currency_1q
@@ -57,20 +57,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\MasterShop $masterShop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesIntervals newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesIntervals newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesIntervals query()
+ * @property-read \App\Models\Masters\MasterProductCategory $masterProductCategory
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategorySalesIntervals newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategorySalesIntervals newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategorySalesIntervals query()
  * @mixin \Eloquent
  */
-class MasterShopSalesIntervals extends Model
+class MasterProductCategorySalesIntervals extends Model
 {
-    protected $table = 'master_shop_sales_intervals';
-
+    protected $table = 'master_product_category_sales_intervals';
     protected $guarded = [];
 
-    public function masterShop(): BelongsTo
+    public function masterProductCategory(): BelongsTo
     {
-        return $this->belongsTo(MasterShop::class);
+        return $this->belongsTo(MasterProductCategory::class);
     }
 }

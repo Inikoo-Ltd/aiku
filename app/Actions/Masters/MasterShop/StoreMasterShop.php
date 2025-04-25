@@ -12,7 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;

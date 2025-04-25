@@ -6,9 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use App\Enums\Goods\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Goods\Stock;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -63,17 +64,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read MasterAsset|null $mainMasterProduct
- * @property-read \App\Models\Goods\MasterProductCategory|null $masterDepartment
- * @property-read \App\Models\Goods\MasterProductCategory|null $masterFamily
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, MasterAsset> $masterProductVariants
- * @property-read \App\Models\Goods\MasterProductCategory|null $masterSubDepartment
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Goods\MasterAssetOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Goods\MasterAssetOrderingStats|null $orderingStats
- * @property-read \App\Models\Goods\MasterAssetSalesIntervals|null $salesIntervals
- * @property-read \App\Models\Goods\MasterAssetStats|null $stats
+ * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
+ * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
+ * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Masters\MasterAssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\Stock> $stocks
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\MasterAssetTimeSeries> $timeSeries
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()

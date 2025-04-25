@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 28 Dec 2024 13:53:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sat, 28 Dec 2024 18:00:26 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  *
  * @property int $id
- * @property int $master_product_category_id
+ * @property int $master_shop_id
  * @property int $invoices_all
  * @property int $invoices_1y
  * @property int $invoices_1q
@@ -172,6 +172,45 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $delivery_notes_pq3
  * @property int $delivery_notes_pq4
  * @property int $delivery_notes_pq5
+ * @property int $registrations_all
+ * @property int $registrations_1y
+ * @property int $registrations_1q
+ * @property int $registrations_1m
+ * @property int $registrations_1w
+ * @property int $registrations_3d
+ * @property int $registrations_1d
+ * @property int $registrations_ytd
+ * @property int $registrations_qtd
+ * @property int $registrations_mtd
+ * @property int $registrations_wtd
+ * @property int $registrations_tdy
+ * @property int $registrations_lm
+ * @property int $registrations_lw
+ * @property int $registrations_ld
+ * @property int $registrations_1y_ly
+ * @property int $registrations_1q_ly
+ * @property int $registrations_1m_ly
+ * @property int $registrations_1w_ly
+ * @property int $registrations_3d_ly
+ * @property int $registrations_1d_ly
+ * @property int $registrations_ytd_ly
+ * @property int $registrations_qtd_ly
+ * @property int $registrations_mtd_ly
+ * @property int $registrations_wtd_ly
+ * @property int $registrations_tdy_ly
+ * @property int $registrations_lm_ly
+ * @property int $registrations_lw_ly
+ * @property int $registrations_ld_ly
+ * @property int $registrations_py1
+ * @property int $registrations_py2
+ * @property int $registrations_py3
+ * @property int $registrations_py4
+ * @property int $registrations_py5
+ * @property int $registrations_pq1
+ * @property int $registrations_pq2
+ * @property int $registrations_pq3
+ * @property int $registrations_pq4
+ * @property int $registrations_pq5
  * @property int $customers_invoiced_all
  * @property int $customers_invoiced_1y
  * @property int $customers_invoiced_1q
@@ -213,20 +252,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\MasterProductCategory $masterProductCategory
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingIntervals newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingIntervals newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingIntervals query()
+ * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingIntervals newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingIntervals newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingIntervals query()
  * @mixin \Eloquent
  */
-class MasterProductCategoryOrderingIntervals extends Model
+class MasterShopOrderingIntervals extends Model
 {
-    protected $table = 'master_product_category_ordering_intervals';
+    protected $table = 'master_shop_ordering_intervals';
 
     protected $guarded = [];
-
-    public function masterProductCategory(): BelongsTo
+    public function masterShop(): BelongsTo
     {
-        return $this->belongsTo(MasterProductCategory::class);
+        return $this->belongsTo(MasterShop::class);
     }
 }

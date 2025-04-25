@@ -2,13 +2,12 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 28 Dec 2024 17:59:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 30 Dec 2024 12:47:22 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
-use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  *
  * @property int $id
- * @property int $master_shop_id
+ * @property int $master_asset_id
  * @property string|null $last_order_created_at
  * @property string|null $last_order_submitted_at
  * @property string|null $last_order_dispatched_at
@@ -100,20 +99,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\MasterShop $masterShop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats query()
+ * @property-read \App\Models\Masters\MasterAsset $masterAsset
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats query()
  * @mixin \Eloquent
  */
-class MasterShopOrderingStats extends Model
+class MasterAssetOrderingStats extends Model
 {
-    protected $table = 'master_shop_ordering_stats';
+    protected $table = 'master_asset_ordering_stats';
 
     protected $guarded = [];
 
-    public function masterShop(): BelongsTo
+    public function masterAsset(): BelongsTo
     {
-        return $this->belongsTo(MasterShop::class);
+        return $this->belongsTo(MasterAsset::class);
     }
 }

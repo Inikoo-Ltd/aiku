@@ -12,7 +12,7 @@ use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
 use App\Http\Resources\Goods\Catalogue\MasterShopResource;
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;

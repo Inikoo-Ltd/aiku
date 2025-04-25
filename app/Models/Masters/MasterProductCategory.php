@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -57,16 +57,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
- * @property-read \App\Models\Goods\MasterShop $masterShop
+ * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Goods\MasterProductCategoryOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Goods\MasterProductCategoryOrderingStats|null $orderingStats
+ * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
+ * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
  * @property-read MasterProductCategory|null $parent
- * @property-read \App\Models\Goods\MasterProductCategorySalesIntervals|null $salesIntervals
- * @property-read \App\Models\Goods\MasterProductCategoryStats|null $stats
+ * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read MasterProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $subDepartments
- * @property-read LaravelCollection<int, \App\Models\Goods\MasterProductCategoryTimeSeries> $timeSeries
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()

@@ -11,7 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Helpers\Media\SaveModelImages;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
-use App\Models\Goods\MasterAsset;
+use App\Models\Masters\MasterAsset;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;

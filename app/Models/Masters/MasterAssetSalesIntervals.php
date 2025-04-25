@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -57,7 +57,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\MasterAsset $masterAsset
+ * @property-read \App\Models\Masters\MasterAsset $masterAsset
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetSalesIntervals query()

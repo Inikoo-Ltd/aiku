@@ -13,9 +13,9 @@ use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
-use App\Models\Goods\MasterProductCategory;
-use App\Models\Goods\MasterShop;
 use App\Models\Inventory\Location;
+use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 

@@ -13,7 +13,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Http\Resources\Goods\Catalogue\MasterShopsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;

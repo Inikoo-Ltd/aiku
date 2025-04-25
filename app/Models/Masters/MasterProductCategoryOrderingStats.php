@@ -2,21 +2,19 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 30 Dec 2024 12:47:22 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sat, 28 Dec 2024 13:55:40 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models\Goods;
+namespace App\Models\Masters;
 
-use App\Models\Catalogue\Asset;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  *
  *
  * @property int $id
- * @property int $master_asset_id
+ * @property int $master_product_category_id
  * @property string|null $last_order_created_at
  * @property string|null $last_order_submitted_at
  * @property string|null $last_order_dispatched_at
@@ -100,20 +98,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\MasterAsset $masterAsset
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingStats newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingStats newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryOrderingStats query()
  * @mixin \Eloquent
  */
-class MasterAssetOrderingStats extends Model
+class MasterProductCategoryOrderingStats extends Model
 {
-    protected $table = 'master_asset_ordering_stats';
+    protected $table = 'master_product_category_ordering_stats';
 
     protected $guarded = [];
-
-    public function masterAsset(): BelongsTo
-    {
-        return $this->belongsTo(MasterAsset::class);
-    }
 }

@@ -11,7 +11,7 @@ namespace App\Transfers\Aurora;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Enums\Goods\MasterAsset\MasterAssetTypeEnum;
-use App\Models\Goods\MasterProductCategory;
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraMasterAsset extends FetchAurora
