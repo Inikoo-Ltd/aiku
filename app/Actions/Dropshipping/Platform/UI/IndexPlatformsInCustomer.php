@@ -54,6 +54,9 @@ class IndexPlatformsInCustomer extends OrgAction
             ->defaultSort('customer_has_platforms.id')
             ->select([
                 'customer_has_platforms.id as customer_has_platform_id',
+                'customer_has_platforms.number_customer_clients as number_customer_clients',
+                'customer_has_platforms.number_portfolios as number_portfolios',
+                'customer_has_platforms.number_orders as number_orders',
                 'platforms.id',
                 'platforms.slug',
                 'platforms.code',
@@ -145,6 +148,9 @@ class IndexPlatformsInCustomer extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_portfolios', label: __('Number Portfolios'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_clients', label: __('Number Clients'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_orders', label: __('Number Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
