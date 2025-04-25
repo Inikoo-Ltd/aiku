@@ -21,9 +21,9 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-//        BroadcastFulfilmentCustomerNotification::class => [
-//            MeasurementSharedListener::class
-//        ],
+        BroadcastFulfilmentCustomerNotification::class => [
+            MeasurementSharedListener::class
+        ],
         ShopAuthenticatedEvent::class => [
             ShopifyAuthenticatedShopWebhookRegister::class
         ]
