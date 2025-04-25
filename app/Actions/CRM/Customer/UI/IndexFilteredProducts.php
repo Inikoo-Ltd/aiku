@@ -69,12 +69,14 @@ class IndexFilteredProducts extends OrgAction
                 'products.id',
                 'products.code',
                 'products.name',
+                'products.price',
                 'products.state',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
             ])
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
+            ->leftJoin('media', 'products.image_id', '=', 'media.id');
 
         return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
             ->allowedFilters([$globalSearch])
