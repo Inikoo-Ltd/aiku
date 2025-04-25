@@ -58,7 +58,7 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::has($modelData, 'image')) {
-            /** @var UploadedFile $image */
+
             $image = Arr::get($modelData, 'image');
             data_forget($modelData, 'image');
             $imageData = [

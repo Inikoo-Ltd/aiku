@@ -131,7 +131,7 @@ class StoreMasterShop extends GrpAction
         try {
             $masterShop = $this->action($group, $data);
             $command->info("Master Shop $masterShop->slug created successfully 🎉");
-        } catch (Exception|Throwable $e) {
+        } catch (Throwable $e) {
             $command->error($e->getMessage());
 
             return 1;
