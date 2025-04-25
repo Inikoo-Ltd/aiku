@@ -4,11 +4,13 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\FilteredProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -35,6 +37,7 @@ class IndexFilteredProducts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         $queryBuilder = QueryBuilder::for(Product::class);
 
         if (class_basename($parent) == 'Shop') {
@@ -49,10 +52,11 @@ class IndexFilteredProducts extends OrgAction
             );
         } elseif (class_basename($parent) == 'Customer') {
             $queryBuilder->where('products.shop_id', $parent->shop_id)
-            ->whereNotIn('products.id', function ($subQuery) use ($parent) {
+            ->whereNotIn('products.id', function ($subQuery) use ($parent, $platform) {
                 $subQuery->select('product_id')
                     ->from('portfolios')
-                    ->where('customer_id', $parent->id);
+                    ->where('customer_id', $parent->id)
+                    ->where('platform_id', $platform->id);
             });
         }
 
