@@ -8,7 +8,7 @@
 
 namespace App\Models\Masters;
 
-use App\Enums\Goods\MasterAsset\MasterAssetTypeEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Goods\Stock;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;

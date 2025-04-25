@@ -17,7 +17,7 @@ use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
-use App\Http\Resources\Goods\Catalogue\MasterDepartmentsResource;
+use App\Http\Resources\Masters\MasterDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;

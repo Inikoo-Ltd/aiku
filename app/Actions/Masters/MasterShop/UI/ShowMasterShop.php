@@ -11,7 +11,7 @@ namespace App\Actions\Masters\MasterShop\UI;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
-use App\Http\Resources\Goods\Catalogue\MasterShopResource;
+use App\Http\Resources\Masters\MasterShopResource;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;

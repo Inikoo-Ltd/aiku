@@ -7,7 +7,7 @@
  * copyright 2024
 */
 
-namespace App\Http\Resources\Goods\Catalogue;
+namespace App\Http\Resources\Masters;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;

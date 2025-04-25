@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Goods\MasterAsset;
+namespace App\Enums\Masters\MasterAsset;
 
 use App\Enums\EnumHelperTrait;
 use App\Models\SysAdmin\Group;
@@ -96,19 +96,14 @@ enum MasterAssetTypeEnum: string
 
         $stats = $group->goodsStats;
 
-
-
-        $counts = [
-            'product'       => $stats->number_master_assets_type_products,
-            'subscription'  => $stats->number_assetd_type_subscription,
+        return[
+            'product'       => $stats->number_master_assets_type_product,
+            'subscription'  => $stats->number_master_assets_type_subscription,
             'service'       => $stats->number_master_assets_type_service,
             'rental'        => $stats->number_master_assets_type_rental,
             'charge'        => $stats->number_master_assets_type_charge,
             'shipping_zone' => $stats->number_master_assets_type_shipping_zone,
         ];
-
-
-        return $counts;
     }
 
 }

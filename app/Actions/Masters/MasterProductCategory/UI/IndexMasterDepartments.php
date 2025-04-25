@@ -13,7 +13,7 @@ use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Goods\Catalogue\MasterDepartmentsResource;
+use App\Http\Resources\Masters\MasterDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;

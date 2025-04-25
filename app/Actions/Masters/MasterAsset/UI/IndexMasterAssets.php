@@ -12,7 +12,7 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
-use App\Http\Resources\Goods\Catalogue\MasterProductsResource;
+use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;

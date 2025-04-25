@@ -11,7 +11,7 @@ namespace App\Actions\Masters\MasterShop\UI;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\UI\ShowMastersDashboard;
-use App\Http\Resources\Goods\Catalogue\MasterShopsResource;
+use App\Http\Resources\Masters\MasterShopsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;

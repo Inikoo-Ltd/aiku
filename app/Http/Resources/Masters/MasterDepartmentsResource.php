@@ -2,12 +2,12 @@
 
 /*
  * author Arya Permana - Kirin
- * created on 15-10-2024-15h-19m
+ * created on 15-10-2024-14h-58m
  * github: https://github.com/KirinZero0
  * copyright 2024
 */
 
-namespace App\Http\Resources\Goods\Catalogue;
+namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,7 +26,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_current_families
  * @property int $number_current_products
  */
-class MasterSubDepartmentsResource extends JsonResource
+class MasterDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -35,9 +35,10 @@ class MasterSubDepartmentsResource extends JsonResource
             'slug'               => $this->slug,
             'code'               => $this->code,
             'name'               => $this->name,
+            'image'               => $this->imageSources(720, 480),
             'description'              => $this->description,
             'created_at'               => $this->created_at,
-            'updated_at'               => $this->updated_at,
+            'updated_at'               => $this->updated_at
         ];
     }
 }
