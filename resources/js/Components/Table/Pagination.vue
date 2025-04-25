@@ -1,5 +1,5 @@
 <template>
-    <nav v-if="!hasData || pagination.total < 1 || exportLinks?.export?.route || hasPagination && meta?.total > 15"
+    <nav v-if="!hasData || pagination?.total < 1 || exportLinks?.export?.route || hasPagination && meta?.total > 15"
         class="bg-white px-4 py-3 flex items-center space-x-2 justify-between border-t border-gray-200 sm:px-4">
         <p v-if="!hasData || pagination.total < 1" class="mx-auto">
             {{ trans('No result found') }}
@@ -25,7 +25,7 @@
                     </svg>
                     <span class="hidden sm:inline ml-2">{{ translations.previous }}</span>
                 </component>
-                <PerPageSelector dusk="per-page-mobile" :value="perPage" :options="perPageOptions"
+                <PerPageSelector v-if="perPageOptions?.length" dusk="per-page-mobile" :value="perPage" :options="perPageOptions"
                     :on-change="onPerPageChange" />
                 <component :is="nextPageUrl ? 'a' : 'div'" :class="{
                     'cursor-not-allowed text-gray-400': !nextPageUrl,
@@ -44,7 +44,7 @@
             <div v-if="hasData && hasLinks" class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div class="flex flex-row space-x-4 items-center flex-grow">
                     <!-- Button row per page -->
-                    <PerPageSelector v-if="pagination.total > 15" dusk="per-page-full" :value="perPage"
+                    <PerPageSelector v-if="perPageOptions?.length && pagination.total > 15" dusk="per-page-full" :value="perPage"
                         :options="perPageOptions" :on-change="onPerPageChange" />
                     <!-- Counts per page -->
                     <p v-if="pagination.total > 15" class="hidden md:block text-sm text-gray-700 flex-grow">

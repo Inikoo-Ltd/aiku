@@ -13,8 +13,8 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\Platform;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateCustomerClient extends OrgAction
 {
-    private CustomerHasPlatform|Customer $scope;
+    private Platform|Customer|CustomerHasPlatform $scope;
 
     public function handle(Customer $customer, ActionRequest $request): Response
     {
@@ -102,7 +102,7 @@ class CreateCustomerClient extends OrgAction
                             'name'       => 'grp.models.customer.platform-client.store',
                             'parameters' => [
                                 'customer' => $customer->id,
-                                'platform' => $this->scope->platform_id
+                                'platform' => $this->scope->platform->id
                             ]
                         ]
                         : [
