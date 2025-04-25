@@ -558,7 +558,7 @@ test('Process Pallet Delivery (from aiku)', function (PalletDelivery $palletDeli
 
 
     $palletDelivery = SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
-    $pallet=$palletDelivery->pallets->first();
+    $pallet = $palletDelivery->pallets->first();
 
     expect($pallet->location)->toBeInstanceOf(Location::class)
         ->and($pallet->location->id)->toBe($this->location->id)

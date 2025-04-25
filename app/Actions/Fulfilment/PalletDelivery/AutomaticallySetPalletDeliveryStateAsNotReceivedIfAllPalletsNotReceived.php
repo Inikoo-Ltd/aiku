@@ -29,7 +29,7 @@ class AutomaticallySetPalletDeliveryStateAsNotReceivedIfAllPalletsNotReceived
             PalletDeliveryStateEnum::CONFIRMED->value,
             PalletDeliveryStateEnum::NOT_RECEIVED->value,
 
-        ])   ) {
+        ])) {
 
 
             $palletStateBookedInCount    = $palletDelivery->pallets()->where('state', PalletStateEnum::BOOKED_IN)->count();
