@@ -435,7 +435,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet', AttachPalletsToReturn::class)->name('pallet.store');
     Route::post('attach-pallet/{pallet:id}', AttachPalletToReturn::class)->name('pallet.attach')->withoutScopedBindings();
     Route::delete('detach-pallet/{pallet:id}', DetachPalletFromReturn::class)->name('pallet.detach');
-    //todo this new action
     Route::post('pallet-stored-item/{palletStoredItem:id}', AttachStoredItemToReturn::class)->name('stored_item.store')->withoutScopedBindings();
     Route::post('pallet-stored-item/pick/{palletStoredItem:id}', PickNewPalletReturnItem::class)->name('pallet_return_item.new_pick')->withoutScopedBindings();
     Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
@@ -629,7 +628,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
     Route::post('client', StoreCustomerClient::class)->name('client.store');
-    Route::post('client/{platform:id}', [StoreCustomerClient::class, 'inPlatform'])->name('platform-client.store');
+    Route::post('client/{platform:id}', StoreCustomerClient::class)->name('platform-client.store')->withoutScopedBindings();
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
     Route::post('portfolio', StoreMultipleManualPortfolios::class)->name('portfolio.store');
@@ -745,19 +744,19 @@ Route::name('invoice-category.')->prefix('invoice-category/')->group(function ()
     Route::patch('{invoiceCategory:id}/update', UpdateInvoiceCategory::class)->name('update');
 });
 
-require_once __DIR__."/models/inventory/warehouse.php";
-require_once __DIR__."/models/inventory/location_org_stock.php";
-require_once __DIR__."/models/inventory/warehouse_area.php";
-require_once __DIR__."/models/inventory/location.php";
-require_once __DIR__."/models/ordering/order.php";
-require_once __DIR__."/models/stock/stock.php";
-require_once __DIR__."/models/accounting/invoice.php";
-require_once __DIR__."/models/accounting/refund.php";
-require_once __DIR__."/models/billables/billables.php";
-require_once __DIR__."/models/hr/hr.php";
-require_once __DIR__."/models/website/webpages.php";
-require_once __DIR__."/models/supply_chain/agent.php";
-require_once __DIR__."/models/sys_admin/user.php";
-require_once __DIR__."/models/fulfilment/fulfilment_customer.php";
-require_once __DIR__."/models/fulfilment/stored_item_audit.php";
-require_once __DIR__."/models/fulfilment/stored_item_audit_delta.php";
+require __DIR__."/models/inventory/warehouse.php";
+require __DIR__."/models/inventory/location_org_stock.php";
+require __DIR__."/models/inventory/warehouse_area.php";
+require __DIR__."/models/inventory/location.php";
+require __DIR__."/models/ordering/order.php";
+require __DIR__."/models/stock/stock.php";
+require __DIR__."/models/accounting/invoice.php";
+require __DIR__."/models/accounting/refund.php";
+require __DIR__."/models/billables/billables.php";
+require __DIR__."/models/hr/hr.php";
+require __DIR__."/models/website/webpages.php";
+require __DIR__."/models/supply_chain/agent.php";
+require __DIR__."/models/sys_admin/user.php";
+require __DIR__."/models/fulfilment/fulfilment_customer.php";
+require __DIR__."/models/fulfilment/stored_item_audit.php";
+require __DIR__."/models/fulfilment/stored_item_audit_delta.php";

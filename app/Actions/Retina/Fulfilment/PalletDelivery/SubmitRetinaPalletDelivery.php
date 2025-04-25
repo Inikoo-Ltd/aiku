@@ -59,14 +59,13 @@ class SubmitRetinaPalletDelivery extends RetinaAction
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
 
         PalletDeliveryRecordSearch::dispatch($palletDelivery);
+
         return $palletDelivery;
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
-            return true;
-        } elseif ($this->fulfilmentCustomer->id == $request->route()->parameter('palletDelivery')->fulfilment_customer_id) {
+        if ($this->asAction || $this->fulfilmentCustomer->id == $request->route()->parameter('palletDelivery')->fulfilment_customer_id) {
             return true;
         }
 
@@ -82,6 +81,7 @@ class SubmitRetinaPalletDelivery extends RetinaAction
     {
         $this->palletDelivery = $palletDelivery;
         $this->initialisation($request);
+
         return $this->handle($palletDelivery);
     }
 
@@ -90,6 +90,7 @@ class SubmitRetinaPalletDelivery extends RetinaAction
         $this->asAction       = true;
         $this->palletDelivery = $palletDelivery;
         $this->initialisationFulfilmentActions($palletDelivery->fulfilmentCustomer, $modelData);
+
         return $this->handle($palletDelivery);
     }
 

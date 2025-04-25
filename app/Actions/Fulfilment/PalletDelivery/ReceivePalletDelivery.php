@@ -44,7 +44,7 @@ class ReceivePalletDelivery extends OrgAction
     use WithActionUpdate;
 
     private PalletDelivery $palletDelivery;
-    protected ?int $user_id = null;
+    protected ?int $userId = null;
 
     public function handle(PalletDelivery $palletDelivery, array $modelData = []): PalletDelivery
     {
@@ -85,7 +85,7 @@ class ReceivePalletDelivery extends OrgAction
                         $palletDelivery,
                         $palletStoredItem,
                         [
-                            'user_id' => $this->user_id
+                            'user_id' => $this->userId
                         ]
                     );
                 }
@@ -182,7 +182,7 @@ class ReceivePalletDelivery extends OrgAction
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
     {
         $this->palletDelivery = $palletDelivery;
-        $this->user_id        = $request->user()->id;
+        $this->userId         = $request->user()->id;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);
 
         return $this->handle($palletDelivery, $this->validatedData);

@@ -8,21 +8,11 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
-use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
-use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
-use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
 use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
-use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletReturns;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -33,35 +23,14 @@ use Lorisleiva\Actions\ActionRequest;
 class ConfirmPalletReturn extends OrgAction
 {
     use WithActionUpdate;
+    use WithSubmitConformPalletReturn;
 
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         $modelData['confirmed_at'] = now();
-        $modelData['state']                                       = PalletReturnStateEnum::CONFIRMED;
 
-        if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            foreach ($palletReturn->pallets as $pallet) {
-                UpdatePallet::run($pallet, [
-                    'state'  => PalletStateEnum::REQUEST_RETURN_CONFIRMED,
-                    'status' => PalletStatusEnum::RETURNING
-                ]);
-
-                $palletReturn->pallets()->syncWithoutDetaching([
-                    $pallet->id => [
-                        'state' => PalletReturnItemStateEnum::CONFIRMED
-                    ]
-                ]);
-            }
-        }
-
-        $palletReturn = $this->update($palletReturn, $modelData);
-
-        GroupHydratePalletReturns::dispatch($palletReturn->group);
-        OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
-        WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
-        FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
-        FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+        $this->processChangeState(PalletReturnStateEnum::CONFIRMED, $palletReturn, $modelData);
 
         SendPalletReturnNotification::run($palletReturn);
         PalletReturnRecordSearch::dispatch($palletReturn);

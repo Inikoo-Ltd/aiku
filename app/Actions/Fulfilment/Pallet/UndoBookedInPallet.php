@@ -2,13 +2,12 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 01 Apr 2024 14:56:54 Malaysia Time, Bali Office , Indonesia
+ * Created: Mon, 01 Apr 2024 14:56:54 Malaysia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDeliveryStateFromItems;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -24,8 +23,6 @@ class UndoBookedInPallet extends OrgAction
     use WithActionUpdate;
 
 
-    private Pallet $pallet;
-
     public function handle(Pallet $pallet): Pallet
     {
 
@@ -38,8 +35,6 @@ class UndoBookedInPallet extends OrgAction
         $pallet = $this->update($pallet, $modelData, ['data']);
 
         LocationHydratePallets::dispatch($oldLocationId);
-
-        UpdatePalletDeliveryStateFromItems::run($pallet->palletDelivery);
 
         return $pallet;
     }

@@ -128,7 +128,7 @@ class StoreCustomerClient extends OrgAction
             return Redirect::route('retina.dropshipping.client.index');
         }
 
-        return Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->platform->slug]);
+        return Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->platform->slug]);
     }
 
     /**

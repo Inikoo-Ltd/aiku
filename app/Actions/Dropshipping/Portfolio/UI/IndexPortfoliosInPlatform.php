@@ -33,9 +33,8 @@ class IndexPortfoliosInPlatform extends OrgAction
     use WithCustomerPlatformSubNavigation;
 
     private CustomerHasPlatform $customerHasPlatform;
-    private Customer $customer;
 
-    public function handle(Platform $platform, Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,8 +47,8 @@ class IndexPortfoliosInPlatform extends OrgAction
         }
 
         $query = QueryBuilder::for(Portfolio::class);
-        $query->where('portfolios.customer_id', $customer->id);
-        $query->where('portfolios.platform_id', $platform->id);
+        $query->where('portfolios.customer_id', $customerHasPlatform->customer_id);
+        $query->where('portfolios.platform_id', $customerHasPlatform->platform_id);
 
 
 
@@ -65,7 +64,7 @@ class IndexPortfoliosInPlatform extends OrgAction
     {
         $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
         $icon          = ['fal', 'fa-user'];
-        $title         = $this->customer->name;
+        $title         = $this->customerHasPlatform->customer->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('portfolios')
@@ -79,7 +78,7 @@ class IndexPortfoliosInPlatform extends OrgAction
             'Org/Shop/CRM/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->customer,
+                    $this->customerHasPlatform->platform,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -120,16 +119,15 @@ class IndexPortfoliosInPlatform extends OrgAction
     {
         $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->customerHasPlatform = $customerHasPlatform;
-        $this->customer = $customer;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($platform, $customer);
+        return $this->handle($customerHasPlatform);
     }
 
-    public function getBreadcrumbs(Customer $customer, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Platform $platform, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowPlatformInCustomer::make()->getBreadcrumbs($customer, $routeName, $routeParameters),
+            ShowPlatformInCustomer::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
             [
                 [
                     'type'   => 'simple',

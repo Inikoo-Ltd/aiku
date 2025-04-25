@@ -49,7 +49,6 @@ class IndexCustomerClients extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-
         $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -263,9 +262,9 @@ class IndexCustomerClients extends OrgAction
             ];
         };
 
-        $customer = null;
+        $platform = null;
         if (isset($routeParameters['platform'])) {
-            $customer = Customer::where('slug', $routeParameters['customer'])->first();
+            $platform = Platform::where('slug', ($routeParameters['platform']))->first();
         }
 
         return match ($routeName) {
@@ -294,31 +293,31 @@ class IndexCustomerClients extends OrgAction
                     ]
                 )
             ),
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index',
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs(
-                    $customer,
+                    $platform,
                     $routeParameters
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index',
                         'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
                     ]
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowPlatformInCustomer::make()->getBreadcrumbs(
-                    $customer,
+                    $platform,
                     $routeName,
                     $routeParameters
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
                         'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'platform'])
                     ]
                 )

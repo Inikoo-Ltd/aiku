@@ -38,7 +38,6 @@ class IndexOrdersInPlatform extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -58,7 +57,6 @@ class IndexOrdersInPlatform extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Order::class);
-
         if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $queryBuilder->where('orders.customer_id', $customerHasPlatform->customer->id);
         } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
@@ -70,7 +68,6 @@ class IndexOrdersInPlatform extends OrgAction
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
-
         $queryBuilder->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
 
@@ -153,6 +150,7 @@ class IndexOrdersInPlatform extends OrgAction
             'Org/Shop/CRM/CustomerPlatformOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->customerHasPlatform->platform,
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
@@ -170,11 +168,11 @@ class IndexOrdersInPlatform extends OrgAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs($routeName, $routeParameters): array
+    public function getBreadcrumbs(Platform $platform, $routeName, $routeParameters): array
     {
         return
             array_merge(
-                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform->customer, $routeName, $routeParameters),
+                ShowPlatformInCustomer::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

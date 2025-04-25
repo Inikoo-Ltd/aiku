@@ -8,41 +8,20 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPalletAsLost extends OrgAction
 {
-    use WithActionUpdate;
-
-
-    private Pallet $pallet;
+    use WithPalletIncidentAction;
 
     public function handle(Pallet $pallet, $modelData): Pallet
     {
-        $reporterId = Arr::pull($modelData, 'reporter_id');
-        data_set($modelData, 'state', PalletStateEnum::LOST);
-        data_set($modelData, 'status', PalletStatusEnum::INCIDENT);
-        data_set($modelData, 'set_as_incident_at', now());
-
-        data_set($modelData, 'incident_report', [
-                'type'        => PalletStateEnum::LOST->value,
-                'message'     => Arr::get($modelData, 'message'),
-                'reporter_id' => $reporterId,
-                'date'        => now()
-        ]);
-
-        $pallet = UpdatePallet::run($pallet, Arr::except($modelData, 'message'), ['data']);
-        PalletRecordSearch::dispatch($pallet);
-        return $pallet;
+        return $this->processIncident($pallet, PalletStateEnum::LOST, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -50,13 +29,14 @@ class SetPalletAsLost extends OrgAction
         if ($this->asAction) {
             return true;
         }
+
         return $request->user()->authTo("fulfilment.{$this->warehouse->id}.edit");
     }
 
     public function rules(): array
     {
         return [
-            'message' => ['nullable', 'string'],
+            'message'     => ['nullable', 'string'],
             'reporter_id' => ['sometimes', 'required', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
         ];
     }
@@ -77,7 +57,7 @@ class SetPalletAsLost extends OrgAction
 
     public function action(Pallet $pallet, array $modelData): Pallet
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromWarehouse($pallet->warehouse, $modelData);
 
         return $this->handle($pallet, $this->validatedData);

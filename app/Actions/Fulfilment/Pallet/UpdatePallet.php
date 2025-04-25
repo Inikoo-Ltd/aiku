@@ -8,8 +8,7 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
-use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
+use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -21,6 +20,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,22 +32,31 @@ class UpdatePallet extends OrgAction
 
     private Pallet $pallet;
 
-    public function handle(Pallet $pallet, array $modelData, bool $hydrate = true): Pallet
+    public function handle(Pallet $pallet, array $modelData, bool $hydrateParents = true): Pallet
     {
-        $originalType = $pallet->type;
-        $pallet       = $this->update($pallet, $modelData, ['data']);
-        $pallet->refresh();
+        $originalType  = $pallet->type;
+        $oldLocationId = $pallet->location_id;
 
-        if ($hydrate) {
-            UpdatePalletHydrate::run($pallet);
+        $pallet = $this->update($pallet, $modelData, ['data']);
+
+        $changes = $pallet->getChanges();
+
+        if ($hydrateParents && $pallet->pallet_return_id && Arr::has($modelData, 'state')) {
+            AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
         }
 
-        if ($originalType !== $pallet->type) {
-            SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
-        }
-        PalletRecordSearch::dispatch($pallet);
+        RunPalletPostUpdateHydrators::dispatch(
+            $pallet,
+            [
+                'type'        => $originalType,
+                'location_id' => $oldLocationId
+            ],
+            $changes,
+            $this->hydratorsDelay
+        );
 
-        return $pallet->refresh();
+
+        return $pallet;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -66,7 +75,7 @@ class UpdatePallet extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'customer_reference' => [
+            'customer_reference'      => [
                 'sometimes',
                 'nullable',
                 'max:64',
@@ -86,37 +95,37 @@ class UpdatePallet extends OrgAction
 
 
             ],
-            'state'              => [
+            'state'                   => [
                 'sometimes',
                 Rule::enum(PalletStateEnum::class)
             ],
-            'status'             => [
+            'status'                  => [
                 'sometimes',
                 Rule::enum(PalletStatusEnum::class)
             ],
-            'type'               => [
+            'type'                    => [
                 'sometimes',
                 Rule::enum(PalletTypeEnum::class)
             ],
-            'rental_id'          => [
+            'rental_id'               => [
                 'nullable',
                 Rule::Exists('rentals', 'id')->where('fulfilment_id', $this->fulfilment->id)
             ],
-            'pallet_return_id'   => [
+            'pallet_return_id'        => [
                 'sometimes',
                 'nullable',
                 Rule::Exists('pallet_returns', 'id')->where('fulfilment_id', $this->fulfilment->id)
 
             ],
-            'location_id'        => ['sometimes', 'nullable', Rule::exists('locations', 'id')],
-            'notes'              => ['sometimes','nullable', 'string', 'max:16384'],
-            'received_at'        => ['sometimes','nullable',  'date'],
-            'booked_in_at'       => ['sometimes', 'nullable', 'date'],
-            'storing_at'         => ['sometimes', 'nullable', 'date'],
-            'dispatched_at'      => ['sometimes', 'nullable', 'date'],
-            'picking_at'         => ['sometimes', 'nullable', 'date'],
-            'picked_at'          => ['sometimes', 'nullable', 'date'],
-            'reference'          => [
+            'location_id'             => ['sometimes', 'nullable', Rule::exists('locations', 'id')],
+            'notes'                   => ['sometimes', 'nullable', 'string', 'max:16384'],
+            'received_at'             => ['sometimes', 'nullable', 'date'],
+            'booked_in_at'            => ['sometimes', 'nullable', 'date'],
+            'storing_at'              => ['sometimes', 'nullable', 'date'],
+            'dispatched_at'           => ['sometimes', 'nullable', 'date'],
+            'picking_at'              => ['sometimes', 'nullable', 'date'],
+            'picked_at'               => ['sometimes', 'nullable', 'date'],
+            'reference'               => [
                 'sometimes',
                 'nullable',
                 'max:64',
@@ -134,10 +143,10 @@ class UpdatePallet extends OrgAction
                     ]
                 ),
             ],
-            'requested_for_return_at'      => ['sometimes', 'nullable', 'date'],
+            'requested_for_return_at' => ['sometimes', 'nullable', 'date'],
         ];
         if (!$this->strict) {
-            $rules                 = $this->noStrictUpdateRules($rules);
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
@@ -156,14 +165,6 @@ class UpdatePallet extends OrgAction
     }
 
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
-    {
-        $this->pallet = $pallet;
-        $this->initialisationFromFulfilment($pallet->fulfilment, $request);
-
-        return $this->handle($pallet, $this->validatedData);
-    }
-
-    public function fromApi(Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->pallet = $pallet;
         $this->initialisationFromFulfilment($pallet->fulfilment, $request);

@@ -54,8 +54,7 @@ class ShowCustomerClient extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
         $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-
-        $this->parent = $customerHasPlatform;
+        $this->parent        = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
@@ -155,7 +154,6 @@ class ShowCustomerClient extends OrgAction
                 CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
                     fn () => GetCustomerClientShowcase::run($customerClient)
                     : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
-
 
 
             ]
@@ -262,7 +260,7 @@ class ShowCustomerClient extends OrgAction
                     $customerClient,
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
@@ -277,12 +275,12 @@ class ShowCustomerClient extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show'
             => array_merge(
-                (new ShowPlatformInCustomer())->getBreadcrumbs($parent->customer, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', $routeParameters),
+                (new ShowPlatformInCustomer())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [

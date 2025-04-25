@@ -53,7 +53,7 @@ class ShowPlatformInCustomer extends OrgAction
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerHasPlatform->customer,
+                    $customerHasPlatform->platform,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -62,7 +62,7 @@ class ShowPlatformInCustomer extends OrgAction
                         'title' => __('platform'),
                         'icon'  => 'fal fa-user',
                     ],
-                    'model'         => __('Platform xx'),
+                    'model'         => __('Platform'),
                     'subNavigation' => $this->getCustomerPlatformSubNavigation($customerHasPlatform, $request),
                     'title'         => $customerHasPlatform->platform->name,
                     'afterTitle'    => [
@@ -79,9 +79,9 @@ class ShowPlatformInCustomer extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(Customer $customer, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Platform $platform, string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (Customer $customer, array $routeParameters, string $suffix = '') {
+        $headCrumb = function (Platform $platform, array $routeParameters, string $suffix = '') {
             return [
                 [
 
@@ -93,7 +93,7 @@ class ShowPlatformInCustomer extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $customer->reference,
+                            'label' => $platform->name,
                         ],
 
                     ],
@@ -103,13 +103,14 @@ class ShowPlatformInCustomer extends OrgAction
             ];
         };
 
+
         return array_merge(
             ShowCustomer::make()->getBreadcrumbs(
                 $routeName,
                 $routeParameters
             ),
             $headCrumb(
-                $customer,
+                $platform,
                 [
 
                     'index' => [

@@ -32,6 +32,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ConfirmPalletDelivery extends OrgAction
 {
     use WithActionUpdate;
+
     private PalletDelivery $palletDelivery;
     private bool $sendNotifications = false;
 
@@ -42,43 +43,41 @@ class ConfirmPalletDelivery extends OrgAction
         }
 
         if ($palletDelivery->state == PalletDeliveryStateEnum::RECEIVED) {
-            $modelData['received_at'] = null;
+            $modelData['received_at']       = null;
             $modelData['recurring_bill_id'] = null;
         } else {
             $modelData['confirmed_at'] = now();
         }
-        if ($palletDelivery->pallets) {
-            foreach ($palletDelivery->pallets as $pallet) {
-                UpdatePallet::run($pallet, [
-                    'reference' => GetSerialReference::run(
-                        container: $palletDelivery->fulfilmentCustomer,
-                        modelType: SerialReferenceModelEnum::PALLET
-                    ),
-                    'state'  => PalletStateEnum::SUBMITTED,
-                    'status' => PalletStatusEnum::RECEIVING
-                ], false);
-                $pallet->generateSlug();
+        foreach ($palletDelivery->pallets as $pallet) {
+            UpdatePallet::run($pallet, [
+                'reference' => GetSerialReference::run(
+                    container: $palletDelivery->fulfilmentCustomer,
+                    modelType: SerialReferenceModelEnum::PALLET
+                ),
+                'state'     => PalletStateEnum::SUBMITTED,
+                'status'    => PalletStatusEnum::RECEIVING
+            ], hydrateParents: false);
+            $pallet->generateSlug();
 
-                PalletRecordSearch::dispatch($pallet);
-            }
+            PalletRecordSearch::dispatch($pallet);
         }
 
-        $modelData['state']        = PalletDeliveryStateEnum::CONFIRMED;
+
+        $modelData['state'] = PalletDeliveryStateEnum::CONFIRMED;
 
         if (!$palletDelivery->{PalletDeliveryStateEnum::SUBMITTED->value.'_at'}) {
             $modelData[PalletDeliveryStateEnum::SUBMITTED->value.'_at'] = now();
         }
 
-        if ($palletDelivery->pallets) {
-            foreach ($palletDelivery->pallets as $pallet) {
-                UpdatePallet::run($pallet, [
-                    'state'     => PalletStateEnum::CONFIRMED,
-                    'status'    => PalletStatusEnum::RECEIVING,
-                ], false);
-            }
+        foreach ($palletDelivery->pallets as $pallet) {
+            UpdatePallet::run($pallet, [
+                'state'  => PalletStateEnum::CONFIRMED,
+                'status' => PalletStatusEnum::RECEIVING,
+            ], hydrateParents: false);
         }
 
         $palletDelivery = $this->update($palletDelivery, $modelData);
+
         if ($this->sendNotifications) {
             SendPalletDeliveryNotification::dispatch($palletDelivery);
         }
@@ -89,8 +88,8 @@ class ConfirmPalletDelivery extends OrgAction
         WarehouseHydratePalletDeliveries::dispatch($palletDelivery->warehouse);
         FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
-
         PalletDeliveryRecordSearch::dispatch($palletDelivery);
+
         return $palletDelivery;
     }
 
@@ -100,8 +99,11 @@ class ConfirmPalletDelivery extends OrgAction
             return true;
         }
 
-        if (! in_array($this->palletDelivery->state, [PalletDeliveryStateEnum::SUBMITTED,
-            PalletDeliveryStateEnum::IN_PROCESS, PalletDeliveryStateEnum::RECEIVED])) {
+        if (!in_array($this->palletDelivery->state, [
+            PalletDeliveryStateEnum::SUBMITTED,
+            PalletDeliveryStateEnum::IN_PROCESS,
+            PalletDeliveryStateEnum::RECEIVED
+        ])) {
             return false;
         }
 
@@ -115,9 +117,10 @@ class ConfirmPalletDelivery extends OrgAction
 
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
     {
-        $this->palletDelivery   = $palletDelivery;
+        $this->palletDelivery    = $palletDelivery;
         $this->sendNotifications = true;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);
+
         return $this->handle($palletDelivery);
     }
 
@@ -128,6 +131,7 @@ class ConfirmPalletDelivery extends OrgAction
         $this->sendNotifications = $sendNotification;
 
         $this->initialisation($palletDelivery->organisation, []);
+
         return $this->handle($palletDelivery);
     }
 }

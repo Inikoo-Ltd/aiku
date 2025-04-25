@@ -114,8 +114,6 @@ test('add product to customer portfolio', function () {
 });
 
 
-
-
 test('add image to product', function () {
     Storage::fake('public');
 
@@ -210,16 +208,16 @@ test('get dropshipping access token', function () {
     $this->token = $token;
 })->skip();
 
-
 test('UI Index customer clients', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
-    $customer = $customerClient->customer;
+    $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', [
+
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', [
         $customerClient->organisation->slug,
         $customerClient->shop->slug,
         $customerClient->customer->slug,
-        $customerHasPlatform->id,
+        $customerHasPlatform->platform->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
@@ -239,15 +237,18 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
     });
 })->depends('create customer client');
 
+
 test('UI Show customer client', function (CustomerClient $customerClient) {
-    $customer       = $customerClient->customer;
+    $this->withoutExceptionHandling();
+
+    $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response       = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->id,
+        $customerHasPlatform->platform->slug,
         $customerClient->ulid
     ]));
 
@@ -268,14 +269,14 @@ test('UI Show customer client', function (CustomerClient $customerClient) {
 })->depends('create customer client');
 
 test('UI create customer client', function (CustomerClient $customerClient) {
-    $customer = $customerClient->customer;
+    $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->id,
+        $customerHasPlatform->platform->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -285,14 +286,15 @@ test('UI create customer client', function (CustomerClient $customerClient) {
 })->depends('create customer client');
 
 test('UI edit customer client', function (CustomerClient $customerClient) {
-    $customer       = $customerClient->customer;
+    $this->withoutExceptionHandling();
+    $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response       = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.edit', [
+    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.edit', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->id,
+        $customerHasPlatform->platform->slug,
         $customerClient->ulid
     ]));
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
@@ -331,7 +333,16 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
 
 test('UI Index customer portfolios', function () {
     $customer = Customer::first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.portfolios.index', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
+    $response = $this->get(
+        route(
+            'grp.org.shops.show.crm.customers.show.portfolios.index',
+            [
+                $this->organisation->slug,
+                $this->shop->slug,
+                $customer->slug
+            ]
+        )
+    );
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
@@ -353,7 +364,7 @@ test('UI Index customer portfolios', function () {
 test('UI get section route client dropshipping', function (CustomerClient $customerClient) {
     $customer = $customerClient->customer;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.aiku.index', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', [
         'organisation' => $customer->organisation->slug,
         'shop'         => $customer->shop->slug,
         'customer'     => $customer->slug
@@ -367,7 +378,7 @@ test('UI get section route client dropshipping', function (CustomerClient $custo
 
 test('UI index customer client order', function () {
     $this->withoutExceptionHandling();
-    $platform       = Platform::where('code', 'aiku')->first();
+    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
     $customer = AttachCustomerToPlatform::make()->action(
         $this->customer,
@@ -383,11 +394,11 @@ test('UI index customer client order', function () {
     );
 
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.orders.index', [
+    $response            = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.orders.index', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->id,
+        $customerHasPlatform->platform->slug,
 
     ]));
 
@@ -410,16 +421,16 @@ test('UI index customer client order', function () {
     return $customerClient;
 });
 
-test('UI index customer client porfolios', function (CustomerClient $customerClient) {
+test('UI index customer client portfolios', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
     $customer = $customerClient->customer;
 
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index', [
+    $response            = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->id,
+        $customerHasPlatform->platform->slug,
 
     ]));
 
@@ -455,7 +466,7 @@ test('UI index customer platforms', function (CustomerClient $customerClient) {
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
-            ->component('Org/Shop/CRM/CustomerPlatforms')
+            ->component('Org/Shop/CRM/PlatformsInCustomer')
             ->has('title')
             ->has('breadcrumbs', 4)
             ->has('pageHead')

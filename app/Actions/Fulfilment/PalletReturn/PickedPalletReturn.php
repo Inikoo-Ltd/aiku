@@ -34,6 +34,9 @@ class PickedPalletReturn extends OrgAction
     use WithActionUpdate;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(PalletReturn $palletReturn, array $modelData = []): PalletReturn
     {
         $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
@@ -53,14 +56,13 @@ class PickedPalletReturn extends OrgAction
             $palletReturnItem = PalletReturnItem::find($pallet->pivot->id);
             PickWholePalletInPalletReturn::make()->action($palletReturnItem, []);
         }
-
+        AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
 
         GroupHydratePalletReturns::dispatch($palletReturn->group);
         OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
         WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
-
         SendPalletReturnNotification::run($palletReturn);
         PalletReturnRecordSearch::dispatch($palletReturn);
 
@@ -80,6 +82,9 @@ class PickedPalletReturn extends OrgAction
         return new PalletReturnResource($palletReturn);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
@@ -87,6 +92,9 @@ class PickedPalletReturn extends OrgAction
         return $this->handle($palletReturn, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
@@ -94,6 +102,9 @@ class PickedPalletReturn extends OrgAction
         return $this->handle($palletReturn, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(PalletReturn $palletReturn): PalletReturn
     {
         $this->asAction = true;

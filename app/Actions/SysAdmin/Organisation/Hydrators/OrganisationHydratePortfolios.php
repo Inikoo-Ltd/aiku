@@ -8,8 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
+use App\Actions\Traits\Hydrators\WithHydratePortfolios;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,7 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class OrganisationHydratePortfolios implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
+    use WithHydratePortfolios;
 
 
     public string $jobQueue = 'low-priority';
@@ -29,14 +28,8 @@ class OrganisationHydratePortfolios implements ShouldBeUnique
 
     public function handle(Organisation $organisation): void
     {
-        $stats = [
-            'number_portfolios'                      => $organisation->portfolios()->count(),
-            'number_current_portfolios'              => $organisation->portfolios()->where('status', true)->count(),
-            'number_portfolios_platform_shopify'     => $organisation->portfolios()->where('type', PortfolioTypeEnum::SHOPIFY->value)->count(),
-            'number_portfolios_platform_woocommerce' => $organisation->portfolios()->where('type', PortfolioTypeEnum::WOOCOMMERCE->value)->count(),
-        ];
-
-
-        $organisation->dropshippingStats->update($stats);
+        $organisation->dropshippingStats->update(
+            $this->getPortfoliosStats($organisation)
+        );
     }
 }
