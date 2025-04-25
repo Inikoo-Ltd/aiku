@@ -220,7 +220,7 @@ class IndexCustomerClients extends OrgAction
                                     'organisation'        => $scope->organisation->slug,
                                     'shop'                => $scope->shop->slug,
                                     'customer'            => $scope->slug,
-                                    'customerHasPlatform' => $this->parent->id
+                                    'platform' => $this->parent->platform->slug
                                 ]
                             ]
                         ]
@@ -303,7 +303,7 @@ class IndexCustomerClients extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'customerHasPlatform'])
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
                     ]
                 )
             ),
@@ -318,7 +318,7 @@ class IndexCustomerClients extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'customerHasPlatform'])
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'platform'])
                     ]
                 )
             ),
