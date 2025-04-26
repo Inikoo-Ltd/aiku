@@ -68,6 +68,7 @@ class IndexMasterFamilies extends OrgAction
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         $queryBuilder->where('master_product_categories.type', ProductCategoryTypeEnum::FAMILY);
+        $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id');
 
         $queryBuilder->select([
             'master_product_categories.id',
@@ -78,6 +79,9 @@ class IndexMasterFamilies extends OrgAction
             'master_product_categories.description',
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
+            'master_product_category_stats.number_current_families as used_in',
+            'master_product_category_stats.number_current_master_assets_type_product as products',
+
         ]);
 
 
@@ -137,7 +141,10 @@ class IndexMasterFamilies extends OrgAction
 
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+
         };
     }
 

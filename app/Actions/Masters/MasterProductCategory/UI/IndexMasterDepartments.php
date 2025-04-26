@@ -65,6 +65,10 @@ class IndexMasterDepartments extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
+        $queryBuilder->where('master_product_categories.type', ProductCategoryTypeEnum::DEPARTMENT);
+
+        $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id');
+
         $queryBuilder->select([
             'master_product_categories.id',
             'master_product_categories.slug',
@@ -74,6 +78,9 @@ class IndexMasterDepartments extends OrgAction
             'master_product_categories.description',
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
+            'master_product_category_stats.number_current_departments as used_in',
+            'master_product_category_stats.number_current_master_product_categories_type_family as families',
+            'master_product_category_stats.number_current_master_assets_type_product as products',
         ]);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
@@ -89,7 +96,6 @@ class IndexMasterDepartments extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->where('master_product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -120,7 +126,11 @@ class IndexMasterDepartments extends OrgAction
             }
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'families', label: __('families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+
         };
     }
 

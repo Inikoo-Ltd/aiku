@@ -105,7 +105,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
                 'department' => MasterDepartmentsResource::make($masterdepartment),
                 'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
-                'families' => FamilyResource::collection($masterdepartment->families()),
+                'families' => FamilyResource::collection($masterdepartment->masterFamilies()),
                 'web_block_types_families' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
             ]
         );

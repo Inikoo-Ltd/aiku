@@ -82,6 +82,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_subscriptions_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_master_product_categories
+ * @property int $number_current_master_product_categories status=true
+ * @property int $number_master_product_categories_type_sub_department
+ * @property int $number_current_master_product_categories_type_sub_department
+ * @property int $number_master_product_categories_type_family
+ * @property int $number_current_master_product_categories_type_family
  * @method static Builder<static>|MasterProductCategoryStats newModelQuery()
  * @method static Builder<static>|MasterProductCategoryStats newQuery()
  * @method static Builder<static>|MasterProductCategoryStats query()

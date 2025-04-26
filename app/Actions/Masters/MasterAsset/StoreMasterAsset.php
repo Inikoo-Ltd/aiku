@@ -8,6 +8,9 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -75,6 +78,14 @@ class StoreMasterAsset extends OrgAction
         });
 
         GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);
+        MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
+        if ($masterAsset->masterdepartment) {
+            MasterDepartmentHydrateMasterAssets::dispatch($masterAsset->masterDepartment)->delay($this->hydratorsDelay);
+        }
+        if ($masterAsset->masterFamily) {
+            MasterFamilyHydrateMasterAssets::dispatch($masterAsset->masterFamily)->delay($this->hydratorsDelay);
+        }
+
 
         return $masterAsset;
     }

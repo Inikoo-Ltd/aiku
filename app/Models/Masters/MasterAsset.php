@@ -73,7 +73,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\Stock> $stocks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
@@ -150,6 +150,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return $this->belongsTo(Group::class);
     }
 
+    public function masterShop(): BelongsTo
+    {
+        return $this->belongsTo(MasterShop::class);
+    }
+
     public function masterProductVariants(): HasMany
     {
         return $this->hasMany(MasterAsset::class, 'main_master_product_id');
@@ -174,7 +179,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
     }
-
 
 
     public function stats(): HasOne

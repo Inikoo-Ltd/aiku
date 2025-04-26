@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -40,7 +41,6 @@ class StoreMasterProductCategory extends GrpAction
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         } else {
-
             data_set($modelData, 'master_shop_id', $parent->id);
         }
 
@@ -60,6 +60,9 @@ class StoreMasterProductCategory extends GrpAction
             MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
             MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
+            if ($masterProductCategory->department) {
+                MasterDepartmentHydrateMasterFamilies::dispatch($masterProductCategory->department)->delay($this->hydratorsDelay);
+            }
         }
 
         return $masterProductCategory;

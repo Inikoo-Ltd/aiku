@@ -8,36 +8,26 @@
 
 namespace App\Actions\Masters\MasterShop\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Models\Masters\MasterShop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterShopHydrateMasterDepartments
+class MasterShopHydrateMasterDepartments implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
 
-    private MasterShop $masterShop;
-
-    public function __construct(MasterShop $masterShop)
+    public function getJobUniqueId(MasterShop $masterShop): string
     {
-        $this->masterShop = $masterShop;
+        return $masterShop->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->masterShop->id))->dontRelease()];
-    }
 
     public function handle(MasterShop $masterShop): void
     {
         $stats = [
-            'number_master_product_categories_type_department' => $masterShop->getMasterDepartments()->count(),
+            'number_master_product_categories_type_department'         => $masterShop->getMasterDepartments()->count(),
             'number_current_master_product_categories_type_department' => $masterShop->getMasterDepartments()->where('status', true)->count(),
         ];
-
-
 
         $masterShop->stats()->update($stats);
     }

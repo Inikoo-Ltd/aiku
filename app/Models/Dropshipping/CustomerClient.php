@@ -64,6 +64,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Group $group
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read Shop|null $shop
  * @property-read \App\Models\Dropshipping\CustomerClientStats|null $stats
  * @property-read UniversalSearch|null $universalSearch

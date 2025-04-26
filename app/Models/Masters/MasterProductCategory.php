@@ -157,17 +157,17 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterProductCategory::class);
     }
 
-    public function department(): BelongsTo
+    public function masterDepartment(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_department_id');
     }
 
-    public function subDepartment(): BelongsTo
+    public function masterSubDepartment(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
     }
 
-    public function subDepartments(): HasMany
+    public function masterSubDepartments(): HasMany
     {
         return $this->hasMany(MasterProductCategory::class, 'master_department_id');
     }
@@ -183,7 +183,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterProductCategory::class, 'master_parent_id');
     }
 
-    public function families(): LaravelCollection
+    public function masterFamilies(): LaravelCollection
     {
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }

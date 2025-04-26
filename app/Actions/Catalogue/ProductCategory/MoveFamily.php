@@ -16,8 +16,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class MoveFamily extends OrgAction
 {
-    use WithProductCategoryHydrators;
-
     public function handle(ProductCategory $family, $modelData): ProductCategory
     {
         if (Arr::exists($modelData, 'department_id')) {

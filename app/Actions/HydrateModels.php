@@ -39,6 +39,10 @@ class HydrateModels extends HydrateModel
             $this->hydrateInventory($command);
         }
 
+        if ($this->checkIfCanHydrate(['masters', 'mas'], $command)) {
+            $this->hydrateMasters($command);
+        }
+
         if ($this->checkIfCanHydrate(['goods'], $command)) {
             $this->hydrateGoods($command);
         }
@@ -110,10 +114,16 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:delivery_notes');
     }
 
+    protected function hydrateMasters(Command $command): void
+    {
+        $command->info('Master section 📐️');
+        $command->call('hydrate:master_shops');
+        $command->call('hydrate:master_product_categories');
+    }
+
     protected function hydrateGoods(Command $command): void
     {
         $command->info('Goods section ⛅️');
-        $command->call('hydrate:master_shops');
         $command->call('hydrate:stocks');
         $command->call('hydrate:stock_families');
     }

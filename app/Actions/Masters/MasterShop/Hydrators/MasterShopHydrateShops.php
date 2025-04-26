@@ -12,25 +12,18 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterShopHydrateShops
+class MasterShopHydrateShops implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private MasterShop $masterShop;
-
-    public function __construct(MasterShop $masterShop)
+    public function getJobUniqueId(MasterShop $masterShop): string
     {
-        $this->masterShop = $masterShop;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->masterShop->id))->dontRelease()];
+        return $masterShop->id;
     }
 
     public function handle(MasterShop $masterShop): void

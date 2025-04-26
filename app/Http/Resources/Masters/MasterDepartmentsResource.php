@@ -13,7 +13,7 @@ use App\Models\Masters\MasterProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property mixed $id
+ * @property int $id
  * @property mixed $slug
  * @property mixed $code
  * @property mixed $name
@@ -23,6 +23,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $master_shop_slug
  * @property mixed $master_shop_code
  * @property mixed $master_shop_name
+ * @property int $families
+ * @property int $products
+ * @property int $used_in
  */
 class MasterDepartmentsResource extends JsonResource
 {
@@ -41,6 +44,9 @@ class MasterDepartmentsResource extends JsonResource
             'master_shop_slug' => $this->master_shop_slug,
             'master_shop_code' => $this->master_shop_code,
             'master_shop_name' => $this->master_shop_name,
+            'used_in'          => $this->used_in,
+            'families'         => $this->families,
+            'products'         => $this->products,
         ];
     }
 }
