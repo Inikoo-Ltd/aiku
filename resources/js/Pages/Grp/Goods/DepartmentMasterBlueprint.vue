@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { Component, ref } from "vue";
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { faChevronCircleLeft, faChevronCircleRight, faImage, faEye, faEyeSlash, faExclamationTriangle } from '@far'
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
-import DepartementRender from '@/Components/CMS/Webpage/Department1/DepartementRender.vue'
+import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRender.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { useConfirm } from "primevue/useconfirm";
-import ConfirmPopup from 'primevue/confirmpopup';
 import { router } from "@inertiajs/vue3"
 import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import ConfirmDialog from 'primevue/confirmdialog';
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import ListItem from '@tiptap/extension-list-item'
 
 const props = defineProps<{
     pageHead: {},
@@ -52,12 +50,12 @@ const goToNext = () => {
     console.log('Next clicked')
 }
 
-const componentsDepartement: Record<string, Component> = {
-    'department-1': DepartementRender,
+const componentsDepartment: Record<string, Component> = {
+    'department-1': DepartmentRender,
 }
 
-const getComponentDepartement = (componentName: string) => {
-    return componentsDepartement[componentName]
+const getComponentDepartment = (componentName: string) => {
+    return componentsDepartment[componentName]
 }
 
 
@@ -159,7 +157,7 @@ const onUpload = async (files: File[], clear: Function) => {
                     <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
                 </button>
                 <div class="flex-1 mx-4">
-                    <component :is="getComponentDepartement(usedTemplate.code)" :data="departmentData" />
+                    <component :is="getComponentDepartment(usedTemplate.code)" :data="departmentData" />
                 </div>
                 <button @click="goToNext" aria-label="Next">
                     <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" />
@@ -215,13 +213,6 @@ const onUpload = async (files: File[], clear: Function) => {
             </ul>
         </div>
     </div>
-
-
-   <!--  <ConfirmPopup>
-        <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
-        </template>
-    </ConfirmPopup> -->
 
     <ConfirmDialog>
         <template #icon>

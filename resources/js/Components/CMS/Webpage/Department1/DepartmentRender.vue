@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faImage } from '@far'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed } from 'vue';
 import Image from '@/Components/Image.vue';
 
 const props = defineProps<{
@@ -11,12 +10,7 @@ const props = defineProps<{
   }
 }>()
 
-/* const imageSource = computed(() => {
-  const src = props.data?.images?.[0]?.source || ''
-  const isBase64 = src.startsWith('data:image/')
-  const isUrl = src.startsWith('http') || src.startsWith('/')
-  return isBase64 || isUrl ? src : null
-}) */
+
 
 console.log(props.data)
 
