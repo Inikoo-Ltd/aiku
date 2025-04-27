@@ -9,14 +9,14 @@
 
 namespace App\Actions\Goods\Ingredient;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Goods\Ingredient;
 use App\Models\SysAdmin\Group;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreIngredient extends GrpAction
+class StoreIngredient extends OrgAction
 {
     use WithNoStrictRules;
 
@@ -58,14 +58,14 @@ class StoreIngredient extends GrpAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
 
     public function asController(Group $group, ActionRequest $request): Ingredient
     {
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
     }

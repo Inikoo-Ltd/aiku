@@ -8,12 +8,12 @@
 
 namespace App\Actions\Goods\StockFamily\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateStockFamily extends GrpAction
+class CreateStockFamily extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -22,7 +22,7 @@ class CreateStockFamily extends GrpAction
 
     public function asController(ActionRequest $request): Response
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($request);
     }

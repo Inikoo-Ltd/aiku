@@ -8,8 +8,8 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\GrpAction;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
@@ -20,7 +20,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowProfileIndexTimesheets extends GrpAction
+class ShowProfileIndexTimesheets extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -28,7 +28,7 @@ class ShowProfileIndexTimesheets extends GrpAction
 
     public function asController(ActionRequest $request): ?LengthAwarePaginator
     {
-        $this->initialisation(group(), $request)->withTab(ProfileTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
         $employees = $request->user()->employees;
         if (count($employees) > 0) {
@@ -43,7 +43,7 @@ class ShowProfileIndexTimesheets extends GrpAction
     public function jsonResponse(?LengthAwarePaginator $timesheets): AnonymousResourceCollection
     {
         if ($timesheets == null) {
-            return TimesheetsResource::collection(collect([]));
+            return TimesheetsResource::collection(collect());
         }
         return TimesheetsResource::collection($timesheets);
     }

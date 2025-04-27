@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
@@ -17,7 +17,7 @@ use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowProfileShowcase extends GrpAction
+class ShowProfileShowcase extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -25,7 +25,7 @@ class ShowProfileShowcase extends GrpAction
 
     public function asController(ActionRequest $request): User
     {
-        $this->initialisation(group(), $request)->withTab(ProfileTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
         return $request->user();
     }

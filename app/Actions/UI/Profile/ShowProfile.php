@@ -10,9 +10,9 @@ namespace App\Actions\UI\Profile;
 
 use App\Actions\Analytics\UserRequest\UI\IndexUserRequestLogs;
 use App\Actions\Analytics\UserRequest\UI\ShowUserRequestLogs;
-use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
@@ -27,7 +27,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowProfile extends GrpAction
+class ShowProfile extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -35,7 +35,7 @@ class ShowProfile extends GrpAction
 
     public function asController(ActionRequest $request): User
     {
-        $this->initialisation(group(), $request)->withTab(ProfileTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
         return $request->user();
     }
