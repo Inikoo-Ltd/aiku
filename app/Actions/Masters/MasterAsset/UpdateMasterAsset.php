@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMaste
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -22,12 +23,12 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAsset extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithMastersEditAuthorisation;
 
 
     private MasterAsset $masterAsset;
@@ -100,15 +101,6 @@ class UpdateMasterAsset extends OrgAction
         }
 
         return $rules;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
     }
 
     /**

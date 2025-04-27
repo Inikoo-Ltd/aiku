@@ -33,9 +33,9 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
     private MasterShop $parent;
 
-    public function handle(MasterProductCategory $masterdepartment): MasterProductCategory
+    public function handle(MasterProductCategory $masterDepartment): MasterProductCategory
     {
-        return $masterdepartment;
+        return $masterDepartment;
     }
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): MasterProductCategory
@@ -46,17 +46,11 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
         return $this->handle($masterDepartment);
     }
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("goods.{$this->group->id}.edit");
 
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
-
-    public function htmlResponse(MasterProductCategory $masterdepartment, ActionRequest $request): Response
+    public function htmlResponse(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Goods/DepartementMasterBlueprint',
+            'Goods/DepartmentMasterBlueprint',
             [
                 'title'       => __('department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -64,11 +58,11 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterdepartment, $request),
-                    'next'     => $this->getNext($masterdepartment, $request),
+                    'previous' => $this->getPrevious($masterDepartment, $request),
+                    'next'     => $this->getNext($masterDepartment, $request),
                 ],
                 'pageHead'    => [
-                    'title'     => $masterdepartment->name,
+                    'title'     => $masterDepartment->name,
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('department')
@@ -84,14 +78,14 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                             ]
                         ]
                     ],
-                    // 'subNavigation' => $this->getDepartmentSubNavigation($masterdepartment)
+                    // 'subNavigation' => $this->getDepartmentSubNavigation($masterDepartment)
                 ],
 
                 'upload_image_route' => [
                     'method' => 'post',
                     'name'       => 'grp.models.master_product_image.upload',
                     'parameters' => [
-                        'masterProductCategory' => $masterdepartment->id
+                        'masterProductCategory' => $masterDepartment->id
                     ]
                 ],
 
@@ -99,26 +93,26 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     'method' => 'patch',
                     'name'       => 'grp.models.master_product.update',
                     'parameters' => [
-                        'masterProductCategory' => $masterdepartment->id
+                        'masterProductCategory' => $masterDepartment->id
                     ]
                 ],
 
-                'department' => MasterDepartmentsResource::make($masterdepartment),
+                'department' => MasterDepartmentsResource::make($masterDepartment),
                 'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
-                'families' => FamilyResource::collection($masterdepartment->masterFamilies()),
+                'families' => FamilyResource::collection($masterDepartment->masterFamilies()),
                 'web_block_types_families' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
             ]
         );
     }
 
-    public function jsonResponse(MasterProductCategory $masterdepartment): DepartmentsResource
+    public function jsonResponse(MasterProductCategory $masterDepartment): DepartmentsResource
     {
-        return new DepartmentsResource($masterdepartment);
+        return new DepartmentsResource($masterDepartment);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function (MasterProductCategory $masterdepartment, array $routeParameters, $suffix) {
+        $headCrumb = function (MasterProductCategory $masterDepartment, array $routeParameters, $suffix) {
             return [
 
                 [
@@ -130,7 +124,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $masterdepartment->code,
+                            'label' => $masterDepartment->code,
                         ],
                     ],
                     'suffix'         => $suffix,
@@ -140,7 +134,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
             ];
         };
 
-        $masterdepartment = MasterProductCategory::where('slug', $routeParameters['masterDepartment'])->first();
+        $masterDepartment = MasterProductCategory::where('slug', $routeParameters['masterDepartment'])->first();
 
         return match ($routeName) {
             /*
@@ -169,7 +163,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
-                    $masterdepartment,
+                    $masterDepartment,
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.index',
@@ -187,50 +181,46 @@ class ShowMasterDepartmentWorkshop extends GrpAction
         };
     }
 
-    public function getPrevious(MasterProductCategory $masterdepartment, ActionRequest $request): ?array
+    public function getPrevious(MasterProductCategory $masterDepartment, ActionRequest $request): ?array
     {
-        $previous = MasterProductCategory::where('code', '<', $masterdepartment->code)->where('master_shop_id', $this->parent->id)->orderBy('code', 'desc')->first();
+        $previous = MasterProductCategory::where('code', '<', $masterDepartment->code)->where('master_shop_id', $this->parent->id)->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(MasterProductCategory $masterdepartment, ActionRequest $request): ?array
+    public function getNext(MasterProductCategory $masterDepartment, ActionRequest $request): ?array
     {
-        $next = MasterProductCategory::where('code', '>', $masterdepartment->code)->where('master_shop_id', $this->parent->id)->orderBy('code')->first();
+        $next = MasterProductCategory::where('code', '>', $masterDepartment->code)->where('master_shop_id', $this->parent->id)->orderBy('code')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    private function getNavigation(?MasterProductCategory $masterdepartment, string $routeName): ?array
+    private function getNavigation(?MasterProductCategory $masterDepartment, string $routeName): ?array
     {
-        if (!$masterdepartment) {
+        if (!$masterDepartment) {
             return null;
         }
 
         return match ($routeName) {
-            /*
-            'shops.departments.show' => [
-                'label' => $masterdepartment->name,
+            'grp.masters.departments.blueprint' => [
+                'label' => $masterDepartment->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'department' => $masterdepartment->slug
+                        'masterFamily' => $masterDepartment->slug
                     ]
                 ]
             ],
-            */
-            // 'grp.org.shops.show.catalogue.departments.show' => [
-            //     'label' => $masterdepartment->name,
-            //     'route' => [
-            //         'name'       => $routeName,
-            //         'parameters' => [
-            //             'organisation' => $masterdepartment->organisation->slug,
-            //             'shop'         => $masterdepartment->shop->slug,
-            //             'department'   => $masterdepartment->slug
-            //         ]
-            //     ]
-            // ],
-
+            'grp.masters.shops.show.departments.blueprint' => [
+                'label' => $masterDepartment->name,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'masterShop'   => $masterDepartment->masterShop->slug,
+                        'masterFamily' => $masterDepartment->slug
+                    ]
+                ]
+            ],
             default => []
         };
     }

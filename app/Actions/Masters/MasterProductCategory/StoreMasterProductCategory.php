@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreMasterProductCategory extends GrpAction
 {
     use WithNoStrictRules;
+    use WithMastersEditAuthorisation;
 
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
@@ -103,15 +105,6 @@ class StoreMasterProductCategory extends GrpAction
         return $rules;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
-
     public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): MasterProductCategory
     {
         $this->asAction       = true;
@@ -122,13 +115,6 @@ class StoreMasterProductCategory extends GrpAction
         $this->initialisation($group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
-    }
-
-    public function asController(MasterShop $masterShop, ActionRequest $request): MasterProductCategory
-    {
-        $this->initialisation($masterShop->group, $request);
-
-        return $this->handle($masterShop, $this->validatedData);
     }
 
     public function inDepartment(MasterShop $masterShop, MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory

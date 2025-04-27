@@ -12,6 +12,7 @@ use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
@@ -21,6 +22,7 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,13 +31,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterAssets extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
+    use WithMastersAuthorisation;
 
     private Group|MasterShop|MasterProductCategory $parent;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("masters.{$this->group->id}.view");
-    }
 
     public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
@@ -140,8 +138,13 @@ class IndexMasterAssets extends GrpAction
     {
         $title = __('master products');
 
+        $icon = '';
+        $model = null;
+        $afterTitle = null;
+        $iconRight = null;
+        $subNavigation = null;
+
         if ($this->parent instanceof Group) {
-            $subNavigation = null;
             $model         = '';
             $icon          = [
                 'icon'  => ['fal', 'fa-cube'],
@@ -226,9 +229,7 @@ class IndexMasterAssets extends GrpAction
                 $headCrumb(
                     [
                         'name'       => $routeName,
-                        'parameters' => [
-                            'masterShop' => $this->parent->slug
-                        ]
+                        'parameters' => Arr::only($routeParameters, ['masterShop']),
                     ],
                     $suffix
                 ),

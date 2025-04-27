@@ -8,29 +8,21 @@
 
 namespace App\Actions\Masters\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Actions\UI\WithInertia;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowMastersDashboard extends GrpAction
+class ShowMastersDashboard extends OrgAction
 {
-    use AsAction;
-    use WithInertia;
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
+    use WithMastersAuthorisation;
 
 
     public function asController(ActionRequest $request): ActionRequest
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $request;
     }

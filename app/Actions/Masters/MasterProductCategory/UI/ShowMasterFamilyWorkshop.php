@@ -10,9 +10,9 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -29,26 +29,20 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowMasterFamilyWorkshop extends GrpAction
 {
     use WithFamilySubNavigation;
+    use WithMastersAuthorisation;
 
     private MasterShop $parent;
 
-    public function handle(MasterProductCategory $masterfamily): MasterProductCategory
+    public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
-        return $masterfamily;
+        return $masterFamily;
     }
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("goods.{$this->group->id}.edit");
-
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterShop;
-        $group = group();
+        $group        = group();
 
         $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
@@ -56,23 +50,23 @@ class ShowMasterFamilyWorkshop extends GrpAction
     }
 
 
-    public function htmlResponse(MasterProductCategory $masterfamily, ActionRequest $request): Response
+    public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
             'Goods/FamilyMasterBlueprint',
             [
                 'title'       => __('family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $masterfamily,
+                    $masterFamily,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterfamily, $request),
-                    'next'     => $this->getNext($masterfamily, $request),
+                    'previous' => $this->getPrevious($masterFamily, $request),
+                    'next'     => $this->getNext($masterFamily, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $masterfamily->name,
+                    'title'   => $masterFamily->name,
                     'model'   => '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder'],
@@ -96,7 +90,6 @@ class ShowMasterFamilyWorkshop extends GrpAction
                             ]
                         ] : false
                     ],
-                    // 'subNavigation' => $this->getFamilySubNavigation($masterfamily, $this->parent, $request)
 
                 ],
                 'tabs'        => [
@@ -105,160 +98,77 @@ class ShowMasterFamilyWorkshop extends GrpAction
                 ],
 
                 'upload_image_route' => [
-                    'method' => 'post',
+                    'method'     => 'post',
                     'name'       => 'grp.models.master_product_image.upload',
                     'parameters' => [
-                        'masterProductCategory' => $masterfamily->id
+                        'masterProductCategory' => $masterFamily->id
                     ]
                 ],
 
                 'update_route' => [
-                    'method' => 'patch',
+                    'method'     => 'patch',
                     'name'       => 'grp.models.master_product.update',
                     'parameters' => [
-                        'masterProductCategory' => $masterfamily->id
+                        'masterProductCategory' => $masterFamily->id
                     ]
                 ],
 
-                'family' => FamilyResource::make($masterfamily),
-                'web_block_types' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
-                'assets' => MasterProductsResource::collection($masterfamily->masterAssets()->get()),
+                'family'                   => FamilyResource::make($masterFamily),
+                'web_block_types'          => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
+                'assets'                   => MasterProductsResource::collection($masterFamily->masterAssets()->get()),
                 'web_block_types_products' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get()),
             ]
         );
     }
 
 
-    public function jsonResponse(MasterProductCategory $masterfamily): DepartmentsResource
+    public function jsonResponse(MasterProductCategory $masterFamily): DepartmentsResource
     {
-        return new DepartmentsResource($masterfamily);
+        return new DepartmentsResource($masterFamily);
     }
 
-    public function getBreadcrumbs(MasterProductCategory $masterfamily, string $routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (MasterProductCategory $masterfamily, array $routeParameters, $suffix) {
-            return [
-
-                [
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Families')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $masterfamily->code,
-                        ],
-                    ],
-                    'suffix'         => $suffix,
-
-                ],
-
-            ];
-        };
-
-
-        return match ($routeName) {
-            'grp.org.shops.show.catalogue.families.show' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $masterfamily,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.catalogue.departments.show.families.show' =>
-            array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
-                $headCrumb(
-                    $masterfamily,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
-                            'parameters' => $routeParameters
-
-
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show' =>
-            array_merge(
-                (new ShowMasterSubDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub-departments.show', $routeParameters),
-                $headCrumb(
-                    $masterfamily,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show',
-                            'parameters' => $routeParameters
-
-
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            default => []
-        };
+        return ShowMasterFamily::make()->getBreadcrumbs($masterFamily, $routeName, $routeParameters, __('Workshop'));
     }
 
-    public function getPrevious(MasterProductCategory $masterfamily, ActionRequest $request): ?array
+    public function getPrevious(MasterProductCategory $masterFamily, ActionRequest $request): ?array
     {
-        $previous = MasterProductCategory::where('code', '<', $masterfamily->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
+        $previous = MasterProductCategory::where('code', '<', $masterFamily->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(MasterProductCategory $masterfamily, ActionRequest $request): ?array
+    public function getNext(MasterProductCategory $masterFamily, ActionRequest $request): ?array
     {
-        $next = MasterProductCategory::where('code', '>', $masterfamily->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
+        $next = MasterProductCategory::where('code', '>', $masterFamily->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    private function getNavigation(?MasterProductCategory $masterfamily, string $routeName): ?array
+    private function getNavigation(?MasterProductCategory $masterFamily, string $routeName): ?array
     {
-        if (!$masterfamily) {
+        if (!$masterFamily) {
             return null;
         }
 
         return match ($routeName) {
-            'shops.families.show' => [
-                'label' => $masterfamily->name,
+            'grp.masters.families.show' => [
+                'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'department' => $masterfamily->slug
+                        'masterFamily' => $masterFamily->slug
                     ]
                 ]
             ],
-            'shops.show.families.show' => [
-                'label' => $masterfamily->name,
+            'grp.masters.shops.show.families.show' => [
+                'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'shop'       => $masterfamily->shop->slug,
-                        'department' => $masterfamily->slug
+                        'masterShop'   => $masterFamily->masterShop->slug,
+                        'masterFamily' => $masterFamily->slug
                     ]
                 ]
             ],

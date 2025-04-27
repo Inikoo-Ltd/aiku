@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterShop\UI;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\UI\ShowMastersDashboard;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterShopsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterShop;
@@ -27,11 +28,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterShops extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("masters.{$this->group->id}.view");
-    }
+    use WithMastersAuthorisation;
 
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
@@ -105,15 +102,14 @@ class IndexMasterShops extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $masterShops, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Masters/MasterShops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
                 'title'       => __('master shops'),
                 'pageHead'    => [
-                    'title'         => __('Master Shops'),
-                    'icon'          => [
+                    'title' => __('Master Shops'),
+                    'icon'  => [
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('master shops')
                     ],

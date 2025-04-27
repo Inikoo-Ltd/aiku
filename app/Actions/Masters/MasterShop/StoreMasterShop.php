@@ -8,8 +8,9 @@
 
 namespace App\Actions\Masters\MasterShop;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterShop;
@@ -23,8 +24,10 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
-class StoreMasterShop extends GrpAction
+class StoreMasterShop extends OrgAction
 {
+    use WithMastersEditAuthorisation;
+
     /**
      * @throws \Throwable
      */
@@ -71,15 +74,6 @@ class StoreMasterShop extends GrpAction
         ];
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
-
     /**
      * @throws \Throwable
      */
@@ -89,7 +83,7 @@ class StoreMasterShop extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
@@ -99,7 +93,7 @@ class StoreMasterShop extends GrpAction
      */
     public function asController(Group $group, ActionRequest $request): MasterShop
     {
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
     }

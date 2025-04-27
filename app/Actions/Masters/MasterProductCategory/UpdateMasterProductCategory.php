@@ -8,29 +8,19 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
-use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithActionUpdate;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Inventory\Location;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterProductCategory extends GrpAction
+class UpdateMasterProductCategory extends OrgAction
 {
-    use WithActionUpdate;
-    use WithNoStrictRules;
+    use WithMasterProductCategoryAction;
 
-    private MasterProductCategory $masterProductCategory;
-
-    private MasterShop $masterShop;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -44,15 +34,6 @@ class UpdateMasterProductCategory extends GrpAction
 
         }
         return $masterProductCategory;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
     }
 
 
@@ -87,39 +68,5 @@ class UpdateMasterProductCategory extends GrpAction
         }
 
         return $rules;
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if ($this->masterProductCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $this->set('master_department_id', null);
-        }
-    }
-
-    public function action(MasterProductCategory $masterProductCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): MasterProductCategory
-    {
-        $this->strict          = $strict;
-        if (!$audit) {
-            Location::disableAuditing();
-        }
-        $this->asAction        = true;
-        $this->masterProductCategory = $masterProductCategory;
-        $this->masterShop = $masterProductCategory->masterShop;
-        $this->hydratorsDelay  = $hydratorsDelay;
-
-        $this->initialisation($masterProductCategory->group, $modelData);
-
-        return $this->handle($masterProductCategory, $this->validatedData);
-    }
-
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory
-    {
-        $this->asAction        = true;
-        $this->masterProductCategory = $masterProductCategory;
-        $this->masterShop = $masterProductCategory->masterShop;
-
-        $this->initialisation($masterProductCategory->group, $request);
-
-        return $this->handle($masterProductCategory, $this->validatedData);
     }
 }

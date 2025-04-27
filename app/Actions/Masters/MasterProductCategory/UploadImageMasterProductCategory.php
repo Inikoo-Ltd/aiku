@@ -8,30 +8,21 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
-use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithActionUpdate;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
-use App\Models\Inventory\Location;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
-class UploadImageMasterProductCategory extends GrpAction
+class UploadImageMasterProductCategory extends OrgAction
 {
-    use WithActionUpdate;
-    use WithNoStrictRules;
     use WithAttachMediaToModel;
-
-    private MasterProductCategory $masterProductCategory;
-
-    private MasterShop $masterShop;
+    use WithMasterProductCategoryAction;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-        $imageFile =  Arr::get($modelData, 'image');
+        /** @var \Illuminate\Http\UploadedFile $imageFile */
+        $imageFile = Arr::get($modelData, 'image');
 
         $imageData = [
             'path'         => $imageFile->getPathName(),
@@ -50,20 +41,10 @@ class UploadImageMasterProductCategory extends GrpAction
         return $masterProductCategory;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
-
-
     public function rules(): array
     {
         $rules = [
-            'image'        => ['sometimes', 'mimes:jpg,jpeg,png']
+            'image' => ['sometimes', 'mimes:jpg,jpeg,png']
         ];
 
         if (!$this->strict) {
@@ -73,19 +54,5 @@ class UploadImageMasterProductCategory extends GrpAction
         return $rules;
     }
 
-    public function action(MasterProductCategory $masterProductCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): MasterProductCategory
-    {
-        $this->strict          = $strict;
-        if (!$audit) {
-            Location::disableAuditing();
-        }
-        $this->asAction        = true;
-        $this->masterProductCategory = $masterProductCategory;
-        $this->masterShop = $masterProductCategory->masterShop;
-        $this->hydratorsDelay  = $hydratorsDelay;
 
-        $this->initialisation($masterProductCategory->group, $modelData);
-
-        return $this->handle($masterProductCategory, $this->validatedData);
-    }
 }

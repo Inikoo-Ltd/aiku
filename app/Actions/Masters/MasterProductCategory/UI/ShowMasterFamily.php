@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
@@ -25,21 +26,16 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowMasterFamily extends GrpAction
 {
     use WithFamilySubNavigation;
+    use WithMastersAuthorisation;
 
     private MasterShop $parent;
 
-    public function handle(MasterProductCategory $masterfamily): MasterProductCategory
+    public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
-        return $masterfamily;
+        return $masterFamily;
     }
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("goods.{$this->group->id}.edit");
-
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
@@ -52,23 +48,23 @@ class ShowMasterFamily extends GrpAction
     }
 
 
-    public function htmlResponse(MasterProductCategory $masterfamily, ActionRequest $request): Response
+    public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Catalogue/Family',
             [
                 'title'       => __('family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $masterfamily,
+                    $masterFamily,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterfamily, $request),
-                    'next'     => $this->getNext($masterfamily, $request),
+                    'previous' => $this->getPrevious($masterFamily, $request),
+                    'next'     => $this->getNext($masterFamily, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $masterfamily->name,
+                    'title'   => $masterFamily->name,
                     'model'   => '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder'],
@@ -93,7 +89,7 @@ class ShowMasterFamily extends GrpAction
                             ]
                         ] : false
                     ],
-                    // 'subNavigation' => $this->getFamilySubNavigation($masterfamily, $this->parent, $request)
+                    // 'subNavigation' => $this->getFamilySubNavigation($masterFamily, $this->parent, $request)
 
                 ],
                 'tabs'        => [
@@ -102,33 +98,33 @@ class ShowMasterFamily extends GrpAction
                 ],
 
                 MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductCategoryShowcase::run($masterfamily)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterfamily)),
+                    fn () => GetMasterProductCategoryShowcase::run($masterFamily)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
 
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterfamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterfamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+                //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
                 // FamilyTabsEnum::MAILSHOTS->value => $this->tab == FamilyTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($masterfamily))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($masterfamily))),
+                //     fn () => MailshotResource::collection(IndexMailshots::run($masterFamily))
+                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($masterFamily))),
 
 
             ]
         )
-        // ->table(IndexCustomers::make()->tableStructure(parent: $masterfamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure($masterfamily));
+        // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+            ->table(IndexMailshots::make()->tableStructure($masterFamily));
 
     }
 
 
-    public function jsonResponse(MasterProductCategory $masterfamily): DepartmentsResource
+    public function jsonResponse(MasterProductCategory $masterFamily): DepartmentsResource
     {
-        return new DepartmentsResource($masterfamily);
+        return new DepartmentsResource($masterFamily);
     }
 
-    public function getBreadcrumbs(MasterProductCategory $masterfamily, string $routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function (MasterProductCategory $masterfamily, array $routeParameters, $suffix) {
+        $headCrumb = function (MasterProductCategory $masterFamily, array $routeParameters, $suffix) {
             return [
 
                 [
@@ -140,7 +136,7 @@ class ShowMasterFamily extends GrpAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $masterfamily->code,
+                            'label' => $masterFamily->code,
                         ],
                     ],
                     'suffix'         => $suffix,
@@ -156,7 +152,7 @@ class ShowMasterFamily extends GrpAction
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
-                    $masterfamily,
+                    $masterFamily,
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.catalogue.families.index',
@@ -174,7 +170,7 @@ class ShowMasterFamily extends GrpAction
             array_merge(
                 (new ShowMasterDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
                 $headCrumb(
-                    $masterfamily,
+                    $masterFamily,
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.families.index',
@@ -194,7 +190,7 @@ class ShowMasterFamily extends GrpAction
             array_merge(
                 (new ShowMasterSubDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub-departments.show', $routeParameters),
                 $headCrumb(
-                    $masterfamily,
+                    $masterFamily,
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
@@ -214,47 +210,47 @@ class ShowMasterFamily extends GrpAction
         };
     }
 
-    public function getPrevious(MasterProductCategory $masterfamily, ActionRequest $request): ?array
+    public function getPrevious(MasterProductCategory $masterFamily, ActionRequest $request): ?array
     {
-        $previous = MasterProductCategory::where('code', '<', $masterfamily->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
+        $previous = MasterProductCategory::where('code', '<', $masterFamily->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(MasterProductCategory $masterfamily, ActionRequest $request): ?array
+    public function getNext(MasterProductCategory $masterFamily, ActionRequest $request): ?array
     {
-        $next = MasterProductCategory::where('code', '>', $masterfamily->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
+        $next = MasterProductCategory::where('code', '>', $masterFamily->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    private function getNavigation(?MasterProductCategory $masterfamily, string $routeName): ?array
+    private function getNavigation(?MasterProductCategory $masterFamily, string $routeName): ?array
     {
-        if (!$masterfamily) {
+        if (!$masterFamily) {
             return null;
         }
 
         return match ($routeName) {
-            'shops.families.show' => [
-                'label' => $masterfamily->name,
+            'grp.masters.families.show' => [
+                'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'department' => $masterfamily->slug
+                        'masterFamily' => $masterFamily->slug
                     ]
                 ]
             ],
-            'shops.show.families.show' => [
-                'label' => $masterfamily->name,
+            'grp.masters.shops.show.families.show' => [
+                'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'shop'       => $masterfamily->shop->slug,
-                        'department' => $masterfamily->slug
+                        'masterShop'   => $masterFamily->masterShop->slug,
+                        'masterFamily' => $masterFamily->slug
                     ]
                 ]
             ],
-            default => [] // Add a default case to handle unmatched route names
+            default => []
         };
     }
 }

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowMasterSubDepartment extends GrpAction
 {
     use WithSubDepartmentSubNavigation;
+    use WithMastersAuthorisation;
 
 
     private MasterShop $parent;
@@ -36,23 +38,14 @@ class ShowMasterSubDepartment extends GrpAction
     }
 
 
-
     public function asController(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterShop;
-        $group = group();
+        $group        = group();
         $this->initialisation($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
 
         return $this->handle($masterSubDepartment);
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("goods.{$this->group->id}.edit");
-
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
-
 
     public function htmlResponse(MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
@@ -61,6 +54,8 @@ class ShowMasterSubDepartment extends GrpAction
             [
                 'title'       => __('Sub-department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $masterSubDepartment,
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -69,9 +64,9 @@ class ShowMasterSubDepartment extends GrpAction
                     'next'     => $this->getNext($masterSubDepartment, $request),
                 ],
                 'pageHead'    => [
-                    'title'     => $masterSubDepartment->name,
-                    'model'     => __('Sub-department'),
-                    'icon'      => [
+                    'title'   => $masterSubDepartment->name,
+                    'model'   => __('Sub-department'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('Sub-department')
                     ],
@@ -93,7 +88,6 @@ class ShowMasterSubDepartment extends GrpAction
                             ]
                         ] : false
                     ],
-                    // 'subNavigation' => $this->getSubDepartmentSubNavigation($masterSubDepartment)
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -109,24 +103,8 @@ class ShowMasterSubDepartment extends GrpAction
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))),
 
 
-
-
-
             ]
         )
-        // ->table(
-        //     IndexCustomers::make()->tableStructure(
-        //         parent: $masterSubDepartment->shop,
-        //         prefix: 'customers'
-        //     )
-        // )
-        // ->table(
-        //     IndexMailshots::make()->tableStructure(
-        //         parent: $masterSubDepartment->shop,
-        //         prefix: 'mailshots'
-        //     )
-        // )
-
             ->table(IndexHistory::make()->tableStructure(prefix: MasterSubDepartmentTabsEnum::HISTORY->value));
     }
 
@@ -136,7 +114,7 @@ class ShowMasterSubDepartment extends GrpAction
         return new DepartmentsResource($masterSubDepartment);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(MasterProductCategory $masterSubDepartment, MasterShop $parent, string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (MasterProductCategory $masterSubDepartment, array $routeParameters, $suffix) {
             return [
@@ -160,31 +138,8 @@ class ShowMasterSubDepartment extends GrpAction
             ];
         };
 
-        $masterSubDepartment = MasterProductCategory::where('slug', $routeParameters['subDepartment'])->first();
 
         return match ($routeName) {
-            /*
-            'shops.departments.show' =>
-            array_merge(
-                IndexShops::make()->getBreadcrumbs(),
-                $headCrumb(
-                    $routeParameters['department'],
-                    [
-                        'index' => [
-                            'name'       => 'shops.departments.index',
-                            'parameters' => []
-                        ],
-                        'model' => [
-                            'name'       => 'shops.departments.show',
-                            'parameters' => [
-                                $routeParameters['department']->slug
-                            ]
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            */
             'grp.org.shops.show.catalogue.departments.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
@@ -205,7 +160,7 @@ class ShowMasterSubDepartment extends GrpAction
             ),
             'grp.org.shops.show.catalogue.departments.show.sub-departments.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                (new ShowMasterDepartment())->getBreadcrumbs($parent, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
                 $headCrumb(
                     $masterSubDepartment,
                     [
@@ -248,22 +203,13 @@ class ShowMasterSubDepartment extends GrpAction
         }
 
         return match ($routeName) {
-            'shops.families.show' => [
+            'grp.masters.shops.show.sub-departments.show' => [
                 'label' => $masterSubDepartment->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'department' => $masterSubDepartment->slug
-                    ]
-                ]
-            ],
-            'shops.show.families.show' => [
-                'label' => $masterSubDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'shop'       => $masterSubDepartment->shop->slug,
-                        'department' => $masterSubDepartment->slug
+                        'masterShop'          => $masterSubDepartment->masterShop->slug,
+                        'masterSubDepartment' => $masterSubDepartment->slug
                     ]
                 ]
             ],

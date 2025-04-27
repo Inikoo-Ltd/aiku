@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMaste
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -25,11 +26,11 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterAsset extends OrgAction
 {
     use WithNoStrictRules;
+    use WithMastersEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -88,15 +89,6 @@ class StoreMasterAsset extends OrgAction
 
 
         return $masterAsset;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
     }
 
     public function rules(): array
