@@ -27,8 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategory extends OrgAction
 {
-    use WithProductCategoryHydrators;
     use WithNoStrictRules;
+    use WithProductCategoryHydrators;
 
     /**
      * @throws \Throwable
@@ -52,7 +52,7 @@ class StoreProductCategory extends OrgAction
             $modelData['shop_id'] = $parent->id;
         }
 
-        $productCategory = DB::transaction(function () use ($parent, $modelData) {
+        $productCategory = DB::transaction(function () use ($modelData) {
             /** @var ProductCategory $productCategory */
             $productCategory = ProductCategory::create($modelData);
 
@@ -65,13 +65,13 @@ class StoreProductCategory extends OrgAction
             }
 
             $productCategory->refresh();
+
             return $productCategory;
         });
 
         ProductCategoryRecordSearch::dispatch($productCategory);
-
         $this->productCategoryHydrators($productCategory);
-
+        $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
 
         return $productCategory;
     }
@@ -79,8 +79,8 @@ class StoreProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'type'                 => ['required', Rule::enum(ProductCategoryTypeEnum::class)],
-            'code'                 => [
+            'type'        => ['required', Rule::enum(ProductCategoryTypeEnum::class)],
+            'code'        => [
                 'required',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -92,17 +92,17 @@ class StoreProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'                 => ['required', 'max:250', 'string'],
-            'image_id'             => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
-            'state'                => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'          => ['sometimes', 'required', 'max:1500'],
+            'name'        => ['required', 'max:250', 'string'],
+            'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
+            'description' => ['sometimes', 'required', 'max:1500'],
 
         ];
 
         if (!$this->strict) {
             $rules['source_department_id'] = ['sometimes', 'string', 'max:255'];
             $rules['source_family_id']     = ['sometimes', 'string', 'max:255'];
-            $rules = $this->noStrictStoreRules($rules);
+            $rules                         = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

@@ -6,18 +6,24 @@
 
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
+import { RouteParams } from "@/types/route-params";
 
 defineProps<{
     data: object,
     tab?: string
 }>()
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: subDepartment }">
-            <Link :href="route('grp.goods.catalogue.shops.show.sub-departments.show', 
-            { masterShop: route().params['masterShop'], masterDepartment: route().params['masterDepartment'], masterSubDepartment: subDepartment.slug })" class="primaryLink">
+            <Link :href="route('grp.masters.shops.show.sub-departments.show',
+            {
+              masterShop:(route().params as RouteParams).masterShop,
+              masterDepartment: (route().params as RouteParams).masterDepartment,
+              masterSubDepartment: subDepartment.slug
+            })" class="primaryLink">
                 {{ subDepartment["code"] }}
             </Link>
         </template>

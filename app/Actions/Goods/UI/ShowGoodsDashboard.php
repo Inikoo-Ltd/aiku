@@ -8,20 +8,14 @@
 
 namespace App\Actions\Goods\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Actions\UI\WithInertia;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowGoodsDashboard extends GrpAction
+class ShowGoodsDashboard extends OrgAction
 {
-    use AsAction;
-    use WithInertia;
-
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo("goods.{$this->group->id}.view");
@@ -30,7 +24,7 @@ class ShowGoodsDashboard extends GrpAction
 
     public function asController(ActionRequest $request): ActionRequest
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $request;
     }
@@ -38,15 +32,18 @@ class ShowGoodsDashboard extends GrpAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
+
+        $title = __('Goods');
+
         return Inertia::render(
             'Goods/GoodsDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs(),
-                'title'        => __('goods'),
+                'title'        => $title,
                 'pageHead'     => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
-                        'title' => __('goods')
+                        'title' => $title
                     ],
                     'title' => __('goods strategy'),
                 ],
@@ -75,17 +72,6 @@ class ShowGoodsDashboard extends GrpAction
                                 'number' => $this->group->goodsStats->number_stocks
                             ]
 
-                        ],
-                        [
-                            'name'  => 'Master Shops',
-                            'icon'  => ['fal', 'fa-books'],
-                            'route' => [
-                                'name'       => 'grp.goods.catalogue.shops.index',
-                                'parameters' => []
-                            ],
-                            'index' => [
-                                'number' => $this->group->goodsStats->number_master_shops
-                            ]
                         ]
                     ]
                 ],

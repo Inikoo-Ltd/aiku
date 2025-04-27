@@ -20,24 +20,47 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductCategory extends OrgAction
 {
     use WithActionUpdate;
-    use WithProductCategoryHydrators;
     use WithNoStrictRules;
+    use WithProductCategoryHydrators;
 
     private ProductCategory $productCategory;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        $originalMasterProductCategory = null;
+        if (Arr::has($modelData, 'master_product_category_id')) {
+            $originalMasterProductCategory = $productCategory->masterProductCategory;
+        }
+
         $productCategory = $this->update($productCategory, $modelData, ['data']);
+        $changes         = $productCategory->getChanges();
 
         ProductCategoryRecordSearch::dispatch($productCategory);
 
-        if ($productCategory->wasChanged('state')) {
+        if (Arr::has($changes, 'state')) {
+            $this->productCategoryHydrators($productCategory);
+        }
+
+        if (Arr::hasAny($changes, ['type', 'state', 'master_product_category_id'])) {
+            $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
+            if ($originalMasterProductCategory != null && $originalMasterProductCategory->id != $productCategory->master_product_category_id) {
+                $this->masterProductCategoryUsageHydrators($productCategory, $originalMasterProductCategory);
+            }
+        }
+
+        if (Arr::hasAny($changes, [
+            'code',
+            'name',
+            'type',
+            'state'
+        ])) {
             $this->productCategoryHydrators($productCategory);
         }
 
@@ -57,7 +80,7 @@ class UpdateProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'        => [
+            'code'              => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -72,18 +95,18 @@ class UpdateProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'        => ['sometimes', 'max:250', 'string'],
-            'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
-            'state'       => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description' => ['sometimes', 'required', 'max:1500'],
-            'department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'name'              => ['sometimes', 'max:250', 'string'],
+            'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
+            'description'       => ['sometimes', 'required', 'max:1500'],
+            'department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id']
         ];
 
         if (!$this->strict) {
             $rules['source_department_id'] = ['sometimes', 'string', 'max:255'];
             $rules['source_family_id']     = ['sometimes', 'string', 'max:255'];
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules                         = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

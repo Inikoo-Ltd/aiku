@@ -23,19 +23,16 @@ import "@/Composables/Icon/NavigationImportIcon"
 import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
-// import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faParking } from '@fal' // Pallet
-import { faUsers } from '@fal' // Navigation
-import { faTachometerAltFast, faGlobe, faParachuteBox, faTransporter } from '@fal'
+import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle } from '@fal'
 import { faSearch, faBell } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking)
+library.add(faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
-provide('isMovePallet', true)  // To conditionally render 'Move Pallet' button
+provide('isMovePallet', true)
 
 initialiseApp()
 
@@ -114,14 +111,11 @@ const sidebarOpen = ref(false)
 </template>
 
 <style lang="scss">
-// * {
-//     --color-primary: v-bind('layout.app.theme[0]');
-// }
+
 
 /* Navigation: Aiku */
 .navigationActive {
     @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
-    // border: v-bind('`1px solid color-mix(in srgb, ${layout?.app?.theme[2]} 85%, black)`') !important;
     box-shadow: v-bind('`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`') !important;
     background-color: v-bind('layout?.app?.theme[2]');
     color: v-bind('layout?.app?.theme[3]')

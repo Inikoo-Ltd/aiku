@@ -7,19 +7,50 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
+import { RouteParams } from "@/types/route-params";
+import { MasterDepartment} from "@/types/master-department";
 
 defineProps<{
     data: object,
     tab?: string
 }>()
 
+function departmentRoute(masterDepartment: MasterDepartment) {
+  if (route().current()=='grp.masters.departments.index') {
+    return route('grp.masters.departments.show',
+      {
+        masterDepartment: masterDepartment.slug }
+
+    )
+  }else{
+    return route('grp.masters.shops.show.departments.show',
+      {
+        masterShop: (route().params as RouteParams).masterShop,
+        masterDepartment: masterDepartment.slug }
+    )
+
+  }
+}
+
+function masterShopRoute(masterDepartment: MasterDepartment) {
+  return route('grp.masters.shops.show',
+    {
+      masterShop: masterDepartment.master_shop_slug
+    }
+  )
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+      <template #cell(master_shop_code)="{ item: department }">
+        <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string" class="secondaryLink">
+          {{ department["master_shop_code"] }}
+        </Link>
+      </template>
         <template #cell(code)="{ item: department }">
-            <Link :href="route('grp.goods.catalogue.shops.show.departments.show', 
-            { masterShop: route().params['masterShop'], masterDepartment: department.slug })" class="primaryLink">
+            <Link :href="departmentRoute(department) as string" class="primaryLink">
                 {{ department["code"] }}
             </Link>
         </template>

@@ -9,11 +9,10 @@ import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue';
 import { capitalize } from "@/Composables/capitalize"
-
-defineProps(['title', 'pageHead', 'flatTreeMaps']);
-
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList} from '@fal';
+
+defineProps(['title', 'pageHead', 'flatTreeMaps']);
 
 library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList);
 
