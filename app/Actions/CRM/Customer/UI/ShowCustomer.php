@@ -75,7 +75,7 @@ class ShowCustomer extends OrgAction
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
         $tabs = $customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::class : CustomerTabsEnum::class;
-
+        $navigation = $tabs::navigation();
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -83,6 +83,8 @@ class ShowCustomer extends OrgAction
         if ($this->parent instanceof Shop) {
             if ($this->parent->type == ShopTypeEnum::DROPSHIPPING) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($customer, $request);
+                unset($navigation[$tabs::FAVOURITES->value]);
+                unset($navigation[$tabs::REMINDERS->value]);
             } else {
                 $subNavigation = $this->getCustomerSubNavigation($customer, $request);
             }
@@ -155,7 +157,7 @@ class ShowCustomer extends OrgAction
                 ],
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => $tabs::navigation()
+                    'navigation' => $navigation
 
                 ],
                 'accounting'       => [
