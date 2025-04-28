@@ -9,10 +9,12 @@
 namespace App\Actions\Dropshipping\Aiku;
 
 use App\Actions\CRM\Customer\AttachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortofolios;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,7 +29,16 @@ class StoreRetinaManualPlatform extends OrgAction
 
     public function handle(Customer $customer): void
     {
-        AttachCustomerToPlatform::make()->action($customer, Platform::where('type', PlatformTypeEnum::MANUAL->value)->first(), []);
+        $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
+        $customer = AttachCustomerToPlatform::make()->action($customer, $platform, []);
+
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->customer_id)
+        ->where('platform_id', $platform->platform_id)
+        ->first();
+
+        CustomerHasPlatformsHydratePortofolios::dispatch($customerHasPlatform);
+
+
     }
 
     public function authorize(ActionRequest $request): bool

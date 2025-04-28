@@ -8,10 +8,12 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\CRM\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
@@ -22,10 +24,12 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerDropshippingTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
+use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -71,7 +75,7 @@ class ShowCustomer extends OrgAction
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
         $tabs = $customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::class : CustomerTabsEnum::class;
-
+        $navigation = $tabs::navigation();
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -79,6 +83,8 @@ class ShowCustomer extends OrgAction
         if ($this->parent instanceof Shop) {
             if ($this->parent->type == ShopTypeEnum::DROPSHIPPING) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($customer, $request);
+                unset($navigation[$tabs::FAVOURITES->value]);
+                unset($navigation[$tabs::REMINDERS->value]);
             } else {
                 $subNavigation = $this->getCustomerSubNavigation($customer, $request);
             }
@@ -151,7 +157,7 @@ class ShowCustomer extends OrgAction
                 ],
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => $tabs::navigation()
+                    'navigation' => $navigation
 
                 ],
                 'accounting'       => [
@@ -173,6 +179,9 @@ class ShowCustomer extends OrgAction
                 // $tabs::DISPATCHED_EMAILS->value => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
                 //     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))
                 //     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))),
+                $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
+                    fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
+                    : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
                 $tabs::FAVOURITES->value  => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
                     : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
@@ -182,6 +191,9 @@ class ShowCustomer extends OrgAction
                 $tabs::ATTACHMENTS->value => $this->tab == $tabs::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
+                $tabs::HISTORY->value => $this->tab == $tabs::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($customer))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
 
 
             ]
@@ -190,7 +202,9 @@ class ShowCustomer extends OrgAction
             ->table(IndexCustomerFavourites::make()->tableStructure(parent:$customer, prefix:$tabs::FAVOURITES->value))
             ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
             ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
-            ->table(IndexDispatchedEmails::make()->tableStructure($customer));
+            ->table(IndexDispatchedEmails::make()->tableStructure($customer))
+            ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
+            ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
     }
 
 

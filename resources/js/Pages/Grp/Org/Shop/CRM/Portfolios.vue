@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, computed } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -21,6 +21,10 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash'
 import Pagination from '@/Components/Table/Pagination.vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTimes)
 
 const props = defineProps<{
     data: {}
@@ -99,6 +103,9 @@ const onSubmitAddItem = async (close: Function, idProduct: number) => {
 }
 
 const selectedProduct = ref<{}[]>([])
+const compSelectedProduct = computed(() => {
+    return selectedProduct.value?.map((item: any) => item.id)
+})
 const selectProduct = (item: any) => {
     const index = selectedProduct.value?.indexOf(item);
     if (index === -1) {
@@ -134,7 +141,7 @@ watch(isOpenModalPortfolios, (newVal) => {
 
     <TablePortfolios :data="data" />
 
-    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false, selectedProduct = []" width="w-full max-w-6xl">
         <div class="">
             <div class="mx-auto text-center text-2xl font-semibold pb-4">
                 {{ trans("Add portfolios") }}
@@ -154,7 +161,13 @@ watch(isOpenModalPortfolios, (newVal) => {
                 </div>
 
                 <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
-                    <div class="font-semibold text-lg py-1">{{ trans("Product") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                    <div class="flex justify-between items-center">
+                        <div class="font-semibold text-lg py-1">{{ trans("Products") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                        <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
+                            {{ trans('Clear selection') }} ({{ compSelectedProduct.length }})
+                            <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
+                        </div>
+                    </div>
                     <div class="border-t border-gray-300 mb-1"></div>
                     <div class="h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
@@ -166,9 +179,9 @@ watch(isOpenModalPortfolios, (newVal) => {
                                         :key="index"
                                         @click="() => selectProduct(item)"
                                         class="h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
-                                        :class="selectedProduct.includes(item) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
+                                        :class="compSelectedProduct.includes(item.id) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
                                     >
-                                        <img :src="item.imageSrc" class="w-16 h-16 object-cover" alt="" />
+                                        <img :src="item.image" class="w-16 h-16 object-cover" alt="" />
                                         <div class="flex flex-col justify-between">
                                             <div>
                                                 <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
