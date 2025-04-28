@@ -9,11 +9,13 @@
 
 namespace App\Actions\Retina\Shopify;
 
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortofolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -30,16 +32,28 @@ class StoreRetinaProductShopify extends RetinaAction
 
     public function handle(ShopifyUser $shopifyUser, array $modelData)
     {
-        DB::transaction(function () use ($shopifyUser, $modelData) {
+        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
+        DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
             foreach (Arr::get($modelData, 'products') as $product) {
                 $portfolio = StorePortfolio::run($shopifyUser->customer, [
                     'product_id' => $product,
-                    'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
+                    'platform_id' => $platform->id,
                 ]);
 
                 HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
             }
         });
+
+        if (!$shopifyUser->customer_id) {
+            return;
+        }
+
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $shopifyUser->customer_id)
+        ->where('platform_id', $platform->id)
+        ->first();
+
+        CustomerHasPlatformsHydratePortofolios::dispatch($customerHasPlatform);
+
     }
 
     public function rules(): array

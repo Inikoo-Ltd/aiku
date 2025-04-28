@@ -9,12 +9,14 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortofolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
@@ -54,6 +56,12 @@ class StoreMultipleManualPortfolios extends OrgAction
                 );
             }
         });
+
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->customer_id)
+        ->where('platform_id', $platform->platform_id)
+        ->first();
+
+        CustomerHasPlatformsHydratePortofolios::dispatch($customerHasPlatform);
     }
 
     public function rules(): array
