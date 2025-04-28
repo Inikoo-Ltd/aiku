@@ -14,6 +14,8 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\CRM\PollsResource;
+use App\Models\CRM\Poll;
 
 class ShowRetinaRegister
 {
@@ -23,12 +25,15 @@ class ShowRetinaRegister
     public function handle(ActionRequest $request): Response
     {
         $shop = $request->website->shop;
+        $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
+        $pollsResource = PollsResource::collection($polls)->toArray($request);
 
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return Inertia::render(
                 'Auth/Register',
                 [
                 'countriesAddressData' => GetAddressData::run(),
+                'polls' => $pollsResource,
                 'registerRoute' => [
                     'name' => 'retina.register.store',
                     'parameters' => [
@@ -42,6 +47,7 @@ class ShowRetinaRegister
                 'Auth/DropshipRegister',
                 [
                 'countriesAddressData' => GetAddressData::run(),
+                'polls' => $pollsResource,
                 'registerRoute' => [
                     'name' => 'retina.ds.register.store',
                     'parameters' => [

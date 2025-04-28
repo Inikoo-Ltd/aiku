@@ -40,8 +40,8 @@ class PortfolioHydrateItemDescriptions implements ShouldBeUnique
 
         $portfolio->update(
             [
-                'code' => $code,
-                'name' => $name,
+                'item_code' => $code,
+                'item_name' => $name,
             ]
         );
     }
