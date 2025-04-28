@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\Stock;
 
-use App\Actions\Goods\Stock\Hydrators\StockHydrateUniversalSearch;
+use App\Actions\Goods\Stock\Search\StockRecordSearch;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
@@ -90,7 +90,7 @@ class UpdateStock extends OrgAction
 
 
         if (count($changes) > 0) {
-            StockHydrateUniversalSearch::dispatch($stock);
+            StockRecordSearch::dispatch($stock);
         }
 
 

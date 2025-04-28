@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\Stock;
 
-use App\Actions\Goods\Stock\Hydrators\StockHydrateUniversalSearch;
+use App\Actions\Goods\Stock\Search\StockRecordSearch;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\OrgAction;
@@ -77,7 +77,7 @@ class StoreStock extends OrgAction
             StockFamilyHydrateStocks::dispatch($parent)->delay($this->hydratorsDelay);
         }
 
-        StockHydrateUniversalSearch::dispatch($stock);
+        StockRecordSearch::dispatch($stock);
 
         return $stock;
     }
