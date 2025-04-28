@@ -11,11 +11,16 @@ namespace App\Http\Resources\CRM;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $id
+ * @property mixed $slug
+ * @property mixed $value
+ * @property mixed $label
+ */
 class PollOptionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var PollOption $pollOption */
         $pollOption = $this;
         return [
             'id'                 => $pollOption->id,
