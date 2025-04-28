@@ -130,6 +130,7 @@ class IndexOrdersInPlatform extends OrgAction
             $this->customerHasPlatform,
             $request
         );
+        $actions = [];
 
         if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
@@ -142,6 +143,21 @@ class IndexOrdersInPlatform extends OrgAction
         } else {
             $afterTitle = [
                 'label' => __('Orders')
+            ];
+            $actions[] = [
+                    'type'        => 'button',
+                    'style'       => 'create',
+                    'label'       => 'Add order',
+                    'key'         => 'add_order',
+                    'fullLoading' => true,
+                    'route'       => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.customer.platform-order.store',
+                        'parameters' => [
+                            'customer' => $this->customerHasPlatform->customer_id,
+                            'platform' => $this->customerHasPlatform->platform_id
+                        ]
+                    ]
             ];
         }
 
@@ -161,6 +177,7 @@ class IndexOrdersInPlatform extends OrgAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
+                    'actions'       => $actions
                 ],
                 'data'        => OrdersResource::collection($orders),
 
