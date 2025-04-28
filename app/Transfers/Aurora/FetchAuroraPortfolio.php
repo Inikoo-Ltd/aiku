@@ -41,10 +41,11 @@ class FetchAuroraPortfolio extends FetchAurora
 
         $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
+        $this->parsedData['product'] = $product;
+
         $this->parsedData['portfolio'] = [
             'platform_id'     => $platform->id,
             'shop_id'         => $customer->shop_id,
-            'product_id'      => $product->id,
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Key'},
             'reference'       => $this->auroraModelData->{'Customer Portfolio Reference'},
             'created_at'      => $this->auroraModelData->{'Customer Portfolio Creation Date'},
@@ -52,6 +53,8 @@ class FetchAuroraPortfolio extends FetchAurora
             'status'          => $this->auroraModelData->{'Customer Portfolio Customers State'} === 'Active',
             'fetched_at'      => now(),
             'last_fetched_at' => now(),
+            'item_name'       => $product->name,
+            'item_code'       => $product->code,
         ];
         $lastRemoved                   = $this->auroraModelData->{'Customer Portfolio Removed Date'};
         if ($lastRemoved) {
