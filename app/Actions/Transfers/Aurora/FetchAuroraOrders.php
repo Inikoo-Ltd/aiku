@@ -110,7 +110,7 @@ class FetchAuroraOrders extends FetchAuroraAction
             }
         }
 
-        OrderHydrateTransactions::run($organisationSource, $order);
+        OrderHydrateTransactions::run($order);
 
         DB::connection('aurora')->table('Order Dimension')
             ->where('Order Key', $sourceData[1])
