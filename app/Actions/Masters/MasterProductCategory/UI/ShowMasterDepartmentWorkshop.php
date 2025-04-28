@@ -217,7 +217,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     'name'       => $routeName,
                     'parameters' => [
                         'masterShop'   => $masterDepartment->masterShop->slug,
-                        'masterFamily' => $masterDepartment->slug
+                        'masterDepartment' => $masterDepartment->slug
                     ]
                 ]
             ],
