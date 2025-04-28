@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Component, ref } from "vue";
+import { ref } from "vue";
+import type { Component } from "vue";
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
