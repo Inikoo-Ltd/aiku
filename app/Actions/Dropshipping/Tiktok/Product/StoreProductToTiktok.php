@@ -33,10 +33,13 @@ class StoreProductToTiktok extends RetinaAction
             $productImages = [];
             foreach (Arr::get($modelData, 'products') as $product) {
                 /** @var Portfolio $portfolio */
-                $portfolio = StorePortfolio::run($tiktokUser->customer, [
-                    'product_id' => $product,
+                $portfolio = StorePortfolio::run(
+                    $tiktokUser->customer,
+                    $product,
+                    [
                     'platform_id' => Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first()->id,
-                ]);
+                ]
+                );
 
                 foreach ($portfolio->item?->images as $image) {
                     $productImage = UploadProductImageToTiktok::run($tiktokUser, $image);

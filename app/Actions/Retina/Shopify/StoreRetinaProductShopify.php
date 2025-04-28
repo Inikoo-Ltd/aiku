@@ -35,8 +35,7 @@ class StoreRetinaProductShopify extends RetinaAction
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
         DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
             foreach (Arr::get($modelData, 'products') as $product) {
-                $portfolio = StorePortfolio::run($shopifyUser->customer, [
-                    'product_id' => $product,
+                $portfolio = StorePortfolio::run($shopifyUser->customer, $product, [
                     'platform_id' => $platform->id,
                 ]);
 

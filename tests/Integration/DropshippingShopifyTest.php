@@ -54,8 +54,8 @@ test('update customer client', function ($customerClient) {
 test('add product to customer portfolio', function () {
     $dropshippingCustomerPortfolio = StorePortfolio::make()->action(
         $this->customer,
+        $this->product,
         [
-            'product_id' => $this->product->id
         ]
     );
     expect($dropshippingCustomerPortfolio)->toBeInstanceOf(Portfolio::class);
