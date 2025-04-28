@@ -1,20 +1,22 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 28 Apr 2025 14:29:15 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 28-04-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
+*/
 
 namespace App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\CustomerHasPlatform;
-use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
+class CustomerHasPlatformsHydratePortofolios implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -30,7 +32,7 @@ class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
         $stats = [];
 
         if ($customerHasPlatform->customer_id && $customerHasPlatform->platform_id) {
-            $stats['number_customer_clients'] = CustomerClient::where('customer_id', $customerHasPlatform->customer_id)
+            $stats['number_portfolios'] = Portfolio::where('customer_id', $customerHasPlatform->customer_id)
                 ->where('platform_id', $customerHasPlatform->platform_id)
                 ->count();
         }
@@ -38,7 +40,7 @@ class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
         $customerHasPlatform->update($stats);
     }
 
-    public string $commandSignature = 'hydrate:customer_has_platforms_customer_clients {customer_has_platform}';
+    public string $commandSignature = 'hydrate:customer_has_platforms_portofolios {customer_has_platform}';
 
     public function asCommand($command)
     {
