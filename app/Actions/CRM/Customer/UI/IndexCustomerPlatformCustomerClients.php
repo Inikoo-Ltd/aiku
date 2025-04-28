@@ -142,25 +142,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
-                    'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        match ($this->platform->type) {
-                            PlatformTypeEnum::SHOPIFY => [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('Fetch Client'),
-                                'label'   => __('Fetch Client'),
-                                'route'   => [
-                                    'name'       => 'pupil.dropshipping.platforms.client.fetch',
-                                    'parameters' => [
-                                        'platform' => $this->platform->slug
-                                    ]
-                                ]
-                            ],
-                            default => []
-                        },
-                    ],
-
+                    'subNavigation' => $subNavigation
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),
 

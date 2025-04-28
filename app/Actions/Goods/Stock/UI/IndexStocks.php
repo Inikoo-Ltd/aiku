@@ -8,10 +8,10 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Http\Resources\Goods\StocksResource;
 use App\InertiaTable\InertiaTable;
@@ -29,7 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStocks extends OrgAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
     private StockFamily|Group $parent;
     private string $bucket;

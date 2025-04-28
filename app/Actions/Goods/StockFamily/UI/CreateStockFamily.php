@@ -9,16 +9,14 @@
 namespace App\Actions\Goods\StockFamily\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateStockFamily extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
+    use WithGoodsAuthorisation;
 
     public function asController(ActionRequest $request): Response
     {

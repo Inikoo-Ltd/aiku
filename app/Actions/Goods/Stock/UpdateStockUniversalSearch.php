@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 03 Apr 2024 17:47:10 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Wed, 03 Apr 2024 17:47:10 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 

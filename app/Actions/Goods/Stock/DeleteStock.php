@@ -10,6 +10,7 @@ namespace App\Actions\Goods\Stock;
 
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationArgument;
 use App\Models\Goods\Stock;
@@ -20,6 +21,7 @@ class DeleteStock
 {
     use WithActionUpdate;
     use WithOrganisationArgument;
+    use WithGoodsEditAuthorisation;
 
     public string $commandSignature = 'delete:stock {stock}';
 
@@ -27,7 +29,7 @@ class DeleteStock
     {
         $stock->delete();
         $stock = $this->update($stock, $deletedData, ['data']);
-        //Todo: PKA-18
+
         if (!$skipHydrate) {
             GroupHydrateStocks::dispatch(group());
             if ($stock->stock_family_id) {

@@ -11,7 +11,9 @@ namespace App\Actions\Retina\Dropshipping\Client;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
@@ -20,6 +22,13 @@ class StoreRetinaClientFromPlatform extends RetinaAction
 {
     public function handle(ShopifyUser|TiktokUser $parent, array $attributes, array $customer, ?CustomerClient $existsClient): CustomerClient
     {
+        $platform = Platform::query();
+        data_set($attributes, 'platform_id', match (class_basename($parent)) {
+            'ShopifyUser' => $platform->where('type', PlatformTypeEnum::SHOPIFY)->first()->id,
+            'TiktokUser' => $platform->where('type', PlatformTypeEnum::TIKTOK)->first()->id,
+            default => $platform->where('type', PlatformTypeEnum::MANUAL)->first()->id
+        });
+
         if (!$existsClient) {
             $customerClient = StoreCustomerClient::make()->action($parent->customer, $attributes);
 

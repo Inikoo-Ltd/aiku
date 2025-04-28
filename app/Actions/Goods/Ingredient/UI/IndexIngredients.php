@@ -9,9 +9,9 @@
 
 namespace App\Actions\Goods\Ingredient\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\IngredientsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\Ingredient;
@@ -26,7 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexIngredients extends GrpAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -49,16 +49,7 @@ class IndexIngredients extends GrpAction
 
         $queryBuilder = QueryBuilder::for(Ingredient::class);
         $queryBuilder->where('ingredients.group_id', $group->id);
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
-        }
-        */
+
 
         return $queryBuilder
             ->defaultSort('ingredients.name')
@@ -75,9 +66,9 @@ class IndexIngredients extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group $parent, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -88,7 +79,6 @@ class IndexIngredients extends GrpAction
                 ->withEmptyState(
                     [
                         'title'       => __('no ingredients'),
-                        'description' => $this->canEdit ? __('Get started by creating a new stock family.') : null,
                     ]
                 )
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
@@ -102,7 +92,6 @@ class IndexIngredients extends GrpAction
     public function htmlResponse(LengthAwarePaginator $ingredients, ActionRequest $request): Response
     {
 
-        $parent = $this->group;
         return Inertia::render(
             'Goods/Ingredients',
             [
@@ -114,22 +103,10 @@ class IndexIngredients extends GrpAction
                         'title' => __("Ingredients"),
                         'icon'  => 'fal fa-boxes-alt'
                     ],
-                    // 'actions' => [
-                    //     $this->canEdit && $request->route()->getName() == 'grp.goods.stock-families.index' ? [
-                    //         'type'    => 'button',
-                    //         'style'   => 'create',
-                    //         'tooltip' => __('new SKU family'),
-                    //         'label'   => __('SKU family'),
-                    //         'route'   => [
-                    //             'name'       => 'grp.goods.stock-families.create',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    // ]
                 ],
                 'data' => IngredientsResource::collection($ingredients),
             ]
-        )->table($this->tableStructure($parent));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs($suffix = null): array

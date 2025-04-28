@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\Stock\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use Inertia\Inertia;
@@ -18,16 +19,11 @@ use Lorisleiva\Actions\ActionRequest;
 class EditStock extends OrgAction
 {
     use WithStockNavigation;
+    use WithGoodsEditAuthorisation;
 
     public function handle(Stock $stock): Stock
     {
         return $stock;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('goods.edit');
-        return $request->user()->authTo("goods.view");
     }
 
     public function asController(Stock $stock, ActionRequest $request): Stock
@@ -44,10 +40,6 @@ class EditStock extends OrgAction
         return $this->handle($stock);
     }
 
-
-
-
-
     public function htmlResponse(Stock $stock, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -59,17 +51,17 @@ class EditStock extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($stock, $request),
                     'next'     => $this->getNext($stock, $request),
                 ],
-                'pageHead' => [
-                    'title'    => $stock->name,
-                    'icon'     => [
+                'pageHead'    => [
+                    'title'   => $stock->name,
+                    'icon'    => [
                         'title' => __('skus'),
                         'icon'  => 'fal fa-box'
                     ],
-                    'actions'  => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -118,7 +110,7 @@ class EditStock extends OrgAction
             stock: $stock,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 

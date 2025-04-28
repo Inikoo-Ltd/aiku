@@ -12,6 +12,7 @@ use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\StockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\Goods\StocksResource;
@@ -23,19 +24,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStockFamily extends OrgAction
 {
+    use WithGoodsAuthorisation;
+
     public function handle(StockFamily $stockFamily): StockFamily
     {
         return $stockFamily;
     }
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("goods.{$this->group->id}.edit");
-
-        return $request->user()->authTo("goods.{$this->group->id}.view");
-    }
-
 
     public function asController(StockFamily $stockFamily, ActionRequest $request): StockFamily
     {

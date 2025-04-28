@@ -8,8 +8,8 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditTradeUnit extends OrgAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
 
     public function handle(TradeUnit $tradeUnit): TradeUnit
