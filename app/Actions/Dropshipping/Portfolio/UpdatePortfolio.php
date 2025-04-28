@@ -74,10 +74,14 @@ class UpdatePortfolio extends OrgAction
             'status'          => 'sometimes|boolean',
             'last_added_at'   => 'sometimes|date',
             'last_removed_at' => 'sometimes|date',
+            'item_id'         => 'sometimes|integer',
+            'item_type'       => 'sometimes|string',
+            'item_name'       => 'sometimes|string',
+            'item_code'       => 'sometimes|string',
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules            = $this->noStrictUpdateRules($rules);
             $rules['shop_id'] = ['sometimes', 'required', Rule::exists('shops', 'id')];
         }
 

@@ -8,11 +8,12 @@
 
 namespace App\Actions\Goods\Stock;
 
-use App\Actions\Goods\Stock\Hydrators\StockHydrateUniversalSearch;
+use App\Actions\Goods\Stock\Search\StockRecordSearch;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -32,6 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreStock extends OrgAction
 {
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -75,7 +77,7 @@ class StoreStock extends OrgAction
             StockFamilyHydrateStocks::dispatch($parent)->delay($this->hydratorsDelay);
         }
 
-        StockHydrateUniversalSearch::dispatch($stock);
+        StockRecordSearch::dispatch($stock);
 
         return $stock;
     }

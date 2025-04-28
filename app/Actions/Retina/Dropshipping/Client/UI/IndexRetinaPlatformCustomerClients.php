@@ -8,24 +8,20 @@
 
 namespace App\Actions\Retina\Dropshipping\Client\UI;
 
+use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\PlatformHasClient;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPlatformCustomerClients extends RetinaAction
 {
@@ -42,7 +38,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
     {
         $this->initialisationFromPlatform($platform, $request);
 
-        return $this->handle($this->customer);
+        return IndexCustomerPlatformCustomerClients::run($this->customer, $platform);
     }
 
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
@@ -57,60 +53,12 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
             $this->platformUser = $this->customer->tiktokUser;
         }
 
-        return $this->handle($this->customer);
-    }
-
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
-    {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('customer_clients.name', $value)
-                    ->orWhereStartWith('customer_clients.email', $value)
-                    ->orWhere('customer_clients.reference', '=', $value);
-            });
-        });
-
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
-        $queryBuilder = QueryBuilder::for(PlatformHasClient::class);
-        $queryBuilder->where('platform_has_clients.customer_id', $customer->id);
-        $queryBuilder->where('platform_has_clients.userable_type', $this->platformUser->getMorphClass());
-        $queryBuilder->where('platform_has_clients.userable_id', $this->platformUser->id);
-
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                prefix: $prefix,
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
-        */
-
-        $queryBuilder->leftJoin('customer_clients', 'platform_has_clients.customer_client_id', 'customer_clients.id');
-
-        return $queryBuilder
-            ->defaultSort('customer_clients.reference')
-            ->select([
-                'customer_clients.location',
-                'customer_clients.reference',
-                'customer_clients.id',
-                'customer_clients.name',
-                'customer_clients.ulid',
-                'customer_clients.created_at'
-            ])
-            ->allowedSorts(['reference', 'name', 'created_at'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return IndexCustomerPlatformCustomerClients::run($this->customer, $platform);
     }
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return IndexRetinaCustomerClients::make()->tableStructure($parent, $modelOperations);
+        return IndexCustomerPlatformCustomerClients::make()->tableStructure($modelOperations);
     }
 
     public function jsonResponse(LengthAwarePaginator $customerClients): AnonymousResourceCollection

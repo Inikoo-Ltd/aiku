@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Goods\TradeUnit;
@@ -22,6 +23,7 @@ class UpdateTradeUnit extends GrpAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     private TradeUnit $tradeUnit;
 

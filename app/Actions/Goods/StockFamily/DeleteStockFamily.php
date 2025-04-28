@@ -12,6 +12,7 @@ use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Inventory\OrgStockFamily\DeleteOrgStockFamily;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\StockFamily;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class DeleteStockFamily extends OrgAction
 {
     use AsController;
     use WithAttributes;
+    use WithGoodsEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -58,15 +60,6 @@ class DeleteStockFamily extends OrgAction
 
 
         return $stockFamily;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("goods.{$this->group->id}.edit");
     }
 
     /**

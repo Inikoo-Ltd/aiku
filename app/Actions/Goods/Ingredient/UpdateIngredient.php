@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\Ingredient;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Goods\Ingredient;
@@ -20,6 +21,7 @@ class UpdateIngredient extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     private Ingredient $ingredient;
 

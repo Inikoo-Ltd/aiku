@@ -46,6 +46,7 @@ class FetchAuroraPortfolios extends FetchAuroraAction
                 try {
                     $portfolio = StorePortfolio::make()->action(
                         customer: $portfolioData['customer'],
+                        item: $portfolioData['product'],
                         modelData: $portfolioData['portfolio'],
                         hydratorsDelay: $this->hydratorsDelay,
                         strict: false,

@@ -8,9 +8,9 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
@@ -26,10 +26,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnits extends GrpAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
     private Group $parent;
-    private string $bucket;
 
 
     public function asController(ActionRequest $request): LengthAwarePaginator
@@ -37,10 +36,10 @@ class IndexTradeUnits extends GrpAction
         $this->parent = group();
         $this->initialisation($this->parent, $request);
 
-        return $this->handle($this->parent);
+        return $this->handle();
     }
 
-    public function handle(Group $parent, $prefix = null): LengthAwarePaginator
+    public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -95,7 +94,7 @@ class IndexTradeUnits extends GrpAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Group' => [
-                            'title'       => __("No Trade Units found"),
+                            'title' => __("No Trade Units found"),
                         ],
                         default => null
                     }
@@ -115,6 +114,8 @@ class IndexTradeUnits extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
     {
+        $title = __('Trade Units');
+
         return Inertia::render(
             'Goods/TradeUnits',
             [
@@ -122,31 +123,13 @@ class IndexTradeUnits extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => 'Trade Units',
+                'title'       => $title,
                 'pageHead'    => [
-                    'title'         => 'Trade Units',
-                    'iconRight'     => [
+                    'title'     => $title,
+                    'iconRight' => [
                         'icon'  => ['fal', 'fa-atom'],
-                        'title' => __('Trade Units')
+                        'title' => $title
                     ],
-                    // 'actions'       => [
-                    //     $this->canEdit ? [
-                    //         'type'    => 'button',
-                    //         'style'   => 'create',
-                    //         'tooltip' => __('new SKU'),
-                    //         'label'   => __('SKU'),
-                    //         'route'   => match ($request->route()->getName()) {
-                    //             'inventory.stock-families.show.stocks.index' => [
-                    //                 'name'       => 'inventory.stock-families.show.stocks.create',
-                    //                 'parameters' => array_values($request->route()->originalParameters())
-                    //             ],
-                    //             default => [
-                    //                 'name'       => 'inventory.stocks.create',
-                    //                 'parameters' => array_values($request->route()->originalParameters())
-                    //             ]
-                    //         }
-                    //     ] : false,
-                    // ],
                 ],
                 'data'        => TradeUnitsResource::collection($tradeUnit),
 
@@ -171,21 +154,15 @@ class IndexTradeUnits extends GrpAction
             ];
         };
 
-        return match ($routeName) {
-            'grp.goods.trade-units.index'
-            =>
-            array_merge(
-                ShowGoodsDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => []
-                    ],
-                    $suffix
-                )
-            ),
-
-            default => []
-        };
+        return array_merge(
+            ShowGoodsDashboard::make()->getBreadcrumbs(),
+            $headCrumb(
+                [
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters
+                ],
+                $suffix
+            )
+        );
     }
 }

@@ -8,9 +8,10 @@
 
 namespace App\Actions\Goods\StockFamily;
 
-use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateUniversalSearch;
+use App\Actions\Goods\StockFamily\Search\StockFamilyRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
@@ -25,6 +26,7 @@ class UpdateStockFamily extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     private StockFamily $stockFamily;
 
@@ -32,43 +34,32 @@ class UpdateStockFamily extends OrgAction
     public function handle(StockFamily $stockFamily, array $modelData): StockFamily
     {
         $stockFamily = $this->update($stockFamily, $modelData, ['data']);
-        $changes = $stockFamily->getChanges();
-        if ($stockFamily->orgStockFamilies) {
-            if (Arr::hasAny($changes, ['code', 'name'])) {
-                /** @var StockFamily $stockFamily */
-                foreach ($stockFamily->orgStockFamilies as $orgStockFamily) {
-                    $orgStockFamily->update(
-                        [
-                            'code'       => $stockFamily->code,
-                            'name'       => $stockFamily->name,
-                        ]
-                    );
-                }
+        $changes     = $stockFamily->getChanges();
+        if ($stockFamily->orgStockFamilies && Arr::hasAny($changes, ['code', 'name'])) {
+            /** @var StockFamily $stockFamily */
+            foreach ($stockFamily->orgStockFamilies as $orgStockFamily) {
+                $orgStockFamily->update(
+                    [
+                        'code' => $stockFamily->code,
+                        'name' => $stockFamily->name,
+                    ]
+                );
             }
         }
 
         if (Arr::hasAny($stockFamily->getChanges(), ['state'])) {
             GroupHydrateStockFamilies::dispatch($stockFamily->group)->delay($this->hydratorsDelay);
         }
-        StockFamilyHydrateUniversalSearch::dispatch($stockFamily);
+        StockFamilyRecordSearch::dispatch($stockFamily);
 
 
         return $stockFamily;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("goods.{$this->group->id}.edit");
-    }
-
     public function rules(): array
     {
         $rules = [
-            'code' => [
+            'code'  => [
                 'sometimes',
                 'required',
                 'alpha_dash',
@@ -87,8 +78,8 @@ class UpdateStockFamily extends OrgAction
                     ]
                 ),
             ],
-            'name'                     => ['sometimes', 'required', 'string', 'max:255'],
-            'state'                    => ['sometimes', 'required', Rule::enum(StockFamilyStateEnum::class)],
+            'name'  => ['sometimes', 'required', 'string', 'max:255'],
+            'state' => ['sometimes', 'required', Rule::enum(StockFamilyStateEnum::class)],
         ];
 
         if (!$this->strict) {
@@ -104,8 +95,8 @@ class UpdateStockFamily extends OrgAction
         if (!$audit) {
             StockFamily::disableAuditing();
         }
-        $this->asAction    = true;
-        $this->stockFamily = $stockFamily;
+        $this->asAction       = true;
+        $this->stockFamily    = $stockFamily;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromGroup($stockFamily->group, $modelData);
 

@@ -8,10 +8,10 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowTradeUnit extends GrpAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
     private Group $parent;
 

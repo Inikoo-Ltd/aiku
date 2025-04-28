@@ -8,9 +8,10 @@
 
 namespace App\Actions\Goods\StockFamily;
 
-use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateUniversalSearch;
+use App\Actions\Goods\StockFamily\Search\StockFamilyRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Goods\StockFamily;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreStockFamily extends OrgAction
 {
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -45,19 +47,10 @@ class StoreStockFamily extends OrgAction
         });
 
         GroupHydrateStockFamilies::dispatch($this->group);
-        StockFamilyHydrateUniversalSearch::dispatch($stockFamily);
+        StockFamilyRecordSearch::dispatch($stockFamily);
         $stockFamily->refresh();
 
         return $stockFamily;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("goods.{$this->group->id}.edit");
     }
 
     public function rules(): array

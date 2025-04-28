@@ -8,9 +8,9 @@
 
 namespace App\Actions\Goods\StockFamily\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Http\Resources\Goods\StockFamiliesResource;
@@ -28,7 +28,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStockFamilies extends OrgAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
     private string $bucket;
 

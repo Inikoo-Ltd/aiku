@@ -106,6 +106,7 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Dropshipping ✊🏼');
         $command->call('hydrate:platforms');
+        $command->call('hydrate:portfolios');
     }
 
     protected function hydrateDispatching(Command $command): void
