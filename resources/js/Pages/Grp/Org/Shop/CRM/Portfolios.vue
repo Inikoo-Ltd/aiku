@@ -168,7 +168,7 @@ watch(isOpenModalPortfolios, (newVal) => {
                                         class="h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
                                         :class="selectedProduct.includes(item) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
                                     >
-                                        <img :src="item.imageSrc" class="w-16 h-16 object-cover" alt="" />
+                                        <img :src="item.image" class="w-16 h-16 object-cover" alt="" />
                                         <div class="flex flex-col justify-between">
                                             <div>
                                                 <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
