@@ -50,6 +50,7 @@ provide("dashboardTabActive", dashboardTabActive)
 		/>
 
 		<DashboardTable
+			class="border-t border-gray-200"
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -60,7 +61,10 @@ provide("dashboardTabActive", dashboardTabActive)
 			}"
 		/>
 
-		<DashboardWidget v-if="props.dashboard?.widgets" :widgetsData="dashboard.widgets" />
+		<DashboardWidget
+			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
+			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+		/>
 
 	</div>
 </template>
