@@ -34,7 +34,7 @@ jobs:
 
       - name: Get db changed files
         id: changed-db-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             app/Enums/**
@@ -42,7 +42,7 @@ jobs:
             database/migrations/**
       - name: Get coverage changed files
         id: changed-coverage-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             app/**

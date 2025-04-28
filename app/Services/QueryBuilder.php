@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Models\Fulfilment\FulfilmentCustomer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -124,7 +125,11 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->setTimezone('UTC')
                         ->toDateTimeString();
 
-                    $this->whereBetween("$table.$column", [$start, $end]);
+                    if ($this->getModel() instanceof FulfilmentCustomer) {
+                        $this->whereBetween('customers.'.$column, [$start, $end]);
+                    } else {
+                        $this->whereBetween("$table.$column", [$start, $end]);
+                    }
                 }
             }
         }
@@ -173,6 +178,12 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             perPage: $perPage,
             pageName: $prefix ? $prefix.'Page' : 'page'
         );
+    }
+
+    public function withTrashed()
+    {
+        $this->queryBuilder->withTrashed();
+        return $this;
     }
 
 

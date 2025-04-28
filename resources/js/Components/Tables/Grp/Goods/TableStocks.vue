@@ -5,15 +5,27 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link, usePage } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
+import { computed, inject } from "vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { RouteParams } from "@/types/route-params";
 
-const props = defineProps<{
+
+defineProps<{
   data: object
   tab?: string
 }>();
 
+
+const locale = inject("locale", aikuLocaleStructure);
+
+const interval = computed(() => {
+  const url = usePage().url;
+  const params = new URLSearchParams(url.split("?")[1]);
+  return params.get("dateInterval") ?? "all";
+});
 
 function stockRoute(stock: Stock) {
   console.log(route().current());
@@ -37,7 +49,7 @@ function stockRoute(stock: Stock) {
     case "grp.goods.stock-families.show.stocks.index":
       return route(
         "grp.goods.stock-families.show.stocks.show",
-        [route().params["stockFamily"], stock.slug]);
+        [(route().params as RouteParams).stockFamily, stock.slug]);
     default:
       return route(
         "grp.goods.stocks.show",
@@ -48,13 +60,9 @@ function stockRoute(stock: Stock) {
 }
 
 function stockFamilyRoute(stock: Stock) {
-  switch (route().current()) {
-    case "grp.goods.stocks.index":
-      return route(
-        "grp.goods.stock-families.show",
-        [stock.family_slug]);
-
-  }
+  return route(
+    "grp.goods.stock-families.show",
+    [stock.family_slug]);
 }
 
 
@@ -77,6 +85,9 @@ function stockFamilyRoute(stock: Stock) {
     </template>
     <template #cell(unit_value)="{ item: stock }">
       {{ stock["unit_value"] }}
+    </template>
+    <template #cell(revenue_grp_currency)="{ item: stockFamily }">
+      {{ locale.currencyFormat(stockFamily["grp_currency"], Number(stockFamily["revenue_grp_currency_" + interval])) }}
     </template>
   </Table>
 </template>

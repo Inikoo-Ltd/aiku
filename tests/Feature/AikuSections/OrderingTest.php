@@ -18,6 +18,7 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
@@ -51,6 +52,7 @@ use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -61,6 +63,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
@@ -164,7 +167,7 @@ test('create order', function () {
 });
 
 test('get order products', function (Order $order) {
-    // Create a transaction if needed (may not be necessary if order already has products)
+    // Create a transaction if needed (may not be necessary if the order already has products)
     $order->transactions->first()
         ?: StoreTransaction::make()->action(
             $order,
@@ -377,8 +380,6 @@ test('update transaction', function ($transaction) {
     );
 
     expect($transaction)->toBeInstanceOf(Transaction::class);
-
-
 })->depends('create transaction');
 
 
@@ -436,9 +437,19 @@ test('update order state to Finalised ', function (Order $order) {
 })->depends('update order state to Handling');
 
 test('create customer client', function () {
-    $shop           = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
-    $customer       = StoreCustomer::make()->action($shop, Customer::factory()->definition());
-    $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
+    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    AttachCustomerToPlatform::make()->action($customer, $platform, []);
+    $customerClient = StoreCustomerClient::make()->action(
+        $customer,
+        array_merge(
+            CustomerClient::factory()->definition(),
+            [
+                'platform_id' => $platform->id,
+            ]
+        )
+    );
     $this->assertModelExists($customerClient);
     expect($customerClient->shop->code)->toBe($shop->code)
         ->and($customerClient->customer->reference)->toBe($customer->reference);

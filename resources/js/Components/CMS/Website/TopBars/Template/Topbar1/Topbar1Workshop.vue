@@ -64,7 +64,7 @@ const layout = inject('layout', {})
                 v-html="textReplaceVariables(model?.greeting?.text, layout.iris_variables)"
 
             /> -->
-
+            
             <!-- Section: Main title -->
             <div
                 v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"

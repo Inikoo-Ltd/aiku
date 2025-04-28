@@ -25,13 +25,15 @@ use App\Models\Accounting\PaymentAccount;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 
 class RefundToInvoice extends OrgAction
 {
     private Invoice $invoice;
     private PaymentAccount $paymentAccount;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $type        = Arr::get($modelData, 'type_refund', 'payment');
@@ -99,7 +101,10 @@ class RefundToInvoice extends OrgAction
         ];
     }
 
-    public function afterValidator(Validator $validator): void
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function afterValidator(): void
     {
         $type = $this->get("type_refund") ?? 'payment';
         $totalRefund = -abs($this->get("amount"));
@@ -148,6 +153,9 @@ class RefundToInvoice extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Invoice
     {
         $this->asAction = true;

@@ -68,9 +68,10 @@ class SendPalletReturnDeletedNotification extends OrgAction
                     'customer_name' => $customer->name,
                     'pallet_reference' => $palletReturn->reference,
                     'date' => $palletReturn->deleted_at->format('F jS, Y'),
-                    'pallet_link' => route('grp.org.fulfilments.show.operations.pallet-returns.show', [ // TODO: add show deleted pallet return
+                    'pallet_link' => route('grp.org.fulfilments.show.crm.customers.showdeleted_pallet_returns.show', [
                         $palletReturn->organisation->slug,
                         $palletReturn->fulfilment->slug,
+                        $palletReturn->fulfilmentCustomer->slug,
                         $palletReturn->slug
                     ]),
                     'customer_link' => route('grp.org.fulfilments.show.crm.customers.show', [
@@ -83,17 +84,6 @@ class SendPalletReturnDeletedNotification extends OrgAction
         }
 
     }
-
-    // public string $commandSignature = 'xxx';
-
-    // public function asCommand($command){
-    //     $pallet = PalletReturn::withTrashed()->find(1);
-
-
-    //     $this->handle($pallet);
-    // }
-
-
 
 
 }

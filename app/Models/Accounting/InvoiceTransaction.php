@@ -65,7 +65,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $source_alt_id to be used in no products transactions
- * @property int|null $invoice_transaction_id For refunds link to original invoice transaction
+ * @property int|null $original_invoice_transaction_id For refunds link to original invoice transaction
  * @property bool $in_process Used for refunds only
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
@@ -180,12 +180,11 @@ class InvoiceTransaction extends Model
 
     public function transactionRefunds(): HasMany
     {
-        return $this->hasMany(InvoiceTransaction::class, 'invoice_transaction_id');
+        return $this->hasMany(InvoiceTransaction::class, 'original_invoice_transaction_id');
     }
 
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
-
     }
 }

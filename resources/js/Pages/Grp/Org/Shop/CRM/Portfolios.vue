@@ -9,38 +9,56 @@ import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
-import Popover from "@/Components/Popover.vue"
-import { inject, ref } from 'vue'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { inject, ref, watch } from 'vue'
 import axios from 'axios'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
+import PureInput from '@/Components/Pure/PureInput.vue'
+import Tag from '@/Components/Tag.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import { trans } from 'laravel-vue-i18n'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faArrowLeft, faArrowRight } from "@fas"
+import { debounce } from 'lodash'
+import Pagination from '@/Components/Table/Pagination.vue'
 
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
+    customer: {}
 }>()
 
 const layout = inject('layout', layoutStructure)
+const locale = inject('locale', null)
 
 const isLoadingSubmit = ref(false)
 const isLoadingFetch = ref(false)
-const portfoliosList = ref([])
-const selectedPortfolio = ref<number | null>(null)
-const errorMessage = ref(null)
+const errorMessage = ref<any>(null)
 
-// Method: Get portofolios list
-const getPortfoliosList = async () => {
+// Method: Get portfolios list
+const queryPortfolio = ref('')
+const portfoliosList = ref([])
+const portfoliosMeta = ref()
+const portfoliosLinks = ref()
+const getPortfoliosList = async (url?: string) => {
     isLoadingFetch.value = true
     try {
-        const response = await axios.get(route("grp.org.shops.show.crm.customers.show.portfolios.filtered-products", { "organisation": layout?.currentParams?.organisation, "shop": layout?.currentParams?.shop, "customer": layout?.currentParams?.customer }))
-
+        const urlToFetch = url || route('grp.org.shops.show.crm.customers.show.portfolios.filtered-products', {
+            "organisation": layout?.currentParams?.organisation,
+            "shop": layout?.currentParams?.shop,
+            "customer": layout?.currentParams?.customer,
+            "filter[global]": queryPortfolio.value
+        })
+        const response = await axios.get(urlToFetch)
         portfoliosList.value = response.data.data
+        portfoliosMeta.value = response?.data.meta || null
+        portfoliosLinks.value = response?.data.links || null
         isLoadingFetch.value = false
-    } catch (error) {
+    } catch {
         isLoadingFetch.value = false
         notify({
             title: "Something went wrong.",
@@ -49,89 +67,202 @@ const getPortfoliosList = async () => {
         })
     }
 }
+const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
 
 // Method: Submit the selected item
-const onSubmitAddItem = async (url: string, close: Function, idProduct: number) => {
-    router.post(url, {
-        product_id: idProduct
+const onSubmitAddItem = async (close: Function, idProduct: number) => {
+    router.post(route('grp.models.customer.portfolio.store', { customer: props.customer?.id} ), {
+        products: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
         onError: (error) => {
             errorMessage.value = error
             notify({
                 title: "Something went wrong.",
-                text: error.product_id || undefined,
+                text: error.products || undefined,
                 type: "error"
             })
         },
         onSuccess: () => {
-            router.reload({only: ['data']}),
+            router.reload({only: ['data']})
+            queryPortfolio.value = ''
+            selectedProduct.value = []
+            portfoliosList.value = []
+            portfoliosMeta.value = null
+            portfoliosLinks.value = null
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfuly added portfolios"),
+                type: "success"
+            })
             close()
         },
         onFinish: () => isLoadingSubmit.value = false
     })
 }
 
+const selectedProduct = ref<{}[]>([])
+const selectProduct = (item: any) => {
+    const index = selectedProduct.value?.indexOf(item);
+    if (index === -1) {
+        selectedProduct.value?.push(item);
+    } else {
+        selectedProduct.value?.splice(index, 1);
+    }
+}
     
+const isOpenModalPortfolios = ref(false)
+watch(isOpenModalPortfolios, (newVal) => {
+    if (newVal) {
+        getPortfoliosList()
+    }
+})
+
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-index-0="{ action }">
-        <!-- {{ action }} -->
-            <Popover class="relative">
-                <template #button>
-                    <Button
-                        @click="() => (portfoliosList.length ? '' : getPortfoliosList())"
-                        :type="action.style"
-                        :tooltip="action.tooltip"
-                        :label="action.label"
-                    />
-                </template>
-
-                <template #content="{ close }">
-                    <div class="w-[250px]">
-                        <div class="text-xs">Select item:</div>
-                        <div>
-                            <PureMultiselect
-                                ref="_multiselectRef"
-                                v-model="selectedPortfolio"
-                                @update:modelValue="() => errorMessage = null"
-                                :canClear="false"
-                                :canDeselect="false"
-                                searchable
-                                label="code"
-                                valueProp="id"
-                                placeholder="Select item.."
-                                :options="portfoliosList"
-                                :noResultsText="isLoadingFetch ? 'loading...' : 'No Result'">
-                            </PureMultiselect>
-                        </div>
-
-                        <div v-if="errorMessage?.product_id" class="text-red-500 italic text-xs mt-1">
-                            {{ errorMessage.product_id }}
-                        </div>
-                        
-                        <div class="flex justify-end mt-4">
-                            <Button
-                                @click="() => action.route?.name ? onSubmitAddItem(route(action.route?.name, action.route?.parameters), close, selectedPortfolio) : false"
-                                type="primary"
-                                tooltip="Move pallet"
-                                :loading="isLoadingSubmit"
-                                full
-                                label="save"
-                                :size="'xs'"
-                                :key="'buttonSubmitPortfolio' + selectedPortfolio"
-                                :disabled="!selectedPortfolio"
-                            />
-                        </div>
-                    </div>
-                </template>
-            </Popover>
+        <template #other>
+            <Button
+                @click="() => isOpenModalPortfolios = true"
+                :type="'secondary'"
+                icon="fal fa-plus"
+                :xxstooltip="'action.tooltip'"
+                :label="trans('Add portfolios')"
+            />
         </template>
     </PageHeading>
 
     <TablePortfolios :data="data" />
+
+    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+        <div class="">
+            <div class="mx-auto text-center text-2xl font-semibold pb-4">
+                {{ trans("Add portfolios") }}
+            </div>
+            <div class="mb-2">
+                <PureInput
+                    v-model="queryPortfolio"
+                    @update:modelValue="() => debounceGetPortfoliosList()"
+                    :placeholder="trans('Input to search portfolios')"
+                />
+            </div>
+            
+            <div class="h-[500px] grid grid-cols-5 text-base font-normal">
+                <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
+                    <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
+                    <div class="border-t border-gray-300 mb-1"></div>
+                </div>
+
+                <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
+                    <div class="font-semibold text-lg py-1">{{ trans("Product") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                    <div class="border-t border-gray-300 mb-1"></div>
+                    <div class="h-[400px] overflow-auto py-2 relative">
+                        <!-- Products list -->
+                        <div class="grid grid-cols-3 gap-3 pb-2">
+                            <template v-if="!isLoadingFetch">
+                                <template v-if="portfoliosList.length > 0">
+                                    <div
+                                        v-for="(item, index) in portfoliosList"
+                                        :key="index"
+                                        @click="() => selectProduct(item)"
+                                        class="h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
+                                        :class="selectedProduct.includes(item) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
+                                    >
+                                        <img :src="item.imageSrc" class="w-16 h-16 object-cover" alt="" />
+                                        <div class="flex flex-col justify-between">
+                                            <div>
+                                                <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                                                <div class="text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                            </div>
+                                            <div class="text-xs text-gray-500">{{ item.price || 'no price' }}</div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div v-else class="text-center text-gray-500 col-span-3">
+                                    {{ trans("No products found") }}
+                                </div>
+                            </template>
+
+                            <div
+                                v-else
+                                v-for="(item, index) in 6"
+                                :key="index"
+                                class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
+                            >
+                            </div>
+                        </div>
+
+                        <!-- Pagination -->
+                        <Pagination
+                            v-if="portfoliosMeta"
+                            :on-click="getPortfoliosList"
+                            :has-data="true"
+                            :meta="portfoliosMeta"
+                            xexportLinks="queryBuilderProps.exportLinks"
+                            :per-page-options="[]"
+                            xon-per-page-change="onPerPageChange"
+                        />
+                        <!-- <div v-if="portfoliosLinks?.previous || portfoliosLinks?.next" class="mt-2 mx-auto flex justify-center gap-x-2">
+                            <div :class="{
+                                'cursor-not-allowed text-gray-400': !portfoliosLinks?.previous,
+                                'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.previous
+                            }" :dusk="portfoliosLinks?.previous ? 'pagination-simple-previous' : null"
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
+                                @click="() => portfoliosLinks?.previous ? getPortfoliosList(portfoliosLinks?.previous) : false"
+                            >
+                                <FontAwesomeIcon :icon="faArrowLeft" class="" fixed-width aria-hidden="true" />
+                                <span class="hidden sm:inline ml-2">{{ trans('Prev') }}</span>
+                            </div>
+
+                            <div class="flex items-center">{{ portfoliosMeta?.current_page }}/{{portfoliosMeta?.from}}</div>
+
+                            <div :class="{
+                                'cursor-not-allowed text-gray-400': !portfoliosLinks?.next,
+                                'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.next
+                            }" :dusk="portfoliosLinks?.next ? 'pagination-simple-previous' : null"
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
+                                @click="() => portfoliosLinks?.next ? getPortfoliosList(portfoliosLinks?.next) : false"
+                            >
+                                <span class="hidden sm:inline ml-2">{{ trans('Next') }}</span>
+                                <FontAwesomeIcon :icon="faArrowRight" class="" fixed-width aria-hidden="true" />
+                            </div>
+                        </div> -->
+
+
+                        <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
+                            <li
+                                v-for="product in selectedProduct"
+                                :key="product.id"
+                            >
+                                <Tag
+                                    :label="product.name"
+                                    closeButton
+                                    noHoverColor
+                                    @onClose="() => {
+                                        selectProduct(product)
+                                    }"
+                                />
+                            </li>
+                        </TransitionGroup>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <Button
+                            @click="() => onSubmitAddItem(() => isOpenModalPortfolios = false, selectedProduct.map(item => item.id))"
+                            :disabled="selectedProduct.length < 1"
+                            v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                            :label="`${trans('Submit')} (${selectedProduct.length} ${trans('portfolios')})`"
+                            type="primary"
+                            full
+                            :loading="isLoadingSubmit"
+                        />
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Modal>
 </template>

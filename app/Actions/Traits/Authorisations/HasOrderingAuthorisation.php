@@ -25,24 +25,39 @@ trait HasOrderingAuthorisation
 
         return match ($this->authorisationType) {
             'view' => $this->viewAuthorisation($request),
-            'edit','update' => $this->editAuthorisation($request),
+            'edit', 'update' => $this->editAuthorisation($request),
             default => false,
         };
     }
 
     private function viewAuthorisation(ActionRequest $request)
     {
-        if ($this->scope instanceof Organisation) {
-            $this->canEdit      = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
-            $this->isSupervisor = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
+        $routeName = $request->route()->getName();
 
-            return $request->user()->authTo("websites-view.{$this->organisation->id}");
-        } else {
-            $this->canEdit      = $request->user()->authTo("orders.{$this->shop->id}.edit");
-            $this->isSupervisor = $request->user()->authTo("supervisor-orders.{$this->shop->id}");
+        if (str_starts_with($routeName, 'grp.org.shops.show')) {
+            $this->canEdit      = $request->user()->authTo(
+                [
+                    "orders.{$this->shop->id}.edit",
+                    "org-supervisor.{$this->organisation->id}"
+                ]
+            );
+            $this->isSupervisor = $request->user()->authTo(
+                [
+                    "supervisor-orders.{$this->shop->id}",
+                    "org-supervisor.{$this->organisation->id}"
+                ]
+            );
 
-            return $request->user()->authTo("orders.{$this->shop->id}.view");
+            return $request->user()->authTo([
+                "orders.{$this->shop->id}.view",
+                "org-supervisor.{$this->organisation->id}"
+            ]);
         }
+
+        $this->canEdit      = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
+        $this->isSupervisor = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
+
+        return $request->user()->authTo("websites - view.{$this->organisation->id}");
     }
 
     private function editAuthorisation(ActionRequest $request)

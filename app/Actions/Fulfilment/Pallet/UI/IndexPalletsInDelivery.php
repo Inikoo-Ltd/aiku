@@ -29,9 +29,6 @@ class IndexPalletsInDelivery extends OrgAction
 {
     use WithFulfilmentShopAuthorisation;
 
-    private PalletDelivery $palletDelivery;
-
-
     public function handle(PalletDelivery $palletDelivery, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -73,6 +70,9 @@ class IndexPalletsInDelivery extends OrgAction
                 'locations.code as location_code',
             );
 
+        if ($palletDelivery->deleted_at) {
+            $query->withTrashed();
+        }
 
         return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name','type'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
@@ -113,22 +113,20 @@ class IndexPalletsInDelivery extends OrgAction
                 $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'avatar');
             }
 
-            /*  if (!($palletDelivery instanceof PalletDelivery and $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS)) {
-                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-             } */
+
 
             if ($palletDelivery instanceof Organisation || $palletDelivery instanceof Fulfilment) {
                 $table->column(key: 'fulfilment_customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if (!($palletDelivery instanceof PalletDelivery and $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS || $palletDelivery->state == PalletDeliveryStateEnum::SUBMITTED)) {
+            if (!($palletDelivery instanceof PalletDelivery && $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS || $palletDelivery->state == PalletDeliveryStateEnum::SUBMITTED)) {
                 $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             }
 
 
             $customersReferenceLabel = __("Pallet reference (customer's), notes");
             if (
-                ($palletDelivery instanceof PalletDelivery and $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) or ($palletDelivery instanceof PalletReturn and $palletDelivery->state == PalletReturnStateEnum::IN_PROCESS)
+                ($palletDelivery instanceof PalletDelivery && $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) || ($palletDelivery instanceof PalletReturn && $palletDelivery->state == PalletReturnStateEnum::IN_PROCESS)
             ) {
                 $customersReferenceLabel = __('Customer Reference');
             }
@@ -138,14 +136,14 @@ class IndexPalletsInDelivery extends OrgAction
 
 
             if (
-                ($palletDelivery instanceof PalletDelivery and $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) or ($palletDelivery instanceof PalletReturn and $palletDelivery->state == PalletReturnStateEnum::IN_PROCESS)
+                ($palletDelivery instanceof PalletDelivery && $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) || ($palletDelivery instanceof PalletReturn && $palletDelivery->state == PalletReturnStateEnum::IN_PROCESS)
             ) {
                 $table->column(key: 'notes', label: __('Notes'), canBeHidden: false, searchable: true);
             }
 
 
 
-            if ($palletDelivery->state == PalletDeliveryStateEnum::BOOKING_IN or $palletDelivery->state == PalletDeliveryStateEnum::BOOKED_IN) {
+            if ($palletDelivery->state == PalletDeliveryStateEnum::BOOKING_IN || $palletDelivery->state == PalletDeliveryStateEnum::BOOKED_IN) {
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
                 $table->column(key: 'rental', label: __('Rental'), canBeHidden: false, searchable: true);
 
@@ -159,8 +157,8 @@ class IndexPalletsInDelivery extends OrgAction
 
             if (
                 !(
-                    ($palletDelivery instanceof PalletDelivery and in_array($palletDelivery->state, [PalletDeliveryStateEnum::BOOKED_IN, PalletDeliveryStateEnum::RECEIVED])) or
-                    ($palletDelivery instanceof PalletReturn and ($palletDelivery->state == PalletReturnStateEnum::DISPATCHED or $palletDelivery->state == PalletReturnStateEnum::CANCEL))
+                    ($palletDelivery instanceof PalletDelivery && in_array($palletDelivery->state, [PalletDeliveryStateEnum::BOOKED_IN, PalletDeliveryStateEnum::RECEIVED])) ||
+                    ($palletDelivery instanceof PalletReturn && ($palletDelivery->state == PalletReturnStateEnum::DISPATCHED || $palletDelivery->state == PalletReturnStateEnum::CANCEL))
                 )
             ) {
 

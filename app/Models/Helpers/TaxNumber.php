@@ -55,7 +55,8 @@ class TaxNumber extends Model
         'data'       => 'array',
         'audited_at' => 'datetime',
         'status'     => TaxNumberStatusEnum::class,
-        'type'       => TaxNumberTypeEnum::class
+        'type'       => TaxNumberTypeEnum::class,
+        'valid'      => 'boolean',
     ];
 
     protected $attributes = [

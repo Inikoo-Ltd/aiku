@@ -8,6 +8,8 @@
 
 namespace App\Transfers\Aurora;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraCustomerClient extends FetchAurora
@@ -39,6 +41,7 @@ class FetchAuroraCustomerClient extends FetchAurora
             $deactivated_at = $metadata->deactivated_date;
         }
 
+        $manualPlatform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
         $this->parsedData['customer_client'] =
             [
@@ -53,6 +56,7 @@ class FetchAuroraCustomerClient extends FetchAurora
                 'address'         => $this->parseAddress(prefix: 'Customer Client Contact', auAddressData: $this->auroraModelData),
                 'fetched_at'      => now(),
                 'last_fetched_at' => now(),
+                'platform_id'     => $manualPlatform->id
             ];
 
         if ($customer->deleted_at) {

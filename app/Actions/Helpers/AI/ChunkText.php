@@ -39,7 +39,7 @@ class ChunkText extends OrgAction
                     ]
                 );
 
-                $embedding_column = $this->get_embedding_size(config('llmdriver.driver'));
+                $embedding_column = $this->getEmbeddingSize(config('llmdriver.driver'));
 
                 $chunk->update([
                     $embedding_column => Ollama::model(config('ollama-laravel.embedding_model'))->embeddings($chunkContent)['embedding'],

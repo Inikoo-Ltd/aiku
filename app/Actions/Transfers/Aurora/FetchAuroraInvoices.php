@@ -27,12 +27,12 @@ class FetchAuroraInvoices extends FetchAuroraAction
 
     public string $jobQueue = 'urgent';
 
-    public string $commandSignature = 'fetch:invoices {organisations?*} {--s|source_id=} {--S|shop= : Shop slug}  {--N|only_new : Fetch only new} {--w|with=* : Accepted values: transactions payments full} {--d|db_suffix=} {--r|reset} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
+    public string $commandSignature = 'fetch:invoices {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--U|only_refunds : Fetch only refunds}  {--N|only_new : Fetch only new} {--w|with=* : Accepted values: transactions payments full} {--d|db_suffix=} {--r|reset} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?Invoice
     {
         $doTransactions = false;
-        if (in_array('transactions', $this->with) or $forceWithTransactions or in_array('full', $this->with)) {
+        if (in_array('transactions', $this->with) || $forceWithTransactions || in_array('full', $this->with)) {
             $doTransactions = true;
         }
 
@@ -41,7 +41,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
         if (!$invoiceData) {
             return null;
         }
-
 
         if ($invoice = Invoice::withTrashed()->where('source_id', $invoiceData['invoice']['source_id'])->first()) {
             try {
@@ -58,36 +57,33 @@ class FetchAuroraInvoices extends FetchAuroraAction
                 return null;
             }
         } else {
-            if ($invoiceData['invoice']['data']['foot_note'] == '') {
-                unset($invoiceData['invoice']['data']['foot_note']);
+            try {
+                $invoice = StoreInvoice::make()->action(
+                    parent: $invoiceData['parent'],
+                    modelData: $invoiceData['invoice'],
+                    hydratorsDelay: $this->hydratorsDelay,
+                    strict: false,
+                    audit: false
+                );
+
+                Invoice::enableAuditing();
+                $this->saveMigrationHistory(
+                    $invoice,
+                    Arr::except($invoiceData['invoice'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                );
+
+
+                $this->recordNew($organisationSource);
+
+                $sourceData = explode(':', $invoice->source_id);
+                DB::connection('aurora')->table('Invoice Dimension')
+                    ->where('Invoice Key', $sourceData[1])
+                    ->update(['aiku_id' => $invoice->id]);
+            } catch (Exception|Throwable $e) {
+                $this->recordError($organisationSource, $e, $invoiceData['invoice'], 'Invoice', 'store');
+
+                return null;
             }
-            //   try {
-            $invoice = StoreInvoice::make()->action(
-                parent: $invoiceData['parent'],
-                modelData: $invoiceData['invoice'],
-                hydratorsDelay: $this->hydratorsDelay,
-                strict: false,
-                audit: false
-            );
-
-            Invoice::enableAuditing();
-            $this->saveMigrationHistory(
-                $invoice,
-                Arr::except($invoiceData['invoice'], ['fetched_at', 'last_fetched_at', 'source_id'])
-            );
-
-
-            $this->recordNew($organisationSource);
-
-            $sourceData = explode(':', $invoice->source_id);
-            DB::connection('aurora')->table('Invoice Dimension')
-                ->where('Invoice Key', $sourceData[1])
-                ->update(['aiku_id' => $invoice->id]);
-            //            } catch (Exception|Throwable $e) {
-            //                $this->recordError($organisationSource, $e, $invoiceData['invoice'], 'Invoice', 'store');
-            //
-            //                return null;
-            //            }
         }
 
 
@@ -232,6 +228,11 @@ class FetchAuroraInvoices extends FetchAuroraAction
         } elseif ($this->onlyOrdersNoTransactions) {
             $query->whereNull('aiku_all_id');
         }
+
+        if ($this->onlyRefunds) {
+            $query->where('Invoice Type', 'Refund');
+        }
+
 
         if ($this->fromDays) {
             $query->where('Invoice Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));

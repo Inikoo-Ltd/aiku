@@ -9,7 +9,7 @@
 namespace App\Actions\Inventory\Location\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\Inventory\FulfilmentLocationsResource;

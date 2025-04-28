@@ -92,8 +92,7 @@ class ShowPalletReturn extends OrgAction
             $this->tab = $request->get('tab', array_key_first($navigation));
         }
 
-
-        $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit);
+        $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit, $this->isSupervisor);
 
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {

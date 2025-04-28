@@ -9,9 +9,10 @@ import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue";
 import { capitalize } from "@/Composables/capitalize"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
-const props = defineProps<{
-  pageHead: object
+defineProps<{
+  pageHead: PageHeadingTypes
   data: object
   title: string
 }>()

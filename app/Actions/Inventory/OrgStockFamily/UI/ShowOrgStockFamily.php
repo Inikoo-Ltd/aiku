@@ -9,10 +9,10 @@
 namespace App\Actions\Inventory\OrgStockFamily\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Inventory\HasInventoryAuthorisation;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\History\HistoryResource;
@@ -26,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgStockFamily extends OrgAction
 {
-    use HasInventoryAuthorisation;
+    use WithInventoryAuthorisation;
 
     public function handle(OrgStockFamily $orgStockFamily): OrgStockFamily
     {

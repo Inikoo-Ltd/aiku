@@ -11,8 +11,10 @@ namespace App\Actions\Fulfilment\PalletReturn\UI;
 
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
@@ -23,6 +25,7 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -36,8 +39,9 @@ class ShowStoredItemReturn extends OrgAction
 {
     use WithFulfilmentShopAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
+    use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private FulfilmentCustomer|Fulfilment $parent;
+    private FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
@@ -63,11 +67,22 @@ class ShowStoredItemReturn extends OrgAction
         return $this->handle($palletReturn);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    {
+        $this->parent = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PalletReturnTabsEnum::values());
+
+        return $this->handle($palletReturn);
+    }
+
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
     {
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
+        } elseif ($this->parent instanceof CustomerHasPlatform) {
+            $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         }
 
         $actions    = [];
@@ -303,6 +318,23 @@ class ShowStoredItemReturn extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show' => array_merge(
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, $routeParameters),
+                $headCrumb(
+                    $palletReturn,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
+                            'parameters' => $routeParameters,
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show',
+                            'parameters' => $routeParameters
                         ]
                     ],
                     $suffix

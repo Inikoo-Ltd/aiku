@@ -8,14 +8,14 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateStock extends GrpAction
+class CreateStock extends OrgAction
 {
     private Group|StockFamily $parent;
 
@@ -30,7 +30,7 @@ class CreateStock extends GrpAction
     public function asController(ActionRequest $request): Response
     {
         $this->parent = group();
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle(group(), $request);
     }
@@ -38,7 +38,7 @@ class CreateStock extends GrpAction
     public function inStockFamily(StockFamily $stockFamily, ActionRequest $request): Response
     {
         $this->parent = $stockFamily;
-        $this->initialisation($stockFamily->group, $request);
+        $this->initialisationFromGroup($stockFamily->group, $request);
 
         return $this->handle($stockFamily, $request);
     }

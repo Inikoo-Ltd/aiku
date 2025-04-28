@@ -283,7 +283,7 @@ class ShowFulfilmentCustomer extends OrgAction
         };
 
         if (Arr::get($routeParameters, 'pallet')) {
-            $pallet             = Pallet::where('slug', $routeParameters['pallet'])->first();
+            $pallet             = Pallet::where('slug', $routeParameters['pallet'])->withTrashed()->first();
             $fulfilmentCustomer = $pallet->fulfilmentCustomer->slug;
         } else {
             $fulfilmentCustomer = $routeParameters['fulfilmentCustomer'];

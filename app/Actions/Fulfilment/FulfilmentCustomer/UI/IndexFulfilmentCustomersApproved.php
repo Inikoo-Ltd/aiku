@@ -55,7 +55,6 @@ class IndexFulfilmentCustomersApproved extends OrgAction
 
 
 
-
         return $queryBuilder
             ->defaultSort('-customers.created_at')
             ->select([
@@ -69,6 +68,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                 'fulfilment_customers.number_stored_items_state_active',
                 'customers.id',
                 'customers.name',
+                'customers.registered_at',
                 'fulfilment_customers.slug',
                 'number_pallets',
                 'number_pallets_status_storing',
@@ -85,6 +85,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
             ->allowedSorts(
                 ['reference', 'name', 'number_pallets', 'slug', 'number_spaces_state_renting', 'number_stored_items_state_active', 'number_pallets_status_storing', 'status', 'sales_all', 'sales_org_currency_all', 'sales_grp_currency_all', 'customers.created_at']
             )
+            ->withBetweenDates(['registered_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator(prefix: $prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -99,6 +100,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
+            $table->betweenDates(['registered_at']);
 
 
             $table

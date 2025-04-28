@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\Picking\UI\IndexPickings;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
@@ -25,7 +26,11 @@ use App\Http\Resources\Dispatching\PickingsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -41,7 +46,8 @@ class ShowDeliveryNote extends OrgAction
     use AsAction;
     use WithInertia;
 
-    private Order|Shop|Warehouse|Customer $parent;
+    private Order|Shop|Warehouse|Customer|CustomerClient $parent;
+    private CustomerHasPlatform $customerHasPlatform;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
@@ -107,6 +113,24 @@ class ShowDeliveryNote extends OrgAction
     {
         $this->parent = $customer;
         $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+        return $this->handle($deliveryNote);
+    }
+
+    public function inCustomerClientInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($deliveryNote);
+    }
+
+    public function inCustomerClientInFulfilment(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
         return $this->handle($deliveryNote);
     }
 
@@ -436,6 +460,28 @@ class ShowDeliveryNote extends OrgAction
                     $suffix
                 ),
             ),
+            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.show',
+            => array_merge(
+                ShowCustomerClient::make()->getBreadcrumbs(
+                    $this->customerHasPlatform,
+                    'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $deliveryNote,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
             default => []
         };
     }
@@ -539,7 +585,8 @@ class ShowDeliveryNote extends OrgAction
                     'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer', 'deliveryNote'])
 
                 ]
-            ]
+            ],
+            default => null
         };
     }
 }

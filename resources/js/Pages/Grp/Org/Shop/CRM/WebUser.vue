@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faGlobe } from '@fal'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import ShowcaseStats from '@/Components/ShowcaseStats.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
@@ -22,7 +22,7 @@ library.add(faGlobe)
 
 const props = defineProps<{
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     data: {}
 }>()
 

@@ -36,7 +36,6 @@ class IndexPallets extends OrgAction
     use WithPalletsSubNavigation;
 
 
-    private bool $selectStoredPallets = false;
 
     private Group|Fulfilment $parent;
 

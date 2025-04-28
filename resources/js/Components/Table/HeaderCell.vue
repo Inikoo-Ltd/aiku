@@ -52,7 +52,7 @@ const isCellNumber = () => {
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
             cell?.type == 'avatar' || cell?.type == 'icon' ? 'px-5 w-1' : 'px-6 w-auto',
-            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type == 'date' ? 'text-right' : 'text-left'
+            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell.type === 'date' || cell.type === 'date_hm' || cell.type === 'date_hms' ? 'text-right' : 'text-left'
         ]"
     >
         <component :is="cell?.sortable ? 'button' : 'div'" class="py-1"
@@ -91,6 +91,12 @@ const isCellNumber = () => {
                             fixed-width
                             class="text-gray-500 mr-2"
                         />
+                        <FontAwesomeIcon
+                            v-if="cell?.is_interval"
+                            icon="fas fa-watch-calculator"
+                            aria-hidden="true"
+                            fixed-width
+                            class="text-gray-500 mr-2"/>
                         <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
                         <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
                         

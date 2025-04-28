@@ -11,6 +11,7 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faTimes, faExclamationTriangle, faAsterisk)
 
@@ -92,6 +93,13 @@ const onClickDelete = () => {
 				if (!props.isFullLoading) {
 					isLoadingdelete.value = false
 				}
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.recurring_bill_state,
+					type: "error"
+				})
 			},
 		})
 	} else {

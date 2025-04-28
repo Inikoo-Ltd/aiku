@@ -5,8 +5,9 @@
  */
 
 export interface PalletDelivery {
-
-    reference:string,
+    slug: string
+    reference:string
+    customer_slug: string
     date: string
     created_at: string
     updated_at: string

@@ -164,6 +164,26 @@ class ShowInvoiceCategory extends OrgAction
                     $suffix
                 ),
             ),
+            'grp.org.accounting.invoice-categories.show.refunds.index' => array_merge(
+                ShowAccountingDashboard::make()->getBreadcrumbs(
+                    'grp.org.accounting.dashboard',
+                    Arr::only($routeParameters, ['organisation'])
+                ),
+                $headCrumb(
+                    $invoiceCategory,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.accounting.invoice-categories.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.accounting.invoice-categories.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'invoiceCategory'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
             default => []
         };
     }

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -17,7 +17,7 @@ use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
 use Illuminate\Support\Arr;
 
-class StoreWebBlock extends GrpAction
+class StoreWebBlock extends OrgAction
 {
     use HasWebAuthorisation;
 
@@ -71,7 +71,7 @@ class StoreWebBlock extends GrpAction
         $this->strict   = $strict;
         $this->asAction = true;
 
-        $this->initialisation($webBlockType->group, $modelData);
+        $this->initialisationFromGroup($webBlockType->group, $modelData);
 
         return $this->handle($webBlockType, $this->validatedData);
     }

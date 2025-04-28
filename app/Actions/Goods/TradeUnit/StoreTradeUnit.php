@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Goods\TradeUnit;
@@ -17,7 +17,7 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 
-class StoreTradeUnit extends GrpAction
+class StoreTradeUnit extends OrgAction
 {
     use WithNoStrictRules;
 
@@ -32,7 +32,7 @@ class StoreTradeUnit extends GrpAction
 
     public function rules(): array
     {
-        $rules =  [
+        $rules = [
             'code'             => [
                 'required',
                 'max:64',
@@ -53,16 +53,16 @@ class StoreTradeUnit extends GrpAction
             'net_weight'       => ['sometimes', 'required', 'numeric'],
             'marketing_weight' => ['sometimes', 'required', 'numeric'],
             'dimensions'       => ['sometimes', 'required'],
-            'type'             => ['sometimes', 'required','string'],
-            'data'             => ['sometimes', 'required','array'],
+            'type'             => ['sometimes', 'required', 'string'],
+            'data'             => ['sometimes', 'required', 'array'],
 
         ];
 
         if (!$this->strict) {
-            $rules['gross_weight'] = ['sometimes',  'nullable', 'numeric'];
-            $rules['net_weight']   = ['sometimes',  'nullable', 'numeric'];
+            $rules['gross_weight'] = ['sometimes', 'nullable', 'numeric'];
+            $rules['net_weight']   = ['sometimes', 'nullable', 'numeric'];
             $rules['source_slug']  = ['sometimes', 'nullable', 'string'];
-            $rules = $this->noStrictStoreRules($rules);
+            $rules                 = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
@@ -75,7 +75,7 @@ class StoreTradeUnit extends GrpAction
         }
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }

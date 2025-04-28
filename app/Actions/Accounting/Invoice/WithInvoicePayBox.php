@@ -18,35 +18,24 @@ use Illuminate\Support\Facades\DB;
 
 trait WithInvoicePayBox
 {
-    public function getPayBoxData(Invoice $invoice): array
+    public function getPayBoxData(?Invoice $invoice): array
     {
-        $totalRefund = $invoice->refunds->where('in_process', false)->sum('total_amount');
+        if (!$invoice) {
+            return [];
+        }
+
+        $totalRefund =  $invoice->refunds->where('in_process', false)->sum('total_amount');
         $irTotal    = $invoice->total_amount + $totalRefund;
         $refundsPayOut = $invoice->refunds->where('in_process', false)->sum('payment_amount');
 
-        $totalPaidAccount = DB::table('invoices')
-            ->where('invoices.id', $invoice->id)
-            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
-            ->where('model_has_payments.model_type', 'Invoice')
-            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
-            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
-            ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
-
-        $totalPaidRefundInOtherPayment = DB::table('invoices')
-            ->where('invoices.id', $invoice->id)
-            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
-            ->where('model_has_payments.model_type', 'Invoice')
-            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
-            ->leftJoin('payments as payments_refund', 'payments_refund.original_payment_id', '=', 'model_has_payments.payment_id')
-            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments_refund.payment_account_id')
-            ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments_refund.amount');
+        $totalPaidAccount = $this->getTotalPaidAccount($invoice);
+        $totalPaidRefundInOtherPayment = $this->getTotalPaidRefundInOtherPayment($invoice);
 
 
         $totalNeedToRefund = (abs($totalRefund) - abs($refundsPayOut)) * -1;
 
-        // $totalNeedToRefund = $invoice->payment_amount > 0 ? $totalRefund - $refundsPayOut : 0;
 
-        $totalExceesPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
+        $totalExcessPayment = ($invoice->payment_amount - $invoice->total_amount) > 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
 
         $consolidateTotalPayments = Arr::get($invoice->shop->settings, 'consolidate_invoice_to_pay', true);
 
@@ -128,13 +117,37 @@ trait WithInvoicePayBox
                 'total_balance'     => $irTotal,
                 'total_paid_in'     => $totalPaidIn,
                 'total_paid_out'    => $refundsPayOut,
-                'total_excees_payment' => $totalExceesPayment,
+                'total_excess_payment' => $totalExcessPayment,
                 'total_need_to_refund_in_payment_method' => $totalNeedToRefundInPaymentMethod,
                 'total_need_to_refund_in_credit_method' => $totalNeedToRefundInCreditMethod,
-                // 'total_need_to_refund' => $totalNeedToRefund,
                 'total_paid_account' => $totalPaidAccount,
                 'total_need_to_pay' => $totalNeedToPay,
             ],
         ];
+    }
+
+    protected function getTotalPaidAccount(Invoice $invoice)
+    {
+        return DB::table('invoices')
+            ->where('invoices.id', $invoice->id)
+            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+            ->where('model_has_payments.model_type', 'Invoice')
+            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments.payment_account_id')
+            ->where('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments.amount');
+
+    }
+
+    protected function getTotalPaidRefundInOtherPayment(Invoice $invoice)
+    {
+        return DB::table('invoices')
+            ->where('invoices.id', $invoice->id)
+            ->leftJoin('model_has_payments', 'model_has_payments.model_id', '=', 'invoices.id')
+            ->where('model_has_payments.model_type', 'Invoice')
+            ->leftJoin('payments', 'payments.id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payments as payments_refund', 'payments_refund.original_payment_id', '=', 'model_has_payments.payment_id')
+            ->leftJoin('payment_accounts', 'payment_accounts.id', '=', 'payments_refund.payment_account_id')
+            ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT->value)->sum('payments_refund.amount');
+
     }
 }

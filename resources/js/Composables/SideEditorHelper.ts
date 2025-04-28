@@ -35,41 +35,45 @@ import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import TextHeader from '@/Components/CMS/Fields/TextHeader.vue'
 import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
 import ColorProperty from '@/Components/Workshop/Properties/ColorProperty.vue'
+import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
+import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
     const components: Component = {
-        'text': InputText,
+        'text': InputText, //done
         'editorhtml': SideEditorInputHTML,
-        'upload_image': UploadImage,
-        'payment_templates': Payments,
-        'editor': Editor,
-        'socialMedia': socialMedia,
-        "VisibleLoggedIn": ButtonVisibleLoggedIn,
+        'upload_image': UploadImage, //done
+        'payment_templates': Payments, //done
+        'editor': Editor, //done
+        'socialMedia': socialMedia, //done
+        "VisibleLoggedIn": ButtonVisibleLoggedIn, //done
        /*  "properties": PanelProperties, */
         "overview-property" : Overview,
-        "textHeader": TextHeader,
-        "background": Background,
-        "border": Border,
-        "padding": Padding,
-        "margin": Margin,
-        "dimension": Dimension,
-        "select" : PureMultiselect,
+        "textHeader": TextHeader, //done
+        "background": Background, // done
+        "border": Border, //done
+        "padding": Padding, //done
+        "margin": Margin, //done
+        "dimension": Dimension, //done
+        "select" : PureMultiselect, // done
         "cards-property": cardsProperty,
-        "button": ButtonProperties,
-        "link": Link,
+        "button": ButtonProperties, //done
+        "link": Link, //done
         "overview_form": OverviewForm,
         "layout_type": SelectLayout,
-        "script": Script,
-        "arrayPhone":ArrayPhone,
-        "textProperty": TextProperty,
+        "script": Script, //done
+        "arrayPhone":ArrayPhone, //done
+        "textProperty": TextProperty, //done
         "images-property" : ImagesArray,
-        "numberCss" : InputNumberCss,
-        "justify-content" : JustifyContent,
-        "shadow" : Shadow,
-        "color" : ColorProperty,
+        "numberCss" : InputNumberCss, //done
+        "justify-content" : JustifyContent, //done
+        "shadow" : Shadow, // done
+        "color" : ColorProperty, //done
         "column-layout" : ColumnComponentPicker,
         "disclosure" : Disclosure,
+        "inputSwitch" : TextInputSwitch,
+        "timeline" : TimelineArray
     }
     
     return components[componentName] ?? NotFoundComponents

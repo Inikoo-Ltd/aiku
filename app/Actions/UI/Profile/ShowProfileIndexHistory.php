@@ -8,8 +8,8 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
@@ -19,7 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowProfileIndexHistory extends GrpAction
+class ShowProfileIndexHistory extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -27,7 +27,7 @@ class ShowProfileIndexHistory extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request)->withTab(ProfileTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
         return IndexHistory::run($request->user(), ProfileTabsEnum::HISTORY->value);
     }

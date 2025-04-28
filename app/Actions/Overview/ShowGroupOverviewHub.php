@@ -9,6 +9,7 @@
 namespace App\Actions\Overview;
 
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,10 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowGroupOverviewHub extends GrpAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("group-overview");
-    }
+    use WithGroupOverviewAuthorisation;
 
     public function asController(ActionRequest $request): ActionRequest
     {
@@ -44,7 +42,7 @@ class ShowGroupOverviewHub extends GrpAction
                 ],
                 'dashboard_stats' => [
                     'setting' => [
-                        "currency_chosen" => 'usd' // | pounds | dollar
+                        "currency_chosen" => $this->group->currency->code
                     ],
                     'widgets' => [
 
@@ -67,65 +65,6 @@ class ShowGroupOverviewHub extends GrpAction
 
                                 ]
                             ],
-                       /*  [
-                            'widgets' => [
-                                [
-                                    'label' => __('the nutrition store'),
-                                    'data' => [
-                                        [
-                                            'label' => __('total orders today'),
-                                            'value' => 275,
-                                            'type' => 'card_currency_success'
-                                        ],
-                                        [
-                                            'label' => __('sales today'),
-                                            'value' => 2345,
-                                            'type' => 'card_currency'
-                                        ]
-                                    ],
-                                    'type' => 'multi_card',
-                                ],
-                                [
-                                    'label' => __('the yoga store'),
-                                    'data' => [
-                                        [
-                                            'label' => __('ad spend this week'),
-                                            'value' => 46,
-                                            'type' => 'card_percentage'
-                                        ],
-                                        [
-                                            'label' => __('sales today'),
-                                            'value' => 2345,
-                                            'type' => 'card_currency'
-                                        ]
-                                    ],
-                                    'type' => 'multi_card',
-                                ],
-                                [
-                                    'label' => __('ad spend this week'),
-                                    'value' => 2345,
-                                    'type' => 'card_currency',
-                                ],
-                                [
-                                    'label' => __('card abandonment rate'),
-                                    'value' => 45,
-                                    'type' => 'card_percentage',
-                                ],
-                                [
-                                    'label' => __('the yoga store'),
-                                    'data' => [
-                                        'label' => __('Total newsletter subscribers'),
-                                        'value' => 55700,
-                                        'progress_bar' => [
-                                            'value' => 55,
-                                            'max' => 100,
-                                            'color' => 'success',
-                                        ],
-                                    ],
-                                    'type' => 'card_progress_bar',
-                                ],
-                            ],
-                        ] */
                     ]
                 ],
             ]

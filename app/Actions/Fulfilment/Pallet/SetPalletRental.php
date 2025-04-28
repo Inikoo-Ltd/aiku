@@ -2,13 +2,12 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 19 Apr 2024 01:34:40 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Fri, 19 Apr 2024 01:34:40 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDeliveryStateFromItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletResource;
@@ -26,7 +25,7 @@ class SetPalletRental extends OrgAction
         $pallet             = $this->update($pallet, $modelData);
         $pallet->refresh();
         SetClausesInPallet::run($pallet, $modelData);
-        UpdatePalletDeliveryStateFromItems::run($pallet->palletDelivery);
+
         return $pallet;
     }
 

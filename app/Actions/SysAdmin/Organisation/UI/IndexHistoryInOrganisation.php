@@ -81,11 +81,11 @@ class IndexHistoryInOrganisation extends OrgAction
                 ->withGlobalSearch()
                 ->withExportLinks($exportLinks)
                 ->column(key: 'expand', label: '', type: 'icon')
-                ->column(key: 'datetime', label: __('Date'), canBeHidden: false, sortable: false)
-                ->column(key: 'user_name', label: __('User'), canBeHidden: false, sortable: false)
-                ->column(key: 'old_values', label: __('Old Value'), canBeHidden: false, sortable: false)
-                ->column(key: 'new_values', label: __('New Value'), canBeHidden: false, sortable: false)
-                ->column(key: 'event', label: __('Action'), canBeHidden: false, sortable: false)
+                ->column(key: 'datetime', label: __('Date'), canBeHidden: false)
+                ->column(key: 'user_name', label: __('User'), canBeHidden: false)
+                ->column(key: 'old_values', label: __('Old Value'), canBeHidden: false)
+                ->column(key: 'new_values', label: __('New Value'), canBeHidden: false)
+                ->column(key: 'event', label: __('Action'), canBeHidden: false)
                 ->defaultSort('ip_address');
         };
     }
@@ -132,10 +132,7 @@ class IndexHistoryInOrganisation extends OrgAction
         return match ($routeName) {
             'grp.org.overview.changelog.index' =>
             array_merge(
-                ShowOrganisationOverviewHub::make()->getBreadcrumbs(
-                    $routeName,
-                    $routeParameters
-                ),
+                ShowOrganisationOverviewHub::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name' => $routeName,

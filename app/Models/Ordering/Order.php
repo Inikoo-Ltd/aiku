@@ -9,6 +9,7 @@
 namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Accounting\Invoice;
@@ -93,18 +94,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $currency_id
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
- * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
- * @property string $goods_amount
- * @property string $services_amount
- * @property string $charges_amount
- * @property string|null $shipping_amount
- * @property string|null $insurance_amount
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $gross_amount Total asserts amount (excluding charges and shipping) before discounts
+ * @property numeric $goods_amount
+ * @property numeric $services_amount
+ * @property numeric $charges_amount
+ * @property numeric|null $shipping_amount
+ * @property numeric|null $insurance_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string $tax_amount
- * @property string $total_amount
+ * @property numeric $tax_amount
+ * @property numeric $total_amount
  * @property numeric $payment_amount
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $fetched_at
@@ -113,9 +114,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
- * @property bool $is_vip Indicate if order is for a VIP customer
- * @property int|null $as_organisation_id Indicate if order is for a organisation in this group
- * @property int|null $as_employee_id Indicate if order is for a employee
+ * @property bool $is_vip Indicate if an order is for a VIP customer
+ * @property int|null $as_organisation_id Indicate if an order is for an organisation in this group
+ * @property int|null $as_employee_id Indicate if an order is for an employee
+ * @property int|null $platform_id
+ * @property OrderPayStatusEnum|null $pay_status
+ * @property \Illuminate\Support\Carbon|null $updated_by_customer_at
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -133,7 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
- * @property-read Collection<int, Platform> $platforms
+ * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read Shop $shop
  * @property-read ShopifyUserHasFulfilment|null $shopifyOrder
@@ -167,26 +171,41 @@ class Order extends Model implements HasMedia, Auditable
         'payment_data' => 'array',
 
 
-        'date'            => 'datetime',
-        'submitted_at'    => 'datetime',
-        'in_warehouse_at' => 'datetime',
-        'handling_at'     => 'datetime',
-        'packed_at'       => 'datetime',
-        'finalised_at'    => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'settled_at'      => 'datetime',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'grp_exchange'    => 'decimal:4',
-        'org_exchange'    => 'decimal:4',
-        'payment_amount'  => 'decimal:2',
+        'date'                   => 'datetime',
+        'updated_by_customer_at' => 'datetime',
+        'submitted_at'           => 'datetime',
+        'in_warehouse_at'        => 'datetime',
+        'handling_at'            => 'datetime',
+        'packed_at'              => 'datetime',
+        'finalised_at'           => 'datetime',
+        'dispatched_at'          => 'datetime',
+        'cancelled_at'           => 'datetime',
+        'settled_at'             => 'datetime',
+        'fetched_at'             => 'datetime',
+        'last_fetched_at'        => 'datetime',
+
+
+        'grp_exchange' => 'decimal:4',
+        'org_exchange' => 'decimal:4',
+
+        'gross_amount'     => 'decimal:2',
+        'goods_amount'     => 'decimal:2',
+        'services_amount'  => 'decimal:2',
+        'charges_amount'   => 'decimal:2',
+        'shipping_amount'  => 'decimal:2',
+        'insurance_amount' => 'decimal:2',
+        'net_amount'       => 'decimal:2',
+        'grp_net_amount'   => 'decimal:2',
+        'org_net_amount'   => 'decimal:2',
+        'tax_amount'       => 'decimal:2',
+        'total_amount'     => 'decimal:2',
+        'payment_amount'   => 'decimal:2',
 
 
         'state'        => OrderStateEnum::class,
         'status'       => OrderStatusEnum::class,
         'handing_type' => OrderHandingTypeEnum::class,
-
+        'pay_status'   => OrderPayStatusEnum::class,
     ];
 
     protected $attributes = [
@@ -281,19 +300,6 @@ class Order extends Model implements HasMedia, Auditable
         return $this->morphToMany(Address::class, 'model', 'model_has_addresses')->withTimestamps();
     }
 
-    public function platforms(): MorphToMany
-    {
-        return $this->morphToMany(Platform::class, 'model', 'model_has_platforms')->withTimestamps();
-    }
-
-    public function platform(): Platform|null
-    {
-        /** @var Platform $platform */
-        $platform = $this->platforms()->first();
-
-        return $platform;
-    }
-
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
@@ -312,6 +318,11 @@ class Order extends Model implements HasMedia, Auditable
     public function salesChannel(): BelongsTo
     {
         return $this->belongsTo(SalesChannel::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
     }
 
 

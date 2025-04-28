@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowAltCircleLeft } from "@fas";
 import { faPlus, faMinus, faEdit, faCross, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { emits } from "v-calendar/dist/types/src/use/datePicker.js";
+// import { emits } from "v-calendar/dist/types/src/use/datePicker.js";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 library.add(faArrowAltCircleLeft);

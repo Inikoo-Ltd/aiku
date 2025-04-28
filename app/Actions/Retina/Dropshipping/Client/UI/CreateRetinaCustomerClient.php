@@ -23,10 +23,7 @@ class CreateRetinaCustomerClient extends RetinaAction
         return Inertia::render(
             'CreateModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('new client'),
                 'pageHead'    => [
                     'title'        => __('new client'),
@@ -110,13 +107,10 @@ class CreateRetinaCustomerClient extends RetinaAction
         return $this->handle($request);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(): array
     {
         return array_merge(
-            IndexRetinaCustomerClients::make()->getBreadcrumbs(
-                routeName: preg_replace('/create$/', 'index', $routeName),
-                routeParameters: $routeParameters,
-            ),
+            IndexRetinaCustomerClients::make()->getBreadcrumbs(),
             [
                 [
                     'type'          => 'creatingModel',

@@ -39,23 +39,27 @@ class HydrateModels extends HydrateModel
             $this->hydrateInventory($command);
         }
 
+        if ($this->checkIfCanHydrate(['masters', 'mas'], $command)) {
+            $this->hydrateMasters($command);
+        }
+
         if ($this->checkIfCanHydrate(['goods'], $command)) {
             $this->hydrateGoods($command);
         }
 
-        if ($this->checkIfCanHydrate(['catalogue','cat'], $command)) {
+        if ($this->checkIfCanHydrate(['catalogue', 'cat'], $command)) {
             $this->hydrateCatalogue($command);
         }
 
-        if ($this->checkIfCanHydrate(['billables','bil'], $command)) {
+        if ($this->checkIfCanHydrate(['billables', 'bil'], $command)) {
             $this->hydrateBillables($command);
         }
 
-        if ($this->checkIfCanHydrate(['discount','disc'], $command)) {
+        if ($this->checkIfCanHydrate(['discount', 'disc'], $command)) {
             $this->hydrateDiscount($command);
         }
 
-        if ($this->checkIfCanHydrate(['website','web'], $command)) {
+        if ($this->checkIfCanHydrate(['website', 'web'], $command)) {
             $this->hydrateWebsite($command);
         }
 
@@ -71,7 +75,7 @@ class HydrateModels extends HydrateModel
             $this->hydrateHr($command);
         }
 
-        if ($this->checkIfCanHydrate(['dispatching','dis'], $command)) {
+        if ($this->checkIfCanHydrate(['dispatching', 'dis'], $command)) {
             $this->hydrateDispatching($command);
         }
 
@@ -91,9 +95,18 @@ class HydrateModels extends HydrateModel
             $this->hydrateProduction($command);
         }
 
+        if ($this->checkIfCanHydrate(['dropshipping', 'drop'], $command)) {
+            $this->hydrateDropshippig($command);
+        }
+
         return 0;
     }
 
+    protected function hydrateDropshippig(Command $command): void
+    {
+        $command->info('Dropshipping ✊🏼');
+        $command->call('hydrate:platforms');
+    }
 
     protected function hydrateDispatching(Command $command): void
     {
@@ -101,13 +114,18 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:delivery_notes');
     }
 
+    protected function hydrateMasters(Command $command): void
+    {
+        $command->info('Master section 📐️');
+        $command->call('hydrate:master_shops');
+        $command->call('hydrate:master_product_categories');
+    }
+
     protected function hydrateGoods(Command $command): void
     {
         $command->info('Goods section ⛅️');
-        $command->call('hydrate:master_shops');
         $command->call('hydrate:stocks');
         $command->call('hydrate:stock_families');
-
     }
 
     protected function hydrateCatalogue(Command $command): void
@@ -148,7 +166,6 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:org_post_rooms');
         $command->call('hydrate:outboxes');
         $command->call('hydrate:mailshots');
-
     }
 
     protected function hydrateSysadmin(Command $command): void
@@ -185,8 +202,6 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:payment_accounts');
         $command->call('hydrate:org_payment_service_provider');
         $command->call('hydrate:invoices');
-
-
         //todo $command->call('hydrate:customer_balances');
     }
 
@@ -251,7 +266,6 @@ class HydrateModels extends HydrateModel
 
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
-
             $command->call('hydrate:shops', [
                 '-s' => $shop->slug
             ]);
@@ -260,7 +274,6 @@ class HydrateModels extends HydrateModel
                 '-S' => $shop->slug
             ]);
         }
-
     }
 
     private function checkIfCanHydrate(array $keys, $command): bool

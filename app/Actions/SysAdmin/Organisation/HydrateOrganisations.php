@@ -15,6 +15,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollectionCat
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransactions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
@@ -23,6 +24,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceInterv
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
@@ -39,6 +42,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPaymentServiceProviders;
@@ -99,6 +104,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOrgStocks::run($organisation);
 
         OrganisationHydrateInvoices::run($organisation);
+        OrganisationHydrateOrderIntervals::run($organisation);
         OrganisationHydrateSales::run($organisation);
         OrganisationHydrateSubscription::run($organisation);
         OrganisationHydrateServices::run($organisation);
@@ -108,9 +114,8 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateDispatchedEmails::run($organisation);
 
 
-
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
-
+            OrganisationHydrateRegistrationIntervals::run($organisation);
             OrganisationHydrateInvoiceIntervals::run($organisation);
 
             OrganisationHydrateDepartments::run($organisation);
@@ -143,13 +148,14 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateTopUps::run($organisation);
             OrganisationHydrateCreditTransactions::run($organisation);
             OrganisationHydrateAdjustments::run($organisation);
-            //OrganisationHydrateOfferCampaigns::run($organisation);
-            //OrganisationHydrateOffers::run($organisation);
             OrganisationHydrateOrderHandling::run($organisation);
             OrganisationHydrateMailshots::run($organisation);
+            OrganisationHydrateDeletedInvoices::run($organisation);
+
+            OrganisationHydrateOrderInBasketAtCreatedIntervals::run($organisation);
+            OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::run($organisation);
 
         }
-
     }
 
 

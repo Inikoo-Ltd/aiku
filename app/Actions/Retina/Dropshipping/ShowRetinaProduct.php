@@ -12,7 +12,7 @@ use App\Actions\Catalogue\Product\UI\GetProductShowcase;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Ordering\Order\UI\IndexOrders;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaDropshippingPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
@@ -40,44 +40,32 @@ class ShowRetinaProduct extends RetinaAction
         return Inertia::render(
             'Dropshipping/Product/Product',
             [
-                'title' => __('product'),
+                'title'       => __('product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-//                'navigation' => [
-//                    'previous' => $this->getPrevious($product, $request),
-//                    'next' => $this->getNext($product, $request),
-//                ],
-                'pageHead' => [
-                    'title' => $product->code,
-                    'model' => __('product'),
-                    'icon' =>
+                'pageHead'    => [
+                    'title'   => $product->code,
+                    'model'   => __('product'),
+                    'icon'    =>
                         [
-                            'icon' => ['fal', 'fa-cube'],
+                            'icon'  => ['fal', 'fa-cube'],
                             'title' => __('product')
                         ],
                     'actions' => [
-                        $this->canEdit ? [
-                            'type' => 'button',
+                        [
+                            'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false,
-                        // $this->canDelete ? [
-                        //     'type' => 'button',
-                        //     'style' => 'delete',
-                        //     'route' => [
-                        //         'name' => 'shops.show.products.remove',
-                        //         'parameters' => $request->route()->originalParameters()
-                        //     ]
-                        // ] : false
+                        ]
+
                     ]
                 ],
-                'tabs' => [
-                    'current' => $this->tab,
+                'tabs'        => [
+                    'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
@@ -86,17 +74,7 @@ class ShowRetinaProduct extends RetinaAction
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
-                // ProductTabsEnum::ORDERS->value => $this->tab == ProductTabsEnum::ORDERS->value ?
-                //     fn () => OrderResource::collection(IndexOrders::run($product->asset))
-                //     : Inertia::lazy(fn () => OrderResource::collection(IndexOrders::run($product->asset))),
 
-                // ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run($product))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
-
-                // ProductTabsEnum::MAILSHOTS->value => $this->tab == ProductTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($product))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($product))),
 
 
             ]
@@ -110,7 +88,7 @@ class ShowRetinaProduct extends RetinaAction
         return new ProductsResource($product);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
+    public function getBreadcrumbs(array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (Product $product, array $routeParameters, string $suffix) {
             return [
@@ -120,6 +98,7 @@ class ShowRetinaProduct extends RetinaAction
                         'route' => $routeParameters,
                         'label' => __($product->slug),
                     ],
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -127,16 +106,16 @@ class ShowRetinaProduct extends RetinaAction
         $portfolio = Product::where('slug', $routeParameters['product'])->first();
 
         return array_merge(
-            IndexRetinaDropshippingPortfolio::make()->getBreadcrumbs(),
+            IndexRetinaPortfolios::make()->getBreadcrumbs(),
             $headCrumb(
                 $portfolio,
                 [
                     'index' => [
-                        'name' => 'retina.dropshipping.portfolios.index',
+                        'name'       => 'retina.dropshipping.portfolios.index',
                         'parameters' => []
                     ],
                     'model' => [
-                        'name' => 'retina.dropshipping.portfolios.show',
+                        'name'       => 'retina.dropshipping.portfolios.show',
                         'parameters' => [$portfolio->slug]
                     ]
                 ],
@@ -145,59 +124,4 @@ class ShowRetinaProduct extends RetinaAction
         );
     }
 
-    /*    public function getPrevious(Product $product, ActionRequest $request): ?array
-        {
-            $previous = Product::where('slug', '<', $product->slug)->orderBy('slug', 'desc')->first();
-
-            return $this->getNavigation($previous, $request->route()->getName());
-        }
-
-        public function getNext(Product $product, ActionRequest $request): ?array
-        {
-            $next = Product::where('slug', '>', $product->slug)->orderBy('slug')->first();
-
-            return $this->getNavigation($next, $request->route()->getName());
-        }
-
-        private function getNavigation(?Product $product, string $routeName): ?array
-        {
-            if (!$product) {
-                return null;
-            }
-
-            return match ($routeName) {
-                'shops.products.show' => [
-                    'label' => $product->name,
-                    'route' => [
-                        'name' => $routeName,
-                        'parameters' => [
-                            'product' => $product->slug,
-                        ],
-                    ],
-                ],
-                'grp.org.shops.show.catalogue.products.show' => [
-                    'label' => $product->name,
-                    'route' => [
-                        'name' => $routeName,
-                        'parameters' => [
-                            'organisation' => $this->parent->slug,
-                            'shop' => $product->shop->slug,
-                            'product' => $product->slug,
-                        ],
-                    ],
-                ],
-                'grp.org.fulfilments.show.products.show' => [
-                    'label' => $product->name,
-                    'route' => [
-                        'name' => $routeName,
-                        'parameters' => [
-                            'organisation' => $this->parent->slug,
-                            'fulfilment' => $product->shop->fulfilment->slug,
-                            'product' => $product->slug,
-                        ],
-                    ],
-                ],
-                default => null,
-            };
-        }*/
 }

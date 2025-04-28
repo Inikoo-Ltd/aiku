@@ -69,9 +69,10 @@ class SendPalletDeliveryDeletedNotification extends OrgAction
                     'customer_name' => $customer->name,
                     'pallet_reference' => $palletDelivery->reference,
                     'date' => $palletDelivery->deleted_at->format('F jS, Y'),
-                    'pallet_link' => route('grp.org.fulfilments.show.operations.pallet-deliveries.show', [ // TODO: add show deleted pallet delivery
+                    'pallet_link' => route('grp.org.fulfilments.show.crm.customers.showdeleted_pallet_deliveries.show', [
                         $palletDelivery->organisation->slug,
                         $palletDelivery->fulfilment->slug,
+                        $palletDelivery->fulfilmentCustomer->slug,
                         $palletDelivery->slug
                     ]),
                     'customer_link' => route('grp.org.fulfilments.show.crm.customers.show', [

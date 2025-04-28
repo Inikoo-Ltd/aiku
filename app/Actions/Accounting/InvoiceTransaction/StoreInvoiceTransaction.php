@@ -23,7 +23,6 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 
 class StoreInvoiceTransaction extends OrgAction
 {
@@ -58,7 +57,7 @@ class StoreInvoiceTransaction extends OrgAction
             if ($this->strict) {
                 $historicAsset = $model->historicAsset;
             } else {
-                $historicAsset = $model->historicAssetWithTrashed()->first();
+                $historicAsset = $model->getHistoricAssetWithTrashed();
             }
         } else {
             $historicAsset = $model;
@@ -86,11 +85,11 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        $intervals = DateIntervalEnum::allExceptHistorical();
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
+        AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
     }
@@ -100,32 +99,22 @@ class StoreInvoiceTransaction extends OrgAction
         if (Arr::exists($modelData, 'pallet_id')) {
             $palletId = Arr::pull($modelData, 'pallet_id');
         } else {
-            $palletId = Arr::pull($modelData, 'data.pallet_id');
+            $palletId = Arr::pull($modelData, 'data.handling_service_pallet_id');
         }
 
         if (Arr::exists($modelData, 'handle_date')) {
             $handlingDate = Arr::pull($modelData, 'handle_date');
         } else {
-            $handlingDate = Arr::pull($modelData, 'data.date');
+            $handlingDate = Arr::pull($modelData, 'data.handling_service_date');
         }
 
         if ($service->is_pallet_handling) {
-            if ($palletId == null) {
-                ValidationException::withMessages([
-                    'message' => [
-                        'pallet_id' => 'Pallet ID is required when handling a pallet',
-                    ]
-                ]);
+            if ($palletId) {
+                data_set($modelData, 'data.handling_service_pallet_id', $palletId);
             }
-            if ($handlingDate == null) {
-                ValidationException::withMessages([
-                    'message' => [
-                        'handle_date' => 'Handling date is required when handling a pallet',
-                    ]
-                ]);
+            if ($handlingDate) {
+                data_set($modelData, 'data.handling_service_date', $handlingDate);
             }
-            data_set($modelData, 'data.pallet_id', $palletId);
-            data_set($modelData, 'data.date', $handlingDate);
         }
 
         return $modelData;

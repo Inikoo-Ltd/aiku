@@ -47,7 +47,6 @@ class GroupHydrateInvoices implements ShouldBeUnique
             )
         );
 
-
         $group->orderingStats()->update($stats);
     }
 

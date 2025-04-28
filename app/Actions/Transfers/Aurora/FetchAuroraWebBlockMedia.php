@@ -10,8 +10,8 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Helpers\Media\SaveModelImages;
 use App\Actions\OrgAction;
-use App\Models\Helpers\FetchDownloadImage;
 use App\Models\Helpers\Media;
+use App\Models\Transfers\FetchDownloadImage;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
 use App\Transfers\Aurora\WithAuroraImages;

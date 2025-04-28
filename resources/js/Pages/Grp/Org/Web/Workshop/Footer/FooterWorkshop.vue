@@ -21,7 +21,7 @@ import { setIframeView } from "@/Composables/Workshop"
 import ProgressSpinner from 'primevue/progressspinner';
 
 import { routeType } from "@/types/route"
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIcons, faMoneyBill, faUpload, faDownload, faThLarge } from '@fas';
@@ -33,7 +33,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faExternalLink, faLineColumns, faIcons, faMoneyBill, faUpload, faThLarge, faLowVision)
 
 const props = defineProps<{
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     title: string
     data: {
         data: Object

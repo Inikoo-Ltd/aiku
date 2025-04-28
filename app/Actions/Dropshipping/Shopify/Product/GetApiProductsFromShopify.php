@@ -13,14 +13,14 @@ use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -66,7 +66,7 @@ class GetApiProductsFromShopify extends OrgAction
                     $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
                         ->where('reference', $product['handle'])->first();
                     $storedItemShopify = $storedItem?->shopifyPortfolio;
-                    Log::info($storedItem);
+
                     if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                         if (!$storedItem) {
                             $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
@@ -76,9 +76,11 @@ class GetApiProductsFromShopify extends OrgAction
 
                         $portfolio = $storedItem->portfolio;
                         if (!$portfolio) {
+                            $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
+
                             $portfolio = StorePortfolio::make()->action($shopifyUser->customer, [
                                 'stored_item_id' => $storedItem->id,
-                                'type' => PortfolioTypeEnum::SHOPIFY
+                                'platform_id' => $platform->id
                             ]);
                         }
 

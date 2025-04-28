@@ -32,6 +32,9 @@ function customerRoute(customer: FulfilmentCustomer) {
                 [customer.slug]);
         case "grp.overview.crm.customers.index":
             return null;
+        case "grp.org.overview.customers.index":
+        case "grp.org.overview.crm.customers.index":
+            return null;
         default:
             return route(
                 "grp.org.shops.show.crm.customers.show",
@@ -72,12 +75,7 @@ function shopRoute(customer: FulfilmentCustomer) {
         <template #cell(location)="{ item: customer }">
             <AddressLocation :data="customer['location']" />
         </template>
-        <!-- <template #cell(created_at)="{ item: customer }">
-            <div class="text-gray-500 text-right">{{ useFormatTime(customer["created_at"], { localeCode: locale.language.code, formatTime: "aiku" }) }}</div>
-        </template> -->
-        <!-- <template #cell(last_invoiced_at)="{ item: customer }">
-            <div class="text-gray-500 text-right">{{ useFormatTime(customer["last_invoiced_at"], { localeCode: locale.language.code, formatTime: "aiku" }) }}</div>
-        </template> -->
+
         <template #cell(invoiced_net_amount)="{ item: customer }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat( customer.currency_code, customer.sales_all)  }}</div>
         </template>

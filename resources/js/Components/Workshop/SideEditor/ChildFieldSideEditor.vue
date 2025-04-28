@@ -1,40 +1,44 @@
 <script setup lang="ts">
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
-import { get } from 'lodash-es'
 import Accordion from 'primevue/accordion'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { getFormValue } from '@/Composables/SideEditorHelper'
 
 import { routeType } from '@/types/route'
 const props = defineProps<{
-    blueprint: Array<{ key: string; label?: string; type?: string }>
+    blueprint: Array<{ key: string; label?: string; type?: string, replaceForm: Array<any> }>
     uploadImageRoute?: routeType
 }>()
 
+
+
 const modelValue = defineModel()
 const openPanel = ref(0)
-const emits = defineEmits<{
-    (e: 'update:modelValue', value: string | number): void
-}>()
-
 
 </script>
 
 <template>
-    <div v-for="(form, index) of blueprint.filter((item)=>item.type != 'hidden')" :key="form.key" class="">
+    <div v-for="(form, index) in blueprint.replaceForm.filter(f => f.type !== 'hidden')" :key="form.key">
         <Accordion v-if="form.name" class="w-full" v-model="openPanel">
-            <div v-if="form.type != 'hidden'">
-                <div v-if="get(form, 'label', '')" class="my-2 text-xs font-semibold">{{ get(form, 'label', '') }}</div>
-                <ParentFieldSideEditor :blueprint="form" :modelValue="modelValue" :uploadImageRoute="uploadImageRoute" 
-                    @update:modelValue="newValue => emits('update:modelValue', newValue)" :index="index" />
-            </div>
+            <template #default>
+                <div v-if="form.label" class="my-2 text-xs font-semibold">{{ form.label }}</div>
+                <ParentFieldSideEditor 
+                    :blueprint="form" 
+                    :modelValue="modelValue"
+                    :uploadImageRoute="uploadImageRoute" 
+                />
+            </template>
         </Accordion>
-        
-        <section v-else class="">
-            <ParentFieldSideEditor :blueprint="form" :modelValue="modelValue" :uploadImageRoute="uploadImageRoute" 
-                @update:modelValue="newValue => emits('update:modelValue', newValue)" :index="index" />
-        </section>
 
+        <div v-else>
+            <ParentFieldSideEditor 
+                :blueprint="form" 
+                :modelValue="modelValue"
+                :uploadImageRoute="uploadImageRoute" 
+            />
+        </div>
     </div>
+
 </template>
 
 

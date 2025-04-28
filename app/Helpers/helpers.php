@@ -16,20 +16,6 @@ if (!function_exists('group')) {
 }
 
 
-if (!function_exists('natural_language_join')) {
-    function natural_language_join(array $list, $conjunction = 'and'): string
-    {
-        $oxford_separator = count($list) == 2 ? ' ' : ', ';
-        $last             = array_pop($list);
-
-        if ($list) {
-            return implode(', ', $list).$oxford_separator.$conjunction.' '.$last;
-        }
-
-        return $last;
-    }
-}
-
 if (!function_exists('percentage')) {
     function percentage($quantity, $total, int $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
     {

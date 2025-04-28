@@ -14,9 +14,9 @@ use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
-use App\Actions\Goods\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
@@ -250,7 +250,7 @@ class StoreShop extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->get('type') == ShopTypeEnum::FULFILMENT->value and !$this->get('warehouses')) {
+        if ($this->get('type') == ShopTypeEnum::FULFILMENT->value && !$this->get('warehouses')) {
             $validator->errors()->add('warehouses', 'warehouse required');
         }
     }

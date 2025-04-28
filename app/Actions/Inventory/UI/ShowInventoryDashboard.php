@@ -8,8 +8,8 @@
 
 namespace App\Actions\Inventory\UI;
 
-use App\Actions\Inventory\HasInventoryAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Organisation;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowInventoryDashboard extends OrgAction
 {
     use HasInventoryStats;
-    use HasInventoryAuthorisation;
+    use WithInventoryAuthorisation;
 
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
@@ -39,12 +39,12 @@ class ShowInventoryDashboard extends OrgAction
         return Inertia::render(
             'Org/Inventory/InventoryDashboard',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'          => __('Inventory'),
-                'pageHead'       => [
-                    'title'          => __('Inventory'),
-                    'model'         => __('warehouse'),
-                    'icon'           => [
+                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'        => __('Inventory'),
+                'pageHead'     => [
+                    'title'     => __('Inventory'),
+                    'model'     => __('warehouse'),
+                    'icon'      => [
                         'icon' => 'fal fa-pallet-alt'
                     ],
                     'iconRight' => [
@@ -52,12 +52,12 @@ class ShowInventoryDashboard extends OrgAction
                         'title' => __('inventory')
                     ],
                 ],
-                'flatTreeMaps'   => [
+                'flatTreeMaps' => [
                     [
                         [
                             'name'  => __('SKUs families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
-                            'route'  => [
+                            'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
                                 'parameters' => $routeParameters
                             ],
@@ -67,22 +67,22 @@ class ShowInventoryDashboard extends OrgAction
 
                         ],
                         [
-                            'name'          => 'SKUs',
-                            'icon'          => ['fal', 'fa-box'],
-                            'description'   => __('current'),
-                            'route'          => [
+                            'name'        => 'SKUs',
+                            'icon'        => ['fal', 'fa-box'],
+                            'description' => __('current'),
+                            'route'       => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index',
                                 'parameters' => $routeParameters
                             ],
-                            'index' => [
+                            'index'       => [
                                 'number' => $this->organisation->inventoryStats->number_current_org_stocks
                             ],
-                            'sub_data'  => $this->getDashboardStats()['stock']['cases']
+                            'sub_data'    => $this->getDashboardStats()['stock']['cases']
                         ]
                     ]
                 ],
                 // 'dashboardStats' => $this->getDashboardStats(),
-                'dashboard' => $this->getDashboard(),
+                'dashboard'    => $this->getDashboard(),
 
             ]
         );
@@ -90,8 +90,6 @@ class ShowInventoryDashboard extends OrgAction
 
     public function getDashboard(): array
     {
-
-
         $dashboard = [];
         foreach ($this->organisation->warehouses as $warehouse) {
             $utilization = 0;
@@ -102,9 +100,9 @@ class ShowInventoryDashboard extends OrgAction
                 'widgets' => [
                     [
                         'label' => __($warehouse->name),
-                        'type' => 'stat_progress_card',
-                        'data' => [
-                            'stockValue' => $warehouse->stats->stock_value,
+                        'type'  => 'stat_progress_card',
+                        'data'  => [
+                            'stockValue'  => $warehouse->stats->stock_value,
                             'utilization' => $utilization
                         ]
                     ]
@@ -125,10 +123,9 @@ class ShowInventoryDashboard extends OrgAction
         ];
 
         foreach (OrgStockStateEnum::cases() as $case) {
-
             $count = OrgStockStateEnum::count($this->organisation)[$case->value];
 
-            if ($case == OrgStockStateEnum::SUSPENDED and $count == 0) {
+            if ($case == OrgStockStateEnum::SUSPENDED && $count == 0) {
                 continue;
             }
 

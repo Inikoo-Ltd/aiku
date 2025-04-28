@@ -2,12 +2,13 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 05 Apr 2024 11:19:04 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Fri, 05 Apr 2024 11:19:04 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Group;
@@ -18,20 +19,13 @@ class GroupHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $uniqueId = $group->id;
-        if ($intervals !== null) {
-            $uniqueId .= '-'.implode('-', $intervals);
-        }
-        if ($doPreviousPeriods !== null) {
-            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
-        }
-
-        return $uniqueId;
+        return $this->getUniqueJobWithInterval($group, $intervals, $doPreviousPeriods);
     }
 
 
@@ -47,6 +41,7 @@ class GroupHydrateSales implements ShouldBeUnique
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
+
 
 
         $group->salesIntervals()->update($stats);

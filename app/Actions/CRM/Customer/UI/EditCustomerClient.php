@@ -13,7 +13,11 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -22,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditCustomerClient extends OrgAction
 {
+    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
+
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -46,7 +52,7 @@ class EditCustomerClient extends OrgAction
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     'shops.show.customers.create' => 'shops.show.customers.index',
-                                    default                       => preg_replace('/edit$/', 'index', $request->route()->getName())
+                                    default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
@@ -57,6 +63,7 @@ class EditCustomerClient extends OrgAction
                     'blueprint' =>
                         [
                             [
+                                "label"  => __("Profile"),
                                 'title'  => __('contact'),
                                 'fields' => [
                                     'company_name' => [
@@ -114,20 +121,33 @@ class EditCustomerClient extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $shop = $request->route()->parameter('shop');
-        return $request->user()->authTo("crm.{$shop->id}.edit");
+        return $request->user()->authTo("crm.$shop->id.edit");
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerClient $customerClient, ActionRequest $request): Response
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
+        $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
+        return $this->handle($customerClient, $request);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
+    {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
+        $this->parent = $customerHasPlatform;
+        $this->initialisationFromFulfilment($fulfilment, $request);
         return $this->handle($customerClient, $request);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexCustomerClients::make()->getBreadcrumbs(
-                routeName: preg_replace('/edit$/', 'index', $routeName), // Adjust to match edit/index
+            ShowCustomerClient::make()->getBreadcrumbs(
+                parent: $this->parent,
+                routeName: preg_replace('/edit$/', 'show', $routeName), // Adjust to match edit/index
                 routeParameters: $routeParameters,
             ),
             [

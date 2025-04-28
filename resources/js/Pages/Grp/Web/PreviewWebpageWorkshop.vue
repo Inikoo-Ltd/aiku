@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { ref, onMounted } from "vue"
+import { ref, onMounted, onBeforeUnmount } from "vue"
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -37,6 +37,7 @@ const props = defineProps<{
 const isPreviewLoggedIn = ref(false)
 const isPreviewMode = ref(false)
 const activeBlock = ref(null)
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
 const showWebpage = (activityItem) => {
 	if (activityItem?.web_block?.layout && activityItem.show) {
@@ -48,6 +49,13 @@ const showWebpage = (activityItem) => {
 
 const updateData = (newVal) => {
 	sendMessageToParent("autosave", newVal)
+}
+
+const checkScreenType = () => {
+  const width = window.innerWidth
+  if (width < 640) screenType.value = 'mobile'
+  else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+  else screenType.value = 'desktop'
 }
 
 
@@ -69,6 +77,13 @@ onMounted(() => {
 			})
 		}
 	})
+	checkScreenType()
+	window.addEventListener('resize', checkScreenType)
+})
+
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkScreenType)
 })
 </script>
 
@@ -112,7 +127,7 @@ onMounted(() => {
 
 								<component class="w-full" :is="getComponent(activityItem.type)" :webpageData="webpage"
 									:blockData="activityItem" @autoSave="() => updateData(activityItem)"
-									v-model="activityItem.web_block.layout.data.fieldValue" />
+									v-model="activityItem.web_block.layout.data.fieldValue" :screenType="screenType"/>
 							</section>
 						</template>
 					</TransitionGroup>

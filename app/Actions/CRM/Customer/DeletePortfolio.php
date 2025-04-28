@@ -9,10 +9,7 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -40,10 +37,9 @@ class DeletePortfolio extends OrgAction
         return $portfolio;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Portfolio $portfolio, ActionRequest $request): Portfolio
+    public function asController(Portfolio $portfolio, ActionRequest $request): Portfolio
     {
-        $this->initialisationFromShop($shop, $request);
-        $request->validate();
+        $this->initialisationFromShop($portfolio->shop, $request);
 
         return $this->handle($portfolio);
     }

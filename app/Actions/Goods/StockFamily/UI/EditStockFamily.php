@@ -8,13 +8,13 @@
 
 namespace App\Actions\Goods\StockFamily\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\StockFamily;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditStockFamily extends GrpAction
+class EditStockFamily extends OrgAction
 {
     public function handle(StockFamily $stockFamily): StockFamily
     {
@@ -28,12 +28,10 @@ class EditStockFamily extends GrpAction
 
     public function asController(StockFamily $stockFamily, ActionRequest $request): StockFamily
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($stockFamily);
     }
-
-
 
     public function htmlResponse(StockFamily $stockFamily, ActionRequest $request): Response
     {

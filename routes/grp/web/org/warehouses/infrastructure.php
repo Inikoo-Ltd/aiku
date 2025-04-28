@@ -34,7 +34,6 @@ Route::scopeBindings()->prefix('areas')->name('warehouse_areas.')->group(functio
         Route::scopeBindings()->prefix('locations')->name('show.locations.')->group(function () {
             Route::get('export', ExportLocations::class)->name('export');
             Route::get('create', CreateLocation::class)->name('create');
-
             Route::get('', IndexLocations::class)->name('index');
 
             Route::scopeBindings()->prefix('{location}')->group(function () {

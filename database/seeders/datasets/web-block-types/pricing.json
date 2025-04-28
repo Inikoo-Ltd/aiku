@@ -53,7 +53,8 @@
 			},
 			"tiers": [
 				{
-					"name": "Freelancer",
+					"name" : "freelancer",
+					"title": "<h2>Freelancer</h2>",
 					"id": "tier-freelancer",
 					"button": {
 						"link": {
@@ -147,7 +148,10 @@
 							"original": null
 						}
 					},
-					"priceMonthly": "$19",
+					"priceMonthly": {
+						"show": true,
+						"text": "$19"
+					},
 					"description": "The essentials to provide your best work for clients.",
 					"features": [
 						"5 products",
@@ -155,10 +159,14 @@
 						"Basic analytics",
 						"48-hour support response time"
 					],
-					"mostPopular": false
+					"badge": {
+						"show": true,
+						"text": "Most Popular"
+					}
 				},
 				{
-					"name": "Startup",
+					"name" : "startup",
+					"title": "<h2>Startup</h2>",
 					"id": "tier-startup",
 					"button": {
 						"link": {
@@ -252,7 +260,10 @@
 							"original": null
 						}
 					},
-					"priceMonthly": "$49",
+					"priceMonthly":  {
+						"show": true,
+						"text": "$99"
+					},
 					"description": "A plan that scales with your rapidly growing business.",
 					"features": [
 						"25 products",
@@ -261,10 +272,14 @@
 						"24-hour support response time",
 						"Marketing automations"
 					],
-					"mostPopular": true
+					"badge": {
+						"show": true,
+						"text": "Most Popular"
+					}
 				},
 				{
-					"name": "Enterprise",
+					"name" : "enterprise",
+					"title": "<h2>Enterprise</h2>",
 					"id": "tier-enterprise",
 					"button": {
 						"link": {
@@ -358,7 +373,10 @@
 							"original": null
 						}
 					},
-					"priceMonthly": "$99",
+					"priceMonthly":{
+						"show": true,
+						"text": "$99"
+					},
 					"description": "Dedicated support and infrastructure for your company.",
 					"features": [
 						"Unlimited products",
@@ -367,7 +385,10 @@
 						"1-hour, dedicated support response time",
 						"Marketing automations"
 					],
-					"mostPopular": false
+					"badge": {
+						"show": true,
+						"text": "Most Popular"
+					}
 				}
 			]
 		}

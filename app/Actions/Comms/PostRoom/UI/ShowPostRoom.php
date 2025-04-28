@@ -11,7 +11,7 @@ namespace App\Actions\Comms\PostRoom\UI;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Comms\PostRoom\PostRoomsTabsEnum;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Http\Resources\Mail\MailshotResource;
@@ -20,13 +20,12 @@ use App\Http\Resources\Mail\OutboxesResource;
 use App\Models\Comms\PostRoom;
 use Inertia\Inertia;
 use Inertia\Response;
-use JetBrains\PhpStorm\Pure;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
  * @property PostRoom $postRoom
  */
-class ShowPostRoom extends GrpAction
+class ShowPostRoom extends OrgAction
 {
     public function handle(PostRoom $postRoom): PostRoom
     {
@@ -41,7 +40,7 @@ class ShowPostRoom extends GrpAction
 
     public function asController(PostRoom $postRoom, ActionRequest $request): PostRoom
     {
-        $this->initialisation($postRoom->group, $request)->withTab(PostRoomsTabsEnum::values());
+        $this->initialisationFromGroup($postRoom->group, $request)->withTab(PostRoomsTabsEnum::values());
 
         return $this->handle($postRoom);
     }
@@ -107,7 +106,6 @@ class ShowPostRoom extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => PostRoomsTabsEnum::navigation(),
                 ],
-                // TODO: Overview <-- is. a dashbpard
                 PostRoomsTabsEnum::SHOWCASE->value => $this->tab == PostRoomsTabsEnum::SHOWCASE->value ?
                     fn () => GetPostRoomShowcase::run($postRoom)
                     : Inertia::lazy(fn () => GetPostRoomShowcase::run($postRoom)),
@@ -132,7 +130,7 @@ class ShowPostRoom extends GrpAction
     }
 
 
-    #[Pure] public function jsonResponse(): PostRoomResource
+    public function jsonResponse(): PostRoomResource
     {
         return new PostRoomResource($this->postRoom);
     }

@@ -34,17 +34,17 @@ class UpdateCustomerClient extends OrgAction
     {
         $addressChange = [];
         if (Arr::has($modelData, 'address')) {
-            $AddressData = Arr::pull($modelData, 'address');
+            $addressData = Arr::pull($modelData, 'address');
 
             if ($customerClient->address) {
-                $address = UpdateAddress::run($customerClient->address, $AddressData);
+                $address = UpdateAddress::run($customerClient->address, $addressData);
                 data_set($modelData, 'location', $address->getLocation());
 
                 $addressChange = $address->getChanges();
             } else {
                 $this->addAddressToModelFromArray(
                     model: $customerClient,
-                    addressData: $AddressData,
+                    addressData: $addressData,
                     scope: 'delivery',
                     canShip: true
                 );
@@ -56,7 +56,7 @@ class UpdateCustomerClient extends OrgAction
 
         $changes = Arr::except($customerClient->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (count($changes) > 0 or count($addressChange) > 0) {
+        if (count($changes) > 0 || count($addressChange) > 0) {
             CustomerClientRecordSearch::dispatch($customerClient);
         }
 
@@ -103,10 +103,11 @@ class UpdateCustomerClient extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['phone']     = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['email']     = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['reference'] = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules              = $this->noStrictUpdateRules($rules);
+            $rules['phone']       = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['email']       = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['reference']   = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['platform_id'] = ['sometimes', 'integer'];
+            $rules                = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

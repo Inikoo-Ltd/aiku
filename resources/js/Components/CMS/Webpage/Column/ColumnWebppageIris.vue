@@ -3,6 +3,7 @@ import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getIrisComponent } from "@/Composables/getIrisComponents"
 import { trans } from 'laravel-vue-i18n'
+import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage)
 
@@ -13,7 +14,9 @@ const props = defineProps<{
 </script>
 
 <template>
-	<section class="w-full min-h-[100px] flex items-center justify-center">
+	<section class="w-full min-h-[100px] flex items-center justify-center"
+		:style="getStyles(fieldValue?.data?.fieldValue?.container?.properties)"
+	>
 		<!-- If no component selected -->
 		<div
 			v-if="!fieldValue"

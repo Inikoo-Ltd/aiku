@@ -14,6 +14,7 @@ use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Inventory\WarehouseArea\UI\ShowWarehouseArea;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
@@ -32,19 +33,13 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowLocation extends OrgAction
 {
     use WithActionButtons;
+    use WithWarehouseAuthorisation;
 
     private WarehouseArea|Warehouse|Organisation $parent;
 
     public function handle(Location $location): Location
     {
         return $location;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-
-        $this->canEdit   = $request->user()->authTo("locations.{$this->warehouse->id}.edit");
-        return $request->user()->authTo("locations.{$this->warehouse->id}.view");
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, Location $location, ActionRequest $request): Location
@@ -54,6 +49,7 @@ class ShowLocation extends OrgAction
 
         return $this->handle($location);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouseArea(Organisation $organisation, Warehouse $warehouse, WarehouseArea $warehouseArea, Location $location, ActionRequest $request): Location
     {
@@ -63,30 +59,8 @@ class ShowLocation extends OrgAction
         return $this->handle($location);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Location $location, ActionRequest $request): Location
-    {
-        $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(LocationTabsEnum::values());
-
-        return $this->handle($location);
-    }
-
-    //    public function maya(Organisation $organisation, Location $location, ActionRequest $request): Location
-    //    {
-    //        $this->maya   = true;
-    //        $this->parent = $organisation;
-    //        $this->initialisation($this->parent, $request)->withTab(LocationTabsEnum::values());
-    //        return $this->handle($location);
-    //    }
-    //
-
-
-
     public function htmlResponse(Location $location, ActionRequest $request): Response
     {
-
-
         $navigation = LocationTabsEnum::navigation();
 
         if (!$location->allow_stocks) {
@@ -101,25 +75,7 @@ class ShowLocation extends OrgAction
             unset($navigation[LocationTabsEnum::STOCKS->value]);
             unset($navigation[LocationTabsEnum::STOCK_MOVEMENTS->value]);
         }
-        if ($this->parent instanceof Warehouse) {
-            $deleteRoute = [
-                            'name'       => 'grp.models.warehouse.location.delete',
-                            'parameters' => [
-                                $this->parent->id,
-                                $location->id
-                            ],
-                            'method'     => 'delete'
-                            ];
-        } elseif ($this->parent instanceof WarehouseArea) {
-            $deleteRoute = [
-                            'name'       => 'grp.models.warehouse_area.location.delete',
-                            'parameters' => [
-                                $this->parent->id,
-                                $location->id
-                            ],
-                            'method'     => 'delete'
-                            ];
-        }
+
 
         return Inertia::render(
             'Org/Warehouse/Location',
@@ -134,13 +90,13 @@ class ShowLocation extends OrgAction
                     'next'     => $this->getNext($location, $request),
                 ],
                 'pageHead'    => [
-                    'icon'      => [
+                    'icon'    => [
                         'title' => __('locations'),
                         'icon'  => 'fal fa-inventory'
                     ],
-                    'model'     => __('location'),
-                    'title'     => $location->slug,
-                    'actions'   => [
+                    'model'   => __('location'),
+                    'title'   => $location->slug,
+                    'actions' => [
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                     ],
                 ],
@@ -244,7 +200,7 @@ class ShowLocation extends OrgAction
 
     public function getPrevious(Location $location, ActionRequest $request): ?array
     {
-        $previous = Location::where('slug', '<', $location->slug)->when(true, function ($query) use ($location, $request) {
+        $previous = Location::where('slug', '<', $location->slug)->when(true, function ($query) use ($location) {
             if ($this->parent instanceof Warehouse) {
                 $query->where('locations.warehouse_id', $location->warehouse_id);
             } else {
@@ -257,7 +213,7 @@ class ShowLocation extends OrgAction
 
     public function getNext(Location $location, ActionRequest $request): ?array
     {
-        $next = Location::where('slug', '>', $location->slug)->when(true, function ($query) use ($location, $request) {
+        $next = Location::where('slug', '>', $location->slug)->when(true, function ($query) use ($location) {
             if ($this->parent instanceof Warehouse) {
                 $query->where('locations.warehouse_id', $location->warehouse_id);
             } else {

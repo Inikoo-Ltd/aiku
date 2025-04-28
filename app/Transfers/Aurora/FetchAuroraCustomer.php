@@ -20,12 +20,14 @@ class FetchAuroraCustomer extends FetchAurora
 {
     protected function parseModel(): void
     {
-        $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Customer Store Key'});
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Customer Store Key'});
 
-        if ($this->parsedData['shop']->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
 
+
+        $this->parsedData['shop'] = $shop;
 
         $status = CustomerStatusEnum::APPROVED->value;
         $state  = CustomerStateEnum::ACTIVE->value;
@@ -72,7 +74,7 @@ class FetchAuroraCustomer extends FetchAurora
         $company = $this->cleanCompanyName($company);
 
 
-        if (!$company and !$contactName) {
+        if (!$company && !$contactName) {
             $contactName = $this->auroraModelData->{'Customer Name'};
             $contactName = $this->cleanName($contactName);
             $contactName = $this->cleanCompanyName($contactName);
@@ -156,6 +158,7 @@ class FetchAuroraCustomer extends FetchAurora
                 'status'              => $status,
                 'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Customer Key'},
                 'created_at'          => $this->auroraModelData->{'Customer First Contacted Date'},
+                'registered_at'       => $this->auroraModelData->{'Customer First Contacted Date'},
                 'contact_address'     => $billingAddress,
                 'tax_number'          => $taxNumber,
                 'email_subscriptions' => $emailSubscriptions,

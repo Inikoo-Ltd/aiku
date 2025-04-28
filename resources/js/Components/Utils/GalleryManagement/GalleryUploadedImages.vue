@@ -29,7 +29,7 @@ library.add(faCheckCircle, faSearch)
 const props = defineProps<{
     imagesUploadedRoutes?: routeType
     attachImageRoute: routeType
-    closePopup: Function
+    closePopup?: Function
     maxSelected?: number
 }>()
 
@@ -79,11 +79,13 @@ const submitSelectedImages = () => {
             {
                 onStart: () => isLoadingSubmit.value = true,
                 onFinish: (aaa) => {
-                    isLoading.value = false
+                    isLoadingSubmit.value = false
                 },
                 onSuccess: (zzz) => {
-                    selectedIdImages.value = [],
-                    props.closePopup()
+                    selectedIdImages.value = [];
+                    if (props.closePopup) {
+                        props.closePopup();
+                    }
                 },
                 onError: (err) => {
                     notify({

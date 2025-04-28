@@ -17,8 +17,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property string $description
  * @property string $number_current_stocks
- * @property mixed $created_at
- * @property mixed $updated_at
  * @property mixed $revenue_grp_currency_all
  * @property mixed $revenue_grp_currency_1y
  * @property mixed $revenue_grp_currency_1q
@@ -33,6 +31,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $revenue_grp_currency_lm
  * @property mixed $revenue_grp_currency_tdy
  * @property mixed $revenue_grp_currency_ld
+ * @property mixed $grp_currency_code
  *
  */
 class StockFamiliesResource extends JsonResource
@@ -60,6 +59,7 @@ class StockFamiliesResource extends JsonResource
             'revenue_grp_currency_lm'  => $this->revenue_grp_currency_lm,
             'revenue_grp_currency_lw'  => $this->revenue_grp_currency_1w,
             'revenue_grp_currency_ld'  => $this->revenue_grp_currency_ld,
+            'grp_currency'             => $this->grp_currency_code
 
 
         ];

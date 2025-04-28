@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 12 Apr 2025 12:57:25 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Stubs\Migrations\HasDateIntervalsStats;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

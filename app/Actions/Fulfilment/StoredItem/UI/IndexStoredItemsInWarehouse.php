@@ -9,23 +9,23 @@
 namespace App\Actions\Fulfilment\StoredItem\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;
 use App\Enums\UI\Fulfilment\StoredItemsInWarehouseTabsEnum;
 use App\Http\Resources\Fulfilment\ReturnStoredItemsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
+use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\InertiaTable\InertiaTable;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Services\QueryBuilder;
 
 class IndexStoredItemsInWarehouse extends OrgAction
 {
@@ -63,9 +63,9 @@ class IndexStoredItemsInWarehouse extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Warehouse $warehouse, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($warehouse, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -104,7 +104,7 @@ class IndexStoredItemsInWarehouse extends OrgAction
             'Org/Fulfilment/StoredItems',
             [
                 'breadcrumbs'                                       => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'                                             => __("Customer's SKUs"),
+                'title'                                             => $title,
                 'pageHead'                                          => [
                     'title'         => $title,
                     'model'         => __('Inventory'),
@@ -127,7 +127,7 @@ class IndexStoredItemsInWarehouse extends OrgAction
                     : Inertia::lazy(fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run($warehouse))),
 
             ]
-        )->table($this->tableStructure($warehouse, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value))
+        )->table($this->tableStructure(prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value))
             ->table(
                 IndexPalletStoredItems::make()->tableStructure(
                     $warehouse,

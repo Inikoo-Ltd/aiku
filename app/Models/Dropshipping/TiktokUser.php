@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Tiktok\Traits\WithTiktokApiServices;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\PlatformHasClient;
+use App\Models\TiktokUserHasOrder;
 use App\Models\TiktokUserHasProduct;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\InCustomer;
@@ -49,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TiktokUserHasOrder> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TiktokUserHasProduct> $products
@@ -111,5 +113,10 @@ class TiktokUser extends Model
     public function products(): HasMany
     {
         return $this->hasMany(TiktokUserHasProduct::class, 'tiktok_user_id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(TiktokUserHasOrder::class, 'tiktok_user_id');
     }
 }

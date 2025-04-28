@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\User;
@@ -17,7 +17,7 @@ use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateProfile extends GrpAction
+class UpdateProfile extends OrgAction
 {
     use WithActionUpdate;
     use WithProfile;
@@ -62,7 +62,7 @@ class UpdateProfile extends GrpAction
 
     public function asController(ActionRequest $request): User
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($request->user(), $this->validatedData);
     }

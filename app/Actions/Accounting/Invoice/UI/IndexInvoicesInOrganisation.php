@@ -1,0 +1,193 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 17 Apr 2025 16:36:40 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Accounting\Invoice\UI;
+
+use App\Actions\OrgAction;
+use App\Actions\Overview\ShowOrganisationOverviewHub;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Http\Resources\Accounting\InvoicesResource;
+use App\InertiaTable\InertiaTable;
+use App\Models\Accounting\Invoice;
+use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
+
+class IndexInvoicesInOrganisation extends OrgAction
+{
+    public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereWith('invoices.reference', $value);
+            });
+        });
+
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+
+        $queryBuilder = QueryBuilder::for(Invoice::class);
+        $queryBuilder->where('invoices.type', InvoiceTypeEnum::INVOICE);
+        $queryBuilder->whereNot('invoices.in_process', true);
+        $queryBuilder->where('invoices.organisation_id', $organisation->id);
+        $queryBuilder->leftjoin('shops', 'invoices.shop_id', '=', 'shops.id');
+
+        $queryBuilder->defaultSort('-date')
+            ->select([
+                'invoices.reference',
+                'invoices.total_amount',
+                'invoices.net_amount',
+                'invoices.pay_status',
+                'invoices.date',
+                'invoices.type',
+                'invoices.created_at',
+                'invoices.updated_at',
+                'invoices.in_process',
+                'invoices.slug',
+                'currencies.code as currency_code',
+                'currencies.symbol as currency_symbol',
+                'shops.name as shop_name',
+                'shops.slug as shop_slug',
+                'shops.code as shop_code',
+            ])
+            ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
+            ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
+
+
+        $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+            ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
+
+
+        return $queryBuilder->allowedSorts(['number', 'pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
+            ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function tableStructure(Organisation $organisation, $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix, $organisation) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+
+            $table->betweenDates(['date']);
+            $noResults = __("No invoices found");
+            $stats     = $organisation->orderingStats->number_invoices_type_invoice;
+            $table->withGlobalSearch();
+
+            $table->withEmptyState(
+                [
+                    'title' => $noResults,
+                    'count' => $stats->number_invoices ?? 0,
+                ]
+            );
+
+
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
+            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+                ->defaultSort('-date');
+        };
+    }
+
+    public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
+    {
+        return InvoicesResource::collection($invoices);
+    }
+
+    public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
+    {
+        $title = __('Invoices');
+
+        $icon = [
+            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'title' => __('invoices')
+        ];
+
+
+        $routeName       = $request->route()->getName();
+        $routeParameters = $request->route()->originalParameters();
+
+
+        $data = [
+            'data' => InvoicesResource::collection($invoices),
+        ];
+
+        $inertiaRender = Inertia::render(
+            'Org/Accounting/Invoices',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
+                'title'       => __('invoices'),
+                'pageHead'    => [
+                    'title'   => $title,
+                    'icon'    => $icon,
+                    'actions' => [],
+                ],
+
+                ...$data
+            ]
+        );
+
+
+        return $inertiaRender->table($this->tableStructure(organisation: $this->organisation));
+    }
+
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
+    }
+
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        $headCrumb = function (array $routeParameters = [], ?string $suffix = null) {
+            return [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => __('Invoices'),
+                        'icon'  => 'fal fa-bars',
+
+                    ],
+                    'suffix' => $suffix
+                ]
+            ];
+        };
+
+        return array_merge(
+            ShowOrganisationOverviewHub::make()->getBreadcrumbs($routeParameters),
+            $headCrumb(
+                [
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters
+                ]
+            )
+        );
+    }
+}

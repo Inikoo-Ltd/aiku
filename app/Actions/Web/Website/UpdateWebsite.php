@@ -45,6 +45,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
 
+        if (Arr::has($modelData, "catalogue_template")) {
+            data_set($modelData, "settings.catalogue_template", Arr::pull($modelData, "catalogue_template"));
+        }
+
         $website = $this->update($website, $modelData, ['data', 'settings']);
         WebsiteRecordSearch::run($website);
 
@@ -107,6 +111,7 @@ class UpdateWebsite extends OrgAction
             'state'         => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
             'status'        => ['sometimes', 'boolean'],
             'google_tag_id' => ['sometimes', 'string'],
+            'catalogue_template' => ['sometimes', 'array'],
             'image'       => [
                 'sometimes',
                 'nullable',

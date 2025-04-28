@@ -834,9 +834,18 @@ test('UI Index customer orders', function () {
 });
 
 test('UI show order', function () {
+    $this->withoutExceptionHandling();
     $order    = Order::first();
     $customer = $order->customer;
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.orders.show', [$this->organisation->slug, $this->shop->slug, $customer->slug, $order->slug]));
+    $response = $this->get(route(
+        'grp.org.shops.show.crm.customers.show.orders.show',
+        [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $customer->slug,
+            $order->slug
+        ]
+    ));
 
     $response->assertInertia(function (AssertableInertia $page) use ($order) {
         $page
@@ -1120,9 +1129,8 @@ test('add balance customer', function (Customer $customer) {
     $customer->refresh();
 
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and((int)$customer->balance)->toBe(100);
-
-    expect($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
+        ->and((int)$customer->balance)->toBe(100)
+        ->and($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
         ->and((int)$creditTransaction->amount)->toBe(100)
         ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::ADD_FUNDS_OTHER)
         ->and($creditTransaction->notes)->toBe('test');
@@ -1130,7 +1138,7 @@ test('add balance customer', function (Customer $customer) {
     return $customer;
 })->depends('create customer');
 
-test('windraw balance customer', function (Customer $customer) {
+test('withdraw balance customer', function (Customer $customer) {
     $creditTransaction = UpdateBalanceCustomer::make()->action(
         $customer,
         [
@@ -1141,9 +1149,8 @@ test('windraw balance customer', function (Customer $customer) {
     $customer->refresh();
 
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and((int)$customer->balance)->toBe(0);
-
-    expect($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
+        ->and((int)$customer->balance)->toBe(0)
+        ->and($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
         ->and((int)$creditTransaction->amount)->toBe(-100)
         ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::MONEY_BACK);
 

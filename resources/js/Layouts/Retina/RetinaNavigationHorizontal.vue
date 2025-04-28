@@ -63,6 +63,7 @@ const mergeNavigations = props.nav.platforms_navigation.navigation;
 
 const currentNavigation = () => {
     const curre = mergeNavigations.find(mergeNav => {
+
         if(layout.currentPlatform) {
             return mergeNav.slug == layout.currentPlatform;
         } else {

@@ -18,8 +18,18 @@ class GetPalletReturnActions
 {
     use AsObject;
 
+    private bool $isSupervisor = false;
+    private string $addIcon = 'fal fa-plus';
+    private string $deleteIcon = 'fal fa-trash-alt';
+
     public function handle(PalletReturn $palletReturn, $canEdit = false, $isSupervisor = false): array
     {
+        $this->isSupervisor = $isSupervisor;
+
+        if ($palletReturn->deleted_at) {
+            return $this->addPdf($palletReturn, []);
+        }
+
         if ($canEdit) {
             $actions = match ($palletReturn->state) {
                 PalletReturnStateEnum::IN_PROCESS => $this->getPalletReturnInProcessActions($palletReturn),
@@ -27,6 +37,7 @@ class GetPalletReturnActions
                 PalletReturnStateEnum::CONFIRMED => $this->getPalletReturnConfirmedActions($palletReturn),
                 PalletReturnStateEnum::PICKING => $this->getPalletReturnPickingActions($palletReturn),
                 PalletReturnStateEnum::PICKED => $this->getPalletReturnPickedActions($palletReturn),
+                PalletReturnStateEnum::DISPATCHED => $this->getPalletReturnDispatchedActions($palletReturn),
                 default => []
             };
 
@@ -341,6 +352,60 @@ class GetPalletReturnActions
         }
 
         return $actions;
+    }
+
+    public function getPalletReturnDispatchedActions(PalletReturn $palletReturn): array
+    {
+        return [
+            $this->dispatchedDelete($palletReturn),
+        ];
+    }
+
+    protected function dispatchedDelete(PalletReturn $palletReturn): array
+    {
+        if (!$this->isSupervisor) {
+            return [
+                'supervisor' => false,
+                'supervisors_route' => [
+                    'method'     => 'get',
+                    'name'       => 'grp.json.fulfilment.supervisors.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug
+                    ]
+                ],
+                'type'    => 'button',
+                'style'   => 'red_outline',
+                'tooltip' => __('Delete'),
+                'icon'    => $this->deleteIcon,
+                'key'     => 'delete_dispatched',
+                'ask_why' => true,
+                'route'   => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.pallet-return.dispatched-delete',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->id
+                    ]
+                ]
+            ];
+        }
+
+
+        return [
+            'supervisor' => true,
+            'type'    => 'button',
+            'style'   => 'red_outline',
+            'tooltip' => __('Delete'),
+            'icon'    => $this->deleteIcon,
+            'key'     => 'delete_dispatched',
+            'ask_why' => true,
+            'route'   => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.pallet-return.dispatched-delete',
+                'parameters' => [
+                    'palletReturn' => $palletReturn->id
+                ]
+            ]
+        ];
     }
 
 

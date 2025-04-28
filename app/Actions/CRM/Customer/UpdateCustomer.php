@@ -61,7 +61,6 @@ class UpdateCustomer extends OrgAction
             }
 
             data_set($modelData, 'location', $customer->address->getLocation());
-
         }
         if (Arr::has($modelData, 'delivery_address')) {
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
@@ -205,6 +204,8 @@ class UpdateCustomer extends OrgAction
             $rules['is_vip']             = ['sometimes', 'boolean'];
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
+            $rules['registered_at']      = ['sometimes', 'nullable', 'date'];
+
 
             $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['email']           = [

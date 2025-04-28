@@ -29,14 +29,29 @@ const emits = defineEmits<{
 <template>
     <div :style="getStyles(modelValue.container.properties)">
         <div class="w-full">
-            <div class="relative isolate overflow-hidden px-6 py-16 md:py-24 text-center  sm:px-16">
+            <div class="relative isolate px-6 py-16 md:py-24 text-center  sm:px-16">
                 <Editor  
                     v-model="modelValue.title"
-                    @update:modelValue="() => emits('autoSave')" 
+                    @update:modelValue="() => emits('autoSave')"
+                    :uploadImageRoute="{
+                        name: webpageData.images_upload_route.name,
+                        parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                        }
+                    }"
                 />
+                
                 <Editor  
                     v-model="modelValue.text" 
                     @update:modelValue="() => emits('autoSave')" 
+                    :uploadImageRoute="{
+                        name: webpageData.images_upload_route.name,
+                        parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                        }
+                    }"
                 />
 
                 <div class="flex justify-center">

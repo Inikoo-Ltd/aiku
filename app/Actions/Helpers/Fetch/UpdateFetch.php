@@ -9,7 +9,7 @@
 namespace App\Actions\Helpers\Fetch;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Helpers\Fetch;
+use App\Models\Transfers\Fetch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -19,7 +19,6 @@ class UpdateFetch
     use WithAttributes;
     use WithActionUpdate;
 
-    private bool $asAction = false;
 
     public function handle(Fetch $fetch, array $modelData): Fetch
     {

@@ -10,14 +10,14 @@
 
 namespace App\Actions\Comms\EmailAddress\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Mail\EmailAddressResource;
 use App\Models\Comms\EmailAddress;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowEmailAddress extends GrpAction
+class ShowEmailAddress extends OrgAction
 {
     public function handle(EmailAddress $emailAddress): EmailAddress
     {
@@ -31,15 +31,15 @@ class ShowEmailAddress extends GrpAction
 
     public function asController(EmailAddress $emailAddress, ActionRequest $request): EmailAddress
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($emailAddress);
     }
 
     public function htmlResponse(EmailAddress $emailAddress, ActionRequest $request): Response
     {
-        $title      = __('Email Address');
-        $icon       = [
+        $title = __('Email Address');
+        $icon  = [
             'icon'  => ['fal', 'fa-envelope'],
             'title' => __('Email Addresses')
         ];
@@ -54,11 +54,11 @@ class ShowEmailAddress extends GrpAction
                 ),
                 'title'       => __('email address'),
                 'pageHead'    => [
-                    'title'      => $title,
-                    'icon'       => $icon,
+                    'title' => $title,
+                    'icon'  => $icon,
                 ],
 
-                'data'   => EmailAddressResource::make($emailAddress)
+                'data' => EmailAddressResource::make($emailAddress)
             ]
         );
     }
@@ -78,19 +78,17 @@ class ShowEmailAddress extends GrpAction
             ];
         };
 
-        return match ($routeName) {
-            default => array_merge(
-                IndexEmailAddress::make()->getBreadcrumbs(
-                    'grp.overview.comms-marketing.email-addresses.index',
-                    []
-                ),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ]
-                )
+        return array_merge(
+            IndexEmailAddress::make()->getBreadcrumbs(
+                'grp.overview.comms-marketing.email-addresses.index',
+                []
             ),
-        };
+            $headCrumb(
+                [
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters
+                ]
+            )
+        );
     }
 }

@@ -16,9 +16,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\CreditTransaction;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
@@ -49,9 +47,8 @@ class UpdateBalanceCustomer extends OrgAction
             CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER => abs($modelData['amount']) * -1,
         };
 
-        $creditTransaction = StoreCreditTransaction::make()->action($customer, $modelData);
+        return StoreCreditTransaction::make()->action($customer, $modelData);
 
-        return $creditTransaction;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -65,7 +62,7 @@ class UpdateBalanceCustomer extends OrgAction
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'amount' => ['required', 'decimal:0,2'],
             'type' => ['required',  Rule::in([
                 CreditTransactionTypeEnum::PAY_RETURN->value,
@@ -79,17 +76,16 @@ class UpdateBalanceCustomer extends OrgAction
             'notes' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
-        return $rules;
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): CreditTransaction
+    public function asController(Customer $customer, ActionRequest $request): void
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $this->handle($customer, $this->validatedData);
     }
 
     /**

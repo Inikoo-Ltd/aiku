@@ -4,13 +4,14 @@ namespace App\Console;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopSellers;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
-use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStatus;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Helpers\Intervals\ResetMonthlyIntervals;
 use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
+use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -28,8 +29,8 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'ShopHydrateTopSellers',
         );
 
-        $schedule->job(FulfilmentCustomerHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'FulfilmentCustomerHydrateStatus',
+        $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'FulfilmentCustomersHydrateStatus',
         );
 
         $schedule->job(ResetYearIntervals::makeJob())->yearlyOn(1, 1, '00:00')->timezone('UTC')->sentryMonitor(
@@ -76,6 +77,9 @@ class Kernel extends ConsoleKernel
         (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:invoice_categories')->everyTwoHours('23:00')->timezone('UTC');
 
+        $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'ProcessFetchStacks',
+        );
     }
 
 

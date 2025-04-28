@@ -9,7 +9,6 @@
 namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
@@ -57,7 +56,7 @@ class IndexRefundInProcessTransactions extends OrgAction
             'net_amount',
             ], $commonSelect))->where('invoice_transactions.invoice_id', $invoice->id);
         } else {
-            $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.invoice_transaction_id', 'original_invoice_transaction.id')
+            $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.original_invoice_transaction_id', 'original_invoice_transaction.id')
             ->select(array_merge([
                 'original_invoice_transaction.id',
                 'original_invoice_transaction.updated_at',
@@ -78,30 +77,7 @@ class IndexRefundInProcessTransactions extends OrgAction
 
     public function tableStructure(Invoice $invoice, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $invoice) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-
-
-            $table
-                ->withModelOperations()
-                ->withGlobalSearch();
-
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-
-            if ($invoice instanceof Invoice && $invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {
-                $table->column(key: 'action', label: __('action'), canBeHidden: false);
-            }
-
-            $table->defaultSort('-invoice_transactions.updated_at');
-        };
+        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, $prefix);
     }
 
 

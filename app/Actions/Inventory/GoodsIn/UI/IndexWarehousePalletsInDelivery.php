@@ -10,7 +10,7 @@ namespace App\Actions\Inventory\GoodsIn\UI;
 
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInDelivery;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentWarehouseAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Inventory\Warehouse;
@@ -23,8 +23,6 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexWarehousePalletsInDelivery extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
-
-    private PalletDelivery $palletDelivery;
 
 
     public function handle(PalletDelivery $palletDelivery, $prefix = null): LengthAwarePaginator

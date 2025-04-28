@@ -11,6 +11,8 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 
 class SetOrderPayments extends OrgAction
@@ -27,12 +29,21 @@ class SetOrderPayments extends OrgAction
 
     protected function handle(Order $order): Order
     {
-
-        $paidAmount = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('model_has_payments.amount');
+        $runningPaymentsAmount = 0;
+        $payStatus = OrderPayStatusEnum::UNPAID;
+        /** @var Payment $payment */
+        foreach (
+            $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment
+        ) {
+            $runningPaymentsAmount += $payment->amount;
+            if ($payStatus == OrderPayStatusEnum::UNPAID && $runningPaymentsAmount >= $order->total_amount) {
+                $payStatus = OrderPayStatusEnum::PAID;
+            }
+        }
 
         $order->update(
             [
-                'payment_amount' => $paidAmount
+                'payment_amount' => $runningPaymentsAmount
             ]
         );
 
