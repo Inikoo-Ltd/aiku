@@ -125,6 +125,7 @@ class IndexUniversalSearch extends OrgAction
             'pallet_deliveries.' => 'fulfilment',
             'pallet_returns.' => 'fulfilment',
             'productions.' => 'productions',
+            'inventory.' => 'inventory',
         ];
 
         if (empty($route) || str_starts_with($route, "dashboard.") || str_starts_with($route, "settings.")) {
