@@ -33,11 +33,11 @@ class StoreProductWooCommerce extends OrgAction
     {
         DB::transaction(function () use ($wooCommerceUser, $modelData) {
             foreach (Arr::get($modelData, 'products') as $product) {
-               StorePortfolio::run(
+                StorePortfolio::run(
                     $wooCommerceUser->customer,
                     $product,
                     [
-                    'platform_id' => Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first()->id,
+                     'platform_id' => Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first()->id,
                 ]
                 );
 

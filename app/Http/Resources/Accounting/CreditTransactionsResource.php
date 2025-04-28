@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 28-04-2025-14h-35m
@@ -8,8 +9,6 @@
 
 namespace App\Http\Resources\Accounting;
 
-use App\Http\Resources\Helpers\AddressResource;
-use App\Models\Accounting\Invoice;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CreditTransactionsResource extends JsonResource

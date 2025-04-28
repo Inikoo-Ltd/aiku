@@ -12,32 +12,29 @@ namespace App\Http\Resources\Fulfilment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property int $id
- * @property string $slug
- * @property string $customer_reference
- * @property \App\Enums\Dropshipping\ChannelFulfilmentStateEnum $state
- * @property string $status
- * @property string $notes
- * @property \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property \App\Models\Inventory\Location $location
- * @property \App\Models\Inventory\Warehouse $warehouse
- * @property \App\Models\Fulfilment\StoredItem $storedItems
+ * @property mixed $id
+ * @property mixed $date
+ * @property mixed $name
+ * @property mixed $reference
+ * @property mixed $slug
+ * @property mixed $state
+ * @property mixed $number_item_transactions
  */
 class RetinaDropshippingOrdersResources extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id' => $this->id,
-            'date'              => $this->date,
-            'name'              => $this->name,
-            'reference' => $this->reference,
-            'slug' => $this->slug,
-            'client_name' => $this->customerClient?->contact_name,
-            'state' => $this->state,
-            'number_transactions' => $this->number_transactions,
-            'state_label'           => $this->state->labels()[$this->state->value],
-            'state_icon'            => $this->state->stateIcon()[$this->state->value]
+            'id'                       => $this->id,
+            'date'                     => $this->date,
+            'name'                     => $this->name,
+            'reference'                => $this->reference,
+            'slug'                     => $this->slug,
+            'client_name'              => $this->customerClient?->contact_name,
+            'state'                    => $this->state,
+            'number_item_transactions' => $this->number_item_transactions,
+            'state_label'              => $this->state->labels()[$this->state->value],
+            'state_icon'               => $this->state->stateIcon()[$this->state->value]
         ];
     }
 }

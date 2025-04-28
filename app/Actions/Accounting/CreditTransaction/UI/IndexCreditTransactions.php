@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 28-04-2025-14h-18m
@@ -10,11 +11,9 @@ namespace App\Actions\Accounting\CreditTransaction\UI;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
-use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
-use App\Models\CRM\Favourite;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -24,9 +23,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCreditTransactions extends OrgAction
 {
-    private Customer $parent;
 
-    public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,10 +39,9 @@ class IndexCreditTransactions extends OrgAction
 
 
         $query = QueryBuilder::for(CreditTransaction::class);
-        if($parent instanceof Customer)
-        {
-            $query->where('credit_transactions.customer_id', $parent->id);
-        }
+
+        $query->where('credit_transactions.customer_id', $customer->id);
+
 
         $query->leftJoin('payments', 'credit_transactions.payment_id', '=', 'payments.id');
         $query->leftJoin('currencies', 'credit_transactions.currency_id', '=', 'currencies.id');
@@ -102,7 +99,6 @@ class IndexCreditTransactions extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.view");
 
         return $request->user()->authTo("crm.{$this->shop->id}.view");

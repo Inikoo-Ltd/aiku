@@ -161,7 +161,7 @@ test('create order', function () {
         ->and($this->customer->stats->number_orders)->toBe(1)
         ->and($this->customer->stats->number_orders_state_creating)->toBe(1)
         ->and($this->customer->stats->number_orders_handing_type_shipping)->toBe(1)
-        ->and($order->stats->number_transactions_at_submission)->toBe(0);
+        ->and($order->stats->number_item_transactions_at_submission)->toBe(0);
 
     return $order;
 });
@@ -210,8 +210,8 @@ test('delete previous transaction', function (Order $order) {
     );
     $order->refresh();
     expect($order->transactions()->count())->toBe(0)
-        ->and($order->stats->number_transactions)->toBe(0)
-        ->and($order->stats->number_transactions_at_submission)->toBe(0);
+        ->and($order->stats->number_item_transactions)->toBe(0)
+        ->and($order->stats->number_item_transactions_at_submission)->toBe(0);
 
     return $order;
 })->depends('get order products');
@@ -227,8 +227,8 @@ test('create transaction', function ($order) {
 
 
     expect($transaction)->toBeInstanceOf(Transaction::class)
-        ->and($transaction->order->stats->number_transactions_at_submission)->toBe(1)
-        ->and($order->stats->number_transactions)->toBe(1);
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
 
     return $transaction;
 })->depends('delete previous transaction');
@@ -251,8 +251,8 @@ test('create transaction from adjustment', function (Order $order) {
     $order->refresh();
 
     expect($transaction)->toBeInstanceOf(Transaction::class)
-        ->and($transaction->order->stats->number_transactions_at_submission)->toBe(2)
-        ->and($order->stats->number_transactions)->toBe(2)
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1)
         ->and($order->shop->stats->number_adjustments)->toBe(1)
         ->and($order->shop->stats->number_adjustments_type_credit)->toBe(1)
         ->and($order->organisation->catalogueStats->number_adjustments)->toBe(1)
@@ -303,8 +303,8 @@ test('create transaction from charge', function (Order $order) {
     $order->refresh();
 
     expect($transaction)->toBeInstanceOf(Transaction::class)
-        ->and($transaction->order->stats->number_transactions_at_submission)->toBe(3)
-        ->and($order->stats->number_transactions)->toBe(3);
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
 
     return $transaction;
 })->depends('create order');
@@ -365,8 +365,8 @@ test('create transaction from shipping', function (Order $order) {
     $order->refresh();
 
     expect($transaction)->toBeInstanceOf(Transaction::class)
-        ->and($transaction->order->stats->number_transactions_at_submission)->toBe(4)
-        ->and($order->stats->number_transactions)->toBe(4);
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
 
     return $transaction;
 })->depends('create order');
@@ -395,7 +395,7 @@ test('update order state to submitted', function (Order $order) {
         ->and($order->shop->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->organisation->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->group->orderingStats->number_orders_state_submitted)->toBe(1)
-        ->and($order->stats->number_transactions)->toBe(4);
+        ->and($order->stats->number_item_transactions)->toBe(1);
 
     return $order;
 })->depends('create order');
@@ -549,8 +549,8 @@ test('create old order', function () {
 
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toBe(OrderStateEnum::CREATING)
-        ->and($order->stats->number_transactions)->toBe(1)
-        ->and($order->stats->number_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1)
+        ->and($order->stats->number_item_transactions_at_submission)->toBe(1)
         ->and($transaction)->toBeInstanceOf(Transaction::class);
 
     $this->customer->refresh();

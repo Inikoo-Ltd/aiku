@@ -40,7 +40,7 @@ class RecurringBillsResource extends JsonResource
             'end_date'                 => $this->end_date,
             'currency_code'            => $this->currency_code ?? ($this->currency ? $this->currency->code : null),
             'currency_symbol'          => $this->currency_symbol,
-            'number_transactions'      => $this->number_transactions
+            'number_item_transactions'      => $this->number_item_transactions
         ];
     }
 }

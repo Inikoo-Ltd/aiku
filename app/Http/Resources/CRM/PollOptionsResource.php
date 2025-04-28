@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 28-04-2025-15h-35m
@@ -15,7 +16,7 @@ class PollOptionsResource extends JsonResource
     public function toArray($request): array
     {
         /** @var PollOption $pollOption */
-                $pollOption = $this;
+        $pollOption = $this;
         return [
             'id'                 => $pollOption->id,
             'slug'               => $pollOption->slug,

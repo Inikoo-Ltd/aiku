@@ -28,7 +28,7 @@ class PortfolioHydrateItemDescriptions implements ShouldBeUnique
     public function handle(Portfolio $portfolio): void
     {
 
-        if(!$portfolio->item_type || !$portfolio->item_id){
+        if (!$portfolio->item_type || !$portfolio->item_id) {
             return ;
         }
 

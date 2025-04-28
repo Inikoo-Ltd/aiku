@@ -29,26 +29,24 @@ class OrderHydrateTransactions implements ShouldBeUnique
 
     public function handle(Order $order): void
     {
-
         $stats = [
-            'number_transactions' => $order->transactions()->count(),
+            'number_item_transactions' => $order->transactions()->where('model_type', 'Product')->count(),
         ];
 
         if ($order->state == OrderStateEnum::CREATING) {
-            $stats['number_transactions_at_submission' ] = $order->transactions()->count();
-
+            $stats['number_item_transactions_at_submission'] = $order->transactions()->where('model_type', 'Product')->count();
         }
 
 
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
-                model: 'transactions',
+                model: 'item_transactions',
                 field: 'state',
                 enum: TransactionStateEnum::class,
                 models: Transaction::class,
                 where: function ($q) use ($order) {
-                    $q->where('order_id', $order->id);
+                    $q->where('order_id', $order->id)->where('model_type', 'Product');
                 }
             )
         );
@@ -56,19 +54,18 @@ class OrderHydrateTransactions implements ShouldBeUnique
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
-                model: 'transactions',
+                model: 'item_transactions',
                 field: 'status',
                 enum: TransactionStatusEnum::class,
                 models: Transaction::class,
                 where: function ($q) use ($order) {
-                    $q->where('order_id', $order->id);
+                    $q->where('order_id', $order->id)->where('model_type', 'Product');
                 }
             )
         );
 
 
-
-        $stats['number_current_transactions'] = $stats['number_transactions'] - $stats['number_transactions_state_cancelled'];
+        $stats['number_current_item_transactions'] = $stats['number_item_transactions'] - $stats['number_item_transactions_state_cancelled'];
 
         $order->stats()->update($stats);
     }

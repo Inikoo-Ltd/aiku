@@ -9,6 +9,7 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\SetOrderPayments;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -109,6 +110,7 @@ class FetchAuroraOrders extends FetchAuroraAction
             }
         }
 
+        OrderHydrateTransactions::run($organisationSource, $order);
 
         DB::connection('aurora')->table('Order Dimension')
             ->where('Order Key', $sourceData[1])
