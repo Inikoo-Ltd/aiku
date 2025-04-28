@@ -159,7 +159,6 @@ class FetchAuroraOrders extends FetchAuroraAction
 
                                 ]
                             )
-
                         );
                     }
                 } elseif ($order->deliveryAddress) {
