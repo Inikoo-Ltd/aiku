@@ -81,6 +81,7 @@ class IndexCustomerBackInStockReminders extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => $noResults,
+                        'count' => $parent->stats->number_reminders ?? 0
                     ]
                 );
 
