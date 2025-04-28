@@ -10,8 +10,8 @@
         "dev.iris": "vite --config vite.iris.config.js",
         "build.iris": "vite build --config vite.iris.config.js && vite build --config vite.iris.config.js --ssr",
         "build.iris.ssr": "vite build --config vite.iris.config.js --ssr",
-        "dev.retina": "vite --config vite.retina.config.js",
-        "build.retina": "vite build --config vite.retina.config.js",
+        "dev.retina": "vite --config vite.retina.config.mjs",
+        "build.retina": "vite build --config vite.retina.config.mjs",
         "dev.pupil": "vite --config vite.pupil.config.js",
         "build.pupil": "vite build --config vite.pupil.config.js",
         "postinstall": "patch-package"
