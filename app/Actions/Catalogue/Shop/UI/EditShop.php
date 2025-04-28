@@ -175,7 +175,19 @@ class EditShop extends OrgAction
                                     'value' => $shop->data['vat_number'] ?? '',
                                 ],
                             ]
-                        ]
+                        ],
+                        [
+                            'label'  => __('customer'),
+                            'icon'   => 'fal fa-user',
+                            'fields' => [
+                                'registration_auto_approve' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Customer registration auto approve'),
+                                    'value' => Arr::get($shop->settings, 'customer.registration_auto_approve', false),
+                                ],
+                            ],
+
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
