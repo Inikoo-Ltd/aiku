@@ -13,6 +13,7 @@ use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -32,6 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreStock extends OrgAction
 {
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     /**
      * @throws \Throwable

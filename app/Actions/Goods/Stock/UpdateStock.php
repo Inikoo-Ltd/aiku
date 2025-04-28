@@ -12,6 +12,7 @@ use App\Actions\Goods\Stock\Hydrators\StockHydrateUniversalSearch;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -30,6 +31,7 @@ class UpdateStock extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     private StockFamily $stockFamily;
 
@@ -95,15 +97,6 @@ class UpdateStock extends OrgAction
         $stock->refresh();
 
         return $stock;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("goods.{$this->group->id}.view");
     }
 
     public function rules(): array

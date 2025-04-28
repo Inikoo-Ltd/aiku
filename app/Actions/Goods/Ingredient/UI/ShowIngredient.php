@@ -9,9 +9,9 @@
 
 namespace App\Actions\Goods\Ingredient\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\IngredientTabsEnum;
 use App\Models\Goods\Ingredient;
 use Inertia\Inertia;
@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowIngredient extends GrpAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
 
     public function handle(Ingredient $ingredient): Ingredient
     {

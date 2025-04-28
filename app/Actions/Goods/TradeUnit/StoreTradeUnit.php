@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
@@ -20,6 +21,7 @@ use Illuminate\Validation\Rule;
 class StoreTradeUnit extends OrgAction
 {
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     public function handle(Group $group, array $modelData): TradeUnit
     {

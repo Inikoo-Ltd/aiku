@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\Ingredient;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Goods\Ingredient;
 use App\Models\SysAdmin\Group;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreIngredient extends OrgAction
 {
     use WithNoStrictRules;
+    use WithGoodsEditAuthorisation;
 
     public function handle(Group $group, array $modelData): Ingredient
     {

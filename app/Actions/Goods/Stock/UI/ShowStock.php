@@ -8,11 +8,11 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
-use App\Actions\Goods\HasGoodsAuthorisation;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\StockTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
@@ -26,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStock extends OrgAction
 {
-    use HasGoodsAuthorisation;
+    use WithGoodsAuthorisation;
     use WithStockNavigation;
 
     private Group|StockFamily $parent;
