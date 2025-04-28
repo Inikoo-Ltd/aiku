@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { getComponentWidget } from "@/Composables/Listing/DashboardWidgetsList"
+// import { getComponentWidget } from "@/Composables/Listing/DashboardWidgetsList"
 import { Pie } from "vue-chartjs"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js";
 import { trans } from "laravel-vue-i18n"
-import { computed } from "vue"
+import { useStringToHex } from '@/Composables/useStringToHex'
+
+import { computed, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCircle } from "@fas"
+import { Link } from "@inertiajs/vue3"
 library.add(faInfoCircle)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors);
@@ -47,16 +51,18 @@ const dataSetsSplit = computed(() => {
         // return aValue - bValue; // Ascending (lowest first)
     });
 
+    if (sortedShops.length <= 4) {
+        return sortedShops  // if Shops length just 4 or less, return it anyway
+    }
+
     // Split the array
     const firstFour = sortedShops.slice(0, 4);
 
     const summedValue = sortedShops.slice(4).reduce((sum, item) => {
         const xx = sum + (Number(item.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0); 
-        // console.log('xx', item.columns.label.formatted_value, xx)
         return xx
     }, 0);
 
-    // console.log('summedValue', 'background: green; color: white', sortedShops.slice(4));
     // Create the summed object
     const summedEntry = {
         columns: {
@@ -75,6 +81,8 @@ const dataSetsSplit = computed(() => {
 
     return [...firstFour, summedEntry];
 })
+
+const isLoadingVisit = ref<number | null>(null)
 </script>
 
 <template>
@@ -92,35 +100,35 @@ const dataSetsSplit = computed(() => {
                     <!-- Total Count -->
                     <div class="flex gap-x-2 items-end">
                         {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency[intervals.value].formatted_value }}
-                        <!-- <span class="text-sm font-medium leading-4 text-gray-500">
-                            {{ trans("in total") }}
-                        </span> -->
                     </div>
 
                     <!-- Case Breakdown -->
                     <div
                         class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
-                        <!-- <template v-for="(dCase, idxCase) in customerStats.cases" :key="dCase.value">
+                        <template v-for="(row, idxCase) in dataSetsSplit" :key="row.value">
                             <component
-                                :is="dCase.route?.name ? Link : 'div'"
-                                :href="dCase.route?.name ? route(dCase.route.name, dCase.route.parameters) : null"
-                                :class="dCase.route?.name ? 'hover:bg-gray-200 px-1 py-0.5 rounded' : ''"
+                                :is="row.route?.name ? Link : 'div'"
+                                :href="row.route?.name ? route(row.route.name, row.route.parameters) : null"
+                                :class="row.route?.name ? 'hover:bg-gray-200 px-1 py-0.5 rounded' : ''"
                                 class="flex gap-x-0.5 items-center font-normal"
-                                v-tooltip="capitalize(dCase.icon.tooltip)"
+                                v-tooltip="row.columns.label.formatted_value"
                                 @start="() => isLoadingVisit = idxCase"
                                 @finish="() => isLoadingVisit = null"
                             >
                                 <LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
                                 <FontAwesomeIcon
-                                    v-else
-                                    :icon="dCase.icon.icon"
-                                    :class="dCase.icon.class"
+                                    xxv-else
+                                    :icon="faCircle"
+                                    :class="row?.icon?.class"
                                     fixed-width
-                                    :title="dCase.icon.tooltip"
+                                    :title="row?.icon?.tooltip"
+                                    :style="{
+                                        color: useStringToHex(row.columns.label.formatted_value),
+                                    }"
                                     aria-hidden="true" />
-                                <span class="font-semibold">{{ locale.number(dCase.count) }}</span>
+                                <span class="font-semibold">{{ row.columns.sales_org_currency[intervals.value]?.formatted_value }}</span>
                             </component>
-                        </template> -->
+                        </template>
                     </div>
                 </div>
 
@@ -133,13 +141,15 @@ const dataSetsSplit = computed(() => {
                         datasets: [
                             {
                                 data: dataSetsSplit.map(bod => bod.columns.sales_org_currency[intervals.value].raw_value),
+                                backgroundColor: [
+                                    ...dataSetsSplit.map((dCase, idx) => useStringToHex(dCase.columns.label.formatted_value)),
+                                ],
                                 hoverOffset: 4,
                             },
                         ],
                     }"
                     :options="options" />
             </div>
-            <!-- <pre>{{ tableData.tables.shops.body }}</pre> -->
         </div>
 
         <!-- <pre>{{ tableData.tables.shops.body[0].columns.sales_org_currency.[all].raw_value }}</pre> -->
