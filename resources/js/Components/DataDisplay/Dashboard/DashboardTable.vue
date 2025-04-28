@@ -156,7 +156,7 @@ const updateTab = (value: string) => {
 </script>
 
 <template>
-	<div class="relative bg-white mb-3 p-4 border border-gray-200">
+	<div class="relative bg-white mb-3 px-4">
 
 		<div class="">
 			<!-- Section: Tabs -->
