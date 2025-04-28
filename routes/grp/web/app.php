@@ -22,7 +22,7 @@ Route::middleware(["auth"])->group(function () {
             $routeCollection = Route::getRoutes();
 
             echo "<table style='width:100%'>";
-            echo "<tr>";
+            echo "<th>";
             echo "<td><h4>HTTP Method</h4></td>";
             echo "<td><h4>Route</h4></td>";
             echo "<td><h4>Name</h4></td>";
@@ -57,6 +57,9 @@ Route::middleware(["auth"])->group(function () {
     Route::prefix("supply-chain")
         ->name("supply-chain.")
         ->group(__DIR__."/supply-chain.php");
+    Route::prefix("masters")
+        ->name("masters.")
+        ->group(__DIR__."/masters.php");
     Route::prefix("goods")
         ->name("goods.")
         ->group(__DIR__."/goods.php");

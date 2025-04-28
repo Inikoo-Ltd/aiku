@@ -11,7 +11,7 @@ namespace App\Actions\Goods\Stock;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateUniversalSearch;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreStock extends GrpAction
+class StoreStock extends OrgAction
 {
     use WithNoStrictRules;
 
@@ -50,6 +50,7 @@ class StoreStock extends GrpAction
             $stock = $parent->stocks()->create($modelData);
             $stock->stats()->create();
             $stock->intervals()->create();
+            $stock->salesIntervals()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $stock->timeSeries()->create(['frequency' => $frequency]);
             }
@@ -154,7 +155,7 @@ class StoreStock extends GrpAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
     }
@@ -164,7 +165,7 @@ class StoreStock extends GrpAction
      */
     public function inStockFamily(StockFamily $stockFamily, ActionRequest $request): Stock
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($stockFamily, $this->validatedData);
     }
@@ -174,7 +175,7 @@ class StoreStock extends GrpAction
      */
     public function asController(ActionRequest $request): Stock
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle(group(), $this->validatedData);
     }

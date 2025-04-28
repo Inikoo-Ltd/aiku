@@ -55,13 +55,13 @@ class PayInvoice extends OrgAction
 
                 if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
                     RefundToInvoice::make()->action($invoice, $paymentAccount, [
-                        'amount' => $amountRefund,
+                        'amount' => abs($amountRefund),
                         'type_refund' => 'credit',
                         'is_auto_refund' => true,
                     ]);
                 } else {
                     RefundToInvoice::make()->action($invoice, $paymentAccount, [
-                        'amount' => $amountRefund,
+                        'amount' => abs($amountRefund),
                         'original_payment_id' => $payment->id,
                         'type_refund' => 'payment',
                         'is_auto_refund' => true,

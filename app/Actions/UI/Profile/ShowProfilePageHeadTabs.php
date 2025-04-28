@@ -8,14 +8,14 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowProfilePageHeadTabs extends GrpAction
+class ShowProfilePageHeadTabs extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -23,7 +23,7 @@ class ShowProfilePageHeadTabs extends GrpAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisation(group(), $request)->withTab(ProfileTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
         return [
             "pageHead"                       => [
                 "title"        => $request->user()->contact_name,

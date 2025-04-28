@@ -14,7 +14,6 @@ use App\Actions\Fulfilment\PalletReturn\AddAddressToPalletReturn;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Fulfilment\RetinaPalletReturnResource;
 use App\Models\Fulfilment\PalletReturn;
-use App\Rules\ValidAddress;
 use Lorisleiva\Actions\ActionRequest;
 
 class AddRetinaAddressToPalletReturn extends RetinaAction
@@ -40,7 +39,7 @@ class AddRetinaAddressToPalletReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'delivery_address' => ['sometimes', new ValidAddress()],
+            'delivery_address_id' => ['required', 'exists:addresses,id'],
         ];
     }
 

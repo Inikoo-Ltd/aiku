@@ -10,8 +10,8 @@ namespace App\Actions\Goods\StockFamily\UI;
 
 use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\OrgAction;
 use App\Enums\UI\SupplyChain\StockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\Goods\StocksResource;
@@ -21,7 +21,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowStockFamily extends GrpAction
+class ShowStockFamily extends OrgAction
 {
     public function handle(StockFamily $stockFamily): StockFamily
     {
@@ -39,7 +39,7 @@ class ShowStockFamily extends GrpAction
 
     public function asController(StockFamily $stockFamily, ActionRequest $request): StockFamily
     {
-        $this->initialisation(group(), $request)->withTab(StockFamilyTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(StockFamilyTabsEnum::values());
 
         return $this->handle($stockFamily);
     }
@@ -72,22 +72,6 @@ class ShowStockFamily extends GrpAction
                             ]
                         ] : false,
                     ],
-                    /*
-                    'meta'    => [
-                        [
-                            'name'     => trans_choice('stock | stocks', $stockFamily->stats->number_stocks),
-                            'number'   => $stockFamily->stats->number_stocks,
-                            'route'     => [
-                                'name'       => 'grp.goods.stock-families.show.stocks.index',
-                                'parameters' => $stockFamily->slug
-                            ],
-                            'leftIcon' => [
-                                'icon'    => 'fal fa-box',
-                                'tooltip' => __('stocks')
-                            ]
-                        ],
-                    ]
-                    */
                 ],
                 'createStockRoute' => [
                     'name'       => 'grp.goods.stock-families.show.stocks.create',

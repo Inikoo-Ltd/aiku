@@ -8,58 +8,19 @@
 
 namespace App\Actions\Goods\UI;
 
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 
 trait WithMasterCatalogueSubNavigation
 {
-    protected function getMasterCatalogueSubNavigation(): array
-    {
-        return [
-            [
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.index',
-                    'parameters' => []
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-home'],
-                    'tooltip' => __('Homepage')
-                ]
-            ],
-            [
-                'label'    => __('Products'),
-
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.products.index',
-                    'parameters' => []
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-cube'],
-                    'tooltip' => __('Master Assets')
-                ]
-            ]
-        ];
-    }
-
     protected function getMasterShopNavigation(MasterShop $masterShop): array
     {
-
         return [
-            [
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.index',
-                    'parameters' => []
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-home'],
-                    'tooltip' => __('Homepage')
-                ]
-            ],
             [
                 'isAnchor' => true,
                 'label'    => __($masterShop->name),
 
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.show',
+                'route'    => [
+                    'name'       => 'grp.masters.shops.show',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -70,13 +31,12 @@ trait WithMasterCatalogueSubNavigation
                 ]
 
 
-
             ],
             [
-                'number'   => 0,
+                'number'   => $masterShop->stats->number_current_master_product_categories_type_department,
                 'label'    => __('Departments'),
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.show.departments.index',
+                'route'    => [
+                    'name'       => 'grp.masters.shops.show.departments.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -86,25 +46,12 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Departments')
                 ]
             ],
+
             [
-                'number'   => 0,
-                'label'    => __('Sub Departments'),
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.show.sub-departments.index',
-                    'parameters' => [
-                        'masterShop' => $masterShop->slug
-                    ]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Master Sub Departments')
-                ]
-            ],
-            [
-                'number'   => 0,
+                'number'   => $masterShop->stats->number_current_master_product_categories_type_family,
                 'label'    => __('Families'),
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.show.families.index',
+                'route'    => [
+                    'name'       => 'grp.masters.shops.show.families.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -116,11 +63,10 @@ trait WithMasterCatalogueSubNavigation
             ],
 
             [
-                'number'   => 0,
-                'align'    => 'right',
+                'number'   => $masterShop->stats->number_current_master_assets_type_product,
                 'label'    => __('Products'),
-                'route'     => [
-                    'name'       => 'grp.goods.catalogue.shops.show.products.index',
+                'route'    => [
+                    'name'       => 'grp.masters.shops.show.products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -128,6 +74,22 @@ trait WithMasterCatalogueSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Master Products')
+                ]
+            ],
+            [
+                'align'    => 'right',
+                'number'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
+                'label'    => __('Subs'),
+                'tooltip'  => __('Sub Departments'),
+                'route'    => [
+                    'name'       => 'grp.masters.shops.show.sub-departments.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-stream'],
+                    'tooltip' => __('Master Sub Departments')
                 ]
             ],
 

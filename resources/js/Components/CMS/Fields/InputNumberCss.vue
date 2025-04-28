@@ -1,32 +1,39 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import DimensionProperty from '@/Components/Workshop/Properties/DimensionProperty.vue'
+import { computed } from 'vue'
 import InputNumberCssProperty from '@/Components/Workshop/Properties/InputNumberCssProperty.vue'
 
-// Default model jika tidak ada nilai yang diberikan
-const defaultModel =  { value: null, unit: 'px' }
 
-// Menggunakan defineModel untuk dua arah binding
-const model = defineModel<typeof defaultModel>({
-    default: () => ({ value: null, unit: 'px' })
+// Define the expected shape
+type CssProperty = {
+  value: number | null
+  unit: string
+}
+
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
+
+// Accepting model from parent — might be undefined or partial
+const rawModel = defineModel<Partial<CssProperty>>({
+  default: () => ({})
 })
 
-
-onMounted(() => {
-    if (!model.value) {
-        model.value = { ...defaultModel }
-    } else {
-        if (!model.value) {
-            model.value = { ...defaultModel }
-        }
+// Normalizing the model
+const normalizedModel = computed<CssProperty>({
+  get() {
+    return {
+      value: rawModel.value?.value ?? null,
+      unit: rawModel.value?.unit ?? 'px',
     }
+  },
+  set(val) {
+    rawModel.value = val
+  }
 })
 </script>
 
 <template>
-    <div>
-        <InputNumberCssProperty v-model="model" />
-    </div>
+  <div>
+    <InputNumberCssProperty :modelValue="normalizedModel" @update:model-value="(val)=> emits('update:modelValue',val)" />
+  </div>
 </template>
-
-<style scoped></style>

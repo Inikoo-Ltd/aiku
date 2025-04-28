@@ -534,7 +534,7 @@ watch(openedBlockSideEditor, (newValue) => {
 					<!-- Iframe -->
 					<iframe ref="_iframe" :src="iframeSrc" :title="props.title"
 						:class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-						@load="isIframeLoading = false" />
+						@load="isIframeLoading = false"  allowfullscreen/>
 				</div>
 			</div>
 

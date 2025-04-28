@@ -40,4 +40,5 @@ export interface PageHeading {
     }
     title: string,
     subNavigation?: any
+    wrapped_actions: Action[]
 }

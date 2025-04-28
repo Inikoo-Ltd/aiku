@@ -34,46 +34,46 @@ class GetRetinaDropshippingNavigation
                 ]
             ];
 
-            $groupNavigation['portfolios'] = [
-                'label' => __('Portfolio'),
-                'icon' => ['fal', 'fa-pallet'],
-                'root' => 'retina.dropshipping.portfolios.',
-                'route' => [
-                    'name' => 'retina.dropshipping.portfolios.index'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label' => __('My Portfolio'),
-                            'icon' => ['fal', 'fa-cube'],
-                            'root' => 'retina.dropshipping.portfolios.index',
-                            'route' => [
-                                'name' => 'retina.dropshipping.portfolios.index'
-                            ]
-                        ],
-                        [
-                            'label' => __('All Products'),
-                            'icon' => ['fal', 'fa-cube'],
-                            'root' => 'retina.dropshipping.portfolios.products.index',
-                            'route' => [
-                                'name' => 'retina.dropshipping.portfolios.products.index'
-                            ]
-                        ]
-                    ]
-                ]
-            ];
+            // $groupNavigation['portfolios'] = [
+            //     'label' => __('Portfolio'),
+            //     'icon' => ['fal', 'fa-pallet'],
+            //     'root' => 'retina.dropshipping.portfolios.',
+            //     'route' => [
+            //         'name' => 'retina.dropshipping.portfolios.index'
+            //     ],
+            //     'topMenu' => [
+            //         'subSections' => [
+            //             [
+            //                 'label' => __('My Portfolio'),
+            //                 'icon' => ['fal', 'fa-cube'],
+            //                 'root' => 'retina.dropshipping.portfolios.index',
+            //                 'route' => [
+            //                     'name' => 'retina.dropshipping.portfolios.index'
+            //                 ]
+            //             ],
+            //             [
+            //                 'label' => __('All Products'),
+            //                 'icon' => ['fal', 'fa-cube'],
+            //                 'root' => 'retina.dropshipping.portfolios.products.index',
+            //                 'route' => [
+            //                     'name' => 'retina.dropshipping.portfolios.products.index'
+            //                 ]
+            //             ]
+            //         ]
+            //     ]
+            // ];
 
-            $groupNavigation['clients'] = [
-                'label' => __('Clients'),
-                'icon' => ['fal', 'fa-user'],
-                'root' => 'retina.dropshipping.client.',
-                'route' => [
-                    'name' => 'retina.dropshipping.client.index'
-                ],
-                'topMenu' => [
+            // $groupNavigation['clients'] = [
+            //     'label' => __('Clients'),
+            //     'icon' => ['fal', 'fa-user'],
+            //     'root' => 'retina.dropshipping.client.',
+            //     'route' => [
+            //         'name' => 'retina.dropshipping.client.index'
+            //     ],
+            //     'topMenu' => [
 
-                ]
-            ];
+            //     ]
+            // ];
 
             $groupNavigation['orders'] = [
                 'label' => __('Orders'),

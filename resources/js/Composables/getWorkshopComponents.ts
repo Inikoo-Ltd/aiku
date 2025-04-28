@@ -11,9 +11,9 @@ import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
 import CTA3 from '@/Components/CMS/Webpage/CTA3/CTA3Workshop.vue'
 import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
 import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
+import Timeline from '@/Components/CMS/Webpage/Timeline/TimelineWorkshop.vue'
 import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
 import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
-import Department from '@/Components/CMS/Webpage/Department/DepartmentWorkshop.vue'
 import Overview from '@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'
 import Script from '@/Components/CMS/Webpage/Script/ScriptWorkShop.vue'
 import  CtaAurora1 from "@/Components/CMS/Webpage/CTAAurora1/CtaAurora1Workshop.vue"
@@ -31,6 +31,9 @@ import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2
 import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Topbar3FulfilemntWorkshop.vue'
 import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
+import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
+import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
+import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -42,8 +45,7 @@ export const getComponent = (componentName: string) => {
         'cta1': CTA,
         'cta2': CTA2,
         'cta3': CTA3,
-        "department": Department,
-        'family': FamilyPageOffer,
+        'family-1': FamilyIris1,
         "iframe": Iframe,
         'images': ImageWorkshop,
         "overview_aurora": Overview,
@@ -64,7 +66,10 @@ export const getComponent = (componentName: string) => {
         'top-bar-2-fulfilment': Topbar2Fulfilment,
         'top-bar-3-fulfilment': Topbar3Fulfilment,
         'pricing': Pricing,
-        'button' : Button
+        'button' : Button,
+        'column-layout-2': ColumnWorkshop,
+        'disclosure': DisclosureWorkshop,
+        'timeline' : Timeline
     }
     return components[componentName] ?? NotFoundComponents
 }

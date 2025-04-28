@@ -33,6 +33,7 @@ class DeleteStockFamily extends OrgAction
         DB::transaction(function () use ($stockFamily) {
             $stockFamily->stats()->delete();
             $stockFamily->intervals()->delete();
+            $stockFamily->salesIntervals()->delete();
             $stockFamily->timeSeries()->delete();
 
             DB::table('audits')->where('auditable_type', 'StockFamily')->where('auditable_id', $stockFamily->id)->delete();

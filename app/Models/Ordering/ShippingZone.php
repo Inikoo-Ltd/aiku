@@ -76,11 +76,11 @@ class ShippingZone extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'territories' => 'array',
-        'price'       => 'array',
-        'status'      => 'boolean',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'territories'     => 'array',
+        'price'           => 'array',
+        'status'          => 'boolean',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [

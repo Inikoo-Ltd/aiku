@@ -8,7 +8,7 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Models\Goods\MasterShop;
+use App\Models\Masters\MasterShop;
 
 trait WithMasterFetch
 {

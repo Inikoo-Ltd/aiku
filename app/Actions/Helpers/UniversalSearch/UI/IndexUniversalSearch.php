@@ -41,7 +41,7 @@ class IndexUniversalSearch extends OrgAction
 
         // dd($sections, $organisationSlug, $shopSlug, $warehouseSlug, $websiteSlug, $fulfilmentSlug);
         if ($sections && count($sections) > 0) {
-            $query->whereIn('sections', $sections);
+            $query->whereIn('sections', array_values($sections));
         }
 
         if ($organisationSlug) {
@@ -124,6 +124,7 @@ class IndexUniversalSearch extends OrgAction
             'stock_deliveries.' => 'fulfilment',
             'pallet_deliveries.' => 'fulfilment',
             'pallet_returns.' => 'fulfilment',
+            'productions.' => 'productions',
         ];
 
         if (empty($route) || str_starts_with($route, "dashboard.") || str_starts_with($route, "settings.")) {

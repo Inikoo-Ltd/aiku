@@ -44,6 +44,16 @@ export default {
 					label : "Border",
 					props_data: {},
 				},
+				{
+                    key: ["shadow"],
+                    label : "Shadow",
+                    type: "shadow",
+                },
+                {
+                    key: ["shadowColor"],
+                    label : "Shadow Color",
+                    type: "color",
+                },
 			],
 		},
 		/* {

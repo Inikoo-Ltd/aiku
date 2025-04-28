@@ -14,10 +14,13 @@ class FilteredProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        // dd($this);
         return [
             'id'                 => $this->id,
             'slug'               => $this->slug,
             'code'               => $this->code,
+            'image'               => $this->media,
+            'price'               => $this->price,
             'name'               => $this->name,
         ];
     }

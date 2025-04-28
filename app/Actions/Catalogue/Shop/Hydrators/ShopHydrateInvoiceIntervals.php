@@ -10,6 +10,7 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -21,20 +22,13 @@ class ShopHydrateInvoiceIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $uniqueId = $shop->id;
-        if ($intervals !== null) {
-            $uniqueId .= '-'.implode('-', $intervals);
-        }
-        if ($doPreviousPeriods !== null) {
-            $uniqueId .= '-'.implode('-', $doPreviousPeriods);
-        }
-
-        return $uniqueId;
+        return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
     }
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void

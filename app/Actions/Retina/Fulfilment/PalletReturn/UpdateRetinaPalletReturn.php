@@ -43,6 +43,7 @@ class UpdateRetinaPalletReturn extends RetinaAction
             'customer_reference'        => ['sometimes', 'nullable', 'string', Rule::unique('pallet_returns', 'customer_reference')
                 ->ignore($this->palletReturn->id)],
             'reference'      => ['sometimes', 'string', 'max:255'],
+            'estimated_delivery_date'   => ['sometimes', 'date'],
             'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],

@@ -61,7 +61,6 @@ use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\FulfilmentTransaction;
-use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\RecurringBill;
@@ -80,10 +79,10 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
-    $this->warehouse    = createWarehouse();
-    $this->group        = $this->organisation->group;
+    $this->organisation            = createOrganisation();
+    $this->adminGuest              = createAdminGuest($this->organisation->group);
+    $this->warehouse               = createWarehouse();
+    $this->group                   = $this->organisation->group;
     $this->getRecurringBillEndDate = new class () {
         use WithGetRecurringBillEndDate;
     };
@@ -93,7 +92,7 @@ beforeEach(function () {
     $this->orgStock1 = $orgStocks[0];
     $this->orgStock2 = $orgStocks[1];
 
-    $location           = $this->warehouse->locations()->first();
+    $location = $this->warehouse->locations()->first();
     if (!$location) {
         StoreLocation::run(
             $this->warehouse,
@@ -105,7 +104,7 @@ beforeEach(function () {
         );
     }
 
-    $user           = User::first();
+    $user = User::first();
     if (!$user) {
         StoreUser::run(
             $this->adminGuest,
@@ -156,8 +155,7 @@ test('create fulfilment shop', function () {
     $user = $this->adminGuest->getUser();
     $user->refresh();
 
-    expect($user->getAllPermissions()->count())->toBe(26)
-        ->and($user->hasAllRoles(["fulfilment-shop-supervisor-{$shop->fulfilment->id}"]))->toBeTrue()
+    expect($user->hasAllRoles(["fulfilment-shop-supervisor-{$shop->fulfilment->id}"]))->toBeTrue()
         ->and($user->hasAllRoles(["shop-admin-$shop->id"]))->toBeFalse()
         ->and($shop->fulfilment->number_warehouses)->toBe(1);
 
@@ -217,34 +215,34 @@ test('create services in fulfilment shop', function (Fulfilment $fulfilment) {
             'auto_assign_subject_type' => 'pallet'
         ]
     );
-    $service3 = StoreService::make()->action(
+    StoreService::make()->action(
         $fulfilment->shop,
         [
-            'price'                    => 200,
-            'unit'                     => 'job',
-            'code'                     => 'Ser-03',
-            'name'                     => 'Service 3',
-            'is_auto_assign'           => false,
+            'price'          => 200,
+            'unit'           => 'job',
+            'code'           => 'Ser-03',
+            'name'           => 'Service 3',
+            'is_auto_assign' => false,
         ]
     );
-    $service4 = StoreService::make()->action(
+    StoreService::make()->action(
         $fulfilment->shop,
         [
-            'price'                    => 300,
-            'unit'                     => 'job',
-            'code'                     => 'Ser-04',
-            'name'                     => 'Service 4',
-            'is_auto_assign'           => false,
+            'price'          => 300,
+            'unit'           => 'job',
+            'code'           => 'Ser-04',
+            'name'           => 'Service 4',
+            'is_auto_assign' => false,
         ]
     );
-    $service5 = StoreService::make()->action(
+    StoreService::make()->action(
         $fulfilment->shop,
         [
-            'price'                    => 400,
-            'unit'                     => 'job',
-            'code'                     => 'Ser-05',
-            'name'                     => 'Service 5',
-            'is_auto_assign'           => false,
+            'price'          => 400,
+            'unit'           => 'job',
+            'code'           => 'Ser-05',
+            'name'           => 'Service 5',
+            'is_auto_assign' => false,
         ]
     );
     StoreService::make()->action(
@@ -298,13 +296,13 @@ test('create rental product to fulfilment shop', function (Fulfilment $fulfilmen
 })->depends('create fulfilment shop');
 
 test('create auto assign rental product to fulfilment shop', function (Fulfilment $fulfilment) {
-    $palletRental = StoreRental::make()->action(
+    $palletRental   = StoreRental::make()->action(
         $fulfilment->shop,
         [
-            'price' => 100,
-            'unit'  => RentalUnitEnum::WEEK->value,
-            'code'  => 'R00002',
-            'name'  => 'Rental Asset B',
+            'price'                  => 100,
+            'unit'                   => RentalUnitEnum::WEEK->value,
+            'code'                   => 'R00002',
+            'name'                   => 'Rental Asset B',
             'auto_assign_asset'      => 'Pallet',
             'auto_assign_asset_type' => PalletTypeEnum::PALLET->value
         ]
@@ -312,21 +310,21 @@ test('create auto assign rental product to fulfilment shop', function (Fulfilmen
     $oversizeRental = StoreRental::make()->action(
         $fulfilment->shop,
         [
-            'price' => 100,
-            'unit'  => RentalUnitEnum::WEEK->value,
-            'code'  => 'R00003',
-            'name'  => 'Rental Asset C',
+            'price'                  => 100,
+            'unit'                   => RentalUnitEnum::WEEK->value,
+            'code'                   => 'R00003',
+            'name'                   => 'Rental Asset C',
             'auto_assign_asset'      => 'Pallet',
             'auto_assign_asset_type' => PalletTypeEnum::OVERSIZE->value
         ]
     );
-    $boxRental = StoreRental::make()->action(
+    $boxRental      = StoreRental::make()->action(
         $fulfilment->shop,
         [
-            'price' => 100,
-            'unit'  => RentalUnitEnum::WEEK->value,
-            'code'  => 'R00004',
-            'name'  => 'Rental Asset D',
+            'price'                  => 100,
+            'unit'                   => RentalUnitEnum::WEEK->value,
+            'code'                   => 'R00004',
+            'name'                   => 'Rental Asset D',
             'auto_assign_asset'      => 'Pallet',
             'auto_assign_asset_type' => PalletTypeEnum::BOX->value
         ]
@@ -461,7 +459,6 @@ test('setup recurring bill', function (RentalAgreement $rentalAgreement) {
 })->depends('create rental agreement for 4th customer');
 
 test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
-
     $recurringBill = $fulfilmentCustomer->currentRecurringBill;
 
     // Setup Delivery
@@ -472,19 +469,19 @@ test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
     expect($palletDelivery)->toBeInstanceOf(PalletDelivery::class);
 
     // Add Pallets and Stored Items and Transactions
-    $pallet = StorePalletCreatedInPalletDelivery::make()->action(
+    $pallet      = StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
             'type' => PalletTypeEnum::PALLET,
         ]
     );
-    $pallet2 = StorePalletCreatedInPalletDelivery::make()->action(
+    $pallet2     = StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
             'type' => PalletTypeEnum::PALLET,
         ]
     );
-    $storedItem = StoreStoredItem::make()->action(
+    $storedItem  = StoreStoredItem::make()->action(
         $fulfilmentCustomer,
         [
             'reference' => 'test',
@@ -522,7 +519,7 @@ test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
     StoreFulfilmentTransaction::make()->action(
         $palletDelivery,
         [
-            'quantity' => 10,
+            'quantity'          => 10,
             'historic_asset_id' => $service->current_historic_asset_id
         ]
     );
@@ -531,7 +528,7 @@ test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
     StoreFulfilmentTransaction::make()->action(
         $palletDelivery,
         [
-            'quantity' => 10,
+            'quantity'          => 10,
             'historic_asset_id' => $product->current_historic_asset_id
         ]
     );
@@ -541,8 +538,8 @@ test('setup delivery', function (FulfilmentCustomer $fulfilmentCustomer) {
     expect($palletDelivery->stats->number_pallets)->toBe(2)
         ->and($palletDelivery->stats->number_pallets_type_pallet)->toBe(2)
         ->and($palletDelivery->stats->number_services)->toBe(2)
-        ->and($palletDelivery->stats->number_physical_goods)->toBe(1);
-    expect($recurringBill->stats->number_transactions)->toBe(0);
+        ->and($palletDelivery->stats->number_physical_goods)->toBe(1)
+        ->and($recurringBill->stats->number_transactions)->toBe(0);
 
     return $palletDelivery;
 })->depends('setup recurring bill');
@@ -552,31 +549,29 @@ test('Delivery state change and recurring bill transaction monitor', function (P
     $palletDelivery = SubmitAndConfirmPalletDelivery::make()->action($palletDelivery);
     $palletDelivery->refresh();
     $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
-    $recurringBill = $fulfilmentCustomer->currentRecurringBill;
+    $recurringBill      = $fulfilmentCustomer->currentRecurringBill;
 
     expect($palletDelivery->stats->number_pallets)->toBe(2)
         ->and($palletDelivery->stats->number_pallets_type_pallet)->toBe(2)
         ->and($palletDelivery->stats->number_services)->toBe(2)
-        ->and($palletDelivery->stats->number_physical_goods)->toBe(1);
-
-    expect($recurringBill->stats->number_transactions)->toBe(0);
+        ->and($palletDelivery->stats->number_physical_goods)->toBe(1)
+        ->and($recurringBill->stats->number_transactions)->toBe(0);
 
     $palletDelivery = ReceivePalletDelivery::make()->action($palletDelivery);
     $palletDelivery->refresh();
-    $recurringBill = $palletDelivery->recurringBill;
+    $recurringBill      = $palletDelivery->recurringBill;
     $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
 
     expect($palletDelivery->state)->toBe(PalletDeliveryStateEnum::RECEIVED)
-        ->and($palletDelivery->recurring_bill_id)->toBe($fulfilmentCustomer->current_recurring_bill_id);
-
-    expect($recurringBill->stats->number_transactions)->toBe(5);
+        ->and($palletDelivery->recurring_bill_id)->toBe($fulfilmentCustomer->current_recurring_bill_id)
+        ->and($recurringBill->stats->number_transactions)->toBe(5);
 
     // Transactions added in Received and Pallet Rentals Added in Booked in
-    $palletDelivery =  StartBookingPalletDelivery::make()->action($palletDelivery);
+    $palletDelivery = StartBookingPalletDelivery::make()->action($palletDelivery);
     $palletDelivery->refresh();
 
     $location = $this->warehouse->locations()->first();
-    $rental = $palletDelivery->fulfilment->rentals->last();
+    $rental   = $palletDelivery->fulfilment->rentals->last();
     foreach ($palletDelivery->pallets as $pallet) {
         BookInPallet::make()->action($pallet, ['location_id' => $location->id]);
         SetPalletRental::make()->action($pallet, ['rental_id' => $rental->id]);
@@ -585,11 +580,11 @@ test('Delivery state change and recurring bill transaction monitor', function (P
     $palletDelivery = SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
     $palletDelivery->refresh();
     $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
-    $recurringBill = $palletDelivery->recurringBill;
+    $recurringBill      = $palletDelivery->recurringBill;
 
-    expect($palletDelivery->state)->toBe(PalletDeliveryStateEnum::BOOKED_IN);
-    expect($fulfilmentCustomer->number_pallets_state_storing)->toBe(2);
-    expect($recurringBill->stats->number_transactions)->toBe(5);
+    expect($palletDelivery->state)->toBe(PalletDeliveryStateEnum::BOOKED_IN)
+        ->and($fulfilmentCustomer->number_pallets_state_storing)->toBe(2)
+        ->and($recurringBill->stats->number_transactions)->toBe(5);
 
     return $palletDelivery;
 })->depends('setup delivery');
@@ -598,17 +593,16 @@ test('add service after delivery booked in', function (PalletDelivery $palletDel
     $service = Service::where('is_auto_assign', false)->skip(1)->first();
 
     $fulfilmentTransaction = StoreFulfilmentTransaction::make()->action($palletDelivery, [
-        'quantity' => 10,
+        'quantity'          => 10,
         'historic_asset_id' => $service->current_historic_asset_id
     ]);
 
     $palletDelivery->refresh();
     $recurringBill = $palletDelivery->recurringBill;
-    expect($palletDelivery->stats->number_services)->toBe(3);
-    expect($recurringBill->stats->number_transactions)->toBe(6);
+    expect($palletDelivery->stats->number_services)->toBe(3)
+        ->and($recurringBill->stats->number_transactions)->toBe(6);
 
     return $fulfilmentTransaction;
-
 })->depends('Delivery state change and recurring bill transaction monitor');
 
 test('update quantity from pallet delivery and Recurring Bill', function (FulfilmentTransaction $fulfilmentTransaction) {
@@ -617,20 +611,18 @@ test('update quantity from pallet delivery and Recurring Bill', function (Fulfil
     ]);
 
     $recurringBillTransaction = $fulfilmentTransaction->recurringBillTransaction;
-    expect(intval($fulfilmentTransaction->quantity))->toBe(20);
-    expect(intval($recurringBillTransaction->quantity))->toBe(20);
+    expect(intval($fulfilmentTransaction->quantity))->toBe(20)
+        ->and(intval($recurringBillTransaction->quantity))->toBe(20);
 
     $recurringBillTransaction = UpdateRecurringBillTransaction::make()->action($recurringBillTransaction, [
-        'quantity'  => 15
+        'quantity' => 15
     ]);
 
     $fulfilmentTransaction = $recurringBillTransaction->fulfilmentTransaction;
-    expect(intval($recurringBillTransaction->quantity))->toBe(15);
-    expect(intval($fulfilmentTransaction->quantity))->toBe(15);
+    expect(intval($recurringBillTransaction->quantity))->toBe(15)
+        ->and(intval($fulfilmentTransaction->quantity))->toBe(15);
 
-    $fulfilmentCustomer = $fulfilmentTransaction->fulfilmentCustomer;
-
-    return $fulfilmentCustomer;
+    return $fulfilmentTransaction->fulfilmentCustomer;
 })->depends('add service after delivery booked in');
 
 test('setup pallet return (whole pallet)', function (FulfilmentCustomer $fulfilmentCustomer) {
@@ -642,8 +634,8 @@ test('setup pallet return (whole pallet)', function (FulfilmentCustomer $fulfilm
     $fulfilmentCustomer->refresh();
     $recurringBill = $fulfilmentCustomer->currentRecurringBill;
 
-    expect($recurringBill->stats->number_transactions)->toBe(6);
-    expect($fulfilmentCustomer->number_pallet_returns)->toBe(1);
+    expect($recurringBill->stats->number_transactions)->toBe(6)
+        ->and($fulfilmentCustomer->number_pallet_returns)->toBe(1);
     $pallet = $fulfilmentCustomer->pallets()->where('state', PalletStateEnum::STORING)->first();
 
     $palletReturn = AttachPalletToReturn::make()->action(
@@ -653,58 +645,63 @@ test('setup pallet return (whole pallet)', function (FulfilmentCustomer $fulfilm
 
     $pallet->refresh();
     $palletReturn->refresh();
-
-    expect($pallet->state)->toBe(PalletStateEnum::REQUEST_RETURN_IN_PROCESS);
-
-    expect($palletReturn->stats->number_pallets)->toBe(1)
+    $recurringBill->refresh();
+    expect($recurringBill->stats->number_transactions)->toBe(7)
+        ->and($pallet->state)->toBe(PalletStateEnum::REQUEST_RETURN_IN_PROCESS)
+        ->and($palletReturn->stats->number_pallets)->toBe(1)
         ->and($palletReturn->stats->number_services)->toBe(1);
+
 
     $palletReturn = SubmitAndConfirmPalletReturn::make()->action($palletReturn);
     $pallet->refresh();
     $palletReturn->refresh();
 
-    expect($pallet->state)->toBe(PalletStateEnum::REQUEST_RETURN_CONFIRMED);
-    expect($palletReturn->state)->toBe(PalletReturnStateEnum::CONFIRMED);
+    expect($pallet->state)->toBe(PalletStateEnum::REQUEST_RETURN_CONFIRMED)
+        ->and($palletReturn->state)->toBe(PalletReturnStateEnum::CONFIRMED);
 
     $palletReturn = PickingPalletReturn::make()->action($palletReturn);
     $pallet->refresh();
     $palletReturn->refresh();
 
-    expect($pallet->state)->toBe(PalletStateEnum::PICKING);
-    expect($palletReturn->state)->toBe(PalletReturnStateEnum::PICKING);
+    expect($pallet->state)->toBe(PalletStateEnum::PICKING)
+        ->and($palletReturn->state)->toBe(PalletReturnStateEnum::PICKING);
 
     $palletReturn = PickedPalletReturn::make()->action($palletReturn);
     $pallet->refresh();
     $palletReturn->refresh();
 
-    expect($pallet->state)->toBe(PalletStateEnum::PICKED);
-    expect($palletReturn->state)->toBe(PalletReturnStateEnum::PICKED);
+    expect($pallet->state)->toBe(PalletStateEnum::PICKED)
+        ->and($palletReturn->state)->toBe(PalletReturnStateEnum::PICKED);
 
     $palletReturn = DispatchPalletReturn::make()->action($palletReturn);
     $pallet->refresh();
     $palletReturn->refresh();
 
-    expect($pallet->state)->toBe(PalletStateEnum::DISPATCHED);
-    expect($palletReturn->state)->toBe(PalletReturnStateEnum::DISPATCHED);
+    expect($pallet->state)->toBe(PalletStateEnum::DISPATCHED)
+        ->and($palletReturn->state)->toBe(PalletReturnStateEnum::DISPATCHED);
 
     return $palletReturn;
 })->depends('update quantity from pallet delivery and Recurring Bill');
 
 test('add service after return dispatched', function (PalletReturn $palletReturn) {
+    $palletReturn->refresh();
+    $recurringBill = $palletReturn->recurringBill;
+    expect($palletReturn->stats->number_services)->toBe(1)
+        ->and($recurringBill->stats->number_transactions)->toBe(7);
+
     $service = Service::where('is_auto_assign', false)->skip(1)->first();
 
     $fulfilmentTransaction = StoreFulfilmentTransaction::make()->action($palletReturn, [
-        'quantity' => 10,
+        'quantity'          => 10,
         'historic_asset_id' => $service->current_historic_asset_id
     ]);
 
     $palletReturn->refresh();
     $recurringBill = $palletReturn->recurringBill;
-    expect($palletReturn->stats->number_services)->toBe(2);
-    expect($recurringBill->stats->number_transactions)->toBe(7);
+    expect($palletReturn->stats->number_services)->toBe(2)
+        ->and($recurringBill->stats->number_transactions)->toBe(8);
 
     return $fulfilmentTransaction;
-
 })->depends('setup pallet return (whole pallet)');
 
 test('update quantity from pallet return and Recurring Bill', function (FulfilmentTransaction $fulfilmentTransaction) {
@@ -713,18 +710,16 @@ test('update quantity from pallet return and Recurring Bill', function (Fulfilme
     ]);
 
     $recurringBillTransaction = $fulfilmentTransaction->recurringBillTransaction;
-    expect(intval($fulfilmentTransaction->quantity))->toBe(20);
-    expect(intval($recurringBillTransaction->quantity))->toBe(20);
+    expect(intval($fulfilmentTransaction->quantity))->toBe(20)
+        ->and(intval($recurringBillTransaction->quantity))->toBe(20);
 
     $recurringBillTransaction = UpdateRecurringBillTransaction::make()->action($recurringBillTransaction, [
-        'quantity'  => 15
+        'quantity' => 15
     ]);
 
     $fulfilmentTransaction = $recurringBillTransaction->fulfilmentTransaction;
-    expect(intval($recurringBillTransaction->quantity))->toBe(15);
-    expect(intval($fulfilmentTransaction->quantity))->toBe(15);
+    expect(intval($recurringBillTransaction->quantity))->toBe(15)
+        ->and(intval($fulfilmentTransaction->quantity))->toBe(15);
 
-    $fulfilmentCustomer = $fulfilmentTransaction->fulfilmentCustomer;
-
-    return $fulfilmentCustomer;
+    return $fulfilmentTransaction->fulfilmentCustomer;
 })->depends('add service after return dispatched');

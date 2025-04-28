@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\Warehouse\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -20,14 +21,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditWarehouse extends OrgAction
 {
+    use WithWarehouseManagementEditAuthorisation;
+
     public function handle(Warehouse $warehouse): Warehouse
     {
         return $warehouse;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("inventory.{$this->warehouse->id}.edit");
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
@@ -66,7 +64,7 @@ class EditWarehouse extends OrgAction
         ];
 
         $currentSection = 'properties';
-        if ($request->has('section') and Arr::has($sections, $request->get('section'))) {
+        if ($request->has('section') && Arr::has($sections, $request->get('section'))) {
             $currentSection = $request->get('section');
         }
 

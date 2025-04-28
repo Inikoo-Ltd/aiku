@@ -1,14 +1,9 @@
-
-
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
 <head>
   <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <title>New order {{$invoce->shop->name}}</title>
-
+  <title>Invoice Deleted Notification</title>
 
   <style type="text/css">
       img {
@@ -76,8 +71,6 @@
           .content-wrap {
               padding: 10px !important;
           }
-
-
       }
   </style>
 </head>
@@ -98,9 +91,9 @@
                bgcolor="#fff">
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
             <td class="alert alert-warning"
-                style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#26A65B; margin: 0; padding: 20px;"
-                align="center" bgcolor="#26A65B" valign="top">
-             The following invoice {{$invoice->reference}} has been deleted.
+                style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#E74C3C; margin: 0; padding: 20px;"
+                align="center" bgcolor="#E74C3C" valign="top">
+              Invoice Deleted Notification
             </td>
           </tr>
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -109,33 +102,21 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                  XXXXX XXXXX
+                    A invoice with the following details has been deleted:
                   </td>
                 </tr>
-
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <a href="{{$invoice->getUrl()}}" class="btn-primary"
-                       style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px;  background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;">Click here to go to invoice</a>
+                    <strong>Invoice Reference:</strong> <a href="[Invoice Link]" style="color: #3498DB; text-decoration: none;">[Invoice Reference]</a><br/>
+                    <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br/>
+                    <strong>Deletion Date:</strong> [Deletion Date]
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
         </table>
-        <div class="footer" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; margin: 0; padding: 20px;">
-          <table width="100%" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-            <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-              <td class="aligncenter content-block"
-                  style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
-                  align="center" valign="top">
-                {{$invoce->organisation->name}}<br/>{{now()->toDayDateTimeString()}}
-              </td>
-            </tr>
-
-          </table>
-        </div>
       </div>
     </td>
     <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;" valign="top"></td>

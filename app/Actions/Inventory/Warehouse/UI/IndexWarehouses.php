@@ -11,7 +11,7 @@ namespace App\Actions\Inventory\Warehouse\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithWarehouseManagementAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Enums\UI\Inventory\WarehousesTabsEnum;

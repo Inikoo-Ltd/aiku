@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 14 Apr 2024 15:24:40 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Sun, 14 Apr 2024 15:24:40 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -11,8 +11,8 @@ namespace App\Actions\Transfers;
 use App\Actions\Helpers\Fetch\StoreFetch;
 use App\Actions\Helpers\Fetch\UpdateFetch;
 use App\Actions\Traits\WithOrganisationSource;
-use App\Enums\Helpers\Fetch\FetchTypeEnum;
-use App\Enums\Helpers\FetchRecord\FetchRecordTypeEnum;
+use App\Enums\Transfers\Fetch\FetchTypeEnum;
+use App\Enums\Transfers\FetchRecord\FetchRecordTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\AuroraOrganisationService;
@@ -60,6 +60,7 @@ class FetchAction implements ShouldBeUnique
     protected bool $onlyOrdersNoTransactions = false;
     protected ?int $fromDays = null;
     protected bool $orderDesc = false;
+    protected bool $onlyRefunds = false;
 
 
     public function __construct()
@@ -152,6 +153,11 @@ class FetchAction implements ShouldBeUnique
     public function recordError($organisationSource, $e, $modelData, $modelType = null, $errorOn = null): void
     {
 
+        \Sentry\captureException($e);
+
+        if (!$organisationSource->fetch) {
+            return;
+        }
 
         $this->number_errors++;
 

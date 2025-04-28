@@ -33,7 +33,7 @@ class SeedWarehousePermissions
 
         $currentPermissions = Permission::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('name');
         $currentPermissions->diff($warehousePermissions)
-            ->each(function ($permissionName) use ($warehouse) {
+            ->each(function ($permissionName) {
                 Permission::where('name', $permissionName)->first()->delete();
             });
 
@@ -47,6 +47,7 @@ class SeedWarehousePermissions
                     ]
                 );
             } catch (Exception) {
+                //
             }
         });
 
@@ -55,7 +56,7 @@ class SeedWarehousePermissions
 
         $currentRoles = Role::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('name');
         $currentRoles->diff($warehouseRoles)
-            ->each(function ($roleName) use ($warehouse) {
+            ->each(function ($roleName) {
                 Role::where(
                     'name',
                     $roleName
@@ -65,50 +66,57 @@ class SeedWarehousePermissions
 
         foreach (RolesEnum::cases() as $case) {
             if ($case->scope() === 'Warehouse') {
-                if (!$role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first()) {
-                    $role = Role::create(
-                        [
-                            'name'       => RolesEnum::getRoleName($case->value, $warehouse),
-                            'scope_type' => 'Warehouse',
-                            'scope_id'   => $warehouse->id,
-                            'group_id'   => $warehouse->group_id,
-                        ]
-                    );
-                }
-                $warehousePermissions = [];
-
-                foreach ($case->getPermissions() as $permissionName) {
-                    if (class_basename($permissionName) == 'WarehousePermissionsEnum') {
-                        if ($permission = (new Permission())->where('name', WarehousePermissionsEnum::getPermissionName($permissionName->value, $warehouse))->first()) {
-                            $warehousePermissions[] = $permission;
-                        }
-                    } else {
-                        foreach ($warehouse->fulfilments as $fulfilment) {
-                            if ($permission = (new Permission())->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
-                                $warehousePermissions[] = $permission;
-                            }
-                        }
-                    }
-                }
-                $role->syncPermissions($warehousePermissions);
+                $this->processWarehouseScope($warehouse, $case);
             } elseif ($case->scope() === 'Fulfilment') {
-                if ($case == RolesEnum::FULFILMENT_SHOP_SUPERVISOR) {
-                    foreach ($warehouse->fulfilments as $fulfilment) {
-                        /** @var Role $role */
-                        $role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first();
-                        foreach ($case->getPermissions() as $permissionName) {
-                            if (class_basename($permissionName) == 'FulfilmentPermissionsEnum') {
-                                if ($permission = (new Permission())->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
-                                    $role->givePermissionTo($permission);
-                                }
-                            }
-                        }
+                $this->processFulfilmentScope($warehouse, $case);
+            }
+        }
+    }
+
+    public function processFulfilmentScope(Warehouse $warehouse, RolesEnum $case): void
+    {
+        if ($case == RolesEnum::FULFILMENT_SHOP_SUPERVISOR) {
+            foreach ($warehouse->fulfilments as $fulfilment) {
+                /** @var Role $role */
+                $role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first();
+                foreach ($case->getPermissions() as $permissionName) {
+                    if (class_basename($permissionName) == 'FulfilmentPermissionsEnum' && $permission = (new Permission())->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
+                        $role->givePermissionTo($permission);
                     }
                 }
             }
         }
     }
 
+    public function processWarehouseScope(Warehouse $warehouse, RolesEnum $case): void
+    {
+        if (!$role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first()) {
+            $role = Role::create(
+                [
+                    'name'       => RolesEnum::getRoleName($case->value, $warehouse),
+                    'scope_type' => 'Warehouse',
+                    'scope_id'   => $warehouse->id,
+                    'group_id'   => $warehouse->group_id,
+                ]
+            );
+        }
+        $warehousePermissions = [];
+
+        foreach ($case->getPermissions() as $permissionName) {
+            if (class_basename($permissionName) == 'WarehousePermissionsEnum') {
+                if ($permission = (new Permission())->where('name', WarehousePermissionsEnum::getPermissionName($permissionName->value, $warehouse))->first()) {
+                    $warehousePermissions[] = $permission;
+                }
+            } else {
+                foreach ($warehouse->fulfilments as $fulfilment) {
+                    if ($permission = (new Permission())->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
+                        $warehousePermissions[] = $permission;
+                    }
+                }
+            }
+        }
+        $role->syncPermissions($warehousePermissions);
+    }
 
     public string $commandSignature = 'warehouse:seed-permissions';
 

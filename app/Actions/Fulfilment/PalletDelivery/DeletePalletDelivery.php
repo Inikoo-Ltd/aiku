@@ -43,7 +43,7 @@ class DeletePalletDelivery extends OrgAction
             $palletDelivery->transactions()->delete();
 
             $this->update($palletDelivery, [
-                'delete_comment' => Arr::get($modelData, 'delete_comment')
+                'deleted_note' => Arr::get($modelData, 'deleted_note')
             ]);
 
             $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
@@ -85,7 +85,7 @@ class DeletePalletDelivery extends OrgAction
     public function rules(): array
     {
         return [
-            'delete_comment' => ['sometimes', 'required']
+            'deleted_note' => ['required', 'string', 'max:4000'],
         ];
     }
 

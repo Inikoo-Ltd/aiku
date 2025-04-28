@@ -112,6 +112,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unpaid_invoices_amount
  * @property string $unpaid_invoices_amount_org_currency
  * @property string $unpaid_invoices_amount_grp_currency
+ * @property int $number_deleted_invoices
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats newQuery()

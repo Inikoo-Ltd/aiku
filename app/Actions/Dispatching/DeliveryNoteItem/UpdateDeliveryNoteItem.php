@@ -9,23 +9,21 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteItem extends OrgAction
 {
     use WithActionUpdate;
+    use WithNoStrictRules;
+    use WithDeliveryNoteItemNoStrictRules;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
         $deliveryNoteItem = $this->update($deliveryNoteItem, $modelData, ['data']);
-
-        if ($deliveryNoteItem->wasChanged('weight')) {
-
-        }
 
         if ($this->strict) {
             if ($deliveryNoteItem->wasChanged('quantity_picked') && $deliveryNoteItem->quantity_picked === $deliveryNoteItem->quantity_required) {
@@ -46,25 +44,11 @@ class UpdateDeliveryNoteItem extends OrgAction
 
     public function rules(): array
     {
-        $rules = [
-
-        ];
+        $rules = [];
 
         if (!$this->strict) {
-            $rules['transaction_id']      = [
-                'sometimes',
-                'nullable',
-                Rule::Exists('transactions', 'id')->where('shop_id', $this->shop->id)
-            ];
-            $rules['state']               = ['sometimes', 'nullable', Rule::enum(DeliveryNoteItemStateEnum::class)];
-            $rules['quantity_required']   = ['sometimes', 'numeric'];
-            $rules['quantity_picked']     = ['sometimes', 'numeric'];
-            $rules['quantity_packed']     = ['sometimes', 'numeric'];
-            $rules['quantity_dispatched'] = ['sometimes', 'numeric'];
-            $rules['source_id']           = ['sometimes', 'string', 'max:255'];
-            $rules['last_fetched_at']     = ['sometimes', 'date'];
-            $rules['created_at']          = ['sometimes', 'date'];
-            $rules['weight']              = ['sometimes', 'numeric', 'min:0'];
+            $rules = $this->noStrictUpdateRules($rules);
+            $rules = $this->deliveryNoteItemNonStrictRules($rules);
         }
 
         return $rules;
@@ -75,8 +59,6 @@ class UpdateDeliveryNoteItem extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
-
-
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 

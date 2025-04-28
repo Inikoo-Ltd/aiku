@@ -17,7 +17,6 @@ trait WithTab
     public function withTab(array $tabs): static
     {
         $tab =  $this->get('tab', Arr::first($tabs));
-
         if (!in_array($tab, $tabs)) {
             abort(404);
         }

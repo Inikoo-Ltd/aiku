@@ -10,6 +10,8 @@ import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Image from '@/Components/Image.vue'
+import axios from 'axios';
+
 
 const props = defineProps<{
     data: {
@@ -34,19 +36,17 @@ const layout = inject('layout', {})
 const isLoggedIn = ref(layout.iris.user_auth ? true : false)
 provide('isPreviewLoggedIn', isLoggedIn)
 
-const onLogoutAuth = (link) => {
-    router.post(route('iris.logout'), {}, {
-        onSuccess: () => {
-            window.location.reload();
-        },
-        onError: () => {
-            notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to logout"),
-                type: "error"
-            });
-        },
-    });
+const onLogoutAuth = async (link) => {
+    try {
+        await axios.post(route('iris.logout'));
+        window.location.reload();
+    } catch (error) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to logout"),
+            type: "error"
+        });
+    }
 };
 
 

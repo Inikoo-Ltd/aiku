@@ -375,22 +375,26 @@ const setChartOptions = () => ({
 				</div>
 			</div>
 		</div>
-		<div v-if="widget?.type === 'double_number'" class="max-w-sm mx-auto font-mono text-[#7C7C7C]">
+		<div v-if="widget?.type === 'number_amount'" class="max-w-sm mx-auto font-mono text-[#7C7C7C]">
 			<!-- Card Title -->
 			<div class="text-center text-gray-500 font-medium mb-2">{{widget.label}}</div>
-			<div class="grid grid-cols-2 gap-4">
+			<div class="grid grid-cols-2 gap-4"
+				:style="{
+					gridTemplateColumns: `repeat(${widget.tabs?.length <= 2 ? widget.tabs.length : 2}, 1fr)`
+				}"
+			>
 				<div 
-				v-for="(column, index) in widget.tabs" 
-				:key="index" 
-				class="text-center"
+					v-for="(column, index) in widget.tabs"
+					:key="index" 
+					class="text-center"
 				>
-				<div class=" text-2xl font-bold">
-					{{ locale.number(column.label) }}
-				</div>
-				<div class=" text-sm">
-				
-					{{ useLocaleStore().currencyFormat( widget.currency_code, column.information.label) }}
-				</div>
+					<div class=" text-2xl font-bold">
+						{{ locale.number(column.label) }}
+					</div>
+					<div class=" text-sm">
+					
+						{{ useLocaleStore().currencyFormat( widget.currency_code, column.information.label) }}
+					</div>
 				</div>
 			</div>
 		</div>

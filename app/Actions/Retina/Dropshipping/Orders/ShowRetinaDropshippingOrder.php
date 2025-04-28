@@ -13,6 +13,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\RetinaAction;
@@ -24,7 +25,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,6 +35,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use Illuminate\Support\Facades\DB;
 
@@ -52,37 +53,20 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return $this->handle($order);
     }
 
+    public function inPlatform(Platform $platform, Order $order, ActionRequest $request): Order
+    {
+        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
+
+        return $this->handle($order);
+    }
+
+
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $timeline = [];
-        foreach (OrderStateEnum::cases() as $state) {
-            if ($state === OrderStateEnum::CREATING) {
-                $timestamp = $order->created_at;
-            } else {
-                $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
-            }
 
-            // If all possible values are null, set the timestamp to null explicitly
-            $timestamp = $timestamp ?: null;
 
-            $timeline[$state->value] = [
-                'label'     => $state->labels()[$state->value],
-                'tooltip'   => $state->labels()[$state->value],
-                'key'       => $state->value,
-                /* 'icon'    => $palletDelivery->state->stateIcon()[$state->value]['icon'], */
-                'timestamp' => $timestamp
-            ];
-        }
-
-        $finalTimeline = Arr::except(
-            $timeline,
-            [
-                $order->state->value == OrderStateEnum::CANCELLED->value
-                    ? OrderStateEnum::DISPATCHED->value
-                    : OrderStateEnum::CANCELLED->value
-            ]
-        );
+        $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
 
         $addresses = $order->customer->addresses;
 
@@ -116,7 +100,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             }
         });
 
-        $addressCollection = AddressResource::collection($processedAddresses);
 
         $payAmount   = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
@@ -126,122 +109,41 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $actions = [];
-        if ($this->canEdit) {
-            $actions = match ($order->state) {
-                OrderStateEnum::CREATING => [
+
+        $actions = match ($order->state) {
+            OrderStateEnum::CREATING => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-plus',
+                    'key'     => 'add-products',
+                    'label'   => __('add products'),
+                    'tooltip' => __('Add products'),
+                    'route'   => [
+                        // 'name'       => 'grp.models.order.transaction.store',
+                        // 'parameters' => [
+                        //     'order' => $order->id,
+                        // ]
+                    ]
+                ],
+                ($order->transactions()->count() > 0) ?
                     [
                         'type'    => 'button',
-                        'style'   => 'secondary',
-                        'icon'    => 'fal fa-plus',
-                        'key'     => 'add-products',
-                        'label'   => __('add products'),
-                        'tooltip' => __('Add products'),
+                        'style'   => 'save',
+                        'tooltip' => __('submit'),
+                        'label'   => __('submit'),
+                        'key'     => 'action',
                         'route'   => [
-                            // 'name'       => 'grp.models.order.transaction.store',
-                            // 'parameters' => [
-                            //     'order' => $order->id,
-                            // ]
-                        ]
-                    ],
-                    ($order->transactions()->count() > 0) ?
-                        [
-                            'type'    => 'button',
-                            'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
-                            'key'     => 'action',
-                            'route'   => [
-                                // 'method'     => 'patch',
-                                // 'name'       => 'grp.models.order.state.submitted',
-                                // 'parameters' => [
-                                //     'order' => $order->id
-                                // ]
+                            'method'     => 'patch',
+                            'name'       => 'retina.models.order.submit',
+                            'parameters' => [
+                                'order' => $order->id
                             ]
-                        ] : [],
-                ],
-                OrderStateEnum::SUBMITTED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Send to Warehouse'),
-                        'label'   => __('send to warehouse'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.in-warehouse',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
                         ]
-                    ]
-                ],
-                OrderStateEnum::IN_WAREHOUSE => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Handle'),
-                        'label'   => __('Handle'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.handling',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::HANDLING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Pack'),
-                        'label'   => __('Pack'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.packed',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::PACKED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Finalize'),
-                        'label'   => __('Finalize'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.finalized',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::FINALISED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Dispatch'),
-                        'label'   => __('Dispatch'),
-                        'key'     => 'action',
-                        'route'   => [
-                            // 'method'     => 'patch',
-                            // 'name'       => 'grp.models.order.state.dispatched',
-                            // 'parameters' => [
-                            //     'order' => $order->id
-                            // ]
-                        ]
-                    ]
-                ],
-                default => []
-            };
-        }
+                    ] : [],
+            ],
+            default => []
+        };
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
@@ -293,7 +195,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
                 'pageHead'    => [
@@ -318,19 +219,14 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         // ]
                     ],
                     'products_list'    => [
-                        // 'name'       => 'grp.json.shop.catalogue.order.products',
+                        // 'name'       => 'grp.json.order.products',
                         // 'parameters' => [
-                        //     'shop'  => $order->shop->slug,
-                        //     'order' => $order->slug
+                        //     'order' => $order->id
                         // ]
                     ],
                     'delivery_note' => $deliveryNoteRoute
                 ],
-                // 'alert'   => [  // TODO
-                //     'status'        => 'danger',
-                //     'title'         => 'Dummy Alert from BE',
-                //     'description'   => 'Dummy description'
-                // ],
+
                 'notes'       => [
                     "note_list" => [
                         [
@@ -541,7 +437,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return new OrderResource($order);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
+    public function getBreadcrumbs(array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (Order $order, array $routeParameters, string $suffix) {
             return [
@@ -551,6 +447,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'route' => $routeParameters,
                         'label' => __($order->slug),
                     ],
+                    'suffix' => $suffix,
                 ],
             ];
         };

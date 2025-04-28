@@ -30,11 +30,10 @@ class ProcessAuroraDeleteCustomerClient extends OrgAction
         ];
     }
 
-
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, ActionRequest $request): array
+    public function handle(Organisation $organisation, array $modelData): array
     {
         $res = [
             'status'  => 'error',
@@ -42,10 +41,8 @@ class ProcessAuroraDeleteCustomerClient extends OrgAction
             'model'   => 'DeleteCustomerClient'
         ];
 
-        $this->initialisation($organisation, $request);
-        $validatedData = $this->validatedData;
 
-        $customerClient = CustomerClient::where('source_id', $organisation->id.':'.$validatedData['id'])->first();
+        $customerClient = CustomerClient::where('source_id', $organisation->id.':'.$modelData['id'])->first();
 
         if ($customerClient) {
 
@@ -59,6 +56,25 @@ class ProcessAuroraDeleteCustomerClient extends OrgAction
         }
 
         return $res;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function action(Organisation $organisation, array $modelData): array
+    {
+        $this->initialisation($organisation, $modelData);
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+        return $this->handle($organisation, $this->validatedData);
     }
 
 }

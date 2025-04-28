@@ -126,9 +126,9 @@ test(
     'outbox seeded when fulfilment created',
     function () {
         $fulfilment = createFulfilment($this->organisation);
-        expect($fulfilment->group->commsStats->number_outboxes)->toBe(43)
-            ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe(43)
-            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe(9);
+        expect($fulfilment->group->commsStats->number_outboxes)->toBe(48)
+            ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe(48)
+            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe(14);
 
         return $fulfilment;
     }
@@ -137,7 +137,7 @@ test(
 test('seed fulfilments outboxes by command', function (Fulfilment $fulfilment) {
     $this->artisan('fulfilment:seed_outboxes '.$fulfilment->slug)->assertExitCode(0);
     $this->artisan('fulfilment:seed_outboxes')->assertExitCode(0);
-    expect($fulfilment->group->commsStats->number_outboxes)->toBe(43);
+    expect($fulfilment->group->commsStats->number_outboxes)->toBe(48);
 })->depends('outbox seeded when fulfilment created');
 
 
@@ -481,6 +481,7 @@ test('UI Index Email Bulk Runs Overview', function () {
 });
 
 test('UI Index Email Addresses Overview', function () {
+    $this->withoutExceptionHandling();
     $response = $this->get(route('grp.overview.comms-marketing.email-addresses.index'));
 
     $response->assertInertia(function (AssertableInertia $page) {

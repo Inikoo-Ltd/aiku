@@ -57,6 +57,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Goods\StockFamilyIntervals|null $intervals
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrgStockFamily> $orgStockFamilies
+ * @property-read \App\Models\Goods\StockFamilySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Goods\StockFamilyStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, \App\Models\Goods\StockFamilyTimeSeries> $timeSeries
@@ -133,6 +134,11 @@ class StockFamily extends Model implements HasMedia, Auditable
     public function intervals(): HasOne
     {
         return $this->hasOne(StockFamilyIntervals::class);
+    }
+
+    public function salesIntervals(): HasOne
+    {
+        return $this->hasOne(StockFamilySalesIntervals::class);
     }
 
     public function orgStockFamilies(): HasMany

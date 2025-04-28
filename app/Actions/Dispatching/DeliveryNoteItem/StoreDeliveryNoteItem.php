@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
@@ -23,6 +22,7 @@ class StoreDeliveryNoteItem extends OrgAction
 {
     use WithAttributes;
     use WithNoStrictRules;
+    use WithDeliveryNoteItemNoStrictRules;
 
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNoteItem
@@ -51,7 +51,7 @@ class StoreDeliveryNoteItem extends OrgAction
             ]);
         }
 
-        if ($deliveryNoteItem->transaction_id and $deliveryNoteItem->transaction->asset) {
+        if ($deliveryNoteItem->transaction_id && $deliveryNoteItem->transaction->asset) {
             AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
         }
 
@@ -76,27 +76,7 @@ class StoreDeliveryNoteItem extends OrgAction
 
         if (!$this->strict) {
             $rules = $this->noStrictStoreRules($rules);
-
-
-            $rules['transaction_id']      = [
-                'sometimes',
-                'nullable',
-                Rule::Exists('transactions', 'id')->where('shop_id', $this->shop->id)
-            ];
-            $rules['state']               = ['sometimes', 'nullable', Rule::enum(DeliveryNoteItemStateEnum::class)];
-            $rules['quantity_required']   = ['sometimes', 'numeric'];
-            $rules['quantity_picked']     = ['sometimes', 'numeric'];
-            $rules['quantity_packed']     = ['sometimes', 'numeric'];
-            $rules['quantity_dispatched'] = ['sometimes', 'numeric'];
-            $rules['org_stock_id']        = [
-                'sometimes',
-                'nullable',
-                Rule::Exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id)
-            ];
-            $rules['stock_id']            = ['sometimes', 'nullable', 'integer'];
-            $rules['stock_family_id']     = ['sometimes', 'nullable', 'integer'];
-            $rules['org_stock_family_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['weight']              = ['sometimes', 'numeric', 'min:0'];
+            $rules = $this->deliveryNoteItemNonStrictRules($rules);
         }
 
         return $rules;
@@ -107,8 +87,6 @@ class StoreDeliveryNoteItem extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($deliveryNote->shop, $modelData);
-
-
         return $this->handle($deliveryNote, $this->validatedData);
     }
 }

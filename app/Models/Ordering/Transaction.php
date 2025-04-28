@@ -10,6 +10,7 @@ namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\CRM\Customer;
@@ -84,6 +85,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
+ * @property-read Invoice|null $invoice
  * @property-read Model|\Eloquent $item
  * @property-read Collection<int, Offer> $offer
  * @property-read Collection<int, OfferCampaign> $offerCampaign
@@ -168,6 +170,11 @@ class Transaction extends Model
         return $this->belongsTo(HistoricAsset::class);
     }
 
+    public function getHistoricAssetWithTrashed(): HistoricAsset
+    {
+        return HistoricAsset::withTrashed()->where('id', $this->historic_asset_id)->first();
+    }
+
     public function feedbacks(): MorphToMany
     {
         return $this->morphToMany(Feedback::class, 'model', 'model_has_feedbacks');
@@ -193,5 +200,9 @@ class Transaction extends Model
         return $this->hasOne(DeliveryNoteItem::class);
     }
 
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
+    }
 
 }

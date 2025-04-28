@@ -40,4 +40,10 @@ enum EmailOngoingRunCodeEnum: string
 
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
 
+    case NEW_PALLET_RETURN_FROM_CUSTOMER = 'new_pallet_return_from_customer';
+    case NEW_PALLET_DELIVERY_FROM_CUSTOMER = 'new_pallet_delivery_from_customer';
+    case PALLET_DELIVERY_DELETED = 'pallet_delivery_deleted';
+    case PALLET_RETURN_DELETED = 'pallet_return_deleted';
+    case PALLET_DELETED = 'pallet_deleted';
+
 }

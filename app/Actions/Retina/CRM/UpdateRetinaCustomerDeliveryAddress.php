@@ -29,10 +29,11 @@ class UpdateRetinaCustomerDeliveryAddress extends RetinaAction
         ];
     }
 
-    public function asController(Customer $customer, ActionRequest $request): Customer
+    public function asController(Customer $customer, ActionRequest $request): void
     {
         $this->initialisation($request);
-        return $this->handle($this->customer, $this->validatedData);
+
+        $this->handle($this->customer, $this->validatedData);
     }
 
     public function action(Customer $customer, array $modelData): Customer

@@ -8,14 +8,24 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -23,6 +33,7 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -71,7 +82,7 @@ class StoreOrder extends OrgAction
             if ($parent instanceof Customer) {
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
-            } elseif ($parent instanceof CustomerClient) {
+            } else {
                 $billingAddress  = $parent->customer->address;
                 $deliveryAddress = $parent->address;
             }
@@ -121,7 +132,7 @@ class StoreOrder extends OrgAction
 
         $modelData = $this->processExchanges($modelData, $parent->shop);
 
-        $order = DB::transaction(function () use ($parent, $modelData, $billingAddress, $deliveryAddress) {
+        $order = DB::transaction(function () use ($modelData, $billingAddress, $deliveryAddress) {
             /** @var Order $order */
             $order = Order::create($modelData);
             $order->refresh();
@@ -178,6 +189,22 @@ class StoreOrder extends OrgAction
 
         $this->orderHydrators($order);
 
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+
+        ShopHydrateOrderIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+        OrganisationHydrateOrderIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
+        GroupHydrateOrderIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
+
+        GroupHydrateOrderInBasketAtCreatedIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
+        OrganisationHydrateOrderInBasketAtCreatedIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
+        ShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+
+        if ($order->updated_by_customer_at) {
+            GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
+            OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
+            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+        }
+
         OrderRecordSearch::dispatch($order);
 
         return $order->fresh();
@@ -200,14 +227,12 @@ class StoreOrder extends OrgAction
 
 
             'customer_reference' => ['sometimes', 'string', 'max:255'],
-
-            'state'        => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'status'       => ['sometimes', Rule::enum(OrderStatusEnum::class)],
-            'handing_type' => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
-
-
-            'tax_category_id'  => ['sometimes', 'required', 'exists:tax_categories,id'],
-            'sales_channel_id' => [
+            'state'              => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'status'             => ['sometimes', Rule::enum(OrderStatusEnum::class)],
+            'handing_type'       => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
+            'tax_category_id'    => ['sometimes', 'required', 'exists:tax_categories,id'],
+            'platform_id'        => ['sometimes', 'exists:platforms,id'],
+            'sales_channel_id'   => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
@@ -230,11 +255,11 @@ class StoreOrder extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION and !$this->shop->collection_address_id) {
+        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && !$this->shop->collection_address_id) {
             abort(400, 'Collection orders require a collection address');
         }
 
-        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION and !$this->shop->collectionAddress->country_id) {
+        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && !$this->shop->collectionAddress->country_id) {
             abort(400, 'Invalid collection address');
         }
     }
@@ -255,6 +280,13 @@ class StoreOrder extends OrgAction
                 $order->shop->slug,
                 $order->customer->slug,
                 $order->customerClient->ulid,
+                $order->slug
+            ]),
+            'grp.models.customer.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.orders.show', [
+                $order->organisation->slug,
+                $order->shop->slug,
+                $order->customer->slug,
+                $order->platform->slug,
                 $order->slug
             ]),
         };
@@ -290,6 +322,18 @@ class StoreOrder extends OrgAction
     public function inCustomer(Customer $customer, ActionRequest $request): Order
     {
         $this->parent = $customer;
+        $this->initialisationFromShop($customer->shop, $request);
+
+        return $this->handle($customer, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inPlatformCustomer(Customer $customer, Platform $platform, ActionRequest $request): Order
+    {
+        $this->parent = $customer;
+        $this->set('platform_id', $platform->id);
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);

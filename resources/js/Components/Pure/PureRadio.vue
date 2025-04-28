@@ -11,13 +11,16 @@ const props = defineProps<{
     mode?: string
     options: any
     by?: string
+    indexChecked?: number  // for initial checked if the value is an object
+    name?: string
+    label?: string  // 'label'
 }>()
 
 const model = defineModel()
 
-const emits = defineEmits<{
-    (e: 'update:modelValue', value: string): void
-}>()
+// const emits = defineEmits<{
+//     (e: 'update:modelValue', value: string): void
+// }>()
 
 const layout = inject('layout', layoutStructure)
 </script>
@@ -33,19 +36,18 @@ const layout = inject('layout', layoutStructure)
                 <div v-if="mode === 'compact'">
                     <RadioGroup class="mt-2"
                         v-model="model"
-                        :by="by ?? 'name'"
                     >
                         <RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
                         <div class="flex gap-x-1.5 gap-y-1 flex-wrap">
                             <RadioGroupOption as="template" v-for="(option, index) in options" :key="option.value"
-                                :value="option" v-slot="{ active, checked }">
+                                :value="by ? option[by] : option" v-slot="{ active, checked }">
                                 <div
                                     :class="[
                                         'cursor-pointer focus:outline-none flex items-center justify-center rounded-md py-3 px-3 text-sm font-medium capitalize',
                                         active ? 'ring-2 ring-gray-600 ring-offset-2' : '',
                                         checked ? 'bg-gray-600 text-white hover:bg-gray-500' : 'ring-1 ring-inset ring-gray-300 bg-white text-gray-700 hover:bg-gray-50',
                                     ]">
-                                    <RadioGroupLabel as="span">{{ option.name }}</RadioGroupLabel>
+                                    <RadioGroupLabel as="span">{{ props.label ? option[props.label] : option.name }}</RadioGroupLabel>
                                 </div>
                             </RadioGroupOption>
                         </div>
@@ -109,22 +111,26 @@ const layout = inject('layout', layoutStructure)
                     <input
                         v-model="model"
                         :value="by ? option[by] : option"
-                        :id="`${option.label}${index}`"
+                        :id="`${option.label}_${index}`"
+                        :name="name"
+                        :checked="indexChecked > -1 ? indexChecked === index : (option[by] || option) == model"
                         type="radio"
                         class="h-4 w-4 border-gray-300 focus:ring-0 focus:outline-none focus:ring-transparent cursor-pointer"
                         :style="{
                             color: layout?.app?.theme?.[0] || '#4F46E5'
                         }"
                     />
-                    <label v-if="option.value || option.label" :for="`${option.label}${index}`" class="flex items-center gap-x-1.5 cursor-pointer">
-                        <p class="text-sm font-medium leading-6 text-gray-700 capitalize">
-                            {{ option.value }}
-                        </p>
-                        <span v-if="option.label" class="font-light text-sm text-gray-400 capitalize">
-                            {{ option.label }}
-                            <!-- d -->
-                        </span>
-                    </label>
+                    <slot name="label" :label="option.label" :option="option" :index="index">
+                        <label v-if="option.value || option.label" :for="`${option.label}_${index}`" class="flex items-center gap-x-1.5 cursor-pointer">
+                            <p class="text-sm font-medium leading-6 text-gray-700 capitalize">
+                                {{ option.value }}
+                            </p>
+                            <span v-if="option.label" class="font-light text-sm text-gray-400 capitalize">
+                                {{ option.label }}
+                                <!-- d -->
+                            </span>
+                        </label>
+                    </slot>
                 </div>
             </div>
         </fieldset>

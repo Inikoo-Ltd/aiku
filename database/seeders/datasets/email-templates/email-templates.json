@@ -207,5 +207,60 @@
     "arguments": [
         "invoice"
     ]
+},
+{
+  "outboxes": [
+    "new_pallet_delivery_from_customer"
+  ],
+  "name": "New pallet delivery from customer",
+  "content": "new_pallet_delivery_from_customer.blade.php",
+  "builder": "blade",
+  "arguments": [
+    "pallet_delivery"
+  ]
+},
+{
+  "outboxes": [
+    "new_pallet_return_from_customer"
+  ],
+  "name": "New pallet return from customer",
+  "content": "new_pallet_return_from_customer.blade.php",
+  "builder": "blade",
+  "arguments": [
+    "pallet_return"
+  ]
+},
+{
+  "outboxes": [
+    "pallet_delivery_deleted"
+  ],
+  "name": "Pallet delivery deleted",
+  "content": "pallet_delivery_deleted.blade.php",
+  "builder": "blade",
+  "arguments": [
+    "pallet_return"
+  ]
+},
+{
+  "outboxes": [
+    "pallet_return_deleted"
+  ],
+  "name": "Pallet return deleted",
+  "content": "pallet_return_deleted.blade.php",
+  "builder": "blade",
+  "arguments": [
+    "pallet_return"
+  ]
+},
+{
+  "outboxes": [
+    "pallet_deleted"
+  ],
+  "name": "Pallet deleted",
+  "content": "pallet_deleted.blade.php",
+  "builder": "blade",
+  "arguments": [
+    "pallet"
+  ]
 }
 ]

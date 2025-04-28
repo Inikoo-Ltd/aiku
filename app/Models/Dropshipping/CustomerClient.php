@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -55,6 +56,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $platform_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -62,6 +64,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Group $group
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read Shop|null $shop
  * @property-read \App\Models\Dropshipping\CustomerClientStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
@@ -140,6 +143,11 @@ class CustomerClient extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(CustomerClientStats::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
     }
 
 }

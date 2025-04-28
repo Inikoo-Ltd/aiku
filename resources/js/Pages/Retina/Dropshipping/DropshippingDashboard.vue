@@ -4,7 +4,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import {capitalize} from "@/Composables/capitalize"
 import {ref} from 'vue'
 
-import {PageHeading as TSPageHeading} from '@/types/PageHeading'
+import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
 import {Tabs as TSTabs} from '@/types/Tabs'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import {routeType} from '@/types/route'
@@ -22,7 +22,7 @@ library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     connectRoute: {
         url: string
@@ -36,6 +36,10 @@ const props = defineProps<{
         isAuthenticated: boolean
         tiktokName: string
         deleteAccountRoute: routeType
+    }
+    aikuConnectRoute: {
+        url: string
+        isAuthenticated: boolean
     }
 }>()
 
@@ -80,6 +84,28 @@ const onCreateStore = () => {
     <div class="px-6">
         <div class="text-xl py-2 w-fit">E-Commerce</div>
         <div class="flex gap-4">
+            <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
+                <div class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Manual</div>
+                        <div class="text-xs text-gray-500">({{ trans("Manage product") }})</div>
+                    </div>
+                </div>
+                <div class="w-full flex justify-end">
+                    <Link as="button" v-if="!aikuConnectRoute?.isAuthenticated" class="w-full" :href="aikuConnectRoute?.url" :method="'post'">
+                        <Button label="Connect" type="primary" full/>
+                    </Link>
+                    <div v-else class="relative w-full">
+                        <Transition name="spin-to-down">
+                            <div class="w-full flex justify-end gap-x-2">
+                                <Button :capitalize="false" :label="`Connected`" type="positive" icon="fal fa-check" size="xs" full/>
+                            </div>
+                        </Transition>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
                 <div class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-12">

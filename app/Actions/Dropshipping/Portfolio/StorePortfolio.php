@@ -14,13 +14,10 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -58,6 +55,7 @@ class StorePortfolio extends OrgAction
             /** @var Portfolio $portfolio */
             $portfolio = $customer->portfolios()->create($modelData);
             $portfolio->stats()->create();
+
             return $portfolio;
         });
 
@@ -82,9 +80,10 @@ class StorePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'product_id'    => ['sometimes', 'required', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
-            'stored_item_id'    => ['sometimes', 'required', Rule::exists('stored_items', 'id')],
-            'reference'     => [
+            'platform_id'    => ['required', Rule::exists('platforms', 'id')],
+            'product_id'     => ['sometimes', 'required', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+            'stored_item_id' => ['sometimes', 'required', Rule::exists('stored_items', 'id')],
+            'reference'      => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -97,9 +96,8 @@ class StorePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'type'          => ['sometimes', Rule::enum(PortfolioTypeEnum::class)],
-            'status'        => 'sometimes|boolean',
-            'last_added_at' => 'sometimes|date',
+            'status'         => 'sometimes|boolean',
+            'last_added_at'  => 'sometimes|date',
         ];
 
         if (!$this->strict) {
@@ -131,11 +129,11 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): Portfolio
+    public function asController(Customer $customer, ActionRequest $request): Portfolio
     {
         $this->customer = $customer;
 
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
     }

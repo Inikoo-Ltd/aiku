@@ -8,7 +8,9 @@
 
 namespace App\Transfers\Aurora;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraPortfolio extends FetchAurora
@@ -37,7 +39,10 @@ class FetchAuroraPortfolio extends FetchAurora
 
         $this->parsedData['customer'] = $customer;
 
+        $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+
         $this->parsedData['portfolio'] = [
+            'platform_id'     => $platform->id,
             'shop_id'         => $customer->shop_id,
             'product_id'      => $product->id,
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Key'},
@@ -52,8 +57,6 @@ class FetchAuroraPortfolio extends FetchAurora
         if ($lastRemoved) {
             $this->parsedData['portfolio']['last_removed_at'] = $lastRemoved;
         }
-        // dd($this->parsedData['portfolio']);
-
     }
 
 

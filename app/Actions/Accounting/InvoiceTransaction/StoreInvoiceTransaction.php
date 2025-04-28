@@ -14,13 +14,15 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSales;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Billables\Service;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 
 class StoreInvoiceTransaction extends OrgAction
 {
@@ -29,17 +31,6 @@ class StoreInvoiceTransaction extends OrgAction
 
     public function handle(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData): InvoiceTransaction
     {
-        if (Arr::exists($modelData, 'pallet_id')) {
-            $palletId = Arr::pull($modelData, 'pallet_id');
-        } else {
-            $palletId = Arr::pull($modelData, 'data.pallet_id');
-        }
-        if (Arr::exists($modelData, 'handle_date')) {
-            $handlingDate = Arr::pull($modelData, 'handle_date');
-        } else {
-            $handlingDate = Arr::pull($modelData, 'data.date');
-        }
-
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($model instanceof Transaction) {
@@ -66,7 +57,7 @@ class StoreInvoiceTransaction extends OrgAction
             if ($this->strict) {
                 $historicAsset = $model->historicAsset;
             } else {
-                $historicAsset = $model->historicAsset()->withTrashed()->first();
+                $historicAsset = $model->getHistoricAssetWithTrashed();
             }
         } else {
             $historicAsset = $model;
@@ -81,59 +72,68 @@ class StoreInvoiceTransaction extends OrgAction
 
             $modelData['family_id']     = $product->family_id;
             $modelData['department_id'] = $product->department_id;
-        } elseif ($historicAsset->model_type == 'Service') {
-            if ($historicAsset->model->is_pallet_handling == true) {
-                if ($palletId == null) {
-                    ValidationException::withMessages([
-                        'message' => [
-                            'pallet_id' => 'Pallet ID is required when handling a pallet',
-                        ]
-                    ]);
-                }
-                if ($handlingDate == null) {
-                    ValidationException::withMessages([
-                        'message' => [
-                            'handle_date' => 'Handling date is required when handling a pallet',
-                        ]
-                    ]);
-                }
-                data_set($modelData, 'data.pallet_id', $palletId);
-                data_set($modelData, 'data.date', $handlingDate);
-            }
+        } elseif ($historicAsset->model_type == 'Service' && $invoice->shop->type == ShopTypeEnum::FULFILMENT) {
+            $modelData = $this->processFulfilmentService($historicAsset->model, $modelData);
         }
 
         /** @var InvoiceTransaction $invoiceTransaction */
         $invoiceTransaction = $invoice->invoiceTransactions()->create($modelData);
 
-        if ($invoiceTransaction->order_id and $invoiceTransaction->transaction_id) {
-
+        if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([
                 'invoice_id' => $invoice->id
             ]);
         }
 
-        // Todo run this 3 hydrators more clever, hydrate only need intervals, e.g. exclude yesterday or last week
-        //AssetHydrateSales::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        //AssetHydrateInvoices::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
-        //AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset)->delay($this->hydratorsDelay);
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+
+        AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
+    }
+
+    protected function processFulfilmentService(Service $service, array $modelData): array
+    {
+        if (Arr::exists($modelData, 'pallet_id')) {
+            $palletId = Arr::pull($modelData, 'pallet_id');
+        } else {
+            $palletId = Arr::pull($modelData, 'data.handling_service_pallet_id');
+        }
+
+        if (Arr::exists($modelData, 'handle_date')) {
+            $handlingDate = Arr::pull($modelData, 'handle_date');
+        } else {
+            $handlingDate = Arr::pull($modelData, 'data.handling_service_date');
+        }
+
+        if ($service->is_pallet_handling) {
+            if ($palletId) {
+                data_set($modelData, 'data.handling_service_pallet_id', $palletId);
+            }
+            if ($handlingDate) {
+                data_set($modelData, 'data.handling_service_date', $handlingDate);
+            }
+        }
+
+        return $modelData;
     }
 
     public function rules(): array
     {
         $rules = [
-            'date'            => ['sometimes', 'required', 'date'],
-            'tax_category_id' => ['required', 'exists:tax_categories,id'],
-            'quantity'        => ['required', 'numeric'],
-            'gross_amount'    => ['required', 'numeric'],
-            'net_amount'      => ['required', 'numeric'],
-            'org_exchange'    => ['sometimes', 'numeric'],
-            'grp_exchange'    => ['sometimes', 'numeric'],
-            'in_process'      => ['sometimes', 'boolean'],
-            'pallet_id'       => ['sometimes'],
-            'handle_date'     => ['sometimes'],
-            'data'            => ['sometimes', 'array'],
+            'date'                          => ['sometimes', 'required', 'date'],
+            'tax_category_id'               => ['required', 'exists:tax_categories,id'],
+            'quantity'                      => ['required', 'numeric'],
+            'gross_amount'                  => ['required', 'numeric'],
+            'net_amount'                    => ['required', 'numeric'],
+            'org_exchange'                  => ['sometimes', 'numeric'],
+            'grp_exchange'                  => ['sometimes', 'numeric'],
+            'in_process'                    => ['sometimes', 'boolean'],
+            'pallet_id'                     => ['sometimes'],
+            'handle_date'                   => ['sometimes'],
+            'data'                          => ['sometimes', 'array'],
             'recurring_bill_transaction_id' => ['sometimes'],
         ];
 
@@ -147,8 +147,8 @@ class StoreInvoiceTransaction extends OrgAction
 
     public function action(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData, int $hydratorsDelay = 0, bool $strict = true): InvoiceTransaction
     {
-        $this->asAction = true;
-        $this->strict   = $strict;
+        $this->asAction       = true;
+        $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($invoice->shop, $modelData);
 

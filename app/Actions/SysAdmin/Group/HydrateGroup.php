@@ -33,6 +33,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
@@ -40,6 +42,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
@@ -49,6 +52,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderHandling;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockMovements;
@@ -88,6 +92,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouses;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebsites;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\SysAdmin\Group;
 
@@ -120,6 +125,7 @@ class HydrateGroup extends HydrateModel
         GroupHydratePaymentAccounts::run($group);
         GroupHydratePaymentServiceProviders::run($group);
         GroupHydrateSales::run($group);
+        GroupHydrateOrderIntervals::run($group);
         GroupHydrateCollectionCategories::run($group);
         GroupHydrateCollections::run($group);
         GroupHydrateWarehouses::run($group);
@@ -189,6 +195,11 @@ class HydrateGroup extends HydrateModel
         GroupHydrateDeliveryNotes::run($group);
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
+        GroupHydrateDeletedInvoices::run($group);
+        GroupHydrateRegistrationIntervals::run($group);
+
+        GroupHydrateOrderInBasketAtCustomerUpdateIntervals::run($group);
+        GroupHydrateOrderInBasketAtCreatedIntervals::run($group);
 
 
     }

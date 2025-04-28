@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
+use App\Actions\Fulfilment\PalletDelivery\AutomaticallySetPalletDeliveryStateAsNotReceivedIfAllPalletsNotReceived;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
@@ -29,7 +30,6 @@ class SetPalletAsNotReceived extends OrgAction
     use WithActionUpdate;
 
 
-    private Pallet $pallet;
     /**
      * @var false|mixed
      */
@@ -46,7 +46,8 @@ class SetPalletAsNotReceived extends OrgAction
         data_set($modelData, 'booked_in_at', null);
         data_set($modelData, 'set_as_not_received_at', now());
 
-        $pallet = UpdatePallet::run($pallet, $modelData, ['data']);
+        $pallet = UpdatePallet::run($pallet, $modelData);
+        AutomaticallySetPalletDeliveryStateAsNotReceivedIfAllPalletsNotReceived::run($pallet->palletDelivery);
 
         SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
 
@@ -61,8 +62,6 @@ class SetPalletAsNotReceived extends OrgAction
         if ($recurringBillTransactionData) {
             DeleteRecurringBillTransaction::make()->action(RecurringBillTransaction::find($recurringBillTransactionData->id));
         }
-
-
 
 
         PalletDeliveryHydratePallets::dispatch($pallet->palletDelivery);
@@ -91,22 +90,13 @@ class SetPalletAsNotReceived extends OrgAction
         return $this->handle($pallet);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function undo(Pallet $pallet, ActionRequest $request): Pallet
-    {
-        $this->initialisationFromWarehouse($pallet->warehouse, $request);
-
-        return $this->handle($pallet);
-    }
 
     /**
      * @throws \Throwable
      */
     public function action(Pallet $pallet, $debug = false): Pallet
     {
-        $this->debug = $debug;
+        $this->debug    = $debug;
         $this->asAction = true;
         $this->initialisationFromWarehouse($pallet->warehouse, []);
 

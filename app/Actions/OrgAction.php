@@ -9,6 +9,7 @@
 namespace App\Actions;
 
 use App\Actions\Traits\WithTab;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Inventory\Warehouse;
 use App\Models\Production\Production;
@@ -42,6 +43,7 @@ class OrgAction
     protected bool $maya = false;
 
     protected array $validatedData;
+    protected DateIntervalEnum $dateInterval = DateIntervalEnum::YEAR_TO_DAY;
 
 
     public function initialisation(Organisation $organisation, ActionRequest|array $request): static

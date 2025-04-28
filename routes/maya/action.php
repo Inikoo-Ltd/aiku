@@ -48,7 +48,7 @@ Route::patch('pallet/{pallet:id}/location/{location:slug}/book-in', [BookInPalle
 
 
 Route::patch('pallet/{pallet:id}/return', ReturnPalletToCustomer::class)->name('pallet.return');
-Route::patch('pallet/{pallet:id}', [UpdatePallet::class, 'fromApi'])->name('pallet.update');
+Route::patch('pallet/{pallet:id}', UpdatePallet::class)->name('pallet.update');
 Route::patch('pallet/{pallet:id}/not-received', SetPalletAsNotReceived::class)->name('pallet.not-received');
 Route::patch('pallet/{pallet:id}/undo-not-received', UndoBookedInPallet::class)->name('pallet.undo-not-received');
 
@@ -72,7 +72,7 @@ Route::patch('pallet-delivery/{palletDelivery:id}/booked-in', SetPalletDeliveryA
 Route::patch('pallet-return/{palletReturn:id}/confirm', [ConfirmPalletReturn::class, 'maya'])->name('pallet-return.confirm');
 Route::patch('pallet-return/{palletReturn:id}/start-picking', [PickingPalletReturn::class, 'maya'])->name('pallet-return.picking');
 Route::patch('pallet-return/{palletReturn:id}/picked', [PickedPalletReturn::class, 'maya'])->name('pallet-return.picked');
-Route::patch('pallet-return/{palletReturn:id}/dispatch', [DispatchPalletReturn::class, 'maya'])->name('pallet-return.dispatch');
+Route::patch('pallet-return/{palletReturn:id}/dispatch', DispatchPalletReturn::class)->name('pallet-return.dispatch');
 
 
 //pallet Return pallet
@@ -80,7 +80,7 @@ Route::patch('pallet-return-item/pallet/{palletReturnItem:id}/pick', PickWholePa
 Route::patch('pallet-return-item/pallet/{palletReturnItem:id}/undo-pick', UndoPickingPalletFromReturn::class)->name('pallet-return-item.pallet.undo-pick');
 Route::patch('pallet-return-item/pallet/{palletReturnItem:id}/not-picked', NotPickedPalletFromReturn::class)->name('pallet-return-item.pallet.not-picked');
 
-//pallet Return stored items
+//pallet Returns stored items
 Route::patch('pallet-return-item/stored-items/{palletReturnItem:id}/pick', PickPalletReturnItemInPalletReturnWithStoredItem::class)->name('pallet-return-item.stored-item.pick');
 Route::patch('pallet-return-item/stored-items/{palletReturnItem:id}/undo-pick', UndoStoredItemPick::class)->name('pallet-return-item.stored-item.not-picked');
 

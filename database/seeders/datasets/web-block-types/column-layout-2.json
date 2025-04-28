@@ -1,0 +1,96 @@
+{
+	"slug": "column-layout-2",
+	"code": "column-layout-2",
+	"name": "column-layout-2",
+	"scope": "webpage",
+	"icon": ["fal", "rectangle-wide"],
+	"data": {
+		"fieldValue": {
+			"container": {
+                "column_1" : null,
+                "column_2" : null,
+				"properties": {
+					"background": {
+						"type": "color",
+                        "color": "#FFFFFF",
+						"image": {
+							"original": null
+						}
+					},
+                    "justifyContent" : "center",
+					"dimension": {
+						"height": {
+							"value": 100,
+							"unit": "%"
+						},
+						"width": {
+							"value": 100,
+							"unit": "%"
+						}
+					},
+					"padding": {
+						"unit": "px",
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"margin": {
+						"unit": "px",
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"border": {
+						"color": "#000000",
+						"unit": "px",
+						"rounded": {
+							"unit": "px",
+							"topright": {
+								"value": 0
+							},
+							"topleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							}
+						},
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					}
+				}
+			}
+		}
+	}
+}

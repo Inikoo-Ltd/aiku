@@ -10,10 +10,10 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Inventory\HasInventoryAuthorisation;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgStock extends OrgAction
 {
-    use HasInventoryAuthorisation;
+    use WithInventoryAuthorisation;
 
 
     private Organisation|StockFamily $parent;
@@ -53,50 +53,36 @@ class ShowOrgStock extends OrgAction
         $this->maya   = true;
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockTabsEnum::values());
-        return $this->handle($orgStock);
-    }
-
-    public function current(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): OrgStock
-    {
-        $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockTabsEnum::values());
 
         return $this->handle($orgStock);
     }
 
-    public function inStockFamily(Organisation $organisation, Warehouse $warehouse, StockFamily $orgStockFamily, OrgStock $orgStock, ActionRequest $request): OrgStock
-    {
-        $this->parent = $orgStockFamily;
-        $this->initialisationFromWarehouse($warehouse, $request);
-
-        return $this->handle($orgStock);
-    }
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'                         => __('stock'),
-                'breadcrumbs'                   => $this->getBreadcrumbs(
+                'title'                           => __('stock'),
+                'breadcrumbs'                     => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                   => [
+                'navigation'                      => [
                     'previous' => $this->getPrevious($orgStock, $request),
                     'next'     => $this->getNext($orgStock, $request),
                 ],
-                'pageHead'                     => [
-                    'icon'    => [
+                'pageHead'                        => [
+                    'icon'  => [
                         'title' => __('sku'),
                         'icon'  => 'fal fa-box'
                     ],
-                    'model'   => __('SKU'),
-                    'title'   => $orgStock->code,
+                    'model' => __('SKU'),
+                    'title' => $orgStock->code,
 
                 ],
-                'tabs'                         => [
+                'tabs'                            => [
                     'current'    => $this->tab,
                     'navigation' => OrgStockTabsEnum::navigation()
 
@@ -232,8 +218,8 @@ class ShowOrgStock extends OrgAction
                     'name'       => $routeName,
                     'parameters' => [
                         'organisation' => $orgStock->organisation->slug,
-                        'warehouse' => $this->warehouse->slug,
-                        'orgStock' => $orgStock->slug
+                        'warehouse'    => $this->warehouse->slug,
+                        'orgStock'     => $orgStock->slug
                     ]
                 ]
             ],

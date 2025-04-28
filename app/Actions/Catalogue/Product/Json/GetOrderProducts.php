@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Catalogue\OrderProductsResource;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -25,9 +24,8 @@ class GetOrderProducts extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    private Shop $parent;
 
-    public function handle(Shop $parent, Order $order, $prefix = null): LengthAwarePaginator
+    public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -42,7 +40,7 @@ class GetOrderProducts extends OrgAction
                 ->where('transactions.order_id', $order->id);
         });
         $queryBuilder->leftJoin('orders', 'transactions.order_id', 'orders.id');
-        $queryBuilder->where('products.shop_id', $parent->id);
+        $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -74,12 +72,11 @@ class GetOrderProducts extends OrgAction
         return OrderProductsResource::collection($products);
     }
 
-    public function asController(Shop $shop, Order $order, ActionRequest $request): LengthAwarePaginator
+    public function asController(Order $order, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle(parent: $shop, order: $order);
+        return $this->handle(order: $order);
     }
 
 }

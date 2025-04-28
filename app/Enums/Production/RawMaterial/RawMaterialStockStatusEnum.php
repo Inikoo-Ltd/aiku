@@ -15,4 +15,17 @@ enum RawMaterialStockStatusEnum: string
     case CRITICAL       = 'critical';
     case OUT_OF_STOCK   = 'out_of_stock';
     case ERROR          = 'error';
+
+    public static function labels(): array
+    {
+        return [
+            self::UNLIMITED->value    => 'Unlimited Stock',
+            self::SURPLUS->value      => 'Surplus Stock',
+            self::OPTIMAL->value      => 'Optimal Stock',
+            self::LOW->value          => 'Low Stock',
+            self::CRITICAL->value     => 'Critical Stock',
+            self::OUT_OF_STOCK->value => 'Out of Stock',
+            self::ERROR->value        => 'Error in Stock',
+        ];
+    }
 }

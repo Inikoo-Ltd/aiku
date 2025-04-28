@@ -89,16 +89,24 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property InvoicePayStatusEnum|null $pay_status
  * @property bool $in_process Used for refunds only
- * @property int|null $invoice_id For refunds link to original invoice
+ * @property int|null $original_invoice_id For refunds link to original invoice
  * @property string|null $footer
  * @property int|null $invoice_category_id
  * @property bool $is_vip Indicate if invoice is for a VIP customer
- * @property int|null $as_organisation_id Indicate if invoice is for a organisation in this group
- * @property int|null $as_employee_id Indicate if invoice is for a employee
+ * @property int|null $as_organisation_id Indicate if invoice is for an organisation in this group
+ * @property int|null $as_employee_id Indicate if invoice is for an employee
  * @property string|null $deleted_note
  * @property int|null $deleted_by
  * @property bool $deleted_from_deleted_invoice_fetch This is used to prevent the invoice from being fetched and updated again in FetchAuroraDeletedInvoices
  * @property int|null $external_invoicer_id
+ * @property string|null $uuid
+ * @property string|null $customer_name
+ * @property string|null $customer_contact_name
+ * @property string|null $tax_number
+ * @property bool|null $tax_number_status
+ * @property bool|null $tax_number_valid
+ * @property string|null $identity_document_type
+ * @property string|null $identity_document_number
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -142,17 +150,18 @@ class Invoice extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'type'             => InvoiceTypeEnum::class,
-        'pay_status'       => InvoicePayStatusEnum::class,
-        'data'             => 'array',
-        'payment_data'     => 'array',
-        'date'             => 'datetime',
-        'paid_at'          => 'datetime',
-        'tax_liability_at' => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
-        'grp_exchange'     => 'decimal:4',
-        'org_exchange'     => 'decimal:4',
+        'type'              => InvoiceTypeEnum::class,
+        'pay_status'        => InvoicePayStatusEnum::class,
+        'data'              => 'array',
+        'payment_data'      => 'array',
+        'date'              => 'datetime',
+        'paid_at'           => 'datetime',
+        'tax_liability_at'  => 'datetime',
+        'fetched_at'        => 'datetime',
+        'last_fetched_at'   => 'datetime',
+        'grp_exchange'      => 'decimal:4',
+        'org_exchange'      => 'decimal:4',
+        'tax_number_status' => 'boolean',
     ];
 
     protected $attributes = [
@@ -255,14 +264,20 @@ class Invoice extends Model implements Auditable
         return $this->belongsTo(SalesChannel::class);
     }
 
+    /**
+     * Get the original invoice that this invoice is related to (for refunds).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @noinspection PhpUnused
+     */
     public function originalInvoice(): BelongsTo
     {
-        return $this->belongsTo(Invoice::class, 'invoice_id');
+        return $this->belongsTo(Invoice::class, 'original_invoice_id');
     }
 
     public function refunds(): HasMany
     {
-        return $this->hasMany(Invoice::class, 'invoice_id');
+        return $this->hasMany(Invoice::class, 'original_invoice_id');
     }
 
     public function invoiceCategory(): BelongsTo

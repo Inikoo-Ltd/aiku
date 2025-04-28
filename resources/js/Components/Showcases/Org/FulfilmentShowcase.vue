@@ -15,7 +15,7 @@ library.add(faNarwhal, faBusinessTime, faUserTie, falSignout, faTruck, faSignOut
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import { inject } from 'vue'
 import {trans} from "laravel-vue-i18n";
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue";
+import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps<{

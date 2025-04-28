@@ -112,7 +112,7 @@ class IndexCustomers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Customer::class);
 
-        if ($parent instanceof Organisation or $parent instanceof Shop) {
+        if ($parent instanceof Organisation || $parent instanceof Shop) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -134,7 +134,6 @@ class IndexCustomers extends OrgAction
             'number_invoices_type_invoice',
             'last_invoiced_at',
             'sales_all',
-            // 'invoiced_net_amount',
             'invoiced_org_net_amount',
             'invoiced_grp_net_amount',
             'platform_name',
@@ -163,19 +162,6 @@ class IndexCustomers extends OrgAction
                 ->leftJoin('shops', 'shops.id', 'shop_id');
         }
 
-
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                prefix: $prefix,
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
-        */
-
-
         return $queryBuilder
             ->defaultSort('-created_at')
             ->addSelect([
@@ -196,16 +182,16 @@ class IndexCustomers extends OrgAction
                 'platforms.name as platform_name',
                 'currencies.code as currency_code',
             ])
-            ->leftJoin('model_has_platforms', function ($join) {
-                $join->on('customers.id', '=', 'model_has_platforms.model_id')
-                    ->where('model_has_platforms.model_type', '=', class_basename(Customer::class));
+            ->leftJoin('customer_has_platforms', function ($join) {
+                $join->on('customers.id', '=', 'customer_has_platforms.customer_id');
             })
-            ->leftJoin('platforms', 'model_has_platforms.platform_id', '=', 'platforms.id')
+            ->leftJoin('platforms', 'customer_has_platforms.platform_id', '=', 'platforms.id')
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id')
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['registered_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -228,9 +214,10 @@ class IndexCustomers extends OrgAction
                 }
             }
 
+            $table->betweenDates(['registered_at']);
 
             $isDropshipping = false;
-            if ($parent instanceof Shop and $parent->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($parent instanceof Shop && $parent->type == ShopTypeEnum::DROPSHIPPING) {
                 $isDropshipping = true;
             }
 
@@ -275,8 +262,7 @@ class IndexCustomers extends OrgAction
             if ($isDropshipping) {
                 $table->column(key: 'number_current_customer_clients', label: '', icon: 'fal fa-users', tooltip: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'number_current_portfolios', label: '', icon: 'fal fa-chess-board', tooltip: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                    // ->column(key: 'platforms', label: __('Platforms'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'platform_name', label: __('Platforms'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'platform_name', label: __('channels'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
@@ -308,7 +294,7 @@ class IndexCustomers extends OrgAction
 
         $action = null;
 
-        if (!$scope instanceof Group and $this->canEdit) {
+        if (!$scope instanceof Group && $this->canEdit) {
             $action = [
                 [
                     'type'    => 'button',

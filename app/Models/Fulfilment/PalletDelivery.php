@@ -77,9 +77,10 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string|null $delete_comment
+ * @property string|null $deleted_note
  * @property int|null $invoice_id
  * @property int|null $recurring_bill_id
+ * @property int|null $deleted_by
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Currency $currency
  * @property-read Address|null $deliveryAddress

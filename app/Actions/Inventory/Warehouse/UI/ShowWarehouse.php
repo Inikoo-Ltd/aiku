@@ -8,10 +8,11 @@
 
 namespace App\Actions\Inventory\Warehouse\UI;
 
+use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\UI\ShowOrganisationDashboard;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\WarehouseResource;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehouse extends OrgAction
 {
     use WithActionButtons;
+    use WithWarehouseAuthorisation;
 
     public function handle(Warehouse $warehouse): Warehouse
     {
@@ -36,8 +38,8 @@ class ShowWarehouse extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo("inventory.{$this->warehouse->id}.edit");
-        return $request->user()->authTo("inventory.{$this->warehouse->id}.view");
 
+        return $request->user()->authTo("inventory.{$this->warehouse->id}.view");
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
@@ -55,13 +57,13 @@ class ShowWarehouse extends OrgAction
         return Inertia::render(
             'Org/Warehouse/Warehouse',
             [
-                'title'                            => __('warehouse'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title'       => __('warehouse'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation'  => [
                     'previous' => $this->getPrevious($warehouse, $request),
                     'next'     => $this->getNext($warehouse, $request),
                 ],
-                'pageHead'                         => [
+                'pageHead'    => [
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'warehouse'],
@@ -70,7 +72,7 @@ class ShowWarehouse extends OrgAction
                     'title'   => $warehouse->name,
                     'model'   => __('Warehouse'),
                     'actions' => [
-                       /*  $this->canEdit ?
+                        $this->canEdit ?
                             [
                                 'type'    => 'button',
                                 'style'   => 'create',
@@ -82,22 +84,21 @@ class ShowWarehouse extends OrgAction
                                 ]
                             ]
                             : null,
-                        $this->canEdit ? $this->getEditActionIcon($request) : null, */
+                        $this->canEdit ? $this->getEditActionIcon($request) : null,
 
                     ],
                 ],
 
-                'tabs'                             => [
+                'tabs'     => [
 
                     'current'    => $this->tab,
                     'navigation' => WarehouseTabsEnum::navigation(),
                 ],
-                'tagsList'      => TagResource::collection(Tag::all()),
+                'tagsList' => TagResource::collection(Tag::all()),
 
                 WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
                     fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)
                     : Inertia::lazy(fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)),
-
 
 
                 WarehouseTabsEnum::HISTORY->value => $this->tab == WarehouseTabsEnum::HISTORY->value ?

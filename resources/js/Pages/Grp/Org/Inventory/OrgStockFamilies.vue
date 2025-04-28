@@ -2,7 +2,7 @@
 
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Sun, 24 Mar 2024 21:15:29 Malaysia Time, Mexico City, Mexicogoo
+  - Created: Sun, 24 Mar 2024 21:15:29 Malaysia Time, Mexico City, Mexico
   - Copyright (c) 2024, Raul A Perusquia Flores
   -->
 
@@ -11,11 +11,13 @@ import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableStockFamilies from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockFamilies.vue";
 import { capitalize } from "@/Composables/capitalize"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
-const props = defineProps<{
+
+defineProps<{
     data: object
     title: string
-    pageHead: object
+    pageHead: PageHeadingTypes
 }>()
 
 

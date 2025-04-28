@@ -11,12 +11,14 @@
 use App\Actions\Accounting\Invoice\Search\ReindexInvoiceSearch;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
-use App\Actions\Accounting\InvoiceTransaction\DeleteRefundInProcessInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
@@ -50,6 +52,7 @@ use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -60,6 +63,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
@@ -162,6 +166,56 @@ test('create order', function () {
     return $order;
 });
 
+test('get order products', function (Order $order) {
+    // Create a transaction if needed (may not be necessary if the order already has products)
+    $order->transactions->first()
+        ?: StoreTransaction::make()->action(
+            $order,
+            $this->product->historicAsset,
+            Transaction::factory()->definition()
+        );
+
+    $order->refresh();
+
+    // Test the GetOrderProducts action
+    $result = GetOrderProducts::make()->handle($order);
+
+    expect($result)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+        ->and($result->count())->toBeGreaterThanOrEqual(1);
+
+    // Test that the product data is correctly retrieved
+    $products = $result->items();
+    expect($products)->toBeArray()
+        ->and(count($products))->toBeGreaterThanOrEqual(1);
+
+    // Verify the first product data
+    $firstProduct = $products[0];
+    expect($firstProduct->id)->toBe(1)->and($firstProduct->transaction_id)->toBe(1);
+
+    // Test the JSON response
+    if (method_exists(GetOrderProducts::class, 'jsonResponse')) {
+        $jsonResponse = GetOrderProducts::make()->jsonResponse($result);
+        expect($jsonResponse)->toBeInstanceOf(\Illuminate\Http\Resources\Json\AnonymousResourceCollection::class);
+    }
+
+    return $order;
+})->depends('create order');
+
+
+test('delete previous transaction', function (Order $order) {
+    $transaction = $order->transactions()->first();
+    UpdateTransaction::make()->action(
+        $transaction,
+        ['quantity_ordered' => 0]
+    );
+    $order->refresh();
+    expect($order->transactions()->count())->toBe(0)
+        ->and($order->stats->number_transactions)->toBe(0)
+        ->and($order->stats->number_transactions_at_submission)->toBe(0);
+
+    return $order;
+})->depends('get order products');
+
 
 test('create transaction', function ($order) {
     $transactionData = Transaction::factory()->definition();
@@ -171,12 +225,13 @@ test('create transaction', function ($order) {
 
     $order->refresh();
 
+
     expect($transaction)->toBeInstanceOf(Transaction::class)
         ->and($transaction->order->stats->number_transactions_at_submission)->toBe(1)
         ->and($order->stats->number_transactions)->toBe(1);
 
     return $transaction;
-})->depends('create order');
+})->depends('delete previous transaction');
 
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
@@ -317,9 +372,14 @@ test('create transaction from shipping', function (Order $order) {
 })->depends('create order');
 
 test('update transaction', function ($transaction) {
-    $order = UpdateTransaction::make()->action($transaction, Transaction::factory()->definition());
+    $transaction = UpdateTransaction::make()->action(
+        $transaction,
+        [
+            'quantity_ordered' => $transaction->quantity_ordered + 1,
+        ]
+    );
 
-    $this->assertModelExists($order);
+    expect($transaction)->toBeInstanceOf(Transaction::class);
 })->depends('create transaction');
 
 
@@ -377,9 +437,19 @@ test('update order state to Finalised ', function (Order $order) {
 })->depends('update order state to Handling');
 
 test('create customer client', function () {
-    $shop           = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
-    $customer       = StoreCustomer::make()->action($shop, Customer::factory()->definition());
-    $customerClient = StoreCustomerClient::make()->action($customer, CustomerClient::factory()->definition());
+    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    AttachCustomerToPlatform::make()->action($customer, $platform, []);
+    $customerClient = StoreCustomerClient::make()->action(
+        $customer,
+        array_merge(
+            CustomerClient::factory()->definition(),
+            [
+                'platform_id' => $platform->id,
+            ]
+        )
+    );
     $this->assertModelExists($customerClient);
     expect($customerClient->shop->code)->toBe($shop->code)
         ->and($customerClient->customer->reference)->toBe($customer->reference);
@@ -450,8 +520,8 @@ test('update invoice transaction', function (Invoice $invoice) {
 })->depends('create invoice from order');
 
 test('delete invoice transaction', function (InvoiceTransaction $invoiceTransaction) {
-    $invoice        = $invoiceTransaction->invoice;
-    DeleteRefundInProcessInvoiceTransaction::make()->action($invoiceTransaction);
+    $invoice = $invoiceTransaction->invoice;
+    DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
     $invoice->refresh();
     expect($invoice)->toBeInstanceOf(Invoice::class)
         ->and($invoice->stats->number_invoice_transactions)->toBe(0);
@@ -535,7 +605,7 @@ test('update purge order', function (Purge $purge) {
 test('delete transaction', function (Order $order) {
     $transaction = $order->transactions->first();
 
-    DeleteTransaction::make()->action($order, $transaction);
+    DeleteTransaction::make()->action($transaction);
     $order->refresh();
 
     expect($order->transactions()->count())->toBe(0);
@@ -729,5 +799,4 @@ test('test reset intervals', function () {
     $this->artisan('intervals:reset-month')->assertExitCode(0);
     $this->artisan('intervals:reset-quarter')->assertExitCode(0);
     $this->artisan('intervals:reset-year')->assertExitCode(0);
-
 });

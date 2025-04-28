@@ -50,7 +50,7 @@ import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import ModalAddress from '@/Components/Utils/ModalAddress.vue'
+import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -651,7 +651,7 @@ const openModal = (action :any) => {
 	<ModalProductList v-if="routes?.products_list?.name" v-model="isModaProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <ModalAddress
+        <CustomerAddressManagementModal
             :addresses="addresses"
             :updateRoute="address_update_route"
             keyPayloadEdit="delivery_address"

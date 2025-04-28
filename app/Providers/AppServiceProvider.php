@@ -33,8 +33,8 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(TelescopeServiceProvider::class);
         }
 
-        $this->app->singleton(BasicShopifyAPI::class, function ($app) {
-            $opts    = app(Options::class); // Or retrieve as needed
+        $this->app->singleton(BasicShopifyAPI::class, function () {
+            $opts    = app(Options::class);
             $tsClass = config('shopify-app.api_time_store');
             $lsClass = config('shopify-app.api_limit_store');
             $sdClass = config('shopify-app.api_deferrer');
@@ -127,9 +127,9 @@ class AppServiceProvider extends ServiceProvider
 
                 // Goods
                 'Ingredient'                    => 'App\Models\Goods\Ingredient',
-                'MasterAsset'                   => 'App\Models\Goods\MasterAsset',
-                'MasterProductCategory'         => 'App\Models\Goods\MasterProductCategory',
-                'MasterShop'                    => 'App\Models\Goods\MasterShop',
+                'MasterAsset'                   => 'App\Models\Masters\MasterAsset',
+                'MasterProductCategory'         => 'App\Models\Masters\MasterProductCategory',
+                'MasterShop'                    => 'App\Models\Masters\MasterShop',
                 'Stock'                         => 'App\Models\Goods\Stock',
                 'StockFamily'                   => 'App\Models\Goods\StockFamily',
                 'TradeUnit'                     => 'App\Models\Goods\TradeUnit',
@@ -141,8 +141,8 @@ class AppServiceProvider extends ServiceProvider
                 'Barcode'                       => 'App\Models\Helpers\Barcode',
                 'CurrencyExchange'              => 'App\Models\Helpers\CurrencyExchange',
                 'Deployment'                    => 'App\Models\Helpers\Deployment',
-                'Fetch'                         => 'App\Models\Helpers\Fetch',
-                'FetchRecord'                   => 'App\Models\Helpers\FetchRecord',
+                'Fetch'                         => 'App\Models\Transfers\Fetch',
+                'FetchRecord'                   => 'App\Models\Transfers\FetchRecord',
                 'Feedback'                      => 'App\Models\Helpers\Feedback',
                 'Query'                         => 'App\Models\Helpers\Query',
                 'SerialReference'               => 'App\Models\Helpers\SerialReference',

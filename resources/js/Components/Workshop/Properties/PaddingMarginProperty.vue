@@ -35,9 +35,12 @@ const props = defineProps<{
     }
 }>()
 
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: string | number): void
+}>()
 
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  // Get the block id that use this property
+/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 // Check if all padding values are the same
 const arePaddingValuesSame = (padding) => {
@@ -56,13 +59,14 @@ const changePaddingToSameValue = (newVal: number) => {
             model.value[key].value = newVal; // Set value to 99
         }
     }
-    onSaveWorkshopFromId(side_editor_block_id)
+   /*  onSaveWorkshopFromId(side_editor_block_id) */
+    emits('update:modelValue', model.value)
 }
+
 </script>
 
 <template>
     <div class="flex flex-col pt-1 pb-3">
-
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
                 <div class="text-xs">{{ trans('Unit') }}</div>
@@ -83,8 +87,8 @@ const changePaddingToSameValue = (newVal: number) => {
                         leave-to-class="translate-y-1 opacity-0"
                     >
                         <PopoverPanel v-slot="{ close }" class="bg-white shadow mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
-                            <div @click="() => {set(model, 'unit','px'), onSaveWorkshopFromId(side_editor_block_id), close()}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px</div>
-                            <div @click="() => {set(model, 'unit','%'), onSaveWorkshopFromId(side_editor_block_id), close()}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
+                            <div @click="() => {set(model, 'unit','px'), close(), emits('update:modelValue', model)}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px</div>
+                            <div @click="() => {set(model, 'unit','%'), close(), emits('update:modelValue', model)}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
                         </PopoverPanel>
                     </transition>
                 </Popover>
@@ -127,14 +131,14 @@ const changePaddingToSameValue = (newVal: number) => {
                             <div class="grid grid-cols-5 items-center">
                                 <FontAwesomeIcon icon='fad fa-border-top' v-tooltip="scope + ' ' + trans('top')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
-                                    <PureInputNumber :modelValue="get(model, 'top.value', 0)" @update:modelValue="(e) => (set(model, 'top.value', e), onSaveWorkshopFromId(side_editor_block_id))" class="" :suffix="model?.unit" />
+                                    <PureInputNumber :modelValue="get(model, 'top.value', 0)" @update:modelValue="(e) => (set(model, 'top.value', e), emits('update:modelValue', model))" class="" :suffix="model?.unit" />
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-5 items-center">
                                 <FontAwesomeIcon icon='fad fa-border-bottom' v-tooltip="scope + ' ' + trans('bottom')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
-                                    <PureInputNumber :modelValue="get(model, 'bottom.value', 0)" @update:modelValue="(e) => (set(model, 'bottom.value', e), onSaveWorkshopFromId(side_editor_block_id))" class="" :suffix="model?.unit" />
+                                    <PureInputNumber :modelValue="get(model, 'bottom.value', 0)" @update:modelValue="(e) => (set(model, 'bottom.value', e), emits('update:modelValue', model))" class="" :suffix="model?.unit" />
                                 </div>
                             </div>
                             
@@ -142,7 +146,7 @@ const changePaddingToSameValue = (newVal: number) => {
                                 <FontAwesomeIcon icon='fad fa-border-left' v-tooltip="scope + ' ' + trans('left')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
-                                        :modelValue="get(model, 'left.value', 0)" @update:modelValue="(e) => (set(model, 'left.value', e), onSaveWorkshopFromId(side_editor_block_id))"
+                                        :modelValue="get(model, 'left.value', 0)" @update:modelValue="(e) => (set(model, 'left.value', e),emits('update:modelValue', model))"
                                         class=""
                                         :suffix="model?.unit"
                                         :disabled="additionalData?.left?.disabled"
@@ -155,7 +159,7 @@ const changePaddingToSameValue = (newVal: number) => {
                                 <FontAwesomeIcon icon='fad fa-border-right' v-tooltip="scope + ' ' + trans('right')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
-                                        :modelValue="get(model, 'right.value', 0)" @update:modelValue="(e) => (set(model, 'right.value', e), onSaveWorkshopFromId(side_editor_block_id))"
+                                        :modelValue="get(model, 'right.value', 0)" @update:modelValue="(e) => (set(model, 'right.value', e),emits('update:modelValue', model))"
                                         class=""
                                         :suffix="model?.unit"
                                         :disabled="additionalData?.right?.disabled"

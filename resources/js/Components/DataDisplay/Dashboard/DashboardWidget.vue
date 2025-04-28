@@ -34,7 +34,8 @@ const props = defineProps<{
                 :style="{
                     'grid-column': `span ${component.col_span || 1} / span ${component.col_span || 1}`,
                     'grid-row': `span ${component.row_span || 1} / span ${component.row_span || 1}`,
-                }" />
+                }"
+            />
         </template>
 	</div>
 

@@ -84,6 +84,15 @@ class SendNewCustomerNotification extends OrgAction
 
     }
 
+    public string $commandSignature = 'xxxx';
+
+    public function asCommand($command)
+    {
+        $pallet = Customer::withTrashed()->find(182402);
+
+        $this->handle($pallet);
+    }
+
 
 
 }

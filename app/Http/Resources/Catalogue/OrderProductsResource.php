@@ -27,7 +27,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $family_slug
  * @property mixed $family_code
  * @property mixed $family_name
- *
+ * @property mixed $id
+ * @property mixed $asset_id
+ * @property mixed $current_historic_asset_id
+ * @property mixed $available_quantity
+ * @property mixed $quantity_ordered
+ * @property mixed $transaction_id
+ * @property mixed $order_id
  */
 class OrderProductsResource extends JsonResource
 {
@@ -47,9 +53,8 @@ class OrderProductsResource extends JsonResource
             'order_id'                  => $this->order_id ?? null,
 
             'deleteRoute'            => [
-                'name'       => 'grp.models.order.transaction.delete',
+                'name'       => 'grp.models.transaction.delete',
                 'parameters' => [
-                    'order'       => $this->order_id,
                     'transaction' => $this->transaction_id
                 ],
                 'method'    => 'delete'

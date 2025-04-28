@@ -27,7 +27,9 @@ use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\UpdateOrderStateToSubmitted;
 use App\Actions\Ordering\Order\UpdateStateToCreatingOrder;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
@@ -39,10 +41,15 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use Illuminate\Support\Facades\Route;
 
+Route::name('transaction.')->prefix('transaction')->group(function () {
+    Route::delete('{transaction:id}', DeleteTransaction::class)->name('delete')->withoutScopedBindings();
+});
+
+
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('update', UpdateOrder::class)->name('update');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
-
+    Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
 
     Route::name('attachment.')->prefix('attachment')->group(function () {
         Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inOrder'])->name('attach');
@@ -51,13 +58,13 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
         Route::patch('{transaction:id}', UpdateTransaction::class)->name('update')->withoutScopedBindings();
-        Route::delete('{transaction:id}', DeleteTransaction::class)->name('delete')->withoutScopedBindings();
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', UpdateStateToCreatingOrder::class)->name('creating');
         Route::patch('submitted', UpdateOrderStateToSubmitted::class)->name('submitted');
+        Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateStateToHandlingOrder::class)->name('handling');
         Route::patch('packed', UpdateStateToPackedOrder::class)->name('packed');

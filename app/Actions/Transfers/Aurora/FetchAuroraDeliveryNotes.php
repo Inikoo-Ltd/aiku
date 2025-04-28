@@ -8,6 +8,7 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress;
@@ -69,7 +70,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             //                return null;
             //            }
 
-            if (in_array('transactions', $this->with) or in_array('full', $this->with) or  $forceWithTransactions) {
+            if (in_array('transactions', $this->with) || in_array('full', $this->with) ||  $forceWithTransactions) {
                 $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
             }
 
@@ -144,6 +145,8 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             FetchAuroraDeliveryNoteItems::run($organisationSource, $auroraData->{'Inventory Transaction Key'}, $deliveryNote);
         }
         $deliveryNote->deliveryNoteItems()->whereIn('id', array_keys($transactionsToDelete))->delete();
+
+        DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
 
         DB::connection('aurora')->table('Delivery Note Dimension')
             ->where('Delivery Note Key', $sourceData[1])

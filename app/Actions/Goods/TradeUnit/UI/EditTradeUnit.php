@@ -9,18 +9,16 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\Goods\HasGoodsAuthorisation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
-use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditTradeUnit extends GrpAction
+class EditTradeUnit extends OrgAction
 {
     use HasGoodsAuthorisation;
 
-    private Group $parent;
 
     public function handle(TradeUnit $tradeUnit): TradeUnit
     {
@@ -29,8 +27,7 @@ class EditTradeUnit extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): TradeUnit
     {
-        $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup(group(), $request);
         return $this->handle($tradeUnit);
     }
 
@@ -133,16 +130,14 @@ class EditTradeUnit extends GrpAction
         }
 
 
-        return match ($routeName) {
-            'grp.goods.trade-units.edit' => [
-                'label' => $tradeUnit->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->slug
-                    ]
+        return [
+            'label' => $tradeUnit->name,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->slug
                 ]
-            ],
-        };
+            ]
+        ];
     }
 }

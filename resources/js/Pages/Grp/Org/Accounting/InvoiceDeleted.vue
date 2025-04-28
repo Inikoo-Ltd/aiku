@@ -42,7 +42,7 @@ const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChan
 
 // import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
 import { Address } from '@/types/PureComponent/Address'
 import { Icon } from '@/types/Utils/Icon'
@@ -63,7 +63,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}
@@ -96,6 +96,7 @@ const props = defineProps<{
     order_summary: FieldOrderSummary[][]
     recurring_bill_route: routeType
     invoice: InvoiceResource
+    invoice_transactions?: {}
     items: {}
     payments: {}
     details: {}
@@ -113,6 +114,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         items: TableInvoiceTransactions,
+        invoice_transactions: TableInvoiceTransactions,
         payments: TablePayments,
         details: ModelDetails,
         history: ModelChangelog,

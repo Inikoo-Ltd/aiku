@@ -7,7 +7,6 @@
 <script setup lang="ts">
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { useCopyText } from '@/Composables/useCopyText'
 import { faExternalLink, faLink, faPencil } from '@fal'
 import { ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
@@ -15,8 +14,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faExternalLink, faLink)
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from 'laravel-vue-i18n'
-import { data } from '@/Components/CMS/Website/Product/ProductTemplates/Product1/Descriptor'
 
 const props = defineProps<{
     data: {

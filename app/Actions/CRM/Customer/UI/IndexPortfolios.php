@@ -105,20 +105,6 @@ class IndexPortfolios extends OrgAction
                             'title'       => __("No portfolios found"),
                             'description' => __("You can add your portfolio 🤷🏽‍♂️"),
                             'count'       => $parent->stats->number_customer_clients,
-                            'action'      => [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new portfolio'),
-                                'label'   => __('portfolio'),
-                                'route'   => [
-                                    'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.create',
-                                    'parameters' => [
-                                        'organisation' => $parent->organisation->slug,
-                                        'shop'         => $parent->shop->slug,
-                                        'customer'     => $parent->slug
-                                    ]
-                                ]
-                            ]
                         ],
                         default => null
                     }

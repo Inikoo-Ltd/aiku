@@ -63,6 +63,7 @@ class UpdateInvoice extends OrgAction
 
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
 
+
         if (count($changes) > 0) {
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
@@ -83,7 +84,21 @@ class UpdateInvoice extends OrgAction
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
             GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
 
-            InvoiceRecordSearch::dispatch($invoice);
+            if (Arr::hasAny($changes, [
+                'reference',
+                'total_amount',
+                'type',
+                'date',
+                'currency_id',
+                'in_process',
+                'slug',
+                'customer_name',
+                'tax_number',
+                'tax_number_valid'
+
+            ])) {
+                InvoiceRecordSearch::dispatch($invoice);
+            }
         }
 
         return $invoice;
@@ -123,19 +138,18 @@ class UpdateInvoice extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['external_invoicer_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['currency_id']          = ['sometimes', 'required', 'exists:currencies,id'];
-            $rules['net_amount']           = ['sometimes', 'required', 'numeric'];
-            $rules['total_amount']         = ['sometimes', 'required', 'numeric'];
-            $rules['gross_amount']         = ['sometimes', 'required', 'numeric'];
-            $rules['rental_amount']        = ['sometimes', 'required', 'numeric'];
-            $rules['goods_amount']         = ['sometimes', 'required', 'numeric'];
-            $rules['services_amount']      = ['sometimes', 'required', 'numeric'];
-            $rules['tax_amount']           = ['sometimes', 'required', 'numeric'];
-            $rules['footer']               = ['sometimes', 'string'];
-            $rules['data']                 = ['sometimes', 'array'];
-
-
+            $rules['external_invoicer_id']               = ['sometimes', 'nullable', 'integer'];
+            $rules['currency_id']                        = ['sometimes', 'required', 'exists:currencies,id'];
+            $rules['net_amount']                         = ['sometimes', 'required', 'numeric'];
+            $rules['total_amount']                       = ['sometimes', 'required', 'numeric'];
+            $rules['gross_amount']                       = ['sometimes', 'required', 'numeric'];
+            $rules['rental_amount']                      = ['sometimes', 'required', 'numeric'];
+            $rules['goods_amount']                       = ['sometimes', 'required', 'numeric'];
+            $rules['services_amount']                    = ['sometimes', 'required', 'numeric'];
+            $rules['tax_amount']                         = ['sometimes', 'required', 'numeric'];
+            $rules['footer']                             = ['sometimes', 'string'];
+            $rules['data']                               = ['sometimes', 'array'];
+            $rules['original_invoice_id']                = ['sometimes', 'nullable', 'integer'];
             $rules['is_vip']                             = ['sometimes', 'boolean'];
             $rules['as_organisation_id']                 = ['sometimes', 'nullable', 'integer'];
             $rules['as_employee_id']                     = ['sometimes', 'nullable', 'integer'];
@@ -143,14 +157,24 @@ class UpdateInvoice extends OrgAction
             $rules['deleted_at']                         = ['sometimes', 'nullable', 'date'];
             $rules['deleted_note']                       = ['sometimes', 'string'];
             $rules['deleted_from_deleted_invoice_fetch'] = ['sometimes', 'boolean'];
+            $rules['order_id']                           = ['sometimes', 'nullable', 'integer'];
             $rules['deleted_by']                         = ['sometimes', 'nullable', 'integer'];
-            $rules['reference']                          = [
+            $rules['customer_name']                      = ['sometimes', 'nullable', 'string'];
+            $rules['customer_contact_name']              = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number']                         = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number_status']                  = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number_valid']                   = ['sometimes', 'nullable', 'boolean'];
+            $rules['identity_document_type']             = ['sometimes', 'nullable', 'string'];
+            $rules['identity_document_number']           = ['sometimes', 'nullable', 'string'];
+
+
+            $rules['reference'] = [
                 'sometimes',
                 'string',
                 'max:64',
             ];
-            $rules                                       = $this->orderNoStrictFields($rules);
-            $rules                                       = $this->noStrictUpdateRules($rules);
+            $rules              = $this->orderNoStrictFields($rules);
+            $rules              = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

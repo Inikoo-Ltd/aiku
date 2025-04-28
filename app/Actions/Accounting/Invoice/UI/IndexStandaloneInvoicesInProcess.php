@@ -55,7 +55,7 @@ class IndexStandaloneInvoicesInProcess extends OrgAction
                 'invoices.updated_at',
                 'invoices.in_process',
                 'invoices.slug',
-                'invoices.invoice_id',
+                'invoices.original_invoice_id',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'shops.name as shop_name',
@@ -75,9 +75,9 @@ class IndexStandaloneInvoicesInProcess extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $fulfilmentCustomer) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)

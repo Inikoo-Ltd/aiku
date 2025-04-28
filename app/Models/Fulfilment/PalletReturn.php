@@ -85,13 +85,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string|null $delete_comment
+ * @property string|null $deleted_note
  * @property bool $is_collection
  * @property int|null $invoice_id
  * @property int|null $recurring_bill_id
  * @property int|null $shopify_user_id
  * @property int|null $platform_id
  * @property string|null $collection_notes
+ * @property string|null $estimated_delivery_date
+ * @property int|null $deleted_by
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses

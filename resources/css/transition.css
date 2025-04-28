@@ -12,7 +12,7 @@
 
 /* Transition name="headlessui" */
 .headlessui-enter-active {
-    transition: all 0.2s ease-out;
+    transition: all 0.15s ease-out;
 }
 .headlessui-enter-from {
     transform: translateY(4px);
@@ -23,7 +23,7 @@
     opacity: 100;
 }
 .headlessui-leave-active {
-    transition: all 0.15s ease-in;
+    transition: all 0.1s ease-in;
 }
 .headlessui-leave-from {
     transform: translateY(0);
@@ -153,6 +153,22 @@
     transform: translateY(100%);
     scale: 0.1;
     opacity: 0;
+}
+
+/* Transition name="spin-to-up" */
+.spin-to-up-enter-active,
+.spin-to-up-leave-active {
+    transition: all 0.1s ease;
+}
+.spin-to-up-enter-from{
+    position: absolute;
+    opacity: 0;
+    transform: translateY(100%);
+}
+.spin-to-up-leave-to {
+    position: absolute;
+    opacity: 100;
+    transform: translateY(-100%);
 }
 
 /* Transition name="spin-to-down" */

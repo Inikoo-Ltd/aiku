@@ -30,12 +30,54 @@ enum DateIntervalEnum: string
     case YESTERDAY = 'ld';
 
 
+    public static function labels(): array
+    {
+        return [
+            'all' => __('All'),
+            '1y'  => __('1 Year'),
+            '1q'  => __('1 Quarter'),
+            '1m'  => __('1 Month'),
+            '1w'  => __('1 Week'),
+            '3d'  => __('3 Days'),
+            'ytd' => __('Year to Day'),
+            'qtd' => __('Quarter to Day'),
+            'mtd' => __('Month to Day'),
+            'wtd' => __('Week to Day'),
+            'tdy' => __('Today'),
+            'lm'  => __('Last Month'),
+            'lw'  => __('Last Week'),
+            'ld'  => __('Yesterday'),
+        ];
+    }
+
+    public static function shortLabels(): array
+    {
+        return [
+            'all' => __('All'),
+            '1y'  => __('1y'),
+            '1q'  => __('1q'),
+            '1m'  => __('1m'),
+            '1w'  => __('1w'),
+            '3d'  => __('3d'),
+            'ytd' => __('YTD'),
+            'qtd' => __('QTD'),
+            'mtd' => __('MTD'),
+            'wtd' => __('WTD'),
+            'tdy' => __('Today'),
+            'lm'  => __('LM'),
+            'lw'  => __('LW'),
+            'ld'  => __('YDAY'),
+
+        ];
+    }
+
+
     public static function lastYearValues(): array
     {
         $intervals = self::values();
         unset($intervals[0]); // This only work if all is the first value
-        return $intervals;
 
+        return $intervals;
     }
 
 
@@ -77,6 +119,17 @@ enum DateIntervalEnum: string
             'ld' => $query->whereBetween($column, [now()->subDay()->startOfDay()->subYear()->startOfDay(), now()->subDay()->endOfDay()->subYear()->endOfDay()]),
             default => $query,
         };
+    }
+
+    public static function allExceptHistorical(): array
+    {
+        return array_map(
+            fn ($case) => $case->value,
+            array_values(array_filter(
+                self::cases(),
+                fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
+            ))
+        );
     }
 
 

@@ -80,8 +80,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string|null $delete_comment
+ * @property string|null $deleted_note
  * @property string|null $source_id
+ * @property int|null $deleted_by
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
  * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment

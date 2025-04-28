@@ -29,6 +29,7 @@ class FamilyWebsiteResource extends JsonResource
             'image_id'   => $this->image_id,
             'code'       => $this->code,
             'name'       => $this->name,
+            'department' => $this->parent?->name,
             'state'      => $this->state,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

@@ -11,8 +11,8 @@
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaPlatformDropshippingOrders;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaDropshippingPortfolio;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaDropshippingProducts;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
+use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
@@ -22,8 +22,8 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     });
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
-        Route::get('my-portfolio', [IndexRetinaDropshippingPortfolio::class, 'inPupil'])->name('index');
-        Route::get('products', [IndexRetinaDropshippingProducts::class, 'inPupil'])->name('products.index');
+        Route::get('my-portfolio', [IndexRetinaPortfolios::class, 'inPupil'])->name('index');
+        Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPupil'])->name('products.index');
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {

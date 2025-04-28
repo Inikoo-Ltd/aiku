@@ -16,7 +16,7 @@ import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import { trans } from 'laravel-vue-i18n'
 import { ref } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import ModalAddress from '@/Components/Utils/ModalAddress.vue'
+import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt)
@@ -126,7 +126,7 @@ const isModalAddress = ref(false)
 
     </div>
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <ModalAddress
+        <CustomerAddressManagementModal
             :addresses="data.addresses"
             :updateRoute="data.address_update_route"
         />

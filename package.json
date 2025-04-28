@@ -3,8 +3,8 @@
     "scripts": {
         "dev": "npx concurrently -c \"#06b6d4,#6366f1,#a3e635,#fdba74\" \"npm run dev.aiku-public\" \"npm run dev.grp\" \"npm run dev.iris\" \"npm run dev.retina\" --names=public,grp,iris,retina",
         "build": "npm run build.grp && npm run build.aiku-public && npm run build.iris && npm run build.retina && npm run build.pupil",
-        "dev.grp": "vite --config vite.grp.config.js",
-        "build.grp": "vite build --config vite.grp.config.js",
+        "dev.grp": "vite --config vite.grp.config.mjs",
+        "build.grp": "vite build --config vite.grp.config.mjs",
         "dev.aiku-public": "vite --config vite.aiku-public.config.js",
         "build.aiku-public": "vite build --config vite.aiku-public.config.js",
         "dev.iris": "vite --config vite.iris.config.js",
@@ -17,26 +17,26 @@
         "postinstall": "patch-package"
     },
     "devDependencies": {
-        "@codecov/vite-plugin": "^0.0.1-beta.6",
+        "@codecov/vite-plugin": "^1.9.0",
         "@prettier/plugin-php": "^0.19.2",
         "@tailwindcss/forms": "^0.5.2",
         "@types/lodash-es": "^4.17.7",
         "@types/qs": "^6.9.7",
         "@types/ziggy-js": "^1.3.2",
-        "@vitejs/plugin-vue": "^4.2.3",
+        "@vitejs/plugin-vue": "^5.2.3",
         "@vue/server-renderer": "^3.2.31",
         "autoprefixer": "^10.4.2",
         "axios": "^1.7",
         "chokidar": "^4.0.3",
         "cypress": "^13.6.2",
-        "laravel-vite-plugin": "^0.7.7",
+        "laravel-vite-plugin": "^1.2.0",
         "lodash": "^4.17.19",
         "postcss": "^8.4.6",
         "prettier": "^2.8.0",
         "resize-observer-polyfill": "^1.5.1",
         "sass": "^1.83.0",
         "tailwindcss": "^3.1.0",
-        "vite": "^4.5.5",
+        "vite": "^6.2.6",
         "vue": "^3.4.27"
     },
     "dependencies": {
@@ -135,5 +135,6 @@
         "vue3-popper": "^1.5.0",
         "vuedraggable": "^4.1.0",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
-    }
+    },
+    "web-types": "./web-types.json"
 }

@@ -8,8 +8,8 @@
 
 namespace App\Actions\Inventory\UI;
 
-use App\Actions\Inventory\HasInventoryAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\SupplyChain\Agent;
@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowAgentInventoryDashboard extends OrgAction
 {
     use HasInventoryStats;
-    use HasInventoryAuthorisation;
+    use WithInventoryAuthorisation;
 
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
@@ -34,7 +34,6 @@ class ShowAgentInventoryDashboard extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-
         /** @var Agent $agent */
         $agent = $this->organisation->agent;
 
@@ -44,11 +43,11 @@ class ShowAgentInventoryDashboard extends OrgAction
         return Inertia::render(
             'Org/Inventory/InventoryDashboard',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'          => __('Inventory'),
-                'pageHead'       => [
-                    'title'          => __('Inventory'),
-                    'icon'           => [
+                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'        => __('Inventory'),
+                'pageHead'     => [
+                    'title'     => __('Inventory'),
+                    'icon'      => [
                         'icon' => 'fal fa-pallet-alt'
                     ],
                     'iconRight' => [
@@ -56,43 +55,32 @@ class ShowAgentInventoryDashboard extends OrgAction
                         'title' => __('inventory')
                     ],
                 ],
-                'flatTreeMaps'   => [
+                'flatTreeMaps' => [
                     [
 
                         [
-                            'name'          => 'SKUs',
-                            'icon'          => ['fal', 'fa-box'],
-                            'description'   => __('current'),
-                            'route'          => [
+                            'name'        => 'SKUs',
+                            'icon'        => ['fal', 'fa-box'],
+                            'description' => __('current'),
+                            'route'       => [
                                 'name'       => 'grp.org.warehouses.show.agent_inventory.supplier_products.index',
                                 'parameters' => $routeParameters
                             ],
-                            'index' => [
+                            'index'       => [
                                 'number' => $this->organisation->agent->stats->number_current_supplier_products
                             ],
-                            'sub_data'  => $this->getDashboardStats($agent)['supplier_products']['cases']
+                            'sub_data'    => $this->getDashboardStats($agent)['supplier_products']['cases']
                         ]
                     ]
                 ],
-                'dashboard' => $this->getDashboard($agent),
-
+                'dashboard'    => []
             ]
         );
     }
 
-    public function getDashboard(Agent $agent): array
-    {
-
-
-        $dashboard = [];
-
-        return $dashboard;
-    }
 
     public function getDashboardStats(Agent $agent): array
     {
-
-
         $stats = [];
 
         $stats['supplier_products'] = [
@@ -101,7 +89,6 @@ class ShowAgentInventoryDashboard extends OrgAction
         ];
 
         foreach (SupplierProductStateEnum::cases() as $case) {
-
             $count = SupplierProductStateEnum::count($agent)[$case->value];
 
             $stats['supplier_products']['cases'][] = [

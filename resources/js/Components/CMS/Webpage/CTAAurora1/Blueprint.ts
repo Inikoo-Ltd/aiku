@@ -23,6 +23,16 @@ export const blueprint = [
 				label: "Border",
 				type: "border",
 			},
+			{
+				key: ["shadow"],
+				label : "Shadow",
+				type: "shadow",
+			},
+			{
+				key: ["shadowColor"],
+				label : "Shadow Color",
+				type: "color",
+			},
 		],
 	},
 	{

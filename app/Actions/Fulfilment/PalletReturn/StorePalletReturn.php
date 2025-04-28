@@ -47,7 +47,6 @@ class StorePalletReturn extends OrgAction
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): PalletReturn
     {
         if (!Arr::exists($modelData, 'tax_category_id')) {
-
             data_set(
                 $modelData,
                 'tax_category_id',
@@ -58,7 +57,6 @@ class StorePalletReturn extends OrgAction
                     deliveryAddress: $fulfilmentCustomer->customer->address,
                 )->id
             );
-
         }
 
         data_set($modelData, 'currency_id', $fulfilmentCustomer->fulfilment->shop->currency_id, overwrite: false);
@@ -69,6 +67,13 @@ class StorePalletReturn extends OrgAction
         $palletReturn = $fulfilmentCustomer->palletReturns()->create($modelData);
         $palletReturn->stats()->create();
 
+        if ($palletReturn->fulfilmentCustomer->currentRecurringBill) {
+            $recurringBill = $palletReturn->fulfilmentCustomer->currentRecurringBill;
+
+            $palletReturn->update([
+                'recurring_bill_id' => $recurringBill->id
+            ]);
+        }
 
         $palletReturn = $this->attachAddressToModel(
             model: $palletReturn,
@@ -132,7 +137,7 @@ class StorePalletReturn extends OrgAction
                     ->where('organisation_id', $this->organisation->id),
             ],
             'customer_notes' => ['sometimes', 'nullable', 'string'],
-            'platform_id' => ['sometimes', 'nullable', 'integer', 'exists:platforms,id']
+            'platform_id'    => ['sometimes', 'nullable', 'integer', 'exists:platforms,id']
         ];
     }
 
@@ -174,7 +179,7 @@ class StorePalletReturn extends OrgAction
 
     public function actionWithDropshipping(FulfilmentCustomer $fulfilmentCustomer, $modelData): PalletReturn
     {
-        $this->action          = true;
+        $this->action           = true;
         $this->withDropshipping = true;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $modelData);
         $this->setRawAttributes($modelData);

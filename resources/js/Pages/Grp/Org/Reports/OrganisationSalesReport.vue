@@ -35,7 +35,7 @@ import ToggleSwitch from "primevue/toggleswitch"
 import { faSortDown, faSortUp } from "@fas"
 import Select from "primevue/select"
 import { Link } from "@inertiajs/vue3"
-import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay)
 

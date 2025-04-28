@@ -13,6 +13,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -22,7 +23,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<div class="relative" :style="getStyles(modelValue.container.properties)">
+	<div class="relative" :style="getStyles(modelValue.container.properties,screenType)">
 		<div
 			@click="
 				() =>
@@ -54,7 +55,15 @@ const emits = defineEmits<{
 					v-if="modelValue?.text"
 					v-model="modelValue.text"
 					@update:modelValue="() => emits('autoSave')"
-					class="mb-4" />
+					class="mb-4"
+					:uploadImageRoute="{
+                        name: webpageData.images_upload_route.name,
+                        parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                        }
+                    }"
+				/>
           <div class="flex justify-center">
 				<div
 					typeof="button"

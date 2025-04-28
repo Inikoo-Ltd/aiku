@@ -246,7 +246,13 @@ class ShowCustomer extends OrgAction
             ),
 
             'grp.org.shops.show.crm.customers.show',
-            'grp.org.shops.show.crm.customers.edit'
+            'grp.org.shops.show.crm.customers.edit',
+            'grp.org.shops.show.crm.customers.show.platforms.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show',
+            'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.orders.index'
             => array_merge(
                 ShowShop::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'shop'])),
                 $headCrumb(
@@ -284,7 +290,7 @@ class ShowCustomer extends OrgAction
 
     public function getNext(Customer $customer, ActionRequest $request): ?array
     {
-        $next = Customer::where('slug', '>', $customer->slug)->when(true, function ($query) use ($customer, $request) {
+        $next = Customer::where('slug', '>', $customer->slug)->when(true, function ($query) {
             if ($this->parent instanceof Organisation) {
                 $query->where('customers.organisation_id', $this->parent->id);
             } elseif ($this->parent instanceof Shop) {

@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\WarehouseArea\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateWarehouseArea extends OrgAction
 {
+    use WithWarehouseEditAuthorisation;
+
     public function handle(Warehouse $warehouse, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -76,20 +79,12 @@ class CreateWarehouseArea extends OrgAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
-    }
-
-
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request);
 
         return $this->handle($warehouse, $request);
     }
-
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {

@@ -30,6 +30,8 @@ class FamilyResource extends JsonResource
             'code'       => $this->code,
             'name'       => $this->name,
             'state'      => $this->state,
+            'description' => $this->description,
+            'image'       => $this->image,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

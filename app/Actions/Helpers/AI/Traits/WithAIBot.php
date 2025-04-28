@@ -14,6 +14,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Response;
 use App\Models\Helpers\Chunk;
 use Cloudstudio\Ollama\Facades\Ollama;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -24,7 +25,7 @@ trait WithAIBot
         return config("llmdriver.drivers.$driver.$key");
     }
 
-    public function get_embedding_size(string $embedding_driver): string
+    public function getEmbeddingSize(string $embedding_driver): string
     {
         $embeddingModel = $this->driverHelper($embedding_driver, 'models.embedding_model');
 
@@ -92,70 +93,94 @@ trait WithAIBot
         return $dotProduct / ($magnitudeA * $magnitudeB);
     }
 
-    public function promptTemplate($context, $question): string
-    {
-        return "
-        **Role**
-        You are a Chatbot operating in a Retrieval-Augmented Generation (RAG) system. Your responsibility is to generate an accurate response to the user's query based strictly on the provided context.
-
-        **Instructions**
-        - If the context does not contain enough information to answer the question, respond politely, for example: \"I'm sorry, but I don't have enough information to answer that question based on what I know.\"
-        - Do not include the question or context in your response.
-        - Avoid using phrases like \"Based on the provided context\" in your response.
-
-        **CONTEXT (JSON)**
-        {$context}
-        
-        **RESPONSE**
-        Provide a direct, concise, and accurate answer using only the information in the context above.
-
-        **QUESTION**
-        {$question}
-
-        ";
-    }
-
-    public function simplePrompt($question): string
-    {
-        return "
-        **Role**
-        You are a Chatbot Helpdesk Agent. Provide concise and accurate responses to user queries.
-
-        **RESPONSE**
-        Provide a direct, concise, and accurate answer. Avoid being verbose and get straight to the point, but ensure the response feels human.
-
-        **QUESTION**
-        {$question}
-        ";
-    }
-
-    public function askDeepseek($question): \Symfony\Component\HttpFoundation\StreamedResponse
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function askActionDeepseek(array $messages, $maxTokens = 800, $responseType = 'json_object', $stream = true)
     {
         $apiKey = config('askbot-laravel.deepseek_api_key');
-        $baseUrl = config('askbot-laravel.deepseek_api_url');
-        $model = config('askbot-laravel.model');
+        $url    = config('askbot-laravel.deepseek_api_url');
+        $model  = config('askbot-laravel.model');
+
+        $client = new Client();
 
         $payload = [
-            'model' => $model,
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a helpful assistant'],
-                ['role' => 'user', 'content' => $question],
-            ],
-            'stream' => true,
+            'model'           => $model,
+            'messages'        => $messages,
+            'stream'          => $stream,
+            'max_tokens'      => $maxTokens,
+            'response_format' => [
+                'type' => $responseType
+            ]
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer '.$apiKey,
+            'Content-Type'  => 'application/json',
+            'Accept'        => $stream ? 'text/event-stream' : 'application/json',
+        ];
+
+        $response = $client->post($url, [
+            'json'    => $payload,
+            'headers' => $headers,
+        ]);
+
+        if ($stream) {
+            $stream = $response->getBody();
+            $result = '';
+            while (!$stream->eof()) {
+                $chunk = $stream->read(1024);
+                $lines = explode("\n", $chunk);
+
+                foreach ($lines as $line) {
+                    if (str_starts_with($line, 'data:')) {
+                        $data        = trim(substr($line, 5));
+                        $decodedData = json_decode($data, true);
+                        if ($decodedData && isset($decodedData['choices'][0]['delta']['content'])) {
+                            // Process the decoded data as needed
+                            $result .= $decodedData['choices'][0]['delta']['content'];
+                        }
+                    }
+                }
+                flush();
+            }
+
+            return $result;
+        } else {
+            $body = $response->getBody();
+            $data = json_decode($body, true);
+
+            return Arr::get($data, 'choices.0.message.content', '');
+        }
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function askDeepseek(array $messages): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $apiKey  = config('askbot-laravel.deepseek_api_key');
+        $baseUrl = config('askbot-laravel.deepseek_api_url');
+        $model   = config('askbot-laravel.model');
+
+        $payload = [
+            'model'      => $model,
+            'messages'   => $messages,
+            'stream'     => true,
             'max_tokens' => 800
         ];
 
         $client = new Client([
             'base_uri' => $baseUrl,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-                'Accept' => 'text/event-stream',
+            'headers'  => [
+                'Authorization' => 'Bearer '.$apiKey,
+                'Content-Type'  => 'application/json',
+                'Accept'        => 'text/event-stream',
             ],
         ]);
 
         $response = $client->post('', [
-            'json' => $payload,
+            'json'   => $payload,
             'stream' => true,
         ]);
 
@@ -163,45 +188,48 @@ trait WithAIBot
             $stream = $response->getBody();
 
             while (!$stream->eof()) {
-                $chunk = $stream->read(1024);
+                $chunk = $stream->read(32);
                 echo $chunk;
                 ob_flush();
                 flush();
             }
         }, 200, [
-            'Content-Type' => 'text/event-stream',
+            'Content-Type'  => 'text/event-stream',
             'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
+            'Connection'    => 'keep-alive',
         ]);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function askLlama($question): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $response = Ollama::model(config('ollama-laravel.model'))
-        ->prompt($question)
-        ->stream(true)
-        ->ask();
+            ->prompt($question)
+            ->stream(true)
+            ->ask();
 
         return Response::stream(function () use ($response) {
             Ollama::processStream($response->getBody(), function ($data) {
-                echo 'data: ' . json_encode(
+                echo 'data: '.json_encode(
                     [
-                        'choices' => [
-                            [
-                                'delta' => [
-                                    'content' => $data['response']
+                            'choices' => [
+                                [
+                                    'delta' => [
+                                        'content' => $data['response']
+                                    ]
                                 ]
                             ]
                         ]
-                    ]
-                ) . "\n\n";
+                )."\n\n";
                 ob_flush();
                 flush();
             });
         }, 200, [
-            'Content-Type' => 'text/event-stream',
+            'Content-Type'  => 'text/event-stream',
             'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
+            'Connection'    => 'keep-alive',
         ]);
     }
 

@@ -6,8 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Invoice\UI\IndexInvoices;
-use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
+use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInGroup;
+use App\Actions\Accounting\Invoice\UI\IndexRefundsInGroup;
+use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
@@ -27,7 +29,7 @@ use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\PostRoom\UI\IndexPostRooms;
 use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
-use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
@@ -44,12 +46,11 @@ use App\Actions\HumanResources\JobPosition\UI\IndexJobPositions;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\Inventory\Location\UI\IndexLocations;
-use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
-use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\Warehouse\UI\IndexWarehouses;
 use App\Actions\Inventory\WarehouseArea\UI\IndexWarehouseAreas;
-use App\Actions\Ordering\Order\UI\IndexOrders;
+use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInGroup;
+use App\Actions\Ordering\Order\UI\IndexOrdersInGroup;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
@@ -90,7 +91,6 @@ Route::name('catalogue.')->prefix('catalogue')->group(function () {
 });
 
 Route::name('billables.')->prefix('billables')->group(function () {
-    // Route::get('/shipping', [IndexShippingZoneSchemas::class, 'inGroup'])->name('shipping.index');
     Route::get('/rentals', [IndexFulfilmentRentals::class, 'inGroup'])->name('rentals.index');
     Route::get('/charges', [IndexCharges::class, 'inGroup'])->name('charges.index');
     Route::get('/services', [IndexFulfilmentServices::class, 'inGroup'])->name('services.index');
@@ -108,22 +108,20 @@ Route::name('web.')->prefix('web')->group(function () {
 });
 
 Route::name('crm.')->prefix('crm')->group(function () {
-    Route::get('/customers', [IndexCustomers::class, 'inGroup'])->name('customers.index');
+    Route::get('/customers', [IndexCustomersInOverview::class, 'inGroup'])->name('customers.index');
     Route::get('/web-users', [IndexWebUsers::class, 'inGroup'])->name('web-users.index');
     Route::get('/prospects', [IndexProspects::class, 'inGroup'])->name('prospects.index');
 });
 
 Route::name('ordering.')->prefix('ordering')->group(function () {
-    Route::get('/orders', [IndexOrders::class, 'inGroup'])->name('orders.index');
+    Route::get('/orders-in-basket', IndexOrdersInBasketInGroup::class)->name('orders_in_basket.index');
+    Route::get('/orders', IndexOrdersInGroup::class)->name('orders.index');
     Route::get('/purges', [IndexPurges::class, 'inGroup'])->name('purges.index');
-    Route::get('/invoices', [IndexInvoices::class, 'inGroup'])->name('invoices.index');
     Route::get('/delivery-notes', IndexDeliveryNotesInGroup::class)->name('delivery_notes.index');
-    Route::get('/transactions', [IndexInvoiceTransactions::class, 'inGroup'])->name('transactions.index');
+    Route::get('/transactions', IndexInvoiceTransactionsInGroup::class)->name('transactions.index');
 });
 
 Route::name('inventory.')->prefix('inventory')->group(function () {
-    Route::get('/org-stocks', [IndexOrgStocks::class, 'inGroup'])->name('org-stocks.index');
-    Route::get('/org-stock-families', [IndexOrgStockFamilies::class, 'inGroup'])->name('org-stock-families.index');
     Route::get('/org-stock-movements', [IndexOrgStockMovements::class, 'inGroup'])->name('org-stock-movements.index');
     Route::get('/warehouses', [IndexWarehouses::class, 'inGroup'])->name('warehouses.index');
     Route::get('/warehouses-areas', [IndexWarehouseAreas::class, 'inGroup'])->name('warehouses-areas.index');
@@ -134,8 +132,6 @@ Route::name('fulfilment.')->prefix('fulfilment')->group(function () {
     Route::get('/pallets', [IndexPallets::class, 'inGroup'])->name('pallets.index');
     Route::get('/stored-items', [IndexStoredItems::class, 'inGroup'])->name('stored-items.index');
     Route::get('/pallet-deliveries', [IndexPalletDeliveries::class, 'inGroup'])->name('pallet-deliveries.index');
-    // Route::get('/artefacts', [IndexArtefacts::class, 'inGroup'])->name('artefacts.index');
-    // Route::get('/manufacture-tasks', [IndexManufactureTasks::class, 'inGroup'])->name('manufacture-tasks.index');
 });
 
 Route::name('procurement.')->prefix('procurement')->group(function () {
@@ -149,6 +145,9 @@ Route::name('accounting.')->prefix('accounting')->group(function () {
     Route::get('/payment-accounts', [IndexPaymentAccounts::class, 'inGroup'])->name('payment-accounts.index');
     Route::get('/payments', [IndexPayments::class, 'inGroup'])->name('payments.index');
     Route::get('/customer-balances', [IndexCustomerBalances::class, 'inGroup'])->name('customer-balances.index');
+    Route::get('/invoices', IndexInvoicesInGroup::class)->name('invoices.index');
+    Route::get('/deleted-invoices', [IndexDeletedInvoices::class, 'inGroup'])->name('deleted_invoices.index');
+    Route::get('/refunds', IndexRefundsInGroup::class)->name('refunds.index');
 });
 
 

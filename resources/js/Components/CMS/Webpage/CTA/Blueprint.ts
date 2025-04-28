@@ -9,6 +9,7 @@ export default {
 				{
 					key : ['source'],
 					label: "Image",
+					useIn : ["desktop"],
 					type: "upload_image",
 				},
 				{
@@ -19,6 +20,7 @@ export default {
 				{
 					key: ["properties", "object_fit"],
 					label: "Object Image",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "select",
 					props_data: {
 						placeholder: "Object",
@@ -159,28 +161,42 @@ export default {
 			replaceForm: [
 				{
 					key: ["background"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label :"Background",
 					type: "background",
 					
 				},
 				{
 					key: ["padding"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Padding",
 					type: "padding",
 					
 				},
 				{
 					key: ["margin"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Margin",
 					type: "margin",
 					
 				},
 				{
 					key: ["border"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Border",
 					type: "border",
 					
 				},
+				{
+                    key: ["shadow"],
+                    label : "Shadow",
+                    type: "shadow",
+                },
+                {
+                    key: ["shadowColor"],
+                    label : "Shadow Color",
+                    type: "color",
+                },
 			],
 		},
 	],

@@ -109,12 +109,29 @@ class ShowFulfilmentCustomer extends OrgAction
                     [
                         'type'        => 'button',
                         'style'       => 'create',
-                        'tooltip'     => __('Create Return'),
-                        'label'       => __('Return'),
+                        'tooltip'     => __('Create Return (Whole pallet)'),
+                        'label'       => __('Return (Whole pallet)'),
                         'fullLoading' => true,
                         'route'       => [
                             'method'     => 'post',
                             'name'       => 'grp.models.fulfilment-customer.pallet-return.store',
+                            'parameters' => [
+                                'fulfilmentCustomer' => $fulfilmentCustomer->id
+                            ]
+                        ]
+                    ];
+            }
+            if ($fulfilmentCustomer->number_pallets_status_storing > 0) {
+                $additionalActions[] =
+                    [
+                        'type'        => 'button',
+                        'style'       => 'create',
+                        'tooltip'     => __('Create Return (Customer SKUs)'),
+                        'label'       => __('Return (SKUs)'),
+                        'fullLoading' => true,
+                        'route'       => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.fulfilment-customer.pallet-return-stored-items.store',
                             'parameters' => [
                                 'fulfilmentCustomer' => $fulfilmentCustomer->id
                             ]
@@ -266,7 +283,7 @@ class ShowFulfilmentCustomer extends OrgAction
         };
 
         if (Arr::get($routeParameters, 'pallet')) {
-            $pallet             = Pallet::where('slug', $routeParameters['pallet'])->first();
+            $pallet             = Pallet::where('slug', $routeParameters['pallet'])->withTrashed()->first();
             $fulfilmentCustomer = $pallet->fulfilmentCustomer->slug;
         } else {
             $fulfilmentCustomer = $routeParameters['fulfilmentCustomer'];

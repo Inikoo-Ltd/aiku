@@ -64,6 +64,7 @@ export interface AddressManagement {
     isCannotSelect: boolean 
     selected_delivery_addresses_id: number[]
     routes_list: {
+        switch_route: routeType
         pinned_route: routeType
         delete_route: routeType
         store_route: routeType

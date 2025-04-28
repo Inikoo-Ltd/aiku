@@ -18,7 +18,8 @@ class GetPaymentShowcase
 
     public function handle(Payment $payment): array
     {
-        $parent = $payment->invoices()->first() ?? $payment->orders()->first();
+        $parentResource = null;
+        $parent         = $payment->invoices()->first() ?? $payment->orders()->first();
         if ($parent instanceof Order) {
             $parentResource = OrderResource::make($parent);
         } elseif ($parent instanceof Invoice) {
@@ -26,13 +27,14 @@ class GetPaymentShowcase
         } else {
             $parentResource = null;
         }
+
         return [
-            'parent_type' => class_basename($parent),
-            'amount' => $payment->amount,
-            'state' => $payment->state,
-            'customer' => CustomerResource::make($payment->customer),
-            'parent_data' => $parentResource,
-            'currency' => CurrencyResource::make($payment->currency),
+            'parent_type'    => $parent ? class_basename($parent) : null,
+            'amount'         => $payment->amount,
+            'state'          => $payment->state,
+            'customer'       => CustomerResource::make($payment->customer),
+            'parent_data'    => $parentResource,
+            'currency'       => CurrencyResource::make($payment->currency),
             'paymentAccount' => PaymentAccountResource::make($payment->paymentAccount),
         ];
     }

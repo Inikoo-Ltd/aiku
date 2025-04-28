@@ -9,8 +9,10 @@
 namespace App\Actions\Traits;
 
 use App\Actions\Helpers\Address\Hydrators\AddressHydrateFixedUsage;
+use App\Models\Accounting\Invoice;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Address;
-use App\Models\SysAdmin\Group;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 
 trait WithFixedAddressActions
@@ -24,12 +26,10 @@ trait WithFixedAddressActions
     }
 
 
-    protected function createFixedAddress($model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
+    protected function createFixedAddress(Order|Invoice|DeliveryNote $model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
     {
         $groupId = $model->group_id;
-        if ($model instanceof Group) {
-            $groupId = $model->id;
-        }
+
         if (!$address = $this->findFixedAddress($addressTemplate, $fixedScope)) {
             $modelData = $addressTemplate->toArray();
             data_set($modelData, 'is_fixed', true);
@@ -67,7 +67,7 @@ trait WithFixedAddressActions
         return $address;
     }
 
-    protected function updateFixedAddress($model, Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
+    protected function updateFixedAddress(Order|Invoice|DeliveryNote $model, Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
     {
         if ($currentAddress->checksum != $addressData->getChecksum()) {
             $model->fixedAddresses()->detach($currentAddress->id);

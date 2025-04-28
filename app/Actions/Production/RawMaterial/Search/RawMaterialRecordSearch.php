@@ -8,7 +8,8 @@
 
 namespace App\Actions\Production\RawMaterial\Search;
 
-use App\Models\Ordering\Order;
+use App\Models\Goods\Stock;
+use App\Models\Production\RawMaterial;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RawMaterialRecordSearch
@@ -17,71 +18,64 @@ class RawMaterialRecordSearch
 
     public string $jobQueue = 'universal-search';
 
-    public function handle(Order $order): void
+    public function handle(RawMaterial $rawMaterial): void
     {
-        if ($order->trashed()) {
-            $order->universalSearch()->delete();
+        if ($rawMaterial->trashed()) {
+            $rawMaterial->universalSearch()->delete();
 
             return;
         }
 
-        $order->universalSearch()->updateOrCreate(
+        /** @var Stock $stock */
+        $stock = $rawMaterial->stock;
+
+        $rawMaterial->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $order->group_id,
-                'organisation_id'   => $order->organisation_id,
-                'organisation_slug' => $order->organisation->slug,
-                'shop_id'           => $order->shop_id,
-                'shop_slug'         => $order->shop->slug,
-                'customer_id'       => $order->customer_id,
-                'customer_slug'     => $order->customer->slug,
-                'sections'          => ['ordering'],
-                'haystack_tier_1'   => trim($order->reference . ' ' . $order->customer->name),
+                'group_id'          => $rawMaterial->group_id,
+                'organisation_id'   => $rawMaterial->organisation_id,
+                'organisation_slug' => $rawMaterial->organisation->slug,
+                'sections'          => ['productions'],
+                'haystack_tier_1'   => trim($rawMaterial->code . ' ' . $stock->code),
                 'result'            => [
                     'route'      => [
-                        'name'       => 'grp.org.shops.show.ordering.orders.show',
+                        'name'       => 'grp.org.productions.show.crafts.raw_materials.show',
                         'parameters' => [
-                            'organisation' => $order->organisation->slug,
-                            'shop'     => $order->shop->slug,
-                            'order'     => $order->slug,
+                            'organisation' => $rawMaterial->organisation->slug,
+                            'production'     => $rawMaterial->production->slug,
+                            'rawMaterial'     => $rawMaterial->slug,
                         ]
                     ],
                     'description' => [
-                        'label'     => $order->customer->name,
+                        'label'     => $stock->name . ' (' . $rawMaterial->description . ')',
                     ],
                     'code' => [
-                        'label' => $order->reference
+                        'label' => $rawMaterial->code
                     ],
                     'icon'  => [
-                        'icon' => 'fal fa-shopping-cart',
+                        'icon' => 'fal fa-drone',
                     ],
                     'meta'  => [
                         [
-                            'label'   => $order->state->labels()[$order->state->value],
+                            'label'   => $rawMaterial->state->labels()[$rawMaterial->state->value],
                             'tooltip' => __('State')
                         ],
                         [
-                            'label'   => $order->status->value,
-                            'tooltip' => __('Status')
+                            'label'   => $rawMaterial->stock_status->labels()[$rawMaterial->stock_status->value],
+                            'tooltip' => __('Stock Status')
                         ],
                         [
-                            'type'    => 'date',
-                            'label'   => $order->created_at,
-                            'tooltip' => __('Date')
+                            'label'   => $rawMaterial->type,
+                            'tooltip' => __('Type')
                         ],
                         [
-                            'type'      => 'currency',
-                            'label'     => __('Payment'),
-                            'code'      => $order->currency->code,
-                            'amount'    => $order->payment_amount,
-                            'tooltip'   => __('Payment')
+                            'label'   => $rawMaterial->unit->labels()[$rawMaterial->unit->value] . ' ' . $rawMaterial->unit_cost,
+                            'tooltip' => __('Stock (Units)')
                         ],
                         [
-                            'type'      => 'currency',
-                            'label'     => __('Net'),
-                            'code'      => $order->currency->code,
-                            'amount'    => $order->net_amount,
-                            'tooltip'   => __('Net')
+                            'type'      => 'number',
+                            'label'     => __('Quantity on Location') . ': ',
+                            'number'    => $rawMaterial->quantity_on_location,
                         ],
                     ]
                 ]

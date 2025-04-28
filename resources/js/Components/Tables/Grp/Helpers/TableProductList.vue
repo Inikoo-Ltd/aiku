@@ -118,7 +118,7 @@ const fetchProductList = async (url?: string) => {
     const data = response.data;
 
     if (url && optionsLinks.value?.next) {
-      products.value = [...products.value, ...data.data];
+      products.value = data.data;
     } else {
       resetProducts();
       products.value = data.data;
@@ -131,13 +131,13 @@ const fetchProductList = async (url?: string) => {
     if (!addedProductIds.value) {
       addedProductIds.value = new Set();
     }
-    data.data.forEach((product: any) => {
+   /*  data.data.forEach((product: any) => {
       if (product.purchase_order_id) {
         addedProductIds.value.add(product.purchase_order_id);
       }
-    });
+    }); */
 
-    emits("optionsList", products.value);
+    /* emits("optionsList", products.value); */
   } catch (error) {
     console.error("Error fetching product list:", error);
   } finally {
@@ -190,13 +190,14 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
           .post(
             route(data.route?.name || "#", {
               ...data.route?.parameters,
-              historicSupplierProduct: slotProps.data.historic_id,
+              historicAsset: slotProps.data.historic_id,
               orgStock: slotProps.data.org_stock_id,
             })
           );
 
         // Refresh list and update addedProductIds
-        await fetchProductList();
+        /* await fetchProductList(); */
+        
         addedProductIds.value.add(productId);
         iconStates.value[productId] = {
           increment: "fal fa-cloud",

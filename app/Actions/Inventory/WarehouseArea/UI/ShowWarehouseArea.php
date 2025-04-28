@@ -13,6 +13,7 @@ use App\Actions\Inventory\Location\UI\IndexLocations;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Inventory\WarehouseAreaTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\LocationResource;
@@ -28,21 +29,14 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehouseArea extends OrgAction
 {
     use WithActionButtons;
+    use WithWarehouseAuthorisation;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->maya) {
-            return true; //Auth pls
-        }
-        $this->canEdit   = $request->user()->authTo("inventory.{$this->warehouse->id}.edit");
-
-        return $request->user()->authTo("inventory.{$this->warehouse->id}.view");
-    }
 
     public function maya(Organisation $organisation, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->initialisation($organisation, $request)->withTab(WarehouseAreaTabsEnum::values());
+
         return $this->handle($warehouseArea);
     }
 
@@ -73,7 +67,7 @@ class ShowWarehouseArea extends OrgAction
                     'next'     => $this->getNext($warehouseArea, $request),
                 ],
                 'pageHead'                             => [
-                    'icon'      =>
+                    'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-map-signs'],
                             'title' => __('warehouse area')
@@ -98,7 +92,7 @@ class ShowWarehouseArea extends OrgAction
                         [
                             'name'     => trans_choice('location|locations', $warehouseArea->stats->number_locations),
                             'number'   => $warehouseArea->stats->number_locations,
-                            'route'     => [
+                            'route'    => [
                                 'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.show.locations.index',
                                 'parameters' => $request->route()->originalParameters()
                             ],
@@ -196,7 +190,7 @@ class ShowWarehouseArea extends OrgAction
 
     public function getPrevious(WarehouseArea $warehouseArea, ActionRequest $request): ?array
     {
-        $previous = WarehouseArea::where('code', '<', $warehouseArea->code)->when(true, function ($query) use ($warehouseArea, $request) {
+        $previous = WarehouseArea::where('code', '<', $warehouseArea->code)->when(true, function ($query) use ($warehouseArea) {
             $query->where('warehouse_id', $warehouseArea->warehouse_id);
         })->orderBy('code', 'desc')->first();
 
@@ -205,7 +199,7 @@ class ShowWarehouseArea extends OrgAction
 
     public function getNext(WarehouseArea $warehouseArea, ActionRequest $request): ?array
     {
-        $next = WarehouseArea::where('code', '>', $warehouseArea->code)->when(true, function ($query) use ($warehouseArea, $request) {
+        $next = WarehouseArea::where('code', '>', $warehouseArea->code)->when(true, function ($query) use ($warehouseArea) {
             $query->where('warehouse_id', $warehouseArea->warehouse->id);
         })->orderBy('code')->first();
 

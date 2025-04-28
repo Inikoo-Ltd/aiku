@@ -16,7 +16,6 @@ class GetWarehouseShowcase
 {
     use AsObject;
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function handle(Warehouse $warehouse, $routeParameters): array
     {
         return [

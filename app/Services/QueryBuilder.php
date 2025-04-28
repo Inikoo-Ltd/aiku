@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Models\Fulfilment\FulfilmentCustomer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -29,7 +30,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $elements               = explode(',', request()->input("$argumentName.$key"));
             $validatedElements      = array_intersect($allowedElements, $elements);
             $countValidatedElements = count($validatedElements);
-            if ($countValidatedElements > 0 and $countValidatedElements < count($allowedElements)) {
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
                 $elementsData = $validatedElements;
             }
         }
@@ -51,7 +52,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $elementsData = null;
 
         $argumentName = ($prefix ? $prefix.'_' : '').'radioFilter';
-        if (request()->has($argumentName) or $defaultValue) {
+        if (request()->has($argumentName) || $defaultValue) {
             $elements = request()->input("$argumentName") ?? $defaultValue;
             if (is_array($elements)) {
                 $elements = Arr::get($elements, 'radio.value');
@@ -60,7 +61,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
             $validatedElements      = array_intersect($allowedElements, [$elements]);
             $countValidatedElements = count($validatedElements);
-            if ($countValidatedElements > 0 and $countValidatedElements < count($allowedElements)) {
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
                 $elementsData = $elements;
             }
         }
@@ -88,86 +89,12 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this;
     }
 
+
     protected function validatePeriod(string $periodType, ?string $prefix = null): ?array
     {
         $period = request()->input(($prefix ? $prefix.'_' : '').'period.'.$periodType);
 
-        $start = null;
-        $end   = null;
-
-        switch ($periodType) {
-            case 'day':
-                if ($period && preg_match('/^\d{8}$/', $period)) {
-                    $start = Carbon::createFromFormat('Ymd', $period)->startOfDay()->toDateTimeString();
-                    $end   = Carbon::createFromFormat('Ymd', $period)->endOfDay()->toDateTimeString();
-                } else {
-                    return null;
-                }
-                break;
-            case 'yesterday':
-                $start = now()->subDay()->startOfDay()->toDateTimeString();
-                $end   = now()->subDay()->endOfDay()->toDateTimeString();
-                break;
-            case 'week':
-                if ($period && preg_match('/^\d{4}\d{2}$/', $period)) {
-                    $year = substr($period, 0, 4);
-                    $week = substr($period, 4, 2);
-                    $date = Carbon::now()->setISODate($year, $week);
-
-                    $start = $date->startOfWeek()->toDateTimeString();
-                    $end   = $date->endOfWeek()->toDateTimeString();
-                } else {
-                    return null;
-                }
-                break;
-            case 'month':
-                if (preg_match('/^\d{4}\d{2}$/', $period)) {
-                    $start = Carbon::createFromFormat('Ym', $period)->startOfMonth()->toDateTimeString();
-                    $end   = Carbon::createFromFormat('Ym', $period)->endOfMonth()->toDateTimeString();
-                } else {
-                    return null;
-                }
-                break;
-            case 'year':
-                if (preg_match('/^\d{4}$/', $period)) {
-                    $start = Carbon::createFromFormat('Y', $period)->startOfYear()->toDateTimeString();
-                    $end   = Carbon::createFromFormat('Y', $period)->endOfYear()->toDateTimeString();
-                } else {
-                    return null;
-                }
-                break;
-            case 'quarter':
-                if ($period && preg_match('/^\d{4}Q[1-4]$/', $period)) {
-                    $year    = substr($period, 0, 4);
-                    $quarter = substr($period, 5, 1);
-
-                    switch ($quarter) {
-                        case '1':
-                            $start = Carbon::create($year)->startOfQuarter()->toDateTimeString();
-                            $end   = Carbon::create($year)->endOfQuarter()->toDateTimeString();
-                            break;
-                        case '2':
-                            $start = Carbon::create($year, 4)->startOfQuarter()->toDateTimeString();
-                            $end   = Carbon::create($year, 4)->endOfQuarter()->toDateTimeString();
-                            break;
-                        case '3':
-                            $start = Carbon::create($year, 7)->startOfQuarter()->toDateTimeString();
-                            $end   = Carbon::create($year, 7)->endOfQuarter()->toDateTimeString();
-                            break;
-                        case '4':
-                            $start = Carbon::create($year, 10)->startOfQuarter()->toDateTimeString();
-                            $end   = Carbon::create($year, 10)->endOfQuarter()->toDateTimeString();
-                            break;
-                    }
-                } else {
-                    return null;
-                }
-                break;
-            default:
-                return null;
-        }
-
-        return ['start' => $start, 'end' => $end];
+        return ValidateQueryBuilderPeriods::run($periodType, $period);
     }
 
     public function withBetweenDates(array $allowedColumns, ?string $prefix = null): static
@@ -198,7 +125,11 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->setTimezone('UTC')
                         ->toDateTimeString();
 
-                    $this->whereBetween("$table.$column", [$start, $end]);
+                    if ($this->getModel() instanceof FulfilmentCustomer) {
+                        $this->whereBetween('customers.'.$column, [$start, $end]);
+                    } else {
+                        $this->whereBetween("$table.$column", [$start, $end]);
+                    }
                 }
             }
         }
@@ -207,15 +138,19 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     }
 
 
-    public function withPaginator($prefix, int $numberOfRecords = null, $tableName = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
+        if ($prefix === null) {
+            $prefix = '';
+        }
+
         $argumentName = ($prefix ? $prefix.'_' : '').'perPage';
-        if ($numberOfRecords === null and request()->has($argumentName)) {
+        if ($numberOfRecords === null && request()->has($argumentName)) {
             $numberOfRecords = (int)request()->input($argumentName);
         }
 
         $userId      = auth()->user()->id ?? null;
-        $keyRppCache = $tableName ? "ui_state-user:$userId;rrp-table:".($prefix ? "$prefix." : "")."$tableName" : null;
+        $keyRppCache = $tableName ? "ui_state-user:$userId;rrp-table:".$prefix."$tableName" : null;
 
         if ($numberOfRecords) {
             $perPage = $numberOfRecords;
@@ -243,6 +178,12 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             perPage: $perPage,
             pageName: $prefix ? $prefix.'Page' : 'page'
         );
+    }
+
+    public function withTrashed()
+    {
+        $this->queryBuilder->withTrashed();
+        return $this;
     }
 
 

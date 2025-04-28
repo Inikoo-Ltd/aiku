@@ -1,12 +1,9 @@
-import JustifyContent from "@/Components/CMS/Fields/JustifyContent.vue";
-
-export const getStyles = (properties: any) => {
+/* export const getStyles = (properties: any, screens = "desktop") => {
     if (!properties || typeof properties !== 'object') {
         // If properties are missing or not an object, return null
         return null;
     }
 
-    console.log(properties)
     const styles = {
         height: properties?.dimension?.height?.value  ? properties?.dimension?.height?.value  + properties?.dimension?.height?.unit : null,
         width: properties?.dimension?.width?.value ? properties?.dimension?.width?.value + properties?.dimension?.width?.unit : null,
@@ -56,7 +53,167 @@ export const getStyles = (properties: any) => {
         gap : properties?.gap?.value != null && properties?.gap?.unit ? 
              (properties.gap.value + properties.gap.unit) : null,
         justifyContent : properties?.justifyContent || null,
+        boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor),
     };
     return Object.fromEntries(Object.entries(styles).filter(([_, value]) => value !== null));
+}; */
+
+export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
+    if (!shadowObj || typeof shadowObj !== 'object') return null;
+
+    const unit = shadowObj.unit || 'px';
+
+    const shadowParts = Object.entries(shadowObj)
+        .filter(([key]) => key !== 'unit')
+        .map(([key, val]: [string, any]) => {
+            const value = val?.value;
+            return value != null ? `${value}${unit}` : null;
+        })
+        .filter(part => part !== null);
+
+    if (shadowParts.length === 0) return null;
+
+    const shadowString = shadowParts.join(' ');
+    return color ? `${shadowString} ${color}` : shadowString;
 };
 
+export const resolveResponsiveValue = (
+    base: any,
+    screen: 'mobile' | 'tablet' | 'desktop',
+    path?: string[]
+  ) => {
+    if (!base || typeof base !== 'object') return base;
+  
+    const responsiveObj = base[screen];
+  
+    // Jika responsive object ada dan path bernilai, coba ambil dari situ
+    if (responsiveObj && typeof responsiveObj === 'object' && path) {
+      const resolvedFromResponsive = path.reduce((acc, key) => acc?.[key], responsiveObj);
+      if (resolvedFromResponsive !== undefined) return resolvedFromResponsive;
+    }
+  
+    // Fallback ke base biasa
+    return path ? path.reduce((acc, key) => acc?.[key], base) : base;
+  };
+  
+  
+
+  export const getStyles = (
+    properties: any,
+    screen: 'mobile' | 'tablet' | 'desktop' = 'desktop'
+) => {
+    if (!properties || typeof properties !== 'object') return null;
+
+    const getVal = (base: any, path?: string[]) =>
+        resolveResponsiveValue(base, screen, path);
+
+    const styles: Record<string, string | null> = {
+        height: getVal(properties?.dimension, ['height', 'value']) && properties?.dimension?.height?.unit
+            ? `${getVal(properties.dimension, ['height', 'value'])}${properties.dimension.height.unit}`
+            : null,
+
+        width: getVal(properties?.dimension, ['width', 'value']) && properties?.dimension?.width?.unit
+            ? `${getVal(properties.dimension, ['width', 'value'])}${properties.dimension.width.unit}`
+            : null,
+
+        color: properties?.text?.color || null,
+        fontFamily: properties?.text?.fontFamily || null,
+        objectFit: getVal(properties?.object_fit),
+        objectPosition: getVal(properties?.object_position),
+
+        paddingTop: getVal(properties?.padding, ['top', 'value']) && properties?.padding?.unit
+            ? `${getVal(properties.padding, ['top', 'value'])}${properties.padding.unit}`
+            : null,
+
+        paddingBottom: getVal(properties?.padding, ['bottom', 'value']) && properties?.padding?.unit
+            ? `${getVal(properties.padding, ['bottom', 'value'])}${properties.padding.unit}`
+            : null,
+
+        paddingLeft: getVal(properties?.padding, ['left', 'value']) && properties?.padding?.unit
+            ? `${getVal(properties.padding, ['left', 'value'])}${properties.padding.unit}`
+            : null,
+
+        paddingRight: getVal(properties?.padding, ['right', 'value']) && properties?.padding?.unit
+            ? `${getVal(properties.padding, ['right', 'value'])}${properties.padding.unit}`
+            : null,
+
+        marginTop: getVal(properties?.margin, ['top', 'value']) && properties?.margin?.unit
+            ? `${getVal(properties.margin, ['top', 'value'])}${properties.margin.unit}`
+            : null,
+
+        marginBottom: getVal(properties?.margin, ['bottom', 'value']) && properties?.margin?.unit
+            ? `${getVal(properties.margin, ['bottom', 'value'])}${properties.margin.unit}`
+            : null,
+
+        marginLeft: getVal(properties?.margin, ['left', 'value']) && properties?.margin?.unit
+            ? `${getVal(properties.margin, ['left', 'value'])}${properties.margin.unit}`
+            : null,
+
+        marginRight: getVal(properties?.margin, ['right', 'value']) && properties?.margin?.unit
+            ? `${getVal(properties.margin, ['right', 'value'])}${properties.margin.unit}`
+            : null,
+
+        // ✅ FIXED RESPONSIVE BACKGROUND
+        background: (() => {
+            const backgroundBase = properties?.background?.[screen] ?? properties?.background;
+            const backgroundType = getVal(backgroundBase, ['type']);
+            const backgroundColor = getVal(backgroundBase, ['color']);
+            const backgroundGradient = getVal(backgroundBase, ['gradient', 'value']);
+            const backgroundImage = getVal(backgroundBase, ['image', 'original']);
+
+            if (!backgroundType) return null;
+            if (backgroundType === 'color') {
+                return backgroundColor
+            } else if (backgroundType === 'gradient') {
+                return backgroundGradient
+            } else {
+                return backgroundImage ? `url(${backgroundImage})` : null;
+            }
+        })(),
+
+        borderTop: getVal(properties?.border, ['top', 'value']) && properties?.border?.unit && properties?.border?.color
+            ? `${getVal(properties.border, ['top', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+            : null,
+
+        borderBottom: getVal(properties?.border, ['bottom', 'value']) && properties?.border?.unit && properties?.border?.color
+            ? `${getVal(properties.border, ['bottom', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+            : null,
+
+        borderLeft: getVal(properties?.border, ['left', 'value']) && properties?.border?.unit && properties?.border?.color
+            ? `${getVal(properties.border, ['left', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+            : null,
+
+        borderRight: getVal(properties?.border, ['right', 'value']) && properties?.border?.unit && properties?.border?.color
+            ? `${getVal(properties.border, ['right', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+            : null,
+
+        borderTopLeftRadius: getVal(properties?.border, ['rounded', 'topleft', 'value']) && properties?.border?.rounded?.unit
+            ? `${getVal(properties.border, ['rounded', 'topleft', 'value'])}${properties.border.rounded.unit}`
+            : null,
+
+        borderTopRightRadius: getVal(properties?.border, ['rounded', 'topright', 'value']) && properties?.border?.rounded?.unit
+            ? `${getVal(properties.border, ['rounded', 'topright', 'value'])}${properties.border.rounded.unit}`
+            : null,
+
+        borderBottomLeftRadius: getVal(properties?.border, ['rounded', 'bottomleft', 'value']) && properties?.border?.rounded?.unit
+            ? `${getVal(properties.border, ['rounded', 'bottomleft', 'value'])}${properties.border.rounded.unit}`
+            : null,
+
+        borderBottomRightRadius: getVal(properties?.border, ['rounded', 'bottomright', 'value']) && properties?.border?.rounded?.unit
+            ? `${getVal(properties.border, ['rounded', 'bottomright', 'value'])}${properties.border.rounded.unit}`
+            : null,
+
+        borderColor: getVal(properties?.border, ['color']) && properties?.border?.color
+            ? `${getVal(properties.border, ['color'])}`
+            : null,
+
+        gap: getVal(properties?.gap, ['value']) && properties?.gap?.unit
+            ? `${getVal(properties.gap, ['value'])}${properties.gap.unit}`
+            : null,
+
+        justifyContent: getVal(properties?.justifyContent),
+        boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor)
+    };
+
+    return Object.fromEntries(Object.entries(styles).filter(([_, val]) => val !== null));
+};

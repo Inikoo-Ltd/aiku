@@ -110,6 +110,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_unpaid_invoices
  * @property string $unpaid_invoices_amount_org_currency
  * @property string $unpaid_invoices_amount_grp_currency
+ * @property int $number_deleted_invoices
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newQuery()

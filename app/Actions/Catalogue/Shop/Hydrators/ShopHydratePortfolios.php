@@ -10,8 +10,8 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydratePortfolios;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -21,6 +21,7 @@ class ShopHydratePortfolios implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+    use WithHydratePortfolios;
 
     public function getJobUniqueId(Shop $shop): string
     {
@@ -33,14 +34,9 @@ class ShopHydratePortfolios implements ShouldBeUnique
             return;
         }
 
-        $stats = [
-            'number_portfolios'                      => $shop->portfolios()->count(),
-            'number_current_portfolios'              => $shop->portfolios()->where('status', true)->count(),
-            'number_portfolios_platform_shopify'     => $shop->portfolios()->where('type', PortfolioTypeEnum::SHOPIFY->value)->count(),
-            'number_portfolios_platform_woocommerce' => $shop->portfolios()->where('type', PortfolioTypeEnum::WOOCOMMERCE->value)->count(),
-        ];
+        $shop->dropshippingStats->update(
+            $this->getPortfoliosStats($shop)
+        );
 
-
-        $shop->dropshippingStats->update($stats);
     }
 }

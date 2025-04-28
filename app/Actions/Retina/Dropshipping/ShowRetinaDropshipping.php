@@ -13,13 +13,14 @@ namespace App\Actions\Retina\Dropshipping;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaDropshipping extends RetinaAction
 {
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): ActionRequest
     {
         $this->initialisation($request);
 
@@ -73,6 +74,10 @@ class ShowRetinaDropshipping extends RetinaAction
                             'tiktokUser' => $customer->tiktokUser?->id
                         ]
                     ]
+                ],
+                'aikuConnectRoute' => [
+                    'isAuthenticated' => $customer->platforms()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
+                    'url'       => route('retina.models.dropshipping.aiku.store')
                 ]
             ]
         );

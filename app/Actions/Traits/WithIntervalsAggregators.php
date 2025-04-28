@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 05 Apr 2024 11:40:48 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Fri, 05 Apr 2024 11:40:48 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -20,11 +20,11 @@ trait WithIntervalsAggregators
         $stats = array_merge($stats, $this->getLastYearIntervalStats($queryBase, $statField, $dateField, $sumField, $intervals));
 
 
-        if ($doPreviousPeriods === null or in_array('previous_years', $doPreviousPeriods)) {
+        if ($doPreviousPeriods === null || in_array('previous_years', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousYearsIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
 
-        if ($doPreviousPeriods === null or in_array('previous_quarters', $doPreviousPeriods)) {
+        if ($doPreviousPeriods === null || in_array('previous_quarters', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousQuartersIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
 

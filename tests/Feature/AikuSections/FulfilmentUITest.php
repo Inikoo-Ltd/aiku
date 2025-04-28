@@ -150,11 +150,11 @@ beforeEach(function () {
     $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
 
     if (!$marketingOutbox) {
-        $marketingOutbox = StoreOutbox::make()->action($orgPostRoom, $this->shop, [
-            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            'type' => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
+        StoreOutbox::make()->action($orgPostRoom, $this->shop, [
+            'code'  => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type'  => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
             'state' => OutboxStateEnum::ACTIVE,
-            'name' => 'invoice outbox'
+            'name'  => 'invoice outbox'
         ]);
     }
 
@@ -595,6 +595,30 @@ test('UI show fulfilment customer (agreed prices tab)', function () {
     });
 });
 
+test('UI show fulfilment customer (tab balance)', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->customer->fulfilmentCustomer->slug,
+        'tab' => 'balance'
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Fulfilment/FulfilmentCustomer')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->customer->name)
+                    ->etc()
+            )
+            ->has('tabs')
+            ->has('balance');
+    });
+});
+
 
 test('UI edit fulfilment customer', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.edit', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->slug]));
@@ -652,14 +676,13 @@ test('UI show invoice (in Operation)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->invoice->reference)
-                        ->etc()
+                    ->where('title', $this->invoice->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('order_summary')
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has('tabs');
-
     });
 });
 
@@ -674,14 +697,13 @@ test('UI show invoice (in Fulfilment Customer)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->invoice->reference)
-                        ->etc()
+                    ->where('title', $this->invoice->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('order_summary')
-            ->has('exportPdfRoute')
+            ->has('invoiceExportOptions')
             ->has('tabs');
-
     });
 });
 
@@ -714,7 +736,7 @@ test('UI index fulfilment invoices unpaid', function () {
 
 test('UI index fulfilment invoices paid', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response  = get(
+    $response   = get(
         route(
             'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',
             [
@@ -732,9 +754,9 @@ test('UI index fulfilment invoices paid', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Invoices')
-                        ->has('subNavigation')
-                        ->etc()
+                    ->where('title', 'Invoices')
+                    ->has('subNavigation')
+                    ->etc()
             );
     });
 });
@@ -2035,7 +2057,7 @@ test('UI show Recurring Bill', function () {
 test('UI show Recurring Bill in operation (current)', function () {
     $this->withoutExceptionHandling();
     $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::CURRENT)->first();
-    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $response      = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
         $page
             ->component('Org/Fulfilment/RecurringBill')
@@ -2044,22 +2066,21 @@ test('UI show Recurring Bill in operation (current)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $recurringBill->slug)
-                        ->etc()
+                    ->where('title', $recurringBill->slug)
+                    ->etc()
             )
             ->has('timeline_rb')
             ->has('consolidateRoute')
             ->has('status_rb')
             ->has('box_stats')
             ->has('tabs');
-
     });
 });
 
 test('UI show Recurring Bill in operation (former)', function () {
     $this->withoutExceptionHandling();
     $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::FORMER)->first();
-    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.former.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $response      = get(route('grp.org.fulfilments.show.operations.recurring_bills.former.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
         $page
             ->component('Org/Fulfilment/RecurringBill')
@@ -2068,15 +2089,14 @@ test('UI show Recurring Bill in operation (former)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $recurringBill->slug)
-                        ->etc()
+                    ->where('title', $recurringBill->slug)
+                    ->etc()
             )
             ->has('timeline_rb')
             ->has('consolidateRoute')
             ->has('status_rb')
             ->has('box_stats')
             ->has('tabs');
-
     });
 });
 
@@ -2290,3 +2310,61 @@ test('UI json index pallets in stored item', function () {
             'data',
         ]);
 });
+
+// Refund
+test('UI create refund', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->post(route('grp.models.refund.create', [$this->invoice->id]), [
+        'referral_route' => [
+            'name' => 'grp.org.fulfilments.show.operations.invoices.show',
+            'parameters' => [
+                'organisation' => $this->organisation->slug,
+                'fulfilment'   => $this->fulfilment->slug,
+                'invoice' => $this->invoice->slug
+            ]
+        ]
+    ]);
+
+    /** @var Invoice $invoice */
+    $invoice = $this->invoice;
+    $invoice->refresh();
+
+    $refund = $invoice->refunds->last();
+    $response->assertRedirect(route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', [
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->invoice->slug,
+        $refund->slug
+    ]));
+
+
+    return $refund;
+});
+
+
+test('UI show refund', function (Invoice $refund) {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', [
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->invoice->slug,
+        $refund->slug
+    ]));
+
+
+    $response->assertInertia(function (AssertableInertia $page) use ($refund) {
+        $page
+            ->component('Org/Accounting/Refund')
+            ->has('title')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $refund->reference)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('order_summary')
+            ->has('box_stats')
+            ->has('breadcrumbs', 4);
+    });
+})->depends('UI create refund');

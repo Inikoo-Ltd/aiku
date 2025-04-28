@@ -21,8 +21,8 @@ use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaPlatformDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaDropshippingPortfolio;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaDropshippingProducts;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
+use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
 use Illuminate\Support\Facades\Route;
@@ -46,9 +46,9 @@ Route::prefix('client')->as('client.')->group(function () {
 });
 
 Route::prefix('portfolios')->as('portfolios.')->group(function () {
-    Route::get('my-portfolio', IndexRetinaDropshippingPortfolio::class)->name('index');
+    Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
     Route::get('my-portfolio/{product}', ShowRetinaProduct::class)->name('show');
-    Route::get('products', IndexRetinaDropshippingProducts::class)->name('products.index');
+    Route::get('products', IndexRetinaProductsInDropshipping::class)->name('products.index');
 });
 
 Route::prefix('orders')->as('orders.')->group(function () {
@@ -63,20 +63,16 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     });
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
-        Route::get('my-portfolio', [IndexRetinaDropshippingPortfolio::class, 'inPlatform'])->name('index');
-        Route::get('products', [IndexRetinaDropshippingProducts::class, 'inPlatform'])->name('products.index');
+        Route::get('my-portfolio', [IndexRetinaPortfolios::class, 'inPlatform'])->name('index');
+        Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::get('/', [IndexRetinaPlatformDropshippingOrders::class, 'inPlatform'])->name('index');
+        Route::get('/{order}', [ShowRetinaDropshippingOrder::class, 'inPlatform'])->name('show');
     });
 });
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });
-
-
-// Route::get('/users', IndexUsers::class)->name('web-users.index');
-// Route::get('/users/{user}', ShowUser::class)->name('web-users.show');
-// Route::get('/users/{user}/edit', EditUser::class)->name('web-users.edit');

@@ -9,11 +9,9 @@
 namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -66,32 +64,9 @@ class IndexRefundTransactions extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Invoice $parent, $prefix = null): Closure
+    public function tableStructure(Invoice $invoice, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $parent) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-
-
-            $table
-                ->withModelOperations()
-                ->withGlobalSearch();
-
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-
-            if ($parent instanceof Invoice && $parent->type === InvoiceTypeEnum::REFUND && $parent->in_process) {
-                $table->column(key: 'action', label: __('action'), canBeHidden: false);
-            }
-
-            $table->defaultSort('-invoice_transactions.updated_at');
-        };
+        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, $prefix);
     }
 
 

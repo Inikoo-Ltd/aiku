@@ -25,7 +25,9 @@ class MacroServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        //
+        // This method is intentionally left empty as all macro registrations
+        // are handled in the boot() method. The register() method would normally
+        // be used for binding services into the container, which is not needed here.
     }
 
 
@@ -52,30 +54,34 @@ class MacroServiceProvider extends ServiceProvider
         });
 
         Builder::macro('whereAnyWordStartWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
-
             return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"));
         });
+
         Builder::macro('whereStartWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
         });
 
-
         Builder::macro('whereWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
         });
 
         Builder::macro('orWhereAnyWordStartWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
-
             return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"));
         });
 
         Builder::macro('orWhereStartWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
             return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
         });
 
         Builder::macro('orWhereWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
             return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
         });
 

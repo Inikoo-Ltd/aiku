@@ -8,12 +8,6 @@
 
 use App\Actions\Goods\Ingredient\UI\IndexIngredients;
 use App\Actions\Goods\Ingredient\UI\ShowIngredient;
-use App\Actions\Goods\MasterAsset\UI\IndexMasterAssets;
-use App\Actions\Goods\MasterProductCategory\UI\IndexMasterDepartments;
-use App\Actions\Goods\MasterProductCategory\UI\IndexMasterFamilies;
-use App\Actions\Goods\MasterProductCategory\UI\IndexMasterSubDepartments;
-use App\Actions\Goods\MasterShop\UI\IndexMasterShops;
-use App\Actions\Goods\MasterShop\UI\ShowMasterShop;
 use App\Actions\Goods\Stock\ExportStocks;
 use App\Actions\Goods\Stock\UI\CreateStock;
 use App\Actions\Goods\Stock\UI\EditStock;
@@ -31,7 +25,6 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
-
 
 Route::prefix('stocks')->as('stocks.')->group(function () {
     Route::get('/', IndexStocks::class)->name('index');
@@ -79,7 +72,6 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
     });
 });
 
-
 Route::prefix('families')->as('stock-families.')->group(function () {
     Route::get('', IndexStockFamilies::class)->name('index');
     Route::get('/active', [IndexStockFamilies::class, 'active'])->name('active.index');
@@ -112,27 +104,6 @@ Route::prefix('trade-units')->as('trade-units.')->group(function () {
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
-    });
-});
-
-Route::prefix('catalogue')->as('catalogue.')->group(function () {
-    Route::get('/shops', IndexMasterShops::class)->name('shops.index');
-    Route::get('/products', IndexMasterAssets::class)->name('products.index');
-    Route::prefix('{masterShop}')->as('shops.show')->group(function () {
-        Route::get('', ShowMasterShop::class)->name('');
-        Route::prefix('departments')->as('.departments.')->group(function () {
-            Route::get('index', IndexMasterDepartments::class)->name('index');
-        });
-        Route::prefix('families')->as('.families.')->group(function () {
-            Route::get('index', IndexMasterFamilies::class)->name('index');
-        });
-        Route::prefix('sub-departments')->as('.sub-departments.')->group(function () {
-            Route::get('index', IndexMasterSubDepartments::class)->name('index');
-        });
-        Route::prefix('products')->as('.products.')->group(function () {
-            Route::get('index', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
-        });
-        // Route::get('edit', EditTradeUnit::class)->name('edit');
     });
 });
 

@@ -9,12 +9,10 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
-use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\CRM\Customer;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,15 +24,13 @@ class StoreRetinaProductManual extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer, array $modelData)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Customer $customer, array $modelData): void
     {
         DB::transaction(function () use ($customer, $modelData) {
-            foreach (Arr::get($modelData, 'products') as $product) {
-                StorePortfolio::run($customer, [
-                    'product_id' => $product,
-                    'type' => PortfolioTypeEnum::SHOPIFY->value,
-                ]);
-            }
+            StoreMultipleManualPortfolios::run($customer, $modelData);
         });
     }
 
@@ -50,6 +46,9 @@ class StoreRetinaProductManual extends RetinaAction
         return true;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Customer $customer, ActionRequest $request): void
     {
         $this->initialisation($request);

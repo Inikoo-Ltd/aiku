@@ -9,22 +9,22 @@ import { computed, ref } from 'vue'
 import type { Component } from 'vue'
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInboxOut, faMailBulk, faRabbitFast } from "@fal";
+import { faBars, faInboxOut, faMailBulk, faRabbitFast } from "@fal";
 import TableMailshots from "@/Components/Tables/TableMailshots.vue";
 import OutboxShowcase from "@/Components/Showcases/Grp/OutboxShowcase.vue";
 import TableEmailBulkRuns from "@/Components/Tables/TableEmailBulkRuns.vue";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
 import { faPaperPlane } from "@far"
 
-library.add(faInboxOut, faMailBulk, faRabbitFast, faPaperPlane);
+library.add(faInboxOut, faMailBulk, faRabbitFast, faPaperPlane, faBars);
 
 const props = defineProps<{
   title: string,
-  pageHead: TSPageHeading
+  pageHead: PageHeadingTypes
   tabs: TSTabs
   history: {}
   mailshots: {}

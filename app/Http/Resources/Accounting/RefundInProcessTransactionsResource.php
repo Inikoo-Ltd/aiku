@@ -27,8 +27,8 @@ class RefundInProcessTransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $totalLastRefund = abs(InvoiceTransaction::where('invoice_id', '!=', $this->refund_id)->where('invoice_transaction_id', $this->id)->sum('net_amount'));
-        $refundNetAmount = abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('invoice_transaction_id', $this->id)->sum('net_amount'));
+        $totalLastRefund = abs(InvoiceTransaction::where('invoice_id', '!=', $this->refund_id)->where('original_invoice_transaction_id', $this->id)->sum('net_amount'));
+        $refundNetAmount = abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('original_invoice_transaction_id', $this->id)->sum('net_amount'));
 
         return [
             'code'                           => $this->code,

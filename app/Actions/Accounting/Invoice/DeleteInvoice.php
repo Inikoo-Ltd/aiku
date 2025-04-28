@@ -9,17 +9,24 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
+use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use Throwable;
 
 class DeleteInvoice extends OrgAction
 {
@@ -27,31 +34,54 @@ class DeleteInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
-        $invoice = $this->update($invoice, $modelData);
-        $invoice->invoiceTransactions()->delete();
-        $invoice->delete();
-        CustomerHydrateInvoices::dispatch($invoice->customer);
-        ShopHydrateInvoices::dispatch($invoice->shop);
-        OrganisationHydrateInvoices::dispatch($invoice->organisation);
-        GroupHydrateInvoices::dispatch($invoice->group);
-        if ($invoice->invoiceCategory) {
-            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
+        try {
+            $invoice = DB::transaction(function () use ($invoice, $modelData) {
+                $invoice = $this->update($invoice, $modelData);
+                $invoice->delete();
+                foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
+                    DeleteInvoiceTransaction::make()->action($invoiceTransaction);
+                }
+
+                return $invoice;
+            });
+            StoreDeletedInvoiceHistory::run(invoice: $invoice);
+            SendInvoiceDeletedNotification::dispatch($invoice);
+            $this->postDeleteInvoiceHydrators($invoice);
+        } catch (Throwable) {
+            //
         }
 
         return $invoice;
+    }
+
+    public function postDeleteInvoiceHydrators(Invoice $invoice): void
+    {
+        $customer = $invoice->customer;
+        CustomerHydrateInvoices::dispatch($customer);
+        ShopHydrateInvoices::dispatch($customer->shop);
+        ShopHydrateDeletedInvoices::dispatch($customer->shop);
+        OrganisationHydrateInvoices::dispatch($customer->organisation);
+        OrganisationHydrateDeletedInvoices::dispatch($customer->organisation);
+        GroupHydrateInvoices::dispatch($customer->group);
+        GroupHydrateDeletedInvoices::dispatch($customer->group);
+        $invoiceCategory = $invoice->invoiceCategory;
+        if ($invoiceCategory) {
+            $invoiceCategory->refresh();
+            InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
+        }
     }
 
     public function rules(): array
     {
         return [
             'deleted_note' => ['required', 'string', 'max:4000'],
-            'deleted_by'   => ['nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'deleted_by'   => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->set('user_id', $request->user()->id);
+        $this->set('deleted_by', $request->user()->id);
         $this->initialisationFromShop($invoice->shop, $request);
 
         return $this->handle($invoice, $this->validatedData);
@@ -60,6 +90,7 @@ class DeleteInvoice extends OrgAction
 
     public function action(Invoice $invoice, array $modelData): Invoice
     {
+        $this->asAction = true;
         $this->initialisationFromShop($invoice->shop, $modelData);
 
         return $this->handle($invoice, $this->validatedData);

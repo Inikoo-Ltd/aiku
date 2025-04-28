@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\WarehouseArea;
 
 use App\Actions\Inventory\WarehouseArea\Search\WarehouseAreaRecordSearch;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\WarehouseAreaResource;
 use App\Models\Inventory\Warehouse;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateWarehouseArea extends OrgAction
 {
     use WithActionUpdate;
+    use WithWarehouseEditAuthorisation;
 
     private WarehouseArea $warehouseArea;
 
@@ -30,15 +32,6 @@ class UpdateWarehouseArea extends OrgAction
         WarehouseAreaRecordSearch::dispatch($warehouseArea);
 
         return $warehouseArea;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

@@ -10,7 +10,7 @@
 
 namespace App\Actions\Comms\EmailAddress\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Mail\EmailAddressResource;
 use App\InertiaTable\InertiaTable;
@@ -24,7 +24,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexEmailAddress extends GrpAction
+class IndexEmailAddress extends OrgAction
 {
     public function handle($prefix = null): LengthAwarePaginator
     {
@@ -69,7 +69,7 @@ class IndexEmailAddress extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle();
     }
@@ -77,10 +77,9 @@ class IndexEmailAddress extends GrpAction
     public function tableStructure(
         Group $parent,
         ?array $modelOperations = null,
-        $prefix = null,
-        $canEdit = false
+        $prefix = null
     ): Closure {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -115,7 +114,7 @@ class IndexEmailAddress extends GrpAction
         $title      = __('Email Addresses');
         $icon       = [
             'icon'  => ['fal', 'fa-envelope'],
-            'title' => __('Email Addresses')
+            'title' => $title
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -127,7 +126,7 @@ class IndexEmailAddress extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('email addresses'),
+                'title'       => $title,
                 'pageHead'    => [
                     'title'      => $title,
                     'icon'       => $icon,
@@ -157,16 +156,14 @@ class IndexEmailAddress extends GrpAction
             ];
         };
 
-        return match ($routeName) {
-            default => array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ]
-                )
+        return array_merge(
+            ShowGroupOverviewHub::make()->getBreadcrumbs(),
+            $headCrumb(
+                [
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters
+                ]
             )
-        };
+        );
     }
 }

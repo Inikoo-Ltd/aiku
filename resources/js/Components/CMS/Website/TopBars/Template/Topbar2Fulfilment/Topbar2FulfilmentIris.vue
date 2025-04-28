@@ -83,7 +83,7 @@ const emits = defineEmits<{
             <!-- Section: Profile -->
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
-                :href="model?.profile?.link?.href"
+                :href="'/app/profile'"
                 :target="model?.profile?.link?.target"
                 class="hidden space-x-1.5 md:flex flex-nowrap items-center"
                 :style="getStyles(model?.profile.container?.properties)"

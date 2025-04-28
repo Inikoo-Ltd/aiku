@@ -31,7 +31,7 @@ class DeleteRetinaPalletReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'delete_comment' => ['sometimes', 'nullable']
+            'deleted_note' => ['sometimes', 'nullable']
         ];
     }
 

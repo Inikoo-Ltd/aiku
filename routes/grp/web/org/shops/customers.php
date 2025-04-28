@@ -14,9 +14,10 @@ use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
+use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\CRM\Customer\UI\IndexPortfolios;
 use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
+use App\Actions\CRM\Customer\UI\IndexPortfolios;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\CreateWebUser;
@@ -25,7 +26,11 @@ use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInCustomer;
+use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
+use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\Ordering\Order\UI\IndexOrders;
+use App\Actions\Ordering\Order\UI\IndexOrdersInPlatform;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexCustomers::class)->name('index');
@@ -41,6 +46,43 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
     Route::get('/invoices', [IndexInvoices::class, 'inCustomer'])->name('.invoices.index');
     Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('.invoices.show');
+
+    Route::prefix('/channels')->as('.platforms')->group(function () {
+        Route::get('', IndexPlatformsInCustomer::class)->name('.index');
+        Route::prefix('/{platform}')->as('.show')->group(function () {
+            Route::get('', ShowPlatformInCustomer::class);
+            Route::prefix('/portfolios')->as('.portfolios')->group(function () {
+                Route::get('', IndexPortfoliosInPlatform::class)->name('.index');
+            });
+            Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
+                Route::get('', IndexCustomerClients::class)->name('.manual.index');
+                Route::get('create', CreateCustomerClient::class)->name('.create');
+                Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+                Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');
+                Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inPlatform'])->name('.edit');
+
+                Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
+                    Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
+                    Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
+                });
+
+                Route::prefix('{customerClient}/delivery_notes')->as('.show.delivery_notes')->group(function () {
+                    Route::get('', [IndexDeliveryNotesInCustomers::class,'inCustomerClient'])->name('.index');
+                    Route::get('{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClientInShop'])->name('.show');
+                });
+
+                Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
+                    Route::get('', [IndexInvoices::class, 'inCustomerClient'])->name('.index');
+                    Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');
+                });
+
+            });
+            Route::prefix('/orders')->as('.orders')->group(function () {
+                Route::get('', IndexOrdersInPlatform::class)->name('.index');
+                Route::get('/{order}', [ShowOrder::class, 'inPlatformInCustomer'])->name('.show');
+            });
+        });
+    });
     Route::prefix('web-users')->as('.web-users')->group(function () {
         Route::get('', IndexWebUsers::class)->name('.index');
         Route::get('create', CreateWebUser::class)->name('.create');
@@ -49,31 +91,9 @@ Route::prefix('{customer}')->as('show')->group(function () {
             Route::get('edit', EditWebUser::class)->name('.edit');
         });
     });
-    Route::prefix('customer-clients')->as('.customer-clients')->group(function () {
-        Route::get('', IndexCustomerClients::class)->name('.index');
-        Route::get('create', CreateCustomerClient::class)->name('.create');
-        Route::get('{customerClient}/edit', EditCustomerClient::class)->name('.edit');
-        Route::prefix('{customerClient}')->group(function () {
-            Route::get('', ShowCustomerClient::class)->name('.show');
-            // Route::get('edit', [EditWebUser::class, 'inCustomerInShop'])->name('.edit');
-            Route::prefix('orders')->as('.orders')->group(function () {
-                Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
-                Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
-            });
-            Route::get('/delivery_notes', [IndexDeliveryNotesInCustomers::class,'inCustomerClient'])->name('.delivery_notes.index');
-            Route::get('/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClient'])->name('.delivery_notes.show');
-            Route::get('/invoices', [IndexInvoices::class, 'inCustomerClient'])->name('.invoices.index');
-            Route::get('/invoices/{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.invoices.show');
 
-        });
-    });
     Route::prefix('portfolios')->as('.portfolios')->group(function () {
         Route::get('', IndexPortfolios::class)->name('.index');
         Route::get('products', IndexFilteredProducts::class)->name('.filtered-products');
-        // Route::get('create', [CreateCustomerClient::class, 'inCustomer'])->name('.create');
-        // Route::prefix('{customerClient}')->group(function () {
-        //     Route::get('', ShowCustomerClient::class)->name('.show');
-        //     // Route::get('edit', [EditWebUser::class, 'inCustomerInShop'])->name('.edit');
-        // });
     });
 });

@@ -8,12 +8,12 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Helpers\Media;
 use App\Models\Web\WebBlock;
 use Illuminate\Support\Facades\DB;
 
-class DeleteWebBlock extends GrpAction
+class DeleteWebBlock extends OrgAction
 {
     public function handle(WebBlock $webBlock): void
     {
