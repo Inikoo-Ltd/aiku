@@ -1112,6 +1112,29 @@ test('UI Index polls', function () {
     });
 });
 
+test('UI Show prospects', function (Prospect $prospect) {
+    $response = $this->get(route('grp.org.shops.show.crm.prospects.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $prospect->slug
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($prospect) {
+        $page
+            ->component('Org/Shop/CRM/Prospect')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $prospect->name)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('tabs');
+    });
+})->depends('create prospect');
+
 test('inventory  hydrator', function () {
     $this->artisan('hydrate -s crm')->assertExitCode(0);
 });
