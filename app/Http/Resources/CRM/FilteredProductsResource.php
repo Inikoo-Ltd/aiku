@@ -14,7 +14,7 @@ class FilteredProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        dd($this);
+        // dd($this);
         return [
             'id'                 => $this->id,
             'slug'               => $this->slug,

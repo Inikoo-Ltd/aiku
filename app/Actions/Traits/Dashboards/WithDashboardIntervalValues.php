@@ -29,7 +29,6 @@ trait WithDashboardIntervalValues
             $data = [
                 'raw_value' => $rawValue,
                 'tooltip'   => '',
-                'scope' => 'baskets_created_org_currency', // TODO
             ];
 
 

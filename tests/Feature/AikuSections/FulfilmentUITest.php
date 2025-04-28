@@ -2310,3 +2310,61 @@ test('UI json index pallets in stored item', function () {
             'data',
         ]);
 });
+
+// Refund
+test('UI create refund', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->post(route('grp.models.refund.create', [$this->invoice->id]), [
+        'referral_route' => [
+            'name' => 'grp.org.fulfilments.show.operations.invoices.show',
+            'parameters' => [
+                'organisation' => $this->organisation->slug,
+                'fulfilment'   => $this->fulfilment->slug,
+                'invoice' => $this->invoice->slug
+            ]
+        ]
+    ]);
+
+    /** @var Invoice $invoice */
+    $invoice = $this->invoice;
+    $invoice->refresh();
+
+    $refund = $invoice->refunds->last();
+    $response->assertRedirect(route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', [
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->invoice->slug,
+        $refund->slug
+    ]));
+
+
+    return $refund;
+});
+
+
+test('UI show refund', function (Invoice $refund) {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.fulfilments.show.operations.invoices.show.refunds.show', [
+        $this->organisation->slug,
+        $this->fulfilment->slug,
+        $this->invoice->slug,
+        $refund->slug
+    ]));
+
+
+    $response->assertInertia(function (AssertableInertia $page) use ($refund) {
+        $page
+            ->component('Org/Accounting/Refund')
+            ->has('title')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $refund->reference)
+                    ->has('subNavigation')
+                    ->etc()
+            )
+            ->has('order_summary')
+            ->has('box_stats')
+            ->has('breadcrumbs', 4);
+    });
+})->depends('UI create refund');

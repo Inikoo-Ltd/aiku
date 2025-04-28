@@ -33,6 +33,7 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -281,6 +282,13 @@ class StoreOrder extends OrgAction
                 $order->customerClient->ulid,
                 $order->slug
             ]),
+            'grp.models.customer.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.orders.show', [
+                $order->organisation->slug,
+                $order->shop->slug,
+                $order->customer->slug,
+                $order->platform->slug,
+                $order->slug
+            ]),
         };
     }
 
@@ -314,6 +322,18 @@ class StoreOrder extends OrgAction
     public function inCustomer(Customer $customer, ActionRequest $request): Order
     {
         $this->parent = $customer;
+        $this->initialisationFromShop($customer->shop, $request);
+
+        return $this->handle($customer, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inPlatformCustomer(Customer $customer, Platform $platform, ActionRequest $request): Order
+    {
+        $this->parent = $customer;
+        $this->set('platform_id', $platform->id);
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
