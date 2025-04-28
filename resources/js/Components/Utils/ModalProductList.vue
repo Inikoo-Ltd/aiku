@@ -20,6 +20,9 @@ import { faMinus, faPlus, faSave, faUndo } from "@fas"
 import QuantityInput from "./QuantityInput.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import Image from "../Image.vue"
+import NumberWithButtonSave from "../NumberWithButtonSave.vue"
+import LoadingIcon from "./LoadingIcon.vue"
 
 library.add(
 	faSearch,
@@ -183,10 +186,11 @@ const formProducts = useForm({
 	quantity_ordered: 0,
 })
 
+const isXxLoading = ref<number | null>(null)
 const onSubmitAddProducts = async (data: any, slotProps: any) => {
 	const productId = slotProps.data.purchase_order_id
 	const orderId = slotProps.data.order_id
-
+	isXxLoading.value = slotProps.data.id
 	try {
 		if (slotProps.data.quantity_ordered > 0) {
 			if (
@@ -284,6 +288,8 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 			type: "error",
 		})
 	}
+
+	isXxLoading.value = null
 }
 
 console.log(products, "sdas")
@@ -332,7 +338,7 @@ onUnmounted(() => {
 
 <template>
 	<KeepAlive>
-		<Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-auto">
+		<Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-5xl">
 			<div class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4 px-3">
 				<div>
 					<!-- Title -->
@@ -377,35 +383,44 @@ onUnmounted(() => {
 											</div>
 										</div>
 									</template>
+									
 									<template #empty> No Product found. </template>
 
 									<!-- Loading Icon -->
 									<template #loading>
-										<div>
-											<FontAwesomeIcon
-												icon="fal fa-spinner"
-												class="text-2xl animate-spin mb-2" />
+										<div class="text-5xl">
+											<LoadingIcon />
 										</div>
 									</template>
 
 									<Column header="Image">
 										<template #body="slotProps">
+											<!-- <pre>{{slotProps.data}}</pre>
 											<img
 												:src="`https://primefaces.org/cdn/primevue/images/product/${slotProps.data.image}`"
 												:alt="slotProps.data.image"
-												class="w-24 rounded" />
+												class="w-24 rounded" /> -->
+											<Image :src="slotProps.data.image_thumbnail" class="w-48 rounded" />
 										</template>
 									</Column>
 									<Column field="code" header="Code"></Column>
 									<Column field="name" header="Description"></Column>
-									<Column header="Action" style="width: 8%">
+									<Column header="" style="width: 8%">
 										<template #body="slotProps">
-											<QuantityInput
+											<!-- <QuantityInput
 												:data="slotProps.data"
 												:action="action"
 												@update="onKeyDown(slotProps)"
 												@submit="onSubmitAddProducts(action, slotProps)"
-												@undo="onUndoClick" />
+												@undo="onUndoClick" /> -->
+												<!-- <pre>{{ slotProps.data.available_quantity }}</pre> -->
+												<NumberWithButtonSave
+													v-model="slotProps.data.quantity_ordered"
+													:min="1"
+													:isLoading="isXxLoading === slotProps.data.id"
+													@onSave="(e)=> onSubmitAddProducts(action, slotProps)"
+												/>
+
 										</template>
 									</Column>
 

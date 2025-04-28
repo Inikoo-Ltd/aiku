@@ -344,8 +344,8 @@ const openModal = (action :any) => {
         <!-- Button: Add service -->
         <template #button-add-products="{ action }">
             <div class="relative">
-                <Popover>
-                    <template #button="{ open }">
+                <!-- <Popover>
+                    <template #button="{ open }"> -->
 						<Button
 							:style="action.style"
 							:label="action.label"
@@ -353,7 +353,7 @@ const openModal = (action :any) => {
 							@click="() => openModal(action)"
 							:key="`ActionButton${action.label}${action.style}`"
 							:tooltip="action.tooltip" />
-					</template>
+					<!-- </template> -->
 
                  <!--    <template #content="{ close: closed }">
                         <div class="w-[350px]"> -->
@@ -413,7 +413,7 @@ const openModal = (action :any) => {
                             </div> -->
                  <!--        </div>
                     </template> -->
-                </Popover>
+                <!-- </Popover> -->
             </div>
         </template>
 

@@ -30,7 +30,7 @@ const locale = useLocaleStore();
 function itemRoute(portfolio: Portfolio) {
   return route(
     "grp.helpers.redirect_portfolio_item",
-    [portfolio.item_id]);
+    [portfolio.id]);
 
 
 }
@@ -57,9 +57,9 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
-    <template #cell(product_code)="{ item: portfolio }">
+    <template #cell(item_code)="{ item: portfolio }">
       <Link :href="itemRoute(portfolio)" class="primaryLink">
-        {{ portfolio["product_code"] }}
+        {{ portfolio["item_code"] }}
       </Link>
     </template>
 
