@@ -24,10 +24,12 @@ import TableCustomerBackInStockReminders from "@/Components/Tables/Grp/Org/CRM/T
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue";
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart } from "@fal";
 import { routeType } from "@/types/route";
 import { AddressManagement } from "@/types/PureComponent/Address";
+import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue";
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart);
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
@@ -56,6 +58,8 @@ const props = defineProps<{
   attachmentRoutes?: {}
   favourites?: {}
   reminders?: {}
+  history?: {}
+  credit_transactions?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -68,12 +72,13 @@ const component = computed(() => {
     products: TableProducts,
     orders: TableOrders,
     details: ModelDetails,
-    history: ModelChangelog,
+    history: TableHistories,
     dispatched_emails: TableDispatchedEmails,
     web_users: TableWebUsers,
     favourites: TableCustomerFavourites,
     reminders: TableCustomerBackInStockReminders,
-    attachments: TableAttachments
+    attachments: TableAttachments,
+    credit_transactions: TableCreditTransactions
   };
 
   return components[currentTab.value];

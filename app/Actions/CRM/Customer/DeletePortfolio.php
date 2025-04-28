@@ -10,8 +10,6 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\Portfolio;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -22,7 +20,7 @@ class DeletePortfolio extends OrgAction
     use WithAttributes;
 
 
-    public function handle(Portfolio $portfolio): Portfolio
+    public function handle(Portfolio $portfolio): void
     {
         if ($portfolio->stats()->exists()) {
             $portfolio->stats()->delete();
@@ -33,21 +31,12 @@ class DeletePortfolio extends OrgAction
         }
 
         $portfolio->delete();
-
-        return $portfolio;
     }
 
-    public function asController(Portfolio $portfolio, ActionRequest $request): Portfolio
+    public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisationFromShop($portfolio->shop, $request);
 
-        return $this->handle($portfolio);
-    }
-
-
-
-    public function htmlResponse(Portfolio $portfolio): RedirectResponse
-    {
-        return Redirect::route('grp.org.shops.show.crm.customers.show.portfolios.index', [$portfolio->organisation->slug, $portfolio->shop->slug, $portfolio->customer->slug]);
+        $this->handle($portfolio);
     }
 }
