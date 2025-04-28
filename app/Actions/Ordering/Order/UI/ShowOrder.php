@@ -35,6 +35,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
@@ -84,8 +85,9 @@ class ShowOrder extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
+    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, Order $order, ActionRequest $request): Order
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
@@ -527,7 +529,7 @@ class ShowOrder extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.orders.show'
             => array_merge(
-                (new ShowPlatformInCustomer())->getBreadcrumbs($this->parent, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
+                (new ShowPlatformInCustomer())->getBreadcrumbs($this->parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
                 $headCrumb(
                     $order,
                     [
@@ -628,7 +630,7 @@ class ShowOrder extends OrgAction
                         'organisation' => $this->organisation->slug,
                         'shop'         => $order->shop->slug,
                         'customer'     => $this->parent->customer->slug,
-                        'customerHasPlatform' => $this->parent->id,
+                        'platform'     => $this->parent->platform->slug,
                         'order'        => $order->slug
                     ]
 
