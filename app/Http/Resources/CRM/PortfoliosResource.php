@@ -29,6 +29,7 @@ class PortfoliosResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'  => $this->id,
             'reference'  => $this->reference,
             'item_name'  => $this->item_name,
             'item_code'  => $this->item_code,
