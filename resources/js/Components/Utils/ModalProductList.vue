@@ -137,8 +137,8 @@ const fetchProductList = async (url?: string) => {
 			resetProducts()
 			products.value = data.data
 		}
-		console.log("products.value",data.data);
-		
+		console.log("products.value", data.data)
+
 		optionsMeta.value = data.meta
 		optionsLinks.value = data.links
 
@@ -185,107 +185,106 @@ const formProducts = useForm({
 })
 
 const onSubmitAddProducts = async (data: any, slotProps: any) => {
-  const quantity = parseFloat(slotProps.data.quantity_ordered || "0");
-  const productUniqueId = slotProps.data.id;
-	console.log('xxx');
-	
-  try {
-    if (quantity > 0) {
-      if (addedProductIds.value && addedProductIds.value.has(productUniqueId)) {
-        // Update branch: the product exists, so patch it
-        if (slotProps.data.updateRoute?.name) {
-          await formProducts
-            .transform(() => ({
-              quantity_ordered: quantity,
-            }))
-            .patch(
-              route(slotProps.data.updateRoute.name, {
-                ...slotProps.data.updateRoute.parameters,
-              })
-            );
-          // Refresh the list after update so the UI reflects the change
-          await fetchProductList();
-          // Optionally update icon states if needed
-          iconStates.value[productUniqueId] = {
-            increment: "fal fa-save",
-            decrement: "fal fa-undo",
-          };
-        } else {
-          console.error("Update route is not defined for this product.");
-        }
-      } else {
-        // Add branch: product not present so post as new
-        if (props.typeModel === "purchase_order") {
-          await formProducts
-            .transform(() => ({
-              quantity_ordered: quantity,
-            }))
-            .post(
-              route(data.route?.name || "#", {
-                ...data.route?.parameters,
-                historicSupplierProduct: slotProps.data.historic_id,
-                orgStock: slotProps.data.org_stock_id,
-              })
-            );
-        } else if (props.typeModel === "order") {
-          await formProducts
-            .transform(() => ({
-              quantity_ordered: quantity,
-            }))
-            .post(
-              route(data.route?.name || "#", {
-                ...data.route?.parameters,
-                historicAsset: slotProps.data.historic_id,
-              })
-            );
-        }
-        // Refresh the product list and update tracking with the unique product id
-        await fetchProductList();
-        addedProductIds.value.add(productUniqueId);
-        iconStates.value[productUniqueId] = {
-          increment: "fal fa-save",
-          decrement: "fal fa-undo",
-        };
-      }
+	const quantity = parseFloat(slotProps.data.quantity_ordered || "0")
+	const productUniqueId = slotProps.data.id
+	console.log("xxx")
 
-      notify({
-        title: trans("Success!"),
-        text: trans("Product successfully added or updated."),
-        type: "success",
-      });
-    } else if (quantity === 0) {
-		console.log(productUniqueId, addedProductIds.value.has(productUniqueId),'xx');
-		
-      if (addedProductIds.value && addedProductIds.value.has(productUniqueId)) {
-        await formProducts.delete(
-          route(slotProps.data.deleteRoute?.name || "#", {
-            ...slotProps.data.deleteRoute?.parameters,
-          })
-        );
+	try {
+		if (quantity > 0) {
+			if (addedProductIds.value && addedProductIds.value.has(productUniqueId)) {
+				// Update branch: the product exists, so patch it
+				if (slotProps.data.updateRoute?.name) {
+					await formProducts
+						.transform(() => ({
+							quantity_ordered: quantity,
+						}))
+						.patch(
+							route(slotProps.data.updateRoute.name, {
+								...slotProps.data.updateRoute.parameters,
+							})
+						)
+					// Refresh the list after update so the UI reflects the change
+					await fetchProductList()
+					// Optionally update icon states if needed
+					iconStates.value[productUniqueId] = {
+						increment: "fal fa-save",
+						decrement: "fal fa-undo",
+					}
+				} else {
+					console.error("Update route is not defined for this product.")
+				}
+			} else {
+				// Add branch: product not present so post as new
+				if (props.typeModel === "purchase_order") {
+					await formProducts
+						.transform(() => ({
+							quantity_ordered: quantity,
+						}))
+						.post(
+							route(data.route?.name || "#", {
+								...data.route?.parameters,
+								historicSupplierProduct: slotProps.data.historic_id,
+								orgStock: slotProps.data.org_stock_id,
+							})
+						)
+				} else if (props.typeModel === "order") {
+					await formProducts
+						.transform(() => ({
+							quantity_ordered: quantity,
+						}))
+						.post(
+							route(data.route?.name || "#", {
+								...data.route?.parameters,
+								historicAsset: slotProps.data.historic_id,
+							})
+						)
+				}
+				// Refresh the product list and update tracking with the unique product id
+				await fetchProductList()
+				addedProductIds.value.add(productUniqueId)
+				iconStates.value[productUniqueId] = {
+					increment: "fal fa-save",
+					decrement: "fal fa-undo",
+				}
+			}
 
-        // Remove the product from the set
-        addedProductIds.value.delete(productUniqueId);
+			notify({
+				title: trans("Success!"),
+				text: trans("Product successfully added or updated."),
+				type: "success",
+			})
+		} else if (quantity === 0) {
+			console.log(productUniqueId, addedProductIds.value.has(productUniqueId), "xx")
 
-        // Refresh list to reflect the deletion
-        await fetchProductList();
+			if (addedProductIds.value && addedProductIds.value.has(productUniqueId)) {
+				await formProducts.delete(
+					route(slotProps.data.deleteRoute?.name || "#", {
+						...slotProps.data.deleteRoute?.parameters,
+					})
+				)
 
-        notify({
-          title: trans("Success!"),
-          text: trans("Product successfully deleted."),
-          type: "success",
-        });
-      }
-    }
-  } catch (error) {
-    console.error("Error adding/updating/deleting product:", error);
-    notify({
-      title: trans("Something went wrong"),
-      text: trans("An error occurred while processing the product."),
-      type: "error",
-    });
-  }
-};
+				// Remove the product from the set
+				addedProductIds.value.delete(productUniqueId)
 
+				// Refresh list to reflect the deletion
+				await fetchProductList()
+
+				notify({
+					title: trans("Success!"),
+					text: trans("Product successfully deleted."),
+					type: "success",
+				})
+			}
+		}
+	} catch (error) {
+		console.error("Error adding/updating/deleting product:", error)
+		notify({
+			title: trans("Something went wrong"),
+			text: trans("An error occurred while processing the product."),
+			type: "error",
+		})
+	}
+}
 
 const onFetchNext = async () => {
 	if (optionsLinks.value?.next && !isLoading.value) {
@@ -329,9 +328,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-	  <slot name="default" :isOpenModal :changeModel="() => isOpenModal = !isOpenModal" >
-
-	</slot>
+	<slot name="default" :isOpenModal :changeModel="() => (isOpenModal = !isOpenModal)"> </slot>
 	<KeepAlive>
 		<Modal :isOpen="isOpenModal" @onClose="closeModal" :closeButton="true" width="w-auto">
 			<div class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4 px-3">
@@ -345,39 +342,39 @@ onUnmounted(() => {
 					<div class="flex items-start gap-x-2 gap-y-2 flex-col mt-4">
 						<div class="flex flex-wrap gap-x-2 gap-y-2">
 							<div class="card">
+								<div class="flex justify-between items-center">
+									<div class="flex items-center">
+										<FontAwesomeIcon
+											@click="onClickProduct('products')"
+											icon="fal fa-compress-wide"
+											v-tooltip="'maximize '"
+											class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+									</div>
+
+									<div class="flex items-center gap-2">
+										<IconField>
+											<InputIcon>
+												<FontAwesomeIcon
+													icon="fal fa-search"
+													class="text-gray-500"
+													fixed-width
+													aria-hidden="true" />
+											</InputIcon>
+											<InputText
+												v-model="searchQuery"
+												placeholder="Search products"
+												@input="onSearchQuery(searchQuery)"
+												class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
+										</IconField>
+									</div>
+								</div>
 								<DataTable
 									:value="products"
 									scrollable
 									scrollHeight="400px"
+									scrollWidth="100%"
+									style="width: 900px"
 									:loading="isLoading === 'fetchProduct'">
-									<template #header>
-										<div class="flex justify-between items-center">
-											<div class="flex items-center">
-												<FontAwesomeIcon
-													@click="onClickProduct('products')"
-													icon="fal fa-compress-wide"
-													v-tooltip="'maximize '"
-													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
-											</div>
-
-											<div class="flex items-center gap-2">
-												<IconField>
-													<InputIcon>
-														<FontAwesomeIcon
-															icon="fal fa-search"
-															class="text-gray-500"
-															fixed-width
-															aria-hidden="true" />
-													</InputIcon>
-													<InputText
-														v-model="searchQuery"
-														placeholder="Search products"
-														@input="onSearchQuery(searchQuery)"
-														class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
-												</IconField>
-											</div>
-										</div>
-									</template>
 									<template #empty> No Product found. </template>
 
 									<!-- Loading Icon -->
