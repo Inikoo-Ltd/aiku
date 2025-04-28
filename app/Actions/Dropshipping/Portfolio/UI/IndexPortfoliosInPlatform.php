@@ -112,7 +112,8 @@ class IndexPortfoliosInPlatform extends OrgAction
                 ->column(key: 'product_name', label: __('product name'), canBeHidden: false, searchable: true)
                 ->column(key: 'reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('created at'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'created_at', label: __('created at'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label: __(' '), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 

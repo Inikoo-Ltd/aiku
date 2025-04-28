@@ -121,7 +121,7 @@ watch(isOpenModalPortfolios, (newVal) => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
+        <template v-if="route().params.platform === 'manual'" #other>
             <Button
                 @click="() => isOpenModalPortfolios = true"
                 :type="'secondary'"
