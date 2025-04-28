@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\Stock\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
@@ -17,15 +18,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateStock extends OrgAction
 {
-    private Group|StockFamily $parent;
+    use WithGoodsEditAuthorisation;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof StockFamily) {
-            return $request->user()->authTo("goods.{$this->parent->group->id}.create");
-        }
-        return $request->user()->authTo("goods.{$this->parent->id}.create");
-    }
+    private Group|StockFamily $parent;
 
     public function asController(ActionRequest $request): Response
     {

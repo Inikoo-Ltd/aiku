@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\StockFamily;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\Inventory\StockFamiliesExport;
 use Lorisleiva\Actions\ActionRequest;
@@ -15,11 +17,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportStockFamilies
+class ExportStockFamilies extends OrgAction
 {
     use AsAction;
     use WithAttributes;
     use WithExportData;
+    use WithGoodsAuthorisation;
 
     /**
      * @throws \Throwable
@@ -36,9 +39,9 @@ class ExportStockFamilies
      */
     public function asController(ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($request->all());
+
+        return $this->handle($this->validatedData);
     }
 }

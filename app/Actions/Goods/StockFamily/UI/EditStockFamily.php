@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\StockFamily\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\StockFamily;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,14 +17,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditStockFamily extends OrgAction
 {
+    use WithGoodsEditAuthorisation;
+
     public function handle(StockFamily $stockFamily): StockFamily
     {
         return $stockFamily;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("goods.{$this->group->id}.edit");
     }
 
     public function asController(StockFamily $stockFamily, ActionRequest $request): StockFamily
