@@ -12,7 +12,6 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { inject, ref, watch } from 'vue'
 import axios from 'axios'
-import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
@@ -20,8 +19,6 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import Tag from '@/Components/Tag.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowLeft, faArrowRight } from "@fas"
 import { debounce } from 'lodash'
 import Pagination from '@/Components/Table/Pagination.vue'
 
@@ -39,7 +36,7 @@ const isLoadingSubmit = ref(false)
 const isLoadingFetch = ref(false)
 const errorMessage = ref<any>(null)
 
-// Method: Get portfolios list
+// Method: Get portfolio list
 const queryPortfolio = ref('')
 const portfoliosList = ref([])
 const portfoliosMeta = ref()
@@ -71,8 +68,8 @@ const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
 
 // Method: Submit the selected item
 const onSubmitAddItem = async (close: Function, idProduct: number) => {
-    router.post(route('grp.models.customer.portfolio.store', { customer: props.customer?.id} ), {
-        products: idProduct
+    router.post(route('grp.models.customer.portfolio.store_multiple_manual', { customer: props.customer?.id} ), {
+        items: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
         onError: (error) => {
@@ -92,7 +89,7 @@ const onSubmitAddItem = async (close: Function, idProduct: number) => {
             portfoliosLinks.value = null
             notify({
                 title: trans("Success!"),
-                text: trans("Successfuly added portfolios"),
+                text: trans("Successfully added portfolios"),
                 type: "success"
             })
             close()
@@ -124,7 +121,7 @@ watch(isOpenModalPortfolios, (newVal) => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
+        <template v-if="route().params.platform === 'manual'" #other>
             <Button
                 @click="() => isOpenModalPortfolios = true"
                 :type="'secondary'"
@@ -205,32 +202,6 @@ watch(isOpenModalPortfolios, (newVal) => {
                             :per-page-options="[]"
                             xon-per-page-change="onPerPageChange"
                         />
-                        <!-- <div v-if="portfoliosLinks?.previous || portfoliosLinks?.next" class="mt-2 mx-auto flex justify-center gap-x-2">
-                            <div :class="{
-                                'cursor-not-allowed text-gray-400': !portfoliosLinks?.previous,
-                                'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.previous
-                            }" :dusk="portfoliosLinks?.previous ? 'pagination-simple-previous' : null"
-                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
-                                @click="() => portfoliosLinks?.previous ? getPortfoliosList(portfoliosLinks?.previous) : false"
-                            >
-                                <FontAwesomeIcon :icon="faArrowLeft" class="" fixed-width aria-hidden="true" />
-                                <span class="hidden sm:inline ml-2">{{ trans('Prev') }}</span>
-                            </div>
-
-                            <div class="flex items-center">{{ portfoliosMeta?.current_page }}/{{portfoliosMeta?.from}}</div>
-
-                            <div :class="{
-                                'cursor-not-allowed text-gray-400': !portfoliosLinks?.next,
-                                'text-gray-700 hover:text-gray-500 cursor-pointer': portfoliosLinks?.next
-                            }" :dusk="portfoliosLinks?.next ? 'pagination-simple-previous' : null"
-                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
-                                @click="() => portfoliosLinks?.next ? getPortfoliosList(portfoliosLinks?.next) : false"
-                            >
-                                <span class="hidden sm:inline ml-2">{{ trans('Next') }}</span>
-                                <FontAwesomeIcon :icon="faArrowRight" class="" fixed-width aria-hidden="true" />
-                            </div>
-                        </div> -->
-
 
                         <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
                             <li

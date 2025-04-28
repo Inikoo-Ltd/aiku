@@ -291,7 +291,7 @@ Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->g
 });
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();
-Route::post('customer/{customer:id}/portfolio', StorePortfolio::class)->name('portfolio.store')->withoutScopedBindings();
+Route::post('customer/{customer:id}/product/{product:id}/portfolio', StorePortfolio::class)->name('portfolio.store')->withoutScopedBindings();
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
@@ -632,7 +632,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomer'])->name('platform-order.store')->withoutScopedBindings();
     Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
-    Route::post('portfolio', StoreMultipleManualPortfolios::class)->name('portfolio.store');
+    Route::post('portfolio-multiple-manual', StoreMultipleManualPortfolios::class)->name('portfolio.store_multiple_manual');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');

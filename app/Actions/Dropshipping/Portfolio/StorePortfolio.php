@@ -20,7 +20,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -35,21 +34,20 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Customer $customer, array $modelData): Portfolio
+    public function handle(Customer $customer, Product|StoredItem $item, array $modelData): Portfolio
     {
+        data_set($modelData, 'last_added_at', now(), overwrite: false);
+
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);
 
-        if (Arr::get($modelData, 'product_id')) {
-            data_set($modelData, 'item_id', Arr::pull($modelData, 'product_id'));
-            data_set($modelData, 'item_type', class_basename(Product::class));
-        }
 
-        if (Arr::get($modelData, 'stored_item_id')) {
-            data_set($modelData, 'item_id', Arr::pull($modelData, 'stored_item_id'));
-            data_set($modelData, 'item_type', class_basename(StoredItem::class));
-        }
+        data_set($modelData, 'item_id', $item->id);
+        data_set($modelData, 'item_type', class_basename($item));
+        data_set($modelData, 'item_code', $item instanceof StoredItem ? $item->reference : $item->code);
+        data_set($modelData, 'item_name', $item->name);
+
 
         $portfolio = DB::transaction(function () use ($customer, $modelData) {
             /** @var Portfolio $portfolio */
@@ -80,10 +78,8 @@ class StorePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'platform_id'    => ['required', Rule::exists('platforms', 'id')],
-            'product_id'     => ['sometimes', 'required', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
-            'stored_item_id' => ['sometimes', 'required', Rule::exists('stored_items', 'id')],
-            'reference'      => [
+            'platform_id'   => ['required', Rule::exists('platforms', 'id')],
+            'reference'     => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -96,8 +92,8 @@ class StorePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'status'         => 'sometimes|boolean',
-            'last_added_at'  => 'sometimes|date',
+            'status'        => 'sometimes|boolean',
+            'last_added_at' => 'sometimes|date',
         ];
 
         if (!$this->strict) {
@@ -112,7 +108,7 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Portfolio
+    public function action(Customer $customer, Product|StoredItem $item, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Portfolio
     {
         if (!$audit) {
             Portfolio::disableAuditing();
@@ -123,19 +119,19 @@ class StorePortfolio extends OrgAction
         $this->customer       = $customer;
         $this->initialisationFromShop($customer->shop, $modelData);
 
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle($customer, $item, $this->validatedData);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(Customer $customer, ActionRequest $request): Portfolio
+    public function asController(Customer $customer, Product $product, ActionRequest $request): Portfolio
     {
         $this->customer = $customer;
 
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle($customer, $product, $this->validatedData);
     }
 
     public function htmlResponse(): RedirectResponse

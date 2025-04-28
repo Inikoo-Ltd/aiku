@@ -77,9 +77,9 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
     </template>
 
     <template #cell(action)="{ item: portfolio }">
-      <Button @click="() => onDeletePortfolio(portfolio.routes.delete_route, portfolio.slug)" :key="portfolio.slug"
-              icon="fal fa-trash-alt" type="negative" :disabled="isDeleteLoading === portfolio.slug"
-              :loading="isDeleteLoading === portfolio.slug" />
+      <Button @click="() => onDeletePortfolio(portfolio.routes.delete_route, portfolio.item_id)" :key="portfolio.item_id"
+              icon="fal fa-trash-alt" type="negative" :disabled="isDeleteLoading === portfolio.item_id"
+              :loading="isDeleteLoading === portfolio.item_id" />
     </template>
   </Table>
 </template>

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\StockFamily;
 
-use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateUniversalSearch;
+use App\Actions\Goods\StockFamily\Search\StockFamilyRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -50,7 +50,7 @@ class UpdateStockFamily extends OrgAction
         if (Arr::hasAny($stockFamily->getChanges(), ['state'])) {
             GroupHydrateStockFamilies::dispatch($stockFamily->group)->delay($this->hydratorsDelay);
         }
-        StockFamilyHydrateUniversalSearch::dispatch($stockFamily);
+        StockFamilyRecordSearch::dispatch($stockFamily);
 
 
         return $stockFamily;
