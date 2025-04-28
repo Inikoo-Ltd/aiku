@@ -36,6 +36,8 @@ class StorePortfolio extends OrgAction
      */
     public function handle(Customer $customer, Product|StoredItem $item, array $modelData): Portfolio
     {
+        data_set($modelData, 'last_added_at', now(), overwrite: false);
+
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);

@@ -13,8 +13,10 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
+use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,21 +38,20 @@ class StoreMultipleManualPortfolios extends OrgAction
         $platform = $customer->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
 
         DB::transaction(function () use ($customer, $platform, $modelData) {
-            foreach (Arr::get($modelData, 'products') as $product) {
+            foreach (Arr::get($modelData, 'items') as $itemID) {
                 if ($customer->is_fulfilment) {
-                    $product = [
-                        'stored_item_id' => $product
-                    ];
+                    $item = StoredItem::find($itemID);
                 } else {
-                    $product = [
-                        'product_id' => $product
-                    ];
+                    $item = Product::find($itemID);
                 }
 
-                StorePortfolio::run($customer, [
-                    ...$product,
-                    'platform_id' => $platform->id
-                ]);
+                StorePortfolio::run(
+                    customer: $customer,
+                    item: $item,
+                    modelData: [
+                        'platform_id' => $platform->id
+                    ]
+                );
             }
         });
     }
@@ -58,7 +59,7 @@ class StoreMultipleManualPortfolios extends OrgAction
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'items' => ['required', 'array']
         ];
     }
 
