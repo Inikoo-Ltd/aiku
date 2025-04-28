@@ -103,11 +103,17 @@ class IndexUniversalSearch extends OrgAction
     public function parseGroupSections($route): array|null
     {
         $routes = [
-            'goods.stock-families.' => [],
-            'goods.' => [],
+            'goods.' => 'goods',
         ];
 
-        return null;
+        $sections = [];
+        foreach ($routes as $prefix => $result) {
+            if (str_contains($route, $prefix)) {
+                $sections[] = $result;
+            }
+        }
+
+        return $sections;
     }
 
     public function parseOrganisationSections($route): array|null

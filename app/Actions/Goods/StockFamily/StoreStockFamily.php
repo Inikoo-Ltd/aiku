@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\StockFamily;
 
-use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateUniversalSearch;
+use App\Actions\Goods\StockFamily\Search\StockFamilyRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -47,7 +47,7 @@ class StoreStockFamily extends OrgAction
         });
 
         GroupHydrateStockFamilies::dispatch($this->group);
-        StockFamilyHydrateUniversalSearch::dispatch($stockFamily);
+        StockFamilyRecordSearch::dispatch($stockFamily);
         $stockFamily->refresh();
 
         return $stockFamily;
