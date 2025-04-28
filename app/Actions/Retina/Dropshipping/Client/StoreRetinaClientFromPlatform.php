@@ -10,8 +10,10 @@ namespace App\Actions\Retina\Dropshipping\Client;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateCustomerClients;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
@@ -49,6 +51,14 @@ class StoreRetinaClientFromPlatform extends RetinaAction
             }
 
             $customerClient = UpdateCustomerClient::run($existsClient, $attributes);
+        }
+
+        if ($customerClient->customer_id && $customerClient->platform_id) {
+            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->customer_id)
+            ->where('platform_id', $customerClient->platform_id)
+            ->first();
+
+            CustomerHasPlatformsHydrateCustomerClients::dispatch($customerHasPlatform);
         }
 
         return $customerClient;

@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -39,6 +40,7 @@ class OrderProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $product = Product::find($this->id)->first();
         return [
             'id'                        => $this->id,
             'slug'                      => $this->slug,
@@ -46,6 +48,7 @@ class OrderProductsResource extends JsonResource
             'historic_id'               => $this->current_historic_asset_id,
             'code'                      => $this->code,
             'name'                      => $this->name,
+            'image_thumbnail'           => $product->imageSources(64, 64),
             'state'                     => $this->state,
             'available_quantity'        => $this->available_quantity,
             'quantity_ordered'          => $this->quantity_ordered ?? 0,

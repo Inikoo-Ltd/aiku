@@ -11,6 +11,7 @@ namespace App\Actions\Helpers;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,19 +20,29 @@ class RedirectPortfolioItemLink extends OrgAction
 {
     public function handle(Portfolio $portfolio): ?RedirectResponse
     {
-        /** @var Product $product */
+        /** @var Product|StoredItem $product */
         $product = $portfolio->item;
 
+        if ($product instanceof Product) {
+            return Redirect::route(
+                'grp.org.shops.show.catalogue.products.all_products.show',
+                [
+                    $product->organisation->slug,
+                    $product->shop->slug,
+                    $product->slug,
+                ]
+            );
+        }
+
         return Redirect::route(
-            'grp.org.fulfilments.show.operations.invoices.invoices.index',
+            'grp.org.warehouses.show.inventory.stored_items.current.show',
             [
                 $product->organisation->slug,
-                $product->shop->slug,
+                $product->warehouse->slug,
                 $product->slug,
             ]
         );
     }
-
 
     public function asController(Portfolio $portfolio, ActionRequest $request): RedirectResponse
     {
