@@ -69,7 +69,7 @@ class IndexEmailAddress extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle();
     }

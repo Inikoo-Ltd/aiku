@@ -481,6 +481,7 @@ test('UI Index Email Bulk Runs Overview', function () {
 });
 
 test('UI Index Email Addresses Overview', function () {
+    $this->withoutExceptionHandling();
     $response = $this->get(route('grp.overview.comms-marketing.email-addresses.index'));
 
     $response->assertInertia(function (AssertableInertia $page) {

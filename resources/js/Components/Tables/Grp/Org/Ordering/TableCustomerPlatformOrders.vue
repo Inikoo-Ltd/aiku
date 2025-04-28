@@ -15,7 +15,7 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.crm.customers.show.platforms.show.orders.index":
             return route(
                 "grp.org.shops.show.crm.customers.show.platforms.show.orders.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["customerHasPlatform"], order.slug])
+                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["platform"], order.slug])
         default:
             return null
     }

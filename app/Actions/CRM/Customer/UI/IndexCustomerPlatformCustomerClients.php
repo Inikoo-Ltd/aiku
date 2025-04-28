@@ -17,9 +17,8 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
-use App\Models\PlatformHasClient;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -29,28 +28,26 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use UnexpectedValueException;
 
 class IndexCustomerPlatformCustomerClients extends OrgAction
 {
-    private ShopifyUser|TiktokUser $parent;
+    use WithCustomerPlatformSubNavigation;
+
+    private Platform $platform;
     private CustomerHasPlatform $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+
         $this->customerHasPlatform = $customerHasPlatform;
+        $this->platform = $platform;
         $this->initialisationFromShop($shop, $request);
 
-        $this->parent = match ($customerHasPlatform->platform->type) {
-            PlatformTypeEnum::TIKTOK => $customer->tiktokUser,
-            PlatformTypeEnum::SHOPIFY => $customer->shopifyUser,
-            PlatformTypeEnum::WOOCOMMERCE => throw new UnexpectedValueException('To be implemented')
-        };
-
-        return $this->handle($customer);
+        return $this->handle($customer, $platform);
     }
 
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, Platform $platform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -64,13 +61,9 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(PlatformHasClient::class);
-        $queryBuilder->where('platform_has_clients.customer_id', $customer->id);
-        $queryBuilder->where('platform_has_clients.userable_type', $this->parent->getMorphClass());
-        $queryBuilder->where('platform_has_clients.userable_id', $this->parent->id);
-
-
-        $queryBuilder->leftJoin('customer_clients', 'platform_has_clients.customer_client_id', 'customer_clients.id');
+        $queryBuilder = QueryBuilder::for(CustomerClient::class);
+        $queryBuilder->where('customer_clients.customer_id', $customer->id);
+        $queryBuilder->where('customer_clients.platform_id', $platform->id);
 
         return $queryBuilder
             ->defaultSort('customer_clients.reference')
@@ -114,17 +107,17 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->parent->name;
+        $title      = $this->customerHasPlatform->customer->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('customer client')
         ];
 
-        if ($this->parent instanceof TiktokUser) {
+        if ($this->platform->type == PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
                 'label' => __('Tiktok Clients')
             ];
-        } elseif ($this->parent instanceof ShopifyUser) {
+        } elseif ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
             $afterTitle = [
                 'label' => __('Shopify Clients')
             ];
@@ -134,9 +127,10 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
             ];
         }
 
+        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
 
         return Inertia::render(
-            'Dropshipping/Client/CustomerClients',
+            'Org/Shop/CRM/CustomerClients',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -148,9 +142,10 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
+                    'subNavigation' => $subNavigation,
                     'actions'       => [
-                        match (class_basename($this->parent)) {
-                            'ShopifyUser' => [
+                        match ($this->platform->type) {
+                            PlatformTypeEnum::SHOPIFY => [
                                 'type'    => 'button',
                                 'style'   => 'create',
                                 'tooltip' => __('Fetch Client'),
@@ -161,7 +156,8 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
                                         'platform' => $this->platform->slug
                                     ]
                                 ]
-                            ]
+                            ],
+                            default => []
                         },
                     ],
 
@@ -176,7 +172,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowPlatformInCustomer::make()->getBreadcrumbs($this->customerHasPlatform, $routeName, $routeParameters),
+                ShowPlatformInCustomer::make()->getBreadcrumbs($this->platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

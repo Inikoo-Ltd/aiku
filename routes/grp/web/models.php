@@ -630,6 +630,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::post('client/{platform:id}', StoreCustomerClient::class)->name('platform-client.store')->withoutScopedBindings();
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
+    Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomer'])->name('platform-order.store')->withoutScopedBindings();
     Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
     Route::post('portfolio', StoreMultipleManualPortfolios::class)->name('portfolio.store');
 });
