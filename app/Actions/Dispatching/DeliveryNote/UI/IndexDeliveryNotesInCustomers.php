@@ -112,10 +112,10 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerHasPlatform = $platform;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customerClient);

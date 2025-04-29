@@ -208,15 +208,17 @@ class StoreOrder extends OrgAction
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
         }
 
-        $platform = $parent->platforms()
-            ->where("type", PlatformTypeEnum::MANUAL)
-            ->first();
+
 
         if ($parent instanceof Customer) {
+            $platform = $parent->platforms()
+                ->where("type", PlatformTypeEnum::MANUAL)
+                ->first();
+
             $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->id)->where('platform_id', $platform->id)->first();
             CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
         } elseif ($parent instanceof CustomerClient) {
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->customer_id)->where('platform_id', $platform->id)->first();
+            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->customer_id)->where('platform_id', $parent->platform_id)->first();
             CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
         }
 
@@ -290,10 +292,12 @@ class StoreOrder extends OrgAction
                 $order->customer->slug,
                 $order->slug
             ]),
-            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer-clients.orders.show', [
+            // TODO: error
+            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
+                $order->platform_id,
                 $order->customerClient->ulid,
                 $order->slug
             ]),

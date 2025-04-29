@@ -13,6 +13,7 @@ use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\WithInvoiceCategorySubNavigation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
@@ -32,6 +33,8 @@ use App\Models\Accounting\InvoiceCategory;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
@@ -54,10 +57,10 @@ class IndexInvoices extends OrgAction
     use WithInvoiceCategorySubNavigation;
 
 
-    private Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent;
+    private Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|CustomerClient $parent;
     private string $bucket = '';
 
-    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|CustomerClient $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -96,6 +99,8 @@ class IndexInvoices extends OrgAction
             $queryBuilder->where('invoices.order_id', $parent->id);
         } elseif ($parent instanceof InvoiceCategory) {
             $queryBuilder->where('invoices.invoice_category_id', $parent->id);
+        } elseif ($parent instanceof CustomerClient) {
+            $queryBuilder->where('invoices.customer_client_id', $parent->id);
         } elseif ($parent instanceof OrgPaymentServiceProvider) {
             $queryBuilder->leftJoin('model_has_payments', function ($join) {
                 $join->on('invoices.id', '=', 'model_has_payments.model_id')
@@ -154,7 +159,7 @@ class IndexInvoices extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): Closure
+    public function tableStructure(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|CustomerClient $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
@@ -262,6 +267,8 @@ class IndexInvoices extends OrgAction
             $subNavigation = $this->getInvoicesNavigation($this->parent);
         } elseif ($this->parent instanceof InvoiceCategory) {
             $subNavigation = $this->getInvoiceCategoryNavigation($this->parent);
+        } elseif ($this->parent instanceof CustomerClient) {
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerHasPlatform);
         }
 
 
@@ -423,6 +430,16 @@ class IndexInvoices extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'all';
+        $this->parent = $customerClient;
+        $this->customerHasPlatform = $platform;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($customerClient);
+    }
+
 
     public function unpaid(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -516,6 +533,7 @@ class IndexInvoices extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
+        dd("test");
         $this->parent = $customer;
         $this->initialisationFromShop($shop, $request)->withTab(InvoicesTabsEnum::values());
 
@@ -673,6 +691,16 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
+                )
+            ),
+
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index' => array_merge(
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
+                        'parameters' => $routeParameters
+                    ]
                 )
             ),
 
