@@ -12,8 +12,10 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
 use App\Actions\Comms\Email\SendNewCustomerNotification;
+use App\Actions\CRM\PollReply\StoreMultiPollReply;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -34,6 +36,12 @@ class RegisterCustomer extends OrgAction
         data_set($modelData, 'registered_at', now());
         data_set($modelData, 'status', CustomerStatusEnum::PENDING_APPROVAL);
 
+        if ($shop->type != ShopTypeEnum::FULFILMENT) {
+            $autoApprove = Arr::get($shop->settings, 'customer.registration_auto_approve', false);
+            if ($autoApprove) {
+                data_set($modelData, 'status', CustomerStatusEnum::APPROVED);
+            }
+        }
 
         $customer = StoreCustomer::make()->action($shop, $modelData);
 
@@ -45,6 +53,15 @@ class RegisterCustomer extends OrgAction
             'password'     => $password,
             'is_root'      => true,
         ]);
+
+        if (Arr::get($modelData, 'poll_replies', []) != []) {
+            $storePollyRepliesData = [
+                'customer_id' => $customer->id,
+                'poll_replies' => $modelData['poll_replies'],
+            ];
+            StoreMultiPollReply::make()->action($shop, $storePollyRepliesData);
+        }
+
 
         SendCustomerWelcomeEmail::run($customer);
 
@@ -85,10 +102,11 @@ class RegisterCustomer extends OrgAction
                     'required',
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
+            'poll_replies'            => ['sometimes', 'required', 'array'],
+
         ];
     }
 
-    /**
 
 
     /**
