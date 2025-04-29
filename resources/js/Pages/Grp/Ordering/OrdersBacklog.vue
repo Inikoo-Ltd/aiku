@@ -4,7 +4,7 @@
   - Copyright (c) 2023, Raul A Perusquia Flores
   -->
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TabsBox from "@/Components/Navigation/TabsBox.vue"
@@ -14,9 +14,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt } from '@fal'
 import { ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
-import Table from '@/Components/Table/Table.vue'
-import Tag from '@/Components/Tag.vue'
-import Icon from '@/Components/Icon.vue'
+import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
+
 
 const props = defineProps<{
     title: string
@@ -47,27 +46,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
-    <Table :resource="props[currentTab]" :name="currentTab">
-        <template #cell(customer_name)="{ item }">
-            <Link :href="route('grp.org.shops.show.crm.customers.show', {
-                organisation: route().params.organisation,
-                shop: route().params.shop,
-                customer: item.customer_slug
-            })" class="primaryLink">
-                {{ item.customer_name }}
-            </Link>
-        </template>
-
-        <template #cell(state)="{ item }">
-            <Icon :data="item.state_icon" />
-        </template>
-
-        <template #cell(payment_status)="{ item }">
-            <Tag v-if="item.payment_state === 'completed'" :label="item.payment_status" theme="3" noHoverColor></Tag>
-            <div v-else>
-                {{ item.payment_status }}
-            </div>
-        </template>
-    </Table>
+    <TableOrders :tab="currentTab" :data="props[currentTab]"></TableOrders>
 
 </template>
