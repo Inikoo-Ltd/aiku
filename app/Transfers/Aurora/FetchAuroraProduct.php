@@ -121,6 +121,8 @@ class FetchAuroraProduct extends FetchAurora
             $name = $code;
         }
 
+        $grossWeight = $this->auroraModelData->{'Product Package Weight'};
+
         $this->parsedData['product'] = [
             'is_main'                => true,
             'type'                   => AssetTypeEnum::PRODUCT,
@@ -143,6 +145,13 @@ class FetchAuroraProduct extends FetchAurora
             'fetched_at'             => now(),
             'last_fetched_at'        => now(),
         ];
+
+
+        if ($grossWeight) {
+            $this->parsedData['product']['gross_weight'] = (int) ceil($grossWeight * 1000);
+        }
+
+
 
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {

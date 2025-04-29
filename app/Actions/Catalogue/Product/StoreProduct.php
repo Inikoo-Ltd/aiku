@@ -97,6 +97,7 @@ class StoreProduct extends OrgAction
 
 
             $product = $this->createAsset($product);
+
             return $this->associateOrgStocks($product, $orgStocks);
         });
 
@@ -259,6 +260,7 @@ class StoreProduct extends OrgAction
             $rules['state']              = ['required', Rule::enum(ProductStateEnum::class)];
             $rules['status']             = ['required', Rule::enum(ProductStatusEnum::class)];
             $rules['trade_config']       = ['required', Rule::enum(ProductTradeConfigEnum::class)];
+            $rules['gross_weight']       = ['sometimes', 'integer', 'gt:0'];
         }
 
         return $rules;
