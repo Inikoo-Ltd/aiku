@@ -97,7 +97,7 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Action -->
         <template #cell(actions)="{ item }">
             <div class="flex gap-2">
-                <div class="w-fit">
+                <div v-if="state === 'creating' || state === 'submitted'" class="w-fit">
                     <NumberWithButtonSave
                         :modelValue="item.quantity_ordered"
                         :routeSubmit="item.updateRoute"
@@ -111,7 +111,7 @@ const debounceUpdateQuantity = debounce(
                 </div>
                 
                 <Link
-                    v-if="state === 'creating'"
+                    v-if="state === 'creating' || state === 'submitted'"
                     :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
                     as="button"
                     :method="item.deleteRoute.method"
