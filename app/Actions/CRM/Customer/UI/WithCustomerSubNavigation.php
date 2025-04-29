@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
@@ -86,6 +87,9 @@ trait WithCustomerSubNavigation
 
     protected function getCustomerDropshippingSubNavigation(Customer $customer, ActionRequest $request): array
     {
+        if ($customer->status != CustomerStatusEnum::APPROVED) {
+            return [];
+        }
         return [
             [
                 'isAnchor' => true,
