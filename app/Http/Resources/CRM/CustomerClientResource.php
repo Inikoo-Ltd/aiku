@@ -30,6 +30,7 @@ class CustomerClientResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                   => $this->id,
             'ulid'                   => $this->ulid,
             'reference'              => $this->reference,
             'name'                   => $this->name,
