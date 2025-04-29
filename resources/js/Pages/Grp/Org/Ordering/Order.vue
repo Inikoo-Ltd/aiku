@@ -10,59 +10,42 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, watch } from 'vue'
+import { computed, ref, inject } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import TablePalletDeliveryPallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveryPallets.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { get } from 'lodash-es'
-import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
+import { PalletDelivery, UploadPallet } from '@/types/Pallet'
 import { Table as TableTS } from '@/types/Table'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
-
 import '@/Composables/Icon/PalletDeliveryStateEnum'
-
-
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { Timeline as TSTimeline } from "@/types/Timeline"
-
 import axios from 'axios'
 import { Action } from '@/types/Action'
-import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from '@kyvg/vue3-notification'
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
-import { Button as TSButton } from '@/types/Button'
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
-
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
-
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
-
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { faExclamationTriangle, faExclamation } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, } from '@fal'
