@@ -178,7 +178,7 @@ class EditShop extends OrgAction
                         ],
                         [
                             'label'  => __('customer'),
-                            'icon'   => 'fal fa-user',
+                            'icon'   => 'fal fa-transporter',
                             'fields' => [
                                 'registration_auto_approve' => [
                                     'type'  => 'toggle',
