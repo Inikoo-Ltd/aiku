@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Platform\UI;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -75,6 +76,20 @@ class ShowPlatformInCustomer extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+
+                'showcase' => [
+                    'stats' => [
+                        'name' => match ($customerHasPlatform->platform->type) {
+                            PlatformTypeEnum::SHOPIFY => $customerHasPlatform->customer->shopifyUser->name,
+                            PlatformTypeEnum::WOOCOMMERCE => $customerHasPlatform->customer->wooCommerceUser->name,
+                            PlatformTypeEnum::TIKTOK => $customerHasPlatform->customer->tiktokUser->name,
+                            default => $customerHasPlatform->customer->name,
+                        },
+                        'number_orders' => $customerHasPlatform->number_orders,
+                        'number_customer_clients' => $customerHasPlatform->number_customer_clients,
+                        'number_portfolios' => $customerHasPlatform->number_portfolios
+                    ]
+                ]
             ]
         );
     }
