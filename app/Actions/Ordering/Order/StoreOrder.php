@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -30,8 +31,10 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
@@ -203,6 +206,18 @@ class StoreOrder extends OrgAction
             GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
             OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+        }
+
+        $platform = $parent->platforms()
+            ->where("type", PlatformTypeEnum::MANUAL)
+            ->first();
+
+        if ($parent instanceof Customer) {
+            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->id)->where('platform_id', $platform->id)->first();
+            CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
+        } elseif ($parent instanceof CustomerClient) {
+            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->customer_id)->where('platform_id', $platform->id)->first();
+            CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
         }
 
         OrderRecordSearch::dispatch($order);
