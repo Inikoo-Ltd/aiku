@@ -22,7 +22,13 @@ const props = defineProps({
 	},
 })
 
-console.log("sdsd", props)
+// di <script setup lang="ts">
+const initialPollReplies = props.polls.map((poll) => ({
+	id: poll.id,
+	type: poll.type,
+	label: poll.label,
+	answer: poll.options.length > 1 ? null : "", // null untuk dropdown, "" untuk textarea
+}))
 
 // Define form using Inertia's useForm
 const form = useForm({
@@ -34,6 +40,7 @@ const form = useForm({
 	password: "",
 	password_confirmation: "",
 	contact_address: {},
+	poll_replies: initialPollReplies,
 })
 
 // Define reactive variables
@@ -214,30 +221,36 @@ simplePolls.value.forEach((poll) => {
 					<hr />
 				</div>
 
-				<div v-for="poll in simplePolls" :key="poll.name" class="sm:col-span-6">
+				<div
+					v-for="(pollReply, idx) in form.poll_replies"
+					:key="pollReply.id"
+					class="sm:col-span-6">
 					<label class="block text-sm font-medium text-gray-700 capitalize">
-						{{ poll.label }}
+						{{ pollReply.label }}
 					</label>
 
 					<Select
-						v-if="poll.options.length > 1"
-						v-model="poll.name"
-						:options="poll.options"
+						v-if="props.polls[idx].options.length > 1"
+						v-model="form.poll_replies[idx].answer"
+						:options="props.polls[idx].options"
 						optionLabel="label"
 						optionValue="value"
-						:placeholder="`Select ${poll.label}`"
+						:placeholder="`Select ${pollReply.label}`"
 						class="mt-2 w-full" />
 
 					<Textarea
 						v-else
-						v-model="poll.name"
+						v-model="form.poll_replies[idx].answer"
 						rows="5"
 						cols="30"
 						placeholder="Your answer…"
 						class="mt-2 w-full border rounded-md p-2" />
 
-					<p v-if="form.errors[`polls.${poll.name}`]" class="mt-1 text-sm text-red-600">
-						{{ form.errors[`polls.${poll.name}`] }}
+
+					<p
+						v-if="form.errors[`poll_replies.${idx}.answer`]"
+						class="mt-1 text-sm text-red-600">
+						{{ form.errors[`poll_replies.${idx}.answer`] }}
 					</p>
 				</div>
 
