@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
@@ -34,12 +35,13 @@ class StoreRetinaProductShopify extends RetinaAction
     {
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
         DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
-            foreach (Arr::get($modelData, 'products') as $product) {
-                $portfolio = StorePortfolio::run($shopifyUser->customer, $product, [
+            foreach (Arr::get($modelData, 'products') as $productId) {
+                $product = Product::find($productId);
+                $portfolio = StorePortfolio::make()->action($shopifyUser->customer, $product, [
                     'platform_id' => $platform->id,
                 ]);
 
-                HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
+                HandleApiProductToShopify::dispatch($shopifyUser, [$portfolio->id]);
             }
         });
 
