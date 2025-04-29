@@ -34,7 +34,7 @@ const props = defineProps({
       leave-to-class="opacity-0 scale-95"
     >
       <PopoverPanel v-slot="{ close }" ref="panelPopover"
-        :class="`absolute z-50 mt-3 transform py-3 px-4 bg-white rounded-md shadow-md w-fit ${position}`" >
+        :class="`border border-gray-800/10 absolute z-50 mt-3 transform py-3 px-4 bg-white rounded-md shadow-md w-fit ${position}`" >
         <!-- Pass closePopover method to content slot -->
         <slot name="content" :close :open></slot>
       </PopoverPanel>
