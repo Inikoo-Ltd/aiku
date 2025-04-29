@@ -282,7 +282,8 @@ class StoreOrder extends OrgAction
                 $order->customerClient->ulid,
                 $order->slug
             ]),
-            'grp.models.customer.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.orders.show', [
+            'grp.models.customer.platform-order.store',
+            'grp.models.customer-client.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
@@ -337,6 +338,18 @@ class StoreOrder extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inPlatformCustomerClient(CustomerClient $customerClient, Platform $platform, ActionRequest $request): Order
+    {
+        $this->parent = $customerClient;
+        $this->set('platform_id', $platform->id);
+        $this->initialisationFromShop($customerClient->shop, $request);
+
+        return $this->handle($customerClient, $this->validatedData);
     }
 
     /**

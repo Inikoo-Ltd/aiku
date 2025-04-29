@@ -46,7 +46,8 @@ trait WithNoStrictRules
         $rules['cancelled_at']           = ['sometimes', 'nullable', 'date'];
         $rules['platform_id']            = ['sometimes', 'integer'];
         $rules['updated_by_customer_at'] = ['sometimes', 'nullable', 'date'];
-
+        $rules['weight']                 = ['sometimes', 'integer'];
+        $rules['estimated_weight']       = ['sometimes', 'integer'];
 
         return $this->orderingAmountNoStrictFields($rules);
     }
