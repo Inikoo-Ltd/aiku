@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Ordering\OrdersResource;
+use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -179,6 +180,7 @@ class IndexOrdersInPlatform extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
+                'platform' => PlatformsResource::make($this->customerHasPlatform->platform),
                 'data'        => OrdersResource::collection($orders),
 
             ]

@@ -42,6 +42,10 @@ class GetRetinaLayout
             'website'  => GroupResource::make($request->get('website'))->getArray(),
             'customer' => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
+            'web_page ' => [
+                'header' => Arr::get($website->published_layout, 'header', []),
+                'footer' => Arr::get($website->published_layout, 'footer', [])
+            ],
             'navigation' => match ($request->get('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
                 'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
