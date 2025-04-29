@@ -16,8 +16,9 @@ import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 
-library.add(faEnvelope)
+library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
 // Set default layout
 defineOptions({ layout: RetinaShowIris })
@@ -34,7 +35,7 @@ const props = defineProps({
 const initialPollReplies = props.polls.map((poll) => ({
 	id: poll.id,
 	type: poll.type,
-  label: poll.label, 
+	label: poll.label,
 	answer: poll.type === "option" ? null : "",
 }))
 
@@ -111,7 +112,7 @@ simplePolls.value.forEach((poll) => {
 </script>
 
 <template>
-	<div class="max-w-lg mx-auto my-8">
+	<div class="max-w-2xl mx-auto my-8">
 		<!-- Card container -->
 		<div class="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
 			<!-- Card header -->
@@ -134,14 +135,14 @@ simplePolls.value.forEach((poll) => {
 							<div class="mt-2">
 								<IconField>
 									<InputIcon>
-										<FontAwesomeIcon :icon="faEnvelope" />
+										<FontAwesomeIcon :icon="faUser" />
 									</InputIcon>
 
 									<InputText
 										v-model="form.contact_name"
 										id="contact_name"
 										name="contact_name"
-                    class="w-full"
+										class="w-full"
 										required />
 								</IconField>
 								<p
@@ -160,19 +161,28 @@ simplePolls.value.forEach((poll) => {
 								>{{ trans("Email") }}</label
 							>
 							<div class="mt-2">
-								<PureInput
-									v-model="form.email"
-									type="email"
-									id="email"
-									name="email"
-									required />
+								<!-- make IconField full-width -->
+								<IconField class="w-full">
+									<InputIcon>
+										<FontAwesomeIcon :icon="faEnvelope" />
+									</InputIcon>
+
+									<!-- and make the input itself full-width -->
+									<InputText
+										v-model="form.email"
+										type="email"
+										id="email"
+										name="email"
+										class="w-full"
+										required />
+								</IconField>
+
 								<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
 									{{ form.errors.email }}
 								</p>
 							</div>
 						</div>
 
-						<!-- Phone Number -->
 						<div class="sm:col-span-3">
 							<label
 								for="phone-number"
@@ -180,12 +190,20 @@ simplePolls.value.forEach((poll) => {
 								>{{ trans("Phone Number") }}</label
 							>
 							<div class="mt-2">
-								<PureInput
-									v-model="form.phone"
-									type="text"
-									id="phone-number"
-									name="phone"
-									required />
+								<IconField class="w-full">
+									<InputIcon>
+										<FontAwesomeIcon :icon="faPhone" />
+									</InputIcon>
+
+									<InputText
+										v-model="form.phone"
+										type="text"
+										id="phone-number"
+										name="phone"
+										class="w-full"
+										required />
+								</IconField>
+
 								<p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
 									{{ form.errors.phone }}
 								</p>
@@ -200,11 +218,19 @@ simplePolls.value.forEach((poll) => {
 								>{{ trans("Business Name") }}</label
 							>
 							<div class="mt-2">
-								<PureInput
-									v-model="form.company_name"
-									type="text"
-									id="business-name"
-									name="company_name" />
+								<IconField class="w-full">
+									<InputIcon>
+										<FontAwesomeIcon :icon="faBuilding" />
+									</InputIcon>
+
+									<InputText
+										v-model="form.company_name"
+										type="text"
+										id="business-name"
+										name="company_name"
+										class="w-full" />
+								</IconField>
+
 								<p
 									v-if="form.errors.company_name"
 									class="text-sm text-red-600 mt-1">
@@ -221,7 +247,13 @@ simplePolls.value.forEach((poll) => {
 								>{{ trans("Website") }}</label
 							>
 							<div class="mt-2">
-								<PureInput v-model="form.website" />
+								<IconField class="w-full">
+									<InputIcon>
+										<FontAwesomeIcon :icon="faGlobe" />
+									</InputIcon>
+
+									<InputText v-model="form.website" class="w-full" />
+								</IconField>
 								<p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
 									{{ form.errors.website }}
 								</p>
@@ -249,7 +281,7 @@ simplePolls.value.forEach((poll) => {
 						<div class="sm:col-span-6">
 							<hr />
 						</div>
-    
+
 						<div
 							v-for="(pollReply, idx) in form.poll_replies"
 							:key="pollReply.id"
