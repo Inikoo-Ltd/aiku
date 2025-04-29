@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 19 Apr 2024 13:42:37 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Fri, 19 Apr 2024 13:42:37 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -26,11 +26,6 @@ use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Mail\DispatchedEmailResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -43,8 +38,7 @@ class ShowInvoice extends OrgAction
     use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
 
-    private Organisation|Shop|CustomerClient $parent;
-    private CustomerHasPlatform $customerHasPlatform;
+    private Organisation|Shop $parent;
 
     public function handle(Invoice $invoice): Invoice
     {
@@ -76,35 +70,19 @@ class ShowInvoice extends OrgAction
         return $this->handle($invoice);
     }
 
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
-    {
-        $this->parent = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
-        $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($invoice);
-    }
-
-    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, Invoice $invoice, ActionRequest $request): Invoice
-    {
-        $this->parent = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $this->handle($invoice);
-    }
 
     /**
-     * Get structured invoice summary for display in the UI.
+     * Get a structured invoice summary for display in the UI.
      *
-     * NOTE: Used in deleted invoices as well ShowDeletedInvoice.php
+     * NOTE: Used in deleted invoices as well as ShowDeletedInvoice.php
      *
      * Returns a multidimensional array with three sections:
      * 1. Product/service line items (conditionally showing services and rentals)
      * 2. Additional costs (charges, shipping, insurance, tax)
      * 3. Total amount
      *
-     * @param  Invoice  $invoice  The invoice model to generate summary for
+     * @param  Invoice  $invoice  The invoice models to generate a summary for
      *
      * @return array Structured array of invoice summary data for UI rendering
      */
@@ -134,17 +112,14 @@ class ShowInvoice extends OrgAction
             [
                 [
                     'label'       => __('Charges'),
-                    // 'information'   => __('Shipping fee to your address using DHL service.'),
                     'price_total' => $invoice->charges_amount
                 ],
                 [
                     'label'       => __('Shipping'),
-                    // 'information'   => __('Tax is based on 10% of total order.'),
                     'price_total' => $invoice->shipping_amount
                 ],
                 [
                     'label'       => __('Insurance'),
-                    // 'information'   => __('Tax is based on 10% of total order.'),
                     'price_total' => $invoice->insurance_amount
                 ],
                 [

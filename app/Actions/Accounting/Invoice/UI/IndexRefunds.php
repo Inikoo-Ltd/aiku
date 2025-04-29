@@ -232,22 +232,7 @@ class IndexRefunds extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $refunds, ActionRequest $request): Response
     {
-        $subNavigation = [];
-
-        if ($this->parent instanceof Customer) {
-            if ($this->parent->is_dropshipping) {
-                $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
-            } else {
-                $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
-            }
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof Shop || $this->parent instanceof Fulfilment || $this->parent instanceof Organisation) {
-            $subNavigation = $this->getInvoicesNavigation($this->parent);
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            $subNavigation = $this->getInvoiceCategoryNavigation($this->parent);
-        }
-
+        $subNavigation = IndexInvoices::make()->getSubNavigation($request);
 
         $title = __('Refunds');
 

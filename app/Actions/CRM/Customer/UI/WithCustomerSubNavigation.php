@@ -18,6 +18,10 @@ trait WithCustomerSubNavigation
 {
     protected function getCustomerSubNavigation(Customer $customer, ActionRequest $request): array
     {
+
+        $deliveryNotedLabel=__('Delivery notes');
+        $webUsersLabel=__('Web users');
+
         return [
             [
                 'isAnchor'   => true,
@@ -39,10 +43,10 @@ trait WithCustomerSubNavigation
 
                 ],
 
-                'label'    => __('Web users'),
+                'label'    => $webUsersLabel,
                 'leftIcon' => [
                     'icon'    => 'fal fa-terminal',
-                    'tooltip' => __('Web users'),
+                    'tooltip' => $webUsersLabel,
                 ],
                 'number'   => $customer->stats->number_web_users
             ],
@@ -59,7 +63,7 @@ trait WithCustomerSubNavigation
                 ]
             ],
             [
-                'label'    => __('Delivery notes'),
+                'label'    => $deliveryNotedLabel,
                 'number'   => $customer->stats->number_delivery_notes,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
@@ -67,7 +71,7 @@ trait WithCustomerSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-truck'],
-                    'tooltip' => __('Delivery notes')
+                    'tooltip' => $deliveryNotedLabel
                 ]
             ],
             [
@@ -87,6 +91,9 @@ trait WithCustomerSubNavigation
 
     protected function getCustomerDropshippingSubNavigation(Customer $customer, ActionRequest $request): array
     {
+        $deliveryNotedLabel=__('Delivery notes');
+        $webUsersLabel=__('Web users');
+
         if ($customer->status != CustomerStatusEnum::APPROVED) {
             return [];
         }
@@ -110,10 +117,10 @@ trait WithCustomerSubNavigation
 
                 ],
 
-                'label'    => __('Web users'),
+                'label'    => $webUsersLabel,
                 'leftIcon' => [
                     'icon'    => 'fal fa-terminal',
-                    'tooltip' => __('Web users'),
+                    'tooltip' => $webUsersLabel,
                 ],
                 'number'   => $customer->stats->number_web_users
             ],
@@ -145,7 +152,7 @@ trait WithCustomerSubNavigation
                 ]
             ],
             [
-                'label'    => __('Delivery notes'),
+                'label'    => $deliveryNotedLabel,
                 'number'   => $customer->stats->number_delivery_notes,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
@@ -153,7 +160,7 @@ trait WithCustomerSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-truck'],
-                    'tooltip' => __('Delivery notes')
+                    'tooltip' => $deliveryNotedLabel
                 ]
             ],
             [
@@ -196,30 +203,6 @@ trait WithCustomerSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-shopping-cart'],
                     'tooltip' => __('orders')
-                ]
-            ],
-            [
-                'label'    => __('Delivery notes'),
-                'number'   => $customerClient->stats->number_delivery_notes ?? 0,
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.delivery_notes.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-truck'],
-                    'tooltip' => __('Delivery notes'),
-                ]
-            ],
-            [
-                'label'    => __('Invoices'),
-                'number'   => $customerClient->stats->number_invoices ?? 0,
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.invoices.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-file-invoice'],
-                    'tooltip' => __('invoices')
                 ]
             ],
         ];

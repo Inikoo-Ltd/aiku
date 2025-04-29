@@ -66,13 +66,8 @@ Route::prefix('{customer}')->as('show')->group(function () {
                     Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
                 });
 
-                Route::prefix('{customerClient}/delivery_notes')->as('.show.delivery_notes')->group(function () {
-                    Route::get('', [IndexDeliveryNotesInCustomers::class,'inCustomerClient'])->name('.index');
-                    Route::get('{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClientInShop'])->name('.show');
-                });
 
                 Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
-                    Route::get('', [IndexInvoices::class, 'inCustomerClient'])->name('.index');
                     Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');
                 });
 
