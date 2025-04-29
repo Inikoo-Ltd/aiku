@@ -42,12 +42,18 @@ class StoreMultipleManualPortfolios extends OrgAction
         DB::transaction(function () use ($customer, $platform, $modelData) {
             foreach (Arr::get($modelData, 'items') as $itemID) {
                 if ($customer->is_fulfilment) {
+                    /** @var StoredItem $item */
                     $item = StoredItem::find($itemID);
                 } else {
+                    /** @var Product $item */
                     $item = Product::find($itemID);
                 }
 
-                StorePortfolio::run(
+                if ($item->portfolio()->where('customer_id', $customer->id)->exists()) {
+                    continue;
+                }
+
+                StorePortfolio::make()->action(
                     customer: $customer,
                     item: $item,
                     modelData: [
@@ -57,8 +63,8 @@ class StoreMultipleManualPortfolios extends OrgAction
             }
         });
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->customer_id)
-        ->where('platform_id', $platform->platform_id)
+        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)
+        ->where('platform_id', $platform->id)
         ->first();
 
         CustomerHasPlatformsHydratePortofolios::dispatch($customerHasPlatform);
