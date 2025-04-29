@@ -95,7 +95,7 @@ class Handler extends ExceptionHandler
             return $this->loadErrorMiddleware($request, function ($request) use ($e, $response, $app) {
                 if (Auth::check()) {
                     $route = $request->route();
-                    if ($route and (str_starts_with($route->getName(), 'grp.models') || str_starts_with($route->getName(), 'retina.models'))) {
+                    if ($route && (str_starts_with($route->getName(), 'grp.models') || str_starts_with($route->getName(), 'retina.models'))) {
                         return back()->withErrors([
                             'error_in_models' => $response->getStatusCode().': '.$e->getMessage()
                         ]);
@@ -137,7 +137,7 @@ class Handler extends ExceptionHandler
                         ->setStatusCode($response->getStatusCode());
                 }
 
-                // User not logged in
+                // User isn't logged in
                 if ($app == 'grp') {
                     return redirect('login');
                 } elseif ($app == 'retina') {
@@ -258,7 +258,7 @@ class Handler extends ExceptionHandler
 
     public function getInertiaPage(Throwable $e, string $app): string
     {
-        if (get_class($e) == 'App\Exceptions\IrisWebsiteNotFound' and $app == 'iris') {
+        if (get_class($e) == 'App\Exceptions\IrisWebsiteNotFound' && $app == 'iris') {
             return 'Errors/IrisWebsiteNotFound';
         }
 
@@ -269,8 +269,12 @@ class Handler extends ExceptionHandler
     {
         Inertia::setRootView('app-'.$app);
 
+        $user = $request->user();
+        if (!$user) {
+            $user = null;
+        }
 
-        $props     = $this->getInertiaProps($request->user(), $app, $request, $response, $e);
+        $props     = $this->getInertiaProps($user, $app, $request, $response, $e);
         $errorData = $this->getBaseErrorData($response, $e);
 
 

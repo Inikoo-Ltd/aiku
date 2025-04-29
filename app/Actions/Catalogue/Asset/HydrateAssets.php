@@ -10,12 +10,14 @@ namespace App\Actions\Catalogue\Asset;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSales;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateTransactions;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\Asset;
 
-class HydrateAsset
+class HydrateAssets
 {
     use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:assets {organisations?*} {--S|shop= shop slug} {--slugs=}';
 
     public function __construct()
@@ -27,10 +29,8 @@ class HydrateAsset
     {
         AssetHydrateHistoricAssets::run($asset);
         AssetHydrateSales::run($asset);
-
+        AssetHydrateTransactions::run($asset);
     }
-
-
 
 
 }

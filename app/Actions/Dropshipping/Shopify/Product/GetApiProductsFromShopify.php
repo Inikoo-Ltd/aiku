@@ -39,7 +39,6 @@ class GetApiProductsFromShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser): void
     {
         $client = $shopifyUser->api()->getRestClient();
-        $shopName = $shopifyUser->customer->shop->name;
         $shopType = $shopifyUser->customer->shop->type;
         $products = [];
         $nextPage = null;
@@ -48,7 +47,6 @@ class GetApiProductsFromShopify extends OrgAction
             $response = $client->request('GET', '/admin/api/2024-01/products.json', [
                 'limit' => 250,
                 'page_info' => $nextPage,
-                // 'vendor' => $shopName
             ]);
 
             if ($response['body'] == 'Not Found') {
@@ -78,10 +76,13 @@ class GetApiProductsFromShopify extends OrgAction
                         if (!$portfolio) {
                             $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
-                            $portfolio = StorePortfolio::make()->action($shopifyUser->customer, [
-                                'stored_item_id' => $storedItem->id,
+                            $portfolio = StorePortfolio::make()->action(
+                                $shopifyUser->customer,
+                                $storedItem,
+                                [
                                 'platform_id' => $platform->id
-                            ]);
+                            ]
+                            );
                         }
 
                         $shopifyUser->products()->sync([$storedItem->id => [
@@ -102,13 +103,19 @@ class GetApiProductsFromShopify extends OrgAction
         }
     }
 
-    public function asCommand(Command $command)
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): void
     {
         $shopifyUser = ShopifyUser::find($command->argument('shopifyUser'));
 
         $this->handle($shopifyUser);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(ShopifyUser $shopifyUser): void
     {
         $this->handle($shopifyUser);

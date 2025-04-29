@@ -103,8 +103,8 @@ test('add product to customer portfolio', function () {
     expect($platform)->toBeInstanceOf(Platform::class);
     $dropshippingCustomerPortfolio = StorePortfolio::make()->action(
         $this->customer,
+        $this->product,
         [
-            'product_id'  => $this->product->id,
             'platform_id' => $platform->id,
         ]
     );

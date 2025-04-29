@@ -26,6 +26,7 @@ class DetectWebsiteFromDomain
             $domain = str_replace('canary.', '', $domain);
         }
         $domain = str_replace('www.', '', $domain);
+        $domain = str_replace('v2.', '', $domain);
 
         if ($domain == config('app.domain') ||  $domain == 'app.'.config('app.domain')) {
             return null;

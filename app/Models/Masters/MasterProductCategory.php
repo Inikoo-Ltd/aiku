@@ -52,20 +52,20 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_family_id
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
- * @property-read MasterProductCategory|null $department
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read MasterProductCategory|null $masterDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @property-read MasterProductCategory|null $masterSubDepartment
+ * @property-read LaravelCollection<int, MasterProductCategory> $masterSubDepartments
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
  * @property-read MasterProductCategory|null $parent
  * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
- * @property-read MasterProductCategory|null $subDepartment
- * @property-read LaravelCollection<int, MasterProductCategory> $subDepartments
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()

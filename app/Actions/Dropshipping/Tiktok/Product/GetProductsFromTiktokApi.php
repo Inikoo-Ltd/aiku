@@ -64,10 +64,13 @@ class GetProductsFromTiktokApi extends OrgAction
 
                     $portfolio = $storedItem->portfolio;
                     if (!$portfolio) {
-                        $portfolio = StorePortfolio::make()->action($tiktokUser->customer, [
-                            'stored_item_id' => $storedItem->id,
+                        $portfolio = StorePortfolio::make()->action(
+                            $tiktokUser->customer,
+                            $storedItem,
+                            [
                             'platform_id' => Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first()->id,
-                        ]);
+                        ]
+                        );
                     }
 
                     $tiktokUser->products()->updateOrCreate([
