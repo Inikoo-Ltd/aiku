@@ -35,6 +35,7 @@ trait WithCustomerPlatformSubNavigation
         ];
 
         $subNavigation[] = [
+            "number"   => $customerHasPlatform->number_portfolios,
             'label'    => __('Portfolios'),
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
@@ -49,6 +50,7 @@ trait WithCustomerPlatformSubNavigation
 
         if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
             $subNavigation[] = [
+                "number"   => $customerHasPlatform->number_customer_clients,
                 'label'    => __('Clients'),
                 'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
@@ -62,6 +64,7 @@ trait WithCustomerPlatformSubNavigation
             ];
         } else {
             $subNavigation[] = [
+                "number"   => $customerHasPlatform->number_customer_clients,
                 'label'    => __('Clients'),
                 'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
@@ -75,6 +78,7 @@ trait WithCustomerPlatformSubNavigation
             ];
         }
         $subNavigation[] = [
+            "number"   => $customerHasPlatform->number_orders,
             'label'    => __('Orders'),
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
