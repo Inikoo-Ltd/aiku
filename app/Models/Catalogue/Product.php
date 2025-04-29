@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\CRM\BackInStockReminder;
 use App\Models\CRM\Favourite;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Group;
@@ -259,6 +260,11 @@ class Product extends Model implements Auditable, HasMedia
     public function webpage(): MorphOne
     {
         return $this->morphOne(Webpage::class, 'model');
+    }
+
+    public function portfolio(): MorphOne
+    {
+        return $this->morphOne(Portfolio::class, 'item');
     }
 
     public function favourites(): HasMany
