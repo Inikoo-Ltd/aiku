@@ -22,6 +22,12 @@ class GetCustomerShowcase
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
+            'approveRoute'       => [
+                'name'       => 'grp.models.customer.approve',
+                'parameters' => [
+                    'customer' => $customer->id
+                ]
+            ],
         ];
     }
 }
