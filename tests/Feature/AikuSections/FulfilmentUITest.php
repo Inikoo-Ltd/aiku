@@ -897,6 +897,7 @@ test('UI show fulfilment customer stored item', function () {
 });
 
 test('UI index refund', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.fulfilments.show.operations.invoices.refunds.index', [$this->organisation->slug, $this->fulfilment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page

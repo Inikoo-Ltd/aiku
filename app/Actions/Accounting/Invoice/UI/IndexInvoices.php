@@ -249,22 +249,22 @@ class IndexInvoices extends OrgAction
         ];
     }
 
-    public function getSubNavigation(ActionRequest $request): array
+    public function getSubNavigation(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|Invoice $parent, ActionRequest $request): array
     {
         $subNavigation = [];
 
-        if ($this->parent instanceof Customer) {
-            if ($this->parent->is_dropshipping) {
-                $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
+        if ($parent instanceof Customer) {
+            if ($parent->is_dropshipping) {
+                $subNavigation = $this->getCustomerDropshippingSubNavigation($parent, $request);
             } else {
-                $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
+                $subNavigation = $this->getCustomerSubNavigation($parent, $request);
             }
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof Shop || $this->parent instanceof Fulfilment || $this->parent instanceof Organisation) {
-            $subNavigation = $this->getInvoicesNavigation($this->parent);
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            $subNavigation = $this->getInvoiceCategoryNavigation($this->parent);
+        } elseif ($parent instanceof FulfilmentCustomer) {
+            $subNavigation = $this->getFulfilmentCustomerSubNavigation($parent, $request);
+        } elseif ($parent instanceof Shop || $parent instanceof Fulfilment || $parent instanceof Organisation) {
+            $subNavigation = $this->getInvoicesNavigation($parent);
+        } elseif ($parent instanceof InvoiceCategory) {
+            $subNavigation = $this->getInvoiceCategoryNavigation($parent);
         }
 
         return $subNavigation;
@@ -273,7 +273,7 @@ class IndexInvoices extends OrgAction
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
 
-        $subNavigation = $this->getSubNavigation($request);
+        $subNavigation = $this->getSubNavigation($this->parent, $request);
 
         $title = __('Invoices');
 
