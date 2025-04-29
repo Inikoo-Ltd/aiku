@@ -92,10 +92,7 @@ trait WithDashboardIntervalValues
         if (str_ends_with($columnFingerprint, '_minified')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_minified'));
             $dataType          = DashboardDataType::NUMBER_MINIFIED;
-        }
-
-
-        if (str_ends_with($columnFingerprint, '_delta')) {
+        } elseif (str_ends_with($columnFingerprint, '_delta')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_delta'));
             $dataType          = DashboardDataType::DELTA_LAST_YEAR;
         } elseif (str_ends_with($columnFingerprint, '_currency')) {
@@ -150,7 +147,6 @@ trait WithDashboardIntervalValues
             )
         ];
     }
-
 
 
 }
