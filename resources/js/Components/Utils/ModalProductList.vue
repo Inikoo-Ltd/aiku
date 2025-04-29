@@ -347,91 +347,86 @@ onUnmounted(() => {
 					</div>
 
 					<!-- Search and Table -->
-					<div class="flex items-start gap-x-2 gap-y-2 flex-col mt-4">
-						<div class="flex flex-wrap gap-x-2 gap-y-2">
-							<div class="card">
-								<DataTable
-									:value="products"
-									scrollable
-									scrollHeight="400px"
-									:loading="isLoading === 'fetchProduct'">
-									<template #header>
-										<div class="flex justify-between items-center">
-											<div class="flex items-center">
-												<FontAwesomeIcon
-													@click="onClickProduct('products')"
-													icon="fal fa-compress-wide"
-													v-tooltip="'maximize '"
-													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
-											</div>
+					<div class=" flex items-start gap-x-2 gap-y-2 flex-col mt-4">
+						<div class="card w-full ">
+							<DataTable
+								:value="products"
+								scrollable
+								scrollHeight="400px"
+								:loading="isLoading === 'fetchProduct'">
+								<template #header>
+									<div class="flex justify-between items-center">
+										<div class="flex items-center">
+											<FontAwesomeIcon
+												@click="onClickProduct('products')"
+												icon="fal fa-compress-wide"
+												v-tooltip="'maximize '"
+												class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+										</div>
 
-											<div class="flex items-center gap-2">
-												<IconField>
-													<InputIcon>
-														<FontAwesomeIcon
-															icon="fal fa-search"
-															class="text-gray-500"
-															fixed-width
-															aria-hidden="true" />
-													</InputIcon>
-													<InputText
-														v-model="searchQuery"
-														placeholder="Search products"
-														@input="onSearchQuery(searchQuery)"
-														class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
-												</IconField>
-											</div>
+										<div class="flex items-center gap-2">
+											<IconField>
+												<InputIcon>
+													<FontAwesomeIcon
+														icon="fal fa-search"
+														class="text-gray-500"
+														fixed-width
+														aria-hidden="true" />
+												</InputIcon>
+												<InputText
+													v-model="searchQuery"
+													placeholder="Search products"
+													@input="onSearchQuery(searchQuery)"
+													class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
+											</IconField>
+										</div>
+									</div>
+								</template>
+								
+								<template #empty> No Product found. </template>
+
+								<!-- Loading Icon -->
+								<template #loading>
+									<div class="text-5xl">
+										<LoadingIcon />
+									</div>
+								</template>
+
+								<Column header="Image">
+									<template #body="slotProps">
+										<div class="w-16 h-16 rounded">
+											<Image :src="slotProps.data.image_thumbnail" />
 										</div>
 									</template>
-									
-									<template #empty> No Product found. </template>
+								</Column>
+								<Column field="code" header="Code"></Column>
+								<Column field="name" header="Description"></Column>
+								<Column header="" style="width: 8%">
+									<template #body="slotProps">
+										<!-- <QuantityInput
+											:data="slotProps.data"
+											:action="action"
+											@update="onKeyDown(slotProps)"
+											@submit="onSubmitAddProducts(action, slotProps)"
+											@undo="onUndoClick" /> -->
+											<!-- <pre>{{ slotProps.data.available_quantity }}</pre> -->
+											<NumberWithButtonSave
+												v-model="slotProps.data.quantity_ordered"
+												:min="1"
+												:isLoading="isXxLoading === slotProps.data.id"
+												@onSave="(e)=> onSubmitAddProducts(action, slotProps)"
+											/>
 
-									<!-- Loading Icon -->
-									<template #loading>
-										<div class="text-5xl">
-											<LoadingIcon />
-										</div>
 									</template>
+								</Column>
 
-									<Column header="Image">
-										<template #body="slotProps">
-											<!-- <pre>{{slotProps.data}}</pre>
-											<img
-												:src="`https://primefaces.org/cdn/primevue/images/product/${slotProps.data.image}`"
-												:alt="slotProps.data.image"
-												class="w-24 rounded" /> -->
-											<Image :src="slotProps.data.image_thumbnail" class="w-48 rounded" />
-										</template>
-									</Column>
-									<Column field="code" header="Code"></Column>
-									<Column field="name" header="Description"></Column>
-									<Column header="" style="width: 8%">
-										<template #body="slotProps">
-											<!-- <QuantityInput
-												:data="slotProps.data"
-												:action="action"
-												@update="onKeyDown(slotProps)"
-												@submit="onSubmitAddProducts(action, slotProps)"
-												@undo="onUndoClick" /> -->
-												<!-- <pre>{{ slotProps.data.available_quantity }}</pre> -->
-												<NumberWithButtonSave
-													v-model="slotProps.data.quantity_ordered"
-													:min="1"
-													:isLoading="isXxLoading === slotProps.data.id"
-													@onSave="(e)=> onSubmitAddProducts(action, slotProps)"
-												/>
-
-										</template>
-									</Column>
-
-									<template #footer>
-										<div class="text-center">
-											In total there are
-											{{ products ? products.length : 0 }} products.
-										</div>
-									</template>
-								</DataTable>
-							</div>
+								<template #footer>
+									<div class="text-center">
+										In total there are
+										{{ products ? products.length : 0 }} products.
+									</div>
+								</template>
+							</DataTable>
 						</div>
 					</div>
 				</div>

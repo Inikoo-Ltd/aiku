@@ -1,5 +1,6 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Table from '@/Components/Table/Table.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -7,6 +8,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
+import { debounce } from 'lodash'
 import { inject, ref } from 'vue'
 
 const props = defineProps<{
@@ -47,6 +49,13 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         }
     )
 }
+const debounceUpdateQuantity = debounce(
+    (routeUpdate: routeType, idTransaction: number, value: number) => {
+        onUpdateQuantity(routeUpdate, idTransaction, value)
+    },
+    500
+)
+
 </script>
 
 
@@ -86,19 +95,34 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         </template>
 
         <!-- Column: Action -->
-   <!--      <template #cell(actions)="{ item }"> -->
-          <!--   <Link
-                v-if="state !== 'dispatched'"
-                :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
-                as="button"
-                :method="item.deleteRoute.method"
-                @start="() => isLoading = 'unselect' + item.id"
-                @finish="() => isLoading = false"
-                v-tooltip="trans('Unselect this product')"
-            >
-                <Button icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + item.id" />
-            </Link> -->
+        <template #cell(actions)="{ item }">
+            <div class="flex gap-2">
+                <div class="w-fit">
+                    <NumberWithButtonSave
+                        :modelValue="item.quantity_ordered"
+                        :routeSubmit="item.updateRoute"
+                        :bindToTarget="{ min: 0 }"
+                        keySubmit="quantity_ordered"
+                        :isLoading="isLoading === 'quantity' + item.id"
+                        @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                        noUndoButton
+                        noSaveButton
+                    />
+                </div>
+                
+                <Link
+                    v-if="state === 'creating'"
+                    :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
+                    as="button"
+                    :method="item.deleteRoute.method"
+                    @start="() => isLoading = 'unselect' + item.id"
+                    @finish="() => isLoading = false"
+                    v-tooltip="trans('Unselect this product')"
+                >
+                    <Button icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + item.id" />
+                </Link>
+            </div>
             <!-- {{ locale.currencyFormat(item.currency_code, item.net_amount) }} -->
-       <!--  </template> -->
+        </template>
     </Table>
 </template>
