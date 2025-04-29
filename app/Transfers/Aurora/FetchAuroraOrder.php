@@ -179,8 +179,8 @@ class FetchAuroraOrder extends FetchAurora
             ]);
         }
 
-        $weight=$this->auroraModelData->{'Order Weight'};
-        $estimatedWeight=$this->auroraModelData->{'Order Estimated Weight'};
+        $weight = $this->auroraModelData->{'Order Weight'};
+        $estimatedWeight = $this->auroraModelData->{'Order Estimated Weight'};
 
         $this->parsedData["order"] = [
             'date'                   => $date,
@@ -224,12 +224,12 @@ class FetchAuroraOrder extends FetchAurora
         ];
 
         if ($weight) {
-            $weight=(integer) ceil($weight*1000);
+            $weight = (int) ceil($weight * 1000);
             $this->parsedData["order"]['weight'] = $weight;
         }
 
         if ($estimatedWeight) {
-            $estimatedWeight= (integer) ceil($estimatedWeight*1000);
+            $estimatedWeight = (int) ceil($estimatedWeight * 1000);
             $this->parsedData["order"]['estimated_weight'] = $estimatedWeight;
         }
 
