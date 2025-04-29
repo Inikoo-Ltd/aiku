@@ -8,16 +8,17 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\HydrateModel;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOfferCampaigns;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOfferComponents;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOffers;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Collection;
 
-class HydrateOrder extends HydrateModel
+class HydrateOrders
 {
+    use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:orders {organisations?*} {--s|slugs=}';
 
 
@@ -31,14 +32,8 @@ class HydrateOrder extends HydrateModel
 
     }
 
-
-    protected function getModel(string $slug): Order
+    public function __construct()
     {
-        return Order::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return Order::all();
+        $this->model = Order::class;
     }
 }

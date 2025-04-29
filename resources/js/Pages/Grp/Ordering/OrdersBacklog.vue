@@ -10,6 +10,11 @@ import { capitalize } from "@/Composables/capitalize"
 import TabsBox from "@/Components/Navigation/TabsBox.vue"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt } from '@fal'
+import { ref } from 'vue'
+import { useTabChange } from '@/Composables/tab-change'
+import Table from '@/Components/Table/Table.vue';
 
 const props = defineProps<{
     title: string
@@ -25,12 +30,7 @@ const props = defineProps<{
     dispatched_today: {}
 }>()
 
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt } from '@fal'
-import { Navigation } from '@/types/Navigation'
-import { ref } from 'vue'
-import { useTabChange } from '@/Composables/tab-change'
-import Table from '@/Components/Table/Table.vue';
+
 
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt)
 
@@ -41,15 +41,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
   <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
-  <!-- {{ currentTab }}
-  {{ tabs.navigation }}
-  <pre>{{ props[currentTab] }}</pre> -->
   <Table :resource="props[currentTab]" :name="currentTab">
-    
+
   </Table>
 
 </template>

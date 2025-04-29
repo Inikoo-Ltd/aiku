@@ -32,10 +32,13 @@ class StoreProductShopify extends OrgAction
 
         DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
             foreach (Arr::get($modelData, 'products') as $product) {
-                $portfolio = StorePortfolio::run($shopifyUser->customer, [
-                    'product_id'  => $product,
+                $portfolio = StorePortfolio::run(
+                    $shopifyUser->customer,
+                    $product,
+                    [
                     'platform_id' => $platform->id
-                ]);
+                ]
+                );
 
                 HandleApiProductToShopify::dispatch($shopifyUser, [$portfolio->id]);
             }

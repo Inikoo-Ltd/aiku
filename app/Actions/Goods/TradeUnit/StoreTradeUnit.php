@@ -77,6 +77,7 @@ class StoreTradeUnit extends OrgAction
         }
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
+        $this->asAction       = true;
         $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);

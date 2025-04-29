@@ -26,16 +26,21 @@ class StoreProductWooCommerce extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(WooCommerceUser $wooCommerceUser, array $modelData)
     {
         DB::transaction(function () use ($wooCommerceUser, $modelData) {
             foreach (Arr::get($modelData, 'products') as $product) {
-                $portfolio = StorePortfolio::run($wooCommerceUser->customer, [
-                    'product_id' => $product,
-                    'platform_id' => Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first()->id,
-                ]);
+                StorePortfolio::run(
+                    $wooCommerceUser->customer,
+                    $product,
+                    [
+                     'platform_id' => Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first()->id,
+                ]
+                );
 
-                // HandleApiProductToWooCommerce::dispatch($wooCommerceUser, [$portfolio->id]);
             }
         });
     }

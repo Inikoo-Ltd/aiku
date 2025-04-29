@@ -3,16 +3,13 @@
 -->
 <script setup lang="ts">
 import { inject, ref, watch } from "vue"
-import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle, faPallet, faCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream} from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import type { Navigation } from '@/types/Tabs'
 import { routeType } from "@/types/route"
-import { Link } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Select from 'primevue/select'
