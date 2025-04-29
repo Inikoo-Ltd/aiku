@@ -68,7 +68,7 @@ const layout = inject('layout', {})
             <!-- Section: Profile -->
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
-                 :href="model?.profile?.link?.href"
+                :href="model?.profile?.link?.href || '#'"
                 :target="model?.profile?.link?.target"
                 class="space-x-1.5 whitespace-nowrap "
                 :style="getStyles(model?.profile.container?.properties)"
@@ -81,8 +81,8 @@ const layout = inject('layout', {})
             <!-- Section: Favourite -->
             <a v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                 id="favorites_button"
-                :href="model?.favourite?.link.href"
-                :target="model?.favourite?.link.target"
+                :href="model?.favourite?.link?.href || '#'"
+                :target="model?.favourite?.link?.target"
                 class="space-x-1.5 whitespace-nowrap "
                 :style="getStyles(model?.favourite.container?.properties)"
 
@@ -94,8 +94,8 @@ const layout = inject('layout', {})
             <!-- Section: Cart -->
             <a v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
                 id="header_order_totals"
-                :href="model?.cart?.link.href"
-                :target="model?.cart?.link.target"
+                :href="model?.cart?.link?.href || '#'"
+                :target="model?.cart?.link?.target"
                 class="space-x-1.5 flex items-center whitespace-nowrap "
                 :style="getStyles(model?.cart.container?.properties)"
 
@@ -107,8 +107,8 @@ const layout = inject('layout', {})
             <!-- Section: Login -->
              <span class="">
                 <a v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-                    :href="model?.login?.link.href"
-                    :target="model?.login?.link.target"
+                    :href="model?.login?.link?.href || '#'"
+                    :target="model?.login?.link?.target"
                     class="space-x-1.5 cursor-pointer whitespace-nowrap"
                     id=""
                     :style="getStyles(model?.login?.container?.properties)"
@@ -123,7 +123,7 @@ const layout = inject('layout', {})
             <!-- Section: Register -->
             <span class="">
                 <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
-                    :href="model?.register?.link?.href"
+                    :href="model?.register?.link?.href || '#'"
                     :target="model?.register?.link?.target"
                     class="space-x-1.5 cursor-pointer whitespace-nowrap "
                     :style="getStyles(model?.register.container?.properties)"
