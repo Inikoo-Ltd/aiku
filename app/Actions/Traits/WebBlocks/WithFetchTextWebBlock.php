@@ -23,21 +23,27 @@ trait WithFetchTextWebBlock
         if (is_int($template)) {
             return $template > 4 ? '4' : (string)$template;
         }
+
         return null;
     }
 
     public function processTextColumnData(Webpage $webpage, $auroraBlock, string $template): array|null
     {
         $layout = null;
-        $text = $auroraBlock["text_blocks"];
+        $text   = $auroraBlock["text_blocks"];
+
         if (count($text) > 0) {
-            $texts = [];
+            $texts         = [];
             $externalLinks = [];
             foreach ($text as $value) {
-                $text = $value['text'] ?? null;
+                $text   = $value['text'] ?? null;
                 $layout = $this->replaceAnchor($webpage, $text, $layout);
+
                 if ($layout) {
-                    $texts = array_merge($texts, $layout['text'] ?? ['']);
+                    if (is_string($layout['text'])) {
+                        $layout['text'] = [$layout['text']];
+                    }
+                    $texts         = array_merge($texts, $layout['text'] ?? ['']);
                     $externalLinks = array_merge($externalLinks, $layout['external_links'] ?? []);
                     data_forget($layout, 'text');
                     data_forget($layout, 'external_links');
@@ -54,10 +60,9 @@ trait WithFetchTextWebBlock
     public function processTextData(Webpage $webpage, $auroraBlock): array|null
     {
         $layout = null;
-        // TODO: discuss with arya is this correct replacement
-        $text = $auroraBlock["text_blocks"];
-        if (count($text) > 0) {
-            $text = $text[0]['text'] ?? null;
+        $text   = $auroraBlock["text_blocks"];
+        if (!empty($text)) {
+            $text   = $text[0]['text'] ?? null;
             $layout = $this->replaceAnchor($webpage, $text, $layout);
             if ($layout) {
                 data_set($layout, "data.fieldValue.value", $layout['text']);
@@ -100,6 +105,7 @@ trait WithFetchTextWebBlock
 
             if (!$links) {
                 $layout['text'] = $text;
+
                 return $layout;
             }
 
@@ -131,8 +137,9 @@ trait WithFetchTextWebBlock
                 $text = str_replace($originalAnchor[$index], $customExtensionElement, $text);
             }
             $layout['external_links'] = $externalLinks;
-            $layout['text'] = $text;
+            $layout['text']           = $text;
         }
+
         return $layout;
     }
 }

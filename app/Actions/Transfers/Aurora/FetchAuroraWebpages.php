@@ -41,6 +41,11 @@ class FetchAuroraWebpages extends FetchAuroraAction
             }
 
             if ($webpage) {
+
+                if(!$webpage->allow_fetch){
+                    return $webpage;
+                }
+
                 try {
                     if ($webpage->is_fixed) {
                         data_forget($webpageData, 'webpage.code');
@@ -74,7 +79,7 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     );
 
                     if (in_array('web_blocks', $this->with)) {
-                        FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: true, dbSuffix: $this->dbSuffix);
+                        FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
                         $currentPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
                         if ($currentPublishedAt) {
                             $currentPublishedAt = Carbon::parse($currentPublishedAt);
@@ -111,6 +116,9 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     Webpage::enableAuditing();
 
                     if (in_array('web_blocks', $this->with)) {
+
+                        FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
+
                         PublishWebpage::make()->action(
                             $webpage,
                             [
