@@ -25,10 +25,11 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faAtom, faFileInvoice } from '@fal'
+import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faAsterisk } from '@fal'
 import { faSearch, faBell } from '@far'
+import { faAsterisk as fasAsterisk } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice)
+library.add(fasAsterisk, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faAsterisk)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
