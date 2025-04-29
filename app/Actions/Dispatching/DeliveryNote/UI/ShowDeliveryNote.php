@@ -417,18 +417,18 @@ class ShowDeliveryNote extends OrgAction
 
     public function getPrevious(DeliveryNote $deliveryNote, ActionRequest $request): ?array
     {
-        $previous = DeliveryNote::where('reference', '<', $deliveryNote->reference);
-        $previous = $this->getNextPrevCommon($previous, $deliveryNote, $request);
-        $previous->orderBy('reference', 'desc')->first();
+        $query    = DeliveryNote::where('reference', '<', $deliveryNote->reference);
+        $query    = $this->getNextPrevCommon($query, $deliveryNote, $request);
+        $previous = $query->orderBy('reference', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName(), $request->route()->originalParameters());
     }
 
     public function getNext(DeliveryNote $deliveryNote, ActionRequest $request): ?array
     {
-        $next = DeliveryNote::where('reference', '>', $deliveryNote->reference);
-        $next = $this->getNextPrevCommon($next, $deliveryNote, $request);
-        $next->orderBy('reference')->first();
+        $query = DeliveryNote::where('reference', '>', $deliveryNote->reference);
+        $query = $this->getNextPrevCommon($query, $deliveryNote, $request);
+        $next  = $query->orderBy('reference')->first();
 
         return $this->getNavigation($next, $request->route()->getName(), $request->route()->originalParameters());
     }

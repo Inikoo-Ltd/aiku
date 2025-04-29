@@ -31,7 +31,6 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
@@ -104,6 +103,7 @@ class StoreOrder extends OrgAction
             $modelData['customer_client_id'] = $parent->id;
             $modelData['currency_id']        = $parent->shop->currency_id;
             $modelData['shop_id']            = $parent->shop_id;
+            $modelData['platform_id']        = $parent->platform_id;
         } else {
             $modelData['currency_id'] = $parent->currency_id;
             $modelData['shop_id']     = $parent->id;
@@ -208,18 +208,12 @@ class StoreOrder extends OrgAction
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
         }
 
-
-
-        if ($parent instanceof Customer) {
-            $platform = $parent->platforms()
-                ->where("type", PlatformTypeEnum::MANUAL)
-                ->first();
-
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->id)->where('platform_id', $platform->id)->first();
-            CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
-        } elseif ($parent instanceof CustomerClient) {
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $parent->customer_id)->where('platform_id', $parent->platform_id)->first();
-            CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
+        if ($order->platfrom_id) {
+            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $order->customer_id)
+                ->where('platform_id', $order->platfrom_id)->first();
+            if ($customerHasPlatform) {
+                CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
+            }
         }
 
         OrderRecordSearch::dispatch($order);
@@ -292,7 +286,6 @@ class StoreOrder extends OrgAction
                 $order->customer->slug,
                 $order->slug
             ]),
-            // TODO: error
             'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,

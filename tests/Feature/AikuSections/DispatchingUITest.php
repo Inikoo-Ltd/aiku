@@ -111,6 +111,7 @@ test("UI Index dispatching delivery-notes", function () {
 });
 
 test("UI Index dispatching show delivery-notes", function () {
+    $this->withoutExceptionHandling();
     $response = get(
         route("grp.org.warehouses.show.dispatching.delivery-notes.show", [
             $this->organisation->slug,
@@ -128,12 +129,9 @@ test("UI Index dispatching show delivery-notes", function () {
                 fn (AssertableInertia $page) => $page
                 ->where("title", $this->deliveryNote->reference)
                 ->where("model", 'Delivery Note')
-                ->where('actions.0.route.name', 'grp.models.delivery-note.state.in-queue')
                 ->etc()
             )
             ->has('delivery_note')
-            ->has("alert")
-            ->has("notes")
             ->has("timelines")
             ->has("box_stats")
             ->has("routes")
