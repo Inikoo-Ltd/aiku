@@ -26,11 +26,13 @@ class FetchAuroraProduct extends FetchAurora
             return;
         }
 
-        $this->parsedData['shop']   = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'});
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'});
 
-        if ($this->parsedData['shop']->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop == ShopTypeEnum::FULFILMENT) {
             return;
         }
+
+        $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
         if ($this->auroraModelData->{'Product Family Category Key'}) {
@@ -148,10 +150,8 @@ class FetchAuroraProduct extends FetchAurora
 
 
         if ($grossWeight) {
-            $this->parsedData['product']['gross_weight'] = (int) ceil($grossWeight * 1000);
+            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
         }
-
-
 
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
