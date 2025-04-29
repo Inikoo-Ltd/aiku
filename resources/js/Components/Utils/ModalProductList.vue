@@ -5,10 +5,7 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
-import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
-import InputGroup from "primevue/inputgroup"
-import InputGroupAddon from "primevue/inputgroupaddon"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { routeType } from "@/types/route"
@@ -17,7 +14,6 @@ import { debounce } from "lodash-es"
 import { useForm } from "@inertiajs/vue3"
 import { faCloud, faCompressWide, faExpandArrowsAlt, faSearch, faSpinner } from "@fal"
 import { faMinus, faPlus, faSave, faUndo } from "@fas"
-import QuantityInput from "./QuantityInput.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import Image from "../Image.vue"
@@ -39,9 +35,9 @@ library.add(
 const props = defineProps<{
 	fetchRoute: routeType
 	action: any
-	current: string | Number
+	current: string | number
 	typeModel: string
-	currentTab: String
+	currentTab: string
 }>()
 
 const emits = defineEmits<{
@@ -267,7 +263,7 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 				// Remove product ID from the addedProductIds set
 				addedProductIds.value.delete(productId)
 
-				// Refresh list to reflect changes
+				// Refresh the list to reflect changes
 				await fetchProductList()
 
 				// Notify success
@@ -292,7 +288,6 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 	isXxLoading.value = null
 }
 
-console.log(products, "sdas")
 
 const onFetchNext = async () => {
 	if (optionsLinks.value?.next && !isLoading.value) {
@@ -300,20 +295,8 @@ const onFetchNext = async () => {
 	}
 }
 
-const onKeyDown = (slotProps: any) => {
-	console.log(slotProps.data.inputTriggered, "we ap ni")
-	if (slotProps.data.inputTriggered) {
-		slotProps.data.inputTriggered = true
-		iconStates.value[slotProps.data.id] = {
-			increment: "fal fa-plus",
-			decrement: "fal fa-minus",
-		}
-	}
-}
 
-const onValueChange = (slotProps: any) => {
-	slotProps.data.quantity_ordered = parseFloat(slotProps.data.quantity_ordered || 0)
-}
+
 
 watch(searchQuery, (newValue) => {
 	debouncedFetch(newValue)
@@ -403,13 +386,6 @@ onUnmounted(() => {
 								<Column field="name" header="Description"></Column>
 								<Column header="" style="width: 8%">
 									<template #body="slotProps">
-										<!-- <QuantityInput
-											:data="slotProps.data"
-											:action="action"
-											@update="onKeyDown(slotProps)"
-											@submit="onSubmitAddProducts(action, slotProps)"
-											@undo="onUndoClick" /> -->
-											<!-- <pre>{{ slotProps.data.available_quantity }}</pre> -->
 											<NumberWithButtonSave
 												v-model="slotProps.data.quantity_ordered"
 												:min="1"

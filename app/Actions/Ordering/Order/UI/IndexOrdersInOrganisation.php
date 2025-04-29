@@ -117,11 +117,6 @@ class IndexOrdersInOrganisation extends OrgAction
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return true; // TODO
-    }
-
     public function tableStructure(Organisation $organisation, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($organisation, $prefix) {

@@ -34,10 +34,7 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $query = QueryBuilder::for(Portfolio::class);
 
-        if ($scope instanceof ShopifyUser) {
-            $customer = $scope->customer;
-            $query->where('customer_id', $customer->id);
-        } elseif ($scope instanceof TiktokUser) {
+        if ($scope instanceof ShopifyUser || $scope instanceof TiktokUser) {
             $customer = $scope->customer;
             $query->where('customer_id', $customer->id);
         } elseif ($scope instanceof WebUser) {
@@ -107,29 +104,29 @@ class IndexRetinaPortfolios extends RetinaAction
             'Dropshipping/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title' => $title,
-                'is_manual' => $manual,
-                'pageHead' => [
-                    'title' => $title,
-                    'icon' => 'fal fa-cube',
+                'title'       => $title,
+                'is_manual'   => $manual,
+                'pageHead'    => [
+                    'title'   => $title,
+                    'icon'    => 'fal fa-cube',
                     'actions' => [
                         $this->customer->is_fulfilment && ($this->platformUser instanceof ShopifyUser) ? [
-                            'type' => 'button',
+                            'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
-                                'name' => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
+                                'name'       => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
                                     'shopifyUser' => $this->platformUser->id
                                 ]
                             ]
                         ] : [],
                         $this->customer->is_fulfilment && ($this->platformUser instanceof TiktokUser) ? [
-                            'type' => 'button',
+                            'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
-                                'name' => 'retina.models.dropshipping.tiktok.product.sync',
+                                'name'       => 'retina.models.dropshipping.tiktok.product.sync',
                                 'parameters' => [
                                     'tiktokUser' => $this->platformUser->id
                                 ]
@@ -138,14 +135,14 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
-                    'name' => 'retina.models.customer.order.platform.store',
+                    'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
                         'customer' => $this->customer->id,
                         'platform' => $this->platform->id
                     ]
                 ] : [],
-                'tabs' => [
-                    'current' => $this->tab,
+                'tabs'        => [
+                    'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
@@ -160,7 +157,7 @@ class IndexRetinaPortfolios extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             $table
@@ -186,7 +183,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type' => 'simple',
+                        'type'   => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.dropshipping.portfolios.index'
