@@ -19,8 +19,8 @@ trait WithCustomerSubNavigation
     protected function getCustomerSubNavigation(Customer $customer, ActionRequest $request): array
     {
 
-        $deliveryNotedLabel=__('Delivery notes');
-        $webUsersLabel=__('Web users');
+        $deliveryNotedLabel = __('Delivery notes');
+        $webUsersLabel = __('Web users');
 
         return [
             [
@@ -91,8 +91,8 @@ trait WithCustomerSubNavigation
 
     protected function getCustomerDropshippingSubNavigation(Customer $customer, ActionRequest $request): array
     {
-        $deliveryNotedLabel=__('Delivery notes');
-        $webUsersLabel=__('Web users');
+        $deliveryNotedLabel = __('Delivery notes');
+        $webUsersLabel = __('Web users');
 
         if ($customer->status != CustomerStatusEnum::APPROVED) {
             return [];
