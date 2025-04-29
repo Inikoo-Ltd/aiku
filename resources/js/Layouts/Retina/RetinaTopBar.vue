@@ -63,7 +63,7 @@ console.log('environment', isStaging)
                 </button>
 
                 <!-- App Title: Image and Title -->
-                <div class="ml-3 w-12 h-12  mt-1 flex flex-1 items-center justify-center md:justify-start transition-all duration-300 ease-in-out"
+                <div class="ml-3 w-12 h-12 flex flex-1 items-center justify-center md:justify-start transition-all duration-300 ease-in-out"
                     :class="[
                         layout.leftSidebar.show ? 'md:w-44' : 'md:w-12'
                     ]" :style="{

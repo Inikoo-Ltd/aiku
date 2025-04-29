@@ -20,6 +20,10 @@ import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faL
 import { faSearch, faBell } from '@far'
 import { ref, provide } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
+import { isArray } from "lodash"
+import { useColorTheme } from "@/Composables/useStockList"
+import IrisHeader from '@/Layouts/Iris/Header.vue'
+import Footer from '@/Layouts/Iris/Footer.vue'
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
@@ -27,9 +31,10 @@ library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser,
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
-
-
 initialiseRetinaApp()
+
+const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
+
 
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)
@@ -40,14 +45,23 @@ const isStaging = layout.app.environment === 'staging'
 </script>
 
 <template>
-    <div class="fixed inset-0 bg-slate-100" />
-
+    <div class="-z-[1] fixed inset-0 bg-slate-100" />
     <div class="isolate relative min-h-full transition-all"
-        :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
-
-        <RetinaTopBar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen"
-            logoRoute="retina.dashboard.show" />
-
+    :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+    
+    
+        <IrisHeader
+            v-if="layout.web_page?.header.header"
+            :data="layout.web_page?.header"
+            :colorThemed="theme"
+            :menu="layout.web_page?.menu"
+        />
+        <RetinaTopBar
+            v-else
+            @sidebarOpen="(value: boolean) => sidebarOpen = value"
+            :sidebarOpen="sidebarOpen"
+            logoRoute="retina.dashboard.show"
+        />
         
         <!-- Sidebar: Left -->
         <div class="">
@@ -62,7 +76,7 @@ const isStaging = layout.app.environment === 'staging'
         <!-- Main Content -->
         <main class="h-screen pb-10 transition-all pl-2 md:pl-0 pr-2 "
             :class="[
-                layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
+                layout.web_page ? 'ml-48 mr-10' : layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
@@ -97,7 +111,8 @@ const isStaging = layout.app.environment === 'staging'
 
     </div>
 
-    <RetinaFooter />
+    <Footer v-if="layout.web_page?.footer && !isArray(layout.web_page?.footer)" :data="layout.web_page?.footer" :colorThemed="theme" />
+    <RetinaFooter v-else />
 
     <!-- Global declaration: Notification -->
     <notifications

@@ -17,8 +17,12 @@ import Modal from "@/Components/Utils/Modal.vue";
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue";
 import { Address, AddressManagement } from "@/types/PureComponent/Address";
 import Tag from "@/Components/Tag.vue";
+import { faCheck, faTimes } from "@fas";
+import ModalRejected from "@/Components/Utils/ModalRejected.vue";
+import ButtonPrimeVue from "primevue/button";
+import { Link } from "@inertiajs/vue3";
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale);
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck);
 
 interface CustomerDropshipping {
   slug: string;
@@ -45,20 +49,87 @@ defineProps<{
       address_update_route: routeType,
       address_modal_title: string
     }
-
+    fulfilment_customer: {
+      radioTabs: {
+        [key: string]: boolean
+      }
+      number_pallets?: number
+      number_pallets_state_received?: number
+      number_stored_items?: number
+      number_pallets_deliveries?: number
+      number_pallets_returns?: number
+      customer: {
+        address: Address
+      }
+    }
+    status: string
     customer: CustomerDropshipping
     updateRoute: routeType
-
+    approveRoute: routeType
   },
   tab: string
 }>();
 
 const isModalAddress = ref(false);
+const isModalUploadOpen = ref(false);
+const isModalBalanceOpen = ref(false);
+const balanceModalType = ref("");
+const visible = ref(false);
+
+const customerID = ref();
+const customerName = ref();
+
+function openModalBalance(type: string) {
+  balanceModalType.value = type;
+  isModalBalanceOpen.value = true;
+}
+
+function openRejectedModal(customer: any) {
+  customerID.value = customer.id;
+  customerName.value = customer.name;
+  isModalUploadOpen.value = true;
+}
 </script>
 
 <template>
   <!-- Section: Stats box -->
   <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-x-8 gap-y-3">
+    <div v-if="data.customer.status === 'pending_approval'" class="w-full max-w-md justify-self-end">
+      <div class="p-5 border rounded-lg bg-white">
+        <div class="flex flex-col items-center text-center gap-2">
+          <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
+          <p class="text-sm text-gray-600">
+            This application is currently awaiting approval.
+          </p>
+        </div>
+
+        <div class="mt-5 flex justify-center gap-3">
+          <Link
+            :href="route(data.approveRoute.name, data.approveRoute.parameters)"
+            method="patch"
+            :data="{ status: 'approved' }">
+            <ButtonPrimeVue
+              class="fixed-width-btn"
+              severity="success"
+              size="small"
+              variant="outlined">
+              <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
+              <span> Approve </span>
+            </ButtonPrimeVue>
+          </Link>
+
+          <ButtonPrimeVue
+            class="fixed-width-btn"
+            severity="danger"
+            size="small"
+            variant="outlined"
+            @click="() => openRejectedModal(data.fulfilment_customer.customer)">
+            <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
+            <span> Reject </span>
+          </ButtonPrimeVue>
+        </div>
+      </div>
+    </div>
 
     <!-- Section: Profile box -->
     <div>
@@ -167,4 +238,9 @@ const isModalAddress = ref(false);
       :updateRoute="data.address_management.address_update_route"
     />
   </Modal>
+  
+  <ModalRejected
+    v-model="isModalUploadOpen"
+    :customerID="customerID"
+    :customerName="customerName" />
 </template>
