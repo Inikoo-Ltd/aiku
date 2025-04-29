@@ -68,8 +68,6 @@ class FetchAuroraProduct extends FetchAurora
         };
 
 
-        //enum('Online Force Out of Stock','Online Auto','Offline','Online Force For Sale')
-
         if ($this->auroraModelData->{'Product Status'} == 'InProcess') {
             $status = ProductStatusEnum::IN_PROCESS;
         } elseif ($this->auroraModelData->{'Product Status'} == 'Discontinued') {
@@ -81,7 +79,6 @@ class FetchAuroraProduct extends FetchAurora
         } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Online Force For Sale') {
             $status = ProductStatusEnum::FOR_SALE;
         } else {
-            //enum('For Sale','Out of Stock','Discontinued','Offline')
             $status = match ($this->auroraModelData->{'Product Web State'}) {
                 'Discontinued' => ProductStatusEnum::DISCONTINUED,
                 'Offline' => ProductStatusEnum::NOT_FOR_SALE,
@@ -149,7 +146,7 @@ class FetchAuroraProduct extends FetchAurora
         ];
 
 
-        if ($grossWeight) {
+        if ($grossWeight && $grossWeight < 500) {
             $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
         }
 
