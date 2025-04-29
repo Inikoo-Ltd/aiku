@@ -36,16 +36,13 @@ class GetRetinaLayout
                 'fulfilment' => FulfilmentResource::make($fulfilment)
             ];
         }
-
-        return [
+        
+        $layout =  [
             ...$additionalData,
             'website'  => GroupResource::make($request->get('website'))->getArray(),
             'customer' => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
-            'web_page ' => [
-                'header' => Arr::get($website->published_layout, 'header', []),
-                'footer' => Arr::get($website->published_layout, 'footer', [])
-            ],
+            
             'navigation' => match ($request->get('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
                 'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
@@ -53,5 +50,15 @@ class GetRetinaLayout
                 default      => []
             },
         ];
+
+        if ($webUser->shop->type->value === 'b2b' || $webUser->shop->type->value === 'dropshipping') {
+            $layout['web_page'] = [
+                'header'        => Arr::get($website->published_layout, 'header', []),
+                'menu'          => Arr::get($website->published_layout, 'menu', []),
+                'footer'        => Arr::get($website->published_layout, 'footer', [])
+            ];
+        }
+        
+        return $layout;
     }
 }

@@ -69,9 +69,9 @@ class GetRetinaB2BHomeData
             'addresses'   => [
                 'isCannotSelect'                => true,
                 // 'address_list'                  => $addressCollection,
-                'options'                       => [
-                    'countriesAddressData' => GetAddressData::run()
-                ],
+                // 'options'                       => [
+                //     'countriesAddressData' => GetAddressData::run()
+                // ],
                 'pinned_address_id'              => $customer->delivery_address_id,
                 'home_address_id'                => $customer->address_id,
                 'current_selected_address_id'    => $customer->delivery_address_id,

@@ -75,6 +75,11 @@ export const initialiseRetinaApp = () => {
             layout.website = usePage().props.layout?.website
         }
 
+        // Set data of Website
+        if (usePage().props.layout?.web_page) {
+            layout.web_page = usePage().props.layout?.web_page
+        }
+
         // Set data of Locale (Language)
         if (usePage().props.layout?.customer) {
             layout.customer = usePage().props.layout.customer
