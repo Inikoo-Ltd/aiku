@@ -12,6 +12,7 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
 use App\Actions\Comms\Email\SendNewCustomerNotification;
+use App\Actions\CRM\PollReply\StoreMultiPollReply;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -45,6 +46,15 @@ class RegisterCustomer extends OrgAction
             'password'     => $password,
             'is_root'      => true,
         ]);
+
+        if (Arr::get($modelData, 'poll_replies', []) != []) {
+            $storePollyRepliesData = [
+                'customer_id' => $customer->id,
+                'poll_replies' => $modelData['poll_replies'],
+            ];
+            StoreMultiPollReply::make()->action($shop, $storePollyRepliesData);
+        }
+
 
         SendCustomerWelcomeEmail::run($customer);
 
@@ -85,10 +95,11 @@ class RegisterCustomer extends OrgAction
                     'required',
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
+            'poll_replies'            => ['sometimes', 'required', 'array'],
+
         ];
     }
 
-    /**
 
 
     /**
