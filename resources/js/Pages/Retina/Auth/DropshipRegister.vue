@@ -10,6 +10,14 @@ import FulfilmentCustomer from "@/Pages/Grp/Org/Fulfilment/FulfilmentCustomer.vu
 import CustomerDataForm from "@/Components/CustomerDataForm.vue"
 import Textarea from "primevue/textarea"
 import Select from "primevue/select"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faEnvelope } from "@far"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faEnvelope)
 
 // Set default layout
 defineOptions({ layout: RetinaShowIris })
@@ -26,6 +34,7 @@ const props = defineProps({
 const initialPollReplies = props.polls.map((poll) => ({
 	id: poll.id,
 	type: poll.type,
+  label: poll.label, 
 	answer: poll.type === "option" ? null : "",
 }))
 
@@ -102,209 +111,234 @@ simplePolls.value.forEach((poll) => {
 </script>
 
 <template>
-	<form @submit.prevent="submit" class="space-y-12 px-14 py-10">
-		<div class="text-xl font-semibold flex justify-center">
-			{{ trans("Join Our Dropship – Register Now!") }}
-		</div>
-		<div class="border-b border-gray-900/10 pb-12">
-			<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-				<!-- First Name -->
-				<div class="sm:col-span-6">
-					<label for="name" class="capitalize block text-sm font-medium text-gray-700">{{
-						trans("Name")
-					}}</label>
-					<div class="mt-2">
-						<PureInput
-							v-model="form.contact_name"
-							type="text"
-							id="contact_name"
-							name="contact_name"
-							required />
-						<p v-if="form.errors.contact_name" class="text-sm text-red-600 mt-1">
-							{{ form.errors.contact_name }}
-						</p>
-					</div>
-				</div>
-
-				<!-- Email -->
-				<div class="sm:col-span-3">
-					<label for="email" class="capitalize block text-sm font-medium text-gray-700">{{
-						trans("Email")
-					}}</label>
-					<div class="mt-2">
-						<PureInput
-							v-model="form.email"
-							type="email"
-							id="email"
-							name="email"
-							required />
-						<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
-							{{ form.errors.email }}
-						</p>
-					</div>
-				</div>
-
-				<!-- Phone Number -->
-				<div class="sm:col-span-3">
-					<label
-						for="phone-number"
-						class="capitalize block text-sm font-medium text-gray-700"
-						>{{ trans("Phone Number") }}</label
-					>
-					<div class="mt-2">
-						<PureInput
-							v-model="form.phone"
-							type="text"
-							id="phone-number"
-							name="phone"
-							required />
-						<p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
-							{{ form.errors.phone }}
-						</p>
-					</div>
-				</div>
-
-				<!-- Business Name -->
-				<div class="sm:col-span-6">
-					<label
-						for="business-name"
-						class="capitalize block text-sm font-medium text-gray-700"
-						>{{ trans("Business Name") }}</label
-					>
-					<div class="mt-2">
-						<PureInput
-							v-model="form.company_name"
-							type="text"
-							id="business-name"
-							name="company_name" />
-						<p v-if="form.errors.company_name" class="text-sm text-red-600 mt-1">
-							{{ form.errors.company_name }}
-						</p>
-					</div>
-				</div>
-
-				<!-- Website -->
-				<div class="sm:col-span-6">
-					<label
-						for="website"
-						class="capitalize block text-sm font-medium text-gray-700"
-						>{{ trans("Website") }}</label
-					>
-					<div class="mt-2">
-						<PureInput v-model="form.website" />
-						<p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
-							{{ form.errors.website }}
-						</p>
-					</div>
-				</div>
-
-				<div class="sm:col-span-6">
-					<hr />
-				</div>
-
-				<div class="sm:col-span-6">
-					<label
-						for="website"
-						class="capitalize block text-sm font-medium text-gray-700"
-						>{{ trans("Country") }}</label
-					>
-					<Address
-						v-model="form[contact_address]"
-						fieldName="contact_address"
-						:form="form"
-						:options="{ countriesAddressData: countriesAddressData }"
-						:fieldData="addressFieldData" />
-				</div>
-
-				<div class="sm:col-span-6">
-					<hr />
-				</div>
-
-				<div
-					v-for="(pollReply, idx) in form.poll_replies"
-					:key="pollReply.id"
-					class="sm:col-span-6">
-					<label class="block text-sm font-medium text-gray-700 capitalize">
-						{{ pollReply.label }}
-					</label>
-
-					<Select
-						v-if="pollReply.type === 'option'"
-						v-model="form.poll_replies[idx].answer"
-						:options="props.polls[idx].options"
-						optionLabel="label"
-						optionValue="id"
-						:placeholder="`Select ${pollReply.label}`"
-						class="mt-2 w-full" />
-
-					<Textarea
-						v-else
-						v-model="form.poll_replies[idx].answer"
-						rows="5"
-						cols="30"
-						placeholder="Your answer…"
-						class="mt-2 w-full border rounded-md p-2" />
-
-					<p
-						v-if="form.errors[`poll_replies.${idx}`]"
-						class="mt-1 text-sm text-red-600">
-						{{ form.errors[`poll_replies.${idx}`] }}
-					</p>
-				</div>
-
-				<div class="sm:col-span-6">
-					<hr />
-				</div>
-
-				<!-- Password -->
-				<div class="sm:col-span-3">
-					<label for="password" class="capitalize block text-sm font-medium text-gray-700"
-						>Password</label
-					>
-					<div class="mt-2 password">
-						<PureInput
-							v-model="form.password"
-							@update:modelValue="(e) => form.clearErrors('password')"
-							:type="'password'"
-							required />
-						<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
-							{{ form.errors.password }}
-						</p>
-					</div>
-				</div>
-
-				<!-- Retype Password -->
-				<div class="sm:col-span-3">
-					<label
-						for="password-confirmation"
-						class="capitalize block text-sm font-medium text-gray-700"
-						>Retype Password</label
-					>
-					<div class="mt-2 password">
-						<PureInput
-							v-model="form.password_confirmation"
-							:type="'password'"
-							required />
-						<p
-							v-if="form.errors.password_confirmation"
-							class="text-sm text-red-600 mt-1">
-							{{ form.errors.password_confirmation }}
-						</p>
-					</div>
-				</div>
+	<div class="max-w-lg mx-auto my-8">
+		<!-- Card container -->
+		<div class="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
+			<!-- Card header -->
+			<div class="px-6 py-4 border-b border-gray-200">
+				<h2 class="text-xl font-semibold text-gray-800">Registration form</h2>
 			</div>
-		</div>
+			<form @submit.prevent="submit" class="space-y-12 px-14 py-10">
+				<div class="text-xl font-semibold flex justify-center">
+					{{ trans("Join Our Dropship – Register Now!") }}
+				</div>
+				<div class="border-b border-gray-900/10 pb-12">
+					<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+						<!-- First Name -->
+						<div class="sm:col-span-6">
+							<label
+								for="name"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>{{ trans("Name") }}</label
+							>
+							<div class="mt-2">
+								<IconField>
+									<InputIcon>
+										<FontAwesomeIcon :icon="faEnvelope" />
+									</InputIcon>
 
-		<!-- Submit Button -->
-		<div class="flex justify-end">
-			<button
-				type="submit"
-				class="inline-flex items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-				<span v-if="isLoading" class="loader mr-2"></span>
-				{{ trans("Register") }}
-			</button>
+									<InputText
+										v-model="form.contact_name"
+										id="contact_name"
+										name="contact_name"
+                    class="w-full"
+										required />
+								</IconField>
+								<p
+									v-if="form.errors.contact_name"
+									class="text-sm text-red-600 mt-1">
+									{{ form.errors.contact_name }}
+								</p>
+							</div>
+						</div>
+
+						<!-- Email -->
+						<div class="sm:col-span-3">
+							<label
+								for="email"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>{{ trans("Email") }}</label
+							>
+							<div class="mt-2">
+								<PureInput
+									v-model="form.email"
+									type="email"
+									id="email"
+									name="email"
+									required />
+								<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
+									{{ form.errors.email }}
+								</p>
+							</div>
+						</div>
+
+						<!-- Phone Number -->
+						<div class="sm:col-span-3">
+							<label
+								for="phone-number"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>{{ trans("Phone Number") }}</label
+							>
+							<div class="mt-2">
+								<PureInput
+									v-model="form.phone"
+									type="text"
+									id="phone-number"
+									name="phone"
+									required />
+								<p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
+									{{ form.errors.phone }}
+								</p>
+							</div>
+						</div>
+
+						<!-- Business Name -->
+						<div class="sm:col-span-6">
+							<label
+								for="business-name"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>{{ trans("Business Name") }}</label
+							>
+							<div class="mt-2">
+								<PureInput
+									v-model="form.company_name"
+									type="text"
+									id="business-name"
+									name="company_name" />
+								<p
+									v-if="form.errors.company_name"
+									class="text-sm text-red-600 mt-1">
+									{{ form.errors.company_name }}
+								</p>
+							</div>
+						</div>
+
+						<!-- Website -->
+						<div class="sm:col-span-6">
+							<label
+								for="website"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>{{ trans("Website") }}</label
+							>
+							<div class="mt-2">
+								<PureInput v-model="form.website" />
+								<p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
+									{{ form.errors.website }}
+								</p>
+							</div>
+						</div>
+
+						<div class="sm:col-span-6">
+							<hr />
+						</div>
+
+						<div class="sm:col-span-6">
+							<label
+								for="website"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>{{ trans("Country") }}</label
+							>
+							<Address
+								v-model="form[contact_address]"
+								fieldName="contact_address"
+								:form="form"
+								:options="{ countriesAddressData: countriesAddressData }"
+								:fieldData="addressFieldData" />
+						</div>
+
+						<div class="sm:col-span-6">
+							<hr />
+						</div>
+    
+						<div
+							v-for="(pollReply, idx) in form.poll_replies"
+							:key="pollReply.id"
+							class="sm:col-span-6">
+							<label class="block text-sm font-medium text-gray-700 capitalize">
+								{{ pollReply.label }}
+							</label>
+
+							<Select
+								v-if="pollReply.type === 'option'"
+								v-model="form.poll_replies[idx].answer"
+								:options="props.polls[idx].options"
+								optionLabel="label"
+								optionValue="id"
+								:placeholder="`Please Choose One`"
+								class="mt-2 w-full" />
+
+							<Textarea
+								v-else
+								v-model="form.poll_replies[idx].answer"
+								rows="5"
+								cols="30"
+								placeholder="Your answer…"
+								class="mt-2 w-full border rounded-md p-2" />
+
+							<p
+								v-if="form.errors[`poll_replies.${idx}`]"
+								class="mt-1 text-sm text-red-600">
+								{{ form.errors[`poll_replies.${idx}`] }}
+							</p>
+						</div>
+
+						<div class="sm:col-span-6">
+							<hr />
+						</div>
+
+						<!-- Password -->
+						<div class="sm:col-span-3">
+							<label
+								for="password"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>Password</label
+							>
+							<div class="mt-2 password">
+								<PureInput
+									v-model="form.password"
+									@update:modelValue="(e) => form.clearErrors('password')"
+									:type="'password'"
+									required />
+								<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
+									{{ form.errors.password }}
+								</p>
+							</div>
+						</div>
+
+						<!-- Retype Password -->
+						<div class="sm:col-span-3">
+							<label
+								for="password-confirmation"
+								class="capitalize block text-sm font-medium text-gray-700"
+								>Retype Password</label
+							>
+							<div class="mt-2 password">
+								<PureInput
+									v-model="form.password_confirmation"
+									:type="'password'"
+									required />
+								<p
+									v-if="form.errors.password_confirmation"
+									class="text-sm text-red-600 mt-1">
+									{{ form.errors.password_confirmation }}
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Submit Button -->
+				<div class="flex justify-end">
+					<button
+						type="submit"
+						class="inline-flex items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+						<span v-if="isLoading" class="loader mr-2"></span>
+						{{ trans("Register") }}
+					</button>
+				</div>
+			</form>
 		</div>
-	</form>
+	</div>
 </template>
 
 <style scoped lang="scss">
