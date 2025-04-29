@@ -247,9 +247,9 @@ simplePolls.value.forEach((poll) => {
 						class="mt-2 w-full border rounded-md p-2" />
 
 					<p
-						v-if="form.errors[`poll_replies.${idx}.answer`]"
+						v-if="form.errors[`poll_replies.${idx}`]"
 						class="mt-1 text-sm text-red-600">
-						{{ form.errors[`poll_replies.${idx}.answer`] }}
+						{{ form.errors[`poll_replies.${idx}`] }}
 					</p>
 				</div>
 
