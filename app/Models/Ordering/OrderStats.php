@@ -18,27 +18,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $order_id
- * @property int $number_transactions_out_of_stock_in_basket transactions at the time up submission from basket
+ * @property int $number_item_transactions_out_of_stock_in_basket transactions at the time up submission from basket
  * @property string|null $out_of_stock_in_basket_grp_net_amount
  * @property string|null $out_of_stock_in_basket_org_net_amount
  * @property string $out_of_stock_in_basket_net_amount
- * @property int $number_transactions_at_submission transactions at the time up submission from basket
- * @property int $number_created_transactions_after_submission
- * @property int $number_updated_transactions_after_submission
- * @property int $number_deleted_transactions_after_submission
- * @property int $number_transactions transactions including cancelled
- * @property int $number_current_transactions transactions excluding cancelled
- * @property int $number_transactions_state_creating
- * @property int $number_transactions_state_submitted
- * @property int $number_transactions_state_in_warehouse
- * @property int $number_transactions_state_handling
- * @property int $number_transactions_state_packed
- * @property int $number_transactions_state_finalised
- * @property int $number_transactions_state_dispatched
- * @property int $number_transactions_state_cancelled
- * @property int $number_transactions_status_creating
- * @property int $number_transactions_status_processing
- * @property int $number_transactions_status_settled
+ * @property int $number_item_transactions_at_submission transactions at the time up submission from basket
+ * @property int $number_created_item_transactions_after_submission
+ * @property int $number_updated_item_transactions_after_submission
+ * @property int $number_deleted_item_transactions_after_submission
+ * @property int $number_item_transactions transactions including cancelled
+ * @property int $number_current_item_transactions transactions excluding cancelled
+ * @property int $number_item_transactions_state_creating
+ * @property int $number_item_transactions_state_submitted
+ * @property int $number_item_transactions_state_in_warehouse
+ * @property int $number_item_transactions_state_handling
+ * @property int $number_item_transactions_state_packed
+ * @property int $number_item_transactions_state_finalised
+ * @property int $number_item_transactions_state_dispatched
+ * @property int $number_item_transactions_state_cancelled
+ * @property int $number_item_transactions_status_creating
+ * @property int $number_item_transactions_status_processing
+ * @property int $number_item_transactions_status_settled
  * @property int $number_offer_campaigns
  * @property int $number_offers
  * @property int $number_offer_components

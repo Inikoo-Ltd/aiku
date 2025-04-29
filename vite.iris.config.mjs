@@ -50,7 +50,7 @@ export default defineConfig(
                         })
     ],
     ssr    : {
-      noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss"]
+      noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
     },
     resolve: {
       alias: {

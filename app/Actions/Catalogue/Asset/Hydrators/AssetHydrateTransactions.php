@@ -36,18 +36,18 @@ class AssetHydrateTransactions implements ShouldBeUnique
         $transactionsOutOfStockInBasket = $transactions->where('out_of_stock_in_basket', true)->get();
 
         $stats = [
-            'number_transactions_out_of_stock_in_basket' => $transactionsOutOfStockInBasket->count(),
+            'number_item_transactions_out_of_stock_in_basket' => $transactionsOutOfStockInBasket->count(),
             'out_of_stock_in_basket_grp_net_amount' => $transactionsOutOfStockInBasket->sum('grp_net_amount'),
             'out_of_stock_in_basket_org_net_amount' => $transactionsOutOfStockInBasket->sum('org_net_amount'),
             'out_of_stock_in_basket_net_amount' => $transactionsOutOfStockInBasket->sum('net_amount'),
-            'number_transactions' => $transactions->count(),
-            'number_current_transactions' => $transactions->where('state', '!=', TransactionStateEnum::CANCELLED)->count(),
+            'number_item_transactions' => $transactions->count(),
+            'number_current_item_transactions' => $transactions->where('state', '!=', TransactionStateEnum::CANCELLED)->count(),
         ];
 
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
-                model: 'transactions',
+                model: 'item_transactions',
                 field: 'state',
                 enum: TransactionStateEnum::class,
                 models: Transaction::class,
@@ -60,7 +60,7 @@ class AssetHydrateTransactions implements ShouldBeUnique
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
-                model: 'transactions',
+                model: 'item_transactions',
                 field: 'status',
                 enum: TransactionStatusEnum::class,
                 models: Transaction::class,

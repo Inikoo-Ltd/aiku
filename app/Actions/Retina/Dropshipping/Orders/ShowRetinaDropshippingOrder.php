@@ -333,7 +333,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         [
                             [
                                 'label'       => 'Items',
-                                'quantity'    => $order->stats->number_transactions,
+                                'quantity'    => $order->stats->number_item_transactions,
                                 'price_base'  => 'Multiple',
                                 'price_total' => $order->net_amount
                             ],

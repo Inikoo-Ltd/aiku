@@ -271,7 +271,7 @@ const isModalUploadFileOpen = ref(false)
 		<!-- Button: delete Return -->
 		<template #button-delete-return="{ action }">
 			<div>
-				<ModalConfirmationDelete :routeDelete="action.route" isFullLoading isWithMessage>
+				<ModalConfirmationDelete :routeDelete="action.route" isFullLoading isWithMessage keyMessage="deleted_note">
 					<template #default="{ isOpenModal, changeModel }">
 						<Button
 							@click="() => changeModel()"

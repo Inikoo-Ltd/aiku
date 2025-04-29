@@ -41,6 +41,7 @@ const props = defineProps<{
     colorTheme?: string  // '#374151'
     isUseAxios?: boolean
     parentClass?: string
+    isLoading?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -194,7 +195,7 @@ const onClickPlusButton = () => {
                 :class="{ 'text-gray-400': !form.isDirty }"
                 :disabled="form.processing || !form.isDirty" type="submit">
                 <slot name="save" :isProcessing="form.processing" :isDirty="form.isDirty" :onSaveViaForm="onSaveViaForm">
-                    <LoadingIcon v-if="form.processing" class="text-xl" />
+                    <LoadingIcon v-if="form.processing || props.isLoading" class="text-xl" />
                     <template v-else>
                         <FontAwesomeIcon v-if="form.isDirty" @click="saveOnForm ? onSaveViaForm() : emits('onSave', form)"
                             :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" icon="fad fa-save" fixed-width class=" cursor-pointer text-xl"

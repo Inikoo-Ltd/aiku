@@ -3,18 +3,15 @@ import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 import { isArray } from 'lodash-es'
 import "@/../css/iris_styling.css"
-
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { onMounted, provide, ref, onBeforeUnmount } from 'vue'
+import {provide, ref } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
-import { irisStyleVariables } from '@/Composables/Workshop'
 import { trans } from 'laravel-vue-i18n'
 import Modal from '@/Components/Utils/Modal.vue'
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
@@ -60,37 +57,6 @@ const setFirstVisitToFalse = () => {
 };
 
 
-/* const iframeStyle = ref({
-    width: "80px",
-    height: "80px",
-}); 
- */
-/* onMounted(() => {
-    irisStyleVariables(theme?.color)
-    const handleMessage = (event: MessageEvent) => {
-        // Validate the message origin
-        if (event.origin === 'https://widget.superchat.de') {
-            // Check the message content (depends on what the iframe sends)
-            if (event.data.details.isOpen) {
-                iframeStyle.value = { width: '400px', height: "700px" };
-            } else if (!event.data.details.isOpen) {
-                iframeStyle.value = { width: '80px', height: "80px" };
-            }
-        }
-    };
-
-    // Listen to messages from the iframe
-    if (window) {
-        window.addEventListener('message', handleMessage);
-    }
-
-    onBeforeUnmount(() => {
-        if (window) {
-            window.removeEventListener('message', handleMessage);
-        }
-    });
-}); */
-
 </script>
 
 <template>
@@ -104,10 +70,10 @@ const setFirstVisitToFalse = () => {
             <div class="px-6 py-28 sm:px-6 lg:px-32 text-red-600">
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-                        <FontAwesomeIcon icon='fas fa-exclamation-triangle' class='text-4xl' fixed-width
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class='text-4xl' fixed-width
                             aria-hidden='true' />
                         Reminder
-                        <FontAwesomeIcon icon='fas fa-exclamation-triangle' class='text-4xl' fixed-width
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class='text-4xl' fixed-width
                             aria-hidden='true' />
                     </h2>
                     <p class="mx-auto mt-6 text-lg/8 text-pretty">Warning: You are currently in the staging environment.
@@ -140,13 +106,7 @@ const setFirstVisitToFalse = () => {
     </notifications>
 
 
-  <!--   <iframe title="superchat" id="superchat-widget"
-        class="rounded-lg shadow-lg fixed bottom-0 right-0 transition-all duration-300"
-        :style="{ ...iframeStyle, border: 'none' }"
-        src="https://widget.superchat.de/v2?applicationKey=WCNK7nqXPQlrVGq895A2obLRVa">
-    </iframe> -->
+
 
 </template>
 
-<style lang="scss">
-</style>

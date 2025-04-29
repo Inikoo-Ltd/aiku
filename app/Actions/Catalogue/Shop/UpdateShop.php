@@ -107,6 +107,10 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::exists($modelData, 'registration_auto_approve')) {
+            data_set($modelData, "settings.customer.registration_auto_approve", Arr::pull($modelData, 'registration_auto_approve'));
+        }
+
 
         $shop = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
@@ -188,6 +192,7 @@ class UpdateShop extends OrgAction
             'shopify_access_token' => ['sometimes', 'string'],
             'registration_number' => ['sometimes', 'string'],
             'vat_number' => ['sometimes', 'string'],
+            'registration_auto_approve' => ['sometimes', 'boolean'],
             'invoice_footer' => ['sometimes', 'string', 'max:10000'],
             'image' => [
                 'sometimes',

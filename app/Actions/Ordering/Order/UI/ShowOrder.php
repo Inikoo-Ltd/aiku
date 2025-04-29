@@ -231,7 +231,7 @@ class ShowOrder extends OrgAction
                 [
                     [
                         'label'       => 'Items',
-                        'quantity'    => $order->stats->number_transactions,
+                        'quantity'    => $order->stats->number_item_transactions,
                         'price_base'  => 'Multiple',
                         'price_total' => $order->net_amount
                     ],
@@ -240,12 +240,12 @@ class ShowOrder extends OrgAction
                     [
                         'label'       => 'Charges',
                         'information' => '',
-                        'price_total' => '0'
+                        'price_total' => $order->charges_amount
                     ],
                     [
                         'label'       => 'Shipping',
                         'information' => '',
-                        'price_total' => '0'
+                        'price_total' => $order->shipping_amount
                     ]
                 ],
                 [

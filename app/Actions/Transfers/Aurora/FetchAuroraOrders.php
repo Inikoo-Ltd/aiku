@@ -9,6 +9,7 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\SetOrderPayments;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -109,6 +110,7 @@ class FetchAuroraOrders extends FetchAuroraAction
             }
         }
 
+        OrderHydrateTransactions::run($order);
 
         DB::connection('aurora')->table('Order Dimension')
             ->where('Order Key', $sourceData[1])
@@ -137,7 +139,27 @@ class FetchAuroraOrders extends FetchAuroraAction
                             audit: false
                         );
                     } else {
-                        UpdateAddress::run($order->deliveryAddress, $deliveryAddress->toArray());
+                        UpdateAddress::run(
+                            $order->deliveryAddress,
+                            Arr::only(
+                                $deliveryAddress->toArray(),
+                                [
+                                    'address_line_1',
+                                    'address_line_2',
+                                    'sorting_code',
+                                    'postal_code',
+                                    'dependent_locality',
+                                    'locality',
+                                    'administrative_area',
+                                    'country_code',
+                                    'country_id',
+                                    'checksum',
+                                    'is_fixed',
+                                    'fixed_scope'
+
+                                ]
+                            )
+                        );
                     }
                 } elseif ($order->deliveryAddress) {
                     dd('todo make order to be collected');
@@ -157,7 +179,21 @@ class FetchAuroraOrders extends FetchAuroraAction
                         audit: false
                     );
                 } else {
-                    UpdateAddress::run($order->billingAddress, $billingAddress->toArray());
+                    UpdateAddress::run($order->billingAddress, Arr::only($billingAddress->toArray(), [
+                        'address_line_1',
+                        'address_line_2',
+                        'sorting_code',
+                        'postal_code',
+                        'dependent_locality',
+                        'locality',
+                        'administrative_area',
+                        'country_code',
+                        'country_id',
+                        'checksum',
+                        'is_fixed',
+                        'fixed_scope'
+
+                    ]));
                 }
 
 
@@ -319,8 +355,6 @@ class FetchAuroraOrders extends FetchAuroraAction
 
     public function commonSelectModelsToFetch($query)
     {
-
-
         if ($this->basket) {
             $query->where('Order State', 'InBasket');
 
@@ -328,8 +362,6 @@ class FetchAuroraOrders extends FetchAuroraAction
                 $q->whereNull('last_fetched_at')
                     ->orWhereRaw('last_fetched_at  < `Order Last Updated Date`');
             });
-
-
         }
 
         if ($this->onlyNew) {
