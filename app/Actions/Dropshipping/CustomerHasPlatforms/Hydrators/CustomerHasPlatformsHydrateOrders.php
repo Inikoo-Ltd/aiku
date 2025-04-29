@@ -35,6 +35,11 @@ class CustomerHasPlatformsHydrateOrders implements ShouldBeUnique
         $stats = [];
 
         if ($customerHasPlatform->customer_id && $customerHasPlatform->platform_id) {
+            $stats = [
+                'number_orders' => Order::where('customer_id', $customerHasPlatform->customer_id)
+                    ->where('platform_id', $customerHasPlatform->platform_id)
+                    ->count()
+            ];
             $stats = array_merge(
                 $stats,
                 $this->getEnumStats(

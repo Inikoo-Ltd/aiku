@@ -10,10 +10,12 @@ namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Actions\Dropshipping\CustomerClient\Search\CustomerClientRecordSearch;
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateCustomerClients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -63,6 +65,14 @@ class StoreCustomerClient extends OrgAction
 
         CustomerClientRecordSearch::dispatch($customerClient)->delay($this->hydratorsDelay);
         CustomerHydrateClients::dispatch($customer)->delay($this->hydratorsDelay);
+
+
+        $platformId = Arr::get($modelData, 'platform_id');
+        if ($platformId) {
+            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platformId)->first();
+            CustomerHasPlatformsHydrateCustomerClients::dispatch($customerHasPlatform);
+        }
+
 
         return $customerClient;
     }
