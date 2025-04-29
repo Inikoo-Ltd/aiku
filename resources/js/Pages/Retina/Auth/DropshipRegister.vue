@@ -27,7 +27,7 @@ const initialPollReplies = props.polls.map((poll) => ({
 	id: poll.id,
 	type: poll.type,
 	label: poll.label,
-	answer: poll.options.length > 1 ? null : "", // null untuk dropdown, "" untuk textarea
+	answer: poll.type === "option" ? null : "",
 }))
 
 // Define form using Inertia's useForm
@@ -230,11 +230,11 @@ simplePolls.value.forEach((poll) => {
 					</label>
 
 					<Select
-						v-if="props.polls[idx].options.length > 1"
+						v-if="pollReply.type === 'option'"
 						v-model="form.poll_replies[idx].answer"
 						:options="props.polls[idx].options"
 						optionLabel="label"
-						optionValue="value"
+						optionValue="id"
 						:placeholder="`Select ${pollReply.label}`"
 						class="mt-2 w-full" />
 
@@ -245,7 +245,6 @@ simplePolls.value.forEach((poll) => {
 						cols="30"
 						placeholder="Your answer…"
 						class="mt-2 w-full border rounded-md p-2" />
-
 
 					<p
 						v-if="form.errors[`poll_replies.${idx}.answer`]"
