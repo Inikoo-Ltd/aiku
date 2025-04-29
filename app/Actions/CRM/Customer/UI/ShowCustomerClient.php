@@ -135,10 +135,12 @@ class ShowCustomerClient extends OrgAction
                             'style' => 'create',
                             'label' => 'Add order',
                             'key'   => 'add_order',
-                            'route' => [
-                                'name'       => 'grp.models.pallet-delivery.multiple-pallets.store',
+                            'route'       => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.customer-client.platform-order.store',
                                 'parameters' => [
-                                    'palletDelivery' => 3
+                                    'customerClient' => $customerClient->id,
+                                    'platform' => $customerClient->platform_id
                                 ]
                             ]
                         ],

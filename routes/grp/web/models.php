@@ -641,6 +641,7 @@ Route::patch('purge/{purge:id}/update', UpdatePurge::class)->name('purge.update'
 Route::name('customer-client.')->prefix('customer-client/{customerClient:id}')->group(function () {
     Route::patch('/', UpdateCustomerClient::class)->name('update');
     Route::post('order', [StoreOrder::class, 'inCustomerClient'])->name('order.store');
+    Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomerClient'])->name('platform-order.store')->withoutScopedBindings();
 });
 
 Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
