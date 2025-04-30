@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateCustomers;
 use App\Actions\Fulfilment\RentalAgreement\StoreRentalAgreement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
@@ -42,6 +43,10 @@ class ApproveCustomer extends OrgAction
                 'state' => RentalAgreementStateEnum::ACTIVE
             ]);
             FulfilmentHydrateCustomers::dispatch($customer->fulfilmentCustomer->fulfilment);
+        } else {
+            UpdateCustomer::make()->action($customer, [
+                'state' => CustomerStateEnum::ACTIVE,
+            ]);
         }
 
         ShopHydrateCrmStats::dispatch($customer->shop);
