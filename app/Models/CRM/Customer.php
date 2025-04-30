@@ -115,9 +115,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $as_organisation_id Indicate customer is an organisation in this group
  * @property int|null $as_employee_id Indicate customer is an employee
  * @property string|null $approved_at
- * @property string $amount_in_basket
- * @property string $amount_in_basket_org_currency
- * @property string $amount_in_basket_grp_currency
+ * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
@@ -198,9 +196,7 @@ class Customer extends Model implements HasMedia, Auditable
         'fetched_at'                    => 'datetime',
         'rejected_at'                   => 'datetime',
         'last_fetched_at'               => 'datetime',
-        'amount_in_basket'              => 'decimal:2',
-        'amount_in_basket_org_currency' => 'decimal:2',
-        'amount_in_basket_grp_currency' => 'decimal:2',
+        'amount_in_basket'              => 'decimal:2'
     ];
 
 

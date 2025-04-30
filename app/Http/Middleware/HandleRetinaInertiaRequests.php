@@ -61,14 +61,14 @@ class HandleRetinaInertiaRequests extends Middleware
         $iris_layout = [
             "website"               => WebsiteIrisResource::make($request->get('website'))->getArray(),
             'theme'                 => Arr::get($website->published_layout, 'theme'),
-            'is_logged_in'          => $webUser ? true : false,
+            'is_logged_in'          => (bool)$webUser,
             'user_auth'             => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-            'customer'              => $webUser ? $webUser->customer : null,
+            'customer'              => $webUser?->customer,
             'variables'             => [
-                'name'                  => $webUser ? $webUser->contact_name : null,
-                'username'              => $webUser ? $webUser->username : null,
-                'email'                 => $webUser ? $webUser->email : null,
-                'favourites_count'      => $webUser ? $webUser->customer->favourites->count() : null,
+                'name'                  => $webUser?->contact_name,
+                'username'              => $webUser?->username,
+                'email'                 => $webUser?->email,
+                'favourites_count'      => $webUser?->customer->favourites->count(),
                 'cart_count'            => 111,
                 'cart_amount'           => 111,
             ]
