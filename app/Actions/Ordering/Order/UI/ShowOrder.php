@@ -20,6 +20,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
+use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
@@ -370,6 +371,60 @@ class ShowOrder extends OrgAction
                         'method'     => 'delete'
                     ]
                 ],
+
+                /*'upload_transaction' => [
+                    'title' => [
+                        'label' => __('Upload pallet'),
+                        'information' => __('The list of column file: customer_reference, notes')
+                    ],
+                    'progressDescription'   => __('Adding Pallet Deliveries'),
+                    'preview_template'    => [
+                        'unique_column' => [
+                            'type'  => [
+                                'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
+                            ]
+                        ],
+                        'header' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes'],
+                        'rows' => [
+                            [
+                                'pallet_type' => 'Pallet',
+                                'pallet_customer_reference' => 'PALLET1',
+                                'pallet_notes' => 'notes',
+                            ],
+                        ]
+                    ],
+                    'upload_spreadsheet'    => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['pallet_customer_reference', 'pallet_notes', 'pallet_type'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)',
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'grp.models.pallet-delivery.pallet.upload',
+                                'parameters' => [
+                                    'palletDelivery' => $palletDelivery->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'grp.json.pallet_delivery.recent_uploads',
+                                'parameters' => [
+                                    'palletDelivery' => $palletDelivery->id
+                                ]
+                            ],
+                            'download' => [
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.templates',
+                                'parameters' => [
+                                    'organisation'       => $palletDelivery->organisation->slug,
+                                    'fulfilment'         => $palletDelivery->fulfilment->slug,
+                                    'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
+                                    'palletDelivery'     => $palletDelivery->slug
+                                ]
+                            ],
+                        ],
+                    ]
+                ],*/
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
