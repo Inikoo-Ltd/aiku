@@ -42,7 +42,7 @@ class FetchAuroraWebpages extends FetchAuroraAction
 
             if ($webpage) {
 
-                if(!$webpage->allow_fetch){
+                if (!$webpage->allow_fetch) {
                     return $webpage;
                 }
 

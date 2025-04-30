@@ -29,7 +29,7 @@ class HandleRetinaInertiaRequests extends Middleware
         $webUser = $request->user();
         $firstLoadOnlyProps = [];
 
-        if (!$request->inertia() or Session::get('reloadLayout')) {
+        if (!$request->inertia() || Session::get('reloadLayout')) {
             $firstLoadOnlyProps          = GetRetinaFirstLoadProps::run($request, $webUser);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('retina'))->toArray(), [
@@ -73,7 +73,7 @@ class HandleRetinaInertiaRequests extends Middleware
                 'cart_amount'           => 111,
             ]
         ];
-        
+
         return array_merge(
             $firstLoadOnlyProps,
             [
@@ -82,7 +82,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'webUser_count' => $webUser?->customer?->webUsers?->count() ?? 1,
                 ],
                 'flash' => [
-                    'notification' => fn() => $request->session()->get('notification')
+                    'notification' => fn () => $request->session()->get('notification')
                 ],
                 'ziggy' => [
                     'location' => $request->url(),
