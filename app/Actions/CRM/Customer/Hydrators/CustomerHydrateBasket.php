@@ -37,7 +37,7 @@ class CustomerHydrateBasket implements ShouldBeUnique
             'current_order_in_basket_id' => DB::table('orders')
                 ->where('customer_id', $customer->id)
                 ->where('state', OrderStateEnum::CREATING->value)
-                ->orderBy('date', 'desc')
+                ->whereDate('date', now()->toDateString())
                 ->value('id'),
         ];
 
