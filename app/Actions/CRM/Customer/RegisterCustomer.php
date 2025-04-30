@@ -16,7 +16,6 @@ use App\Actions\CRM\PollReply\StoreMultiPollReply;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -41,7 +40,6 @@ class RegisterCustomer extends OrgAction
             $autoApprove = Arr::get($shop->settings, 'customer.registration_auto_approve', false);
             if ($autoApprove) {
                 data_set($modelData, 'status', CustomerStatusEnum::APPROVED);
-                data_set($modelData, 'state', CustomerStateEnum::ACTIVE);
             }
         }
 
