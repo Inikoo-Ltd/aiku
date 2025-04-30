@@ -78,7 +78,7 @@ class IndexRetinaEcomCheckouts extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Dropshipping/Orders',
+            'Ecom/Checkout',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Checkouts'),

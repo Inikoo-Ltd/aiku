@@ -55,9 +55,9 @@ export const textReplaceVariables = (text: string, piniaVariables: {}) => {
         return ''
     }
 
-    return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || 'Vika A.')
-    .replace(/\{\{\s*username\s*\}\}/g, piniaVariables?.username || 'aqordeon')
-    .replace(/\{\{\s*email\s*\}\}/g, piniaVariables?.email || 'example@mail.com')
+    return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || '-')
+    .replace(/\{\{\s*username\s*\}\}/g, piniaVariables?.username || '-')
+    .replace(/\{\{\s*email\s*\}\}/g, piniaVariables?.email || '-')
     .replace(/\{\{\s*favourites_count\s*\}\}/g, piniaVariables?.favourites_count || '0')
     .replace(/\{\{\s*cart_count\s*\}\}/g, piniaVariables?.cart_count || '0')
     .replace(/\{\{\s*cart_amount\s*\}\}/g, piniaVariables?.cart_amount || '0')
