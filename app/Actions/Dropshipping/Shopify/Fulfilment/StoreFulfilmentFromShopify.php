@@ -17,6 +17,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ShopifyFulfilmentReasonEnum;
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Country;
 use App\Models\ShopifyUserHasProduct;
@@ -57,7 +59,7 @@ class StoreFulfilmentFromShopify extends OrgAction
 
             $palletReturn = StorePalletReturn::make()->actionWithDropshipping($shopifyUser->customer->fulfilmentCustomer, [
                 'type' => PalletReturnTypeEnum::DROPSHIPPING,
-                'platform_id' => $shopifyUser->customer->getMainPlatform()?->id
+                'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY)->first()->id
             ]);
 
             $storedItems = [];
