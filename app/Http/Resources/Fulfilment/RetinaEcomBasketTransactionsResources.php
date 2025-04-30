@@ -24,6 +24,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class RetinaEcomBasketTransactionsResources extends JsonResource
 {
+    public static $wrap = null;
+    
     public function toArray($request): array
     {
         $transaction = $this;
@@ -47,14 +49,14 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'currency_code'       => $transaction->currency_code,
             'image'               => Product::find($transaction->product_id)->imageSources(200, 200),
             'deleteRoute' => [
-                'name'       => 'grp.models.transaction.delete',
+                'name'       => 'retina.models.transaction.delete',
                 'parameters' => [
                     'transaction' => $transaction->id
                 ],
                 'method'     => 'delete'
             ],
             'updateRoute' => [
-                'name'       => 'grp.models.order.transaction.update',
+                'name'       => 'retina.models.transaction.update',
                 'parameters' => [
                     'order'       => $transaction->order_id,
                     'transaction' => $transaction->id
