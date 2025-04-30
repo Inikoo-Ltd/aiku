@@ -12,6 +12,7 @@ use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Fulfilment\FulfilmentResource;
 use App\Http\Resources\SysAdmin\Group\GroupResource;
 use App\Models\CRM\WebUser;
+use App\Models\Web\Website;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Arr;
 
@@ -21,12 +22,12 @@ class GetRetinaLayout
 
     public function handle($request, ?WebUser $webUser): array
     {
-        /** @var \App\Models\Web\Website $website */
-        $website    = $request->get('website');
+        /** @var Website $website */
+        $website = $request->get('website');
         if (!$webUser) {
             return [
                 'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
-                'website'  => GroupResource::make($request->get('website'))->getArray(),
+                'website'   => GroupResource::make($request->get('website'))->getArray(),
             ];
         }
 
@@ -37,20 +38,18 @@ class GetRetinaLayout
             ];
         }
 
-        $layout =  [
+        return [
             ...$additionalData,
-            'website'  => GroupResource::make($request->get('website'))->getArray(),
-            'customer' => CustomersResource::make($webUser->customer)->getArray(),
+            'website'   => GroupResource::make($request->get('website'))->getArray(),
+            'customer'  => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
 
             'navigation' => match ($request->get('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
                 'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
                 'b2b' => GetRetinaB2bNavigation::run($webUser),
-                default      => []
+                default => []
             },
         ];
-
-        return $layout;
     }
 }
