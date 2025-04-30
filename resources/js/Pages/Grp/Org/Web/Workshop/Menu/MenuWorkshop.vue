@@ -213,7 +213,8 @@ const onChangeNavigation = (setData) => {
 				:is_dirty="true"
 				v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)">
-				<template #form-extend>
+				<!-- Move this to Advanced Setting later -->
+				<!-- <template #form-extend>
 					<div class="flex items-center gap-2 mb-3">
 						<div class="items-start leading-none flex-shrink-0">
 							<FontAwesomeIcon
@@ -226,7 +227,6 @@ const onChangeNavigation = (setData) => {
 								class="flex overflow-hidden border-2 cursor-pointer w-full sm:w-auto"
 								:class="status ? 'border-green-500' : 'border-red-500'"
 								@click="() => (status = !status)">
-								<!-- Active Button -->
 								<div
 									class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
 									:class="
@@ -236,8 +236,6 @@ const onChangeNavigation = (setData) => {
 									">
 									Active
 								</div>
-
-								<!-- Inactive Button -->
 								<div
 									class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
 									:class="
@@ -250,7 +248,7 @@ const onChangeNavigation = (setData) => {
 							</div>
 						</div>
 					</div>
-				</template>
+				</template> -->
 			</Publish>
 		</template>
 		<template #other>
