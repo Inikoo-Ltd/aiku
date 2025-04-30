@@ -372,7 +372,7 @@ class ShowOrder extends OrgAction
                     ]
                 ],
 
-                'upload_transaction' => [
+                /*'upload_transaction' => [
                     'title' => [
                         'label' => __('Upload pallet'),
                         'information' => __('The list of column file: customer_reference, notes')
@@ -424,7 +424,7 @@ class ShowOrder extends OrgAction
                             ],
                         ],
                     ]
-                ],
+                ],*/
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
