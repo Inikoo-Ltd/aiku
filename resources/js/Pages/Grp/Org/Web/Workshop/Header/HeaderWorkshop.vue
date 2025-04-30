@@ -261,7 +261,8 @@ onMounted(() => {
         <template #button-publish="{ action }">
             <Publish v-model="comment" :isLoading="isLoading || isLoadingSave" :is_dirty="true"
                 @onPublish="(popover) => onPublish(action.route, popover)">
-                <template #form-extend>
+                <!-- Move this to Advanced Setting later -->
+                <!-- <template #form-extend>
                     <div class="flex items-center gap-2 mb-3">
                     <div class="items-start leading-none flex-shrink-0">
                         <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
@@ -270,13 +271,11 @@ onMounted(() => {
                     <div class="flex items-center gap-4 w-full">
                         <div class="flex overflow-hidden border-2 cursor-pointer w-full sm:w-auto"
                             :class="status ? 'border-green-500' : 'border-red-500'" @click="()=>status=!status">
-                        <!-- Active Button -->
                         <div class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
                                 :class="status ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'">
                             Active
                         </div>
 
-                        <!-- Inactive Button -->
                         <div class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
                                 :class="!status ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'">
                             Inactive
@@ -284,7 +283,7 @@ onMounted(() => {
                         </div>
                     </div>
                     </div>
-                </template>
+                </template> -->
 
             </Publish>
         </template>
