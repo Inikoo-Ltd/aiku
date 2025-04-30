@@ -80,7 +80,6 @@ class ReceivePalletDelivery extends OrgAction
                 }
 
                 foreach ($pallet->palletStoredItems as $palletStoredItem) {
-
                     StoreStoredItemAuditDeltaFromDelivery::run(
                         $palletDelivery,
                         $palletStoredItem,
@@ -127,8 +126,8 @@ class ReceivePalletDelivery extends OrgAction
         }
         $palletDelivery->refresh();
         $palletsInDelivery = $palletDelivery->pallets()
-        ->where('state', PalletStateEnum::RECEIVED)
-        ->get();
+            ->where('state', PalletStateEnum::RECEIVED)
+            ->get();
 
         foreach ($palletsInDelivery as $pallet) {
             $startDate = now();
@@ -136,7 +135,8 @@ class ReceivePalletDelivery extends OrgAction
                 recurringBill: $currentRecurringBill,
                 item: $pallet,
                 modelData: [
-                    'start_date' => $startDate
+                    'start_date' => $startDate,
+                    'end_date'   => $currentRecurringBill->end_date
                 ],
                 skipHydrators: true
             );

@@ -54,7 +54,6 @@ class StoreRecurringBillTransaction extends OrgAction
             $historicAssetId = $item->asset->current_historic_asset_id;
             $totalQuantity   = $item->quantity;
 
-            // todo add unit cost to the transaction
             $unitCost = $item->gross_amount / $item->quantity;
             data_set($modelData, 'item_id', $item->historicAsset->model_id);
         } elseif ($item instanceof HistoricAsset) {

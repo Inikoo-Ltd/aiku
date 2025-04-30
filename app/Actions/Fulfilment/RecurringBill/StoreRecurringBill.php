@@ -86,6 +86,7 @@ class StoreRecurringBill extends OrgAction
 
         if ($this->strict) {
             FindStoredPalletsAndAttachThemToNewRecurringBill::make()->action($recurringBill);
+            FindSpacesAndAttachThemToNewRecurringBill::make()->action($recurringBill);
         }
 
         GroupHydrateRecurringBills::dispatch($recurringBill->group)->delay($this->hydratorsDelay);
