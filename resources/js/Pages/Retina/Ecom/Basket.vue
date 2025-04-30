@@ -11,25 +11,26 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faArrowLeft, faArrowRight } from "@fal"
 import CheckoutSummary from "./CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import OrderSummary from "@/Components/Summary/OrderSummary.vue"
+import { inject } from "vue"
+import Image from "@/Components/Image.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-
-
-const data = [
-    {
-        image: 'https://via.placeholder.com/150',
-        code: 'Item 1',
-        description: 'Description 1',
-        quantity: 2,
-        amount_net: 100
-    },
-    {
-        image: 'https://via.placeholder.com/150',
-        code: 'Item 2',
-        description: 'Description 2',
-        quantity: 1,
-        amount_net: 50
+const props = defineProps<{
+    transactions: {}
+    summary: {
+        net_amount: string
+        gross_amount: string
+        tax_amount: string
+        goods_amount: string
+        services_amount: string
+        charges_amount: string
     }
-]
+}>()
+
+const locale = inject('locale', aikuLocaleStructure)
+
+
 </script>
 
 <template>
@@ -38,11 +39,9 @@ const data = [
             <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
         </div>
         
-        <CheckoutSummary></CheckoutSummary>
+        <CheckoutSummary :summary></CheckoutSummary>
 
-        <div class="border border-t border-orange-300"></div>
-
-        <DataTable :value="data" removableSort scrollable >
+        <DataTable :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
             <template #empty>
                 <div class="flex items-center justify-center h-full text-center">
                     {{ trans("No data available.") }}
@@ -59,7 +58,9 @@ const data = [
 
                     <template #body="{ data: dataBody }">
                         <div class="px-2 flex relative">
-                            <img src="https://www.ancientwisdom.biz/rwi/100x100_1612992.jpeg" alt="Image" class="w-12 h-12 rounded-full" />
+                            <Image
+                                :src="dataBody.image"
+                            />
                         </div>
                     </template>
                 </Column>
@@ -67,7 +68,7 @@ const data = [
                 <Column
                     xxsortable="columnHeader.sortable"
                     xxsortField="`columns.${colSlug}.${intervals.value}.raw_value`"
-                    field="code"
+                    field="asset_code"
                     class="w-28"
                 >
                     <template #header>
@@ -75,29 +76,20 @@ const data = [
                             Code
                         </div>
                     </template>
-                    
-                    <!-- <template #body="{ data: dataBody }">
-                        <div class="px-2 flex relative" :class="[ columnHeader.align === 'left' ? '' : 'justify-end text-right', ]" >
-                            <DashboardCell
-                                :interval="intervals"
-                                :cell="dataBody.columns?.[colSlug]?.[intervals.value] ?? dataBody.columns[colSlug]"
-                            />
-                        </div>
-                    </template> -->
                 </Column>
                 
                 <Column
-                    field="description"
+                    field="asset_name"
                 >
                     <template #header>
                         <div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600">
-                            Description
+                            Product name
                         </div>
                     </template>
                 </Column>
 
                 <Column
-                    field="quantity"
+                    field="quantity_ordered"
                     class="w-40"
                 >
                     <template #header>
@@ -109,17 +101,16 @@ const data = [
                     <template #body="{ data: dataBody }">
                         <div class="px-2 relative text-right">
                             <NumberWithButtonSave
-                                :modelValue="dataBody.quantity"
-                                @update:modelValue="(e: string) => {
-                                    console.log('ww')
-                                }"
+                                v-model="dataBody.quantity_ordered"
+                                :routeSubmit="dataBody.updateRoute"
+                                saveOnForm
                             />
                         </div>
                     </template>
                 </Column>
 
                 <Column
-                    field="amount_net"
+                    field="net_amount"
                     class="w-36"
                 >
                     <template #header>
@@ -130,7 +121,7 @@ const data = [
 
                     <template #body="{ data: dataBody }">
                         <div class="px-2 relative text-right">
-                            {{ dataBody.amount_net }}
+                            {{ new Intl.NumberFormat('en', { style: "currency", currency: dataBody.currency_code, }).format(dataBody.net_amount) }}
                         </div>
                     </template>
                 </Column>
@@ -193,9 +184,10 @@ const data = [
                 :iconRight="faArrowRight"
                 label="Go to Checkout"
                 :routeTarget="{
-                    name: 'retina.ecom.checkouts.index'
+                    name: 'retina.ecom.checkout.show'
                 }"
             />
         </div>
+        <!-- <pre>{{ transactions.data[0] }}</pre> -->
     </div>
 </template>

@@ -60,7 +60,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
 
 
-                    'data'     => $order ? $this->getOrderBoxStats($order) : null,
+                    'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 
                     'transactions' => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
                 ]
