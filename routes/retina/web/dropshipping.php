@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreRetinaShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
@@ -57,6 +58,10 @@ Route::prefix('orders')->as('orders.')->group(function () {
 });
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
+    Route::prefix('basket')->as('basket.')->group(function () {
+        Route::get('/', IndexRetinaBaskets::class)->name('index');
+    });
+
     Route::prefix('client')->as('client.')->group(function () {
         Route::get('/', IndexRetinaPlatformCustomerClients::class)->name('index');
         Route::get('fetch', [FetchRetinaCustomerClientFromShopify::class, 'inPlatform'])->name('fetch');

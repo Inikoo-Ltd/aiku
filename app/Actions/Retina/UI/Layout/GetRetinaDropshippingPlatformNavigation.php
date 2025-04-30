@@ -23,6 +23,16 @@ class GetRetinaDropshippingPlatformNavigation
 
         $tabs = [];
 
+        $platformNavigation['basket'] = [
+            'label' => __('Basket'),
+            'icon' => ['fal', 'fa-shopping-cart'],
+            'root' => 'retina.dropshipping.platforms.basket.',
+            'route' => [
+                'name' => 'retina.dropshipping.platforms.basket.index',
+                'parameters' => [$platform->slug]
+            ],
+        ];
+
         if (!$webUser->customer->fulfilmentCustomer or $platform->type !== PlatformTypeEnum::SHOPIFY) {
             $tabs = [
                 [
