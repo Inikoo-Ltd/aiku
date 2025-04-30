@@ -23,7 +23,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { isArray } from "lodash"
 import { useColorTheme } from "@/Composables/useStockList"
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import Footer from '@/Layouts/Iris/Footer.vue'
+import IrisFooter from '@/Layouts/Iris/Footer.vue'
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
@@ -33,12 +33,11 @@ provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
 
-const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
+const irisTheme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 
 
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)
-console.log('environment:', layout.app.environment)
 
 const isStaging = layout.app.environment === 'staging'
 
@@ -51,10 +50,10 @@ const isStaging = layout.app.environment === 'staging'
     
     
         <IrisHeader
-            v-if="layout.web_page?.header.header"
-            :data="layout.web_page?.header"
-            :colorThemed="theme"
-            :menu="layout.web_page?.menu"
+            v-if="layout.iris?.header.header"
+            :data="layout.iris?.header"
+            :colorThemed="irisTheme"
+            :menu="layout.iris?.menu"
         />
         <RetinaTopBar
             v-else
@@ -74,13 +73,13 @@ const isStaging = layout.app.environment === 'staging'
         </div>
 
         <!-- Main Content -->
-        <main class="h-screen pb-10 transition-all pl-2 md:pl-0 pr-2 "
+        <main class="h-full pb-10 transition-all pl-2 md:pl-0 pr-2 "
             :class="[
-                layout.web_page ? 'ml-48 mr-10' : layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
+                layout.iris?.header ? 'ml-48 mr-10' : layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
-            <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
+            <div class="bg-white shadow-lg rounded h-full xxoverflow-y-auto relative flex flex-col pb-6 text-gray-700">
                 <!-- Section: Breadcrumbs -->
                 <div class="mt-1">
                     <!-- <Breadcrumbs v-if="usePage().props.breadcrumbs?.length > 0"
@@ -111,7 +110,7 @@ const isStaging = layout.app.environment === 'staging'
 
     </div>
 
-    <Footer v-if="layout.web_page?.footer && !isArray(layout.web_page?.footer)" :data="layout.web_page?.footer" :colorThemed="theme" />
+    <IrisFooter v-if="layout.iris?.footer && !isArray(layout.iris?.footer)" :data="layout.iris?.footer" :colorThemed="irisTheme" />
     <RetinaFooter v-else />
 
     <!-- Global declaration: Notification -->

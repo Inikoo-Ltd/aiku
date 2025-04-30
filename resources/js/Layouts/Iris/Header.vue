@@ -40,7 +40,8 @@ const onLogoutAuth = async (link) => {
     try {
         await axios.post(route('iris.logout'));
         window.location.reload();
-    } catch (error) {
+    } catch {
+        console.error('error onLogoutAuth')
         notify({
             title: trans("Something went wrong"),
             text: trans("Failed to logout"),
