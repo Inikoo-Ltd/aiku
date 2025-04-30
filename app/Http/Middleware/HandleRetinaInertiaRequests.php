@@ -51,7 +51,7 @@ class HandleRetinaInertiaRequests extends Middleware
         $isMenuActive = Arr::get($menuLayout, 'status');
 
         $iris_webpage = [];
-        if ($webUser->shop->type->value === 'b2b' || $webUser->shop->type->value === 'dropshipping') {
+        if ($webUser?->shop?->type?->value === 'b2b' || $webUser?->shop?->type?->value === 'dropshipping') {
             $iris_webpage = [
                 'header'                => array_merge($isHeaderActive == 'active' ? $headerLayout : []),
                 'footer'                => array_merge($isFooterActive == 'active' ? $footerLayout : []),

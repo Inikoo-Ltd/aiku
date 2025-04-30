@@ -33,6 +33,7 @@ const navigation =  usePage().props?.iris?.menu
 const footer =  usePage().props?.iris?.footer
 const theme =  usePage().props?.iris?.theme ? usePage().props?.iris?.theme :  {color : [...useColorTheme[2]]}
 
+console.log('irisTheme', usePage().props.iris)
 
 onMounted(() => {
     irisStyleVariables(theme?.color)
@@ -92,7 +93,7 @@ const setFirstVisitToFalse = () => {
         </Modal>
         
         <div :class="[(theme.layout === 'blog' || !theme.layout ) ? 'container max-w-7xl mx-auto shadow-xl' : '']" :style="{ fontFamily: theme.fontFamily}">
-            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"/>
+            <IrisHeader v-if="header?.header" :data="header" :colorThemed="theme" :menu="navigation"/>
             <main>
                 <slot />
             </main>
