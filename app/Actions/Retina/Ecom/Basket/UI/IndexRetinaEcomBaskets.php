@@ -86,7 +86,7 @@ class IndexRetinaEcomBaskets extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Dropshipping/Orders',
+            'Ecom/Basket',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Baskets'),
