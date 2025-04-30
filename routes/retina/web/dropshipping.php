@@ -13,7 +13,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreRetinaShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
-use App\Actions\Retina\Dropshipping\Checkout\UI\IndexRetinaDropshippingBaskets;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingBaskets;
 use App\Actions\Retina\Dropshipping\Checkout\UI\IndexRetinaDropshippingCheckouts;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;

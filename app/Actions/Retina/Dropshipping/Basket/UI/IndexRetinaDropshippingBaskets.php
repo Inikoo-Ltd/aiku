@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Retina\Dropshipping\Checkout\UI;
+namespace App\Actions\Retina\Dropshipping\Basket\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
