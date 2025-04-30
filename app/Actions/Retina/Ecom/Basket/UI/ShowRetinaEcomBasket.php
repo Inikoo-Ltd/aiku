@@ -12,10 +12,12 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\UI\Basket\BasketTabsEnum;
-use App\Http\Resources\Fulfilment\RetinaEcomBasketResources;
+use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
+use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,18 +60,97 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
 
 
+                    'data'     => $order ? $this->getOrderBoxStats($order) : null,
 
-                    'data' => $order ? RetinaEcomBasketResources::make($order) : null,
-
-                    'tabs'        => [
-                        'current'    => $this->tab,
-                        'navigation' => BasketTabsEnum::navigation()
-                    ],
-
-
-                    'transactions' => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run(parent: $order, prefix: BasketTabsEnum::TRANSACTIONS->value)) : null,
+                    'transactions' => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
                 ]
         );
+    }
+
+    public function getOrderBoxStats(Order $order): array
+    {
+
+        $payAmount   = $order->total_amount - $order->payment_amount;
+        $roundedDiff = round($payAmount, 2);
+
+        $estWeight = ($order->estimated_weight ?? 0) / 1000;
+
+        return [
+            'customer' => array_merge(
+                CustomerResource::make($order->customer)->getArray(),
+                [
+                    'addresses' => [
+                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
+                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
+                    ],
+                ]
+            ),
+            'products' => [
+                'payment'          => [
+                    'routes'       => [
+                        'fetch_payment_accounts' => [
+                            'name'       => 'grp.json.shop.payment-accounts',
+                            'parameters' => [
+                                'shop' => $order->shop->slug
+                            ]
+                        ],
+                        'submit_payment'         => [
+                            'name'       => 'grp.models.order.payment.store',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+
+                    ],
+                    'total_amount' => (float)$order->total_amount,
+                    'paid_amount'  => (float)$order->payment_amount,
+                    'pay_amount'   => $roundedDiff,
+                ],
+                'estimated_weight' => $estWeight
+            ],
+
+            'order_summary' => [
+                [
+                    [
+                        'label'       => 'Items',
+                        'quantity'    => $order->stats->number_item_transactions,
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->net_amount
+                    ],
+                ],
+                [
+                    [
+                        'label'       => 'Charges',
+                        'information' => '',
+                        'price_total' => $order->charges_amount
+                    ],
+                    [
+                        'label'       => 'Shipping',
+                        'information' => '',
+                        'price_total' => $order->shipping_amount
+                    ]
+                ],
+                [
+                    [
+                        'label'       => 'Net',
+                        'information' => '',
+                        'price_total' => $order->net_amount
+                    ],
+                    [
+                        'label'       => 'Tax 20%',
+                        'information' => '',
+                        'price_total' => $order->tax_amount
+                    ]
+                ],
+                [
+                    [
+                        'label'       => 'Total',
+                        'price_total' => $order->total_amount
+                    ]
+                ],
+                'currency' => CurrencyResource::make($order->currency),
+            ],
+        ];
     }
 
     public function getBreadcrumbs(): array
