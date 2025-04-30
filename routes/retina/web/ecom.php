@@ -9,13 +9,13 @@
 */
 
 
-use App\Actions\Retina\Ecom\Basket\UI\IndexRetinaEcomBaskets;
-use App\Actions\Retina\Ecom\Checkout\UI\IndexRetinaEcomCheckouts;
+use App\Actions\Retina\Ecom\Basket\UI\ShowRetinaEcomBasket;
+use App\Actions\Retina\Ecom\Checkout\UI\ShowRetinaEcomCheckout;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('baskets')->as('baskets.')->group(function () {
-    Route::get('/', IndexRetinaEcomBaskets::class)->name('index');
+Route::prefix('basket')->as('basket.')->group(function () {
+    Route::get('/', ShowRetinaEcomBasket::class)->name('show');
 });
-Route::prefix('checkouts')->as('checkouts.')->group(function () {
-    Route::get('/', IndexRetinaEcomCheckouts::class)->name('index');
+Route::prefix('checkout')->as('checkout.')->group(function () {
+    Route::get('/', ShowRetinaEcomCheckout::class)->name('show');
 });

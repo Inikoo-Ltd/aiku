@@ -21,7 +21,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $state
  * @property mixed $number_item_transactions
  */
-class RetinaEcomBasketsResources extends JsonResource
+class RetinaBasketsResources extends JsonResource
 {
     public function toArray($request): array
     {

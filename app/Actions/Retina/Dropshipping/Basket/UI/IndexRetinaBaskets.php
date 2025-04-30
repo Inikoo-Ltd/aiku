@@ -1,19 +1,17 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Artha <artha@aw-advantage.com>
+ * Created: Wed, 16 Oct 2024 10:47:26 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2024, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Retina\Ecom\Basket\UI;
+namespace App\Actions\Retina\Dropshipping\Basket\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Fulfilment\RetinaEcomBasketsResources;
+use App\Http\Resources\Fulfilment\RetinaBasketsResources;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -21,15 +19,15 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
 use Closure;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaEcomBaskets extends RetinaAction
+class IndexRetinaBaskets extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|Customer $parent, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -86,7 +84,7 @@ class IndexRetinaEcomBaskets extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Ecom/Basket',
+            'Dropshipping/Client/CustomerClients',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Baskets'),
@@ -95,7 +93,7 @@ class IndexRetinaEcomBaskets extends RetinaAction
                     'icon'  => 'fal fa-shopping-basket'
                 ],
 
-                'products' => RetinaEcomBasketsResources::collection($orders)
+                'products' => RetinaBasketsResources::collection($orders)
             ]
         )->table($this->tableStructure('baskets'));
     }
@@ -140,7 +138,7 @@ class IndexRetinaEcomBaskets extends RetinaAction
                             'route' => [
                                 'name' => 'retina.dropshipping.orders.index'
                             ],
-                            'label'  => __('Orders'),
+                            'label'  => __('Baskets'),
                         ]
                     ]
                 ]
