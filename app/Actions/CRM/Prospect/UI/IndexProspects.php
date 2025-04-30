@@ -138,7 +138,8 @@ class IndexProspects extends OrgAction
         return $elements;
     }
 
-    public function handle(Group|Organisation|Shop|Fulfilment|Tag $parent, $scope, $prefix = null): LengthAwarePaginator
+    // if $scope is set as $scope='all' then php artisan ide-helper:meta will fail!
+    public function handle(Group|Organisation|Shop|Fulfilment|Tag $parent, $prefix = null, $scope): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -232,6 +233,8 @@ class IndexProspects extends OrgAction
                 ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'website', label: __('website'), canBeHidden: false, sortable: true, searchable: true);
+
+
         };
     }
 
@@ -269,7 +272,7 @@ class IndexProspects extends OrgAction
         $dataProspect  = [
             'data' => $this->tab == ProspectsTabsEnum::PROSPECTS->value
                 ? ProspectsResource::collection($prospects)
-                : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
+                : Inertia::lazy(fn() => ProspectsResource::collection($prospects)),
 
             'tagRoute' => [
                 'store'  => [
@@ -292,27 +295,27 @@ class IndexProspects extends OrgAction
             ],
 
             ProspectsTabsEnum::DASHBOARD->value => $this->tab == ProspectsTabsEnum::DASHBOARD->value ?
-                fn () => GetProspectsDashboard::run($this->parent, $request)
-                : Inertia::lazy(fn () => GetProspectsDashboard::run($this->parent, $request)),
+                fn() => GetProspectsDashboard::run($this->parent, $request)
+                : Inertia::lazy(fn() => GetProspectsDashboard::run($this->parent, $request)),
             ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                fn () => $dataProspect
-                : Inertia::lazy(fn () => $dataProspect),
+                fn() => $dataProspect
+                : Inertia::lazy(fn() => $dataProspect),
 
             ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
+                fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
+                : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
 
             ProspectsTabsEnum::FAILED->value => $this->tab == ProspectsTabsEnum::FAILED->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))),
+                fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
+                : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))),
 
             ProspectsTabsEnum::SUCCESS->value => $this->tab == ProspectsTabsEnum::SUCCESS->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))),
+                fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
+                : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))),
 
             ProspectsTabsEnum::HISTORY->value => $this->tab == ProspectsTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
+                fn() => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
         ];
 
         if ($this->parent instanceof Group) {
@@ -323,8 +326,8 @@ class IndexProspects extends OrgAction
                     'navigation' => Arr::except(ProspectsTabsEnum::navigation(), [ProspectsTabsEnum::DASHBOARD->value]),
                 ],
                 ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                    fn () => $dataProspect
-                    : Inertia::lazy(fn () => $dataProspect),
+                    fn() => $dataProspect
+                    : Inertia::lazy(fn() => $dataProspect),
             ];
         }
 
