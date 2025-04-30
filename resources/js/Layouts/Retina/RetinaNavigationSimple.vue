@@ -75,9 +75,8 @@ onUnmounted(() => {
 
     <!-- If this Navigation is active, then teleport the SubSections to #RetinaTopBarSubsections in <AppTopBar> -->
     <template v-if="isTopMenuActive && isNavigationActive(layout.currentRoute, props.nav.root || 'xx.xx.xx.xx')">
-        <Teleport to="#RetinaTopBarSubsections" :disabled="!isNavigationActive(layout.currentRoute, props.nav.root || 'xx.xx.xx.xx')">
+        <Teleport v-if="nav.topMenu?.subSections" to="#RetinaTopBarSubsections" :disabled="!isNavigationActive(layout.currentRoute, props.nav.root || 'xx.xx.xx.xx')">
             <RetinaTopBarSubsections
-                v-if="nav.topMenu?.subSections"
                 :subSections="nav.topMenu.subSections"
             />
         </Teleport>

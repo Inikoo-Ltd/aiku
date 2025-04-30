@@ -208,9 +208,9 @@ class StoreOrder extends OrgAction
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
         }
 
-        if ($order->platfrom_id) {
+        if ($order->platform_id) {
             $customerHasPlatform = CustomerHasPlatform::where('customer_id', $order->customer_id)
-                ->where('platform_id', $order->platfrom_id)->first();
+                ->where('platform_id', $order->platform_id)->first();
             if ($customerHasPlatform) {
                 CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
             }
@@ -290,7 +290,7 @@ class StoreOrder extends OrgAction
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
-                $order->platform_id,
+                $order->platform->slug,
                 $order->customerClient->ulid,
                 $order->slug
             ]),

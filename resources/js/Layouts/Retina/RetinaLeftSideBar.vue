@@ -54,7 +54,7 @@ const onLogoutAuth = () => {
 <template>
     <div class="pb-20 px-2 fixed md:flex md:flex-col  transition-all"
         :class="[
-            layout.web_page ? 'top-24 h-[85vh]' : 'md:inset-y-0 h-full',
+            layout.iris?.header ? 'top-24 h-[85vh]' : 'md:inset-y-0 h-full',
             layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-16',
             isStaging ? 'mt-9 lg:mt-12 pt-7' : 'mt-9 lg:mt-10 pt-3'
         ]"
