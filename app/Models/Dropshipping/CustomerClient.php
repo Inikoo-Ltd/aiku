@@ -57,9 +57,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property int|null $platform_id
- * @property string $amount_in_basket
- * @property string $amount_in_basket_org_currency
- * @property string $amount_in_basket_grp_currency
+ * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
@@ -95,9 +93,7 @@ class CustomerClient extends Model implements Auditable
         'location'                      => 'array',
         'deactivated_at'                => 'datetime',
         'status'                        => 'boolean',
-        'amount_in_basket'              => 'decimal:2',
-        'amount_in_basket_org_currency' => 'decimal:2',
-        'amount_in_basket_grp_currency' => 'decimal:2',
+        'amount_in_basket'              => 'decimal:2'
     ];
 
     protected $attributes = [
