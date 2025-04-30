@@ -51,14 +51,6 @@ class GetRetinaLayout
             },
         ];
 
-        if ($webUser->shop->type->value === 'b2b' || $webUser->shop->type->value === 'dropshipping') {
-            $layout['web_page'] = [
-                'header'        => Arr::get($website->published_layout, 'header', []),
-                'menu'          => Arr::get($website->published_layout, 'menu', []),
-                'footer'        => Arr::get($website->published_layout, 'footer', [])
-            ];
-        }
-        
         return $layout;
     }
 }

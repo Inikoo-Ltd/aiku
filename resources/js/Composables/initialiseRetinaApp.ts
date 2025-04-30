@@ -76,9 +76,9 @@ export const initialiseRetinaApp = () => {
         }
 
         // Set data of Website
-        if (usePage().props.layout?.web_page) {
-            layout.web_page = usePage().props.layout?.web_page
-        }
+        // if (usePage().props.layout?.web_page) {
+        //     layout.web_page = usePage().props.layout?.web_page
+        // }
 
         // Set data of Locale (Language)
         if (usePage().props.layout?.customer) {
@@ -88,6 +88,7 @@ export const initialiseRetinaApp = () => {
         if (usePage().props.app) {
             layout.app = usePage().props.app
         }
+
         layout.app.name = "retina"
 
         // Set App Environment
@@ -95,7 +96,10 @@ export const initialiseRetinaApp = () => {
             layout.app.environment = usePage().props?.environment
         }
 
-        layout.webUser_count = usePage().props.auth?.webUser_count || null
+        // Set Webuser count
+        if (usePage().props.auth?.webUser_count) {
+            layout.webUser_count = usePage().props.auth?.webUser_count || null
+        }
 
         // let moduleName = (layout.currentRoute || "").split(".")
         // layout.currentModule = moduleName.length > 1 ? moduleName[1] : ""
