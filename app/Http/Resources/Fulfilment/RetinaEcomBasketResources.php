@@ -21,16 +21,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $state
  * @property mixed $number_item_transactions
  */
-class RetinaEcomBasketsResources extends JsonResource
+class RetinaEcomBasketResources extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'product_code'                => $this->product_code,
-            'product_name'                => $this->product_name,
-            'quantity'                 => $this->quantity,
             'net_amount'                => $this->net_amount,
-            'date'                => $this->date,
+            'gross_amount'              => $this->gross_amount,
+            'tax_amount'                => $this->tax_amount,
+            'goods_amount'              => $this->goods_amount,
+            'services_amount'           => $this->services_amount,
+            'charges_amount'            => $this->charges_amount,
         ];
     }
 }

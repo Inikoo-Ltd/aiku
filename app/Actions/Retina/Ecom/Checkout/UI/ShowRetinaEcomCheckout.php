@@ -8,17 +8,17 @@
  *
 */
 
-namespace App\Actions\Retina\Ecom\Basket\UI;
+namespace App\Actions\Retina\Ecom\Checkout\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Fulfilment\RetinaEcomBasketsResources;
+use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Http\Resources\Fulfilment\RetinaEcomCheckoutResources;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Ordering\Transaction;
+use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -27,14 +27,14 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaEcomBaskets extends RetinaAction
+class ShowRetinaEcomCheckout extends RetinaAction
 {
     public function handle(ShopifyUser|Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('product_name', $value)
-                    ->orWhereWith('product_name', $value);
+                $query->whereAnyWordStartWith('orders.reference', $value)
+                    ->orWhereWith('orders.reference', $value);
             });
         });
 
@@ -42,28 +42,20 @@ class IndexRetinaEcomBaskets extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Transaction::class);
+        $query = QueryBuilder::for(Order::class);
 
         if ($parent instanceof Customer) {
             $query->where('customer_id', $parent->id);
         }
-        $query->where('transactions.state', OrderStateEnum::CREATING);
-        $query->where('model_type', Product::class);
 
-        $query->leftJoin('products', 'transactions.model_id', '=', 'products.id');
+        $query->where('state', OrderStateEnum::CREATING);
 
+        $query->leftJoin('order_stats', 'order_stats.order_id', '=', 'orders.id');
 
-        return $query->defaultSort('products_id')
-            ->select([
-                'products.code as product_code',
-                'products.name as product_name',
-                'products.id as product_id',
-                'products.slug as product_slug',
-                'transactions.quantity_ordered as quantity',
-                'transactions.net_amount as net_amount',
-                'transactions.date as date',
-            ])
-            ->allowedSorts(['products.id'])
+        $query->defaultSort('orders.id');
+
+        return $query->defaultSort('orders.id')
+            ->allowedSorts(['orders.id'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -86,18 +78,22 @@ class IndexRetinaEcomBaskets extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Ecom/Basket',
+            'Dropshipping/Orders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Baskets'),
+                'title'       => __('Checkouts'),
                 'pageHead'    => [
-                    'title' => __('Baskets'),
-                    'icon'  => 'fal fa-shopping-basket'
+                    'title' => __('Checkouts'),
+                    'icon'  => 'fal fa-money-bill-wave'
+                ],
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'products' => RetinaEcomBasketsResources::collection($orders)
+                'checkouts' => RetinaEcomCheckoutResources::collection($orders)
             ]
-        )->table($this->tableStructure('baskets'));
+        )->table($this->tableStructure('checkouts'));
     }
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
@@ -119,11 +115,9 @@ class IndexRetinaEcomBaskets extends RetinaAction
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-
-            $table->column(key: 'product_code', label: __('Code'), canBeHidden: false, searchable: true);
-            $table->column(key: 'product_name', label: __('Name'), canBeHidden: false, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, searchable: true);
-            $table->column(key: 'net_amount', label: __('net amount'), canBeHidden: false, searchable: true);
+            $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
+            $table->column(key: 'number_item_transactions', label: __('quantity'), canBeHidden: false, searchable: true);
             $table->column(key: 'date', label: __('date'), canBeHidden: false, searchable: true);
         };
     }
