@@ -63,18 +63,18 @@ export default {
 							href: "/app",
 							target : '_self'
 						},
-						props_radio_type : {
-							disabled : true
-						},
-						props_radio_target : {
-							disabled : true
-						},
-						props_input: {
-							disabled : true
-						},
-						props_selectquery:{
-							disabled : true
-						}
+						// props_radio_type : {
+						// 	disabled : true
+						// },
+						// props_radio_target : {
+						// 	disabled : true
+						// },
+						// props_input: {
+						// 	disabled : true
+						// },
+						// props_selectquery:{
+						// 	disabled : true
+						// }
 					}
 				},
 				{
@@ -134,18 +134,18 @@ export default {
 							type: "internal",
 							workshop: "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/register-fulfilment-awf/workshop"
 						},
-						props_radio_type : {
-							disabled : true
-						},
-						props_radio_target : {
-							disabled : true
-						},
-						props_input: {
-							disabled : true
-						},
-						props_selectquery:{
-							disabled : true
-						}
+						// props_radio_type : {
+						// 	disabled : true
+						// },
+						// props_radio_target : {
+						// 	disabled : true
+						// },
+						// props_input: {
+						// 	disabled : true
+						// },
+						// props_selectquery:{
+						// 	disabled : true
+						// }
 					}
 				},
 				{

@@ -56,19 +56,19 @@ provide('onLogout', onLogoutAuth)
 </script>
 
 <template>
-    <!-- Section: Header-Topbar -->
+    <!-- Section: Topbar -->
     <component v-if="data?.topBar?.data.fieldValue" :is="getIrisComponent(data?.topBar.code)"
         :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" class="hidden md:block" />
 
-    <!-- Section: Header-Menu -->
+    <!-- Section: Header -->
     <component :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
         class="hidden md:block" />
 
-    <!-- <pre>{{ menu.data }}</pre> -->
+    <!-- Section: Menu desktop -->
     <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :navigations="menu.data.fieldValue.navigation"
         :colorThemed="colorThemed" class="hidden md:block" />
 
-        
+    <!-- Section: Menu mobile -->
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <MobileMenu :header="data.header.data.fieldValue" :menu="menu?.data?.fieldValue?.navigation" />
