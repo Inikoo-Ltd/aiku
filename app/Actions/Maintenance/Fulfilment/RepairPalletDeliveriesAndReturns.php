@@ -174,7 +174,7 @@ class RepairPalletDeliveriesAndReturns
             }
 
             if (!$palletReturn) {
-                print 'Pallet: '.$pallet->id.' dont have pallet return!!'."\n";
+                //print 'Pallet: '.$pallet->id.' dont have pallet return!!'."\n";
                 // dd($pallet);
                 continue;
             }
@@ -366,7 +366,7 @@ class RepairPalletDeliveriesAndReturns
                 $palletReturn
             ) {
                 if ($palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
-                    print "Fix Pallet return Transaction CRB that should not be there! (todo) : $transaction->id\n";
+                    print "Fix Pallet return Transaction CRB that should not be there!  >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
                     // delete it
 
                 }
