@@ -34,7 +34,7 @@ class CustomerClientHydrateBasket implements ShouldBeUnique
                 ->where('customer_client_id', $customerClient->id)
                 ->where('state', OrderStateEnum::CREATING->value)
                 ->sum('total_amount'),
-            'current_order_in_basket_id' => DB::table('orders')
+            'current_order_in_basket_id' => DB::table('orders') // TODO: check this is correct or not
                 ->where('customer_client_id', $customerClient->id)
                 ->where('state', OrderStateEnum::CREATING->value)
                 ->orderBy('date', 'desc')
