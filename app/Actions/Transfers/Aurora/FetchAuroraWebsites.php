@@ -137,7 +137,7 @@ class FetchAuroraWebsites extends FetchAuroraAction
             /** @var Webpage $webpage */
             foreach ($website->webpages()->where('is_fixed', true)->get() as $webpage) {
 
-                if($webpage->allow_fetch){
+                if ($webpage->allow_fetch) {
                     FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: true, dbSuffix: $this->dbSuffix);
                     PublishWebpage::make()->action(
                         $webpage,
