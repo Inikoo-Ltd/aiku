@@ -50,7 +50,7 @@ const isStaging = layout.app.environment === 'staging'
     
     
         <IrisHeader
-            v-if="layout.iris?.header.header"
+            v-if="layout.iris?.header?.header"
             :data="layout.iris?.header"
             :colorThemed="irisTheme"
             :menu="layout.iris?.menu"
