@@ -12,53 +12,24 @@ namespace App\Actions\Retina\Ecom\Checkout\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Fulfilment\RetinaEcomCheckoutResources;
-use App\InertiaTable\InertiaTable;
+use App\Http\Resources\CRM\CustomerResource;
+use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
-use App\Services\QueryBuilder;
-use Closure;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class ShowRetinaEcomCheckout extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null): Order|null
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('orders.reference', $value)
-                    ->orWhereWith('orders.reference', $value);
-            });
-        });
-
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
+        if (!$customer->current_order_in_basket_id) {
+            return null;
         }
-
-        $query = QueryBuilder::for(Order::class);
-
-        if ($parent instanceof Customer) {
-            $query->where('customer_id', $parent->id);
-        }
-
-        $query->where('state', OrderStateEnum::CREATING);
-
-        $query->leftJoin('order_stats', 'order_stats.order_id', '=', 'orders.id');
-
-        $query->defaultSort('orders.id');
-
-        return $query->defaultSort('orders.id')
-            ->allowedSorts(['orders.id'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return Order::find($customer->current_order_in_basket_id);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -66,7 +37,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
         return $request->user()->is_root;
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): Order|null
     {
         $this->initialisation($request);
 
@@ -75,51 +46,109 @@ class ShowRetinaEcomCheckout extends RetinaAction
         return $this->handle($customer);
     }
 
-    public function htmlResponse(LengthAwarePaginator $orders): Response
+    public function htmlResponse(Order|null $order): Response
     {
         return Inertia::render(
             'Ecom/Checkout',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Checkouts'),
-                'pageHead'    => [
-                    'title' => __('Checkouts'),
-                    'icon'  => 'fal fa-money-bill-wave'
-                ],
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
-                ],
+                    'breadcrumbs' => $this->getBreadcrumbs(),
+                    'title'       => __('Baskets'),
+                    'pageHead'    => [
+                        'title' => __('Baskets'),
+                        'icon'  => 'fal fa-shopping-basket'
+                    ],
 
-                'checkouts' => RetinaEcomCheckoutResources::collection($orders)
-            ]
-        )->table($this->tableStructure('checkouts'));
+
+
+                    'data'     => $order ? $this->getOrderBoxStats($order) : null,
+                ]
+        );
     }
 
-    public function tableStructure($prefix = null, $modelOperations = []): Closure
+    public function getOrderBoxStats(Order $order): array
     {
-        return function (InertiaTable $table) use ($prefix, $modelOperations) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
 
-            $emptyStateData = [
-                'icons' => ['fal fa-pallet'],
-                'title' => __("No order exist"),
-                'count' => 0
-            ];
+        $payAmount   = $order->total_amount - $order->payment_amount;
+        $roundedDiff = round($payAmount, 2);
 
-            $table->withGlobalSearch()
-                ->withEmptyState($emptyStateData)
-                ->withModelOperations($modelOperations);
+        $estWeight = ($order->estimated_weight ?? 0) / 1000;
 
-            $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
-            $table->column(key: 'number_item_transactions', label: __('quantity'), canBeHidden: false, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, searchable: true);
-        };
+        return [
+            'customer' => array_merge(
+                CustomerResource::make($order->customer)->getArray(),
+                [
+                    'addresses' => [
+                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
+                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
+                    ],
+                ]
+            ),
+            'products' => [
+                'payment'          => [
+                    'routes'       => [
+                        'fetch_payment_accounts' => [
+                            'name'       => 'grp.json.shop.payment-accounts',
+                            'parameters' => [
+                                'shop' => $order->shop->slug
+                            ]
+                        ],
+                        'submit_payment'         => [
+                            'name'       => 'grp.models.order.payment.store',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+
+                    ],
+                    'total_amount' => (float)$order->total_amount,
+                    'paid_amount'  => (float)$order->payment_amount,
+                    'pay_amount'   => $roundedDiff,
+                ],
+                'estimated_weight' => $estWeight
+            ],
+
+            'order_summary' => [
+                [
+                    [
+                        'label'       => 'Items',
+                        'quantity'    => $order->stats->number_item_transactions,
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->net_amount
+                    ],
+                ],
+                [
+                    [
+                        'label'       => 'Charges',
+                        'information' => '',
+                        'price_total' => $order->charges_amount
+                    ],
+                    [
+                        'label'       => 'Shipping',
+                        'information' => '',
+                        'price_total' => $order->shipping_amount
+                    ]
+                ],
+                [
+                    [
+                        'label'       => 'Net',
+                        'information' => '',
+                        'price_total' => $order->net_amount
+                    ],
+                    [
+                        'label'       => 'Tax 20%',
+                        'information' => '',
+                        'price_total' => $order->tax_amount
+                    ]
+                ],
+                [
+                    [
+                        'label'       => 'Total',
+                        'price_total' => $order->total_amount
+                    ]
+                ],
+                'currency' => CurrencyResource::make($order->currency),
+            ],
+        ];
     }
 
     public function getBreadcrumbs(): array

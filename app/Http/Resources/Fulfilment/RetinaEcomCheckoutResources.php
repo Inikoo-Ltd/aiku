@@ -26,16 +26,12 @@ class RetinaEcomCheckoutResources extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                       => $this->id,
-            'date'                     => $this->date,
-            'name'                     => $this->name,
-            'reference'                => $this->reference,
-            'slug'                     => $this->slug,
-            'client_name'              => $this->customerClient?->contact_name,
-            'state'                    => $this->state,
-            'number_item_transactions' => $this->number_item_transactions,
-            'state_label'              => $this->state->labels()[$this->state->value],
-            'state_icon'               => $this->state->stateIcon()[$this->state->value]
+            'net_amount'                => $this->net_amount,
+            'gross_amount'              => $this->gross_amount,
+            'tax_amount'                => $this->tax_amount,
+            'goods_amount'              => $this->goods_amount,
+            'services_amount'           => $this->services_amount,
+            'charges_amount'            => $this->charges_amount,
         ];
     }
 }
