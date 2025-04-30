@@ -11,8 +11,6 @@ use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
-use App\Actions\Ordering\Transaction\DeleteTransaction;
-use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
@@ -21,6 +19,8 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
+use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
+use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\DeleteRetinaFulfilmentTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\StoreRetinaFulfilmentTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\UpdateRetinaFulfilmentTransaction;
@@ -176,6 +176,6 @@ Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('at
 
 
 Route::name('transaction.')->prefix('transaction')->group(function () {
-    Route::delete('{transaction:id}', DeleteTransaction::class)->name('delete')->withoutScopedBindings();
-    Route::patch('{transaction:id}', UpdateTransaction::class)->name('update')->withoutScopedBindings();
+    Route::delete('{transaction:id}', RetinaEcomDeleteTransaction::class)->name('delete')->withoutScopedBindings();
+    Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update')->withoutScopedBindings();
 });
