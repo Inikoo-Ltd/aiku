@@ -25,13 +25,15 @@ class FetchAuroraService extends FetchAurora
             return;
         }
 
-        $this->parsedData['shop'] = $this->parseShop(
+        $shop = $this->parseShop(
             $this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'}
         );
 
-        if ($this->parsedData['shop']->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
+
+        $this->parsedData['shop'] = $shop;
 
         $data     = [];
         $settings = [];
@@ -80,22 +82,20 @@ class FetchAuroraService extends FetchAurora
         }
 
         $this->parsedData['service'] = [
-            'type'                 => $type,
-            'owner_type'           => $owner_type,
-            'owner_id'             => $owner_id,
-            'state'                => $state,
-            'code'                 => $code,
-            'name'                 => $this->auroraModelData->{'Product Name'},
-            'price'                => round($unit_price, 2),
-            'status'               => $status,
-            'data'                 => $data,
-            'settings'             => $settings,
-            'created_at'           => $created_at,
-            'source_id'            => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
-            'historic_source_id'   => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
+            'type'               => $type,
+            'owner_type'         => $owner_type,
+            'owner_id'           => $owner_id,
+            'state'              => $state,
+            'code'               => $code,
+            'name'               => $this->auroraModelData->{'Product Name'},
+            'price'              => round($unit_price, 2),
+            'status'             => $status,
+            'data'               => $data,
+            'settings'           => $settings,
+            'created_at'         => $created_at,
+            'source_id'          => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
+            'historic_source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
         ];
-
-
 
 
         if ($type == AssetTypeEnum::RENTAL) {
@@ -108,13 +108,13 @@ class FetchAuroraService extends FetchAurora
                 'Rent-01' => PalletTypeEnum::PALLET->value,
                 'Rent-02' => PalletTypeEnum::OVERSIZE->value,
                 'Rent-04' => PalletTypeEnum::BOX->value,
-                default   => null
+                default => null
             };
 
             $unit = match ($code) {
                 'Rent-06' => RentalUnitEnum::WEEK->value,
                 'Rent-05' => RentalUnitEnum::MONTH->value,
-                default   => RentalUnitEnum::DAY->value
+                default => RentalUnitEnum::DAY->value
             };
 
 
@@ -122,7 +122,6 @@ class FetchAuroraService extends FetchAurora
             $this->parsedData['service']['auto_assign_asset']      = $autoAssignAsset;
             $this->parsedData['service']['auto_assign_asset_type'] = $autoAssignAssetType;
         } else {
-
             $serviceAutomationData = $this->getAutomationData();
             if ($serviceAutomationData['is_auto_assign']) {
                 $this->parsedData['service']['is_auto_assign']           = $serviceAutomationData['is_auto_assign'];
@@ -130,20 +129,17 @@ class FetchAuroraService extends FetchAurora
                 $this->parsedData['service']['auto_assign_subject']      = $serviceAutomationData['auto_assign_subject'];
                 $this->parsedData['service']['auto_assign_subject_type'] = $serviceAutomationData['auto_assign_subject_type'];
 
-                $this->parsedData['service']['auto_assign_status']      = $serviceAutomationData['auto_assign_status'];
+                $this->parsedData['service']['auto_assign_status'] = $serviceAutomationData['auto_assign_status'];
             }
 
-            $this->parsedData['service']['unit']    = 'service';
+            $this->parsedData['service']['unit'] = 'service';
         }
-
-
-
     }
 
     protected function getAutomationData(): array
     {
         $automationData = [
-            'is_auto_assign'        => false,
+            'is_auto_assign' => false,
         ];
 
         if ($this->auroraModelData->{'Product Code'} == 'AWSF-04') {
@@ -180,7 +176,6 @@ class FetchAuroraService extends FetchAurora
 
 
         return $automationData;
-
     }
 
 

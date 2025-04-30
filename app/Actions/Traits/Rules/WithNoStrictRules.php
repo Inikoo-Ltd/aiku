@@ -44,7 +44,6 @@ trait WithNoStrictRules
         $rules['reference']              = ['sometimes', 'string', 'max:64'];
         $rules['date']                   = ['sometimes', 'required', 'date'];
         $rules['cancelled_at']           = ['sometimes', 'nullable', 'date'];
-        $rules['platform_id']            = ['sometimes', 'integer'];
         $rules['updated_by_customer_at'] = ['sometimes', 'nullable', 'date'];
         $rules['weight']                 = ['sometimes', 'integer'];
         $rules['estimated_weight']       = ['sometimes', 'integer'];

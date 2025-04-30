@@ -39,22 +39,22 @@ class FetchAuroraWebsite extends FetchAurora
 
     protected function parseModel(): void
     {
-        $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Website Store Key'});
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Website Store Key'});
 
-        if ($this->parsedData['shop']->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop == ShopTypeEnum::FULFILMENT) {
             return;
         }
+
+        $this->parsedData['shop'] = $shop;
 
         $state = match ($this->auroraModelData->{'Website Status'}) {
             'Active' => WebsiteStateEnum::LIVE,
             'Closed' => WebsiteStateEnum::CLOSED,
-            default  => WebsiteStateEnum::IN_PROCESS,
+            default => WebsiteStateEnum::IN_PROCESS,
         };
 
 
         $domain = preg_replace('/^www\./', '', strtolower($this->auroraModelData->{'Website URL'}));
-
-
 
 
         $this->parsedData['website'] =

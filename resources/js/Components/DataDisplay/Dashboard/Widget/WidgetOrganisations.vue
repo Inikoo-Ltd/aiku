@@ -1,16 +1,16 @@
 <script setup lang="ts">
-// import { getComponentWidget } from "@/Composables/Listing/DashboardWidgetsList"
-import { Pie } from "vue-chartjs"
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js";
-import { trans } from "laravel-vue-i18n"
-import { useStringToHex } from '@/Composables/useStringToHex'
+import { Pie } from "vue-chartjs";
+import { ArcElement, Chart as ChartJS, Colors, Legend, Tooltip } from "chart.js";
+import { trans } from "laravel-vue-i18n";
+import { useStringToHex } from "@/Composables/useStringToHex";
+import { computed, ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faInfoCircle } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCircle } from "@fas";
+import { Link } from "@inertiajs/vue3";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
-import { computed, ref } from "vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCircle } from "@fas"
-import { Link } from "@inertiajs/vue3"
 library.add(faInfoCircle)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors);
@@ -48,7 +48,6 @@ const dataSetsSplit = computed(() => {
         const aValue = Number(a.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0;
         const bValue = Number(b.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0;
         return bValue - aValue; // Descending (highest first)
-        // return aValue - bValue; // Ascending (lowest first)
     });
 
     if (sortedShops.length <= 4) {
@@ -59,8 +58,7 @@ const dataSetsSplit = computed(() => {
     const firstFour = sortedShops.slice(0, 4);
 
     const summedValue = sortedShops.slice(4).reduce((sum, item) => {
-        const xx = sum + (Number(item.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0); 
-        return xx
+      return sum + (Number(item.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0)
     }, 0);
 
     // Create the summed object
@@ -90,7 +88,6 @@ const isLoadingVisit = ref<number | null>(null)
         <dd class="flex flex-col gap-x-2">
             <div class="text-base mb-1 text-gray-400 capitalize">
                 {{ trans('Organisations sales') }}
-                <!-- <FontAwesomeIcon v-tooltip="trans('The graph of column sales. Only active shop is shown.')" :icon="faInfoCircle" class="hover:text-gray-600" fixed-width aria-hidden="true" /> -->
             </div>
             <div
                 class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
@@ -139,7 +136,7 @@ const isLoadingVisit = ref<number | null>(null)
                         {
                             data: dataSetsSplit.map(bod => bod.columns.sales_org_currency[intervals.value].raw_value),
                             backgroundColor: [
-                                ...dataSetsSplit.map((dCase, idx) => useStringToHex(dCase.columns.label.formatted_value)),
+                                ...dataSetsSplit.map((dCase) => useStringToHex(dCase.columns.label.formatted_value)),
                             ],
                             hoverOffset: 4,
                         },

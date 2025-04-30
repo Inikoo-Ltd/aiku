@@ -134,15 +134,20 @@ class FetchAuroraWebsites extends FetchAuroraAction
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::PRICING)->first(), 'pricing');
             }
 
-
+            /** @var Webpage $webpage */
             foreach ($website->webpages()->where('is_fixed', true)->get() as $webpage) {
-                FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: true, dbSuffix: $this->dbSuffix);
-                PublishWebpage::make()->action(
-                    $webpage,
-                    [
-                        'comment' => 'Initial publish after migration',
-                    ]
-                );
+
+                if($webpage->allow_fetch){
+                    FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: true, dbSuffix: $this->dbSuffix);
+                    PublishWebpage::make()->action(
+                        $webpage,
+                        [
+                            'comment' => 'Initial publish after migration',
+                        ]
+                    );
+                }
+
+
             }
 
 

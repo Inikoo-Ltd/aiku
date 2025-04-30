@@ -76,7 +76,6 @@ class FetchAuroraWebBlocks
             $this->reset($webpage);
         }
 
-
         $oldMigrationsChecksum = $webpage->webBlocks()->get()->pluck('migration_checksum', 'migration_checksum')->toArray();
         if (isset($webpage->migration_data)) {
             $migrationTypes = ['both', 'loggedIn', 'loggedOut'];
@@ -149,7 +148,7 @@ class FetchAuroraWebBlocks
     private function processMigrationsData(array $migrationsData, array &$oldMigrationsChecksum): void
     {
         // the position will duplicate example: 1,1
-        // because there type of loggedIn and loggedOut, if continue with a new position the loggedOut will after the loggedIn webBlock
+        // because there type of loggedIn and loggedOut, if continue with a new position, the loggedOut will after the loggedIn webBlock
         foreach ($migrationsData as $checksum => $migrationData) {
             if (isset($oldMigrationsChecksum[$checksum])) {
                 $modelHasWebBlocks = DB::table("model_has_web_blocks")->where('migration_checksum', $checksum);
@@ -174,8 +173,6 @@ class FetchAuroraWebBlocks
         $models = [];
         $group  = $webpage->group;
 
-        // TODO: department, family, see_also & product
-        // children webpages for department & family
 
 
         //     print "***>>".$auroraBlock["type"]."<<<***\n";
@@ -185,7 +182,7 @@ class FetchAuroraWebBlocks
                 $webBlockType = $group->webBlockTypes()->where("code", "images")->first();
                 $layout       = $this->processImagesData($webpage, $auroraBlock);
                 break;
-            case "text": // -> need new web block type for text column/array of text, this can't store the array of text for images
+            case "text": // -> need a new web block type for text column/array of a text, this can't store the array of a text for images
                 if ($template = $this->getTemplateTextColumn($auroraBlock)) {
                     $webBlockType = $group->webBlockTypes()->where("slug", "text-column")->first();
                     $layout       = $this->processTextColumnData($webpage, $auroraBlock, $template);
@@ -368,7 +365,7 @@ class FetchAuroraWebBlocks
 
 
                 AttachExternalLinkToWebBlock::make()->action($webpage, $webBlock, $externalLink, [
-                    'show' => $webBlockShow // <-- fix this and set show value depending on if Seb-block is shown or not
+                    'show' => $webBlockShow // <-- fix this and set the show value depending on if Seb-block is shown or not
                 ]);
             }
         }

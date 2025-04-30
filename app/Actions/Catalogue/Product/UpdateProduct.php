@@ -56,25 +56,26 @@ class UpdateProduct extends OrgAction
 
         UpdateAsset::run($product->asset, [], $this->hydratorsDelay);
 
-        if (Arr::hasAny($changed, ['state','status'])) {
+        if (Arr::hasAny($changed, ['state', 'status'])) {
             $this->productHydrators($product);
         }
 
-        if (count($changed) > 0) {
+        if (Arr::hasAny(
+            $changed,
+            [
+                'code',
+                'name',
+                'description',
+                'state',
+                'price',
+                'available_quantity'
+            ]
+        )) {
             ProductRecordSearch::dispatch($product);
         }
 
 
         return $product;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return true; //TODO: Auth
     }
 
     public function rules(): array
@@ -111,8 +112,9 @@ class UpdateProduct extends OrgAction
 
 
         if (!$this->strict) {
-            $rules['org_stocks'] = ['sometimes', 'nullable', 'array'];
-            $rules               = $this->noStrictUpdateRules($rules);
+            $rules['org_stocks']   = ['sometimes', 'nullable', 'array'];
+            $rules['gross_weight'] = ['sometimes', 'integer', 'gt:0'];
+            $rules                 = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

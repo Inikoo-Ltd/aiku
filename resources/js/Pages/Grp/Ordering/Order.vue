@@ -22,7 +22,6 @@ import {computed, defineAsyncComponent, ref} from "vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { capitalize } from "@/Composables/capitalize";
-import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue";
 
 
 library.add(

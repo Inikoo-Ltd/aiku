@@ -99,6 +99,7 @@ use Spatie\Tags\HasTags;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgStock> $orgStocks
  * @property-read Organisation $organisation
+ * @property-read Portfolio|null $portfolio
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $productVariants
  * @property \Illuminate\Database\Eloquent\Collection<int, \Spatie\Tags\Tag> $tags
  * @property-read \App\Models\Catalogue\Shop|null $shop

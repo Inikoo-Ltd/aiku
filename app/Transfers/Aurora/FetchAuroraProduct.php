@@ -26,11 +26,13 @@ class FetchAuroraProduct extends FetchAurora
             return;
         }
 
-        $this->parsedData['shop']   = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'});
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'});
 
-        if ($this->parsedData['shop']->type == ShopTypeEnum::FULFILMENT) {
+        if ($shop == ShopTypeEnum::FULFILMENT) {
             return;
         }
+
+        $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
         if ($this->auroraModelData->{'Product Family Category Key'}) {
@@ -66,8 +68,6 @@ class FetchAuroraProduct extends FetchAurora
         };
 
 
-        //enum('Online Force Out of Stock','Online Auto','Offline','Online Force For Sale')
-
         if ($this->auroraModelData->{'Product Status'} == 'InProcess') {
             $status = ProductStatusEnum::IN_PROCESS;
         } elseif ($this->auroraModelData->{'Product Status'} == 'Discontinued') {
@@ -79,7 +79,6 @@ class FetchAuroraProduct extends FetchAurora
         } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Online Force For Sale') {
             $status = ProductStatusEnum::FOR_SALE;
         } else {
-            //enum('For Sale','Out of Stock','Discontinued','Offline')
             $status = match ($this->auroraModelData->{'Product Web State'}) {
                 'Discontinued' => ProductStatusEnum::DISCONTINUED,
                 'Offline' => ProductStatusEnum::NOT_FOR_SALE,
@@ -121,6 +120,8 @@ class FetchAuroraProduct extends FetchAurora
             $name = $code;
         }
 
+        $grossWeight = $this->auroraModelData->{'Product Package Weight'};
+
         $this->parsedData['product'] = [
             'is_main'                => true,
             'type'                   => AssetTypeEnum::PRODUCT,
@@ -143,6 +144,11 @@ class FetchAuroraProduct extends FetchAurora
             'fetched_at'             => now(),
             'last_fetched_at'        => now(),
         ];
+
+
+        if ($grossWeight && $grossWeight < 500) {
+            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
+        }
 
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {

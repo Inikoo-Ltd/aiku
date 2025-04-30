@@ -45,7 +45,6 @@ class EditShop extends OrgAction
      */
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $shopify = Arr::get($shop->settings, 'shopify');
 
         return Inertia::render(
             'EditModel',

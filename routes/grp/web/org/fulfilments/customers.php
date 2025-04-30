@@ -22,8 +22,6 @@ use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
-use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
-use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
@@ -193,13 +191,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
                     Route::get('{order}', [ShowOrder::class, 'inFulfilmentCustomerClient'])->name('.show');
                 });
 
-                Route::prefix('{customerClient}/delivery_notes')->as('.show.delivery_notes')->group(function () {
-                    Route::get('', [IndexDeliveryNotesInCustomers::class,'inFulfilmentCustomerClient'])->name('.index');
-                    Route::get('{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerClientInFulfilment'])->name('.show');
-                });
-
                 Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
-                    Route::get('', [IndexInvoices::class, 'inFulfilmentCustomerClient'])->name('.index');
                     Route::get('{invoice}', [ShowInvoice::class, 'inFulfilmentCustomerClient'])->name('.show');
                 });
             });

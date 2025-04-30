@@ -23,6 +23,7 @@ use App\Http\Resources\Accounting\RefundsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
+use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
@@ -47,10 +48,10 @@ class IndexRefunds extends OrgAction
     use WithInvoiceCategorySubNavigation;
 
 
-    private Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop $parent;
+    private Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|Invoice $parent;
     private string $bucket;
 
-    public function handle(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|Invoice $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -133,7 +134,7 @@ class IndexRefunds extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Invoice|Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order $parent, $prefix = null): Closure
+    public function tableStructure(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|Invoice $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
@@ -224,7 +225,6 @@ class IndexRefunds extends OrgAction
         ];
     }
 
-
     public function jsonResponse(LengthAwarePaginator $refunds): AnonymousResourceCollection
     {
         return RefundsResource::collection($refunds);
@@ -232,22 +232,7 @@ class IndexRefunds extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $refunds, ActionRequest $request): Response
     {
-        $subNavigation = [];
-
-        if ($this->parent instanceof Customer) {
-            if ($this->parent->is_dropshipping) {
-                $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
-            } else {
-                $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
-            }
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof Shop || $this->parent instanceof Fulfilment || $this->parent instanceof Organisation) {
-            $subNavigation = $this->getInvoicesNavigation($this->parent);
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            $subNavigation = $this->getInvoiceCategoryNavigation($this->parent);
-        }
-
+        $subNavigation = IndexInvoices::make()->getSubNavigation($this->parent, $request);
 
         $title = __('Refunds');
 
