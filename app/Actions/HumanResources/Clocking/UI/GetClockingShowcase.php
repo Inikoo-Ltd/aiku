@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Clocking\UI;
 
+use App\Http\Resources\HumanResources\ClockingResource;
 use App\Models\HumanResources\Clocking;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -17,10 +18,6 @@ class GetClockingShowcase
 
     public function handle(Clocking $clocking): array
     {
-        return [
-            [
-
-            ]
-        ];
+        return ClockingResource::make($clocking)->getArray();
     }
 }

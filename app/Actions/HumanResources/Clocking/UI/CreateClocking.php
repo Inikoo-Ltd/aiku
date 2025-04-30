@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\Clocking\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Workplace;
@@ -20,6 +21,8 @@ use Spatie\LaravelOptions\Options;
 
 class CreateClocking extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(ActionRequest $request): Response
     {
         return Inertia::render(
@@ -90,12 +93,7 @@ class CreateClocking extends OrgAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->slug}");
-    }
-
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplaceInClockingMachine(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request);
