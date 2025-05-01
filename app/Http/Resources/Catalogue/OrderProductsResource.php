@@ -63,9 +63,8 @@ class OrderProductsResource extends JsonResource
                 'method'    => 'delete'
             ],
             'updateRoute'            => [
-                'name'       => 'grp.models.order.transaction.update',
+                'name'       => 'grp.models.transaction.update',
                 'parameters' => [
-                    'order'       => $this->order_id,
                     'transaction' => $this->transaction_id
                 ],
                 'method'    => 'patch'

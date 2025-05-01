@@ -10,58 +10,43 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, watch } from 'vue'
+import { computed, ref,inject } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import TablePalletDeliveryPallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveryPallets.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { get } from 'lodash'
-import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
+import { PalletDelivery, UploadPallet } from '@/types/Pallet'
 import { Table as TableTS } from '@/types/Table'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
-
 import '@/Composables/Icon/PalletDeliveryStateEnum'
-
-
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { Timeline as TSTimeline } from "@/types/Timeline"
-
 import axios from 'axios'
 import { Action } from '@/types/Action'
-import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from '@kyvg/vue3-notification'
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
-import { Button as TSButton } from '@/types/Button'
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import NeedToPay from '@/Components/Utils/NeedToPay.vue'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
-
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
-import { Address, AddressManagement } from "@/types/PureComponent/Address"
-
+import { Address } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
-
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { faExclamationTriangle, faExclamation } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, } from '@fal'
@@ -70,6 +55,7 @@ import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
+
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 
@@ -169,7 +155,7 @@ const props = defineProps<{
 
 
 const isModalUploadOpen = ref(false)
-const isModaProductListOpen = ref(false)
+const isModalProductListOpen = ref(false)
 const locale = inject('locale', aikuLocaleStructure)
 
 const currentTab = ref(props.tabs?.current)
@@ -189,39 +175,11 @@ const component = computed(() => {
 
 
 const isLoadingButton = ref<string | boolean>(false)
-// const isLoadingData = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
 
 // Tabs: Products
 const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1, })
-const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
-    isLoadingButton.value = 'addProducts'
 
-    formProducts
-        .transform((data) => ({
-            quantity_ordered: data.quantity_ordered,
-        }))
-        .post(
-            route(data.route?.name || '#', { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    closedPopover()
-                    formProducts.reset()
-                },
-                onError: (errors) => {
-                    notify({
-                        title: trans('Something went wrong.'),
-                        text: trans('Failed to add service, please try again.'),
-                        type: 'error',
-                    })
-                },
-                onFinish: () => {
-                    isLoadingButton.value = false
-                }
-            }
-        )
-}
 
 
 // Section: Payment invoice
@@ -291,7 +249,7 @@ const onSubmitPayment = () => {
 }
 
 
-// Section: add notes (on popup pageheading)
+// Section: add notes (on popup pagehHading)
 const errorNote = ref('')
 const noteToSubmit = ref({
     selectedNote: '',
@@ -325,14 +283,13 @@ const onSubmitNote = async (closePopup: Function) => {
 
 const openModal = (action :any) => {
 	currentAction.value = action;
-    isModaProductListOpen.value = true;
+    isModalProductListOpen.value = true;
 };
 
 </script>
 
 <template>
-    <!-- <pre>{{ data.data }}</pre> -->
-    <!-- {{ props.service_list_route.name }} -->
+
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
@@ -350,64 +307,6 @@ const openModal = (action :any) => {
 							:tooltip="action.tooltip" />
 					</template>
 
-                 <!--    <template #content="{ close: closed }">
-                        <div class="w-[350px]"> -->
-                           <!--  <div class="text-xs px-1 my-2">{{ trans('Products') }}: </div>
-                            <div class="">
-                                <PureMultiselectInfiniteScroll v-model="formProducts.historicAssetId"
-                                    :fetchRoute="routes.products_list" :placeholder="trans('Select Products')"
-                                    valueProp="current_historic_asset_id">
-                                    <template #singlelabel="{ value }">
-                                        <div class="w-full text-left pl-4">{{ value.name }} <span
-                                                class="text-sm text-gray-400">({{ value.stock }})</span></div>
-                                    </template>
-
-                                    <template #option="{ option, isSelected, isPointed }">
-                                        <div class="w-full flex items-center justify-between gap-x-3">
-                                            <div
-                                                :class="isSelected(option) ? option.stock ? '' : 'text-indigo-200' : option.stock ? '' : 'text-gray-400'">
-                                                {{ option.name }} <span class="text-sm"
-                                                    :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{
-                                                        option.stock }})</span></div>
-
-                                            <FontAwesomeIcon v-if="option.stock === 0" v-tooltip="trans('No stock')"
-                                                icon='fas fa-exclamation-triangle' class='text-red-500' fixed-width
-                                                aria-hidden='true' />
-                                            <FontAwesomeIcon v-else-if="option.stock < 10" icon='fas fa-exclamation'
-                                                class='text-yellow-500' fixed-width aria-hidden='true' />
-                                        </div>
-                                    </template>
-                                </PureMultiselectInfiniteScroll>
-
-                                <p v-if="get(formProducts, ['errors', 'historicAssetId'])"
-                                    class="mt-2 text-sm text-red-500">
-                                    {{ formProducts.errors.historicAssetId }}
-                                </p>
-                            </div>
-
-                            <div class="mt-4">
-                                <div class="text-xs px-1 my-2">{{ trans('Quantity') }}: </div>
-                                <PureInput v-model="formProducts.quantity_ordered" :placeholder="trans('Quantity')"
-                                    @keydown.enter="() => onSubmitAddProducts(action, closed)" />
-                                <p v-if="get(formProducts, ['errors', 'quantity_ordered'])"
-                                    class="mt-2 text-sm text-red-600">
-                                    {{ formProducts.errors.quantity_ordered }}
-                                </p>
-                            </div>
-
-                            <div class="flex justify-end mt-4">
-                                <Button @click="() => onSubmitAddProducts(action, closed)" :style="'save'"
-                                    :loading="isLoadingButton == 'addProducts'"
-                                    :disabled="!formProducts.historicAssetId || (formProducts.quantity_ordered < 1)"
-                                    label="Save" full />
-                            </div> -->
-
-                            <!-- Loading: fetching service list -->
-                            <!-- <div v-if="isLoadingData === 'addProducts'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                                <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-5xl' fixed-width aria-hidden='true' />
-                            </div> -->
-                 <!--        </div>
-                    </template> -->
                 </Popover>
             </div>
         </template>
@@ -428,9 +327,6 @@ const openModal = (action :any) => {
                                 :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
                                 valueProp="value" />
 
-                            <!-- <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
-                                {{ formAddService.errors.service_id }}
-                            </p> -->
                         </div>
 
                         <div class="mt-3">
@@ -624,14 +520,7 @@ const openModal = (action :any) => {
         <!-- Box: Order summary -->
         <BoxStatPallet class="col-span-2 border-t lg:border-t-0 border-gray-300">
             <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-                <!-- <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2> -->
-
                 <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code"  />
-
-                <!-- <div class="mt-6">
-                    <button type="submit"
-                        class="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">Checkout</button>
-                </div> -->
             </section>
         </BoxStatPallet>
     </div>
@@ -648,7 +537,7 @@ const openModal = (action :any) => {
 			@update:tab="handleTabUpdate"/>
     </div>
 
-	<ModalProductList v-if="routes?.products_list?.name" v-model="isModaProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
+	<ModalProductList v-if="routes?.products_list?.name" v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal
@@ -703,16 +592,7 @@ const openModal = (action :any) => {
                     </div>
                 </div>
 
-                <!-- <div class="col-span-2">
-                    <label for="message" class="block text-sm font-medium leading-6">Note</label>
-                    <div class="mt-1">
-                        <PureTextarea
-                            v-model="paymentData.payment_reference"
-                            name="message"
-                            id="message" rows="4"
-                        />
-                    </div>
-                </div> -->
+
             </div>
 
             <div class="mt-6 mb-4 relative">

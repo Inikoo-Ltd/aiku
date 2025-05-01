@@ -41,8 +41,9 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use Illuminate\Support\Facades\Route;
 
-Route::name('transaction.')->prefix('transaction')->group(function () {
-    Route::delete('{transaction:id}', DeleteTransaction::class)->name('delete')->withoutScopedBindings();
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+    Route::delete('', DeleteTransaction::class)->name('delete');
+    Route::patch('', UpdateTransaction::class)->name('update');
 });
 
 
@@ -57,7 +58,6 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
-        Route::patch('{transaction:id}', UpdateTransaction::class)->name('update')->withoutScopedBindings();
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
@@ -88,7 +88,6 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 });
 
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
-
     Route::name('assign.')->prefix('assign')->group(function () {
         Route::patch('picker', AssignPickerToPicking::class)->name('picker');
         Route::patch('packer', AssignPackerToPicking::class)->name('packer');

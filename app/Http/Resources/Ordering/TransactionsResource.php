@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 06 Apr 2024 09:40:37 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Sat, 06 Apr 2024 09:40:37 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -68,9 +68,8 @@ class TransactionsResource extends JsonResource
                 'method'     => 'delete'
             ],
             'updateRoute' => [
-                'name'       => 'grp.models.order.transaction.update',
+                'name'       => 'grp.models.transaction.update',
                 'parameters' => [
-                    'order'       => $transaction->order_id,
                     'transaction' => $transaction->id
                 ],
                 'method'     => 'patch'

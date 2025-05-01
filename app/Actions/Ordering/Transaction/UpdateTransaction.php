@@ -16,7 +16,6 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
-use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -36,7 +35,7 @@ class UpdateTransaction extends OrgAction
 
             $historicAsset = $transaction->historicAsset;
             $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            // here we are going to  deal with discounts 15/09/24
+            // here we are going to deal with discounts 15/09/24
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
 
             data_set($modelData, 'gross_amount', $gross);
@@ -103,9 +102,9 @@ class UpdateTransaction extends OrgAction
         return $this->handle($transaction, $this->validatedData);
     }
 
-    public function asController(Order $order, Transaction $transaction, ActionRequest $request): Transaction
+    public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
-        $this->initialisationFromShop($order->shop, $request);
+        $this->initialisationFromShop($transaction->shop, $request);
 
         return $this->handle($transaction, $this->validatedData);
     }
