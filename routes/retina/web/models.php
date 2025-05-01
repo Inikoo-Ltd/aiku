@@ -19,6 +19,8 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
+use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
+use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\DeleteRetinaFulfilmentTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\StoreRetinaFulfilmentTransaction;
 use App\Actions\Retina\Fulfilment\FulfilmentTransaction\UpdateRetinaFulfilmentTransaction;
@@ -171,3 +173,9 @@ Route::name('web-users.')->prefix('web-users')->group(function () {
 });
 
 Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('attachment.download');
+
+
+Route::name('transaction.')->prefix('transaction')->group(function () {
+    Route::delete('{transaction:id}', RetinaEcomDeleteTransaction::class)->name('delete')->withoutScopedBindings();
+    Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update')->withoutScopedBindings();
+});

@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\ClockingMachine\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Workplace;
@@ -20,17 +21,13 @@ use Spatie\LaravelOptions\Options;
 
 class EditClockingMachine extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(ClockingMachine $clockingMachine): ClockingMachine
     {
         return $clockingMachine;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
 
     public function asController(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
@@ -39,22 +36,19 @@ class EditClockingMachine extends OrgAction
         return $this->handle($clockingMachine);
     }
 
-    public function inOrganisation(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
-    {
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($clockingMachine);
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplace(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
         $this->initialisation($organisation, $request);
+
         return $this->handle($clockingMachine);
     }
 
 
-
+    /**
+     * @throws \Exception
+     */
     public function htmlResponse(ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -66,8 +60,8 @@ class EditClockingMachine extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     => $clockingMachine->code,
-                    'actions'   => [
+                    'title'   => $clockingMachine->name,
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -78,7 +72,7 @@ class EditClockingMachine extends OrgAction
                         ]
                     ]
                 ],
-                'formData' => [
+                'formData'    => [
                     'blueprint' => [
                         [
                             'title'  => __('edit clocking machine'),
@@ -98,9 +92,9 @@ class EditClockingMachine extends OrgAction
                         ]
 
                     ],
-                    'args' => [
+                    'args'      => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.clocking_machine..update',
+                            'name'       => 'grp.models.clocking_machine..update',
                             'parameters' => $clockingMachine->id
 
                         ],

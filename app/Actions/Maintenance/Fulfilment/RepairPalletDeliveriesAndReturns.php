@@ -42,24 +42,16 @@ class RepairPalletDeliveriesAndReturns
      */
     public function handle(): void
     {
-        $this->fixSpacesInRecurringBill();
-
+        //$this->fixSpacesInRecurringBill();
         $this->fixPalletDispatchedAt();
-
-
         $this->fixPalletDeliveryRecurringBill();
         $this->fixPalletDeliveryTransactionsRecurringBill();
         $this->fixPalletDeliveryTransactionsRecurringBillThatShouldNotBeThere();
-
         $this->palletsStartDate();
         $this->palletsEndDate();
         $this->palletsValidateStartEndDate();
-
-
         $this->fixPalletReturnTransactionsRecurringBill();
         $this->fixPalletReturnTransactionsRecurringBillThatShouldNotBeThere();
-
-
         $this->fixNonRentalRecurringBillTransactions();
 
 
@@ -182,7 +174,7 @@ class RepairPalletDeliveriesAndReturns
             }
 
             if (!$palletReturn) {
-                print 'Pallet: '.$pallet->id.' dont have pallet return!!'."\n";
+                //print 'Pallet: '.$pallet->id.' dont have pallet return!!'."\n";
                 // dd($pallet);
                 continue;
             }
@@ -203,10 +195,10 @@ class RepairPalletDeliveriesAndReturns
                 }
 
                 if ($palletDate == 'no date' and $palledReturnDate != 'no date') {
-                    print 'Pallet: Dispatch mismatch '.$pallet->id.' '.$palletDate.' -> '.$palledReturnDate."\n";
+                    print '===+++==== Pallet: Dispatch mismatch '.$pallet->id.' '.$palletDate.' -> '.$palledReturnDate."\n";
 
 
-                    $pallet->update(['dispatched_at' => $palletReturn->dispatched_at]);
+                    //$pallet->update(['dispatched_at' => $palletReturn->dispatched_at]);
                 }
                 if ($palletDate != 'no date' and $palledReturnDate == 'no date') {
                     print 'Pallet: Big error Dispatch mismatch '.$pallet->id.' '.$palletDate.' -> '.$palledReturnDate."\n";
@@ -237,7 +229,7 @@ class RepairPalletDeliveriesAndReturns
 
                 if ($originalStartDate->ne($currentStartDay)) {
                     print 'PSD: '.$transaction->id.'  '.$originalStartDate->format('Y-m-d').' -> '.$currentStartDay->format('Y-m-d')."\n";
-                    $transaction->update(['start_date' => $currentStartDay]);
+                    //$transaction->update(['start_date' => $currentStartDay]);
                 }
             }
         }
@@ -255,8 +247,8 @@ class RepairPalletDeliveriesAndReturns
                 $pallet = $transaction->item;
                 if ($pallet->dispatched_at) {
                     if (!$transaction->end_date) {
-                        print 'PED: Trans'.$transaction->id.' add   pallet id  '.$pallet->id.'  end day '.$pallet->dispatched_at->format('Y-m-d')."\n";
-                        $transaction->update(['end_date' => $pallet->dispatched_at]);
+                        print '***PED: Trans'.$transaction->id.' add   pallet id  '.$pallet->id.'  end day '.$pallet->dispatched_at->format('Y-m-d')."\n";
+                        //$transaction->update(['end_date' => $pallet->dispatched_at]);
                     } else {
                         $currentEndDay   = $transaction->end_date->startOfDay();
                         $originalEndDate = $currentEndDay;
@@ -285,18 +277,18 @@ class RepairPalletDeliveriesAndReturns
         /** @var RecurringBill $recurringBill */
         foreach ($recurringBills as $recurringBill) {
             $recurringBill->transactions->each(function ($transaction) use ($recurringBill) {
-                if (($transaction->pallet_delivery_id || $transaction->pallet_return_id) and !in_array($transaction->item_type, ['Pallet', 'StoredItem'])) {
+                if (($transaction->pallet_delivery_id || $transaction->pallet_return_id) && !in_array($transaction->item_type, ['Pallet', 'StoredItem'])) {
                     $fulfilmentTransaction = $transaction->fulfilmentTransaction;
 
 
                     if ($fulfilmentTransaction->quantity != $transaction->quantity) {
-                        print "Fix Fulfilment Transaction Qty: $fulfilmentTransaction->id\n";
-                        UpdateRecurringBillTransaction::make()->action(
-                            $transaction,
-                            [
-                                'quantity' => $fulfilmentTransaction->quantity
-                            ]
-                        );
+                        print "(todo) Fix Fulfilment Transaction Qty: $fulfilmentTransaction->id\n";
+//                        UpdateRecurringBillTransaction::make()->action(
+//                            $transaction,
+//                            [
+//                                'quantity' => $fulfilmentTransaction->quantity
+//                            ]
+//                        );
                     }
                 }
             });
@@ -338,18 +330,18 @@ class RepairPalletDeliveriesAndReturns
                 $palletDelivery
             ) {
                 if (!$palletDelivery->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
-                    print "Fix Pallet Delivery Transaction CRB: $transaction->id\n";
+                    print "+++ +++ ++ Fix Pallet Delivery Transaction CRB: $transaction->id\n";
 
-                    StoreRecurringBillTransaction::make()->action(
-                        $palletDelivery->recurringBill,
-                        $transaction,
-                        [
-                            'start_date'                => now(),
-                            'quantity'                  => $transaction->quantity,
-                            'pallet_delivery_id'        => $palletDelivery->id,
-                            'fulfilment_transaction_id' => $transaction->id
-                        ]
-                    );
+//                    StoreRecurringBillTransaction::make()->action(
+//                        $palletDelivery->recurringBill,
+//                        $transaction,
+//                        [
+//                            'start_date'                => now(),
+//                            'quantity'                  => $transaction->quantity,
+//                            'pallet_delivery_id'        => $palletDelivery->id,
+//                            'fulfilment_transaction_id' => $transaction->id
+//                        ]
+//                    );
                 }
             });
         }
@@ -374,7 +366,7 @@ class RepairPalletDeliveriesAndReturns
                 $palletReturn
             ) {
                 if ($palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
-                    print "Fix Pallet return Transaction CRB that should not be there! (todo) : $transaction->id\n";
+                    print "Fix Pallet return Transaction CRB that should not be there!  >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
                     // delete it
 
                 }
@@ -401,7 +393,7 @@ class RepairPalletDeliveriesAndReturns
                 $palletReturn
             ) {
                 if (!$palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
-                    print "Fix Pallet return Transaction CRB: $transaction->id\n";
+                    print "** Fix Pallet return Transaction CRB: $transaction->id\n";
 
                     StoreRecurringBillTransaction::make()->action(
                         $palletReturn->recurringBill,
@@ -427,7 +419,7 @@ class RepairPalletDeliveriesAndReturns
                 $currentRecurringBill = $palletDelivery->fulfilmentCustomer->currentRecurringBill;
                 if ($receivedDate->isAfter($currentRecurringBill->start_date)) {
                     print "Fix Pallet Delivery CRB: $palletDelivery->id\n";
-                    $palletDelivery->update(['recurring_bill_id' => $currentRecurringBill->id]);
+                    //$palletDelivery->update(['recurring_bill_id' => $currentRecurringBill->id]);
                 }
             }
         }

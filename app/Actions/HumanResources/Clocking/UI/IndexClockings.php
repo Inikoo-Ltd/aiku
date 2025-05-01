@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\Clocking\UI;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\ClockingsResource;
 use App\Models\HumanResources\Clocking;
@@ -29,12 +30,12 @@ use App\Services\QueryBuilder;
 
 class IndexClockings extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     private Organisation|Workplace|ClockingMachine|Timesheet $parent;
 
     public function handle(Organisation|Workplace|ClockingMachine|Timesheet $parent, $prefix = null): LengthAwarePaginator
     {
-
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -53,6 +54,8 @@ class IndexClockings extends OrgAction
             case 'Timesheet':
                 $queryBuilder->where('clockings.timesheet_id', $parent->id);
                 break;
+            default:
+                abort(404, 'Not Found');
         }
 
         return $queryBuilder
@@ -82,7 +85,6 @@ class IndexClockings extends OrgAction
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
-
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
@@ -108,6 +110,7 @@ class IndexClockings extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+
         return $this->handle(parent: $organisation);
     }
 
@@ -115,6 +118,7 @@ class IndexClockings extends OrgAction
     {
         $this->parent = $workplace;
         $this->initialisation($organisation, $request);
+
         return $this->handle(parent: $workplace);
     }
 
@@ -122,6 +126,7 @@ class IndexClockings extends OrgAction
     {
         $this->parent = $clockingMachine;
         $this->initialisation($organisation, $request);
+
         return $this->handle(parent: $clockingMachine);
     }
 
@@ -135,13 +140,6 @@ class IndexClockings extends OrgAction
         return $this->handle(parent: $clockingMachine);
     }
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
 
     public function jsonResponse(LengthAwarePaginator $clockings): AnonymousResourceCollection
     {
@@ -164,8 +162,7 @@ class IndexClockings extends OrgAction
                     'actions' => [
                         $this->canEdit
                         && (
-                            $request->route()->getName() == 'grp.org.hr.workplaces.show.clockings.index' or
-                            $request->route()->getName() == 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index'
+                            $request->route()->getName() == 'grp.org.hr.workplaces.show.clockings.index' || $request->route()->getName() == 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index'
                         )
                             ? [
                             'type'  => 'button',

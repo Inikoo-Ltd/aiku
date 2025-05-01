@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\ClockingMachine\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
@@ -19,12 +20,14 @@ use Spatie\LaravelOptions\Options;
 
 class CreateClockingMachine extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
+    /**
+     * @throws \Exception
+     */
     public function handle(Organisation|Workplace $parent, ActionRequest $request): Response
     {
 
-        //  dd(Options::forEnum(ClockingMachineTypeEnum::class),);
-
-        // dd($parent);
         $workplaces     = [];
         $workplaceValue = null;
 
@@ -115,15 +118,9 @@ class CreateClockingMachine extends OrgAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
-
-
+    /**
+     * @throws \Exception
+     */
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request);
@@ -131,6 +128,9 @@ class CreateClockingMachine extends OrgAction
         return $this->handle($organisation, $request);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asController(Organisation $organisation, Workplace $workplace, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request);

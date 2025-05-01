@@ -12,6 +12,8 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\ShopifyUserHasFulfilment;
@@ -34,6 +36,7 @@ class StoreShopifyOrderFulfilment extends OrgAction
 
         if (!$customerClient) {
             $attributes = $this->getAttributes($customer, $address);
+            data_set($attributes, 'platform_id', Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id);
 
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customer, $attributes);
         }

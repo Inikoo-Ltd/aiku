@@ -110,6 +110,7 @@ export const initialiseRetinaApp = () => {
 
         if (usePage().props.iris) {
             layout.iris = usePage().props.iris
+            layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
         }
 
         if (usePage().props.auth?.user?.avatar_thumbnail) {

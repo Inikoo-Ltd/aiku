@@ -8,6 +8,8 @@
 
 namespace App\Actions\HumanResources\ClockingMachine;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\HumanResources\WorkplacesExport;
 use App\Models\SysAdmin\Organisation;
@@ -16,11 +18,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportWorkplaces
+class ExportWorkplaces extends OrgAction
 {
     use AsAction;
     use WithAttributes;
     use WithExportData;
+    use WithHumanResourcesAuthorisation;
 
     /**
      * @throws \Throwable
@@ -32,14 +35,21 @@ class ExportWorkplaces
         return $this->export(new WorkplacesExport(), 'workplaces', $type);
     }
 
+    public function rules(): array
+    {
+        return [
+            'type' => ['required', 'string', 'in:csv,xlsx'],
+        ];
+    }
+
+
     /**
      * @throws \Throwable
      */
     public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisation($organisation, $request);
 
-        return $this->handle($request->all());
+        return $this->handle($this->validatedData);
     }
 }

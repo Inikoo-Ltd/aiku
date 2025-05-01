@@ -23,9 +23,6 @@ class ConnectClockingMachineToHan
     use WithAttributes;
     use WithActionUpdate;
 
-    private bool $asAction = false;
-
-
     public function handle(ClockingMachine $clockingMachine, array $modelData): array
     {
         data_set($modelData, 'status', ClockingMachineStatusEnum::CONNECTED->value);

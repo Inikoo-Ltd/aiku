@@ -9,16 +9,18 @@
 namespace App\Actions\HumanResources\Clocking;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Workplace;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteClocking extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(Clocking $clocking): Clocking
     {
         $clocking->delete();
@@ -26,61 +28,31 @@ class DeleteClocking extends OrgAction
         return $clocking;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
 
-    public function asController(Organisation $organisation, Clocking $clocking, ActionRequest $request): Clocking
+    public function asController(Clocking $clocking, ActionRequest $request): Clocking
     {
-        $request->validate();
+        $this->initialisation($clocking->organisation, $request);
 
         return $this->handle($clocking);
     }
 
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWorkplace(Organisation $organisation, Workplace $workplace, Clocking $clocking, ActionRequest $request): Clocking
-    {
-        $request->validate();
-
-        return $this->handle($clocking);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inClockingMachine(Organisation $organisation, ClockingMachine $clockingMachine, Clocking $clocking, ActionRequest $request): Clocking
-    {
-        $request->validate();
-
-        return $this->handle($clocking);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWorkplaceInClockingMachine(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, Clocking $clocking, ActionRequest $request): Clocking
-    {
-        $request->validate();
-
-        return $this->handle($clocking);
-    }
-
-
-    public function htmlResponse(Workplace | ClockingMachine | Clocking $parent): RedirectResponse
+    public function htmlResponse(Workplace|ClockingMachine|Clocking $parent): RedirectResponse
     {
         if (class_basename($parent::class) == 'ClockingMachine') {
             return Redirect::route(
                 route: 'grp.org.hr.workplace.show.clocking_machines.show.clockings.index',
                 parameters: [
-                    'organisation'      => $parent->organisation->slug,
-                    'workplace'         => $parent->workplace->slug,
-                    'clockingMachine'   => $parent->slug
+                    'organisation' => $parent->organisation->slug,
+                    'workplace' => $parent->workplace->slug,
+                    'clockingMachine' => $parent->slug
                 ]
             );
         } elseif (class_basename($parent::class) == 'Workplace') {
             return Redirect::route(
                 route: 'grp.org.hr.clocking_machines.show.clockings.index',
                 parameters: [
-                    'organisation'      => $parent->organisation->slug,
-                    'workplace'         => $parent->slug
+                    'organisation' => $parent->organisation->slug,
+                    'workplace'    => $parent->slug
                 ]
             );
         } else {

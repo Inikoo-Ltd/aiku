@@ -12,6 +12,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Clocking\UI\IndexClockings;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\ClockingMachineTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -26,12 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowClockingMachine extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
+    use WithHumanResourcesAuthorisation;
 
     public function inOrganisation(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
@@ -40,17 +36,6 @@ class ShowClockingMachine extends OrgAction
         return $clockingMachine;
     }
 
-    public function inApi(string $qr): ClockingMachine
-    {
-        $decodedSlug     = base64_decode($qr);
-        $clockingMachine = ClockingMachine::where('slug', $decodedSlug)->first();
-
-        if ($clockingMachine) {
-            return $clockingMachine;
-        } else {
-            abort('ClockingMachine not found');
-        }
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplace(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
@@ -62,28 +47,27 @@ class ShowClockingMachine extends OrgAction
 
     public function htmlResponse(ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Org/HumanResources/ClockingMachine',
             [
-                'title'                                 => __('clocking machine'),
-                'breadcrumbs'                           => $this->getBreadcrumbs(
+                'title'                                  => __('clocking machine'),
+                'breadcrumbs'                            => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'                             => [
                     'previous' => $this->getPrevious($clockingMachine, $request),
                     'next'     => $this->getNext($clockingMachine, $request),
                 ],
-                'pageHead'                              => [
-                    'icon'  =>
+                'pageHead'                               => [
+                    'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-chess-clock'],
                             'title' => __('clocking machines')
                         ],
-                    'title'     => $clockingMachine->name,
-                    'model'     => __('clocking machine'),
-                    'actions'   => [
+                    'title'   => $clockingMachine->name,
+                    'model'   => __('clocking machine'),
+                    'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -102,11 +86,11 @@ class ShowClockingMachine extends OrgAction
 
                         ] : false
                     ],
-                    'meta'  => [
+                    'meta'    => [
                         [
                             'name'     => trans_choice('clocking|clockings', 0/*$clockingMachine->stats->number_clockings*/),
                             'number'   => 0/*$clockingMachine->stats->number_clockings*/,
-                            'route'     =>
+                            'route'    =>
                                 match ($request->route()->getName()) {
                                     'grp.org.hr.workplaces.show.clocking_machines.show' => [
                                         'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index',
@@ -131,7 +115,7 @@ class ShowClockingMachine extends OrgAction
                     ]
 
                 ],
-                'tabs'                                  => [
+                'tabs'                                   => [
                     'current'    => $this->tab,
                     'navigation' => ClockingMachineTabsEnum::navigation()
                 ],
@@ -160,10 +144,10 @@ class ShowClockingMachine extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function ($clockingMachine, array $routeParameters, $suffix) {
+        $clockingMachine = ClockingMachine::where('slug', $routeParameters['clockingMachine'])->first();
 
-            $clockingMachine = ClockingMachine::where('slug', $routeParameters['index']['parameters']['clockingMachine'])->first();
 
+        $headCrumb = function (ClockingMachine $clockingMachine, array $routeParameters, $suffix) {
             return [
                 [
                     'type'           => 'modelWithIndex',
@@ -182,12 +166,13 @@ class ShowClockingMachine extends OrgAction
                 ],
             ];
         };
+
         return match ($routeName) {
             'grp.org.hr.clocking_machines.show' =>
             array_merge(
                 (new ShowHumanResourcesDashboard())->getBreadcrumbs($routeParameters),
                 $headCrumb(
-                    $routeParameters['clockingMachine'],
+                    $clockingMachine,
                     [
                         'index' => [
                             'name'       => 'grp.org.hr.clocking_machines.index',
@@ -205,7 +190,7 @@ class ShowClockingMachine extends OrgAction
             array_merge(
                 (new ShowWorkplace())->getBreadcrumbs($routeParameters),
                 $headCrumb(
-                    $routeParameters['clockingMachine'],
+                    $clockingMachine,
                     [
                         'index' => [
                             'name'       => 'grp.org.hr.workplaces.show.clocking_machines.index',
@@ -261,9 +246,9 @@ class ShowClockingMachine extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'      => $this->organisation->slug,
-                        'workplace'         => $clockingMachine->workplace->slug,
-                        'clockingMachine'   => $clockingMachine->slug
+                        'organisation'    => $this->organisation->slug,
+                        'workplace'       => $clockingMachine->workplace->slug,
+                        'clockingMachine' => $clockingMachine->slug
                     ]
                 ]
             ]
