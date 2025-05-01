@@ -16,6 +16,7 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -33,6 +34,14 @@ class UpdateTransaction extends OrgAction
                 return DeleteTransaction::run($transaction);
             }
 
+            if ($transaction->model_type == 'Product') {
+                /** @var Product $product */
+                $product = $transaction->model;
+                $estimatedWeight = Arr::get($modelData, 'quantity_ordered') * $product->gross_weight;
+                data_set($modelData, 'estimated_weight', $estimatedWeight);
+
+            }
+
             $historicAsset = $transaction->historicAsset;
             $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
             // here we are going to deal with discounts 15/09/24
@@ -46,8 +55,8 @@ class UpdateTransaction extends OrgAction
 
         if ($this->strict) {
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
-            if (count($changes) && (array_key_exists('net_amount', $changes) || array_key_exists('gross_amount', $changes))) {
-                $transaction->order->refresh();
+
+            if (Arr::hasAny($changes, ['quantity_ordered','net_amount', 'gross_amount'])) {
                 CalculateOrderTotalAmounts::run($transaction->order);
             }
         }

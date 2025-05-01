@@ -77,7 +77,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
- * @property string|null $source_alt_id to be used in no products transactions
+ * @property string|null $source_alt_id to be used in no product transactions
+ * @property int|null $estimated_weight grams
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItem
@@ -86,7 +87,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read Invoice|null $invoice
- * @property-read Model|\Eloquent $item
+ * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, Offer> $offer
  * @property-read Collection<int, OfferCampaign> $offerCampaign
  * @property-read Collection<int, OfferComponent> $offerComponents
@@ -145,7 +146,7 @@ class Transaction extends Model
     protected $guarded = [];
 
 
-    public function item(): MorphTo
+    public function model(): MorphTo
     {
         return $this->morphTo();
     }
