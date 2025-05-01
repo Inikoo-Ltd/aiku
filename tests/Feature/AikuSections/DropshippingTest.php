@@ -10,6 +10,7 @@
 
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\CRM\Customer\AttachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
@@ -482,3 +483,11 @@ test('UI index customer platforms', function (CustomerClient $customerClient) {
 
     return $customerClient;
 })->depends('UI index customer client order');
+
+test('Customer clients basket hydrator', function () {
+    $customerClient = CustomerClient::first();
+    CustomerClientHydrateBasket::run($customerClient);
+    expect($customerClient)->toBeInstanceOf(CustomerClient::class)
+        ->and($customerClient->amount_in_basket)->toEqual(0)
+        ->and($customerClient->current_order_in_basket_id)->toBeNull();
+});

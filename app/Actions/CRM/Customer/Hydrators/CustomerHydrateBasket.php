@@ -14,7 +14,6 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CustomerHydrateBasket implements ShouldBeUnique
@@ -29,16 +28,16 @@ class CustomerHydrateBasket implements ShouldBeUnique
 
     public function handle(Customer $customer): void
     {
+
+        if ($customer->is_dropshipping || $customer->is_fulfilment) {
+            return;
+        }
+
+        $order = $customer->orders()->where('state', OrderStateEnum::CREATING->value)->first();
+
         $stats = [
-            'amount_in_basket' => DB::table('orders')
-                ->where('customer_id', $customer->id)
-                ->where('state', OrderStateEnum::CREATING->value)
-                ->sum('total_amount'),
-            'current_order_in_basket_id' => DB::table('orders') // TODO: check this is correct or not
-                ->where('customer_id', $customer->id)
-                ->where('state', OrderStateEnum::CREATING->value)
-                ->orderBy('date', 'desc')
-                ->value('id'),
+            'amount_in_basket'           => $order ? $order->total_amount : 0,
+            'current_order_in_basket_id' => $order?->id
         ];
 
         $customer->update($stats);
