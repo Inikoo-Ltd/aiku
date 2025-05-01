@@ -30,7 +30,7 @@ use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
-use App\Actions\Ordering\Order\UpdateOrderStateToSubmitted;
+use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateStateToCreatingOrder;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
@@ -63,7 +63,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', UpdateStateToCreatingOrder::class)->name('creating');
-        Route::patch('submitted', UpdateOrderStateToSubmitted::class)->name('submitted');
+        Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateStateToHandlingOrder::class)->name('handling');

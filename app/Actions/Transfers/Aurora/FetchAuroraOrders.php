@@ -8,6 +8,8 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\SetOrderPayments;
@@ -111,6 +113,12 @@ class FetchAuroraOrders extends FetchAuroraAction
         }
 
         OrderHydrateTransactions::run($order);
+
+        if ($order->customer_client_id) {
+            CustomerClientHydrateBasket::run($order->customerClient);
+        } else {
+            CustomerHydrateBasket::run($order->customer);
+        }
 
         DB::connection('aurora')->table('Order Dimension')
             ->where('Order Key', $sourceData[1])

@@ -29,7 +29,7 @@ use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\Ordering\Order\UpdateOrderStateToSubmitted;
+use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
 use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
 use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
@@ -390,7 +390,7 @@ test('update order', function ($order) {
 })->depends('create order');
 
 test('update order state to submitted', function (Order $order) {
-    $order = UpdateOrderStateToSubmitted::make()->action($order);
+    $order = SubmitOrder::make()->action($order);
     expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
         ->and($order->shop->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->organisation->orderingStats->number_orders_state_submitted)->toBe(1)
