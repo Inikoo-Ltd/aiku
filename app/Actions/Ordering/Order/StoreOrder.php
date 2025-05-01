@@ -216,6 +216,22 @@ class StoreOrder extends OrgAction
             }
         }
 
+        if ($order->state == OrderStateEnum::CREATING) {
+
+            if ($order->customer_client_id) {
+                $order->customerClient()->update([
+                    'amount_in_basket'           => $order->total_amount,
+                    'current_order_in_basket_id' => $order->id
+                ]);
+            } else {
+                $order->customer()->update([
+                    'amount_in_basket'           => $order->total_amount,
+                    'current_order_in_basket_id' => $order->id
+                ]);
+            }
+        }
+
+
         OrderRecordSearch::dispatch($order);
 
         return $order->fresh();
