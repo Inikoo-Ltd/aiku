@@ -184,7 +184,7 @@ class HydrateModels extends HydrateModel
         $command->info('Ordering section 🛒');
         $command->call('hydrate:orders');
         $command->call('hydrate:invoices');
-        //todo $command->call('hydrate:purges');
+        $command->call('hydrate:purges');
         $command->call('hydrate:delivery_notes');
     }
 

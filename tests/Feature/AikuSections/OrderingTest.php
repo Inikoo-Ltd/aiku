@@ -33,6 +33,7 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
 use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
 use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
+use App\Actions\Ordering\Purge\HydratePurges;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
@@ -799,4 +800,9 @@ test('test reset intervals', function () {
     $this->artisan('intervals:reset-month')->assertExitCode(0);
     $this->artisan('intervals:reset-quarter')->assertExitCode(0);
     $this->artisan('intervals:reset-year')->assertExitCode(0);
+});
+
+test('purge hydrators', function () {
+    $purge = Purge::first();
+    HydratePurges::run($purge);
 });
