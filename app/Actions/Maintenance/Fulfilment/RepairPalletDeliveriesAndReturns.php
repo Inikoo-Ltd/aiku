@@ -283,12 +283,12 @@ class RepairPalletDeliveriesAndReturns
 
                     if ($fulfilmentTransaction->quantity != $transaction->quantity) {
                         print "(todo) Fix Fulfilment Transaction Qty: $fulfilmentTransaction->id\n";
-//                        UpdateRecurringBillTransaction::make()->action(
-//                            $transaction,
-//                            [
-//                                'quantity' => $fulfilmentTransaction->quantity
-//                            ]
-//                        );
+                        //                        UpdateRecurringBillTransaction::make()->action(
+                        //                            $transaction,
+                        //                            [
+                        //                                'quantity' => $fulfilmentTransaction->quantity
+                        //                            ]
+                        //                        );
                     }
                 }
             });
@@ -332,16 +332,16 @@ class RepairPalletDeliveriesAndReturns
                 if (!$palletDelivery->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
                     print "+++ +++ ++ Fix Pallet Delivery Transaction CRB: $transaction->id\n";
 
-//                    StoreRecurringBillTransaction::make()->action(
-//                        $palletDelivery->recurringBill,
-//                        $transaction,
-//                        [
-//                            'start_date'                => now(),
-//                            'quantity'                  => $transaction->quantity,
-//                            'pallet_delivery_id'        => $palletDelivery->id,
-//                            'fulfilment_transaction_id' => $transaction->id
-//                        ]
-//                    );
+                    //                    StoreRecurringBillTransaction::make()->action(
+                    //                        $palletDelivery->recurringBill,
+                    //                        $transaction,
+                    //                        [
+                    //                            'start_date'                => now(),
+                    //                            'quantity'                  => $transaction->quantity,
+                    //                            'pallet_delivery_id'        => $palletDelivery->id,
+                    //                            'fulfilment_transaction_id' => $transaction->id
+                    //                        ]
+                    //                    );
                 }
             });
         }
