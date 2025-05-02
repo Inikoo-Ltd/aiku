@@ -37,7 +37,6 @@ class EditGroupSettings extends GrpAction
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
 
-        $group = group();
         return Inertia::render("EditModel", [
             "title"       => __("group"),
             "breadcrumbs" => $this->getBreadcrumbs(

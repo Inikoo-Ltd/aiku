@@ -13,7 +13,6 @@ use App\Actions\Accounting\Payment\Search\PaymentRecordSearch;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydratePayments;
 use App\Actions\Accounting\PaymentGateway\Checkout\Channels\MakePaymentUsingCheckout;
 use App\Actions\Accounting\PaymentGateway\Paypal\Orders\MakePaymentUsingPaypal;
-use App\Actions\Accounting\PaymentGateway\Xendit\Channels\Invoice\MakePaymentUsingXendit;
 use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePayments;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePayments;
@@ -74,7 +73,6 @@ class StorePayment extends OrgAction
             if ($this->strict) {
                 match ($paymentAccount->type->value) {
                     PaymentAccountTypeEnum::CHECKOUT->value => MakePaymentUsingCheckout::run($payment, $modelData),
-                    PaymentAccountTypeEnum::XENDIT->value => MakePaymentUsingXendit::run($payment),
                     PaymentAccountTypeEnum::PAYPAL->value => MakePaymentUsingPaypal::run($payment, $paypalData),
                     default => null
                 };

@@ -10,7 +10,6 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Events\BroadcastPreviewHeaderFooter;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,7 +23,7 @@ class AutosaveWebsiteMarginal extends OrgAction
 
     public function handle(Website $website, string $marginal, array $modelData): Website
     {
-        $this->marginal =  $marginal;
+        $this->marginal = $marginal;
 
         if ($marginal == 'header') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout;
@@ -44,20 +43,7 @@ class AutosaveWebsiteMarginal extends OrgAction
             ]);
         }
 
-        /*  BroadcastPreviewHeaderFooter::dispatch($website); */
-
         return $website;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-
-        if ($this->isAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("websites.edit");
     }
 
     public function prepareForValidation(ActionRequest $request): void

@@ -173,7 +173,7 @@ class IndexAgentSupplierProducts extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'upload_spreadsheet' => $spreadsheetRoute ?? null,
+                'upload_spreadsheet' => null,
                 'data'               => SupplierProductsResource::collection($supplier_products),
             ]
         )->table($this->tableStructure($agent));
