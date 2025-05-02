@@ -19,14 +19,12 @@ use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
+use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
-use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
-use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
-use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
@@ -35,11 +33,11 @@ use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
@@ -51,6 +49,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrder extends OrgAction
 {
     use HasOrderingAuthorisation;
+    use IsOrder;
 
     private Shop|Customer|CustomerClient|Purge|CustomerHasPlatform $parent;
     private CustomerHasPlatform $customerHasPlatform;
@@ -187,91 +186,7 @@ class ShowOrder extends OrgAction
         ];
     }
 
-    public function getOrderBoxStats(Order $order): array
-    {
 
-        $payAmount   = $order->total_amount - $order->payment_amount;
-        $roundedDiff = round($payAmount, 2);
-
-        $estWeight = ($order->estimated_weight ?? 0) / 1000;
-
-        return [
-            'customer' => array_merge(
-                CustomerResource::make($order->customer)->getArray(),
-                [
-                    'addresses' => [
-                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
-                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
-                    ],
-                ]
-            ),
-            'products' => [
-                'payment'          => [
-                    'routes'       => [
-                        'fetch_payment_accounts' => [
-                            'name'       => 'grp.json.shop.payment-accounts',
-                            'parameters' => [
-                                'shop' => $order->shop->slug
-                            ]
-                        ],
-                        'submit_payment'         => [
-                            'name'       => 'grp.models.order.payment.store',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-
-                    ],
-                    'total_amount' => (float)$order->total_amount,
-                    'paid_amount'  => (float)$order->payment_amount,
-                    'pay_amount'   => $roundedDiff,
-                ],
-                'estimated_weight' => $estWeight
-            ],
-
-            'order_summary' => [
-                [
-                    [
-                        'label'       => 'Items',
-                        'quantity'    => $order->stats->number_item_transactions,
-                        'price_base'  => 'Multiple',
-                        'price_total' => $order->net_amount
-                    ],
-                ],
-                [
-                    [
-                        'label'       => 'Charges',
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => 'Shipping',
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
-                [
-                    [
-                        'label'       => 'Net',
-                        'information' => '',
-                        'price_total' => $order->net_amount
-                    ],
-                    [
-                        'label'       => 'Tax 20%',
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
-                ],
-                [
-                    [
-                        'label'       => 'Total',
-                        'price_total' => $order->total_amount
-                    ]
-                ],
-                'currency' => CurrencyResource::make($order->currency),
-            ],
-        ];
-    }
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
@@ -283,25 +198,29 @@ class ShowOrder extends OrgAction
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
-        if ($order->deliveryNotes()->first()) {
+
+        /** @var DeliveryNote $firstDeliveryNote */
+        $firstDeliveryNote = $order->deliveryNotes()->first();
+
+        if ($firstDeliveryNote) {
             $deliveryNoteRoute = [
                 'deliveryNoteRoute'    => [
                     'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
                     'parameters' => array_merge($request->route()->originalParameters(), [
-                        'deliveryNote' => $order->deliveryNotes()->first()->slug
+                        'deliveryNote' => $firstDeliveryNote->slug
                     ])
                 ],
                 'deliveryNotePdfRoute' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
                     'parameters' => [
                         'organisation' => $order->organisation->slug,
-                        'warehouse'    => $order->deliveryNotes->first()->warehouse->slug,
-                        'deliveryNote' => $order->deliveryNotes()->first()->slug,
+                        'warehouse'    => $firstDeliveryNote->warehouse->slug,
+                        'deliveryNote' => $firstDeliveryNote->slug,
                     ],
                 ]
             ];
 
-            $deliveryNoteResource = DeliveryNotesResource::make($order->deliveryNotes()->first());
+            $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
         }
         return Inertia::render(
             'Org/Ordering/Order',
