@@ -14,7 +14,7 @@ class InertiaTable
 {
     private string $name = 'default';
     private string $pageName = 'page';
-    private array $perPageOptions = [10, 25, 50, 100]; // must be between config/ui.php for min_records_per_page - records_per_page - max_records_per_page
+    private array $perPageOptions = [10, 25, 50, 100, 150]; // must be between config/ui.php for min_records_per_page - records_per_page - max_records_per_page
     private Request $request;
     private Collection $columns;
     private Collection $searchInputs;
