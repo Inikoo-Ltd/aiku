@@ -44,7 +44,7 @@ class UpdateShop extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
+        return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
     public function handle(Shop $shop, array $modelData): Shop
@@ -58,15 +58,14 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::has($modelData, 'image')) {
-
             $image = Arr::get($modelData, 'image');
             data_forget($modelData, 'image');
             $imageData = [
-                'path' => $image->getPathName(),
+                'path'         => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension' => $image->getClientOriginalExtension(),
+                'extension'    => $image->getClientOriginalExtension(),
             ];
-            $shop = SaveModelImage::run(
+            $shop      = SaveModelImage::run(
                 model: $shop,
                 imageData: $imageData,
                 scope: 'avatar'
@@ -112,7 +111,7 @@ class UpdateShop extends OrgAction
         }
 
 
-        $shop = $this->update($shop, $modelData, ['data', 'settings']);
+        $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
 
@@ -152,8 +151,8 @@ class UpdateShop extends OrgAction
 
             ],
 
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'code' => [
+            'name'                      => ['sometimes', 'required', 'string', 'max:255'],
+            'code'                      => [
                 'sometimes',
                 'required',
                 'max:8',
@@ -164,42 +163,43 @@ class UpdateShop extends OrgAction
 
                         ['column' => 'group_id', 'value' => $this->organisation->group_id],
                         [
-                            'column' => 'id',
+                            'column'   => 'id',
                             'operator' => '!=',
-                            'value' => $this->shop->id
+                            'value'    => $this->shop->id
                         ],
                     ]
                 ),
 
             ],
-            'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email' => ['sometimes', 'nullable', 'email'],
-            'phone' => ['sometimes', 'nullable'],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
-            'identity_document_type' => ['sometimes', 'nullable', 'string'],
-            'type' => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
-            'currency_id' => ['sometimes', 'required', 'exists:currencies,id'],
-            'country_id' => ['sometimes', 'required', 'exists:countries,id'],
-            'language_id' => ['sometimes', 'required', 'exists:languages,id'],
-            'timezone_id' => ['sometimes', 'required', 'exists:timezones,id'],
-            'address' => ['sometimes', 'required', new ValidAddress()],
-            'collection_address' => ['sometimes', 'required', new ValidAddress()],
-            'state' => ['sometimes', Rule::enum(ShopStateEnum::class)],
-            'shopify_shop_name' => ['sometimes', 'string'],
-            'shopify_api_key' => ['sometimes', 'string'],
-            'shopify_api_secret' => ['sometimes', 'string'],
-            'shopify_access_token' => ['sometimes', 'string'],
-            'registration_number' => ['sometimes', 'string'],
-            'vat_number' => ['sometimes', 'string'],
+            'contact_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'                     => ['sometimes', 'nullable', 'email'],
+            'phone'                     => ['sometimes', 'nullable'],
+            'identity_document_number'  => ['sometimes', 'nullable', 'string'],
+            'identity_document_type'    => ['sometimes', 'nullable', 'string'],
+            'type'                      => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
+            'currency_id'               => ['sometimes', 'required', 'exists:currencies,id'],
+            'country_id'                => ['sometimes', 'required', 'exists:countries,id'],
+            'language_id'               => ['sometimes', 'required', 'exists:languages,id'],
+            'timezone_id'               => ['sometimes', 'required', 'exists:timezones,id'],
+            'address'                   => ['sometimes', 'required', new ValidAddress()],
+            'collection_address'        => ['sometimes', 'required', new ValidAddress()],
+            'state'                     => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'shopify_shop_name'         => ['sometimes', 'string'],
+            'shopify_api_key'           => ['sometimes', 'string'],
+            'shopify_api_secret'        => ['sometimes', 'string'],
+            'shopify_access_token'      => ['sometimes', 'string'],
+            'registration_number'       => ['sometimes', 'string'],
+            'vat_number'                => ['sometimes', 'string'],
             'registration_auto_approve' => ['sometimes', 'boolean'],
-            'invoice_footer' => ['sometimes', 'string', 'max:10000'],
-            'image' => [
+            'invoice_footer'            => ['sometimes', 'string', 'max:10000'],
+            'image'                     => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
-            ]
+            ],
+            'colour'                    => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {
@@ -214,10 +214,10 @@ class UpdateShop extends OrgAction
         if (!$audit) {
             Warehouse::disableAuditing();
         }
-        $this->asAction = true;
-        $this->shop = $shop;
+        $this->asAction       = true;
+        $this->shop           = $shop;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->strict = $strict;
+        $this->strict         = $strict;
         $this->initialisation($shop->organisation, $modelData);
 
         return $this->handle($shop, $this->validatedData);

@@ -42,6 +42,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $show_in_dashboards
  * @property array<array-key, mixed> $data
  * @property int|null $organisation_id
+ * @property string|null $colour
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group $group

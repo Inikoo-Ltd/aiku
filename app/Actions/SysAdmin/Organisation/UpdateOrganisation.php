@@ -94,7 +94,6 @@ class UpdateOrganisation extends OrgAction
 
         return $request->user()->authTo(
             [
-                'organisations.edit',
                 'org-admin.'.$this->organisation->id
             ]
         );
@@ -122,7 +121,8 @@ class UpdateOrganisation extends OrgAction
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
-            ]
+            ],
+            'colour'                  => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

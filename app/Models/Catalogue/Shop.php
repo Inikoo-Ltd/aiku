@@ -130,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property string|null $invoice_footer
+ * @property string|null $colour
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
