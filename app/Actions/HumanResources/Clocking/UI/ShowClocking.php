@@ -12,6 +12,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\ClockingTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -29,36 +30,38 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowClocking extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
+    private Organisation|Workplace|ClockingMachine $parent;
+
     public function handle(Clocking $clocking): Clocking
     {
         return $clocking;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
-
     public function inOrganisation(Organisation $organisation, Clocking $clocking, ActionRequest $request): Clocking
     {
+        $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(ClockingTabsEnum::values());
+
         return $this->handle($clocking);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplace(Organisation $organisation, Workplace $workplace, Clocking $clocking, ActionRequest $request): Clocking
     {
+        $this->parent = $workplace;
         $this->initialisation($organisation, $request)->withTab(ClockingTabsEnum::values());
+
         return $this->handle($clocking);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inClockingMachine(Organisation $organisation, ClockingMachine $clockingMachine, Clocking $clocking, ActionRequest $request): Clocking
     {
+        $this->parent = $clockingMachine;
         $this->initialisation($organisation, $request)->withTab(ClockingTabsEnum::values());
+
         return $this->handle($clocking);
     }
 
@@ -66,7 +69,9 @@ class ShowClocking extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplaceInClockingMachine(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, Clocking $clocking, ActionRequest $request): Clocking
     {
+        $this->parent = $clockingMachine;
         $this->initialisation($organisation, $request)->withTab(ClockingTabsEnum::values());
+
         return $this->handle($clocking);
     }
 
@@ -80,17 +85,17 @@ class ShowClocking extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($clocking, $request),
                     'next'     => $this->getNext($clocking, $request),
                 ],
                 'pageHead'    => [
-                    'icon'  =>
+                    'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-clock'],
                             'title' => __('clocking')
                         ],
-                    'title'   => $clocking->slug,
+                    'title'   => $clocking->clocked_at,
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -130,7 +135,7 @@ class ShowClocking extends OrgAction
                             } : false
                     ]
                 ],
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ClockingTabsEnum::navigation()
 
@@ -166,11 +171,11 @@ class ShowClocking extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $clocking->slug,
+                            'label' => $clocking->clocked_at,
                         ],
 
                     ],
-                    'suffix' => $suffix
+                    'suffix'         => $suffix
                 ],
             ];
         };
@@ -220,7 +225,7 @@ class ShowClocking extends OrgAction
                 (new ShowClockingMachine())->getBreadcrumbs(
                     'grp.org.hr.clocking_machines.show',
                     [
-                       'clockingMachine' => $routeParameters['clockingMachine']
+                        'clockingMachine' => $routeParameters['clockingMachine']
                     ]
                 ),
                 $headCrumb(
@@ -247,8 +252,8 @@ class ShowClocking extends OrgAction
                 (new ShowClockingMachine())->getBreadcrumbs(
                     'grp.org.hr.workplaces.show.clocking_machines.show',
                     [
-                      'workplace'       => $routeParameters['workplace'],
-                      'clockingMachine' => $routeParameters['clockingMachine'],
+                        'workplace'       => $routeParameters['workplace'],
+                        'clockingMachine' => $routeParameters['clockingMachine'],
                     ]
                 ),
                 $headCrumb(
@@ -280,7 +285,7 @@ class ShowClocking extends OrgAction
 
     public function getPrevious(Clocking $clocking, ActionRequest $request): ?array
     {
-        $previous = Clocking::where('slug', '<', $clocking->slug)->when(true, function ($query) use ($clocking, $request) {
+        $previous = Clocking::where('id', '<', $clocking->id)->when(true, function ($query) use ($clocking, $request) {
             switch ($request->route()->getName()) {
                 case 'grp.org.hr.workplaces.show.clockings.show':
                     $query->where('clockings.workplace_id', $clocking->workplace_id);
@@ -289,17 +294,17 @@ class ShowClocking extends OrgAction
                 case 'grp.org.hr.clocking_machines.show.clockings.show':
                     $query->where('clockings.clocking_machine_id', $clocking->clocking_machine_id);
                     break;
-
+                default:
+                    //
             }
-        })->orderBy('slug', 'desc')->first();
+        })->orderBy('id', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(Clocking $clocking, ActionRequest $request): ?array
     {
-        $next = Clocking::where('slug', '>', $clocking->slug)->when(true, function ($query) use ($clocking, $request) {
+        $next = Clocking::where('id', '>', $clocking->id)->when(true, function ($query) use ($clocking, $request) {
             switch ($request->route()->getName()) {
                 case 'grp.org.hr.workplaces.show.clockings.show':
                     $query->where('clockings.workplace_id', $clocking->workplace_id);
@@ -308,9 +313,10 @@ class ShowClocking extends OrgAction
                 case 'grp.org.hr.clocking_machines.show.clockings.show':
                     $query->where('clockings.clocking_machine_id', $clocking->clocking_machine_id);
                     break;
-
+                default:
+                    //
             }
-        })->orderBy('slug')->first();
+        })->orderBy('id')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
@@ -320,47 +326,48 @@ class ShowClocking extends OrgAction
         if (!$clocking) {
             return null;
         }
+
         return match ($routeName) {
             'grp.org.hr.clockings.show' => [
-                'label' => $clocking->slug,
+                'label' => $clocking->clocked_at,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
-                        'clocking'  => $clocking->slug
+                        'clocking' => $clocking->id
                     ]
 
                 ]
             ],
             'grp.org.hr.clocking_machines.show.clockings.show' => [
-                'label' => $clocking->slug,
+                'label' => $clocking->clocked_at,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
-                        'clockingMachine'   => $clocking->clockingMachine->slug,
-                        'clocking'          => $clocking->slug
+                        'clockingMachine' => $clocking->clockingMachine->slug,
+                        'clocking'        => $clocking->id
                     ]
 
                 ]
             ],
             'grp.org.hr.workplaces.show.clockings.show' => [
-                'label' => $clocking->slug,
+                'label' => $clocking->clocked_at,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
                         'workplace' => $clocking->workplace->slug,
-                        'clocking'  => $clocking->slug
+                        'clocking'  => $clocking->id
                     ]
 
                 ]
             ],
             'grp.org.hr.workplaces.show.clocking_machines.show.clockings.show' => [
-                'label' => $clocking->slug,
+                'label' => $clocking->clocked_at,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
-                        'workplace'         => $clocking->workplace->slug,
-                        'clockingMachine'   => $clocking->clockingMachine->slug,
-                        'clocking'          => $clocking->slug
+                        'workplace'       => $clocking->workplace->slug,
+                        'clockingMachine' => $clocking->clockingMachine->slug,
+                        'clocking'        => $clocking->id
                     ]
 
                 ]

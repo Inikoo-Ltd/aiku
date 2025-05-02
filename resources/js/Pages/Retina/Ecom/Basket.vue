@@ -103,6 +103,7 @@ const locale = inject('locale', aikuLocaleStructure)
                             <NumberWithButtonSave
                                 v-model="dataBody.quantity_ordered"
                                 :routeSubmit="dataBody.updateRoute"
+                                key-submit="quantity_ordered"
                                 saveOnForm
                             />
                         </div>

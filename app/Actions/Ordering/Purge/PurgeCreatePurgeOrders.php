@@ -15,9 +15,9 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Purge;
 use Carbon\Carbon;
 
-class FetchEligiblePurgeOrders extends OrgAction
+class PurgeCreatePurgeOrders extends OrgAction
 {
-    public function handle(Purge $purge)
+    public function handle(Purge $purge): Purge
     {
         $dateThreshold = Carbon::now()->subDays($purge->inactive_days);
         $orders        = $purge->shop->orders()

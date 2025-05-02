@@ -10,8 +10,10 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrganisationsArgument;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class CalculateOrderTotalAmounts extends OrgAction
 {
@@ -27,7 +29,7 @@ class CalculateOrderTotalAmounts extends OrgAction
 
         $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         $chargesAmount  = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
-
+        $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         $taxAmount   = $itemsNet * $tax;
         $totalAmount = $itemsNet + $taxAmount;
@@ -43,8 +45,22 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'gross_amount', $itemsGross);
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
+        data_set($modelData, 'estimated_weight', $estimatedWeight);
 
         $order->update($modelData);
+
+        $changes = $order->getChanges();
+        if ($order->state == OrderStateEnum::CREATING && Arr::has($changes, 'total_amount')) {
+            if ($order->customer_client_id) {
+                $order->customerClient()->update([
+                    'amount_in_basket'           => $order->total_amount,
+                ]);
+            } else {
+                $order->customer()->update([
+                    'amount_in_basket'           => $order->total_amount,
+                ]);
+            }
+        }
 
 
 

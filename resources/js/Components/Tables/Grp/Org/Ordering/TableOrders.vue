@@ -32,27 +32,29 @@ const locale = useLocaleStore();
 
 function orderRoute(order: Order) {
   switch (route().current()) {
-    case "grp.org.shops.show.crm.show.orders.index":
-      return route(
-        "grp.org.shops.show.crm.show.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop,  (route().params as RouteParams).customer, order.slug]);
-    case "grp.org.overview.orders_in_basket.index":
-    case "grp.overview.ordering.orders_in_basket.index":
-        return route(
-            "grp.org.shops.show.ordering.orders.show",
-            [order.organisation_slug, order.shop_slug, order.slug]);  
+    case 'grp.org.shops.show.ordering.backlog':
     case "grp.org.shops.show.ordering.orders.index":
       return route(
         "grp.org.shops.show.ordering.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug]);
+
+    case "grp.org.shops.show.crm.show.orders.index":
+      return route(
+        "grp.org.shops.show.crm.show.orders.show",
+        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug]);
+    case "grp.org.overview.orders_in_basket.index":
+    case "grp.overview.ordering.orders_in_basket.index":
+      return route(
+        "grp.org.shops.show.ordering.orders.show",
+        [order.organisation_slug, order.shop_slug, order.slug]);
     case "grp.org.shops.show.crm.customers.show.orders.index":
       return route(
         "grp.org.shops.show.crm.customers.show.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop,  (route().params as RouteParams).customer, order.slug]);
+        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug]);
     case "grp.org.shops.show.crm.customers.show.customer-clients.orders.index":
       return route(
         "grp.org.shops.show.crm.customers.show.customer-clients.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop,  (route().params as RouteParams).customer,  (route().params as RouteParams).customerClient, order.slug]);
+        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerClient, order.slug]);
     default:
       return null;
   }
@@ -61,7 +63,7 @@ function orderRoute(order: Order) {
 function shopRoute(order: Order) {
   return route(
     "grp.org.shops.show.ordering.backlog",
-    [order.organisation_slug,order.shop_slug]);
+    [order.organisation_slug, order.shop_slug]);
 }
 
 function organisationRoute(order: Order) {
@@ -72,27 +74,27 @@ function organisationRoute(order: Order) {
 
 
 function customerRoute(order: Order) {
-    let routeCurr = route().current();
-    console.log(routeCurr)
-    switch (routeCurr) {
-        case "grp.overview.ordering.orders.index":
-        case "grp.org.overview.orders_in_basket.index":
-        case 'grp.org.overview.orders.index':
-        case "grp.overview.ordering.orders_in_basket.index":
-            return route(
-                "grp.org.shops.show.crm.customers.show",
-                [order.organisation_slug, order.shop_slug, order.customer_slug]
-            );
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    order.customer_slug
-                ]
-            );
-    }
+  let routeCurr = route().current();
+  console.log(routeCurr);
+  switch (routeCurr) {
+    case "grp.overview.ordering.orders.index":
+    case "grp.org.overview.orders_in_basket.index":
+    case "grp.org.overview.orders.index":
+    case "grp.overview.ordering.orders_in_basket.index":
+      return route(
+        "grp.org.shops.show.crm.customers.show",
+        [order.organisation_slug, order.shop_slug, order.customer_slug]
+      );
+    default:
+      return route(
+        "grp.org.shops.show.crm.customers.show",
+        [
+          (route().params as RouteParams).organisation,
+          (route().params as RouteParams).shop,
+          order.customer_slug
+        ]
+      );
+  }
 }
 
 
@@ -101,7 +103,7 @@ function customerRoute(order: Order) {
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
 
-    <template #cell(organisation_code)="{ item: order }" >
+    <template #cell(organisation_code)="{ item: order }">
       <Link :href="organisationRoute(order)" class="secondaryLink">
         {{ order["organisation_code"] }}
       </Link>
@@ -128,7 +130,6 @@ function customerRoute(order: Order) {
         {{ order["customer_name"] }}
       </Link>
     </template>
-
 
 
     <template #cell(date)="{ item: order }">

@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $purged_at
  * @property string|null $order_created_at
  * @property string|null $order_last_updated_at
- * @property int|null $number_transaction
+ * @property int|null $number_transactions
  * @property string|null $net_amount Net amount of the deleted order
  * @property string|null $org_net_amount
  * @property string|null $grp_net_amount

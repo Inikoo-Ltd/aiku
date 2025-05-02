@@ -96,17 +96,18 @@ class HydrateModels extends HydrateModel
         }
 
         if ($this->checkIfCanHydrate(['dropshipping', 'drop'], $command)) {
-            $this->hydrateDropshippig($command);
+            $this->hydrateDropshipping($command);
         }
 
         return 0;
     }
 
-    protected function hydrateDropshippig(Command $command): void
+    protected function hydrateDropshipping(Command $command): void
     {
         $command->info('Dropshipping ✊🏼');
         $command->call('hydrate:platforms');
         $command->call('hydrate:portfolios');
+        $command->call('hydrate:customer_clients');
     }
 
     protected function hydrateDispatching(Command $command): void
@@ -183,7 +184,7 @@ class HydrateModels extends HydrateModel
         $command->info('Ordering section 🛒');
         $command->call('hydrate:orders');
         $command->call('hydrate:invoices');
-        //todo $command->call('hydrate:purges');
+        $command->call('hydrate:purges');
         $command->call('hydrate:delivery_notes');
     }
 

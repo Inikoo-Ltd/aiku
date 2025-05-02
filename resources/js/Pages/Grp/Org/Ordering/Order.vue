@@ -157,7 +157,7 @@ const props = defineProps<{
 
 
 const isModalUploadOpen = ref(false)
-const isModaProductListOpen = ref(false)
+const isModalProductListOpen = ref(false)
 const locale = inject('locale', aikuLocaleStructure)
 
 const currentTab = ref(props.tabs?.current)
@@ -279,7 +279,7 @@ const onSubmitPayment = () => {
 }
 
 
-// Section: add notes (on popup pageheading)
+// Section: add notes (on popup pageHeading)
 const errorNote = ref('')
 const noteToSubmit = ref({
     selectedNote: '',
@@ -313,22 +313,17 @@ const onSubmitNote = async (closePopup: Function) => {
 
 const openModal = (action :any) => {
 	currentAction.value = action;
-    isModaProductListOpen.value = true;
+    isModalProductListOpen.value = true;
 };
 
 </script>
 
 <template>
-    <!-- <pre>{{ data.data }}</pre> -->
-    <!-- {{ props.service_list_route.name }} -->
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <!-- Button: Add service -->
         <template #button-add-products="{ action }">
             <div class="relative">
-                <!-- <Popover>
-                    <template #button="{ open }"> -->
 						<Button
 							:style="action.style"
 							:label="action.label"
@@ -336,67 +331,6 @@ const openModal = (action :any) => {
 							@click="() => openModal(action)"
 							:key="`ActionButton${action.label}${action.style}`"
 							:tooltip="action.tooltip" />
-					<!-- </template> -->
-
-                 <!--    <template #content="{ close: closed }">
-                        <div class="w-[350px]"> -->
-                           <!--  <div class="text-xs px-1 my-2">{{ trans('Products') }}: </div>
-                            <div class="">
-                                <PureMultiselectInfiniteScroll v-model="formProducts.historicAssetId"
-                                    :fetchRoute="routes.products_list" :placeholder="trans('Select Products')"
-                                    valueProp="current_historic_asset_id">
-                                    <template #singlelabel="{ value }">
-                                        <div class="w-full text-left pl-4">{{ value.name }} <span
-                                                class="text-sm text-gray-400">({{ value.stock }})</span></div>
-                                    </template>
-
-                                    <template #option="{ option, isSelected, isPointed }">
-                                        <div class="w-full flex items-center justify-between gap-x-3">
-                                            <div
-                                                :class="isSelected(option) ? option.stock ? '' : 'text-indigo-200' : option.stock ? '' : 'text-gray-400'">
-                                                {{ option.name }} <span class="text-sm"
-                                                    :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{
-                                                        option.stock }})</span></div>
-
-                                            <FontAwesomeIcon v-if="option.stock === 0" v-tooltip="trans('No stock')"
-                                                icon='fas fa-exclamation-triangle' class='text-red-500' fixed-width
-                                                aria-hidden='true' />
-                                            <FontAwesomeIcon v-else-if="option.stock < 10" icon='fas fa-exclamation'
-                                                class='text-yellow-500' fixed-width aria-hidden='true' />
-                                        </div>
-                                    </template>
-                                </PureMultiselectInfiniteScroll>
-
-                                <p v-if="get(formProducts, ['errors', 'historicAssetId'])"
-                                    class="mt-2 text-sm text-red-500">
-                                    {{ formProducts.errors.historicAssetId }}
-                                </p>
-                            </div>
-
-                            <div class="mt-4">
-                                <div class="text-xs px-1 my-2">{{ trans('Quantity') }}: </div>
-                                <PureInput v-model="formProducts.quantity_ordered" :placeholder="trans('Quantity')"
-                                    @keydown.enter="() => onSubmitAddProducts(action, closed)" />
-                                <p v-if="get(formProducts, ['errors', 'quantity_ordered'])"
-                                    class="mt-2 text-sm text-red-600">
-                                    {{ formProducts.errors.quantity_ordered }}
-                                </p>
-                            </div>
-
-                            <div class="flex justify-end mt-4">
-                                <Button @click="() => onSubmitAddProducts(action, closed)" :style="'save'"
-                                    :loading="isLoadingButton == 'addProducts'"
-                                    :disabled="!formProducts.historicAssetId || (formProducts.quantity_ordered < 1)"
-                                    label="Save" full />
-                            </div> -->
-
-                            <!-- Loading: fetching service list -->
-                            <!-- <div v-if="isLoadingData === 'addProducts'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                                <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-5xl' fixed-width aria-hidden='true' />
-                            </div> -->
-                 <!--        </div>
-                    </template> -->
-                <!-- </Popover> -->
             </div>
         </template>
 
@@ -415,10 +349,6 @@ const openModal = (action :any) => {
                                 required
                                 :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
                                 valueProp="value" />
-
-                            <!-- <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
-                                {{ formAddService.errors.service_id }}
-                            </p> -->
                         </div>
 
                         <div class="mt-3">
@@ -565,7 +495,7 @@ const openModal = (action :any) => {
 
         <!-- Box: Product stats -->
         <BoxStatPallet class="py-4 pl-1.5 pr-3" icon="fal fa-user">
-            <div class="relative flex items-start w-full flex-none gap-x-1">
+            <dl class="relative flex items-start w-full flex-none gap-x-1">
                 <dt class="flex-none pt-0.5">
                     <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
                 </dt>
@@ -577,7 +507,7 @@ const openModal = (action :any) => {
                     :payAmount="box_stats.products.payment.pay_amount"
                     :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
                     :currencyCode="currency.code" />
-            </div>
+            </dl>
 
             <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                 <dt class="flex-none">
@@ -616,14 +546,7 @@ const openModal = (action :any) => {
         <!-- Box: Order summary -->
         <BoxStatPallet class="col-span-2 border-t lg:border-t-0 border-gray-300">
             <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-                <!-- <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2> -->
-
                 <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code"  />
-
-                <!-- <div class="mt-6">
-                    <button type="submit"
-                        class="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">Checkout</button>
-                </div> -->
             </section>
         </BoxStatPallet>
     </div>
@@ -640,7 +563,7 @@ const openModal = (action :any) => {
 			@update:tab="handleTabUpdate"/>
     </div>
 
-	<ModalProductList v-model="isModaProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
+	<ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <DeliveryAddressManagementModal
@@ -680,9 +603,7 @@ const openModal = (action :any) => {
                         <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
                     <div class="space-x-1">
-                        <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code || 'usd',
-                                box_stats.products.payment.pay_amount) }}</span>
+                        <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{locale.currencyFormat(box_stats.order_summary.currency.code || 'usd', box_stats.products.payment.pay_amount) }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
                             type="tertiary" label="Pay all" size="xxs" />
@@ -696,24 +617,13 @@ const openModal = (action :any) => {
                     </div>
                 </div>
 
-                <!-- <div class="col-span-2">
-                    <label for="message" class="block text-sm font-medium leading-6">Note</label>
-                    <div class="mt-1">
-                        <PureTextarea
-                            v-model="paymentData.payment_reference"
-                            name="message"
-                            id="message" rows="4"
-                        />
-                    </div>
-                </div> -->
             </div>
 
             <div class="mt-6 mb-4 relative">
                 <Button @click="() => onSubmitPayment()" label="Submit" :disabled="!(!!paymentData.payment_method)"
                     :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
-                    <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
-                        errorPaymentMethod }}</p>
+                    <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{errorPaymentMethod }}</p>
                 </Transition>
             </div>
         </div>

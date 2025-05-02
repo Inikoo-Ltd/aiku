@@ -44,7 +44,7 @@ class StoreSpace extends OrgAction
         $startAt = Carbon::parse(Arr::get($modelData, 'start_at', now()));
 
         $dateWithoutTime = Carbon::parse($startAt)->startOfDay();
-        $today = Carbon::today();
+        $today           = Carbon::today();
 
         if ($dateWithoutTime->isBefore($today)) {
             $state = SpaceStateEnum::RENTING;
@@ -60,7 +60,6 @@ class StoreSpace extends OrgAction
         GroupHydrateSpaces::dispatch($fulfilmentCustomer->group);
 
         if ($space->state === SpaceStateEnum::RENTING) {
-
             $currentRecurringBill = $fulfilmentCustomer->currentRecurringBill;
             if (!$currentRecurringBill) {
                 $currentRecurringBill = StoreRecurringBill::make()->action(
@@ -85,16 +84,14 @@ class StoreSpace extends OrgAction
                 $currentRecurringBill,
                 $space,
                 [
-                    'start_date'                => $space->start_at,
-                    'quantity'                  => 1,
+                    'start_date' => $space->start_at,
+                    'end_date'   => $currentRecurringBill->end_date,
+                    'quantity'   => 1,
                 ]
             );
-
-
         }
 
         return $space;
-
     }
 
     public function rules(): array
@@ -104,9 +101,12 @@ class StoreSpace extends OrgAction
             'exclude_weekend' => ['required', 'bool'],
             'start_at'        => ['required', 'date'],
             'end_at'          => ['nullable', 'date'],
-            'rental_id'       => ['required', 'integer', Rule::exists('rentals', 'id')
-                ->where('fulfilment_id', $this->fulfilment->id)
-                ->where('type', RentalTypeEnum::SPACE)
+            'rental_id'       => [
+                'required',
+                'integer',
+                Rule::exists('rentals', 'id')
+                    ->where('fulfilment_id', $this->fulfilment->id)
+                    ->where('type', RentalTypeEnum::SPACE)
             ],
         ];
     }

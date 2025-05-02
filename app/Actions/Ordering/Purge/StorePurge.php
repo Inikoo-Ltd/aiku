@@ -27,6 +27,9 @@ class StorePurge extends OrgAction
 {
     use WithNoStrictRules;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Shop $shop, $modelData): Purge
     {
         data_set($modelData, 'group_id', $shop->group_id);
@@ -42,8 +45,7 @@ class StorePurge extends OrgAction
 
             return $purge;
         });
-        FetchEligiblePurgeOrders::dispatch($purge);
-
+        PurgeCreatePurgeOrders::dispatch($purge);
         PurgeHydratePurgedOrders::dispatch($purge);
 
         return $purge;
@@ -97,6 +99,9 @@ class StorePurge extends OrgAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Shop $shop, ActionRequest $request): Purge
     {
         $this->initialisationFromShop($shop, $request);
@@ -104,6 +109,9 @@ class StorePurge extends OrgAction
         return $this->handle($shop, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Purge
     {
         if (!$audit) {

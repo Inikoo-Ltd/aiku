@@ -41,8 +41,26 @@ class StoreClocking extends OrgAction
     use WithBase64FileConverter;
     use WithUpdateModelImage;
 
-
     private Employee $employee;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction || $this->han) {
+            return true;
+        }
+
+        if ($request->user() instanceof ClockingMachine) {
+            $employeeWorkplace = $this->employee->workplaces()
+                    ->wherePivot('workplace_id', $request->user()->workplace_id)
+                    ->count() > 0;
+
+            return ($this->organisation->id === $request->user()->organisation_id)
+                && $employeeWorkplace
+                && $this->employee->state === EmployeeStateEnum::WORKING;
+        }
+
+        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
+    }
 
     /**
      * @throws \Throwable
@@ -77,7 +95,7 @@ class StoreClocking extends OrgAction
         data_set($modelData, 'timesheet_id', $timesheet->id);
 
 
-        $clocking = DB::transaction(function () use ($parent, $modelData, $subject, $timesheet, $uploadedPhoto) {
+        $clocking = DB::transaction(function () use ($modelData, $subject, $timesheet, $uploadedPhoto) {
             /** @var Clocking $clocking */
             $clocking = $subject->clockings()->create($modelData);
             AddClockingToTimeTracker::run($timesheet, $clocking);
@@ -114,25 +132,6 @@ class StoreClocking extends OrgAction
         }
 
         return ClockingResource::make($clocking);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $this->han) {
-            return true;
-        }
-
-        if ($request->user() instanceof ClockingMachine) {
-            $employeeWorkplace = $this->employee->workplaces()
-                    ->wherePivot('workplace_id', $request->user()->workplace_id)
-                    ->count() > 0;
-
-            return ($this->organisation->id === $request->user()->organisation_id)
-                && $employeeWorkplace
-                && $this->employee->state === EmployeeStateEnum::WORKING;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function rules(): array
@@ -221,7 +220,6 @@ class StoreClocking extends OrgAction
      */
     public function action(Organisation|User|Employee|Guest $generator, ClockingMachine|Workplace $parent, Employee|Guest $subject, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Clocking
     {
-
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;

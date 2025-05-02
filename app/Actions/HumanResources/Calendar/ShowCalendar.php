@@ -8,33 +8,30 @@
 
 namespace App\Actions\HumanResources\Calendar;
 
-use App\Actions\InertiaAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\EmployeeTabsEnum;
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowCalendar extends InertiaAction
+class ShowCalendar extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     public function handle(Employee $employee): Employee
     {
         return $employee;
     }
 
-
-    public function authorize(ActionRequest $request): bool
+    public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): Employee
     {
-        $this->canEdit = $request->user()->authTo('hr.edit');
+        $this->initialisation($organisation, $request)->withTab(EmployeeTabsEnum::values());
 
-        return $request->user()->authTo("human-resources.view");
-    }
-
-    public function asController(Employee $employee, ActionRequest $request): Employee
-    {
-        $this->initialisation($request)->withTab(EmployeeTabsEnum::values());
         return $this->handle($employee);
     }
 
@@ -43,9 +40,9 @@ class ShowCalendar extends InertiaAction
         return Inertia::render(
             'Org/HumanResources/Calendar',
             [
-                'title'                                 => __('calendar'),
-                'breadcrumbs'                           => $this->getBreadcrumbs($employee),
-                'navigation'                            => [
+                'title'       => __('calendar'),
+                'breadcrumbs' => $this->getBreadcrumbs($employee, $request->route()->originalParameters()),
+                'navigation'  => [
                     'previous' => $this->getPrevious($employee, $request),
                     'next'     => $this->getNext($employee, $request),
                 ],
@@ -90,10 +87,10 @@ class ShowCalendar extends InertiaAction
         return new EmployeeResource($employee);
     }
 
-    public function getBreadcrumbs(Employee $employee, $suffix = null): array
+    public function getBreadcrumbs(Employee $employee, array $routeParameters, $suffix = null): array
     {
         return array_merge(
-            (new ShowHumanResourcesDashboard())->getBreadcrumbs(),
+            ShowHumanResourcesDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'           => 'modelWithIndex',
@@ -122,13 +119,14 @@ class ShowCalendar extends InertiaAction
     public function getPrevious(Employee $employee, ActionRequest $request): ?array
     {
         $previous = Employee::where('slug', '<', $employee->slug)->orderBy('slug', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
 
+        return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Employee $employee, ActionRequest $request): ?array
     {
         $next = Employee::where('slug', '>', $employee->slug)->orderBy('slug')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
@@ -137,11 +135,12 @@ class ShowCalendar extends InertiaAction
         if (!$employee) {
             return null;
         }
+
         return match ($routeName) {
             'grp.org.hr.employees.show' => [
                 'label' => $employee->contact_name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
                         'employee' => $employee->slug
                     ]

@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\Clocking\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
@@ -20,15 +21,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditClocking extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(Clocking $clocking): Clocking
     {
         return $clocking;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->slug}");
-        return $request->user()->authTo("human-resources.{$this->organisation->slug}");
     }
 
     public function inOrganisation(Organisation $organisation, Clocking $clocking, ActionRequest $request): Clocking

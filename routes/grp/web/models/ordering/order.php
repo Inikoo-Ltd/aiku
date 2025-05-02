@@ -30,7 +30,7 @@ use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
-use App\Actions\Ordering\Order\UpdateOrderStateToSubmitted;
+use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateStateToCreatingOrder;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
@@ -41,8 +41,9 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use Illuminate\Support\Facades\Route;
 
-Route::name('transaction.')->prefix('transaction')->group(function () {
-    Route::delete('{transaction:id}', DeleteTransaction::class)->name('delete')->withoutScopedBindings();
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+    Route::delete('', DeleteTransaction::class)->name('delete');
+    Route::patch('', UpdateTransaction::class)->name('update');
 });
 
 
@@ -57,13 +58,12 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
-        Route::patch('{transaction:id}', UpdateTransaction::class)->name('update')->withoutScopedBindings();
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', UpdateStateToCreatingOrder::class)->name('creating');
-        Route::patch('submitted', UpdateOrderStateToSubmitted::class)->name('submitted');
+        Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateStateToHandlingOrder::class)->name('handling');
@@ -88,7 +88,6 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 });
 
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
-
     Route::name('assign.')->prefix('assign')->group(function () {
         Route::patch('picker', AssignPickerToPicking::class)->name('picker');
         Route::patch('packer', AssignPackerToPicking::class)->name('packer');

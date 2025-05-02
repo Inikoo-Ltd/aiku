@@ -24,7 +24,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class RetinaEcomBasketResources extends JsonResource
 {
     public static $wrap = null;
-    
+
     public function toArray($request): array
     {
         return [

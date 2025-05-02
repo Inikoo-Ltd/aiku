@@ -44,7 +44,8 @@ class FindStoredPalletsAndAttachThemToNewRecurringBill extends OrgAction
                 recurringBill: $recurringBill,
                 item: $pallet,
                 modelData: [
-                    'start_date' => $startDate
+                    'start_date' => $startDate,
+                    'end_date'   => $recurringBill->end_date
                 ],
                 skipHydrators: true
             );

@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\Calendar;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\EmployeesResource;
 use App\Http\Resources\HumanResources\EmployeeResource;
@@ -26,12 +27,13 @@ use App\Services\QueryBuilder;
 
 class IndexCalendars extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('employees.contact_name', $value);
-
             });
         });
 
@@ -43,16 +45,15 @@ class IndexCalendars extends OrgAction
             ->defaultSort('employees.slug')
             ->select(['slug', 'id', 'job_title', 'contact_name', 'state'])
             ->with('jobPositions')
-            ->allowedSorts(['slug', 'state', 'contact_name','job_title'])
+            ->allowedSorts(['slug', 'state', 'contact_name', 'job_title'])
             ->allowedFilters([$globalSearch, 'slug', 'contact_name', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
-
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -67,18 +68,6 @@ class IndexCalendars extends OrgAction
                 ->defaultSort('slug');
         };
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return
-            (
-                $request->user()->tokenCan('root') or
-                $request->user()->authTo("human-resources.{$this->organisation->id}.view")
-            );
-    }
-
 
     public function jsonResponse(LengthAwarePaginator $employees): AnonymousResourceCollection
     {
