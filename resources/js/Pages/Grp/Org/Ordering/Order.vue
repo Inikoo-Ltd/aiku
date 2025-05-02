@@ -407,18 +407,18 @@ const openModal = (action :any) => {
     <div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
             <!-- Field: Reference Number -->
-            <Link as="a" v-if="box_stats?.customer.reference" v-tooltip="trans('Reference')"
-                :href="'route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)'"
+            <Link as="a" v-if="box_stats?.customer.reference" v-tooltip="trans('Customer')"
+                :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-            <dt class="flex-none">
-                <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
-            </dt>
-            <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
+                <dt class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
+                </dt>
+                <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
             <div v-if="box_stats?.customer.contact_name" v-tooltip="trans('Contact name')"
-                class="pl-1 flex items-center w-full flex-none gap-x-2">
+                class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
