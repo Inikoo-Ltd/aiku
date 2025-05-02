@@ -8,8 +8,10 @@
 
 namespace App\Models\Ordering;
 
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Accounting\Invoice;
@@ -61,7 +63,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_client_id
  * @property string|null $reference
  * @property string|null $customer_reference Customers own order reference
- * @property string|null $nest
  * @property OrderStateEnum $state
  * @property OrderStatusEnum $status
  * @property OrderHandingTypeEnum $handing_type
@@ -120,6 +121,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $platform_id
  * @property OrderPayStatusEnum|null $pay_status
  * @property \Illuminate\Support\Carbon|null $updated_by_customer_at
+ * @property OrderShippingEngineEnum $shipping_engine
+ * @property OrderChargesEngineEnum $charges_engine
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -202,10 +205,12 @@ class Order extends Model implements HasMedia, Auditable
         'payment_amount'   => 'decimal:2',
 
 
-        'state'        => OrderStateEnum::class,
-        'status'       => OrderStatusEnum::class,
-        'handing_type' => OrderHandingTypeEnum::class,
-        'pay_status'   => OrderPayStatusEnum::class,
+        'state'           => OrderStateEnum::class,
+        'status'          => OrderStatusEnum::class,
+        'handing_type'    => OrderHandingTypeEnum::class,
+        'pay_status'      => OrderPayStatusEnum::class,
+        'shipping_engine' => OrderShippingEngineEnum::class,
+        'charges_engine'  => OrderChargesEngineEnum::class
     ];
 
     protected $attributes = [
