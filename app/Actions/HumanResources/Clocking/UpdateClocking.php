@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\Clocking;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\HumanResources\Clocking;
@@ -18,20 +19,12 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateClocking extends OrgAction
 {
     use WithActionUpdate;
+    use WithHumanResourcesEditAuthorisation;
 
 
     public function handle(Clocking $clocking, array $modelData): Clocking
     {
         return $this->update($clocking, $modelData, ['data']);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

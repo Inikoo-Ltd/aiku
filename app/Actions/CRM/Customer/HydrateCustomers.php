@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
@@ -40,6 +41,7 @@ class HydrateCustomers
         CustomerHydrateDeliveryNotes::run($customer);
         CustomerHydrateTopUps::run($customer);
         CustomerHydrateCreditTransactions::run($customer);
+        CustomerHydrateBasket::run($customer);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

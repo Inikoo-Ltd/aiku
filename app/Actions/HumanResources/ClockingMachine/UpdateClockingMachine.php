@@ -13,6 +13,7 @@ use App\Actions\HumanResources\Workplace\Hydrators\WorkplaceHydrateClockingMachi
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateClockingMachines;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateClockingMachines;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateClockingMachine extends OrgAction
 {
     use WithActionUpdate;
+    use WithHumanResourcesEditAuthorisation;
 
 
     private ClockingMachine $clockingMachine;
@@ -46,15 +48,6 @@ class UpdateClockingMachine extends OrgAction
         return $clockingMachine;
     }
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
 
     public function rules(): array
     {

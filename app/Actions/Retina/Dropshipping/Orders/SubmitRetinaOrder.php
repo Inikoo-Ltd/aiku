@@ -27,7 +27,7 @@ class SubmitRetinaOrder extends RetinaAction
 
     public function handle(Order $order): Order
     {
-        $order = SubmitOrder::make()->action($order);
+        $order = SubmitOrder::run($order);
 
 
         if (!$order->customer_id && !$order->platform) {

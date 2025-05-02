@@ -13,6 +13,7 @@ use App\Actions\HumanResources\Workplace\Hydrators\WorkplaceHydrateClockingMachi
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateClockingMachines;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateClockingMachines;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
 use App\Models\HumanResources\ClockingMachine;
@@ -30,6 +31,8 @@ use Str;
 
 class StoreClockingMachine extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     private Organisation|Workplace $parent;
 
     /**
@@ -150,7 +153,6 @@ class StoreClockingMachine extends OrgAction
      */
     public function api(Workplace $workplace, ActionRequest $request): ClockingMachine
     {
-        // todo we might need to make a proper authorisation check here
         $this->asAction = true;
         $this->parent   = $workplace;
         $this->initialisation($workplace->organisation, $request);

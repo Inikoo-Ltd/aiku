@@ -169,7 +169,7 @@ const props = defineProps<{
 
 
 const isModalUploadOpen = ref(false)
-const isModaProductListOpen = ref(false)
+const isModalProductListOpen = ref(false)
 const locale = inject('locale', aikuLocaleStructure)
 
 const currentTab = ref(props.tabs?.current)
@@ -325,7 +325,7 @@ const onSubmitNote = async (closePopup: Function) => {
 
 const openModal = (action :any) => {
 	currentAction.value = action;
-    isModaProductListOpen.value = true;
+    isModalProductListOpen.value = true;
 };
 
 </script>
@@ -648,7 +648,7 @@ const openModal = (action :any) => {
 			@update:tab="handleTabUpdate"/>
     </div>
 
-	<ModalProductList v-if="routes?.products_list?.name" v-model="isModaProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
+	<ModalProductList v-if="routes?.products_list?.name" v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal

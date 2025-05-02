@@ -52,6 +52,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraTimesheet;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraTopUp;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWarehouse;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWarehouseArea;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebpage;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebUser;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Transfers\FetchStack;
@@ -129,6 +130,9 @@ class ProcessFetchStack
             'Customer' => ProcessAuroraCustomer::make()->action($organisation, $modelData),
             'Stock' => ProcessAuroraStock::make()->action($organisation, $modelData),
             'DeleteFavourite' => ProcessAuroraDeleteFavourites::make()->action($organisation, $modelData),
+            'Webpage' => ProcessAuroraWebpage::make()->action($organisation, $modelData),
+            'PublishWebpage' => ProcessAuroraWebpage::make()->action($organisation, array_merge($modelData, ['with' => 'web_blocks'])),
+
             default => null,
         };
 

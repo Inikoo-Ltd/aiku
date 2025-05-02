@@ -17,6 +17,7 @@ use App\Actions\CRM\BackInStockReminder\UpdateBackInStockReminder;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateBalanceCustomer;
@@ -1179,3 +1180,11 @@ test('withdraw balance customer', function (Customer $customer) {
 
     return $customer;
 })->depends('add balance customer');
+
+test('Customer basket hydrator', function () {
+    $customer = Customer::first();
+    CustomerHydrateBasket::run($customer);
+    expect($customer)->toBeInstanceOf(Customer::class)
+        ->and($customer->amount_in_basket)->toEqual(0)
+        ->and($customer->current_order_in_basket_id)->toBeNull();
+});

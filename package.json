@@ -12,8 +12,8 @@
         "build.iris.ssr": "vite build --config vite.iris.config.mjs --ssr",
         "dev.retina": "vite --config vite.retina.config.mjs",
         "build.retina": "vite build --config vite.retina.config.mjs",
-        "dev.pupil": "vite --config vite.pupil.config.js",
-        "build.pupil": "vite build --config vite.pupil.config.js",
+        "dev.pupil": "vite --config vite.pupil.config.mjs",
+        "build.pupil": "vite build --config vite.pupil.config.mjs",
         "postinstall": "patch-package"
     },
     "devDependencies": {

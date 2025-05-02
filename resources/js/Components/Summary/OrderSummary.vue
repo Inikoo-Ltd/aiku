@@ -10,7 +10,9 @@ library.add(faQuestionCircle)
 
 const props = defineProps<{
     currency_code?: string
-    order_summary: FieldOrderSummary[][]
+    order_summary: FieldOrderSummary[][] | {
+        [key: string]: FieldOrderSummary[]
+    }
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)

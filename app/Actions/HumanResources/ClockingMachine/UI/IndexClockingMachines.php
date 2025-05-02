@@ -12,6 +12,7 @@ use App\Actions\HumanResources\WithWorkplaceSubNavigation;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\ClockingMachinesResource;
 use App\InertiaTable\InertiaTable;
@@ -31,13 +32,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexClockingMachines extends OrgAction
 {
     use WithWorkplaceSubNavigation;
+    use WithHumanResourcesAuthorisation;
 
 
     private Organisation|Workplace|Group $parent;
 
     public function handle(Workplace|Organisation|Group $parent, $prefix = null): LengthAwarePaginator
     {
-        // dd($parent);
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->whereStartWith('clocking_machines.name', $value);
         });
@@ -119,16 +120,6 @@ class IndexClockingMachines extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
-
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
@@ -196,7 +187,7 @@ class IndexClockingMachines extends OrgAction
                 ),
                 'title'       => __('clocking machines'),
                 'pageHead'    => [
-                    'icon'  =>
+                    'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-chess-clock'],
                             'title' => __('clocking machines')

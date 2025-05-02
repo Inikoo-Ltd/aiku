@@ -9,28 +9,21 @@
 
 namespace App\Actions\Ordering\Purge\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\PurgedOrder\PurgedOrderStatusEnum;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PurgeHydratePurgedOrders extends HydrateModel
+class PurgeHydratePurgedOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Purge $purge;
-    public function __construct(Purge $purge)
+    public function getJobUniqueId(Purge $purge): string
     {
-        $this->purge = $purge;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->purge->id))->dontRelease()];
+        return $purge->id;
     }
 
     public function handle(Purge $purge): void
@@ -65,20 +58,11 @@ class PurgeHydratePurgedOrders extends HydrateModel
 
     private function transactionsStats(Purge $purge): void
     {
-        $estimatedNumberTransactions = $purge->purgedOrders()
-            ->with('order.transactions')
-            ->get()
-            ->sum(function ($purgedOrder) {
-                return $purgedOrder->order->transactions->count();
-            });
+        $estimatedNumberTransactions = $purge->purgedOrders()->sum('number_transactions');
 
         $purgedTransactions = $purge->purgedOrders()
             ->where('status', PurgedOrderStatusEnum::PURGED)
-            ->with('order.transactions')
-            ->get()
-            ->sum(function ($purgedOrder) {
-                return $purgedOrder->order->transactions->count();
-            });
+            ->sum('number_transactions');
 
         $stats = [
             'estimated_number_transactions'    => $estimatedNumberTransactions,

@@ -9,8 +9,8 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Models\HumanResources\ClockingMachine;
-use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -18,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteClockingMachine extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     public function handle(ClockingMachine $clockingMachine): ClockingMachine
     {
         $clockingMachine->clockings()->delete();
@@ -33,26 +35,16 @@ class DeleteClockingMachine extends OrgAction
 
     public function asController(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
-        $request->validate();
+        $this->initialisation($organisation, $request);
 
         return $this->handle($clockingMachine);
     }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWorkplace(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
-    {
-        $request->validate();
-
-        return $this->handle($clockingMachine);
-    }
-
 
 
     public function htmlResponse(ClockingMachine $clockingMachine): RedirectResponse
     {
         return Redirect::route('grp.org.hr.workplaces.show', $clockingMachine->workplace->slug);
     }
-
 
 
 }

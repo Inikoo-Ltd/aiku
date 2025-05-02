@@ -16,8 +16,6 @@ class GetClockingMachineAppQRCode
 {
     use WithActionUpdate;
 
-    private bool $asAction = false;
-
 
     public function handle(ClockingMachine $clockingMachine): array
     {
@@ -32,9 +30,6 @@ class GetClockingMachineAppQRCode
     public function asController(ClockingMachine $clockingMachine): array
     {
         $this->validateAttributes();
-
-        $clockingMachine = $this->handle($clockingMachine);
-
-        return $clockingMachine;
+        return $this->handle($clockingMachine);
     }
 }
