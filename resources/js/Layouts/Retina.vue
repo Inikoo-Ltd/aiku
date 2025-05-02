@@ -24,6 +24,9 @@ import { isArray } from "lodash"
 import { useColorTheme } from "@/Composables/useStockList"
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 import IrisFooter from '@/Layouts/Iris/Footer.vue'
+import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
+import RetinaLayoutDs from "./RetinaLayoutDs.vue"
+import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
@@ -44,74 +47,32 @@ const isStaging = layout.app.environment === 'staging'
 </script>
 
 <template>
-    <div class="-z-[1] fixed inset-0 bg-slate-100" />
-    <div class="isolate relative min-h-full transition-all"
-    :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+    <!-- Retina: Ds -->
+    <RetinaLayoutDs
+        v-if="layout.retina?.type === 'dropshipping'"
+    >
+        <template #default>
+            <slot />
+        </template>
+    </RetinaLayoutDs>
+
+    <!-- Retina: Ecom -->
+    <RetinaLayoutEcom
+        v-else-if="layout.retina?.type === 'b2b'"
+    >
+        <template #default>
+            <slot />
+        </template>
+    </RetinaLayoutEcom>
     
-    
-        <IrisHeader
-            v-if="layout.iris?.header?.header"
-            :data="layout.iris?.header"
-            :colorThemed="irisTheme"
-            :menu="layout.iris?.menu"
-        />
-        <RetinaTopBar
-            v-else
-            @sidebarOpen="(value: boolean) => sidebarOpen = value"
-            :sidebarOpen="sidebarOpen"
-            logoRoute="retina.dashboard.show"
-        />
-        
-        <!-- Sidebar: Left -->
-        <div class="">
-            <!-- Mobile Helper: background to close hamburger -->
-            <div @click="sidebarOpen = !sidebarOpen" class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen" />
-            <RetinaLeftSideBar class="-left-2/3 transition-all z-20 block md:left-[0]"
-                :class="[
-                    { 'left-[0]': sidebarOpen },
-                ]" @click="sidebarOpen = !sidebarOpen" />
-        </div>
-
-        <!-- Main Content -->
-        <main class="h-full pb-10 transition-all pl-2 md:pl-0 pr-2 "
-            :class="[
-                layout.iris?.header ? 'ml-48 mr-10' : layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
-                isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
-            ]"
-        >
-            <div class="bg-white shadow-lg rounded h-full xxoverflow-y-auto relative flex flex-col pb-6 text-gray-700">
-                <!-- Section: Breadcrumbs -->
-                <div class="mt-1">
-                    <!-- <Breadcrumbs v-if="usePage().props.breadcrumbs?.length > 0"
-                        :breadcrumbs="usePage().props.breadcrumbs ?? []"
-                        :navigation="usePage().props.navigation ?? []"
-                    /> -->
-
-                    <Breadcrumbs
-                        class="bg-white w-full transition-all duration-200 ease-in-out"
-                        :class="[
-                            layout.leftSidebar.show ? 'left-0 md:left-48' : 'left-0 md:left-12',
-                        ]"
-                        :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
-                        :layout="layout"    
-                    />
-                </div>
-                        <slot />
-                <!-- <transition name="slide-to-right" mode="out-in" appear>
-                    <div :key="$page.url">
-                    </div>
-                </transition> -->
-            </div>
-        </main>
-
-        <!-- Sidebar: Right -->
-        <RetinaRightSideBar class="fixed top-[52px] w-[170px] transition-all"
-            :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-2' : '-right-[170px]']" />
-
-    </div>
-
-    <IrisFooter v-if="layout.iris?.footer && !isArray(layout.iris?.footer)" :data="layout.iris?.footer" :colorThemed="irisTheme" />
-    <RetinaFooter v-else />
+    <!-- Retina: Fulfilment -->
+    <RetinaLayoutFulfilment
+        v-else
+    >
+        <template #default>
+            <slot />
+        </template>
+    </RetinaLayoutFulfilment>
 
     <!-- Global declaration: Notification -->
     <notifications

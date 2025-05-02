@@ -87,7 +87,9 @@ class HandleRetinaInertiaRequests extends Middleware
                 'ziggy' => [
                     'location' => $request->url(),
                 ],
-
+                "retina"    => [
+                    "type" => $webUser?->shop?->type?->value,  // 'b2b', 'dropshipping', 'fulfilment'
+                ],
                 'iris' => array_merge(
                     $iris_webpage,
                     $iris_layout

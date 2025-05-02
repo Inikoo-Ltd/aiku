@@ -62,7 +62,7 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
 
-    products: TableTS
+    products?: TableTS
 
     data?: {
         data: PalletDelivery
@@ -91,7 +91,7 @@ const props = defineProps<{
         [key: string]: TSTimeline
     }
 
-    upload_spreadsheet: UploadPallet
+    upload_spreadsheet?: UploadPallet
     address_management:{
       can_open_address_management: boolean
       updateRoute: routeType
@@ -140,17 +140,17 @@ const props = defineProps<{
     // nonProductItems: {}
     transactions: {}
     currency: Currency
-    delivery_notes: {
+    delivery_notes?: {
         data: Array<any>
     },
-    delivery_note: {
+    delivery_note?: {
         reference: string
     }
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
-    address_update_route: routeType
-    addresses: {
+    address_update_route?: routeType
+    addresses?: {
         
     }
 }>()

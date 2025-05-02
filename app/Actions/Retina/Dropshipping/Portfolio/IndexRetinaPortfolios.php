@@ -85,6 +85,8 @@ class IndexRetinaPortfolios extends RetinaAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $this->platformUser = $request->user();
+        $this->platform = $platform;
         $this->asAction = true;
         $this->initialisationFromPupil($request);
 

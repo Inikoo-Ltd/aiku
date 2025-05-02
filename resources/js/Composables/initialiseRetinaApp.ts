@@ -108,6 +108,10 @@ export const initialiseRetinaApp = () => {
             layout.user = usePage().props.auth.user
         }
 
+        if (usePage().props.retina) {
+            layout.retina = usePage().props.retina
+        }
+
         if (usePage().props.iris) {
             layout.iris = usePage().props.iris
             layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
