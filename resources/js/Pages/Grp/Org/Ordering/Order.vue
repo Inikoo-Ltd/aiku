@@ -143,7 +143,7 @@ const props = defineProps<{
     delivery_notes?: {
         data: Array<any>
     },
-    delivery_note: {
+    delivery_note?: {
         reference: string
     }
     attachments?: {}

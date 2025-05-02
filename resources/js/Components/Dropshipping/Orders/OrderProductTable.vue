@@ -46,7 +46,8 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         },
         {
             onStart: () => isLoading.value = 'quantity' + idTransaction,
-            onFinish: () => isLoading.value = false
+            onFinish: () => isLoading.value = false,
+            only: ['transactions', 'box_stats']
         }
     )
 }
@@ -76,20 +77,22 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
-            <div class="flex justify-end">
-                <div class="w-32">
-                     {{ item['quantity_ordered'] }}
+            <div class="w-32 flex items-center justify-end">
+                <Transition name="spin-to-down">
+                    <span :key="item.quantity_ordered">
+                        {{ item['quantity_ordered'] }}
+                    </span>
+                </Transition>
 
-                    <!-- <PureInput
-                        :modelValue="item.quantity_ordered"
-                        @onEnter="(e: number) => onUpdateQuantity(item.updateRoute, item.id, e)"
-                        @blur="(e: string) => e == item.quantity_ordered ? false : onUpdateQuantity(item.updateRoute, item.id, e)"
-                        :isLoading="isLoading === 'quantity' + item.id"
-                        type="number"
-                        align="right"
-                        :disabled="state === 'dispatched'"
-                    /> -->
-                </div>
+                <!-- <PureInput
+                    :modelValue="item.quantity_ordered"
+                    @onEnter="(e: number) => onUpdateQuantity(item.updateRoute, item.id, e)"
+                    @blur="(e: string) => e == item.quantity_ordered ? false : onUpdateQuantity(item.updateRoute, item.id, e)"
+                    :isLoading="isLoading === 'quantity' + item.id"
+                    type="number"
+                    align="right"
+                    :disabled="state === 'dispatched'"
+                /> -->
             </div>
 
             <!-- <div v-else>{{ item.quantity }}</div> -->
