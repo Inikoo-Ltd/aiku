@@ -9,6 +9,8 @@ import { isArray } from "lodash"
 
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 import IrisFooter from '@/Layouts/Iris/Footer.vue'
+import RetinaLeftSideBar from "./Retina/RetinaLeftSideBar.vue"
+import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
@@ -19,6 +21,8 @@ const layout = useLayoutStore()
 const sidebarOpen = ref(false)
 
 const isStaging = layout.app.environment === 'staging'
+
+console.log('LayoutDs')
 </script>
 
 <template>
@@ -33,22 +37,24 @@ const isStaging = layout.app.environment === 'staging'
         />
         
         <!-- Sidebar: Left -->
-        <!-- <div class="">
+        <div class="">
             <div @click="sidebarOpen = !sidebarOpen" class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen" />
-            <RetinaLeftSideBar class="-left-2/3 transition-all z-20 block md:left-[0]"
-                :class="[
-                    { 'left-[0]': sidebarOpen },
-                ]" @click="sidebarOpen = !sidebarOpen" />
-        </div> -->
+            
+        </div>
 
         <!-- Main Content -->
         <main
-            class="max-w-7xl w-full mx-auto h-full my-10 transition-all px-8 lg:px-0"
+            class="relative max-w-7xl w-full mx-auto min-h-96 h-fit my-10 transition-all px-8 lg:px-0"
             :xxclass="[
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
-            <div class="bg-white shadow-lg rounded-md h-full relative flex flex-col pb-6 text-gray-700">
+            <RetinaDsLeftSidebar
+                class="z-20 block right-full -translate-x-3 w-48 absolute pb-20 px-2 md:flex md:flex-col  transition-all"
+                @click="sidebarOpen = !sidebarOpen"
+            />
+
+            <div class="min-h-full bg-white shadow-lg rounded-md h-full relative flex flex-col pb-6 text-gray-700">
                 <!-- Section: Breadcrumbs -->
                 <!-- <div class="mt-1">
 
