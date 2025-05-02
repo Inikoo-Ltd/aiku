@@ -32,6 +32,14 @@ trait IsOrder
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
                         'billing'  => AddressResource::make($order->billingAddress ?? new Address())
                     ],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'parameters' => [
+                            'organisation'  => $order->organisation->slug,
+                            'shop'          => $order->shop->slug,
+                            'customer'      => $order->customer->slug,
+                        ]
+                    ]
                 ]
             ),
             'products' => [
