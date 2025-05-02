@@ -49,7 +49,7 @@ class IndexPalletsInDelivery extends OrgAction
 
         $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
 
-        $query->defaultSort('pallets.id')
+        $query->defaultSort('pallets.customer_reference')
             ->select(
                 'pallets.id',
                 'pallets.slug',
@@ -74,7 +74,7 @@ class IndexPalletsInDelivery extends OrgAction
             $query->withTrashed();
         }
 
-        return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name','type'])
+        return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name', 'type'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -114,7 +114,6 @@ class IndexPalletsInDelivery extends OrgAction
             }
 
 
-
             if ($palletDelivery instanceof Organisation || $palletDelivery instanceof Fulfilment) {
                 $table->column(key: 'fulfilment_customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
@@ -142,11 +141,9 @@ class IndexPalletsInDelivery extends OrgAction
             }
 
 
-
             if ($palletDelivery->state == PalletDeliveryStateEnum::BOOKING_IN || $palletDelivery->state == PalletDeliveryStateEnum::BOOKED_IN) {
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
                 $table->column(key: 'rental', label: __('Rental'), canBeHidden: false, searchable: true);
-
             }
 
 
@@ -157,20 +154,17 @@ class IndexPalletsInDelivery extends OrgAction
 
             if (
                 !(
-                    ($palletDelivery instanceof PalletDelivery && in_array($palletDelivery->state, [PalletDeliveryStateEnum::BOOKED_IN, PalletDeliveryStateEnum::RECEIVED])) ||
-                    ($palletDelivery instanceof PalletReturn && ($palletDelivery->state == PalletReturnStateEnum::DISPATCHED || $palletDelivery->state == PalletReturnStateEnum::CANCEL))
+                    ($palletDelivery instanceof PalletDelivery && in_array($palletDelivery->state, [PalletDeliveryStateEnum::BOOKED_IN, PalletDeliveryStateEnum::RECEIVED]))
+                    || ($palletDelivery instanceof PalletReturn && ($palletDelivery->state == PalletReturnStateEnum::DISPATCHED || $palletDelivery->state == PalletReturnStateEnum::CANCEL))
                 )
             ) {
-
                 $table->column(key: 'actions', label: ' ', canBeHidden: false, searchable: true);
             }
 
 
-            $table->defaultSort('reference');
+            $table->defaultSort('customer_reference');
         };
     }
-
-
 
 
 }
