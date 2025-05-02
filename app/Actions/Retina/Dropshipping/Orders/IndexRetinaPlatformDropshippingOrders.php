@@ -99,6 +99,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
+        $this->platformUser = $request->user();
         $this->asAction = true;
         $this->initialisationFromPupil($request);
         $shopifyUser = $this->shopifyUser;
