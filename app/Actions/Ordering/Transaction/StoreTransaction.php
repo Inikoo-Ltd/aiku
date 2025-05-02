@@ -28,7 +28,7 @@ class StoreTransaction extends OrgAction
     use WithOrderExchanges;
 
 
-    public function handle(Order $order, HistoricAsset $historicAsset, array $modelData): Transaction
+    public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
 
@@ -63,7 +63,7 @@ class StoreTransaction extends OrgAction
 
 
         if ($this->strict) {
-            CalculateOrderTotalAmounts::run($order);
+            CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
         }
 
@@ -109,7 +109,7 @@ class StoreTransaction extends OrgAction
     public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Transaction
     {
         $this->asAction       = true;
-        $this->strict = $strict;
+        $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($order->shop, $modelData);
 

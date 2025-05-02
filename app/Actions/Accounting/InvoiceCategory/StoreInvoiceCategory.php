@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\InvoiceCategory;
 
+use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -34,6 +35,7 @@ class StoreInvoiceCategory extends OrgAction
      */
     public function handle(Group|Organisation $parent, array $modelData): InvoiceCategory
     {
+        data_set($modelData, 'colour', GetRandomColour::run());
         if ($parent instanceof Organisation) {
             data_set($modelData, 'group_id', $parent->group_id);
         }
@@ -53,8 +55,7 @@ class StoreInvoiceCategory extends OrgAction
         if ($this->asAction) {
             return true;
         }
-
-        return $request->user()->authTo("accounting.{$this->organisation->id}.edit"); //TODO: Review this
+        return false;
     }
 
     public function prepareForValidation(ActionRequest $request): void

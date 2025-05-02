@@ -12,6 +12,7 @@ use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomerClients;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -179,7 +180,7 @@ class FetchAuroraOrder extends FetchAurora
             ]);
         }
 
-        $weight = $this->auroraModelData->{'Order Weight'};
+        $weight          = $this->auroraModelData->{'Order Weight'};
         $estimatedWeight = $this->auroraModelData->{'Order Estimated Weight'};
 
         $this->parsedData["order"] = [
@@ -224,12 +225,12 @@ class FetchAuroraOrder extends FetchAurora
         ];
 
         if ($weight && $weight < 10000000) {
-            $weight = (int) ceil($weight * 1000);
+            $weight                              = (int)ceil($weight * 1000);
             $this->parsedData["order"]['weight'] = $weight;
         }
 
         if ($estimatedWeight && $estimatedWeight < 10000000) {
-            $estimatedWeight = (int) ceil($estimatedWeight * 1000);
+            $estimatedWeight                               = (int)ceil($estimatedWeight * 1000);
             $this->parsedData["order"]['estimated_weight'] = $estimatedWeight;
         }
 
@@ -302,6 +303,7 @@ class FetchAuroraOrder extends FetchAurora
             $collectionAddress = $shop->collectionAddress;
 
             $this->parsedData['order']["delivery_address"] = $collectionAddress;
+            $this->parsedData['order']["shipping_engine"]  = OrderShippingEngineEnum::NO_APPLICABLE;
         }
     }
 

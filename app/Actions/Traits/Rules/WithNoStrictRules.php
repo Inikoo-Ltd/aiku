@@ -8,6 +8,10 @@
 
 namespace App\Actions\Traits\Rules;
 
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use Illuminate\Validation\Rule;
+
 trait WithNoStrictRules
 {
     protected function noStrictStoreRules($rules): array
@@ -47,6 +51,8 @@ trait WithNoStrictRules
         $rules['updated_by_customer_at'] = ['sometimes', 'nullable', 'date'];
         $rules['weight']                 = ['sometimes', 'integer'];
         $rules['estimated_weight']       = ['sometimes', 'integer'];
+        $rules['shipping_engine']        = ['sometimes', Rule::enum(OrderShippingEngineEnum::class)];
+        $rules['charges_engine']         = ['sometimes', Rule::enum(OrderChargesEngineEnum::class)];
 
         return $this->orderingAmountNoStrictFields($rules);
     }

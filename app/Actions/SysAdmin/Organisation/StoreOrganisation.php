@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
@@ -63,6 +64,7 @@ class StoreOrganisation extends GrpAction
 
         data_set($modelData, 'ulid', Str::ulid());
         data_set($modelData, 'settings.ui.name', Arr::get($modelData, 'name'));
+        data_set($modelData, 'colour', GetRandomColour::run());
 
 
         return DB::transaction(function () use ($group, $modelData, $addressData) {
@@ -74,7 +76,7 @@ class StoreOrganisation extends GrpAction
             SetOrganisationLogo::run($organisation);
             SeedOrganisationPermissions::run($organisation);
             SeedJobPositions::run($organisation);
-            if ($organisation->type == OrganisationTypeEnum::SHOP or $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
+            if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 SeedOrgPostRooms::run($organisation);
                 SeedOrganisationOutboxes::run($organisation);
             }
@@ -120,7 +122,7 @@ class StoreOrganisation extends GrpAction
                 $organisation->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            if ($organisation->type == OrganisationTypeEnum::SHOP or $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
+            if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 $organisation->outboxNewsletterIntervals()->create();
                 $organisation->outboxMarketingIntervals()->create();
                 $organisation->outboxMarketingNotificationIntervals()->create();
@@ -157,16 +159,12 @@ class StoreOrganisation extends GrpAction
             }
 
             if ($organisation->type == OrganisationTypeEnum::SHOP) {
-
                 $organisation->orderingStats()->create();
                 $organisation->salesIntervals()->create();
                 $organisation->orderingIntervals()->create();
                 $organisation->orderHandlingStats()->create();
                 $organisation->fulfilmentStats()->create();
                 $organisation->manufactureStats()->create();
-
-
-
             }
 
             $organisation->serialReferences()->create(
@@ -366,7 +364,7 @@ class StoreOrganisation extends GrpAction
         try {
             $organisation = $this->action($group, $data);
             $command->info("Organisation $organisation->slug created successfully 🎉");
-        } catch (Exception|Throwable $e) {
+        } catch (Throwable $e) {
             $command->error($e->getMessage());
 
             return 1;

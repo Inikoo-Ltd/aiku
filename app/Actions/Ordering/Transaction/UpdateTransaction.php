@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -27,7 +28,7 @@ class UpdateTransaction extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-    public function handle(Transaction $transaction, array $modelData): Transaction
+    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
     {
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
             if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
@@ -36,10 +37,9 @@ class UpdateTransaction extends OrgAction
 
             if ($transaction->model_type == 'Product') {
                 /** @var Product $product */
-                $product = $transaction->model;
+                $product         = $transaction->model;
                 $estimatedWeight = Arr::get($modelData, 'quantity_ordered') * $product->gross_weight;
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
-
             }
 
             $historicAsset = $transaction->historicAsset;
@@ -51,13 +51,26 @@ class UpdateTransaction extends OrgAction
             data_set($modelData, 'net_amount', $net);
         }
 
+        if ($this->strict && Arr::exists($modelData, 'net_amount')) {
+            $shop        = $transaction->shop;
+            $orgExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->currency);
+            $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->group->currency);
+
+            data_set($modelData, 'org_exchange', $orgExchange);
+            data_set($modelData, 'org_net_amount', $orgExchange * Arr::get($modelData, 'net_amount'));
+
+            data_set($modelData, 'grp_exchange', $grpExchange);
+            data_set($modelData, 'grp_net_amount', $grpExchange * Arr::get($modelData, 'net_amount'));
+        }
+
+
         $this->update($transaction, $modelData, ['data']);
 
         if ($this->strict) {
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
 
-            if (Arr::hasAny($changes, ['quantity_ordered','net_amount', 'gross_amount'])) {
-                CalculateOrderTotalAmounts::run($transaction->order);
+            if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
+                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping);
             }
         }
 

@@ -20,6 +20,7 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Media\HydrateMedia;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\Maintenance\Appearance\ResetModelColours;
 use App\Actions\Maintenance\SysAdmin\RepairUsersAdminsAuth;
 use App\Actions\SysAdmin\Admin\StoreAdmin;
 use App\Actions\SysAdmin\Group\HydrateGroup;
@@ -82,7 +83,6 @@ beforeEach(function () {
         'inertia.testing.page_paths',
         [resource_path('js/Pages/Grp')]
     );
-
 });
 
 test('create group', function () {
@@ -188,7 +188,7 @@ test('create organisation by command', function (Group $group) {
         'name'          => 'Test Organisation in group 2',
         'country_code'  => 'MY',
         'currency_code' => 'MYR',
-        '--address'       => json_encode(Address::factory()->definition())
+        '--address'     => json_encode(Address::factory()->definition())
     ])->assertSuccessful();
     $organisation = Organisation::where('code', 'TEST')->firstOrFail();
     expect($organisation)->toBeInstanceOf(Organisation::class);
@@ -298,7 +298,6 @@ test('SetUserAuthorisedModels command', function (Guest $guest) {
     expect($user->authorisedOrganisations()->count())->toBe(1);
 
     return $user;
-
 })->depends('create guest');
 
 
@@ -320,7 +319,6 @@ test('UI index users (active)', function (User $user) {
             ->has('data')
             ->has('pageHead');
     });
-
 })->depends('SetUserAuthorisedModels command');
 
 test('UI index users (suspended)', function (User $user) {
@@ -341,7 +339,6 @@ test('UI index users (suspended)', function (User $user) {
             ->has('data')
             ->has('pageHead');
     });
-
 })->depends('SetUserAuthorisedModels command');
 
 test('UI index all users', function (User $user) {
@@ -362,7 +359,6 @@ test('UI index all users', function (User $user) {
             ->has('data')
             ->has('pageHead');
     });
-
 })->depends('SetUserAuthorisedModels command');
 
 test('UI show dashboard org', function (User $user) {
@@ -387,14 +383,12 @@ test('UI show dashboard org', function (User $user) {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn (AssertableInertia $page) =>
-                $page->has('interval_options')
-                ->has('settings')
-                ->where('currency_code', $organisation->currency->code)
-                ->etc()
+                fn (AssertableInertia $page) => $page->has('interval_options')
+                    ->has('settings')
+                    ->where('currency_code', $organisation->currency->code)
+                    ->etc()
             );
     });
-
 })->depends('SetUserAuthorisedModels command')->todo();
 
 
@@ -428,7 +422,7 @@ test('UI edit shop', function (User $user) {
     /** @var Organisation $organisation */
     $organisation = $user->authorisedOrganisations()->first();
 
-    $shop     = StoreShop::make()->action($organisation, Shop::factory()->definition());
+    $shop = StoreShop::make()->action($organisation, Shop::factory()->definition());
 
 
     $response = get(
@@ -525,12 +519,11 @@ test('UI show dashboard org (tab invoice_categories)', function (User $user) {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn (AssertableInertia $page) =>
-                $page->has('table', 2)
-                ->has('interval_options')
-                ->has('settings')
-                ->where('currency_code', $organisation->currency->code)
-                ->etc()
+                fn (AssertableInertia $page) => $page->has('table', 2)
+                    ->has('interval_options')
+                    ->has('settings')
+                    ->where('currency_code', $organisation->currency->code)
+                    ->etc()
             );
     });
 })->depends('SetUserAuthorisedModels command')->todo();
@@ -651,11 +644,11 @@ test('update guest credentials', function ($guest) {
 
     $guest = UpdateGuest::make()->action($guest, ['username' => 'test_user']);
     expect($guest->getUser()->username)->toBe('test_user')
-    ->and(Hash::check('hello1234', $guest->getUser()->password))->toBeTrue();
+        ->and(Hash::check('hello1234', $guest->getUser()->password))->toBeTrue();
 
     $guest = UpdateGuest::make()->action($guest, ['password' => 'test_user_two']);
     expect($guest->getUser()->username)->toBe('test_user')
-    ->and(Hash::check('test_user_two', $guest->getUser()->password))->toBeTrue();
+        ->and(Hash::check('test_user_two', $guest->getUser()->password))->toBeTrue();
 
     return $guest;
 })->depends('update guest');
@@ -666,8 +659,8 @@ test('update guest status', function ($guest) {
 
     $guest = UpdateGuest::make()->action($guest, ['status' => true]);
     expect($guest->getUser()->username)->toBe('test_user')
-    ->and(Hash::check('test_user_two', $guest->getUser()->password))->toBeTrue()
-    ->and($guest->status)->toBeTrue();
+        ->and(Hash::check('test_user_two', $guest->getUser()->password))->toBeTrue()
+        ->and($guest->status)->toBeTrue();
 
     return $guest;
 })->depends('update guest credentials');
@@ -806,7 +799,6 @@ test('can login', function (Guest $guest) {
 })->depends('create guest');
 
 
-
 test('Hydrate group', function (Group $group) {
     HydrateGroup::run($group);
 
@@ -850,18 +842,17 @@ test('hydrate address', function (Organisation $organisation) {
     $address = $organisation->address;
     HydrateAddress::run($address);
     $this->artisan('hydrate:addresses')->assertSuccessful();
-
 })->depends('create organisation type shop');
 
 test('parse country', function () {
     $countryId = ParseCountryID::run('malaysia');
     /** @var Country $country */
-    $country   = Country::find($countryId);
+    $country = Country::find($countryId);
     expect($country->code)->toBe('MY');
 
     $countryId = ParseCountryID::run('DEU');
     /** @var Country $country */
-    $country   = Country::find($countryId);
+    $country = Country::find($countryId);
     expect($country->code)->toBe('DE');
 });
 
@@ -909,7 +900,6 @@ test('employee job position in another organisation', function () {
     $org2 = StoreOrganisation::make()->action($group, Organisation::factory()->definition());
     $group->refresh();
     expect($org2)->toBeInstanceOf(Organisation::class);
-
 
 
     $employee = StoreEmployee::make()->action(
@@ -974,7 +964,6 @@ test('UI index users (in Employee)', function (Employee $employee) {
             ->has('data')
             ->has('pageHead');
     });
-
 })->depends('employee job position in another organisation')->todo();//authorisation issue
 
 test('users search', function () {
@@ -986,7 +975,6 @@ test('users search', function () {
 });
 
 test('can show hr dashboard', function () {
-
     actingAs(User::first());
 
     $this->withoutExceptionHandling();
@@ -994,10 +982,9 @@ test('can show hr dashboard', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-        ->component('SysAdmin/SysAdminDashboard')
-        ->has('breadcrumbs', 2);
+            ->component('SysAdmin/SysAdminDashboard')
+            ->has('breadcrumbs', 2);
     });
-
 });
 
 
@@ -1033,7 +1020,6 @@ test('UI show organisation setting', function () {
 
 
 test('UI index organisation', function () {
-
     actingAs(User::first());
 
     $this->withoutExceptionHandling();
@@ -1178,7 +1164,6 @@ test('UI get section route org setting edit', function () {
 });
 
 
-
 test('UI get section route org reports index', function () {
     $organisation = Organisation::first();
 
@@ -1297,12 +1282,11 @@ test('UI show dashboard group', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn (AssertableInertia $page) =>
-                $page->has('table', 2)
-                ->has('interval_options')
-                ->has('settings')
-                ->where('currency_code', $group->currency->code)
-                ->etc()
+                fn (AssertableInertia $page) => $page->has('table', 2)
+                    ->has('interval_options')
+                    ->has('settings')
+                    ->where('currency_code', $group->currency->code)
+                    ->etc()
             );
     });
 })->todo();
@@ -1348,12 +1332,11 @@ test('UI show dashboard group (tab invoice_shops)', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn (AssertableInertia $page) =>
-                $page->has('table', 2)
-                ->has('interval_options')
-                ->has('settings')
-                ->where('currency_code', $group->currency->code)
-                ->etc()
+                fn (AssertableInertia $page) => $page->has('table', 2)
+                    ->has('interval_options')
+                    ->has('settings')
+                    ->where('currency_code', $group->currency->code)
+                    ->etc()
             );
     });
 })->todo();
@@ -1375,4 +1358,11 @@ test('Hydrate guests', function () {
 
 test('sysadmin hydrator', function () {
     $this->artisan('hydrate -s sys')->assertExitCode(0);
+});
+
+test('reset colours', function () {
+    ResetModelColours::run();
+    $this->artisan('reset:colours')->assertSuccessful();
+    $organisation = Organisation::first();
+    expect($organisation->colour)->toBeString();
 });

@@ -34,10 +34,10 @@ class UpdateInvoiceCategory extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("accounting.{$this->organisation->id}.edit"); //TODO: Review this
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}.accounting", "org-admin.".$this->organisation->id]);
     }
 
-    public function asController(InvoiceCategory $invoiceCategory, ActionRequest $request)
+    public function asController(InvoiceCategory $invoiceCategory, ActionRequest $request): InvoiceCategory
     {
         $this->initialisation($invoiceCategory->organisation, $request);
 
@@ -55,6 +55,7 @@ class UpdateInvoiceCategory extends OrgAction
             'priority'           => ['sometimes', 'integer'],
             'show_in_dashboards' => ['sometimes', 'boolean'],
             'organisation_id'    => ['nullable', 'integer', Rule::exists('organisations', 'id')->where('group_id', $this->group->id)],
+            'colour'             => ['sometimes', 'string'],
 
         ];
         if (!$this->strict) {

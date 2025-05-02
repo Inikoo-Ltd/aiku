@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
+use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -80,7 +81,7 @@ class StoreShop extends OrgAction
 
 
         data_set($modelData, 'group_id', $organisation->group_id);
-
+        data_set($modelData, 'colour', GetRandomColour::run());
 
         $shop = DB::transaction(function () use ($organisation, $modelData, $addressData, $warehouses) {
             /** @var Shop $shop */
