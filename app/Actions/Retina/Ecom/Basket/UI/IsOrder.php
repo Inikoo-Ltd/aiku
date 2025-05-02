@@ -72,7 +72,7 @@ trait IsOrder
                         'label'       => 'Items',
                         'quantity'    => $order->stats->number_item_transactions,
                         'price_base'  => 'Multiple',
-                        'price_total' => $order->net_amount
+                        'price_total' => $order->goods_amount
                     ],
                 ],
                 [

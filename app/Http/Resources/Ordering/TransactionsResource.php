@@ -36,57 +36,61 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $product_slug
  * @property string $currency_code
  * @property mixed $order_id
+ * @property mixed $price
  */
 class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $transaction = $this;
-
         return [
-            'id'                  => $transaction->id,
-            'state'               => $transaction->state,
-            'status'              => $transaction->status,
-            'quantity_ordered'    => intVal($transaction->quantity_ordered),
-            'quantity_bonus'      => intVal($transaction->quantity_bonus),
-            'quantity_dispatched' => intVal($transaction->quantity_dispatched),
-            'quantity_fail'       => intVal($transaction->quantity_fail),
-            'quantity_cancelled'  => intVal($transaction->quantity_cancelled),
-            'gross_amount'        => $transaction->gross_amount,
-            'net_amount'          => $transaction->net_amount,
-            'asset_code'          => $transaction->asset_code,
-            'asset_name'          => $transaction->asset_name,
-            'asset_type'          => $transaction->asset_type,
-            'product_slug'        => $transaction->product_slug,
-            'created_at'          => $transaction->created_at,
-            'currency_code'       => $transaction->currency_code,
+            'id'                  => $this->id,
+            'state'               => $this->state,
+            'status'              => $this->status,
+            'quantity_ordered'    => intVal($this->quantity_ordered),
+            'quantity_bonus'      => intVal($this->quantity_bonus),
+            'quantity_dispatched' => intVal($this->quantity_dispatched),
+            'quantity_fail'       => intVal($this->quantity_fail),
+            'quantity_cancelled'  => intVal($this->quantity_cancelled),
+            'gross_amount'        => $this->gross_amount,
+            'net_amount'          => $this->net_amount,
+            'price'               => $this->price,
+            'asset_code'          => $this->asset_code,
+            'asset_name'          => $this->asset_name,
+            'asset_type'          => $this->asset_type,
+            'product_slug'        => $this->product_slug,
+            'created_at'          => $this->created_at,
+            'currency_code'       => $this->currency_code,
 
-            'deleteRoute' => $request->user() instanceof User ? [
-                'name'       => 'grp.models.transaction.delete',
-                'parameters' => [
-                    'transaction' => $transaction->id
+            'deleteRoute' => $request->user() instanceof User
+                ? [
+                    'name'       => 'grp.models.transaction.delete',
+                    'parameters' => [
+                        'transaction' => $this->id
+                    ],
+                    'method'     => 'delete'
+                ]
+                : [
+                    'name'       => 'retina.models.transaction.delete',
+                    'parameters' => [
+                        'transaction' => $this->id
+                    ],
+                    'method'     => 'delete'
                 ],
-                'method'     => 'delete'
-            ] : [
-                'name'       => 'retina.models.transaction.delete',
-                'parameters' => [
-                    'transaction' => $transaction->id
+            'updateRoute' => $request->user() instanceof User
+                ? [
+                    'name'       => 'grp.models.transaction.update',
+                    'parameters' => [
+                        'transaction' => $this->id
+                    ],
+                    'method'     => 'patch'
+                ]
+                : [
+                    'name'       => 'retina.models.transaction.update',
+                    'parameters' => [
+                        'transaction' => $this->id
+                    ],
+                    'method'     => 'patch'
                 ],
-                'method'     => 'delete'
-            ],
-            'updateRoute' => $request->user() instanceof User ? [
-                'name'       => 'grp.models.transaction.update',
-                'parameters' => [
-                    'transaction' => $transaction->id
-                ],
-                'method'     => 'patch'
-            ] : [
-                'name'       => 'retina.models.transaction.update',
-                'parameters' => [
-                    'transaction' => $transaction->id
-                ],
-                'method'     => 'patch'
-            ],
         ];
     }
 }

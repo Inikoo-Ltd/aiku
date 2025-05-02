@@ -14,6 +14,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Organisation;
@@ -76,6 +77,7 @@ class IndexTransactions extends OrgAction
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',
+                'products.price as price',
                 'products.slug as product_slug',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
@@ -86,10 +88,9 @@ class IndexTransactions extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset $parent, $tableRows = null, $prefix = null): Closure
+    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix, $tableRows) {
-
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -106,6 +107,8 @@ class IndexTransactions extends OrgAction
 
             $table->column(key: 'asset_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'asset_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if ($parent instanceof Order) {
@@ -113,10 +116,6 @@ class IndexTransactions extends OrgAction
             }
         };
     }
-
-
-
-
 
 
 }
