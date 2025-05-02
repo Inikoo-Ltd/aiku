@@ -65,7 +65,8 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
-        if ($calculateShipping && in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::IN_WAREHOUSE]) && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+
+        if ($calculateShipping && in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::IN_WAREHOUSE]) && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
             CalculateOrderShipping::run($order);
         }
     }
