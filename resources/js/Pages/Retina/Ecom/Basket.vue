@@ -34,7 +34,7 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="w-full max-w-6xl mx-auto mt-8">
+    <div class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
             <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
         </div>
