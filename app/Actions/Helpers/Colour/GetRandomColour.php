@@ -14,19 +14,22 @@ class GetRandomColour
 {
     use AsObject;
 
+    /**
+     * @throws \Random\RandomException
+     */
     public function handle(): string
     {
         // Generate random hue (0-360)
-        $hue = rand(0, 360);
+        $hue = random_int(0, 360);
 
         // Set saturation to moderate value for pastels (40-70%)
-        $saturation = rand(40, 70);
+        $saturation = random_int(40, 70);
 
         // Set lightness high for pastels (75-90%)
-        $lightness = rand(75, 90);
+        $lightness = random_int(75, 90);
 
         // Generate random opacity between 0.8 and 1.0
-        $opacity = number_format(rand(80, 100) / 100, 2);
+        $opacity = number_format(random_int(80, 100) / 100, 2);
 
         $rgb = $this->hslToRgb($hue, $saturation, $lightness);
 
@@ -65,7 +68,7 @@ class GetRandomColour
             $t -= 1;
         }
 
-        $result = $p; // Default result matches the last return
+        $result = $p; // The default result matches the last return
 
         if ($t < 1 / 6) {
             $result = $p + ($q - $p) * 6 * $t;

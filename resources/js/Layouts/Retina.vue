@@ -5,44 +5,27 @@
   -->
 
 <script setup lang="ts">
-import { usePage } from "@inertiajs/vue3"
-import RetinaFooter from "@/Layouts/Retina/RetinaFooter.vue"
-import RetinaLeftSideBar from "@/Layouts/Retina/RetinaLeftSideBar.vue"
-import RetinaRightSideBar from "@/Layouts/Retina/RetinaRightSideBar.vue"
-import RetinaTopBar from "@/Layouts/Retina/RetinaTopBar.vue"
-import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-
 import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks } from '@fal'
 import { faSearch, faBell } from '@far'
-import { ref, provide } from 'vue'
+import { provide } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { isArray } from "lodash"
-import { useColorTheme } from "@/Composables/useStockList"
-import IrisHeader from '@/Layouts/Iris/Header.vue'
-import IrisFooter from '@/Layouts/Iris/Footer.vue'
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
 import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
-// console.log('sss', useLayoutStore().app.theme)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
 
-const irisTheme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
-
-
 const layout = useLayoutStore()
-const sidebarOpen = ref(false)
 
-const isStaging = layout.app.environment === 'staging'
 
 </script>
 

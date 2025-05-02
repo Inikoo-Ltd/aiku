@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\ShippingZone;
 use App\Models\Ordering\ShippingZoneSchema;
@@ -23,18 +24,33 @@ class CalculateOrderShipping
 {
     use AsObject;
 
+    protected bool $toBeConfirmed = false;
+
     public function handle(Order $order): Order
     {
+        if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE, OrderShippingEngineEnum::TO_BE_CONFIRMED_SET])) {
+            return $order;
+        }
+
         $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
 
         list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
-
 
         $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
         if ($shippingTransaction) {
             $this->updateShippingTransaction($shippingTransaction, $shippingZone, $shippingAmount);
         } else {
             $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
+        }
+
+        if ($this->toBeConfirmed) {
+            $order->update([
+                'shipping_engine' => OrderShippingEngineEnum::TO_BE_CONFIRMED,
+            ]);
+        } else {
+            $order->update([
+                'shipping_engine' => OrderShippingEngineEnum::AUTO,
+            ]);
         }
 
         return $order;
@@ -55,6 +71,7 @@ class CalculateOrderShipping
         );
     }
 
+
     private function updateShippingTransaction(Transaction $transaction, ShippingZone $shippingZone, $shippingAmount): Transaction
     {
         return UpdateTransaction::run(
@@ -63,8 +80,8 @@ class CalculateOrderShipping
                 'model_id'          => $shippingZone->id,
                 'asset_id'          => $shippingZone->asset_id,
                 'historic_asset_id' => $shippingZone->historicAsset->id,
-                'gross_amount'      => $shippingAmount,
-                'net_amount'        => $shippingAmount,
+                'gross_amount'      => $shippingAmount ?? 0,
+                'net_amount'        => $shippingAmount ?? 0,
             ],
             false
         );
@@ -92,6 +109,10 @@ class CalculateOrderShipping
         $pricingType = Arr::get($shippingZone->price, 'type');
         if ($pricingType == 'Step Order Items Net Amount') {
             return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
+        } elseif ($pricingType == 'TBC') {
+            $this->toBeConfirmed = true;
+
+            return null;
         }
 
         return null;
@@ -134,3 +155,4 @@ class CalculateOrderShipping
         return $helperZone->match($helperAddress);
     }
 }
+
