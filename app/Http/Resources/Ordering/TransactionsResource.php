@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -60,15 +61,27 @@ class TransactionsResource extends JsonResource
             'created_at'          => $transaction->created_at,
             'currency_code'       => $transaction->currency_code,
 
-            'deleteRoute' => [
+            'deleteRoute' => $request->user() instanceof User ? [
                 'name'       => 'grp.models.transaction.delete',
                 'parameters' => [
                     'transaction' => $transaction->id
                 ],
                 'method'     => 'delete'
+            ] : [
+                'name'       => 'retina.models.transaction.delete',
+                'parameters' => [
+                    'transaction' => $transaction->id
+                ],
+                'method'     => 'delete'
             ],
-            'updateRoute' => [
+            'updateRoute' => $request->user() instanceof User ? [
                 'name'       => 'grp.models.transaction.update',
+                'parameters' => [
+                    'transaction' => $transaction->id
+                ],
+                'method'     => 'patch'
+            ] : [
+                'name'       => 'retina.models.transaction.update',
                 'parameters' => [
                     'transaction' => $transaction->id
                 ],

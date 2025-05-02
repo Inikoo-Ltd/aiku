@@ -41,7 +41,7 @@ class StoreRetinaProductShopify extends RetinaAction
                     'platform_id' => $platform->id,
                 ]);
 
-                HandleApiProductToShopify::dispatch($shopifyUser, [$portfolio->id]);
+                HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
             }
         });
 

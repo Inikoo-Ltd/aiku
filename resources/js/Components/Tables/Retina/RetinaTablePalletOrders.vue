@@ -157,14 +157,14 @@ function orderRoute(palletReturn: PalletDelivery) {
                 </div>
             </div>
 
-            <Link v-else-if="palletReturn.model === 'Order'" :href="orderRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
-            </Link>
-
-            <Link v-else :href="orderRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn.reference }}
-            </Link>
-
+            <div v-else-if="palletReturn.model === 'Order'">
+                <Link v-if="location !== 'pupil'" :href="orderRoute(palletReturn)" class="primaryLink">
+                    {{ palletReturn['reference'] }}
+                </Link>
+                <div v-else>
+                    {{ palletReturn['reference'] }}
+                </div>
+            </div>
         </template>
 
         <!-- Column: Customer Reference -->

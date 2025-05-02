@@ -54,11 +54,11 @@ class HandleApiProductToShopify extends OrgAction
                     }
                 }
 
-                foreach ($product->images as $image) {
-                    $images[] = [
-                        "attachment" => $image->getBase64Image()
-                    ];
-                }
+                //                foreach ($product->images as $image) {
+                //                    $images[] = [
+                //                        "attachment" => $image->getBase64Image()
+                //                    ];
+                //                }
 
                 $body = [
                     "product" => [
