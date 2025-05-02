@@ -18,6 +18,7 @@ use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class CalculateOrderHangingCharges
@@ -36,8 +37,15 @@ class CalculateOrderHangingCharges
         $chargeApplies = $this->checkIfChargeApplies($charge, $order);
 
 
-        $chargeTransaction = $order->transactions()->where('model_type', 'Charge')
-            ->where('model_id', $charge->id)->first();
+        $chargeTransaction   = null;
+        $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
+            ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+            ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::HANGING->value)->value('transactions.id');
+
+        if ($chargeTransactionID) {
+            $chargeTransaction = Transaction::find($chargeTransactionID);
+        }
+
         if ($chargeApplies) {
             $chargeAmount = Arr::get($charge->settings, 'amount');
             if ($chargeTransaction) {

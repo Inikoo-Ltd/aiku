@@ -33,6 +33,14 @@ class CalculateOrderShipping
         }
 
         $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
+        if(!$shippingZoneSchema){
+            if($order->shipping_engine == OrderShippingEngineEnum::AUTO){
+                $order->update([
+                    'shipping_engine' => OrderShippingEngineEnum::MANUAL,
+                ]);
+            }
+            return $order;
+        }
 
         list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
 
