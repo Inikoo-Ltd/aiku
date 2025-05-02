@@ -11,6 +11,7 @@ import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCircle } from "@fas"
 import { Link } from "@inertiajs/vue3"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 library.add(faInfoCircle)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors);
@@ -57,23 +58,53 @@ const dataSetsSplit = computed(() => {
 
     // Split the array
     const firstFour = sortedShops.slice(0, 4);
+    const othersShop = sortedShops.slice(4);
 
-    const summedValue = sortedShops.slice(4).reduce((sum, item) => {
+    const summedOrgValue = othersShop.reduce((sum, item) => {
         const xx = sum + (Number(item.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0); 
         return xx
     }, 0);
+
+    const summedGrpValue = othersShop.reduce((sum, item) => {
+        const xx = sum + (Number(item.columns.sales_grp_currency[props.intervals.value]?.raw_value) || 0); 
+        return xx
+    }, 0);
+
+    console.log('summedOrgValue', othersShop.length)
 
     // Create the summed object
     const summedEntry = {
         columns: {
             sales_org_currency: {
                 [props.intervals.value]: {
-                    raw_value: summedValue,
+                    raw_value: summedOrgValue,
+                    formatted_value: trans('Others')
+                }
+            },
+            sales_org_currency_minified: {
+                [props.intervals.value]: {
+                    raw_value: summedOrgValue,
+                    formatted_value: trans('Others')
+                }
+            },
+            sales_grp_currency: {
+                [props.intervals.value]: {
+                    raw_value: summedGrpValue,
+                    formatted_value: trans('Others')
+                }
+            },
+            sales_grp_currency_minified: {
+                [props.intervals.value]: {
+                    raw_value: summedGrpValue,
                     formatted_value: trans('Others')
                 }
             },
             label: {
-                formatted_value: trans('Others'),
+                formatted_value: `${othersShop.length} ` + trans('Others'),
+                align: "left",
+            },
+            label_minified: {
+                formatted_value: `${othersShop.length} ` + trans('Others'),
                 align: "left",
             },
         }
@@ -95,13 +126,15 @@ const isLoadingVisit = ref<number | null>(null)
             <div
                 class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
                 <!-- Total Count -->
-                <div class="flex gap-x-2 items-end">
-                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency[intervals.value].formatted_value }}
+                <div v-if="!tableData?.tables?.organisations"
+                    class="flex gap-x-2 items-end"
+                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency?.[intervals.value].formatted_value"
+                >
+                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_minified?.[intervals.value].formatted_value }}
                 </div>
 
                 <!-- Case Breakdown -->
-                <div
-                    class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
+                <div class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
                     <template v-for="(row, idxCase) in dataSetsSplit" :key="row.value">
                         <component
                             :is="row.route?.name ? Link : 'div'"
@@ -114,7 +147,7 @@ const isLoadingVisit = ref<number | null>(null)
                         >
                             <LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
                             <FontAwesomeIcon
-                                xxv-else
+                                v-else
                                 :icon="faCircle"
                                 :class="row?.icon?.class"
                                 fixed-width
@@ -123,7 +156,11 @@ const isLoadingVisit = ref<number | null>(null)
                                     color: useStringToHex(row.columns.label.formatted_value),
                                 }"
                                 aria-hidden="true" />
-                            <span class="font-semibold">{{ row.columns.sales_org_currency[intervals.value]?.formatted_value }}</span>
+                            <div class="text-gray-400">
+                                <span class="text-gray-500 font-semibold">{{ row.columns.label_minified?.formatted_value }}</span>
+                                ({{ row.columns.sales_org_currency_minified?.[intervals.value]?.formatted_value }})
+                            </div>
+                            <!-- <span class="font-semibold">{{ row.columns.sales_org_currency[intervals.value]?.formatted_value }}</span> -->
                         </component>
                     </template>
                 </div>

@@ -249,7 +249,7 @@ const updateTab = (value: string) => {
 				</ColumnGroup>
 			</DataTable>
 
-			<div v-if="isLoadingOnTable" class="absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
+			<div v-if="isLoadingOnTable" class="z-10 absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
 				<LoadingIcon />
 			</div>
 
