@@ -188,38 +188,60 @@ export default {
 				tooltip: "Cart",
 			},
 			replaceForm: [
-				{
-					key: ["visible"],
-					type: "VisibleLoggedIn",
-					label :'Visibility',
-					props_data: {
-						defaultValue: 'login',
-					},
-				},
-				{
-					key: ["link"],
-					type: "link",
-					label :'Link',
-					props_data: {
-						defaultValue: {
-							type : "external",
-							url: "",
-							id: null,
-							workshop_route : ""
-						},
-					},
-				},
-				{
-					key: ['container', 'properties'],
-					type: "button",
-					label :'Button',
-				},
+				// {
+				// 	key: ["visible"],
+				// 	type: "VisibleLoggedIn",
+				// 	label :'Visibility',
+				// 	props_data: {
+				// 		defaultValue: 'login',
+				// 	},
+				// },
+				// {
+				// 	key: ["link"],
+				// 	type: "link",
+				// 	label :'Link',
+				// 	props_data: {
+				// 		defaultValue: {
+				// 			type : "external",
+				// 			url: "",
+				// 			id: null,
+				// 			workshop_route : ""
+				// 		},
+				// 	},
+				// },
+				// {
+				// 	key: ['container', 'properties'],
+				// 	type: "button",
+				// 	label :'Button',
+				// },
+				// {
+				// 	key: ['text'],
+				// 	type: "editorhtml",
+				// 	label :'Text',
+				// 	props_data: {
+				// 		defaultValue: '{{ cart_count }}',
+				// 	},
+				// },
 				{
 					key: ['text'],
-					type: "editorhtml",
-					label :'Text',
+					label: "Text",
+					// useIn : ["desktop", "tablet", "mobile"],
+					type: "select",
 					props_data: {
-						defaultValue: '{{ cart_count }}',
+						placeholder: "Select Text",
+						by: "value",
+						required: true,
+						options: [
+							{
+								label: "Cart amount (£455.98)",
+								value: "{{ cart_amount }}",
+							},
+							{
+								label: "Items count (95 items)",
+								value: "{{ cart_count }} items",
+							},
+						],
+						defaultValue: '{{ cart_amount }}',
 					},
 				},
 			],
@@ -232,38 +254,61 @@ export default {
 				tooltip: "Favourite",
 			},
 			replaceForm: [
-				{
-					key: ["visible"],
-					type: "VisibleLoggedIn",
-					label :'Visibility',
-					props_data: {
-						defaultValue: 'login',
-					},
-				},
-				{
-					key: ["link"],
-					type: "link",
-					label :'Link',
-					props_data: {
-						defaultValue: {
-							"type" : "external",
-							"url": "",
-							"id": null,
-							"workshop_route" : ""
-						},
-					},
-				},
-				{
-					key: ['container', 'properties'],
-					type: "button",
-					label :'Button',
-				},
+				// {
+				// 	key: ["visible"],
+				// 	type: "VisibleLoggedIn",
+				// 	label :'Visibility',
+				// 	props_data: {
+				// 		defaultValue: 'login',
+				// 	},
+				// },
+				// {
+				// 	key: ["link"],
+				// 	type: "link",
+				// 	label :'Link',
+				// 	props_data: {
+				// 		defaultValue: {
+				// 			"type" : "external",
+				// 			"url": "",
+				// 			"id": null,
+				// 			"workshop_route" : ""
+				// 		},
+				// 	},
+				// },
+				// {
+				// 	key: ['container', 'properties'],
+				// 	type: "button",
+				// 	label :'Button',
+				// },
+				// {
+				// 	key: ['text'],
+				// 	type: "editorhtml",
+				// 	label :'text',
+				// 	props_data: {
+				// 		defaultValue: '{{ favourites_count }}',
+				// 	},
+				// },
+				
 				{
 					key: ['text'],
-					type: "editorhtml",
-					label :'text',
+					label: "Text",
+					// useIn : ["desktop", "tablet", "mobile"],
+					type: "select",
 					props_data: {
-						defaultValue: '{{ favourites_count }}',
+						placeholder: "Select Text",
+						by: "value",
+						required: true,
+						options: [
+							{
+								label: "Amount (95)",
+								value: "{{ favourites_count }}",
+							},
+							{
+								label: "Amount & label (95 favourites)",
+								value: "{{ favourites_count }} favourites",
+							},
+						],
+						defaultValue: '{{ favourites_count }} favourites',
 					},
 				},
 			],

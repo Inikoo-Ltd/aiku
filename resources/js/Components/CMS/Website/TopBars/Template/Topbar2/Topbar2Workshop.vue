@@ -8,7 +8,7 @@ import { ref } from 'vue'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
-import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
+import { checkVisible, textReplaceVariables, dummyIrisVariables } from '@/Composables/Workshop'
 import Image from '@/Components/Image.vue'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
@@ -95,7 +95,7 @@ const emits = defineEmits<{
             >
                 <!-- <i class="far fa-user fa-flip-horizontal  " title="Profile" aria-hidden="true"></i> -->
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.profile?.text, dummyIrisVariables)" />
             </a>
 
             <!-- Section: Favourites -->
@@ -106,7 +106,7 @@ const emits = defineEmits<{
                  @click="()=> emits('setPanelActive', 'favourites')"
             >
                 <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.favourite?.text, dummyIrisVariables)" />
             </a>
 
             <!-- Section: Cart -->
@@ -118,7 +118,7 @@ const emits = defineEmits<{
             >
                 <FontAwesomeIcon icon='fal fa-shopping-cart' class='text-base px-[5px]' v-tooltip="trans('Basket')"
                     fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.cart?.text, dummyIrisVariables)" />
             </a>
 
 
@@ -147,7 +147,7 @@ const emits = defineEmits<{
             >
                 <!-- <i class="far fa-user fa-flip-horizontal  " title="Profile" aria-hidden="true"></i> -->
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.profile?.text, dummyIrisVariables)" />
             </a>
 
             <Image
@@ -164,7 +164,7 @@ const emits = defineEmits<{
                 @click="()=> emits('setPanelActive', 'logout')"
             >
                 <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
-                <span class="" v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+                <span class="" v-html="textReplaceVariables(model?.logout?.text, dummyIrisVariables)" />
             </a>
         </div>
 
@@ -176,7 +176,7 @@ const emits = defineEmits<{
                 @click="()=> emits('setPanelActive', 'logout')"
             >
                 <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
-                <span class="hidden md:inline" v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+                <span class="hidden md:inline" v-html="textReplaceVariables(model?.logout?.text, dummyIrisVariables)" />
             </a>
 
             <!-- Register -->
@@ -189,7 +189,7 @@ const emits = defineEmits<{
 
                 >
                     <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" />
+                    <span v-html="textReplaceVariables(model?.register.text, dummyIrisVariables)" />
                 </a>
              </span>
 
@@ -204,7 +204,7 @@ const emits = defineEmits<{
                     @click="()=> emits('setPanelActive', 'login')"
                 >
                     <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
+                    <span v-html="textReplaceVariables(model?.login?.text, dummyIrisVariables)" />
                 </a>
             </span>
 
