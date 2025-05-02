@@ -8,7 +8,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
-import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
+import { checkVisible, textReplaceVariables, dummyIrisVariables } from '@/Composables/Workshop'
 import { iframeToParent } from '@/Composables/Workshop'
 import { sendMessageToParent } from '@/Composables/Workshop'
 
@@ -67,9 +67,9 @@ const layout = inject('layout', {})
             
             <!-- Section: Main title -->
             <div
-                v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
+                v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, dummyIrisVariables)"
                 class="text-center flex items-center"
-                v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
+                v-html="textReplaceVariables(model?.main_title?.text, dummyIrisVariables)"
             />
         </div>
 
@@ -84,7 +84,7 @@ const layout = inject('layout', {})
                  @click="()=> emits('setPanelActive', 'profile')"
             >
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.profile?.text, dummyIrisVariables)" />
             </a>
 
             <!-- Section: Favourite -->
@@ -95,7 +95,7 @@ const layout = inject('layout', {})
                 @click="()=> emits('setPanelActive', 'favourite')"
             >
                 <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.favourite?.text, dummyIrisVariables)" />
             </a>
 
             <!-- Section: Cart -->
@@ -106,7 +106,7 @@ const layout = inject('layout', {})
                 @click="()=> emits('setPanelActive', 'cart')"
             >
                 <FontAwesomeIcon icon='fal fa-shopping-cart' class='text-base px-[5px]' v-tooltip="trans('Basket')" fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.cart?.text, dummyIrisVariables)" />
             </a>
 
             <!-- Section: Login -->
@@ -118,7 +118,7 @@ const layout = inject('layout', {})
                      @click="()=> emits('setPanelActive', 'login')"
                 >
                     <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
+                    <span v-html="textReplaceVariables(model?.login?.text, dummyIrisVariables)" />
                 </a>
              </span>
 
@@ -131,7 +131,7 @@ const layout = inject('layout', {})
                     @click="()=> emits('setPanelActive', 'register')"
                 >
                     <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" />
+                    <span v-html="textReplaceVariables(model?.register.text, dummyIrisVariables)" />
                 </a>
             </span>
 
@@ -143,7 +143,7 @@ const layout = inject('layout', {})
                 @click="()=> emits('setPanelActive', 'logout')"
             >
                 <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+                <span v-html="textReplaceVariables(model?.logout?.text, dummyIrisVariables)" />
             </a>
         </div>
     </div>
