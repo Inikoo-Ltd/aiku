@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, IframeHTMLAttributes } from "vue"
+import { ref, IframeHTMLAttributes } from "vue"
 import draggable from "vuedraggable"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -17,7 +17,6 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import HeaderListModal from "@/Components/CMS/Fields/ListModal.vue"
 import { setIframeView } from "@/Composables/Workshop"
 import ProgressSpinner from "primevue/progressspinner"
-import ConfirmDialog from "primevue/confirmdialog"
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
 import { routeType } from "@/types/route"
@@ -37,8 +36,7 @@ import {
 	faExclamationTriangle,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
-import { faBoothCurtain, faExternalLink } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { faExternalLink } from "@fal"
 
 library.add(
 	faChevronRight,
@@ -196,12 +194,6 @@ const onChangeNavigation = (setData) => {
 	sendToIframe({ key: "reload", value: {} })
 }
 
-/* watch(Navigation,(newVal) => {
-    if (newVal) debouncedSendUpdate(newVal)
-  },
-  { deep: true }
-)
- */
 </script>
 
 <template>
@@ -213,42 +205,6 @@ const onChangeNavigation = (setData) => {
 				:is_dirty="true"
 				v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)">
-				<!-- Move this to Advanced Setting later -->
-				<!-- <template #form-extend>
-					<div class="flex items-center gap-2 mb-3">
-						<div class="items-start leading-none flex-shrink-0">
-							<FontAwesomeIcon
-								:icon="'fas fa-asterisk'"
-								class="font-light text-[12px] text-red-400 mr-1" />
-							<span class="capitalize">{{ trans("Status") }} :</span>
-						</div>
-						<div class="flex items-center gap-4 w-full">
-							<div
-								class="flex overflow-hidden border-2 cursor-pointer w-full sm:w-auto"
-								:class="status ? 'border-green-500' : 'border-red-500'"
-								@click="() => (status = !status)">
-								<div
-									class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
-									:class="
-										status
-											? 'bg-green-500 text-white'
-											: 'bg-gray-200 text-gray-500'
-									">
-									Active
-								</div>
-								<div
-									class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
-									:class="
-										!status
-											? 'bg-red-500 text-white'
-											: 'bg-gray-200 text-gray-500'
-									">
-									Inactive
-								</div>
-							</div>
-						</div>
-					</div>
-				</template> -->
 			</Publish>
 		</template>
 		<template #other>
@@ -350,9 +306,6 @@ const onChangeNavigation = (setData) => {
 					v-model="Navigation.data.fieldValue.navigation[selectedNav]"
 					@update:model-value="(data) => onChangeNavigation(data)" />
 				<div v-else class="h-full w-full bg-slate-100">
-					<!-- <div v-if="isIframeLoading" class="flex justify-center items-center w-full h-64 p-12 bg-white">
-            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin w-6" aria-hidden="true" />
-          </div> -->
 					<div v-if="isIframeLoading" class="loading-overlay">
 						<ProgressSpinner />
 					</div>

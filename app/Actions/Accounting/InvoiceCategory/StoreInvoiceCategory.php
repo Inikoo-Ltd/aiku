@@ -55,7 +55,7 @@ class StoreInvoiceCategory extends OrgAction
         if ($this->asAction) {
             return true;
         }
-        return false;
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}.accounting", "org-admin.".$this->organisation->id]);
     }
 
     public function prepareForValidation(ActionRequest $request): void
