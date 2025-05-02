@@ -33,7 +33,7 @@ class GetRetinaDropshippingPlatformNavigation
             ],
         ];
 
-        if (!$webUser->customer->fulfilmentCustomer or $platform->type !== PlatformTypeEnum::SHOPIFY) {
+        if (!$webUser->customer->is_fulfilment or $platform->type !== PlatformTypeEnum::SHOPIFY) {
             $tabs = [
                 [
                     'label' => __('All Products'),
