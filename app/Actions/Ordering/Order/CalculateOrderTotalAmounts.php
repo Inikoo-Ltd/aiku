@@ -19,7 +19,7 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
-    public function handle(Order $order): void
+    public function handle(Order $order, $calculateShipping = true): void
     {
         $items      = $order->transactions()->get();
         $itemsNet   = $items->sum('net_amount');
@@ -27,8 +27,8 @@ class CalculateOrderTotalAmounts extends OrgAction
         $tax        = $order->taxCategory->rate;
 
 
-        $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
-        $chargesAmount  = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
+        $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
+        $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         $taxAmount   = $itemsNet * $tax;
@@ -50,20 +50,24 @@ class CalculateOrderTotalAmounts extends OrgAction
         $order->update($modelData);
 
         $changes = $order->getChanges();
+
+
+
         if ($order->state == OrderStateEnum::CREATING && Arr::has($changes, 'total_amount')) {
             if ($order->customer_client_id) {
                 $order->customerClient()->update([
-                    'amount_in_basket'           => $order->total_amount,
+                    'amount_in_basket' => $order->total_amount,
                 ]);
             } else {
                 $order->customer()->update([
-                    'amount_in_basket'           => $order->total_amount,
+                    'amount_in_basket' => $order->total_amount,
                 ]);
             }
         }
 
-
-
+        if ($calculateShipping && in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::IN_WAREHOUSE]) && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+            CalculateOrderShipping::run($order);
+        }
     }
 
     public string $commandSignature = 'order:totals {--s|slugs=}';
