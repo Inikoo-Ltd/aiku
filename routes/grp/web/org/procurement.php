@@ -60,7 +60,7 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('{orgSupplier}/supplier-products', [IndexOrgSupplierProducts::class, 'inOrgSupplier'])->name('show.supplier_products.index');
     Route::get('{orgSupplier}/supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgSupplier'])->name('show.supplier_products.show');
     Route::get('{orgSupplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->name('show.purchase_orders.index');
-    Route::get('{orgSupplier}/purchase-orders/create', [CreatePurchaseOrder::class, 'inOrgSupplier'])->name('show.purchase_orders.create');
+    Route::get('{orgSupplier}/purchase-orders/create', CreatePurchaseOrder::class)->name('show.purchase_orders.create');
     Route::get('{orgSupplier}/stock-deliveries', [IndexStockDeliveries::class, 'inOrgSupplier'])->name('show.stock_deliveries.index');
 
 });
@@ -92,7 +92,6 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
 Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('', IndexPurchaseOrders::class)->name('index');
     Route::get('export', ExportPurchaseOrders::class)->name('export');
-    Route::get('create', CreatePurchaseOrder::class)->name('create');
     Route::get('{purchaseOrder}', ShowPurchaseOrder::class)->name('show');
     Route::get('{purchaseOrder}/edit', EditPurchaseOrder::class)->name('edit');
 });

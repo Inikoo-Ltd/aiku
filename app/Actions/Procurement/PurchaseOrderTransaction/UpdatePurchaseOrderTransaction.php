@@ -24,8 +24,10 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
-        return $this->update($purchaseOrderTransaction, $modelData, ['data']);
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+        $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, $modelData, ['data']);
+        CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
+
+        return $purchaseOrderTransaction;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -42,8 +44,8 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     {
         $rules = [
             'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
-            'unit_quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-            'unit_price'    => ['sometimes', 'nullable', 'numeric'],
+            'unit_quantity'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'unit_price'       => ['sometimes', 'nullable', 'numeric'],
         ];
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
@@ -54,9 +56,8 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, int $hydratorsDelay = 0, bool $strict = true): PurchaseOrderTransaction
     {
-
-        $this->asAction      = true;
-        $this->strict        = $strict;
+        $this->asAction = true;
+        $this->strict   = $strict;
 
         $this->hydratorsDelay = $hydratorsDelay;
 
@@ -69,6 +70,7 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     public function asController(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, ActionRequest $request): PurchaseOrderTransaction
     {
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
+
         return $this->handle($purchaseOrderTransaction, $this->validatedData);
     }
 

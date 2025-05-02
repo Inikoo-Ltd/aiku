@@ -24,32 +24,23 @@ class UpdateCustomerDeliveryAddress extends OrgAction
             $customer->delivery_address_id = $modelData['delivery_address_id'];
             $customer->save();
         }
+
         return $customer;
     }
 
     public function rules(): array
     {
-        $rules = [
-            'delivery_address_id'         => ['sometimes', 'nullable', 'exists:addresses,id'],
+        return [
+            'delivery_address_id' => ['sometimes', 'nullable', 'exists:addresses,id'],
         ];
-
-        return $rules;
     }
 
     public function asController(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
     {
-        $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
     }
 
-    public function fromRetina(Customer $customer, ActionRequest $request): Customer
-    {
-        $customer = $request->user()->customer;
 
-        $this->initialisation($request->get('website')->organisation, $request);
-
-        return $this->handle($customer, $this->validatedData);
-    }
 }

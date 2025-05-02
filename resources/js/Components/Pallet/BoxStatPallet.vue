@@ -1,12 +1,8 @@
 <script setup lang='ts'>
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
-import { inject } from 'vue'
 
-const layout = inject('layout', layoutStructure)
 
-const props = defineProps<{
+defineProps<{
     tooltip?: string
     label?: string | number
     icon?: string | string[]
@@ -20,14 +16,7 @@ const props = defineProps<{
 
 <template>
     <div class="relative flex flex-col justify-start" >
-    <!--     <div v-if="tooltip" class="absolute top-0 left-0 text-xs border-b border-r border-gray-300 rounded-br py-0.5 pl-3 pr-4 shadow-sm"
-            :style="{
-                backgroundColor: color?.bgColor || '#fff',
-                color: color?.textColor || layout?.app?.theme[0]
-            }"
-        >
-            {{ trans(tooltip) }}
-        </div> -->
+
         
         <!-- Section: Percentage (%) -->
         <div v-if="percentage" class="absolute top-0.5 right-0.5 tabular-nums text-xxs rounded-br-sm px-1">
@@ -41,13 +30,13 @@ const props = defineProps<{
 
         <div class="flex flex-col justify-center w-full flex-none gap-x-4 gap-y-1">
             <slot>
-                <div v-if="icon || label" class="flex gap-x-3">
+                <dl v-if="icon || label" class="flex gap-x-3">
                     <dt v-if="icon" class="flex-none">
                         <span class="sr-only">Contact name</span>
                         <FontAwesomeIcon :icon='icon' class='text-gray-400' fixed-width aria-hidden='true' />
                     </dt>
                     <dd v-if="label" class="text-gray-500">{{ label }}</dd>
-                </div>
+                </dl>
             </slot>
         </div>
     </div>

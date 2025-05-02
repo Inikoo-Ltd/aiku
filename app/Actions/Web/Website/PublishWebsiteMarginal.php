@@ -14,14 +14,10 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
-use App\Events\BroadcastPreviewHeaderFooter;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
-use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Str;
 
 class PublishWebsiteMarginal extends OrgAction
 {
@@ -90,82 +86,8 @@ class PublishWebsiteMarginal extends OrgAction
 
         $website->update($updateData);
 
-        /*  BroadcastPreviewHeaderFooter::dispatch($website); */
 
         return $website;
-    }
-
-    // public function htmlResponse(Website $website): Response
-    // {
-    //     $url   = url()->previous();
-    //     $route = app('router')->getRoutes()->match(app('request')->create($url))->getName();
-
-    //     if (Str::contains($route, 'grp.org.shops.show.web.websites.workshop')) {
-    //         return match ($this->marginal) {
-    //             'header' =>
-    //             Inertia::location(route('grp.org.shops.show.web.websites.workshop.header', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'shop'         => $website->shop->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //             'footer' =>
-    //             Inertia::location(route('grp.org.shops.show.web.websites.workshop.footer', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'shop'         => $website->shop->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //             'menu' =>
-    //             Inertia::location(route('grp.org.shops.show.web.websites.workshop.menu', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'shop'         => $website->shop->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //             default =>
-    //             Inertia::location(route('grp.org.shops.show.web.websites.workshop', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'shop'         => $website->shop->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //         };
-    //     } else {
-    //         return match ($this->marginal) {
-    //             'header' =>
-    //             Inertia::location(route('grp.org.fulfilments.show.web.websites.workshop.header', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'fulfilment'   => $this->shop->fulfilment->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //             'footer' =>
-    //             Inertia::location(route('grp.org.fulfilments.show.web.websites.workshop.footer', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'fulfilment'   => $this->shop->fulfilment->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //             'menu' =>
-    //             Inertia::location(route('grp.org.fulfilments.show.web.websites.workshop.menu', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'fulfilment'   => $this->shop->fulfilment->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //             default =>
-    //             Inertia::location(route('grp.org.fulfilments.show.web.websites.workshop', [
-    //                 'organisation' => $website->organisation->slug,
-    //                 'fulfilment'   => $this->shop->fulfilment->slug,
-    //                 'website'      => $website->slug,
-    //             ])),
-    //         };
-    //     }
-    // }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-
-        if ($this->isAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("websites.edit");
     }
 
     public function prepareForValidation(ActionRequest $request): void
