@@ -6,13 +6,14 @@ import Table from '@/Components/Table/Table.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
+import { Table as TableTS} from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash'
 import { inject, ref } from 'vue'
 
 const props = defineProps<{
-    data: any[]
+    data: any[] | TableTS
     tab: string
     updateRoute: routeType
     state?: string
