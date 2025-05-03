@@ -8,26 +8,35 @@
 
 namespace App\Actions\HumanResources\Employee;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Exports\HumanResources\EmployeesTemplateExport;
 use App\Models\SysAdmin\Organisation;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
+use Lorisleiva\Actions\ActionRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class DownloadEmployeesTemplate
+class DownloadEmployeesTemplate extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithHumanResourcesAuthorisation;
 
+    /**
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
     public function handle(): BinaryFileResponse
     {
-
         return Excel::download(new EmployeesTemplateExport(), 'employees_template.xlsx');
     }
 
-    public function asController(Organisation $organisation): BinaryFileResponse
+    /**
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
+    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
+        $this->initialisation($organisation, $request);
+
         return $this->handle();
     }
 

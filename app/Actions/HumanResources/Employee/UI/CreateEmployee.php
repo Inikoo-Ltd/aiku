@@ -10,6 +10,7 @@ namespace App\Actions\HumanResources\Employee\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Http\Resources\HumanResources\JobPositionResource;
@@ -26,6 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateEmployee extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -241,12 +244,6 @@ class CreateEmployee extends OrgAction
             ]
         );
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
 
     /**
      * @throws Exception

@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\User\UpdateUser;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
@@ -37,6 +38,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateEmployee extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
     use WithActionUpdate;
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
@@ -107,16 +109,6 @@ class UpdateEmployee extends OrgAction
         }
 
         return $employee;
-    }
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

@@ -14,6 +14,7 @@ use App\Actions\HumanResources\ClockingMachine\HydrateClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\Search\ReindexClockingMachineSearch;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
+use App\Actions\HumanResources\Employee\HydrateEmployees;
 use App\Actions\HumanResources\Employee\Search\ReindexEmployeeSearch;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
@@ -60,14 +61,11 @@ beforeEach(function () {
 });
 
 test('check seeded job positions', function () {
-
     expect($this->organisation->group->humanResourcesStats->number_job_positions)->toBe(28);
     /** @var JobPosition $jobPosition */
     $jobPosition = $this->organisation->jobPositions()->first();
     expect($jobPosition->stats)->toBeInstanceOf(JobPositionStats::class)
         ->and($jobPosition->stats->number_employees)->toBe(0);
-
-
 });
 
 test('create working place successful', function () {
@@ -139,15 +137,14 @@ test('create employee successful', function () {
 });
 
 test('add job position to employee', function (Employee $employee) {
-
     /** @var JobPosition $jobPosition */
     $jobPosition = $this->organisation->jobPositions()->where('slug', 'hr-c')->first();
 
     UpdateEmployee::make()->action($employee, [
         'job_positions' => [
             [
-            'slug'  => $jobPosition->slug,
-            'scopes' => []
+                'slug'   => $jobPosition->slug,
+                'scopes' => []
             ]
         ]
     ]);
@@ -178,6 +175,7 @@ test('update employees successful', function ($lastEmployee) {
 test('update employee working hours', function (Employee $employee) {
     $employee = UpdateEmployeeWorkingHours::run($employee, [10]);
     expect($employee['working_hours'])->toBeArray(10);
+
     return $employee;
 })->depends('create employee successful');
 
@@ -206,14 +204,12 @@ test('update clocking machines', function ($createdClockingMachine) {
 })->depends('create clocking machines');
 
 test('get clocking machine app qrcode', function (ClockingMachine $clockingMachine) {
-
     $qr = GetClockingMachineAppQRCode::run($clockingMachine);
     expect($qr)->not()->toBeNull()
         ->and($qr)->toBeArray()
         ->and($qr['code'])->toContain($clockingMachine->slug);
 
     return $qr;
-
 })->depends('create clocking machines');
 
 test('can show hr dashboard', function () {
@@ -293,7 +289,6 @@ test('new timesheet for employee', function (Employee $employee) {
         ->and($employee->stats->number_timesheets)->toBe(1);
 
     return $timesheet;
-
 })->depends('create employee successful');
 
 test('create clocking', function (Timesheet $timesheet, Workplace $workplace) {
@@ -313,10 +308,9 @@ test('create clocking', function (Timesheet $timesheet, Workplace $workplace) {
         ->and($clocking->type)->toBe(ClockingTypeEnum::MANUAL)
         ->and($employee->stats->number_timesheets)->toBe(1)
         ->and($employee->stats->number_clockings)->toBe(1)
-            ->and($employee->stats->number_time_trackers)->toBe(1);
+        ->and($employee->stats->number_time_trackers)->toBe(1);
 
     return $timesheet;
-
 })->depends('new timesheet for employee', 'create working place successful');
 
 test('second clocking ', function (Timesheet $timesheet, Workplace $workplace) {
@@ -344,7 +338,6 @@ test('second clocking ', function (Timesheet $timesheet, Workplace $workplace) {
     $timeTracker = $timesheet->timeTrackers->first();
     expect($timeTracker->status)->toBe(TimeTrackerStatusEnum::CLOSED)
         ->and($timeTracker->end_clocking_id)->toBe($clocking->id);
-
 })->depends('create clocking', 'create working place successful');
 
 test('hydrate clocking machine', function (ClockingMachine $clockingMachine) {
@@ -383,4 +376,10 @@ test('clocking machines notes search', function () {
     $clockingMachine = ClockingMachine::first();
     ReindexClockingMachineSearch::run($clockingMachine);
     expect($clockingMachine->universalSearch()->count())->toBe(1);
+});
+
+test('hydrate employees', function () {
+    $this->artisan('hydrate:employees')->assertExitCode(0);
+    $employee = Employee::first();
+    HydrateEmployees::run($employee);
 });

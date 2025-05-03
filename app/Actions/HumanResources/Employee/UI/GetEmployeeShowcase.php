@@ -11,24 +11,20 @@ namespace App\Actions\HumanResources\Employee\UI;
 
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Http\Resources\Api\Dropshipping\ShopResource;
+use App\Actions\Traits\UI\WithPermissionsPictogram;
 use App\Http\Resources\HumanResources\EmployeeResource;
-use App\Http\Resources\HumanResources\JobPositionResource;
-use App\Http\Resources\Inventory\WarehouseResource;
-use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\HumanResources\Employee;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetEmployeeShowcase
 {
     use AsObject;
+    use WithPermissionsPictogram;
 
     public function handle(Employee $employee): array
     {
         $user = $employee->getUser();
-        $pictogram = [];
+
         if ($user) {
             $jobPositionsOrganisationsData = [];
             foreach ($employee->group->organisations as $organisation) {
@@ -37,34 +33,14 @@ class GetEmployeeShowcase
             }
 
             $permissionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
-            $pictogram = [
-                'organisation_list' => OrganisationsResource::collection($user->group->organisations),
-                "current_organisation"  => $user->getOrganisation(),
-                'options'           => Organisation::get()->flatMap(function (Organisation $organisation) {
-                    return [
-                        $organisation->slug => [
-                            'positions'   => JobPositionResource::collection($organisation->jobPositions),
-                            'shops'       => \App\Http\Resources\Catalogue\ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
-                            'fulfilments' => ShopResource::collection($organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
-                            'warehouses'  => WarehouseResource::collection($organisation->warehouses),
-                        ]
-                    ];
-                })->toArray(),
-                'group' => $permissionsGroupData,
-                'organisations' => $jobPositionsOrganisationsData
-            ];
+            $pictogram            = $this->getPermissionsPictogram($user, $permissionsGroupData, $jobPositionsOrganisationsData);
         } else {
             $pictogram = null;
         }
 
-
-
-
-        $permissionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
         return [
-            'employee' => EmployeeResource::make($employee),
-            'pin'      => $employee->pin,
-
+            'employee'              => EmployeeResource::make($employee),
+            'pin'                   => $employee->pin,
             'permissions_pictogram' => $pictogram
         ];
     }

@@ -78,15 +78,6 @@ class StoreClockingMachine extends OrgAction
         return $clockingMachine;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
 
     public function rules(): array
     {

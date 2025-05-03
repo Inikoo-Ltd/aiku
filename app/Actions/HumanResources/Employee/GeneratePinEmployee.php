@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 class GeneratePinEmployee extends OrgAction
 {
     use WithActionUpdate;
+    use WithHumanResourcesAuthorisation;
 
     public function handle(Employee $employee): string
     {
@@ -29,15 +31,6 @@ class GeneratePinEmployee extends OrgAction
         return response()->json([
             'pin' => $pin
         ]);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): string

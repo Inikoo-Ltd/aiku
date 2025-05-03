@@ -10,24 +10,17 @@ namespace App\Actions\HumanResources\Employee\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\HumanResources\Employee;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class EmployeeHydrateTimesheets
+class EmployeeHydrateTimesheets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Employee $employee;
-
-    public function __construct(Employee $employee)
+    public function getJobUniqueId(Employee $employee): string
     {
-        $this->employee = $employee;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->employee->id))->dontRelease()];
+        return $employee->id;
     }
 
     public function handle(Employee $employee): void
@@ -35,7 +28,6 @@ class EmployeeHydrateTimesheets
         $stats = [
             'number_timesheets' => $employee->timesheets()->count(),
         ];
-
 
         $employee->stats()->update($stats);
     }

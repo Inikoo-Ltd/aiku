@@ -9,7 +9,7 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteClockingMachine extends OrgAction
 {
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesEditAuthorisation;
 
     public function handle(ClockingMachine $clockingMachine): ClockingMachine
     {
@@ -26,11 +26,6 @@ class DeleteClockingMachine extends OrgAction
         $clockingMachine->delete();
 
         return $clockingMachine;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function asController(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine

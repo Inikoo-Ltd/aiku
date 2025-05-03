@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteEmployee extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(Employee $employee): Employee
     {
         $employee->delete();
@@ -23,14 +26,9 @@ class DeleteEmployee extends OrgAction
         return $employee;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
     public function asController(Employee $employee, ActionRequest $request): Employee
     {
-        $request->validate();
+        $this->initialisation($employee->organisation, $request);
 
         return $this->handle($employee);
     }

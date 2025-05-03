@@ -31,16 +31,12 @@ use Lorisleiva\Actions\ActionRequest;
 class EditEmployee extends OrgAction
 {
     use WithEmployeeSubNavigation;
+
     protected Organisation $organisation;
 
     public function handle(Employee $employee): Employee
     {
         return $employee;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): Employee
@@ -51,19 +47,14 @@ class EditEmployee extends OrgAction
         return $this->handle($employee);
     }
 
-
     /**
      * @throws Exception
      */
     public function htmlResponse(Employee $employee, ActionRequest $request): Response
     {
-        $user = $employee->getUser();
-
-
-
+        $user                         = $employee->getUser();
         $jobPositionsOrganisationData = GetEmployeeJobPositionsData::run($employee);
-        $jobPositionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
-
+        $jobPositionsGroupData        = GetUserGroupScopeJobPositionsData::run($user);
 
         $sections['properties'] = [
             'label'  => __('Properties'),
@@ -86,7 +77,7 @@ class EditEmployee extends OrgAction
                     'label' => __('work email'),
                     'value' => $employee->work_email ?? ''
                 ],
-                'cluster'         => [
+                'cluster'       => [
                     'type'     => 'employeeState',
                     'mode'     => 'card',
                     'label'    => 'Employee status',
@@ -133,62 +124,63 @@ class EditEmployee extends OrgAction
         ];
 
 
-        $organisations = Organisation::where('id', $employee->organisation_id)->get();
+        $organisations    = Organisation::where('id', $employee->organisation_id)->get();
         $organisationList = OrganisationsResource::collection($organisations);
 
         if ($user) {
             $sections['job_positions'] = [
-            'label'  => __('Job Positions (permissions)'),
-            'icon'   => 'fal fa-clipboard-list',
-            'fields' => [
-                'positions'     => [
-                    'type'     => 'permissions',
-                    "noSaveButton"      => true,
-                    'required' => true,
-                    'label'    => __('Job Positions (permissions)'),
-                    'options' => [
-                        $employee->organisation->slug => [
-                        'positions'   => JobPositionResource::collection($this->organisation->jobPositions),
-                        'shops'       => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
-                        'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
-                        'warehouses'  => WarehouseResource::collection($this->organisation->warehouses),
-                    ],],
-                    'is_in_organisation'    => true,  // To remove parameter
-                    'organisation_list' => $organisationList,
-                    'updatePseudoJobPositionsRoute'       => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.user.group_permissions.update',
-                        'parameters' => [
-                            'user'  => $user?->id
-                        ]
-                    ],
-                    'updateJobPositionsRoute'       => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.employee.update',
-                        'parameters' => [
-                            'employee'  => $employee->id
-                        ]
-                    ],
-                    'value'   => [
-                        'group' => $jobPositionsGroupData,
-                        'organisations' =>  [
-                            $employee->organisation->slug => $jobPositionsOrganisationData,
+                'label'  => __('Job Positions (permissions)'),
+                'icon'   => 'fal fa-clipboard-list',
+                'fields' => [
+                    'positions' => [
+                        'type'                          => 'permissions',
+                        "noSaveButton"                  => true,
+                        'required'                      => true,
+                        'label'                         => __('Job Positions (permissions)'),
+                        'options'                       => [
+                            $employee->organisation->slug => [
+                                'positions'   => JobPositionResource::collection($this->organisation->jobPositions),
+                                'shops'       => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
+                                'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
+                                'warehouses'  => WarehouseResource::collection($this->organisation->warehouses),
+                            ],
                         ],
+                        'is_in_organisation'            => true,  // To remove parameter
+                        'organisation_list'             => $organisationList,
+                        'updatePseudoJobPositionsRoute' => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.user.group_permissions.update',
+                            'parameters' => [
+                                'user' => $user->id
+                            ]
+                        ],
+                        'updateJobPositionsRoute'       => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.employee.update',
+                            'parameters' => [
+                                'employee' => $employee->id
+                            ]
+                        ],
+                        'value'                         => [
+                            'group'         => $jobPositionsGroupData,
+                            'organisations' => [
+                                $employee->organisation->slug => $jobPositionsOrganisationData,
+                            ],
+                        ],
+                        // 'value' => $jobPositionsOrganisationData,
+                        'full'                          => true
                     ],
-                    // 'value' => $jobPositionsOrganisationData,
-                    'full'    => true
-                ],
 
-            ]
+                ]
             ];
-            $sections['credentials'] = [
+            $sections['credentials']   = [
                 'label'  => __('Credentials'),
                 'icon'   => 'fal fa-key',
                 'fields' => [
                     'username' => [
                         'type'  => 'input',
                         'label' => __('username'),
-                        'value' => $user ? $user->username : ''
+                        'value' => $user->username
 
                     ],
                     'password' => [
@@ -204,25 +196,25 @@ class EditEmployee extends OrgAction
             'label'  => __('Personal information'),
             'icon'   => 'fal fa-id-card',
             'fields' => [
-                'contact_name'  => [
+                'contact_name'             => [
                     'type'        => 'input',
                     'label'       => __('name'),
                     'placeholder' => __('Name'),
                     'value'       => $employee->contact_name,
                     'required'    => true
                 ],
-                'date_of_birth' => [
+                'date_of_birth'            => [
                     'type'        => 'date',
                     'label'       => __('date of birth'),
                     'placeholder' => __('Date of birth'),
                     'value'       => $employee->date_of_birth
                 ],
-                'email'         => [
+                'email'                    => [
                     'type'  => 'input',
                     'label' => __('personal email'),
                     'value' => $employee->email
                 ],
-                'contact_address' => [
+                'contact_address'          => [
                     'type'    => 'address',
                     'label'   => __('Address'),
                     'value'   => AddressFormFieldsResource::make($employee->address)->getArray(),
@@ -230,22 +222,22 @@ class EditEmployee extends OrgAction
                         'countriesAddressData' => GetAddressData::run()
                     ]
                 ],
-                'emergency_contact'               => [
-                    'type'     => 'textarea',
-                    'label'    => __('Emergency Contact'),
-                    'value'    => $employee->emergency_contact
+                'emergency_contact'        => [
+                    'type'  => 'textarea',
+                    'label' => __('Emergency Contact'),
+                    'value' => $employee->emergency_contact
                 ],
-                'identity_document_type'         => [
+                'identity_document_type'   => [
                     'type'  => 'input',
                     'label' => __('identity document type'),
                     'value' => $employee->identity_document_type
                 ],
-                'identity_document_number'         => [
+                'identity_document_number' => [
                     'type'  => 'input',
                     'label' => __('identity document number'),
                     'value' => $employee->identity_document_number
                 ],
-                'notes'         => [
+                'notes'                    => [
                     'type'  => 'textarea',
                     'label' => __('notes'),
                     'value' => $employee->notes
@@ -258,19 +250,19 @@ class EditEmployee extends OrgAction
             'icon'   => 'fal fa-chess-clock',
             'fields' => [
                 'pin' => [
-                    'type'  => 'pin',
-                    'label' => __('pin'),
-                    'route_generate'    => [
-                        'name'     => 'grp.org.hr.employees.generate-pin',
-                        'parameters'    => [$employee->organisation->slug, $employee->slug]
+                    'type'           => 'pin',
+                    'label'          => __('pin'),
+                    'route_generate' => [
+                        'name'       => 'grp.org.hr.employees.generate-pin',
+                        'parameters' => [$employee->organisation->slug, $employee->slug]
                     ],
-                    'value' => $employee->pin
+                    'value'          => $employee->pin
                 ],
             ]
         ];
 
         $currentSection = 'properties';
-        if ($request->has('section') and Arr::has($sections, $request->get('section'))) {
+        if ($request->has('section') && Arr::has($sections, $request->get('section'))) {
             $currentSection = $request->get('section');
         }
 
@@ -294,11 +286,11 @@ class EditEmployee extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => $employee->contact_name,
-                    'model'   => __('Edit Employee'),
+                    'title'         => $employee->contact_name,
+                    'model'         => __('Edit Employee'),
                     'subNavigation' => $this->getEmployeeSubNavigation($employee, $request),
-                    'icon'    => 'fal fa-user-hard-hat',
-                    'actions' => [
+                    'icon'          => 'fal fa-user-hard-hat',
+                    'actions'       => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',

@@ -10,6 +10,7 @@ namespace App\Actions\HumanResources\Employee\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
@@ -32,6 +33,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexEmployees extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     private Organisation|JobPosition|Group $parent;
 
     protected function getElementGroups(Organisation|JobPosition|Group $parent): array
@@ -109,10 +112,7 @@ class IndexEmployees extends OrgAction
             });
             $queryBuilder->addSelect('job_positions');
         }
-        // elseif (class_basename($parent) == 'Group') {
-        //     $queryBuilder->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', 'employees.id')
-        //         ->where('job_position_id', $parent->id);
-        // }
+
 
         return $queryBuilder
             ->defaultSort('slug')
@@ -221,7 +221,7 @@ class IndexEmployees extends OrgAction
                                 'key'   => 'btn_upload',
                                 'type'  => 'button',
                                 'style' => 'secondary',
-                                'label' => 'zxczxcxz',
+                                'label' => __('Upload'),
                                 'icon'    => ['fal', 'fa-upload'],
                             ],
                             [

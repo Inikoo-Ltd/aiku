@@ -13,14 +13,18 @@ use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateJobPositionsSha
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateTimesheets;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateTimeTracker;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateWeekWorkingHours;
-use App\Actions\HydrateModel;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\HumanResources\Employee;
-use Illuminate\Support\Collection;
 
-class HydrateEmployee extends HydrateModel
+class HydrateEmployees
 {
+    use WithHydrateCommand;
     public string $commandSignature = 'hydrate:employees {organisations?*} {--s|slugs=}';
 
+    public function __construct()
+    {
+        $this->model = Employee::class;
+    }
 
     public function handle(Employee $employee): void
     {
@@ -31,14 +35,4 @@ class HydrateEmployee extends HydrateModel
         EmployeeHydrateTimeTracker::run($employee);
     }
 
-
-    protected function getModel(string $slug): Employee
-    {
-        return Employee::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return Employee::get();
-    }
 }

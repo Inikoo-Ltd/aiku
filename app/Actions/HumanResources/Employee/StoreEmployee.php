@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\User\StoreUser;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithPreparePositionsForValidation;
@@ -38,10 +39,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreEmployee extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
     use WithNoStrictRules;
     use WithModelAddressActions;
+
     /**
      * @throws \Throwable
      */
@@ -107,8 +110,6 @@ class StoreEmployee extends OrgAction
                         'user_model_status' => $status
                     ],
                 );
-
-
             }
 
             SyncEmployeeJobPositions::run($employee, $positions);
@@ -125,16 +126,6 @@ class StoreEmployee extends OrgAction
 
         return $employee;
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
 
     public function prepareForValidation(ActionRequest $request): void
     {
@@ -217,7 +208,6 @@ class StoreEmployee extends OrgAction
 
         if (!$this->strict) {
             $rules = $this->noStrictStoreRules($rules);
-
         }
 
         return $rules;

@@ -19,7 +19,7 @@ class GetEmployeeJobPositionsData
     {
         $organisation = $employee->organisation;
         return $employee->jobPositions->map(function ($jobPosition) use ($organisation) {
-            $scopes = collect($jobPosition->pivot->scopes)->mapWithKeys(function ($scopeIds, $scope) use ($jobPosition, $organisation) {
+            $scopes = collect($jobPosition->pivot->scopes)->mapWithKeys(function ($scopeIds, $scope) use ($organisation) {
                 return match ($scope) {
                     'Warehouse' => [
                         'warehouses' => $organisation->warehouses->whereIn('id', $scopeIds)->pluck('slug')->toArray()

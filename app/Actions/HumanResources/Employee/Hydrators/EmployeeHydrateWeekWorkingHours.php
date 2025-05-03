@@ -17,6 +17,10 @@ class EmployeeHydrateWeekWorkingHours implements ShouldBeUnique
 {
     use AsAction;
 
+    public function getJobUniqueId(Employee $employee): int
+    {
+        return $employee->id;
+    }
 
     public function handle(Employee $employee): void
     {
@@ -27,8 +31,4 @@ class EmployeeHydrateWeekWorkingHours implements ShouldBeUnique
         $employee->update(['week_working_hours' => $week_working_hours]);
     }
 
-    public function getJobUniqueId(Employee $employee): int
-    {
-        return $employee->id;
-    }
 }

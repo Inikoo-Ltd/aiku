@@ -11,25 +11,18 @@ namespace App\Actions\HumanResources\Employee\Hydrators;
 use App\Actions\Traits\WithJobPositionableShare;
 use App\Actions\Traits\WithNormalise;
 use App\Models\HumanResources\Employee;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class EmployeeHydrateJobPositionsShare
+class EmployeeHydrateJobPositionsShare implements ShouldBeUnique
 {
     use AsAction;
     use WithNormalise;
     use WithJobPositionableShare;
 
-    private Employee $employee;
-
-    public function __construct(Employee $employee)
+    public function getJobUniqueId(Employee $employee): string
     {
-        $this->employee = $employee;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->employee->id))->dontRelease()];
+        return $employee->id;
     }
 
     public function handle(Employee $employee): void

@@ -10,38 +10,36 @@ namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\Helpers\Upload\ImportUpload;
 use App\Actions\Helpers\Upload\StoreUpload;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithImportModel;
 use App\Imports\HumanResources\Employee\EmployeeImport;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 
-class ImportEmployees
+class ImportEmployees extends OrgAction
 {
     use WithImportModel;
+    use WithHumanResourcesAuthorisation;
 
-    /**
-     * @var \App\Models\SysAdmin\Organisation
-     */
-    private Organisation|Workplace $parent;
 
-    public function handle($file): Upload
+    public function handle(Organisation $parent, $file): Upload
     {
         $upload = StoreUpload::run($file, Employee::class);
 
         if ($this->isSync) {
             ImportUpload::run(
                 $file,
-                new EmployeeImport($this->parent, $upload)
+                new EmployeeImport($parent, $upload)
             );
             $upload->refresh();
         } else {
             ImportUpload::dispatch(
                 $this->tmpPath.$upload->filename,
-                new EmployeeImport($this->parent, $upload)
+                new EmployeeImport($parent, $upload)
             );
         }
 
@@ -52,29 +50,20 @@ class ImportEmployees
 
     public function runImportForCommand($file, $command): Upload
     {
-        $this->parent = Organisation::where('slug', $command->argument('org'))->first();
+        $organisation = Organisation::where('slug', $command->argument('org'))->firstOrFail();
 
-        return $this->handle($file);
+        return $this->handle($organisation, $file);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Upload
     {
-        $this->parent = $organisation;
-        $request->validate();
+        $this->initialisation($organisation, $request);
+
         $file = $request->file('file');
         Storage::disk('local')->put($this->tmpPath, $file);
 
-        return $this->handle($file);
+        return $this->handle($organisation, $file);
     }
 
-    public function inWorkplace(Workplace $workplace, ActionRequest $request): Upload
-    {
-        $this->parent = $workplace;
-        $request->validate();
-        $file = $request->file('file');
-        Storage::disk('local')->put($this->tmpPath, $file);
-
-        return $this->handle($workplace, $file);
-    }
 
 }

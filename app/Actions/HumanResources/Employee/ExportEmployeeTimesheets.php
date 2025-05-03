@@ -9,15 +9,18 @@
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\HumanResources\TimesheetsExport;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportEmployeeTimesheets extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
     use WithExportData;
 
     /**
@@ -30,14 +33,20 @@ class ExportEmployeeTimesheets extends OrgAction
         return $this->export(new TimesheetsExport($employee), 'employee-timesheets', $type);
     }
 
+    public function rules(): array
+    {
+        return [
+            'type' => ['required', 'string', Rule::in('csv', 'xlsx')],
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisation($organisation, $request);
 
-        return $this->handle($employee, $request->all());
+        return $this->handle($employee, $this->validatedData);
     }
 }

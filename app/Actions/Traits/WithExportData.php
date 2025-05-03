@@ -19,7 +19,7 @@ trait WithExportData
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
-    public function export($callback, $prefix, $type): ?BinaryFileResponse
+    public function export($callback, $prefix, string $type): ?BinaryFileResponse
     {
         $result = null;
 

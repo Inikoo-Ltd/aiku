@@ -26,21 +26,15 @@ class ValidatePinEmployee extends OrgAction
 
     protected bool $asAction = false;
 
-    private Employee $employee;
     private ClockingMachine $clockingMachine;
 
     public function handle(Organisation $organisation, array $modalData)
     {
-        $employee = $organisation->employees()
+        return $organisation->employees()
         ->where('state', '!=', EmployeeStateEnum::LEFT->value)
         ->where('pin', Arr::get($modalData, 'pin'))->firstOrFail();
-        return $employee;
     }
 
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     public function action(ClockingMachine $clockingMachine, array $modelData, bool $audit = true)
     {
