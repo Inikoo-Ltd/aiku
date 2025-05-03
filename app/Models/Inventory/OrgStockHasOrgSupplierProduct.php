@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $local_priority
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read OrgSupplierProduct|null $orgSupplierProduct
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHasOrgSupplierProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHasOrgSupplierProduct newQuery()

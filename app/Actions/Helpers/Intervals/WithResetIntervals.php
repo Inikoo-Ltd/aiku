@@ -18,6 +18,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSalesIntervals;
+use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -34,11 +36,15 @@ use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -320,6 +326,70 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             )->delay(now()->addMinutes(30))->onQueue('low-priority');
+        }
+    }
+
+    protected function resetOrgStocks(): void
+    {
+        foreach (
+            OrgStock::whereIn('state', [
+                OrgStockStateEnum::ACTIVE,
+                OrgStockStateEnum::DISCONTINUING
+            ])->get() as $orgStock
+        ) {
+            OrgStockHydrateSalesIntervals::dispatch(
+                stock: $orgStock,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(10))->onQueue('sales');
+        }
+
+        foreach (
+            OrgStock::whereNotIn('state', [
+                OrgStockStateEnum::ACTIVE,
+                OrgStockStateEnum::DISCONTINUING
+            ])->get() as $orgStock
+        ) {
+            OrgStockHydrateSalesIntervals::dispatch(
+                stock: $orgStock,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(90))->onQueue('low-priority');
+        }
+    }
+
+    protected function resetOrgStockFamilies(): void
+    {
+        foreach (
+            OrgStockFamily::whereIn(
+                'state',
+                [
+                    OrgStockFamilyStateEnum::ACTIVE,
+                    OrgStockFamilyStateEnum::DISCONTINUING
+                ]
+            )->get() as $orgStockFamily
+        ) {
+            OrgStockFamilyHydrateSalesIntervals::dispatch(
+                stockFamily: $orgStockFamily,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(2))->onQueue('sales');
+        }
+
+        foreach (
+            OrgStockFamily::whereNotIn(
+                'state',
+                [
+                    OrgStockFamilyStateEnum::ACTIVE,
+                    OrgStockFamilyStateEnum::DISCONTINUING
+                ]
+            )->get() as $orgStockFamily
+        ) {
+            OrgStockFamilyHydrateSalesIntervals::dispatch(
+                stockFamily: $orgStockFamily,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(45))->onQueue('low-priority');
         }
     }
 

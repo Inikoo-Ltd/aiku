@@ -14,23 +14,17 @@ use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Location;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class LocationHydratePallets
+class LocationHydratePallets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Location $location;
-    public function __construct(Location $location)
+    public function getJobUniqueId(Location $location): string
     {
-        $this->location = $location;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->location->id))->dontRelease()];
+        return $location->id;
     }
 
     public function handle(Location $location): void

@@ -13,14 +13,16 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 
 trait WithIntervalUniqueJob
 {
-    public function getUniqueJobWithInterval(Group|Organisation|Shop|InvoiceCategory|Asset|StockFamily|Stock $stock, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    public function getUniqueJobWithInterval(Group|Organisation|Shop|InvoiceCategory|Asset|StockFamily|Stock|OrgStock|OrgStockFamily $model, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        $uniqueId = $stock->id;
+        $uniqueId = $model->id;
         if ($intervals !== null) {
             $intervalValues = [];
             foreach ($intervals as $interval) {

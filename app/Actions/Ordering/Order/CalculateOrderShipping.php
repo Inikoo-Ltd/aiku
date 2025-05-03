@@ -33,8 +33,8 @@ class CalculateOrderShipping
         }
 
         $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
-        if(!$shippingZoneSchema){
-            if($order->shipping_engine == OrderShippingEngineEnum::AUTO){
+        if (!$shippingZoneSchema) {
+            if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
                 $order->update([
                     'shipping_engine' => OrderShippingEngineEnum::MANUAL,
                 ]);
@@ -163,4 +163,3 @@ class CalculateOrderShipping
         return $helperZone->match($helperAddress);
     }
 }
-

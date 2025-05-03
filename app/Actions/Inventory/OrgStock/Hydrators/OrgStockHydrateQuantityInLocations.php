@@ -16,7 +16,10 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 {
     use AsAction;
 
-
+    public function getJobUniqueId(OrgStock $orgStock): int
+    {
+        return $orgStock->id;
+    }
 
     public function handle(OrgStock $orgStock): void
     {
@@ -26,8 +29,5 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         ]);
     }
 
-    public function getJobUniqueId(OrgStock $orgStock): int
-    {
-        return $orgStock->id;
-    }
+
 }

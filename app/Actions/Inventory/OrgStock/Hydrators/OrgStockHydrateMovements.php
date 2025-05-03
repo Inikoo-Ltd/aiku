@@ -26,10 +26,9 @@ class OrgStockHydrateMovements implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
-
         $orgStock->stats->update(
             [
-                'number_org_stock_movements' =>   DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->count(),
+                'number_org_stock_movements' => DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->count(),
             ]
         );
     }

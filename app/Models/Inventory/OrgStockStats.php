@@ -97,7 +97,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats query()

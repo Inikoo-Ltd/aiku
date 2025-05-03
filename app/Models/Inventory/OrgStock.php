@@ -70,6 +70,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
@@ -167,6 +168,11 @@ class OrgStock extends Model implements Auditable
     public function intervals(): HasOne
     {
         return $this->hasOne(OrgStockIntervals::class);
+    }
+
+    public function salesIntervals(): HasOne
+    {
+        return $this->hasOne(OrgStockSalesInterval::class);
     }
 
     public function orgSupplierProducts(): BelongsToMany
