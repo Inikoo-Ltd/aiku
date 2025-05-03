@@ -9,18 +9,17 @@
 namespace App\Actions\HumanResources\Workplace\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\HumanResources\WorkplacesExport;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportWorkplace extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithHumanResourcesAuthorisation;
     use WithExportData;
 
     /**
@@ -33,14 +32,19 @@ class ExportWorkplace extends OrgAction
         return $this->export(new WorkplacesExport(), 'workplaces', $type);
     }
 
+    public function rules(): array
+    {
+        return [
+            'type' => ['required', 'string', Rule::in('csv', 'xlsx')],
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
     public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
-
-        return $this->handle($request->all());
+        $this->initialisation($organisation, $request);
+        return $this->handle($this->validatedData);
     }
 }

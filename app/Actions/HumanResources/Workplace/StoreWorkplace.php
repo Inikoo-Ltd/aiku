@@ -8,9 +8,10 @@
 
 namespace App\Actions\HumanResources\Workplace;
 
-use App\Actions\HumanResources\Workplace\Hydrators\WorkplaceHydrateUniversalSearch;
+use App\Actions\HumanResources\Workplace\Search\WorkplaceRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWorkplaces;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
 use App\Models\HumanResources\Workplace;
@@ -29,6 +30,8 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreWorkplace extends OrgAction
 {
     use WithModelAddressActions;
+    use WithHumanResourcesEditAuthorisation;
+
 
     public function handle(Organisation $organisation, array $modelData): Workplace
     {
@@ -51,18 +54,9 @@ class StoreWorkplace extends OrgAction
 
 
         OrganisationHydrateWorkplaces::run($organisation);
-        WorkplaceHydrateUniversalSearch::dispatch($workplace);
+        WorkplaceRecordSearch::dispatch($workplace);
 
         return $workplace;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

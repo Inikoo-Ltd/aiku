@@ -36,7 +36,7 @@ class WorkplaceRecordSearch
                 'organisation_id'   => $workplace->organisation_id,
                 'organisation_slug' => $workplace->organisation->slug,
                 'sections'          => ['hr'],
-                'haystack_tier_1'   => trim($workplace->name. ' ' . $workplace->code),
+                'haystack_tier_1'   => $workplace->name,
                 'result'            => [
                     'route'      => [
                         'name'       => 'grp.org.hr.workplaces.show',

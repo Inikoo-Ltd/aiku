@@ -12,6 +12,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\WithWorkplaceSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\WorkplaceTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -26,19 +27,14 @@ class ShowWorkplace extends OrgAction
 {
     use WithActionButtons;
     use WithWorkplaceSubNavigation;
+    use WithHumanResourcesAuthorisation;
+
 
     public function handle(Workplace $workplace): Workplace
     {
         return $workplace;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
 
     public function asController(Organisation $organisation, Workplace $workplace, ActionRequest $request): Workplace
     {

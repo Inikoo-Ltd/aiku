@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\Workplace\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Helpers\Address;
@@ -25,15 +26,14 @@ use Spatie\LaravelOptions\Options;
 
 class EditWorkplace extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
+
     public function handle(Workplace $workplace): Workplace
     {
         return $workplace;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
 
     public function asController(Organisation $organisation, Workplace $workplace, ActionRequest $request): Workplace
     {
@@ -48,19 +48,18 @@ class EditWorkplace extends OrgAction
      */
     public function htmlResponse(Workplace $workplace, ActionRequest $request): Response
     {
-
         $sections['properties'] = [
             'label'  => __('Properties'),
             'icon'   => 'fal fa-key',
             'fields' => [
-                'name' => [
-                    'type'          => 'input',
-                    'label'         => __('name'),
-                    'placeholder'   => __('Input your name'),
-                    'value'         => $workplace->name,
-                    'required'      => true
+                'name'        => [
+                    'type'        => 'input',
+                    'label'       => __('name'),
+                    'placeholder' => __('Input your name'),
+                    'value'       => $workplace->name,
+                    'required'    => true
                 ],
-                'type' => [
+                'type'        => [
                     'type'        => 'select',
                     'label'       => __('type'),
                     'options'     => Options::forEnum(WorkplaceTypeEnum::class),
@@ -80,10 +79,10 @@ class EditWorkplace extends OrgAction
                     'searchable'  => true,
                     'mode'        => 'single'
                 ],
-                'address'      => [
-                    'type'    => 'address',
-                    'label'   => __('Address'),
-                    'value'   => AddressFormFieldsResource::make(
+                'address'     => [
+                    'type'     => 'address',
+                    'label'    => __('Address'),
+                    'value'    => AddressFormFieldsResource::make(
                         new Address(
                             [
                                 'country_id' => $workplace->organisation->country_id,
@@ -91,11 +90,11 @@ class EditWorkplace extends OrgAction
                             ]
                         )
                     )->getArray(),
-                    'options' => [
+                    'options'  => [
                         'countriesAddressData' => GetAddressData::run()
 
                     ],
-                    'required'    => true
+                    'required' => true
                 ]
             ]
         ];
@@ -122,27 +121,27 @@ class EditWorkplace extends OrgAction
         ];
 
         $currentSection = 'properties';
-        if ($request->has('section') and Arr::has($sections, $request->get('section'))) {
+        if ($request->has('section') && Arr::has($sections, $request->get('section'))) {
             $currentSection = $request->get('section');
         }
 
         return Inertia::render(
             'EditModel',
             [
-                'title'                            => __('editing working place'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title'       => __('editing working place'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation'  => [
                     'previous' => $this->getPrevious($workplace, $request),
                     'next'     => $this->getNext($workplace, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $workplace->name,
-                    'icon'     =>
+                    'title'   => $workplace->name,
+                    'icon'    =>
                         [
                             'icon'  => ['fal', 'building'],
                             'title' => __('working place')
                         ],
-                    'actions'  => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',

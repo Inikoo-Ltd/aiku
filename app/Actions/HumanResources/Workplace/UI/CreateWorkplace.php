@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\Workplace\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Helpers\Address;
@@ -23,6 +24,8 @@ use Spatie\LaravelOptions\Options;
 
 class CreateWorkplace extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     /**
      * @throws Exception
      */
@@ -109,12 +112,6 @@ class CreateWorkplace extends OrgAction
             ]
         );
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
 
     /**
      * @throws Exception

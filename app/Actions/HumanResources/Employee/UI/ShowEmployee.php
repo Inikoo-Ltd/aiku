@@ -30,18 +30,9 @@ class ShowEmployee extends OrgAction
     use WithEmployeeSubNavigation;
 
 
-    private Employee $employee;
-
     public function handle(Employee $employee): Employee
     {
         return $employee;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
     }
 
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): Employee

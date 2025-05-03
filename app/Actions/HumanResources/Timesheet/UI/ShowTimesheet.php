@@ -13,6 +13,7 @@ use App\Actions\HumanResources\Clocking\UI\IndexClockings;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\TimeTracker\UI\IndexTimeTrackers;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\TimesheetTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -30,19 +31,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowTimesheet extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     private Employee|Organisation $parent;
 
     public function handle(Timesheet $timesheet): Timesheet
     {
         return $timesheet;
-    }
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function asController(Organisation $organisation, Timesheet $timesheet, ActionRequest $request): Timesheet
@@ -93,27 +88,31 @@ class ShowTimesheet extends OrgAction
                 'timesheet' => GetTimesheetShowcase::run($timesheet),
 
                 TimesheetTabsEnum::TIME_TRACKERS->value => $this->tab == TimesheetTabsEnum::TIME_TRACKERS->value ?
-                    fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))
-                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))),
+                    fn() => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))
+                    : Inertia::lazy(fn() => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))),
 
 
                 TimesheetTabsEnum::CLOCKINGS->value => $this->tab == TimesheetTabsEnum::CLOCKINGS->value ?
-                    fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))
-                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))),
+                    fn() => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))
+                    : Inertia::lazy(fn() => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))),
 
 
                 TimesheetTabsEnum::HISTORY->value => $this->tab == TimesheetTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($timesheet))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($timesheet))),
+                    fn() => HistoryResource::collection(IndexHistory::run($timesheet))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($timesheet))),
 
             ]
-        )->table(IndexClockings::make()->tableStructure(
-            parent:$timesheet,
-            prefix: TimesheetTabsEnum::CLOCKINGS->value
-        ))->table(IndexTimeTrackers::make()->tableStructure(
-            parent:$timesheet,
-            prefix: TimesheetTabsEnum::TIME_TRACKERS->value
-        ));
+        )->table(
+            IndexClockings::make()->tableStructure(
+                parent: $timesheet,
+                prefix: TimesheetTabsEnum::CLOCKINGS->value
+            )
+        )->table(
+            IndexTimeTrackers::make()->tableStructure(
+                parent: $timesheet,
+                prefix: TimesheetTabsEnum::TIME_TRACKERS->value
+            )
+        );
     }
 
 
@@ -155,10 +154,7 @@ class ShowTimesheet extends OrgAction
                     ]
                 ),
                 'grp.org.hr.employees.show.timesheets.show' => array_merge(
-                    ShowEmployee::make()->getBreadcrumbs([
-                        'organisation' => $this->organisation->slug,
-                        'employee'     => $timesheet->subject->slug
-                    ]),
+                    ShowEmployee::make()->getBreadcrumbs($timesheet->subject, Arr::only($routeParameters, ['organisation', 'employee'])),
                     [
                         [
                             'type'           => 'modelWithIndex',
@@ -166,10 +162,7 @@ class ShowTimesheet extends OrgAction
                                 'index' => [
                                     'route' => [
                                         'name'       => 'grp.org.hr.employees.show',
-                                        'parameters' => [
-                                            'organisation' => $this->organisation->slug,
-                                            'employee'     => $timesheet->subject->slug,
-                                        ]
+                                        'parameters' => Arr::only($routeParameters, ['organisation', 'employee'])
                                     ],
                                     'label' => __('Timesheets')
                                 ],

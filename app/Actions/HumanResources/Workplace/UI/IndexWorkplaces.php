@@ -10,6 +10,7 @@ namespace App\Actions\HumanResources\Workplace\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\WorkplaceInertiaResource;
 use App\Http\Resources\HumanResources\WorkplaceResource;
@@ -28,6 +29,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWorkplaces extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
+
     private array $originalParameters;
     private Group|Organisation $parent;
 
@@ -48,7 +52,7 @@ class IndexWorkplaces extends OrgAction
 
         if ($parent instanceof Organisation) {
             $queryBuilder->where('workplaces.organisation_id', $parent->id);
-        } elseif ($parent instanceof Group) {
+        } else { //Group
             $queryBuilder->where('workplaces.group_id', $parent->id);
         }
 
@@ -70,7 +74,7 @@ class IndexWorkplaces extends OrgAction
             ])
             ->with('address')
             ->with('stats')
-            ->allowedSorts(['slug','name'])
+            ->allowedSorts(['slug', 'name'])
             ->allowedFilters([$globalSearch, 'slug', 'name', 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -79,7 +83,6 @@ class IndexWorkplaces extends OrgAction
     public function tableStructure($parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
-
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -115,16 +118,6 @@ class IndexWorkplaces extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
-
 
     public function jsonResponse(LengthAwarePaginator $workplace): AnonymousResourceCollection
     {
@@ -134,15 +127,14 @@ class IndexWorkplaces extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $workplace, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Org/HumanResources/Workplaces',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('working places'),
                 'pageHead'    => [
-                    'icon'   => ['fal', 'building'],
-                    'title'  => __('Working places'),
+                    'icon'    => ['fal', 'building'],
+                    'title'   => __('Working places'),
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -156,7 +148,7 @@ class IndexWorkplaces extends OrgAction
                     ]
                 ],
 
-                'data'        => WorkplaceInertiaResource::collection($workplace),
+                'data' => WorkplaceInertiaResource::collection($workplace),
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -167,6 +159,7 @@ class IndexWorkplaces extends OrgAction
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
         $this->originalParameters = $request->route()->originalParameters();
+
         return $this->handle($organisation);
     }
 
@@ -184,7 +177,7 @@ class IndexWorkplaces extends OrgAction
         $headCrumb = function ($routeName, $routeParameters) {
             return [
                 [
-                   'type'   => 'simple',
+                    'type'   => 'simple',
                     'simple' => [
                         'route' => [
                             'name'       => $routeName,
@@ -196,6 +189,7 @@ class IndexWorkplaces extends OrgAction
                 ],
             ];
         };
+
         return match ($routeName) {
             'grp.org.hr.workplaces.index' =>
             array_merge(

@@ -11,7 +11,6 @@ namespace App\Actions\HumanResources\Timesheet;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\HumanResources\Timesheet;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTimesheet extends OrgAction
 {
@@ -24,14 +23,6 @@ class UpdateTimesheet extends OrgAction
     }
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
 
     public function rules(): array
     {

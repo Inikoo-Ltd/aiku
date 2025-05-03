@@ -13,12 +13,18 @@ use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Workplace;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WorkplaceHydrateClockingMachines
+class WorkplaceHydrateClockingMachines implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+
+    public function getJobUniqueId(Workplace $workplace): string
+    {
+        return $workplace->id;
+    }
 
     public function handle(Workplace $workplace): void
     {

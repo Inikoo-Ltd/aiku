@@ -12,6 +12,7 @@ use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\Helpers\Period\PeriodEnum;
 use App\Enums\UI\HumanResources\TimesheetsTabsEnum;
@@ -35,6 +36,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexTimesheets extends OrgAction
 {
     use WithEmployeeSubNavigation;
+    use WithHumanResourcesAuthorisation;
 
     private Group|Employee|Organisation|Guest $parent;
 
@@ -146,25 +148,10 @@ class IndexTimesheets extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
-            //   ->column(key: 'number_time_trackers', label: __('time tracker'), canBeHidden: false)
-            //  ->column(key: 'number_open_time_trackers', label: __('open time tracker'), canBeHidden: false)
             $table->defaultSort('date');
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-
-        return
-            (
-                $request->user()->tokenCan('root') or
-                $request->user()->authTo("human-resources.{$this->organisation->id}.edit")
-            );
-    }
 
     public function jsonResponse(LengthAwarePaginator $timesheets): AnonymousResourceCollection
     {
