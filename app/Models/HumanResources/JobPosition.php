@@ -42,7 +42,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\Employee> $employees
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\Employee> $employeesOtherOrganisations
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Guest> $guests
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
@@ -106,20 +105,6 @@ class JobPosition extends Model implements Auditable
         return $this->belongsToMany(Employee::class, 'employee_has_job_positions')
                     ->withPivot(['share', 'scopes'])
                     ->withTimestamps();
-    }
-
-    public function employeesOtherOrganisations(): BelongsToMany
-    {
-        return $this->belongsToMany(Employee::class, 'employee_has_other_organisation_job_positions')
-            ->withPivot(['share', 'scopes'])
-            ->withTimestamps();
-    }
-
-    public function guests(): BelongsToMany
-    {
-        return $this->belongsToMany(Guest::class, 'guest_has_job_positions')
-            ->withPivot(['share', 'scopes'])
-            ->withTimestamps();
     }
 
     public function roles(): BelongsToMany

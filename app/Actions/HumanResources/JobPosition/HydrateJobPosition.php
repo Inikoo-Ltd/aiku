@@ -10,14 +10,18 @@ namespace App\Actions\HumanResources\JobPosition;
 
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateGuests;
-use App\Actions\HydrateModel;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\HumanResources\JobPosition;
-use Illuminate\Support\Collection;
 
-class HydrateJobPosition extends HydrateModel
+class HydrateJobPosition
 {
+    use WithHydrateCommand;
     public string $commandSignature = 'hydrate:job_positions {organisations?*} {--s|slugs=}';
 
+    public function __construct()
+    {
+        $this->model = JobPosition::class;
+    }
 
     public function handle(JobPosition $jobPosition): void
     {
@@ -26,13 +30,4 @@ class HydrateJobPosition extends HydrateModel
     }
 
 
-    protected function getModel(string $slug): JobPosition
-    {
-        return JobPosition::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return JobPosition::get();
-    }
 }

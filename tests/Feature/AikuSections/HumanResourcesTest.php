@@ -19,6 +19,7 @@ use App\Actions\HumanResources\Employee\Search\ReindexEmployeeSearch;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployeeWorkingHours;
+use App\Actions\HumanResources\JobPosition\HydrateJobPosition;
 use App\Actions\HumanResources\JobPosition\Search\ReindexJobPositionSearch;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
 use App\Actions\HumanResources\Workplace\Search\ReindexWorkplaceSearch;
@@ -382,4 +383,10 @@ test('hydrate employees', function () {
     $this->artisan('hydrate:employees')->assertExitCode(0);
     $employee = Employee::first();
     HydrateEmployees::run($employee);
+});
+
+test('hydrate job positions', function () {
+    $this->artisan('hydrate:job_positions')->assertExitCode(0);
+    $jobPosition = JobPosition::first();
+    HydrateJobPosition::run($jobPosition);
 });

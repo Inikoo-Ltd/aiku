@@ -35,7 +35,7 @@ class JobPositionRecordSearch
         }
     }
 
-    private function saveToUniversalSearch(JobPosition $jobPosition, Organisation $organisation)
+    private function saveToUniversalSearch(JobPosition $jobPosition, Organisation $organisation): void
     {
 
         $modelData = [
@@ -61,15 +61,15 @@ class JobPositionRecordSearch
             'meta'       => [
                     $jobPosition->stats->number_employees_currently_working > 0 ?
                     [
-                    'type'   => 'number',
-                    'label' => __('employees') . ": ",
-                    'number'   => (int) $jobPosition->stats->number_employees_currently_working,
+                        'type'   => 'number',
+                        'label' => __('employees') . ": ",
+                        'number'   => $jobPosition->stats->number_employees_currently_working,
                     ] : [],
                     $jobPosition->stats->number_guests_status_active > 0 ?
                     [
-                    'type'   => 'number',
-                    'label' => __('guests') . ": ",
-                    'number'   => (int) $jobPosition->stats->number_guests_status_active,
+                        'type'   => 'number',
+                        'label' => __('guests') . ": ",
+                        'number'   => $jobPosition->stats->number_guests_status_active,
                     ] : [],
                 ]
             ]

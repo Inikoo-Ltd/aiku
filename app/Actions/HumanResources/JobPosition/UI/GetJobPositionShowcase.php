@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\JobPosition\UI;
 
+use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Models\HumanResources\JobPosition;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -18,9 +19,7 @@ class GetJobPositionShowcase
     public function handle(JobPosition $jobPosition): array
     {
         return [
-            [
-
-            ]
+            'jobPosition' => JobPositionResource::make($jobPosition),
         ];
     }
 }

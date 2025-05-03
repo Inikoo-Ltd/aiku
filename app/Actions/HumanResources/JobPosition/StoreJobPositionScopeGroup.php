@@ -8,7 +8,7 @@
 
 namespace App\Actions\HumanResources\JobPosition;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Models\HumanResources\JobPosition;
@@ -16,7 +16,7 @@ use App\Models\SysAdmin\Group;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 
-class StoreJobPositionScopeGroup extends GrpAction
+class StoreJobPositionScopeGroup extends OrgAction
 {
     public function handle(Group $group, array $modelData): JobPosition
     {
@@ -59,7 +59,7 @@ class StoreJobPositionScopeGroup extends GrpAction
     public function action(Group $group, array $modelData): JobPosition
     {
         $this->asAction = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }

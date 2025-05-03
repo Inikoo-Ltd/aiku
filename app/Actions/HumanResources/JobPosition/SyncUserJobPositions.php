@@ -12,11 +12,11 @@ use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateGuests;
 use App\Actions\SysAdmin\User\SyncRolesFromJobPositions;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\User;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsObject;
 
 class SyncUserJobPositions
 {
-    use AsAction;
+    use AsObject;
 
     public function handle(User $user, array $jobPositions): void
     {

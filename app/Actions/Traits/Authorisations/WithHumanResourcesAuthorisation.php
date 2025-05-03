@@ -10,6 +10,8 @@ namespace App\Actions\Traits\Authorisations;
 
 use Lorisleiva\Actions\ActionRequest;
 
+use function PHPUnit\Framework\stringStartsWith;
+
 trait WithHumanResourcesAuthorisation
 {
     public function authorize(ActionRequest $request): bool
@@ -18,13 +20,12 @@ trait WithHumanResourcesAuthorisation
             return true;
         }
 
-        if ($request->route()->getName() == 'grp.overview.hr.clocking-machines.index') {
+        if (stringStartsWith($request->route()->getName(), 'grp.overview.hr.')) {
             return $request->user()->authTo("group-overview");
         }
 
-        $this->canEdit = $request->user()->authTo(["human-resources.{$this->organisation->id}.edit","org-supervisor.{$this->organisation->id}.human-resources"]);
+        $this->canEdit = $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]);
 
-        return $request->user()->authTo(["human-resources.{$this->organisation->id}.view","org-supervisor.{$this->organisation->id}.human-resources"]);
-
+        return $request->user()->authTo(["human-resources.{$this->organisation->id}.view", "org-supervisor.{$this->organisation->id}.human-resources"]);
     }
 }

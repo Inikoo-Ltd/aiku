@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\JobPosition\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\JobPositionTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -24,16 +25,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowJobPosition extends OrgAction
 {
+    use WithHumanResourcesAuthorisation;
+
     public function handle(JobPosition $jobPosition): JobPosition
     {
         return $jobPosition;
-    }
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("org-admin.{$this->organisation->id}");
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
     public function asController(Organisation $organisation, JobPosition $jobPosition, ActionRequest $request): JobPosition
@@ -79,22 +75,6 @@ class ShowJobPosition extends OrgAction
                         prefix: JobPositionTabsEnum::EMPLOYEES->value
                     )
                 )),
-
-//               JobPositionTabsEnum::ROLES->value => $this->tab == JobPositionTabsEnum::ROLES->value
-//        ?
-//        fn () => RoleResource::collection(
-//            IndexRoles::run(
-//                parent: $jobPosition,
-//                prefix: 'roles'
-//            )
-//        )
-//        : Inertia::lazy(fn () => RoleResource::collection(
-//            IndexRoles::run(
-//                parent: $this->warehouse,
-//                prefix: 'roles'
-//            )
-//        )),
-
 
                 JobPositionTabsEnum::HISTORY->value => $this->tab == JobPositionTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($jobPosition))

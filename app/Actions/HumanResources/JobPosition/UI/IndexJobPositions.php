@@ -12,6 +12,7 @@ use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\JobPositionsResource;
 use App\InertiaTable\InertiaTable;
@@ -32,6 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexJobPositions extends OrgAction
 {
     use WithEmployeeSubNavigation;
+    use WithHumanResourcesAuthorisation;
 
     private Group|Employee|Organisation $parent;
 
@@ -76,17 +78,6 @@ class IndexJobPositions extends OrgAction
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        $this->canEdit = $request->user()->authTo("org-supervisor.{$this->organisation->id}.human-resources");
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
-
-
     public function jsonResponse(LengthAwarePaginator $jobPositions): AnonymousResourceCollection
     {
         return JobPositionsResource::collection($jobPositions);
@@ -125,9 +116,6 @@ class IndexJobPositions extends OrgAction
 
             if ($parent instanceof Organisation) {
                 $table->column(key: 'number_employees_currently_working', label: __('employees'), canBeHidden: false, sortable: true, searchable: true);
-
-                //$table->column(key: 'department', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
-                //$table->column(key: 'team', label: __('team'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 $table->column(key: 'share', label: __('Share'), canBeHidden: false, sortable: true, searchable: true);
             }

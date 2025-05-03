@@ -8,13 +8,14 @@
 
 namespace App\Actions\HumanResources\JobPosition\Hydrators;
 
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositionsShare;
 use App\Actions\Traits\WithNormalise;
 use App\Models\HumanResources\JobPosition;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class JobPositionHydrateGuests
+class JobPositionHydrateGuests implements ShouldBeUnique
 {
     use AsAction;
     use WithNormalise;
@@ -33,27 +34,24 @@ class JobPositionHydrateGuests
 
     public function handle(JobPosition $jobPosition): void
     {
+        $numberGuests         = DB::table('user_has_pseudo_job_positions')
+            ->leftJoin('users', 'user_has_pseudo_job_positions.user_id', '=', 'users.id')
+            ->leftJoin('guests', 'users.id', '=', 'guests.user_id')
+            ->whereNotNull('guests.id')->where('user_has_pseudo_job_positions.job_position_id', $jobPosition->id)->count('guests.id');
 
-        //todo
-
-        //        $numberGuests        = $jobPosition->guests()->count();
-        //        $numberGuestsWorkTime = $jobPosition->employees()->sum('share');
-        //
-        //        $jobPosition->stats()->update(
-        //            [
-        //                'number_guests'           => $numberGuests,
-        //                'number_guests_work_time' => $numberGuestsWorkTime
-        //            ]
-        //        );
-        //
-        //        if ($jobPosition->organisation_id) {
-        //            OrganisationHydrateJobPositionsShare::run($jobPosition->organisation);
-        //        }
+        $numberGuestWorkTime = DB::table('user_has_pseudo_job_positions')
+            ->leftJoin('users', 'user_has_pseudo_job_positions.user_id', '=', 'users.id')
+            ->leftJoin('guests', 'users.id', '=', 'guests.user_id')
+            ->whereNotNull('guests.id')->where('user_has_pseudo_job_positions.job_position_id', $jobPosition->id)->sum('user_has_pseudo_job_positions.share');
 
 
+        $jobPosition->stats()->update(
+            [
+                'number_guests'           => $numberGuests,
+                'number_guests_work_time' => $numberGuestWorkTime
+            ]
+        );
     }
-
-
 
 
 }

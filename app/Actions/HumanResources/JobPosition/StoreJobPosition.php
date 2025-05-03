@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\JobPosition;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositions;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreJobPosition extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(Organisation $organisation, array $modelData): JobPosition
     {
         data_set($modelData, 'group_id', $organisation->group_id);
@@ -34,16 +37,6 @@ class StoreJobPosition extends OrgAction
 
         return $jobPosition;
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("org-supervisor.{$this->organisation->id}.human-resources");
-    }
-
 
     public function rules(): array
     {
@@ -70,11 +63,9 @@ class StoreJobPosition extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if (!$this->asAction) {
-            if ($this->has('code')) {
-                $this->set('code', 'c-'.$this->get('code'));
-                $this->set('locked', false);
-            }
+        if (!$this->asAction && $this->has('code')) {
+            $this->set('code', 'c-'.$this->get('code'));
+            $this->set('locked', false);
         }
     }
 

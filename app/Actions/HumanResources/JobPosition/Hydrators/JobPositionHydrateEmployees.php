@@ -14,25 +14,18 @@ use App\Actions\Traits\WithNormalise;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class JobPositionHydrateEmployees
+class JobPositionHydrateEmployees implements ShouldBeUnique
 {
     use AsAction;
     use WithNormalise;
     use WithEnumStats;
 
-    private JobPosition $jobPosition;
-
-    public function __construct(JobPosition $jobPosition)
+    public function getJobUniqueId(JobPosition $jobPosition): string
     {
-        $this->jobPosition = $jobPosition;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->jobPosition->id))->dontRelease()];
+        return $jobPosition->id;
     }
 
     public function handle(JobPosition $jobPosition): void

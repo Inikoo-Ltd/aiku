@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\JobPosition;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteJobPosition extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(JobPosition $jobPosition): JobPosition
     {
         $jobPosition->delete();
@@ -24,14 +27,9 @@ class DeleteJobPosition extends OrgAction
         return $jobPosition;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
-    }
-
     public function asController(Organisation $organisation, JobPosition $jobPosition, ActionRequest $request): JobPosition
     {
-        $request->validate();
+        $this->initialisation($organisation, $request);
 
         return $this->handle($jobPosition);
     }
