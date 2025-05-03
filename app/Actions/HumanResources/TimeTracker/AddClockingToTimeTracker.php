@@ -12,11 +12,11 @@ use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsObject;
 
 class AddClockingToTimeTracker
 {
-    use AsAction;
+    use AsObject;
 
 
     public function handle(Timesheet $timesheet, Clocking $clocking, int $hydratorsDelay = 0): TimeTracker

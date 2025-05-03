@@ -16,7 +16,6 @@ use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreTimeTracker extends OrgAction
 {
@@ -50,23 +49,6 @@ class StoreTimeTracker extends OrgAction
         TimesheetHydrateTimeTrackers::dispatch($timesheet);
 
         return $timeTracker;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
-
-
-    public function rules(): array
-    {
-        return [
-
-        ];
     }
 
 

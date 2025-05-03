@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\Timesheet;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateTimesheets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateTimesheets;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Timesheet;
 use App\Models\SysAdmin\Guest;
 use App\Models\HumanResources\Employee;
@@ -20,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTimesheet extends OrgAction
 {
+    use WithHumanResourcesEditAuthorisation;
+
     public function handle(Employee|Guest $parent, array $modelData): Timesheet
     {
         data_set($modelData, 'group_id', $parent->group_id);
@@ -37,15 +40,6 @@ class StoreTimesheet extends OrgAction
         $timesheet->refresh();
 
         return $timesheet;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
     }
 
 

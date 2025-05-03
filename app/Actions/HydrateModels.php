@@ -195,6 +195,7 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:workplaces');
         $command->call('hydrate:job_positions');
         $command->call('hydrate:clocking_machines');
+        $command->call('hydrate:timesheets');
     }
 
     protected function hydrateAccounting(Command $command): void

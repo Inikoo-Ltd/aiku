@@ -9,28 +9,22 @@
 namespace App\Actions\HumanResources\Timesheet;
 
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
-use App\Actions\HydrateModel;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\HumanResources\Timesheet;
-use Illuminate\Support\Collection;
 
-class HydrateTimesheet extends HydrateModel
+class HydrateTimesheets
 {
+    use WithHydrateCommand;
     public string $commandSignature = 'hydrate:timesheets {organisations?*} {--s|slugs=}';
 
+    public function __construct()
+    {
+        $this->model = Timesheet::class;
+    }
 
     public function handle(Timesheet $timesheet): void
     {
         TimesheetHydrateTimeTrackers::run($timesheet);
     }
 
-
-    protected function getModel(string $slug): Timesheet
-    {
-        return Timesheet::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return Timesheet::get();
-    }
 }

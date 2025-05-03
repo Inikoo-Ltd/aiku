@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Timesheet\Pdf;
 
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -18,7 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 
-class PdfTimesheets
+class PdfTimesheets extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -27,19 +28,19 @@ class PdfTimesheets
     /**
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Organisation $parent)
+    public function handle(Organisation $parent): string
     {
         ini_set("pcre.backtrack_limit", "5000000");
         ini_set("pcre.recursion_limit", "5000000");
 
-        $filename = __('Timesheets - ') . $parent->name . '.pdf';
-        $config = [
-            'title' => $filename,
-            'margin_left' => 8,
-            'margin_right' => 8,
-            'margin_top' => 2,
-            'margin_bottom' => 2,
-            'auto_page_break' => true,
+        $filename = __('Timesheets - ').$parent->name.'.pdf';
+        $config   = [
+            'title'                  => $filename,
+            'margin_left'            => 8,
+            'margin_right'           => 8,
+            'margin_top'             => 2,
+            'margin_bottom'          => 2,
+            'auto_page_break'        => true,
             'auto_page_break_margin' => 10
         ];
 
@@ -50,16 +51,16 @@ class PdfTimesheets
             QueryBuilder::for($q)->withFilterPeriod('date');
         });
 
-        $chunkSize = 10;
+        $chunkSize      = 10;
         $employeeChunks = $query->get()->chunk($chunkSize);
 
         $pdf = PDF::loadHTML('', $config);
 
         foreach ($employeeChunks as $key => $chunk) {
             $html = view('hr.timesheets', [
-                'filename' => $filename,
+                'filename'     => $filename,
                 'organisation' => $parent,
-                'employees' => $chunk,
+                'employees'    => $chunk,
             ])->render();
 
             if ($key > 0) {
@@ -69,17 +70,16 @@ class PdfTimesheets
             $pdf->getMpdf()->WriteHTML($html);
         }
 
-        $filePath = "pdfs/{$filename}.pdf";
-        Storage::put($filePath, $pdf->output('', 'S'));
+        $filePath = "pdfs/$filename.pdf";
+        Storage::put($filePath, $pdf->output());
 
         return $filePath;
     }
 
-    /**
-     * @throws \Mpdf\MpdfException
-     */
+
     public function asController(Organisation $organisation, ActionRequest $request): void
     {
+        $this->initialisation($organisation, $request);
         self::dispatch($organisation);
     }
 }

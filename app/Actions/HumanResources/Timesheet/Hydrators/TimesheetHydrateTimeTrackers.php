@@ -11,29 +11,22 @@ namespace App\Actions\HumanResources\Timesheet\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\Timesheet;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use App\Models\HumanResources\TimeTracker;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class TimesheetHydrateTimeTrackers
+class TimesheetHydrateTimeTrackers implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Timesheet $timesheet;
-
-    public function __construct(Timesheet $timesheet)
+    public function getJobUniqueId(Timesheet $timesheet): string
     {
-        $this->timesheet = $timesheet;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->timesheet->id))->dontRelease()];
+        return $timesheet->id;
     }
 
     public function handle(Timesheet $timesheet): void
     {
-
         $timesheet->refresh();
 
         $stats = [
@@ -46,11 +39,8 @@ class TimesheetHydrateTimeTrackers
         $breakDuration            = 0;
         $breakStart               = null;
         $numberClosedTimeTrackers = 0;
+        /** @var TimeTracker $timeTracker */
         foreach ($timeTrackers as $timeTracker) {
-
-
-
-
             if ($breakStart) {
                 $breakDuration += $breakStart->diffInSeconds($timeTracker->starts_at);
                 $breakStart    = null;
@@ -61,9 +51,6 @@ class TimesheetHydrateTimeTrackers
                 $workDuration += $timeTracker->duration;
                 $breakStart   = $timeTracker->ends_at;
             }
-
-
-
         }
 
         $stats['number_open_time_trackers'] = $stats['number_time_trackers'] - $numberClosedTimeTrackers;
@@ -73,8 +60,8 @@ class TimesheetHydrateTimeTrackers
         }
 
         if ($numberClosedTimeTrackers) {
-            $stats['working_duration']  = $workDuration;
-            $stats['breaks_duration']   = $breakDuration;
+            $stats['working_duration'] = $workDuration;
+            $stats['breaks_duration']  = $breakDuration;
         }
 
         $timesheet->update($stats);

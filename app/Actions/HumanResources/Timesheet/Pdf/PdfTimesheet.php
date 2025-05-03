@@ -8,29 +8,28 @@
 
 namespace App\Actions\HumanResources\Timesheet\Pdf;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Symfony\Component\HttpFoundation\Response;
 
-class PdfTimesheet
+class PdfTimesheet extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithHumanResourcesAuthorisation;
     use WithExportData;
 
     /**
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Employee $parent)
+    public function handle(Employee $employee): Response
     {
-        $filename = __('Timesheets - ') . $parent->name . '.pdf';
+        $filename = __('Timesheets - ') . $employee->contact_name . '.pdf';
         $config = [
             'title' => $filename,
             'margin_left' => 8,
@@ -42,14 +41,14 @@ class PdfTimesheet
         ];
 
         $query = QueryBuilder::for(Timesheet::class);
-        $query->where('subject_type', class_basename($parent));
-        $query->where('subject_id', $parent->id);
+        $query->where('subject_type', class_basename($employee));
+        $query->where('subject_id', $employee->id);
         $query->withFilterPeriod('date');
 
         return PDF::chunkLoadView('<html-separator/>', 'hr.timesheet', [
             'filename' => $filename,
-            'organisation' => $parent->organisation,
-            'employee' => $parent,
+            'organisation' => $employee->organisation,
+            'employee' => $employee,
             'timesheets' => $query->get()
         ], [], $config)->stream($filename);
     }
@@ -59,6 +58,7 @@ class PdfTimesheet
      */
     public function inEmployee(Organisation $organisation, Employee $employee, ActionRequest $request): Response
     {
+        $this->initialisation($organisation, $request);
         return $this->handle($employee);
     }
 }
