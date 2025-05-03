@@ -9,26 +9,18 @@
 namespace App\Actions\SupplyChain\Supplier\Hydrators;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Models\SupplyChain\Supplier;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SupplierHydratePurchaseOrders
+class SupplierHydratePurchaseOrders implements ShouldBeUnique
 {
     use AsAction;
-    private Supplier $supplier;
 
-
-    public function __construct(Supplier $supplier)
+    public function getJobUniqueId(Supplier $supplier): string
     {
-        $this->supplier = $supplier;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->supplier->id))->dontRelease()];
+        return $supplier->id;
     }
 
     public function handle(Supplier $supplier): void
@@ -45,15 +37,6 @@ class SupplierHydratePurchaseOrders
         foreach (PurchaseOrderStateEnum::cases() as $productState) {
             $stats['number_purchase_orders_state_'.$productState->snake()] = Arr::get($purchaseOrderStateCounts, $productState->value, 0);
         }
-
-        // $purchaseOrderStatusCounts =  $supplier->purchaseOrders()
-        //     ->selectRaw('status, count(*) as total')
-        //     ->groupBy('status')
-        //     ->pluck('total', 'status')->all();
-
-        // foreach (PurchaseOrderDeliveryStateEnum::cases() as $purchaseOrderStatusEnum) {
-        //     $stats['number_purchase_orders_delivery_state_'.$purchaseOrderStatusEnum->snake()] = Arr::get($purchaseOrderStatusCounts, $purchaseOrderStatusEnum->value, 0);
-        // }
 
         $supplier->stats()->update($stats);
     }

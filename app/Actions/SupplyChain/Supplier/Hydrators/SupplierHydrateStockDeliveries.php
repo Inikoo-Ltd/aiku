@@ -10,12 +10,18 @@ namespace App\Actions\SupplyChain\Supplier\Hydrators;
 
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
 use App\Models\SupplyChain\Supplier;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SupplierHydrateStockDeliveries
+class SupplierHydrateStockDeliveries implements ShouldBeUnique
 {
     use AsAction;
+
+    public function getJobUniqueId(Supplier $supplier): string
+    {
+        return $supplier->id;
+    }
 
     public function handle(Supplier $supplier): void
     {

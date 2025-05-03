@@ -11,24 +11,17 @@ namespace App\Actions\SupplyChain\Agent\Hydrators;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Models\SupplyChain\Agent;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AgentHydratePurchaseOrders
+class AgentHydratePurchaseOrders implements ShouldBeUnique
 {
     use AsAction;
-    private Agent $agent;
 
-
-    public function __construct(Agent $agent)
+    public function getJobUniqueId(Agent $agent): string
     {
-        $this->agent = $agent;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->agent->id))->dontRelease()];
+        return $agent->id;
     }
 
     public function handle(Agent $agent): void
@@ -46,7 +39,7 @@ class AgentHydratePurchaseOrders
             $stats['number_purchase_orders_state_'.$productState->snake()] = Arr::get($purchaseOrderStateCounts, $productState->value, 0);
         }
 
-        $purchaseOrderStatusCounts =  $agent->purchaseOrders()
+        $purchaseOrderStatusCounts = $agent->purchaseOrders()
             ->selectRaw('delivery_state, count(*) as total')
             ->groupBy('delivery_state')
             ->pluck('total', 'delivery_state')->all();

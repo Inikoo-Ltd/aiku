@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 03 Apr 2024 20:48:26 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Wed, 03 Apr 2024 20:48:26 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -12,7 +12,7 @@ use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromSupplierInAgent;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
-use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateUniversalSearch;
+use App\Actions\SupplyChain\Supplier\Search\SupplierRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -56,7 +56,7 @@ class StoreSupplier extends OrgAction
             $group = $parent;
         }
 
-        $supplier = DB::transaction(function () use ($group, $parent, $modelData, $addressData) {
+        $supplier = DB::transaction(function () use ($parent, $modelData, $addressData) {
             /** @var Supplier $supplier */
             $supplier = $parent->suppliers()->create($modelData);
             $supplier->stats()->create();
@@ -91,7 +91,7 @@ class StoreSupplier extends OrgAction
             AgentHydrateSuppliers::dispatch($supplier->agent)->delay($this->hydratorsDelay);
         }
 
-        SupplierHydrateUniversalSearch::dispatch($supplier);
+        SupplierRecordSearch::dispatch($supplier);
 
         return $supplier;
     }
@@ -147,7 +147,7 @@ class StoreSupplier extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('contact_name') and !$this->get('company_name')) {
+        if (!$this->get('contact_name') && !$this->get('company_name')) {
             $validator->errors()->add('contact_name', 'contact name or company name is required');
         }
     }

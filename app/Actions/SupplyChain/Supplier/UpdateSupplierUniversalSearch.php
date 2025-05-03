@@ -8,7 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier;
 
-use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateUniversalSearch;
+use App\Actions\SupplyChain\Supplier\Search\SupplierRecordSearch;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,7 +21,7 @@ class UpdateSupplierUniversalSearch
 
     public function handle(Supplier $supplier): void
     {
-        SupplierHydrateUniversalSearch::run($supplier);
+        SupplierRecordSearch::run($supplier);
     }
 
     public function asCommand(Command $command): int

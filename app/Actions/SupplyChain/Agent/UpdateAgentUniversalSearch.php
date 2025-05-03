@@ -8,7 +8,7 @@
 
 namespace App\Actions\SupplyChain\Agent;
 
-use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateUniversalSearch;
+use App\Actions\SupplyChain\Agent\Search\AgentRecordSearch;
 use App\Models\SupplyChain\Agent;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -21,7 +21,7 @@ class UpdateAgentUniversalSearch
 
     public function handle(Agent $agent): void
     {
-        AgentHydrateUniversalSearch::run($agent);
+        AgentRecordSearch::run($agent);
     }
 
     public function asCommand(): int

@@ -10,26 +10,18 @@ namespace App\Actions\SupplyChain\Agent\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateSupplierProducts;
 use App\Models\SupplyChain\Agent;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AgentHydrateSupplierProducts
+class AgentHydrateSupplierProducts implements ShouldBeUnique
 {
     use AsAction;
     use WithHydrateSupplierProducts;
 
-    private Agent $agent;
-
-    public function __construct(Agent $agent)
+    public function getJobUniqueId(Agent $agent): string
     {
-        $this->agent = $agent;
+        return $agent->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->agent->id))->dontRelease()];
-    }
-
 
     public function handle(Agent $agent): void
     {

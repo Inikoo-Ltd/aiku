@@ -11,13 +11,19 @@ namespace App\Actions\SupplyChain\Supplier\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateSupplierProducts;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\SupplyChain\Supplier;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SupplierHydrateSupplierProducts
+class SupplierHydrateSupplierProducts implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateSupplierProducts;
+
+    public function getJobUniqueId(Supplier $supplier): string
+    {
+        return $supplier->id;
+    }
 
     public function handle(Supplier $supplier): void
     {

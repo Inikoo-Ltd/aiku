@@ -39,7 +39,11 @@ use App\Actions\Procurement\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Procurement\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\Procurement\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
 use App\Actions\Procurement\StockDeliveryItem\UpdateStockDeliveryItem;
+use App\Actions\SupplyChain\Agent\HydrateAgents;
+use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
 use App\Actions\SupplyChain\Agent\StoreAgent;
+use App\Actions\SupplyChain\Supplier\HydrateSuppliers;
+use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\Search\ReindexSupplierProductsSearch;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
@@ -391,11 +395,11 @@ test('create supplier delivery', function (OrgSupplier $orgSupplier) {
 
 test('update supplier delivery', function (StockDelivery $stockDelivery) {
     $stockDelivery = UpdateStockDelivery::make()->action($stockDelivery, [
-        'reference' => 'AGAGA'
+        'reference' => 'SP-01'
     ]);
     $stockDelivery->refresh();
     expect($stockDelivery)->toBeInstanceOf(StockDelivery::class)
-        ->and($stockDelivery->reference)->toBe('AGAGA');
+        ->and($stockDelivery->reference)->toBe('SP-01');
 
     return $stockDelivery;
 })->depends('create supplier delivery');
@@ -458,7 +462,7 @@ test('update org supplier product', function () {
         'is_available' => false
     ]);
 
-    expect($orgSupplierProduct->is_available)->toBe(false);
+    expect($orgSupplierProduct->is_available)->toBeFalse();
 });
 
 test('create supplier delivery items by selected purchase order', function (StockDelivery $stockDelivery, $items) {
@@ -569,4 +573,28 @@ test('supplier products notes search', function () {
     $supplierProduct = SupplierProduct::first();
     ReindexSupplierProductsSearch::run($supplierProduct);
     expect($supplierProduct->universalSearch()->count())->toBe(1);
+});
+
+test('hydrate agents', function () {
+    $agent = Agent::first();
+    HydrateAgents::run($agent);
+    $this->artisan('hydrate:agents')->assertExitCode(0);
+});
+
+test('hydrate suppliers', function () {
+    $supplier = Supplier::first();
+    HydrateSuppliers::run($supplier);
+    $this->artisan('hydrate:suppliers')->assertExitCode(0);
+});
+
+test('agents record search', function () {
+    $agent = Agent::first();
+    ReindexAgentSearch::run($agent);
+    $this->artisan('search:agents')->assertExitCode(0);
+});
+
+test('suppliers record search', function () {
+    $supplier = Supplier::first();
+    ReindexSupplierSearch::run($supplier);
+    $this->artisan('search:suppliers')->assertExitCode(0);
 });

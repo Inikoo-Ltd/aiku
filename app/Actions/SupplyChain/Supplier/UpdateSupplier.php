@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 03 Apr 2024 20:49:22 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Wed, 03 Apr 2024 20:49:22 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -10,7 +10,7 @@ namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Address\UpdateAddress;
-use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateUniversalSearch;
+use App\Actions\SupplyChain\Supplier\Search\SupplierRecordSearch;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SupplyChain\SupplierResource;
@@ -55,7 +55,7 @@ class UpdateSupplier extends GrpAction
             }
         }
 
-        SupplierHydrateUniversalSearch::dispatch($supplier);
+        SupplierRecordSearch::dispatch($supplier);
 
         return $supplier;
     }

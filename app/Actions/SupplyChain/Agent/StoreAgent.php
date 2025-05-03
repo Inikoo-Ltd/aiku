@@ -9,7 +9,7 @@
 namespace App\Actions\SupplyChain\Agent;
 
 use App\Actions\GrpAction;
-use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateUniversalSearch;
+use App\Actions\SupplyChain\Agent\Search\AgentRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -78,7 +78,7 @@ class StoreAgent extends GrpAction
         });
 
         GroupHydrateAgents::dispatch($group)->delay($this->hydratorsDelay);
-        AgentHydrateUniversalSearch::dispatch($agent)->delay($this->hydratorsDelay);
+        AgentRecordSearch::dispatch($agent)->delay($this->hydratorsDelay);
         return $agent;
     }
 

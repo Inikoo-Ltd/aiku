@@ -10,7 +10,7 @@ namespace App\Actions\SupplyChain\Agent;
 
 use App\Actions\GrpAction;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
-use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateUniversalSearch;
+use App\Actions\SupplyChain\Agent\Search\AgentRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
@@ -56,7 +56,7 @@ class UpdateAgent extends GrpAction
             GroupHydrateAgents::dispatch($this->group)->delay($this->hydratorsDelay);
         }
 
-        AgentHydrateUniversalSearch::dispatch($agent);
+        AgentRecordSearch::dispatch($agent);
 
 
         return $agent;

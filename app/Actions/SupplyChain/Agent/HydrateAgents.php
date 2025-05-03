@@ -14,7 +14,7 @@ use App\Models\SupplyChain\Agent;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class HydrateAgent
+class HydrateAgents
 {
     use asAction;
 

@@ -172,7 +172,6 @@ class ReindexSearch extends HydrateModel
         $command->call('search:payments');
         $command->call('search:payment_accounts');
         // $command->call('search:topups'); -> error on record search
-        //todo $command->call('search:customer_balances');
     }
 
     protected function reindexProcurement(Command $command): void
@@ -187,19 +186,15 @@ class ReindexSearch extends HydrateModel
     protected function reindexSupplyChain(Command $command): void
     {
         $command->info('Supply Chain section 🚛');
-        //todo $command->call('search:agents');
-        //todo $command->call('search:suppliers');
+        $command->call('search:agents');
+        $command->call('search:suppliers');
         $command->call('search:supplier_products'); // not yet tested
     }
 
     protected function reindexProduction(Command $command): void
     {
         $command->info('Production section 🏭');
-        //todo $command->call('search:job_orders');
-        //todo $command->call('search:raw_materials');
-        //todo $command->call('search:artefacts');
-        //todo $command->call('search:manufacture_tasks');
-        //todo $command->call('search:artisans');
+
     }
 
     protected function reindexInventory(Command $command): void

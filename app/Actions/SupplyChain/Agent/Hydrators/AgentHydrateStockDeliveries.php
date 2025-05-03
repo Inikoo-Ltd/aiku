@@ -12,23 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Procurement\StockDelivery;
 use App\Models\SupplyChain\Agent;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AgentHydrateStockDeliveries
+class AgentHydrateStockDeliveries implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Agent $agent;
 
-    public function __construct(Agent $agent)
+    public function getJobUniqueId(Agent $agent): string
     {
-        $this->agent = $agent;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->agent->id))->dontRelease()];
+        return $agent->id;
     }
 
     public function handle(Agent $agent): void

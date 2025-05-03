@@ -205,7 +205,6 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:payment_accounts');
         $command->call('hydrate:org_payment_service_provider');
         $command->call('hydrate:invoices');
-        //todo $command->call('hydrate:customer_balances');
     }
 
     protected function hydrateProcurement(Command $command): void
@@ -220,19 +219,14 @@ class HydrateModels extends HydrateModel
     protected function hydrateSupplyChain(Command $command): void
     {
         $command->info('Supply Chain section 🚛');
-        //todo $command->call('hydrate:agents');
-        //todo $command->call('hydrate:suppliers');
+        $command->call('hydrate:agents');
+        $command->call('hydrate:suppliers');
         $command->call('hydrate:supplier_products'); // not yet tested
     }
 
     protected function hydrateProduction(Command $command): void
     {
         $command->info('Production section 🏭');
-        //todo $command->call('hydrate:job_orders');
-        //todo $command->call('hydrate:raw_materials');
-        //todo $command->call('hydrate:artefacts');
-        //todo $command->call('hydrate:manufacture_tasks');
-        //todo $command->call('hydrate:artisans');
     }
 
     protected function hydrateInventory(Command $command): void
