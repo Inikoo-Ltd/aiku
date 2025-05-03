@@ -805,4 +805,5 @@ test('test reset intervals', function () {
 test('purge hydrators', function () {
     $purge = Purge::first();
     HydratePurges::run($purge);
+    $this->artisan('hydrate:purges')->assertExitCode(0);
 });
