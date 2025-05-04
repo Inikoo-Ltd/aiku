@@ -101,17 +101,4 @@ class CustomerHasPlatformsHydrateOrders implements ShouldBeUnique
         $customerHasPlatform->update($stats);
     }
 
-    public string $commandSignature = 'hydrate:customer_has_platforms_orders {customer_has_platform}';
-
-    public function asCommand($command)
-    {
-        $customerHasPlatformId = $command->argument('customer_has_platform');
-        $customerHasPlatform = CustomerHasPlatform::find($customerHasPlatformId);
-        if (!$customerHasPlatform) {
-            $command->error("CustomerHasPlatform with ID {$customerHasPlatformId} not found.");
-            return;
-        }
-        $this->handle($customerHasPlatform);
-    }
-
 }

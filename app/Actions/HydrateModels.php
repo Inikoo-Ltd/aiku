@@ -95,7 +95,7 @@ class HydrateModels extends HydrateModel
             $this->hydrateProduction($command);
         }
 
-        if ($this->checkIfCanHydrate(['dropshipping', 'drop'], $command)) {
+        if ($this->checkIfCanHydrate(['dropshipping', 'drop', 'ds'], $command)) {
             $this->hydrateDropshipping($command);
         }
 
@@ -106,8 +106,11 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Dropshipping ✊🏼');
         $command->call('hydrate:platforms');
-        $command->call('hydrate:portfolios');
+        $command->call('hydrate:customer_has_platforms');
         $command->call('hydrate:customer_clients');
+        $command->call('hydrate:portfolios');
+
+
     }
 
     protected function hydrateDispatching(Command $command): void
@@ -275,8 +278,13 @@ class HydrateModels extends HydrateModel
 
     private function checkIfCanHydrate(array $keys, $command): bool
     {
-        $result = array_intersect($keys, $command->option('sections'));
-        if (count($command->option('sections')) == 0 || count($result)) {
+        $sections = $command->option('sections');
+        if ($sections && is_string($sections)) {
+            $sections = [$sections];
+        }
+
+        $result = array_intersect($keys, $sections);
+        if (count($sections) == 0 || count($result)) {
             return true;
         }
 

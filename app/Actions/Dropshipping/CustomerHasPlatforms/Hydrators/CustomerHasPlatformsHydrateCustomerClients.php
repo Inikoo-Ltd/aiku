@@ -26,7 +26,6 @@ class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
 
     public function handle(CustomerHasPlatform $customerHasPlatform): void
     {
-
         $stats = [];
 
         if ($customerHasPlatform->customer_id && $customerHasPlatform->platform_id) {
@@ -36,19 +35,6 @@ class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
         }
 
         $customerHasPlatform->update($stats);
-    }
-
-    public string $commandSignature = 'hydrate:customer_has_platforms_customer_clients {customer_has_platform}';
-
-    public function asCommand($command)
-    {
-        $customerHasPlatformId = $command->argument('customer_has_platform');
-        $customerHasPlatform = CustomerHasPlatform::find($customerHasPlatformId);
-        if (!$customerHasPlatform) {
-            $command->error("CustomerHasPlatform with ID {$customerHasPlatformId} not found.");
-            return;
-        }
-        $this->handle($customerHasPlatform);
     }
 
 }

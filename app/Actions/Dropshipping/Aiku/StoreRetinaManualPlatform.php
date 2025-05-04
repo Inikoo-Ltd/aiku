@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\Aiku;
 
 use App\Actions\CRM\Customer\AttachCustomerToPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortofolios;
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortfolios;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -36,7 +36,7 @@ class StoreRetinaManualPlatform extends OrgAction
         ->where('platform_id', $platform->platform_id)
         ->first();
 
-        CustomerHasPlatformsHydratePortofolios::dispatch($customerHasPlatform);
+        CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);
 
 
     }

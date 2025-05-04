@@ -491,3 +491,10 @@ test('Customer clients basket hydrator', function () {
         ->and($customerClient->amount_in_basket)->toEqual(0)
         ->and($customerClient->current_order_in_basket_id)->toBeNull();
 });
+
+test('Dropshipping hydrators', function () {
+    $this->artisan('hydrate',[
+        '--sections'=>'dropshipping',
+    ])->assertExitCode(0);
+
+});

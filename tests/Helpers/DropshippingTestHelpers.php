@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnhandledExceptionInspection */
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Config;
 
 use function Pest\Laravel\actingAs;
 
-function setupDropshippingTest($testClass)
+
+function setupDropshippingTest($testClass): void
 {
     $testClass->organisation = createOrganisation();
     $testClass->group = $testClass->organisation->group;

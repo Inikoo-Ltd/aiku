@@ -16,7 +16,7 @@ use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHasPlatformsHydratePortofolios implements ShouldBeUnique
+class CustomerHasPlatformsHydratePortfolios implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -40,17 +40,5 @@ class CustomerHasPlatformsHydratePortofolios implements ShouldBeUnique
         $customerHasPlatform->update($stats);
     }
 
-    public string $commandSignature = 'hydrate:customer_has_platforms_portofolios {customer_has_platform}';
-
-    public function asCommand($command)
-    {
-        $customerHasPlatformId = $command->argument('customer_has_platform');
-        $customerHasPlatform = CustomerHasPlatform::find($customerHasPlatformId);
-        if (!$customerHasPlatform) {
-            $command->error("CustomerHasPlatform with ID {$customerHasPlatformId} not found.");
-            return;
-        }
-        $this->handle($customerHasPlatform);
-    }
 
 }

@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortofolios;
+use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -67,7 +67,7 @@ class StoreMultipleManualPortfolios extends OrgAction
         ->where('platform_id', $platform->id)
         ->first();
 
-        CustomerHasPlatformsHydratePortofolios::dispatch($customerHasPlatform);
+        CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);
     }
 
     public function rules(): array
