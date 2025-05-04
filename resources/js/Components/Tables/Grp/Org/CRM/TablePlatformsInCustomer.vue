@@ -32,7 +32,7 @@ function portfoliosRoute(platform: Platform) {
 }
 function clientsRoute(platform: Platform) {
   return route(
-    "grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index",
+    "grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index",
     [
       (route().params as RouteParams).organisation,
       (route().params as RouteParams).shop,

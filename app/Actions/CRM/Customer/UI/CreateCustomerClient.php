@@ -48,7 +48,7 @@ class CreateCustomerClient extends OrgAction
                             'label' => __('cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
-                                    'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create' => preg_replace('/create$/', 'manual.index', $request->route()->getName()),
+                                    'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.create' => preg_replace('/create$/', 'manual.index', $request->route()->getName()),
                                     default => preg_replace('/create$/', 'index', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())

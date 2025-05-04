@@ -214,7 +214,7 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
     $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', [
         $customerClient->organisation->slug,
         $customerClient->shop->slug,
         $customerClient->customer->slug,
@@ -245,7 +245,7 @@ test('UI Show customer client', function (CustomerClient $customerClient) {
     $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
@@ -273,7 +273,7 @@ test('UI create customer client', function (CustomerClient $customerClient) {
     $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.create', [
+    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.create', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
@@ -291,7 +291,7 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
     $customer            = $customerClient->customer;
     $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.edit', [
+    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.edit', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
@@ -365,7 +365,7 @@ test('UI Index customer portfolios', function () {
 test('UI get section route client dropshipping', function (CustomerClient $customerClient) {
     $customer = $customerClient->customer;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', [
         'organisation' => $customer->organisation->slug,
         'shop'         => $customer->shop->slug,
         'customer'     => $customer->slug
@@ -493,8 +493,7 @@ test('Customer clients basket hydrator', function () {
 });
 
 test('Dropshipping hydrators', function () {
-    $this->artisan('hydrate',[
-        '--sections'=>'dropshipping',
+    $this->artisan('hydrate', [
+        '--sections' => 'dropshipping',
     ])->assertExitCode(0);
-
 });

@@ -302,7 +302,7 @@ class StoreOrder extends OrgAction
                 $order->customer->slug,
                 $order->slug
             ]),
-            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.show', [
+            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,

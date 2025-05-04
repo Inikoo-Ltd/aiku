@@ -48,7 +48,6 @@ class IndexPortfolios extends OrgAction
 
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('portfolios.reference', $value);
@@ -66,17 +65,6 @@ class IndexPortfolios extends OrgAction
             $queryBuilder->where('portfolios.customer_id', $parent->id);
         }
 
-
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                prefix: $prefix,
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
-        */
 
         return $queryBuilder
             ->defaultSort('portfolios.reference')

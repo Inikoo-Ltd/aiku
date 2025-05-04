@@ -9,7 +9,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -31,7 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomerPlatformCustomerClients extends OrgAction
 {
-    use WithCustomerPlatformSubNavigation;
+    use WithCustomerHasPlatformSubNavigation;
 
     private Platform $platform;
     private CustomerHasPlatform $customerHasPlatform;
@@ -154,13 +155,13 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowPlatformInCustomer::make()->getBreadcrumbs($this->platform, $routeName, $routeParameters),
+                ShowCustomerHasPlatform::make()->getBreadcrumbs($this->platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.other_platform.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),

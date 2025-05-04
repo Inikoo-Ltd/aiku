@@ -8,7 +8,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
@@ -42,7 +43,7 @@ class ShowCustomerClient extends OrgAction
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
-    use WithCustomerPlatformSubNavigation;
+    use WithCustomerHasPlatformSubNavigation;
 
     private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
 
@@ -275,18 +276,18 @@ class ShowCustomerClient extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show'
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show'
             => array_merge(
-                (new ShowPlatformInCustomer())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index', $routeParameters),
+                (new ShowCustomerHasPlatform())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show',
                             'parameters' => $routeParameters
 
 
@@ -333,7 +334,7 @@ class ShowCustomerClient extends OrgAction
 
                 ]
             ],
-            'grp.org.fulfilments.show.crm.customers.show.customer-clients.show', 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show' => [
+            'grp.org.fulfilments.show.crm.customers.show.customer-clients.show', 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,

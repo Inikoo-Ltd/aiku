@@ -19,8 +19,11 @@ class GetOrderAddressManagement
 {
     use AsObject;
 
-    public function handle(Order $order): array
+    public function handle(Order $order, bool $isRetina = false): array
     {
+
+        $modelRoutePrefix =  $isRetina ? 'retina.models.' : 'grp.models.';
+
         $addresses = $order->customer->addresses;
 
         $processedAddresses = $addresses->map(function ($address) {
@@ -58,14 +61,14 @@ class GetOrderAddressManagement
         return [
             'updateRoute'          => [
                 'method'     => 'patch',
-                'name'       => 'grp.models.order.update',
+                'name'       => $modelRoutePrefix.'order.update',
                 'parameters' => [
                     'order' => $order->id,
                 ]
             ],
             'address_update_route' => [
                 'method'     => 'patch',
-                'name'       => 'grp.models.customer.address.update',
+                'name'       => $modelRoutePrefix.'customer.address.update',
                 'parameters' => [
                     'customer' => $order->customer_id
                 ]
@@ -83,28 +86,28 @@ class GetOrderAddressManagement
                 'routes_list'                    => [
                     'switch_route' => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.order.address.switch',
+                        'name'       => $modelRoutePrefix.'order.address.switch',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
                     'pinned_route'                   => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.customer.delivery-address.update',
+                        'name'       => $modelRoutePrefix.'customer.delivery-address.update',
                         'parameters' => [
                             'customer' => $order->customer_id
                         ]
                     ],
                     'delete_route' => [
                         'method'     => 'delete',
-                        'name'       => 'grp.models.customer.delivery-address.delete',
+                        'name'       => $modelRoutePrefix.'customer.delivery-address.delete',
                         'parameters' => [
                             'customer' => $order->customer_id
                         ]
                     ],
                     'store_route'  => [
                         'method'     => 'post',
-                        'name'       => 'grp.models.customer.address.store',
+                        'name'       => $modelRoutePrefix.'customer.address.store',
                         'parameters' => [
                             'customer' => $order->customer_id
                         ]

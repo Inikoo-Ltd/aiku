@@ -7,13 +7,13 @@
  * copyright 2025
 */
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Dropshipping\CustomerHasPlatforms\UI;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\CustomerHasPlatform;
 use Lorisleiva\Actions\ActionRequest;
 
-trait WithCustomerPlatformSubNavigation
+trait WithCustomerHasPlatformSubNavigation
 {
     public function getCustomerPlatformSubNavigation(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): array
     {
@@ -24,12 +24,11 @@ trait WithCustomerPlatformSubNavigation
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show',
                 'parameters' => $request->route()->originalParameters()
-
             ],
 
-            'label'    => __('Channel'),
+            'label'    => __('Channel').': '.$customerHasPlatform->platform->name,
             'leftIcon' => [
-                'icon'    => 'fal fa-parachute-box',
+                'icon'    => 'fal fa-store',
                 'tooltip' => __('channel'),
             ],
         ];
@@ -43,7 +42,7 @@ trait WithCustomerPlatformSubNavigation
 
             ],
             'leftIcon' => [
-                'icon'    => 'fal fa-box',
+                'icon'    => 'fal fa-bookmark',
                 'tooltip' => __('portfolio'),
             ],
         ];
@@ -53,7 +52,7 @@ trait WithCustomerPlatformSubNavigation
                 "number"   => $customerHasPlatform->number_customer_clients,
                 'label'    => __('Clients'),
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],
@@ -67,7 +66,7 @@ trait WithCustomerPlatformSubNavigation
                 "number"   => $customerHasPlatform->number_customer_clients,
                 'label'    => __('Clients'),
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.other_platform.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],

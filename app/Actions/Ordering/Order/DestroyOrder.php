@@ -2,18 +2,19 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Models\Ordering\Order;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class DestroyOrder
+class DestroyOrder extends OrgAction
 {
-    use AsAction;
+    use WithOrderingEditAuthorisation;
 
     public function handle(Order $order): Void
     {

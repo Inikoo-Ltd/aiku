@@ -185,7 +185,7 @@ trait WithCustomerSubNavigation
                 'isAnchor' => true,
                 'label'    => __('Client'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
@@ -197,7 +197,7 @@ trait WithCustomerSubNavigation
                 'label'    => __('Orders'),
                 'number'   => $customerClient->stats->number_orders ?? 0,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.index',
                     'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [

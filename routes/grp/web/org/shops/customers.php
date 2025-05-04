@@ -26,11 +26,11 @@ use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
 use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInCustomer;
-use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
-use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
+use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInCustomerHasPlatform;
 use App\Actions\Ordering\Order\UI\IndexOrders;
-use App\Actions\Ordering\Order\UI\IndexOrdersInPlatform;
+use App\Actions\Ordering\Order\UI\IndexOrdersInCustomerHasPlatform;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexCustomers::class)->name('index');
@@ -50,14 +50,14 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::prefix('/channels')->as('.platforms')->group(function () {
         Route::get('', IndexPlatformsInCustomer::class)->name('.index');
         Route::prefix('/{platform}')->as('.show')->group(function () {
-            Route::get('', ShowPlatformInCustomer::class);
+            Route::get('', ShowCustomerHasPlatform::class);
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
-                Route::get('', IndexPortfoliosInPlatform::class)->name('.index');
+                Route::get('', IndexPortfoliosInCustomerHasPlatform::class)->name('.index');
             });
-            Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
+            Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
                 Route::get('', IndexCustomerClients::class)->name('.manual.index');
                 Route::get('create', CreateCustomerClient::class)->name('.create');
-                Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other-platform.index');
+                Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other_platform.index');
                 Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');
                 Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inPlatform'])->name('.edit');
 
@@ -73,7 +73,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
-                Route::get('', IndexOrdersInPlatform::class)->name('.index');
+                Route::get('', IndexOrdersInCustomerHasPlatform::class)->name('.index');
                 Route::get('/{order}', [ShowOrder::class, 'inPlatformInCustomer'])->name('.show');
             });
         });

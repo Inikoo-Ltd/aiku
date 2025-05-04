@@ -25,6 +25,7 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Ordering\Order\HydrateOrders;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -806,4 +807,16 @@ test('purge hydrators', function () {
     $purge = Purge::first();
     HydratePurges::run($purge);
     $this->artisan('hydrate:purges')->assertExitCode(0);
+});
+
+test('order hydrators', function () {
+    $order = Order::first();
+    HydrateOrders::run($order);
+    $this->artisan('hydrate:orders ')->assertExitCode(0);
+});
+
+test('Ordering hydrators', function () {
+    $this->artisan('hydrate', [
+        '--sections' => 'ordering',
+    ])->assertExitCode(0);
 });

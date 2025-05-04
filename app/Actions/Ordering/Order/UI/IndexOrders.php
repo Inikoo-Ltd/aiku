@@ -14,6 +14,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
@@ -43,6 +44,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrders extends OrgAction
 {
+    use WithOrderingAuthorisation;
     use WithCustomerSubNavigation;
     use WithOrdersSubNavigation;
 
@@ -219,7 +221,6 @@ class IndexOrders extends OrgAction
                 $stats     = $parent->stats;
                 $noResults = __("This customer client hasn't place any orders");
             } else {
-                //todo check what stats to use for each parent
                 $stats = $parent->orderingStats;
             }
 
@@ -489,22 +490,12 @@ class IndexOrders extends OrgAction
                     ]
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.customer-clients.orders.index' =>
+            'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.index' =>
             array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index' =>
-            array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
+                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.index',
                         'parameters' => $routeParameters
                     ]
                 )

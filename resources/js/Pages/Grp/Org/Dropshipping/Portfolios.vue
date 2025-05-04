@@ -1,7 +1,7 @@
 <!--
-  -  Author: Raul Perusquia <raul@inikoo.com>
-  -  Created: Mon, 17 Oct 2022 17:33:07 British Summer Time, Sheffield, UK
-  -  Copyright (c) 2022, Raul A Perusquia Flores
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Sun, 04 May 2025 17:37:38 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2025, Raul A Perusquia Flores
   -->
 
 <script setup lang="ts">
@@ -22,9 +22,9 @@ import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash'
 import Pagination from '@/Components/Table/Pagination.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes } from "@fal"
+import { faBookmark, faStore, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTimes)
+library.add(faTimes,faStore,faBookmark)
 
 const props = defineProps<{
     data: {}
@@ -40,7 +40,7 @@ const isLoadingSubmit = ref(false)
 const isLoadingFetch = ref(false)
 const errorMessage = ref<any>(null)
 
-// Method: Get portfolio list
+// Method: Get a portfolio list
 const queryPortfolio = ref('')
 const portfoliosList = ref([])
 const portfoliosMeta = ref()

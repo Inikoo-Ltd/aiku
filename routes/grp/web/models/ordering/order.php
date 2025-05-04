@@ -31,7 +31,7 @@ use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\SubmitOrder;
-use App\Actions\Ordering\Order\UpdateStateToCreatingOrder;
+use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
 use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
@@ -61,8 +61,10 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
+    Route::patch('send-back-to-Basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
+
     Route::name('state.')->prefix('state')->group(function () {
-        Route::patch('creating', UpdateStateToCreatingOrder::class)->name('creating');
+        Route::patch('creating', SendOrderBackToBasket::class)->name('creating');
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');

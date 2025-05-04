@@ -12,6 +12,9 @@ import Popover from "@/Components/Utils/Popover.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBookmark, faStore } from "@fal";
+library.add(faStore,faBookmark)
 
 const props = defineProps<{
 	data: {}
@@ -81,7 +84,7 @@ const onSubmitAddOrder = (close: Function) => {
                                 <PureMultiselectInfiniteScroll
                                     v-model="selectedClient"
                                     :fetchRoute="{
-										name: 'grp.org.shops.show.crm.customers.show.platforms.show.customer-clients.manual.index',
+										name: 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
 										parameters: {
 											organisation: (route().params as RouteParams).organisation,
 											shop: (route().params as RouteParams).shop,

@@ -9,9 +9,10 @@
 
 namespace App\Actions\Dropshipping\Portfolio\UI;
 
-use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
-use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -28,9 +29,10 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPortfoliosInPlatform extends OrgAction
+class IndexPortfoliosInCustomerHasPlatform extends OrgAction
 {
-    use WithCustomerPlatformSubNavigation;
+    use WithCustomerHasPlatformSubNavigation;
+    use WithCRMAuthorisation;
 
     private CustomerHasPlatform $customerHasPlatform;
 
@@ -64,18 +66,17 @@ class IndexPortfoliosInPlatform extends OrgAction
     {
         $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
         $icon          = ['fal', 'fa-user'];
-        $title         = $this->customerHasPlatform->customer->name;
+        $title         = $this->customerHasPlatform->customer->name.' ('.$this->customerHasPlatform->customer->reference.')';
         $iconRight     = [
-            'icon'  => ['fal', 'fa-user-friends'],
+            'icon'  => ['fal', 'fa-bookmark'],
             'title' => __('portfolios')
         ];
         $afterTitle    = [
-
-            'label' => __('Portfolios')
+            'label' => __('Portfolios').' @'.$this->customerHasPlatform->platform->name,
         ];
 
         return Inertia::render(
-            'Org/Shop/CRM/Portfolios',
+            'Org/Dropshipping/Portfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->customerHasPlatform->platform,
@@ -113,7 +114,7 @@ class IndexPortfoliosInPlatform extends OrgAction
                 ->column(key: 'reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('created at'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __(' '), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'action', label: __(' '), canBeHidden: false);
         };
     }
 
@@ -129,7 +130,7 @@ class IndexPortfoliosInPlatform extends OrgAction
     public function getBreadcrumbs(Platform $platform, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowPlatformInCustomer::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
+            ShowCustomerHasPlatform::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
             [
                 [
                     'type'   => 'simple',

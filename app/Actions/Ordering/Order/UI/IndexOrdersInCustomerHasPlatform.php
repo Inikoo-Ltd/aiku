@@ -9,9 +9,10 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
-use App\Actions\Dropshipping\Platform\UI\ShowPlatformInCustomer;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
+use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Http\Resources\Platform\PlatformsResource;
@@ -31,9 +32,11 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use UnexpectedValueException;
 
-class IndexOrdersInPlatform extends OrgAction
+class IndexOrdersInCustomerHasPlatform extends OrgAction
 {
-    use WithCustomerPlatformSubNavigation;
+    use WithCustomerHasPlatformSubNavigation;
+    use WithCRMAuthorisation;
+
     private CustomerHasPlatform $customerHasPlatform;
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
@@ -69,8 +72,7 @@ class IndexOrdersInPlatform extends OrgAction
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
-        $queryBuilder->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
-        $queryBuilder->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
+
 
         $queryBuilder->leftJoin('model_has_payments', function ($join) {
             $join->on('orders.id', '=', 'model_has_payments.model_id')
@@ -87,8 +89,6 @@ class IndexOrdersInPlatform extends OrgAction
                 'orders.id', 'orders.reference', 'orders.date', 'orders.state',
                 'orders.created_at', 'orders.updated_at', 'orders.slug',
                 'orders.net_amount', 'orders.total_amount',
-                'customers.name as customer_name', 'customers.slug as customer_slug',
-                'customer_clients.name as client_name', 'customer_clients.ulid as client_ulid',
                 'payments.state as payment_state', 'payments.status as payment_status',
                 'currencies.code as currency_code', 'currencies.id as currency_id',
             ])
@@ -122,10 +122,10 @@ class IndexOrdersInPlatform extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->customerHasPlatform->customer->name;
+        $title         = $this->customerHasPlatform->customer->name.' ('.$this->customerHasPlatform->customer->reference.')';
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('orders')
+            'title' => __('orders').' @'.$this->customerHasPlatform->platform->name,
         ];
         $subNavigation = $this->getCustomerPlatformSubNavigation(
             $this->customerHasPlatform,
@@ -133,18 +133,11 @@ class IndexOrdersInPlatform extends OrgAction
         );
         $actions = [];
 
-        if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
-            $afterTitle = [
-                'label' => __('Tiktok Orders')
-            ];
-        } elseif ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::SHOPIFY) {
-            $afterTitle = [
-                'label' => __('Shopify Orders')
-            ];
-        } else {
-            $afterTitle = [
-                'label' => __('Orders')
-            ];
+        $afterTitle = [
+            'label' => __('orders').' @'.$this->customerHasPlatform->platform->name,
+        ];
+        if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::MANUAL) {
+
             $actions[] = [
                     'type'        => 'button',
                     'style'       => 'create',
@@ -164,7 +157,7 @@ class IndexOrdersInPlatform extends OrgAction
 
 
         return Inertia::render(
-            'Org/Shop/CRM/CustomerPlatformOrders',
+            'Org/Dropshipping/OrdersInCustomerHasPlatform',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->customerHasPlatform->platform,
@@ -191,7 +184,7 @@ class IndexOrdersInPlatform extends OrgAction
     {
         return
             array_merge(
-                ShowPlatformInCustomer::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
+                ShowCustomerHasPlatform::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

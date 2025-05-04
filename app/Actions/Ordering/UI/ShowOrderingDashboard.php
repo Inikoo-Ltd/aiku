@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;

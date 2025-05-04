@@ -2,12 +2,14 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
@@ -15,8 +17,9 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
-class DeleteOrder
+class DeleteOrder extends OrgAction
 {
+    use WithOrderingEditAuthorisation;
     use WithActionUpdate;
 
     public string $commandSignature = 'cancel:order {id}';

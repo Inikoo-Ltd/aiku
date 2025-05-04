@@ -7,11 +7,11 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dropshipping\Platform\UI;
+namespace App\Actions\Dropshipping\CustomerHasPlatforms\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Customer\UI\WithCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
@@ -24,9 +24,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowPlatformInCustomer extends OrgAction
+class ShowCustomerHasPlatform extends OrgAction
 {
-    use WithCustomerPlatformSubNavigation;
+    use WithCustomerHasPlatformSubNavigation;
+    use WithCRMAuthorisation;
 
     public function handle(CustomerHasPlatform $customerHasPlatform): CustomerHasPlatform
     {
@@ -48,9 +49,8 @@ class ShowPlatformInCustomer extends OrgAction
         $navigation = CustomerPlatformTabsEnum::navigation();
 
         $actions = [];
-
         return Inertia::render(
-            'Org/Fulfilment/FulfilmentCustomerPlatform',
+            'Org/Dropshipping/PlatformInCustomer',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -60,14 +60,14 @@ class ShowPlatformInCustomer extends OrgAction
                 ),
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('platform'),
-                        'icon'  => 'fal fa-user',
+                        'icon'  => ['fal', 'fa-user'],
+                        'title' => __('customer')
                     ],
-                    'model'         => __('Platform'),
+
                     'subNavigation' => $this->getCustomerPlatformSubNavigation($customerHasPlatform, $request),
-                    'title'         => $customerHasPlatform->platform->name,
+                    'title'         => $customerHasPlatform->customer->name.' ('.$customerHasPlatform->customer->reference.')',
                     'afterTitle'    => [
-                        'label' => '('.$customerHasPlatform->customer->name.')',
+                        'label' => ' @'.$customerHasPlatform->platform->name,
                     ],
                     'actions'       => $actions
                 ],

@@ -26,19 +26,26 @@ class CalculateOrderShipping
 
     protected bool $toBeConfirmed = false;
 
-    public function handle(Order $order): Order
+    public function handle(Order $order, $discount = false): Order
     {
         if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE, OrderShippingEngineEnum::TO_BE_CONFIRMED_SET])) {
             return $order;
         }
 
-        $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
+        if ($discount) {
+            $shippingZoneSchema = $order->shop->discountShippingZoneSchema;
+        } else {
+            $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
+        }
+
+
         if (!$shippingZoneSchema) {
             if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
                 $order->update([
                     'shipping_engine' => OrderShippingEngineEnum::MANUAL,
                 ]);
             }
+
             return $order;
         }
 
@@ -117,6 +124,8 @@ class CalculateOrderShipping
         $pricingType = Arr::get($shippingZone->price, 'type');
         if ($pricingType == 'Step Order Items Net Amount') {
             return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
+        } elseif ($pricingType == 'Step Order Estimated Weight') {
+            return $this->getPriceBlanketFromAmount($order->estimated_weight, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'TBC') {
             $this->toBeConfirmed = true;
 
