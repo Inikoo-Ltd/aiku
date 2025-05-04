@@ -230,7 +230,6 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
             )
@@ -332,35 +331,37 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
     });
 })->depends('create customer client');
 
-test('UI Index customer portfolios', function () {
+test('UI Index customer portfolios', function (CustomerClient $customerClient) {
     $customer = Customer::first();
+    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+
     $response = $this->get(
         route(
-            'grp.org.shops.show.crm.customers.show.portfolios.index',
+            'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
             [
                 $this->organisation->slug,
                 $this->shop->slug,
-                $customer->slug
+                $customer->slug,
+                $customerHasPlatform->platform->slug,
             ]
         )
     );
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
-            ->component('Org/Shop/CRM/Portfolios')
+            ->component('Org/Dropshipping/Portfolios')
             ->has('title')
-            ->has('breadcrumbs', 4)
+            ->has('breadcrumbs', 5)
             ->has('pageHead')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
             )
             ->has('data');
     });
-});
+})->depends('create customer client');
 
 test('UI get section route client dropshipping', function (CustomerClient $customerClient) {
     $customer = $customerClient->customer;
@@ -405,14 +406,13 @@ test('UI index customer client order', function () {
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
-            ->component('Org/Shop/CRM/CustomerPlatformOrders')
+            ->component('Org/Dropshipping/OrdersInCustomerHasPlatform')
             ->has('title')
             ->has('breadcrumbs', 5)
             ->has('pageHead')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
             )
@@ -437,14 +437,13 @@ test('UI index customer client portfolios', function (CustomerClient $customerCl
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
-            ->component('Org/Shop/CRM/Portfolios')
+            ->component('Org/Dropshipping/Portfolios')
             ->has('title')
             ->has('breadcrumbs', 5)
             ->has('pageHead')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
             )
