@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3880640106a74f3450dfd65314ca1b6a",
+    "content-hash": "2664052de7943ddf29eb7cf166b42d8b",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -2187,16 +2187,16 @@
         },
         {
             "name": "checkout/checkout-sdk-php",
-            "version": "3.1.0",
+            "version": "3.2.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/checkout/checkout-sdk-php.git",
-                "reference": "dc1b71009f2456cabde720ee38d225c7e177adfb"
+                "reference": "61a9d9e8b7d64f39ee58cc625c48eebd5d22c058"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/checkout/checkout-sdk-php/zipball/dc1b71009f2456cabde720ee38d225c7e177adfb",
-                "reference": "dc1b71009f2456cabde720ee38d225c7e177adfb",
+                "url": "https://api.github.com/repos/checkout/checkout-sdk-php/zipball/61a9d9e8b7d64f39ee58cc625c48eebd5d22c058",
+                "reference": "61a9d9e8b7d64f39ee58cc625c48eebd5d22c058",
                 "shasum": ""
             },
             "require": {
@@ -2249,9 +2249,9 @@
             ],
             "support": {
                 "issues": "https://github.com/checkout/checkout-sdk-php/issues",
-                "source": "https://github.com/checkout/checkout-sdk-php/tree/3.1.0"
+                "source": "https://github.com/checkout/checkout-sdk-php/tree/3.2.8"
             },
-            "time": "2024-03-26T12:27:04+00:00"
+            "time": "2025-04-22T08:03:18+00:00"
         },
         {
             "name": "chrisharrison/php-array-of",
@@ -22933,6 +22933,7 @@
     "prefer-lowest": false,
     "platform": {
         "php": "^8.3",
+        "ext-bcmath": "*",
         "ext-curl": "*",
         "ext-gd": "*",
         "ext-intl": "*",
@@ -22941,8 +22942,7 @@
         "ext-pgsql": "*",
         "ext-simplexml": "*",
         "ext-soap": "*",
-        "ext-zlib": "*",
-        "ext-bcmath": "*"
+        "ext-zlib": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

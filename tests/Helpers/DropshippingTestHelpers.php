@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpUnhandledExceptionInspection */
+<?php
+
+/** @noinspection PhpUnhandledExceptionInspection */
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
@@ -16,7 +18,6 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Config;
 
 use function Pest\Laravel\actingAs;
-
 
 function setupDropshippingTest($testClass): void
 {
