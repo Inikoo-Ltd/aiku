@@ -322,11 +322,16 @@ onMounted(() => {
                     </div>
 
 
+                    <!-- {{ panelActive }} -->
                     <div class="">
-                        <SideEditor v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue" :key="keySidebar"
+                        <SideEditor
+                            v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue"
+                            :key="keySidebar"
                             v-model="usedTemplates[selectedTab.key].data.fieldValue"
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
-                            :uploadImageRoute="uploadImageRoute" :panel-open="panelActive" />
+                            :uploadImageRoute="uploadImageRoute"
+                            :panelOpen="panelActive"
+                        />
                     </div>
                 </div>
             </div>
