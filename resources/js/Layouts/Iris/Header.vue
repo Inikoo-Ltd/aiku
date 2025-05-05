@@ -75,7 +75,8 @@ provide('onLogout', onLogoutAuth)
             <Image
                 v-if="data?.header?.data?.fieldValue?.logo?.image?.source?.original"
                 :src="data?.header?.data?.fieldValue?.logo?.image?.source"
-                class="h-10 mx-2"
+                class="h-full mx-2"
+                :imageCover="true"
                 :alt="data?.header?.data?.fieldValue?.logo?.alt"
             />
 
@@ -84,5 +85,6 @@ provide('onLogout', onLogoutAuth)
                 <FontAwesomeIcon :icon="faUserCircle" class="text-2xl" />
             </div>
         </div>
+
     </div>
 </template>
