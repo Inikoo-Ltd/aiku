@@ -228,9 +228,9 @@ class ShowOrder extends OrgAction
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $editableAddress = false;
+        $readonly = true;
         if($platform->type == PlatformTypeEnum::MANUAL) {
-            $editableAddress = true;
+            $readonly = false;
         }
         return Inertia::render(
             'Org/Ordering/Order',
@@ -281,7 +281,7 @@ class ShowOrder extends OrgAction
 
                 'notes'     => $this->getOrderNotes($order),
                 'timelines' => $finalTimeline,
-                'is_address_editable' => $editableAddress,
+                'readonly' => $readonly,
                 'address_management' => GetOrderAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
