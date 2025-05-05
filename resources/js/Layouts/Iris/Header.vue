@@ -72,8 +72,6 @@ provide('onLogout', onLogoutAuth)
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <MobileMenu :header="data.header.data.fieldValue" :menu="menu?.data?.fieldValue?.navigation" />
-            <!-- Logo for Mobile -->
-            <!-- <pre> {{ data.header.data.fieldValue?.logo.image.source }}</pre>  -->
             <Image
                 v-if="data?.header?.data?.fieldValue?.logo?.image?.source?.original"
                 :src="data?.header?.data?.fieldValue?.logo?.image?.source"
@@ -84,20 +82,7 @@ provide('onLogout', onLogoutAuth)
             <!-- Profile Icon with Dropdown Menu -->
             <div @click="toggle" class="flex items-center cursor-pointer">
                 <FontAwesomeIcon :icon="faUserCircle" class="text-2xl" />
-                <!-- <Menu ref="_menu" id="overlay_menu" :model="items" :popup="true">
-                    <template #itemicon="{ item }">
-                        <FontAwesomeIcon :icon="item.icon" />
-                    </template>
-                </Menu> -->
             </div>
         </div>
-
-        <!-- Mobile Search Bar -->
-        <!--  <div class="relative mt-2">
-                <input type="text" placeholder="Search Products"
-                    class="border border-gray-300 py-2 px-4 rounded-md w-full shadow-inner focus:outline-none focus:border-gray-500">
-                <FontAwesomeIcon icon="fas fa-search" class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500"
-                    fixed-width />
-            </div> -->
     </div>
 </template>

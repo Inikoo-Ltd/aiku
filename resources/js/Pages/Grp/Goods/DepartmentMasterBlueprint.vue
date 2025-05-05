@@ -207,7 +207,7 @@ const onUpload = async (files: File[], clear: Function) => {
                 <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye" @click="isModalFamiliesPreview = true"/>
             </div>
 
-            <ul class="divide-y divide-gray-100 h-[calc(100vh-30vh)] overflow-auto">
+            <ul class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
                 <li v-for="(item, index) in familiesOption" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">
