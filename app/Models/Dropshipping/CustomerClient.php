@@ -9,6 +9,7 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\UniversalSearch;
@@ -141,6 +142,11 @@ class CustomerClient extends Model implements Auditable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     public function stats(): HasOne
