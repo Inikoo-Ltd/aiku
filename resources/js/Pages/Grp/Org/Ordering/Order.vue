@@ -609,7 +609,7 @@ const isModalUploadExcel = ref(false)
             :address_modal_title="address_management.address_modal_title"
 		    :addresses="address_management.addresses"
             :updateRoute="address_management.address_update_route"
-            keyPayloadEdit="delivery_address"
+            keyPayloadEdit="address"
         />
     </Modal>
 

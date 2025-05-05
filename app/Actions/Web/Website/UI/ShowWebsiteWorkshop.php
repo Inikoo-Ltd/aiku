@@ -192,7 +192,10 @@ class ShowWebsiteWorkshop extends OrgAction
         $website = Website::where('slug', $routeParameters['website'])->first();
 
         return match ($routeName) {
-            'grp.org.shops.show.web.websites.workshop' =>
+            'grp.org.shops.show.web.websites.workshop',
+            'grp.org.shops.show.web.websites.workshop.header',
+            'grp.org.shops.show.web.websites.workshop.menu',
+            'grp.org.shops.show.web.websites.workshop.footer' =>
 
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
