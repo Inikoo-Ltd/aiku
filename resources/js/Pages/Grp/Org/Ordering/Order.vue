@@ -55,8 +55,21 @@ import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
 import DeliveryAddressManagementModal from '@/Components/Utils/DeliveryAddressManagementModal.vue'
+import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
+interface UploadSection {
+    title: {
+        label: string
+        information: string
+    }
+    progressDescription: string
+    upload_spreadsheet: UploadPallet
+    preview_template: {
+        header: string[]
+        rows: {}[]
+    }
+}
 
 const props = defineProps<{
     title: string
@@ -153,6 +166,7 @@ const props = defineProps<{
     addresses?: {
         
     }
+    upload_excel: UploadSection
 }>()
 
 
@@ -316,6 +330,8 @@ const openModal = (action :any) => {
     isModalProductListOpen.value = true;
 };
 
+
+const isModalUploadExcel = ref(false)
 </script>
 
 <template>
@@ -331,6 +347,18 @@ const openModal = (action :any) => {
 							@click="() => openModal(action)"
 							:key="`ActionButton${action.label}${action.style}`"
 							:tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-upload-add="{ action }">
+            <div class="relative">
+                <Button v-if="upload_excel"
+                    :style="action.style"
+                    :label="action.label"
+                    :icon="action.icon"
+                    @click="() => isModalUploadExcel = true"
+                    :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip" />
             </div>
         </template>
 
@@ -628,6 +656,16 @@ const openModal = (action :any) => {
             </div>
         </div>
     </Modal>
+
+    <UploadExcel
+        v-if="upload_excel"
+        v-model="isModalUploadExcel"
+        :title="upload_excel.title"
+        :progressDescription="upload_excel.progressDescription"
+        :upload_spreadsheet="upload_excel.upload_spreadsheet"
+        :preview_template="upload_excel.preview_template"
+        :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined"
+    />
 
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
