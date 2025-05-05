@@ -294,44 +294,43 @@ class ShowOrder extends OrgAction
                 'upload_excel' => [
                     'title' => [
                         'label' => __('Upload product'),
-                        'information' => __('The list of column file: product_reference, notes')
+                        'information' => __('The list of column file: code, quantity')
                     ],
                     'progressDescription'   => __('Adding Products'),
                     'preview_template'    => [
-                        'header' => ['product_reference', 'notes'],
+                        'header' => ['code', 'quantity'],
                         'rows' => [
                             [
-                                'product_reference' => 'product-001',
-                                'pallet_notes' => 'notes'
+                                'code' => 'product-001',
+                                'quantity' => 'quantity'
                             ]
                         ]
                     ],
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
                         'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['product_reference', 'notes'],
+                        'required_fields' => ['code', 'quantity'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)'
                         ],
                         'route'           => [
                             'upload'   => [
-                                'name'       => 'grp.models.pallet-delivery.pallet.upload',
+                                'name'       => 'grp.models.order.transaction.upload',
                                 'parameters' => [
                                     'order' => $order->id
                                 ]
                             ],
                             'history'  => [
-                                'name'       => 'grp.json.pallet_delivery.recent_uploads',
+                                'name'       => 'grp.json.order.transaction.recent_uploads',
                                 'parameters' => [
                                     'order' => $order->id
                                 ]
                             ],
                             'download' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.templates',
+                                'name'       => 'grp.org.shops.show.ordering.order.uploads.templates',
                                 'parameters' => [
                                     'organisation' => $order->organisation->slug,
                                     'shop'         => $order->shop->slug,
-                                    'customer'     => $order->customer->slug,
                                     'order'        => $order->slug
                                 ]
                             ],

@@ -27,6 +27,7 @@ use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Tag\GetTagOptions;
+use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
@@ -80,5 +81,6 @@ Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-suppli
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 
 Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliveryUploads::class)->name('pallet_delivery.recent_uploads');
+Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransactionUploads::class)->name('order.transaction.recent_uploads');
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
