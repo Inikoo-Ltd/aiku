@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
+use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -26,7 +27,7 @@ use Illuminate\Support\Arr;
 class ShowMenu extends OrgAction
 {
     use AsAction;
-
+    use WithMenuSubNavigation;
 
     private Website $website;
 
@@ -50,11 +51,13 @@ class ShowMenu extends OrgAction
             'Org/Web/Workshop/Menu/MenuWorkshop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $website,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'       => __("Website Menu's Workshop"),
                 'pageHead'    => [
+                    'subNavigation' => $this->getMenuSubNavigation($website),
                     'title'    => __("Menu's Workshop"),
                     'model'    => $website->name,
                     'icon'     => [
@@ -176,9 +179,53 @@ class ShowMenu extends OrgAction
         return $website;
     }
 
-    public function getBreadcrumbs($routeName, $routeParameters): array
+    public function getBreadcrumbs(Website $website, string $routeName, array $routeParameters, $suffix = ''): array
     {
-        return [];
+        $headCrumb = function (Website $website, array $routeParameters, string $suffix) {
+            return [
+                [
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => $routeParameters['index'],
+                            'label' => __('Workshop')
+                        ],
+                        'model' => [
+                            'route' => $routeParameters['model'],
+                            'label' => 'Menu',
+                        ],
+
+                    ],
+                    'suffix'         => $suffix
+                ],
+            ];
+        };
+
+
+
+        return match ($routeName) {
+            'grp.org.shops.show.web.websites.workshop.menu' => array_merge(
+                ShowWebsiteWorkshop::make()->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $website,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.web.websites.workshop',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.web.websites.workshop.menu',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
     }
 
 }
