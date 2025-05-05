@@ -9,7 +9,6 @@ export default {
 				{
 					key : ['source'],
 					label: "Image",
-					useIn : ["desktop"],
 					type: "upload_image",
 				},
 				{

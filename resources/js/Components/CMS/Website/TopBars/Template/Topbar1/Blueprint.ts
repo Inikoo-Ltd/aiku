@@ -248,6 +248,7 @@ export default {
 		},
 		{
 			name: "Favourite",
+			accordion_key: 'favourite',
             key: ["favourite"],
 			icon: {
 				icon: "fal fa-heart",

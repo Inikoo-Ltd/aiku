@@ -44,12 +44,20 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor')
 }
 
+const accordionKey = computed(() => {
+    if (Array.isArray(props.blueprint.key)) {
+        return props.blueprint.key.join('.')
+    }
+
+    return props.blueprint.key
+})
 
 </script>
 
 <template>
     <!-- Accordion mode -->
-    <AccordionPanel v-if="blueprint.name" :key="accordionKey" :value="accordionKey">
+    <AccordionPanel v-if="blueprint.name" :key="accordionKey" :value="blueprint.accordion_key ?? accordionKey">
+        <!-- wewew {{ blueprint.accordion_key }} {{ accordionKey }} -->
         <AccordionHeader>
             <div class="flex items-center gap-2">
                 <Icon v-if="blueprint.icon" :data="blueprint.icon" />
