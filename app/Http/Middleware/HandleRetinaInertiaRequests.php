@@ -60,21 +60,23 @@ class HandleRetinaInertiaRequests extends Middleware
             "website"               => WebsiteIrisResource::make($request->get('website'))->getArray(),
         ];
 
-        if ($webUser->shop->type != ShopTypeEnum::FULFILMENT) {
-            $iris_layout = array_merge($iris_layout, [
-                'theme'                 => Arr::get($website->published_layout, 'theme'),
-                'is_logged_in'          => (bool)$webUser,
-                'user_auth'             => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-                'customer'              => $webUser?->customer,
-                'variables'             => [
-                    'name'                  => $webUser?->contact_name,
-                    'username'              => $webUser?->username,
-                    'email'                 => $webUser?->email,
-                    'favourites_count'      => $webUser?->customer->favourites->count(),
-                    'cart_count'        => $webUser ? $webUser->customer?->orderInBasket?->stats->number_item_transactions : null,
-                    'cart_amount'       => $webUser ? $webUser->customer?->orderInBasket?->total_amount : null,
-                ]
-            ]);
+        if ($webUser->website?->shop) {
+            if ($webUser->website->shop->type != ShopTypeEnum::FULFILMENT) {
+                $iris_layout = array_merge($iris_layout, [
+                    'theme'                 => Arr::get($website->published_layout, 'theme'),
+                    'is_logged_in'          => (bool)$webUser,
+                    'user_auth'             => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+                    'customer'              => $webUser?->customer,
+                    'variables'             => [
+                        'name'                  => $webUser?->contact_name,
+                        'username'              => $webUser?->username,
+                        'email'                 => $webUser?->email,
+                        'favourites_count'      => $webUser?->customer->favourites->count(),
+                        'cart_count'        => $webUser ? $webUser->customer?->orderInBasket?->stats->number_item_transactions : null,
+                        'cart_amount'       => $webUser ? $webUser->customer?->orderInBasket?->total_amount : null,
+                    ]
+                ]);
+            }
         }
 
         return array_merge(
