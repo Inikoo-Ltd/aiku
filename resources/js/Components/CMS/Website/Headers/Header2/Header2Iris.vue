@@ -43,7 +43,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 					v-if="fieldValue?.logo?.image?.source"
 					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
 					:href="fieldValue?.logo?.link?.href || '#'"
-					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-full h-full"
+					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-fit h-full"
 				>
 				    <Image 
                         :style="getStyles(fieldValue.logo.properties)"

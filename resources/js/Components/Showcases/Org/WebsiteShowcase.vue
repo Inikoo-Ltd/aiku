@@ -7,13 +7,15 @@
 <script setup lang="ts">
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faExternalLink, faLink, faPencil } from '@fal'
+import { faGlobe, faLink, faPencil } from '@fal'
 import { ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faExternalLink, faLink)
+library.add(faGlobe, faLink)
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
     data: {
@@ -28,11 +30,10 @@ const props = defineProps<{
     },
 }>()
 
-console.log(props.data)
 const links = ref([
-    { label: "Edit Header", url: route(props.data.layout.headerRoute.name, props.data.layout.headerRoute.parameters), icon: faPencil },
-    { label: "Edit Menu", url: route(props.data.layout.menuRoute.name, props.data.layout.menuRoute.parameters), icon: faPencil },
-    { label: "Edit Footer", url: route(props.data.layout.footerRoute.name, props.data.layout.footerRoute.parameters), icon: faPencil }
+    { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
+    { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+    { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
 ]);
 
 </script>
@@ -41,15 +42,17 @@ const links = ref([
     <div class="px-6 py-12 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- URL Box -->
-            <div
-                class="bg-white  h-fit flex items-center cursor-pointer gap-x-3  md:w-96">
+            <div class="bg-white w-fit h-fit flex items-center gap-x-3 md:w-96">
                 <a :href="props.data.url" target="_blank"
-                    class="pl-4 md:pl-5 inline-block text-xxs md:text-base text-gray-400">{{ props.data.url }}
-                    <FontAwesomeIcon :icon="faExternalLink" class='pl-1 text-gray-500' v-tooltip="'Go To Website'" aria-hidden='true' />
+                    v-tooltip="trans('Go To Website')"
+                    class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
+                    <div class="bg-gray-200 py-2 px-2">
+                        <FontAwesomeIcon :icon="faGlobe" class='px-1' aria-hidden='true' />
+                    </div>
+                    <div class="flex items-center px-4">
+                        {{ props.data.url }}
+                    </div>
                 </a>
-               <!--  <Button :style="'tertiary'" class="" @click="useCopyText(props.data.url)"
-                    v-tooltip="trans('Copy url to clipboard')">
-                </Button> -->
             </div>
 
 
@@ -57,9 +60,13 @@ const links = ref([
             <div class="bg-white flex justify-end">
                 <div class="w-64 border border-gray-300 rounded-md p-2">
                     <div v-for="(item, index) in links" :key="index" class="p-2">
-                        <Link :href="item.url">
-                        <Button full :icon="item.icon" :label="item.label" class="text-sm py-1 px-3" />
-                        </Link>
+                        <ButtonWithLink
+                            :routeTarget="item.route_target"
+                            full
+                            :icon="item.icon"
+                            :label="item.label"
+                            type="secondary"
+                        />
                     </div>
                 </div>
             </div>

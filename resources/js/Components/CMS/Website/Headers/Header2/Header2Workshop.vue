@@ -240,27 +240,33 @@ const editable = ref(true)
 		<div class="block md:hidden p-3">
 			<div class="flex justify-between items-center">
 				<MobileMenu :header="modelValue" :menu="modelValue" />
+            <Image
+                v-if="modelValue.logo?.image?.source?.original"
+                :src="modelValue.logo?.image?.source"
+               :style="getStyles(modelValue.logo.properties)"
+                :alt="modelValue.logo?.alt"
+            />
 
-				<!-- Logo for Mobile -->
-				<Image
-					v-if="modelValue?.logo?.source?.original"
-					:src="modelValue?.logo?.source"
-					class="h-10 mx-2"></Image>
-				<img
-					v-else-if="modelValue.logo"
-					src="https://d19ayerf5ehaab.cloudfront.net/assets/store-18687/18687-logo-1642004490.png"
-					alt="Ancient Wisdom Logo"
-					class="h-10 mx-2" />
+            <!-- Profile Icon with Dropdown Menu -->
+            <div @click="toggle" class="flex items-center cursor-pointer">
+                <FontAwesomeIcon :icon="faUserCircle" class="text-2xl" />
+            </div>
+				<!-- <MobileMenu :header="modelValue" :menu="modelValue" /> -->
+				<!-- <Image
+						:style="getStyles(modelValue.logo.properties)"
+						:alt="modelValue?.logo?.image?.alt || modelValue?.logo?.alt"
+						:imageCover="true"
+						:src="modelValue?.logo?.image?.source"
+						:imgAttributes="modelValue?.logo.image?.attributes" /> -->
 
-				<!-- Profile Icon with Dropdown Menu -->
-				<div @click="toggle" class="flex items-center cursor-pointer text-white">
+				<!-- <div @click="toggle" class="flex items-center cursor-pointer text-white">
 					<FontAwesomeIcon icon="fas fa-user-circle" class="text-2xl" />
 					<Menu ref="_menu" id="overlay_menu" :model="items" :popup="true">
 						<template #itemicon="{ item }">
 							<FontAwesomeIcon :icon="item.icon" />
 						</template>
 					</Menu>
-				</div>
+				</div> -->
 			</div>
 		</div>
 	</div>

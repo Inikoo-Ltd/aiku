@@ -25,6 +25,7 @@ use App\Actions\Dispatching\Picking\UpdatePickingStateToQueried;
 use App\Actions\Dispatching\Picking\UpdatePickingStateToWaiting;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
@@ -58,6 +59,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
+        Route::post('upload', ImportTransactionInOrder::class, )->name('upload');
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
