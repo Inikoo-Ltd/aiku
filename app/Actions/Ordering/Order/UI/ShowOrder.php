@@ -291,6 +291,54 @@ class ShowOrder extends OrgAction
                     ]
                 ],
 
+                'upload_product' => [
+                    'title' => [
+                        'label' => __('Upload product'),
+                        'information' => __('The list of column file: product_reference, notes')
+                    ],
+                    'progressDescription'   => __('Adding Products'),
+                    'preview_template'    => [
+                        'header' => ['product_reference', 'notes'],
+                        'rows' => [
+                            [
+                                'product_reference' => 'product-001',
+                                'pallet_notes' => 'notes'
+                            ]
+                        ]
+                    ],
+                    'upload_spreadsheet'    => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['product_reference', 'notes'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)'
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'grp.models.pallet-delivery.pallet.upload',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'grp.json.pallet_delivery.recent_uploads',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'download' => [
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.templates',
+                                'parameters' => [
+                                    'organisation' => $order->organisation->slug,
+                                    'shop'         => $order->shop->slug,
+                                    'customer'     => $order->customer->slug,
+                                    'order'        => $order->slug
+                                ]
+                            ],
+                        ],
+                    ]
+                ],
+
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
