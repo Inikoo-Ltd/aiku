@@ -604,11 +604,11 @@ const isModalUploadExcel = ref(false)
 
 	<ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
 
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
+    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
         <DeliveryAddressManagementModal
             :address_modal_title="address_management.address_modal_title"
 		    :addresses="address_management.addresses"
-            :updateRoute="address_update_route"
+            :updateRoute="address_management.address_update_route"
             keyPayloadEdit="delivery_address"
         />
     </Modal>
