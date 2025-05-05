@@ -8,7 +8,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
@@ -80,8 +79,8 @@ class HandleIrisInertiaRequests extends Middleware
                         'username'          => $webUser ? $webUser->username : null,
                         'email'             => $webUser ? $webUser->email : null,
                         'favourites_count'  => $webUser ? $webUser->customer->stats->number_favourites : null,
-                        'cart_count'        => $webUser ? $webUser->customer->stats->number_orders_state_creating : null,
-                        'cart_amount'       => $webUser ? $webUser->customer->orders->where('state', OrderStateEnum::CREATING)->sum('total_amount') : null,
+                        'cart_count'        => $webUser ? $webUser->customer->orderInBasket->stats->number_item_transactions : null,
+                        'cart_amount'       => $webUser ? $webUser->customer->orderInBasket->total_amount : null,
                     ]
                 ],
 

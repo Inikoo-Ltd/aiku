@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
@@ -50,29 +51,31 @@ class HandleRetinaInertiaRequests extends Middleware
         $menuLayout = Arr::get($website->published_layout, 'menu');
         $isMenuActive = Arr::get($menuLayout, 'status');
 
-        $iris_webpage = [];
-        if ($webUser?->shop?->type?->value === 'b2b' || $webUser?->shop?->type?->value === 'dropshipping') {
-            $iris_webpage = [
-                'header'                => array_merge($isHeaderActive == 'active' ? $headerLayout : []),
-                'footer'                => array_merge($isFooterActive == 'active' ? $footerLayout : []),
-                'menu'                  => array_merge($isMenuActive == 'active' ? $menuLayout : []),
-            ];
-        }
+        $iris_webpage = [
+            'header'                => array_merge($isHeaderActive ? $headerLayout : []),
+            'footer'                => array_merge($isFooterActive ? $footerLayout : []),
+            'menu'                  => array_merge($isMenuActive ? $menuLayout : []),
+        ];
         $iris_layout = [
             "website"               => WebsiteIrisResource::make($request->get('website'))->getArray(),
-            'theme'                 => Arr::get($website->published_layout, 'theme'),
-            'is_logged_in'          => (bool)$webUser,
-            'user_auth'             => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-            'customer'              => $webUser?->customer,
-            'variables'             => [
-                'name'                  => $webUser?->contact_name,
-                'username'              => $webUser?->username,
-                'email'                 => $webUser?->email,
-                'favourites_count'      => $webUser?->customer->favourites->count(),
-                'cart_count'            => 111,
-                'cart_amount'           => 111,
-            ]
         ];
+
+        if ($webUser->shop->type != ShopTypeEnum::FULFILMENT) {
+            $iris_layout = array_merge($iris_layout, [
+                'theme'                 => Arr::get($website->published_layout, 'theme'),
+                'is_logged_in'          => (bool)$webUser,
+                'user_auth'             => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+                'customer'              => $webUser?->customer,
+                'variables'             => [
+                    'name'                  => $webUser?->contact_name,
+                    'username'              => $webUser?->username,
+                    'email'                 => $webUser?->email,
+                    'favourites_count'      => $webUser?->customer->favourites->count(),
+                    'cart_count'        => $webUser ? $webUser->customer?->orderInBasket?->stats->number_item_transactions : null,
+                    'cart_amount'       => $webUser ? $webUser->customer?->orderInBasket?->total_amount : null,
+                ]
+            ]);
+        }
 
         return array_merge(
             $firstLoadOnlyProps,
