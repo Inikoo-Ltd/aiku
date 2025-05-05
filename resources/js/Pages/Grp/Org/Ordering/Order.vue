@@ -316,6 +316,17 @@ const openModal = (action :any) => {
     isModalProductListOpen.value = true;
 };
 
+function onPayClick() {
+  const pay = props.box_stats.products.payment.pay_amount
+  const state = props.data.data?.state
+
+  if (pay > 0 && state === 'creating') {
+      isOpenModalPayment.value = false
+} else {
+      isOpenModalPayment.value = true
+      fetchPaymentMethod()
+  }
+}
 </script>
 
 <template>
@@ -501,7 +512,7 @@ const openModal = (action :any) => {
                 </dt>
 
                 <NeedToPay
-                    @click="() => box_stats.products.payment.pay_amount > 0 ? (isOpenModalPayment = true, fetchPaymentMethod()) : false"
+                     @click="onPayClick"
                     :totalAmount="box_stats.products.payment.total_amount"
                     :paidAmount="box_stats.products.payment.paid_amount"
                     :payAmount="box_stats.products.payment.pay_amount"
