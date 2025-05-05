@@ -10,6 +10,10 @@ export interface PageHeading {
         label: string
         class?: string
     }
+    platform?:{
+        icon: string | string[],
+        title: string,
+    }
     container: {
         icon: string | string[]
         label: string

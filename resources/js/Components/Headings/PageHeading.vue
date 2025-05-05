@@ -98,6 +98,12 @@ const layout = inject('layout', layoutStructure)
                             </div>
                         </div>
                     </slot>
+                    <slot name="platform">
+                        <div v-if="data.platform" class="text-gray-400 font-normal text-lg leading-none">
+                            {{ data.platform.title }}
+                        </div>
+                      
+                    </slot>
                 </div>
             </div>
 

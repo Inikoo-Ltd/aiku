@@ -146,6 +146,7 @@ const props = defineProps<{
     delivery_note?: {
         reference: string
     }
+    readonly?: boolean
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
@@ -334,7 +335,7 @@ const openModal = (action :any) => {
             </div>
         </template>
 
-        <template #otherBefore>
+        <template #otherBefore v-if="!props.readonly">
             <!-- Section: Add notes -->
             <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
                 <template #button="{ open }">
@@ -485,7 +486,7 @@ const openModal = (action :any) => {
                 </dt>
                 <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                     <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                    <div @click="() => isModalAddress = true"
+                    <div v-if="!props.readonly" @click="() => isModalAddress = true"
                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                         <span>{{ trans('Edit') }}</span>
                     </div>
@@ -552,7 +553,6 @@ const openModal = (action :any) => {
     </div>
 
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
-
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state"
@@ -560,6 +560,7 @@ const openModal = (action :any) => {
             :fetchRoute="routes.products_list"
 			:modalOpen="isModalUploadOpen"
 			:action="currentAction"
+            :readonly="props.readonly"
 			@update:tab="handleTabUpdate"/>
     </div>
 
