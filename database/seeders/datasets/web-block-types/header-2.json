@@ -80,9 +80,9 @@
 			},
 			"logo": {
 				"visible": "all",
+				"alt": "Image Logo",
 				"image": {
-					"source": null,
-					"alt": "CTA Image"
+					"source": null
 				},
 				"properties": {
 					"padding": {
