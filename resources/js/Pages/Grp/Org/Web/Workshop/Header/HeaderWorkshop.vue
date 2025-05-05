@@ -31,6 +31,7 @@ import { faBrowser } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import Toggle from '@/Components/Pure/Toggle.vue'
+import LoadingText from '@/Components/Utils/LoadingText.vue'
 
 library.add(faBrowser, faPresentation, faCube, faText, faHeart, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, falHeart, faLowVision)
 
@@ -322,11 +323,16 @@ onMounted(() => {
                     </div>
 
 
+                    <!-- {{ panelActive }} -->
                     <div class="">
-                        <SideEditor v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue" :key="keySidebar"
+                        <SideEditor
+                            v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue"
+                            :key="keySidebar"
                             v-model="usedTemplates[selectedTab.key].data.fieldValue"
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
-                            :uploadImageRoute="uploadImageRoute" :panel-open="panelActive" />
+                            :uploadImageRoute="uploadImageRoute"
+                            :panelOpen="panelActive"
+                        />
                     </div>
                 </div>
             </div>
@@ -359,13 +365,21 @@ onMounted(() => {
                     <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin w-6" aria-hidden="true" />
                 </div> -->
 
-                <div v-if="isIframeLoading" class="loading-overlay">
-                    <ProgressSpinner />
+                <div v-if="isIframeLoading" class="flex justify-center items-center gap-y-6 flex-col top-0 left-0 w-full h-full z-[1000]">
+                    <LoadingIcon class="text-5xl" />
+                    <LoadingText :text="trans('Loading iframe')" class="text-2xl" />
                 </div>
 
                 <!-- Workshop Preview -->
-                <iframe ref="_iframe" :src="iframeSrc" :title="props.title" :class="iframeClass"
-                    @error="handleIframeError" @load="isIframeLoading = false" />
+                <iframe
+                    v-show="!isIframeLoading"
+                    ref="_iframe"
+                    :src="iframeSrc"
+                    :title="props.title"
+                    :class="iframeClass"
+                    @error="handleIframeError"
+                    @load="isIframeLoading = false"
+                />
 
             </div>
 

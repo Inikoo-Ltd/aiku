@@ -34,6 +34,6 @@ const normalizedModel = computed<CssProperty>({
 
 <template>
   <div>
-    <InputNumberCssProperty :modelValue="normalizedModel" @update:model-value="(val)=> emits('update:modelValue',val)" />
+    <InputNumberCssProperty :modelValue="normalizedModel" @update:modelValue="(val)=> emits('update:modelValue',val)" />
   </div>
 </template>

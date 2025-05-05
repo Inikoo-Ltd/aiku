@@ -59,7 +59,7 @@ const handleUpload = async () => {
         const response = await axios.post(route(props.uploadRoutes.name, props.uploadRoutes.parameters), formData, {
             headers: { "Content-Type": "multipart/form-data" },
         })
-
+        
         const updatedModelValue = { ...props.modelValue, ...cloneDeep(response.data.data[0].source) }
         emits("update:modelValue", updatedModelValue)
         emits("autoSave")

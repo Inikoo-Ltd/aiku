@@ -41,7 +41,7 @@ export default {
 					type: "link",
 				},
 				{
-					key: ["image", "alt"],
+					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
 				},

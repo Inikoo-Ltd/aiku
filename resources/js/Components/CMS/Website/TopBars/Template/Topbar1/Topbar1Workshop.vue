@@ -56,7 +56,7 @@ const layout = inject('layout', {})
         class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4"
         :style="getStyles(model?.container.properties)"
     >
-        <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full hover-dashed"  @click="()=> emits('setPanelActive', 'title')">
+        <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full hover-dashed"  @click="()=> emits('setPanelActive', 'main_title')">
             <!-- Section: greeting -->
            <!--  <div
                 v-if="checkVisible(model?.greeting?.visible || null, isLoggedIn) && textReplaceVariables(model?.greeting?.text, layout.iris_variables)"
@@ -110,12 +110,11 @@ const layout = inject('layout', {})
             </a>
 
             <!-- Section: Login -->
-             <span class="hover-dashed">
+             <span @click="()=> emits('setPanelActive', 'login')" class="hover-dashed">
                 <a v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
                     class="space-x-1.5 cursor-pointer whitespace-nowrap"
                     id=""
                     :style="getStyles(model?.login?.container?.properties)"
-                     @click="()=> emits('setPanelActive', 'login')"
                 >
                     <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.login?.text, dummyIrisVariables)" />
@@ -124,11 +123,10 @@ const layout = inject('layout', {})
 
 
             <!-- Section: Register -->
-            <span class="hover-dashed">
+            <span @click="()=> emits('setPanelActive', 'register')" class="hover-dashed">
                 <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
                     class="space-x-1.5 cursor-pointer whitespace-nowrap hover-dashed"
                     :style="getStyles(model?.register.container?.properties)"
-                    @click="()=> emits('setPanelActive', 'register')"
                 >
                     <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.register.text, dummyIrisVariables)" />

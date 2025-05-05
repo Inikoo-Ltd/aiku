@@ -42,27 +42,27 @@ const emits = defineEmits<{
 							<h3
 								:id="tier.id"
 								:class="[
-									tier.mostPopular ? 'text-indigo-600' : 'text-gray-900',
+									tier?.mostPopular ? 'text-indigo-600' : 'text-gray-900',
 									'text-lg/8 font-semibold',
 								]">
-								{{ tier.name }}
+								{{ tier?.name }}
 							</h3>
 							<p
-								v-if="tier.badge.show"
+								v-if="tier?.badge?.show"
 								class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs/5 font-semibold text-indigo-600">
-								{{tier.badge.text}}
+								{{tier?.badge?.text}}
 							</p>
 						</div>
-						<p class="mt-4 text-sm/6 text-gray-600">{{ tier.description }}</p>
-						<p v-if="tier.priceMonthly.show" class="mt-6 flex items-baseline gap-x-1">
+						<p class="mt-4 text-sm/6 text-gray-600">{{ tier?.description }}</p>
+						<p v-if="tier?.priceMonthly?.show" class="mt-6 flex items-baseline gap-x-1">
 							<span class="text-4xl font-semibold tracking-tight text-gray-900">{{
-								tier.priceMonthly.text
+								tier?.priceMonthly?.text
 							}}</span>
 							<!-- <span class="text-sm/6 font-semibold text-gray-600">/month</span> -->
 						</p>
 						<ul role="list" class="mt-8 space-y-3 text-sm/6 text-gray-600">
 							<li
-								v-for="feature in tier.features"
+								v-for="feature in tier?.features"
 								:key="feature"
 								class="flex gap-x-3">
 								<FontAwesomeIcon
@@ -76,12 +76,12 @@ const emits = defineEmits<{
 						</ul>
 					</div>
 					<a
-						v-if="tier.link"
-						:href="tier.link.href"
-						:aria-describedby="tier.id"
-						:target="tier.link.target"
+						v-if="tier?.link"
+						:href="tier?.link?.href"
+						:aria-describedby="tier?.id"
+						:target="tier?.link?.target"
 						:class="[
-							tier.mostPopular
+							tier?.mostPopular
 								? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500'
 								: 'text-indigo-600 ring-1 ring-indigo-200 ring-inset hover:ring-indigo-300',
 							'mt-8 block rounded-md px-3 py-2 text-center text-sm/6 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',

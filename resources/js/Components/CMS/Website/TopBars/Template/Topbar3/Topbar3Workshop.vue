@@ -13,11 +13,11 @@ library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
 interface ModelTopbar1 {
     greeting: {
-        text: string
+        text?: string
         visible: string
     }
     main_title: {
-        text: string
+        text?: string
         visible: string // 'all'
     }
     container: {
@@ -27,6 +27,96 @@ interface ModelTopbar1 {
             }
             background: {
 
+            }
+        }
+    }
+    logout: {
+        text?: string
+        visible: string
+        link: string
+        container: {
+            properties: {
+                color: {
+
+                }
+                background: {
+
+                }
+            }
+        }
+    }
+    login: {
+        text?: string
+        visible: string
+        link: string
+        container: {
+            properties: {
+                color: {
+
+                }
+                background: {
+
+                }
+            }
+        }
+    }
+    register: {
+        text?: string
+        visible: string
+        link: string
+        container: {
+            properties: {
+                color: {
+
+                }
+                background: {
+
+                }
+            }
+        }
+    }
+    favourite: {
+        text?: string
+        visible: string
+        link: string
+        container: {
+            properties: {
+                color: {
+
+                }
+                background: {
+
+                }
+            }
+        }
+    }
+    cart: {
+        text?: string
+        visible: string
+        link: string
+        container: {
+            properties: {
+                color: {
+
+                }
+                background: {
+
+                }
+            }
+        }
+    }
+    profile: {
+        text?: string
+        visible: string
+        link: string
+        container: {
+            properties: {
+                color: {
+
+                }
+                background: {
+
+                }
             }
         }
     }
@@ -52,7 +142,6 @@ const emits = defineEmits<{
     <div id="top_bar" class="py-2 px-4 flex justify-between"
         :style="getStyles(model?.container.properties)"
     >
-
         <div class="flex gap-x-2">
             <!-- Section: Profile -->
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
@@ -80,36 +169,38 @@ const emits = defineEmits<{
             </a>
 
             <!-- Login -->
-            <span class="hover-dashed">
+            <div class="hover-dashed"
+                @click="()=> emits('setPanelActive', 'login')"
+            >
                 <a v-if="checkVisible(model?.login.visible || null, isLoggedIn)" 
                     class="space-x-1.5 cursor-pointer"
                     id=""
-                      @click="()=> emits('setPanelActive', 'login')"
                     :style="getStyles(model?.login.container.properties)"
 
                 >
                     <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.login?.text, dummyIrisVariables)" />
                 </a>
-            </span>
+            </div>
 
             <!-- Register -->
-             <span class="hover-dashed">
+            <div class="hover-dashed"
+                @click="()=> emits('setPanelActive', 'register')"
+            >
                 <a v-if="checkVisible(model?.register.visible || null, isLoggedIn)" 
                     class="space-x-1.5 cursor-pointer "
                     id=""
                     :style="getStyles(model?.register.container.properties)"
-                            @click="()=> emits('setPanelActive', 'register')"
                 >
                     <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.register?.text, dummyIrisVariables)" />
                 </a>
-             </span>
+            </div>
 
         </div>
 
         <!-- Section: Main title -->
-        <div @click="()=> emits('setPanelActive', 'title')" v-if="checkVisible(model?.main_title.visible || null, isLoggedIn)" class="text-center flex items-center hover-dashed" v-html="model.main_title.text">
+        <div @click="()=> emits('setPanelActive', 'main_title')" v-if="checkVisible(model?.main_title.visible || null, isLoggedIn)" class="text-center flex items-center hover-dashed" v-html="model.main_title.text">
         </div>
 
         <div class="action_buttons" style="display: flex; justify-content: flex-end; column-gap: 5px; grid-column: span 5 / span 5">
@@ -119,7 +210,7 @@ const emits = defineEmits<{
                 id="favorites_button"
                 class="mx-0 space-x-1.5 hover-dashed"
                 :style="getStyles(model?.favourite.container.properties)"
-                @click="()=> emits('setPanelActive', 'favourites')"
+                @click="()=> emits('setPanelActive', 'favourite')"
             >
                 <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.favourite?.text, dummyIrisVariables)"></span>

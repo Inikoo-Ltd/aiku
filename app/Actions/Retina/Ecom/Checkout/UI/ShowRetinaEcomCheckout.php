@@ -23,7 +23,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
 {
     use IsOrder;
 
-    public function handle(Customer $customer, $prefix = null): Order|null
+    public function handle(Customer $customer): Order|null
     {
         if (!$customer->current_order_in_basket_id) {
             return null;
@@ -31,17 +31,11 @@ class ShowRetinaEcomCheckout extends RetinaAction
         return Order::find($customer->current_order_in_basket_id);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->is_root;
-    }
 
     public function asController(ActionRequest $request): Order|null
     {
         $this->initialisation($request);
-
         $customer = $request->user()->customer;
-
         return $this->handle($customer);
     }
 
@@ -51,14 +45,11 @@ class ShowRetinaEcomCheckout extends RetinaAction
             'Ecom/Checkout',
             [
                     'breadcrumbs' => $this->getBreadcrumbs(),
-                    'title'       => __('Baskets'),
+                    'title'       => __('Basket'),
                     'pageHead'    => [
-                        'title' => __('Baskets'),
+                        'title' => __('Basket'),
                         'icon'  => 'fal fa-shopping-basket'
                     ],
-
-
-
                     'data'     => $order ? $this->getOrderBoxStats($order) : null,
                 ]
         );
@@ -74,9 +65,9 @@ class ShowRetinaEcomCheckout extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
+                                'name' => 'retina.ecom.checkout.show'
                             ],
-                            'label'  => __('Orders'),
+                            'label'  => __('Checkout'),
                         ]
                     ]
                 ]

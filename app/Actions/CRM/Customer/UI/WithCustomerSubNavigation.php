@@ -94,14 +94,11 @@ trait WithCustomerSubNavigation
         $deliveryNotedLabel = __('Delivery notes');
         $webUsersLabel = __('Web users');
 
-        if ($customer->status != CustomerStatusEnum::APPROVED) {
-            return [];
-        }
-        return [
+        $baseNavigation = [
             [
                 'isAnchor' => true,
                 'label'    => __('Customer'),
-                'route'     => [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show',
                     'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
                 ],
@@ -111,12 +108,29 @@ trait WithCustomerSubNavigation
                 ]
             ],
             [
-                'route' => [
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => __('Channels'),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-parachute-box',
+                    'tooltip' => __('Channels'),
+                ],
+                'number'   => $customer->platforms->count()
+            ],
+        ];
+
+        if ($customer->status != CustomerStatusEnum::APPROVED) {
+            return $baseNavigation;
+        }
+
+        return array_merge($baseNavigation, [
+            [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.web-users.index',
                     'parameters' => $request->route()->originalParameters()
-
                 ],
-
                 'label'    => $webUsersLabel,
                 'leftIcon' => [
                     'icon'    => 'fal fa-terminal',
@@ -125,24 +139,9 @@ trait WithCustomerSubNavigation
                 'number'   => $customer->stats->number_web_users
             ],
             [
-                'route' => [
-                    'name'      => 'grp.org.shops.show.crm.customers.show.platforms.index',
-                    'parameters' => $request->route()->originalParameters()
-
-                ],
-
-                'label'     => __('Channels'),
-                'leftIcon'  => [
-                    'icon'    => 'fal fa-parachute-box',
-                    'tooltip' => __('Channels'),
-                ],
-                'number' => $customer->platforms->count()
-
-            ],
-            [
                 'label'    => __('Orders'),
                 'number'   => $customer->stats->number_orders,
-                'route'     => [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.orders.index',
                     'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
                 ],
@@ -154,7 +153,7 @@ trait WithCustomerSubNavigation
             [
                 'label'    => $deliveryNotedLabel,
                 'number'   => $customer->stats->number_delivery_notes,
-                'route'     => [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
                     'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
                 ],
@@ -166,7 +165,7 @@ trait WithCustomerSubNavigation
             [
                 'label'    => __('Invoices'),
                 'number'   => $customer->stats->number_invoices,
-                'route'     => [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.invoices.index',
                     'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
                 ],
@@ -175,7 +174,7 @@ trait WithCustomerSubNavigation
                     'tooltip' => __('invoices')
                 ]
             ],
-        ];
+        ]);
     }
 
     protected function getCustomerClientSubNavigation(CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform): array

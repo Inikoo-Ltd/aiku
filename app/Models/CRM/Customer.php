@@ -138,6 +138,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Invoice> $invoices
  * @property-read MediaCollection<int, Media> $media
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read Order|null $orderInBasket
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
@@ -437,5 +438,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function subscriptionEvents(): MorphMany
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
+    }
+
+    public function orderInBasket(): HasOne
+    {
+        return $this->hasOne(Order::class, 'id', 'current_order_in_basket_id');
     }
 }

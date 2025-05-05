@@ -58,7 +58,7 @@ const isStaging = layout.app.environment === 'staging'
             'background-color': layout.app.theme[0] + '00',
             'color': layout.app.theme[1]
         }"
-        id="leftSidebar"
+        id="pupil_left_sidebar"
     >
             <!-- Toggle: collapse-expand LeftSideBar -->
             <div @click="handleToggleLeftBar"
