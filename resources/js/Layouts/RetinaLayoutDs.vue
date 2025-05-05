@@ -24,7 +24,7 @@ console.log('LayoutDs')
 <template>
     <div class="-z-[1] fixed inset-0 bg-slate-100" />
     <div class="isolate relative min-h-full transition-all"
-    :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+        :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
         <IrisHeader
             v-if="layout.iris?.header?.header"
             :data="layout.iris?.header"
@@ -40,14 +40,14 @@ console.log('LayoutDs')
 
         <!-- Main Content -->
         <main
-            class="relative max-w-7xl w-full mx-auto min-h-96 h-fit my-10 transition-all px-8 lg:px-0"
+            class="flex gap-x-2 max-w-7xl w-full mx-auto min-h-[500px] h-fit my-10 transition-all px-8 xl:px-0"
         >
             <RetinaDsLeftSidebar
-                class="z-20 block right-full -translate-x-3 w-48 absolute pb-20 px-2 md:flex md:flex-col  transition-all"
+                class="z-20 block h-fit right-full -translate-x-3 w-48 xabsolute xpb-20 xpx-2 md:flex md:flex-col  transition-all"
                 @click="sidebarOpen = !sidebarOpen"
             />
 
-            <div class="min-h-full bg-white shadow-lg rounded-md h-full relative flex flex-col pb-6 text-gray-700">
+            <div class="w-full min-h-full bg-white shadow-lg rounded-md h-full relative flex flex-col pb-6 text-gray-700">
 
                 <slot name="default" />
             </div>

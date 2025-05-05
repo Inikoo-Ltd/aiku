@@ -35,7 +35,7 @@ const isStaging = layout.app.environment === 'staging'
 <template>
     <div class="-z-[1] fixed inset-0 bg-slate-100" />
     <div class="isolate relative min-h-full transition-all"
-    :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+        :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
     
     
         <RetinaTopBar
@@ -55,13 +55,13 @@ const isStaging = layout.app.environment === 'staging'
         </div>
 
         <!-- Main Content -->
-        <main class="h-full pb-10 transition-all pl-2 md:pl-0 pr-2 "
+        <main class="h-[calc(100vh-40px)] transition-all pl-2 md:pl-0 pr-2 "
             :class="[
-                layout.iris?.header ? 'ml-48 mr-10' : layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
+                layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
-            <div class="bg-white shadow-lg rounded h-full xxoverflow-y-auto relative flex flex-col pb-6 text-gray-700">
+            <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
                 <!-- Section: Breadcrumbs -->
                 <div class="mt-1">
                     <!-- <Breadcrumbs v-if="usePage().props.breadcrumbs?.length > 0"
