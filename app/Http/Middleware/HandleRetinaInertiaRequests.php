@@ -69,8 +69,8 @@ class HandleRetinaInertiaRequests extends Middleware
                 'username'              => $webUser?->username,
                 'email'                 => $webUser?->email,
                 'favourites_count'      => $webUser?->customer->favourites->count(),
-                'cart_count'            => 111,
-                'cart_amount'           => 111,
+                'cart_count'        => $webUser ? $webUser->customer->orderInBasket->stats->number_item_transactions : null,
+                'cart_amount'       => $webUser ? $webUser->customer->orderInBasket->total_amount : null,
             ]
         ];
 

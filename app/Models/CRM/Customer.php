@@ -438,4 +438,9 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
     }
+
+    public function orderInBasket(): HasOne
+    {
+        return $this->hasOne(Order::class, 'id', 'current_order_in_basket_id');
+    }
 }
