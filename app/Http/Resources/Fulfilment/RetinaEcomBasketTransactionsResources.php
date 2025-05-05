@@ -47,7 +47,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'product_slug'        => $transaction->product_slug,
             'created_at'          => $transaction->created_at,
             'currency_code'       => $transaction->currency_code,
-            'image'               => Product::find($transaction->product_id)->imageSources(200, 200),
+            'image'               => $transaction->product_id ? Product::find($transaction->product_id)->imageSources(200, 200) : null,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [
