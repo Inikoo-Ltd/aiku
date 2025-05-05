@@ -22,6 +22,7 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
@@ -222,6 +223,15 @@ class ShowOrder extends OrgAction
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
         }
 
+        $platform  = $order->platform;
+        if(!$platform) {
+            $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+        }
+
+        $editableAddress = false;
+        if($platform->type == PlatformTypeEnum::MANUAL) {
+            $editableAddress = true;
+        }
         return Inertia::render(
             'Org/Ordering/Order',
             [
@@ -242,7 +252,11 @@ class ShowOrder extends OrgAction
                         'icon'  => 'fal fa-shopping-cart',
                         'title' => __('customer client')
                     ],
-                    'actions' => $actions
+                    'actions' => $actions,
+                    'platform' => $platform ? [
+                                            'icon'  => $platform->imageSources(24, 24),
+                                            'title' => $platform->name,
+                                            ] : null,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -267,7 +281,7 @@ class ShowOrder extends OrgAction
 
                 'notes'     => $this->getOrderNotes($order),
                 'timelines' => $finalTimeline,
-
+                'is_address_editable' => $editableAddress,
                 'address_management' => GetOrderAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),

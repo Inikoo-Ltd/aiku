@@ -11,6 +11,7 @@ namespace App\Models\Dropshipping;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Models\Traits\HasImage;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -44,6 +45,7 @@ class Platform extends Model
 {
     use HasSlug;
     use InGroup;
+    use HasImage;
 
     protected $casts = [
         'type' => PlatformTypeEnum::class

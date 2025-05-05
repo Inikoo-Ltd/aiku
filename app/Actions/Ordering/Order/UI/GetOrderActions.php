@@ -9,6 +9,8 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -19,10 +21,16 @@ class GetOrderActions
     public function handle(Order $order, $canEdit = false): array
     {
         $actions = [];
+
+        $platform  = $order->platform;
+        if(!$platform) {
+            $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+        }
+
         if ($canEdit) {
             $actions = match ($order->state) {
                 OrderStateEnum::CREATING => [
-                    [
+                    $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type' => 'buttonGroup',
                         'key' => 'upload-add',
                         'button' => [
@@ -35,8 +43,8 @@ class GetOrderActions
                                 'tooltip' => __('Upload pallets via spreadsheet'),
                             ],
                         ],
-                    ],
-                    [
+                    ] : [],
+                    $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type' => 'button',
                         'style' => 'secondary',
                         'icon' => 'fal fa-plus',
@@ -49,8 +57,8 @@ class GetOrderActions
                                 'order' => $order->id,
                             ]
                         ]
-                    ],
-                    ($order->transactions()->count() > 0) ?
+                    ] : [],
+                    ($order->transactions()->count() > 0) && $platform && $platform->type == PlatformTypeEnum::MANUAL ?
                         [
                             'type' => 'button',
                             'style' => 'save',
