@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 // Tambahkan ikon ke library FontAwesome
 library.add(faBorderOuter, faLink, faUnlink)
+type CssProperty = { value: number; unit: string }
 
 // Menggunakan defineModel() dengan nilai default
 const model = defineModel<{ value: number; unit: string }>({
@@ -18,18 +19,15 @@ const model = defineModel<{ value: number; unit: string }>({
 
 
 const emits = defineEmits<{
-    (e: 'update:modelValue', value: string | number): void
+  (e: 'update:modelValue', value: string | number): void
 }>()
 
 /* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
 const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 // Fungsi untuk memperbarui model
-const updateModel = (key: keyof typeof model.value, newValue: any) => {
+function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[K]) {
   model.value = { ...model.value, [key]: newValue }
-  /* onSaveWorkshopFromId(side_editor_block_id) */
-  console.log(model.value)
-  emits('update:modelValue', model.value)
 }
 </script>
 
@@ -75,7 +73,7 @@ const updateModel = (key: keyof typeof model.value, newValue: any) => {
                 <div class="col-span-4">
                   <PureInputNumber
                     :modelValue="model.value"
-                    @update:modelValue="(newVal) => updateModel('value', newVal)"
+                    @update:model-value="val => updateModel('value', val)"
                     class=""
                     :suffix="model.unit"
                   />
