@@ -5,11 +5,16 @@ import { library, icon } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faGalaxy, faTimesCircle } from '@fas';
 import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone } from '@fal';
+import { faTruckLoading, faTruckMoving, faTruckContainer, faUser as faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock } from '@far';
 import { faLambda } from '@fad';
 import { faBackpack } from '@far';
 
 // Add icons to the library
-library.add(faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone );
+library.add(
+    faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
+    faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory,
+    faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock
+);
 
 const props = withDefaults(
     defineProps<{
@@ -26,8 +31,10 @@ const props = withDefaults(
 );
 
 const _popover = ref();
-const allIcons = props.listType === 'extend' 
-    ? [...[faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone ], ...props.iconList] 
+const allIcons = props.listType === 'extend'
+    ? [...[faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
+        faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory,
+        faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock], ...props.iconList]
     : props.iconList;
 
 const emits = defineEmits<{
@@ -39,7 +46,7 @@ const toggle = (event: Event) => {
 };
 
 const renderIcon = (iconData: any) => {
- /*    return icon(faCircle).html[0]; */
+    /*    return icon(faCircle).html[0]; */
     if (!iconData) return icon(faCircle).html[0];
 
     if (typeof iconData === 'string') {
@@ -51,7 +58,7 @@ const renderIcon = (iconData: any) => {
         }
     } else if (Array.isArray(iconData)) {
         const [prefix, iconName] = iconData;
- 
+
         return icon({ prefix, iconName }).html[0];
     } else {
         return icon(iconData).html[0]; // Assume it's a FontAwesome object
@@ -73,7 +80,7 @@ const onChangeIcon = (iconData: any) => {
         }
     } else if (props.valueType === 'svg') {
         updatedValue = icon(iconData).html[0];
-    }else if (props.valueType === 'array'){
+    } else if (props.valueType === 'array') {
         updatedValue = [iconData.prefix, iconData.iconName]
     }
 
@@ -94,23 +101,27 @@ defineExpose({
 
     <!-- Popover content -->
     <Popover ref="_popover">
-        <div class="grid grid-cols-4 gap-4 w-full max-w-[25rem]">
-            <!-- Loop through the allIcons array -->
-            <div 
-                v-for="(iconData, index) in allIcons" 
-                :key="index"
-                class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition duration-300"
-                @click="() => onChangeIcon(iconData)"
-            >
-                <!-- Render the icon -->
-                <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
-                <!-- Render the label -->
-               <!--  <span class="mt-2 text-xs text-gray-600 text-center">
-                    {{ Array.isArray(iconData) ? iconData[1] : iconData.iconName || 'SVG' }}
-                </span> -->
-            </div>
-        </div>
-    </Popover>
+  <div class="w-full max-w-[25rem]">
+    <div class="grid grid-cols-4 gap-4 h-32 overflow-y-auto">
+      <!-- Loop through the allIcons array -->
+      <div
+        v-for="(iconData, index) in allIcons"
+        :key="index"
+        class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition duration-300"
+        @click="() => onChangeIcon(iconData)"
+      >
+        <!-- Render the icon -->
+        <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
+        <!-- Render the label -->
+        <!--
+        <span class="mt-2 text-xs text-gray-600 text-center">
+          {{ Array.isArray(iconData) ? iconData[1] : iconData.iconName || 'SVG' }}
+        </span>
+        -->
+      </div>
+    </div>
+  </div>
+</Popover>
 </template>
 
 <style scoped>
