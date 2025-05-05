@@ -53,16 +53,12 @@ const onPropertyUpdate = (newVal: any) => {
   const prevVal = get(modelValue.value, rawKey)
   const useIn = props.blueprint.useIn
 
-  // ✅ Kalau useIn kosong → flat saja
+  // ✅ Kalau useIn null → flat 
   if (!Array.isArray(useIn) || useIn.length === 0) {
     emits('update:modelValue', rawKey, newVal)
     return
   }
 
-  // ✅ Kalau useIn ADA → data harus disimpan sebagai responsive format
-  // Contoh:
-  // - kalau newVal: "test" → simpan { desktop: "test" } (atau tergantung currentView)
-  // - kalau newVal: { object } → simpan langsung (anggap sudah benar)
   const current = isPlainObject(prevVal) ? prevVal : {}
 
   const updatedValue = Array.isArray(props.blueprint.useIn) && props.blueprint.useIn.length > 0

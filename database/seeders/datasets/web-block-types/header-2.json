@@ -80,8 +80,10 @@
 			},
 			"logo": {
 				"visible": "all",
-				"image": null,
-				"alt": "image",
+				"image": {
+					"source": null,
+					"alt": "CTA Image"
+				},
 				"properties": {
 					"padding": {
 						"unit": "px",
