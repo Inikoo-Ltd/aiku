@@ -78,6 +78,16 @@ const onEditAddress = (address: Address) => {
   selectedAddress.value = { ...address };
 };
 const onSubmitEditAddress = (address: Address) => {
+  if (!props.updateRoute) {
+    notify({
+        title: trans("Failed to update the address"),
+        text: trans("Please contact the administrator to fix."),
+        type: "error",
+    })
+
+    return
+  }
+
   const filterDataAddress = { ...address };
   delete filterDataAddress.formatted_address;
   delete filterDataAddress.country;
