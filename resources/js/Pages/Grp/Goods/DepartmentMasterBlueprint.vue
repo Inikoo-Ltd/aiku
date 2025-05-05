@@ -32,7 +32,6 @@ const isModalGallery = ref(false)
 const isLoading = ref(false)
 const isModalFamiliesPreview = ref(false)
 const showPreviewFamilies = ref(props.web_block_types_families.data[0])
-console.log(props)
 const confirm = useConfirm();
 
 
@@ -84,18 +83,37 @@ const confirmDelete = (_event: MouseEvent, item: { id: number; name: string; sho
 
 
 const onSaveAll = (routes: routeType) => {
-    router.patch(
-        route(routes.name, routes.parameters),
-        { data: departmentData.value, families: familiesOption.value },
-        {
-            preserveScroll: true,
-            onStart: () => { isLoading.value = true },
-            onSuccess: () => { },
-            onError: errors => { },
-            onFinish: () => { isLoading.value = false },
-        }
-    )
-}
+  router.patch(
+    route(routes.name, routes.parameters),
+    {
+      data: {
+        name: departmentData.value.name,
+        description: departmentData.value.description,
+      },
+      families: familiesOption.value.map(item => ({
+        slug: item.slug,
+        show: item.show,
+      })),
+    },
+    {
+      preserveScroll: true,
+      onStart: () => {
+        isLoading.value = true;
+      },
+      onSuccess: () => {
+        // Success handler (optional)
+      },
+      onError: (errors) => {
+        // Handle validation or server errors
+        console.error('Save failed:', errors);
+      },
+      onFinish: () => {
+        isLoading.value = false;
+      },
+    }
+  );
+};
+
 
 const confirmSave = (routes: routeType) => {
     confirm.require({
@@ -149,7 +167,7 @@ const onUpload = async (files: File[], clear: Function) => {
         </template>
     </PageHeading>
 
-    <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 px-4 pb-8 m-5">
+    <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 px-4 pb-8 m-5 ">
         <!-- Sidebar -->
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <!-- Navigation & Preview -->
@@ -172,7 +190,7 @@ const onUpload = async (files: File[], clear: Function) => {
                     <PureInput v-model="departmentData.name" type="text" placeholder="Enter name" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <PureTextarea v-model="departmentData.description" type="text" :rows="4" placeholder="Enter name" />
                 </div>
                 <div>
@@ -183,13 +201,13 @@ const onUpload = async (files: File[], clear: Function) => {
         </div>
 
         <!-- Families List -->
-        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
+        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 " >
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">Families List</h3>
                 <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye" @click="isModalFamiliesPreview = true"/>
             </div>
 
-            <ul class="divide-y divide-gray-100">
+            <ul class="divide-y divide-gray-100 h-[calc(100vh-30vh)] overflow-auto">
                 <li v-for="(item, index) in familiesOption" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">
