@@ -60,7 +60,7 @@ class HandleRetinaInertiaRequests extends Middleware
             "website"               => WebsiteIrisResource::make($request->get('website'))->getArray(),
         ];
 
-        if ($webUser->website?->shop) {
+        if ($webUser?->website?->shop) {
             if ($webUser->website->shop->type != ShopTypeEnum::FULFILMENT) {
                 $iris_layout = array_merge($iris_layout, [
                     'theme'                 => Arr::get($website->published_layout, 'theme'),
