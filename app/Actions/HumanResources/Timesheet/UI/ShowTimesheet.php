@@ -88,18 +88,18 @@ class ShowTimesheet extends OrgAction
                 'timesheet' => GetTimesheetShowcase::run($timesheet),
 
                 TimesheetTabsEnum::TIME_TRACKERS->value => $this->tab == TimesheetTabsEnum::TIME_TRACKERS->value ?
-                    fn() => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))
-                    : Inertia::lazy(fn() => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))),
+                    fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))
+                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))),
 
 
                 TimesheetTabsEnum::CLOCKINGS->value => $this->tab == TimesheetTabsEnum::CLOCKINGS->value ?
-                    fn() => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))
-                    : Inertia::lazy(fn() => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))),
+                    fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))
+                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))),
 
 
                 TimesheetTabsEnum::HISTORY->value => $this->tab == TimesheetTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($timesheet))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($timesheet))),
+                    fn () => HistoryResource::collection(IndexHistory::run($timesheet))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($timesheet))),
 
             ]
         )->table(
