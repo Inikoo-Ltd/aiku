@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -138,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read Collection<int, Invoice> $invoices
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read Collection<int, OrderPaymentApiPoint> $orderPaymentApiPoint
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
  * @property-read Platform|null $platform
@@ -329,6 +331,12 @@ class Order extends Model implements HasMedia, Auditable
     {
         return $this->belongsTo(Platform::class);
     }
+
+    public function orderPaymentApiPoint(): HasMany
+    {
+        return $this->hasMany(OrderPaymentApiPoint::class);
+    }
+
 
 
 }

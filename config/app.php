@@ -268,6 +268,15 @@ return [
     'send_email_in_non_production_env'    => env('SEND_EMAIL_IN_NON_PRODUCTION_ENV', false),
     'email_address_in_non_production_env' => env('EMAIL_ADDRESS_IN_NON_PRODUCTION_ENV', 'dev@aiku.io'),
     'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
-    'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE')
+    'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
+
+    'sandbox' => [
+        'share_url' => env('SANDBOX_SHARE_URL'),
+        'checkout_com' => [
+            'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
+            'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
+            'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
+        ]
+    ]
 
 ];

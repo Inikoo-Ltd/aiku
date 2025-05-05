@@ -50,7 +50,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'webUser_count' => $webUser?->customer?->webUsers?->count() ?? 1,
                 ],
                 'flash'  => [
-                    'notification' => fn() => $request->session()->get('notification')
+                    'notification' => fn () => $request->session()->get('notification')
                 ],
                 'ziggy'  => [
                     'location' => $request->url(),
