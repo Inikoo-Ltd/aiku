@@ -117,6 +117,7 @@ const onSaveAll = () => {
     {
         name: departmentData.value.name,
         description: departmentData.value.description,
+        image_id : departmentData.value.image_id,
      /*  families: familiesOption.value.map(item => ({
         slug: item.slug,
         show: item.show,
@@ -129,6 +130,7 @@ const onSaveAll = () => {
       },
       onSuccess: () => {
         departementEdit.value = false
+        departmentData.value = props.department.data
         // Success handler (optional)
       },
       onError: (errors) => {
@@ -304,7 +306,7 @@ const onUpload = async (files: File[], clear: () => void) => {
             :closePopup="() => (isModalGallery = false)" 
             :submitUpload="onUpload" 
             :maxSelected="1"
-            @submitSelectedImages="(e)=>{departmentData.image = e[0], isModalGallery = false}" 
+            @submitSelectedImages="(e)=>{departmentData.image_id = e[0].id, isModalGallery = false, onSaveAll()}" 
         />
     </Modal>
 

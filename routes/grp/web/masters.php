@@ -27,6 +27,7 @@ Route::get('/shops', IndexMasterShops::class)->name('shops.index');
 Route::get('/products', IndexMasterAssets::class)->name('products.index');
 Route::get('/departments', [IndexMasterDepartments::class, 'inGroup'])->name('departments.index');
 Route::get('/departments/{masterDepartment}', [ShowMasterDepartment::class, 'inGroup'])->name('departments.show');
+Route::get('departments/{masterDepartment}/blueprint', [ShowMasterDepartmentWorkshop::class,'inGroup'])->name('departments.blueprint');
 
 Route::get('/families', [IndexMasterFamilies::class, 'inGroup'])->name('families.index');
 Route::get('/families/{masterFamily}', [ShowMasterFamily::class, 'inGroup'])->name('families.show');
