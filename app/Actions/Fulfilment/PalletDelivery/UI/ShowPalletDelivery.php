@@ -180,7 +180,7 @@ class ShowPalletDelivery extends OrgAction
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
                         'parameters' => [
                             'organisation'  => $recurringBill->organisation->slug,
-                            'fulfilment'    => $this->parent->slug,
+                            'fulfilment'    => $this->parent->fulfilment->slug,
                             'fulfilmentCustomer' => $this->parent->slug,
                             'invoice' => $recurringBill->invoices->slug
                         ]
