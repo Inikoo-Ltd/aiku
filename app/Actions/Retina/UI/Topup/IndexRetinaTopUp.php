@@ -22,7 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaTopup extends RetinaAction
+class IndexRetinaTopUp extends RetinaAction
 {
     public function handle(Customer $parent, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {

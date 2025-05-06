@@ -26,9 +26,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $families
  * @property int $products
  * @property int $used_in
+ * @property mixed $show_in_website
  */
 class MasterDepartmentsResource extends JsonResource
 {
+
     public function toArray($request): array
     {
         /** @var MasterProductCategory $masterDepartment */
@@ -47,6 +49,7 @@ class MasterDepartmentsResource extends JsonResource
             'used_in'          => $this->used_in,
             'families'         => $this->families,
             'products'         => $this->products,
+            'show_in_website'  => $this->show_in_website,
         ];
     }
 }

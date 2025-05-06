@@ -31,8 +31,8 @@ class UpdateMasterProductCategory extends OrgAction
             } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
                 MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
             }
-
         }
+
         return $masterProductCategory;
     }
 
@@ -40,7 +40,7 @@ class UpdateMasterProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'        => [
+            'code'                     => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -55,12 +55,13 @@ class UpdateMasterProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'        => ['sometimes', 'max:250', 'string'],
-            'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'status'      => ['sometimes', 'required', 'boolean'],
-            'description' => ['sometimes', 'required', 'max:1500'],
-            'master_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
-            'master_sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id']
+            'name'                     => ['sometimes', 'max:250', 'string'],
+            'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
+            'status'                   => ['sometimes', 'required', 'boolean'],
+            'description'              => ['sometimes', 'required', 'max:1500'],
+            'master_department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'master_sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'show_in_website'          => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

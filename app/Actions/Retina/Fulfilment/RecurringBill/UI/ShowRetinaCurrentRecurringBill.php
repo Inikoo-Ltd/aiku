@@ -65,7 +65,7 @@ class ShowRetinaCurrentRecurringBill extends RetinaAction
                 ],
                 'status_rb'   => $recurringBill->status,
                 'currency'    => CurrencyResource::make($recurringBill->currency),
-                'box_stats'   => ShowRecurringBill::make()->getRecurringBillBoxStats($recurringBill),
+                'box_stats'   => ShowRecurringBill::make()->getRecurringBillBoxStats($recurringBill, $this->fulfilmentCustomer),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
