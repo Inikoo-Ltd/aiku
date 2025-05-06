@@ -40,6 +40,7 @@ set('keep_releases', 15);
 set('shared_dirs', ['storage', 'private']);
 set('shared_files', [
     'isdoc-pdf',
+    'rgb.icc',
     'rr',
     '.rr.yaml',
     '.env',
