@@ -17,6 +17,7 @@ const props = defineProps<{
     tab: string
     updateRoute: routeType
     state?: string
+    readonly?: boolean
 }>()
     
 function productRoute(product) {
@@ -109,6 +110,7 @@ const debounceUpdateQuantity = debounce(
                         :bindToTarget="{ min: 0 }"
                         keySubmit="quantity_ordered"
                         :isLoading="isLoading === 'quantity' + item.id"
+                        :readonly="readonly"
                         @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
                         noUndoButton
                         noSaveButton
@@ -124,7 +126,7 @@ const debounceUpdateQuantity = debounce(
                     @finish="() => isLoading = false"
                     v-tooltip="trans('Unselect this product')"
                 >
-                    <Button icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + item.id" />
+                    <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + item.id" />
                 </Link>
             </div>
             <!-- {{ locale.currencyFormat(item.currency_code, item.net_amount) }} -->

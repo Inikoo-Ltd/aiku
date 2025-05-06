@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Models\Dropshipping\Platform;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -18,11 +19,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $name
  * @property mixed $type
  * @property mixed $slug
+ * @property mixed $number_portfolios
+ * @property mixed $number_customer_clients
+ * @property mixed $number_orders
  */
 class PlatformsInCustomerResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var Platform $platform */
+        $platform = Platform::find($this->id);
+
         return [
             'slug'                     => $this->slug,
             'id'                       => $this->id,
@@ -32,7 +39,8 @@ class PlatformsInCustomerResource extends JsonResource
             'number_clients'           => $this->number_customer_clients,
             'number_orders'            => $this->number_orders,
             'type'                     => $this->type,
-            'customer_has_platform_id' => $this->customer_has_platform_id
+            'customer_has_platform_id' => $this->customer_has_platform_id,
+            'image'                    => $platform->imageSources(48, 48) ?? null,
         ];
     }
 }
