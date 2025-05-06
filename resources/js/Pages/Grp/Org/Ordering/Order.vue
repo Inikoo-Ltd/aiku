@@ -502,7 +502,6 @@ const isModalUploadExcel = ref(false)
                     v-html="box_stats?.customer.addresses.billing.formatted_address">
                 </dd>
             </div>
-
             <!-- Field: Shipping Address -->
             <div v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address"
                 class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address')">
@@ -511,13 +510,13 @@ const isModalUploadExcel = ref(false)
                 </dt>
                 <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                     <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                    <div @click="() => isModalAddress = true"
+                    <div v-if="!props.readonly" @click="() => isModalAddress = true"
                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                         <span>{{ trans('Edit') }}</span>
                     </div>
                 </dd>
             </div>
-
+ 
             <div v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address"
                 class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address and Billing address')">
                 <dt class="flex-none">
