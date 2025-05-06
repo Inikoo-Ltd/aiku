@@ -9,6 +9,8 @@
 namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Dropshipping\CustomerClient;
 
@@ -26,6 +28,9 @@ class HydrateCustomerClients
     public function handle(CustomerClient $customerClient): void
     {
         CustomerClientHydrateBasket::run($customerClient);
+        CustomerClientHydrateInvoices::run($customerClient);
+        CustomerClientHydrateOrders::run($customerClient);
+
     }
 
 
