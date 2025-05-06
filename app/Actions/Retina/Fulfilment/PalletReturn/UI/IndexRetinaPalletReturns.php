@@ -111,7 +111,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new dispatch (whole goods)') : __('Create new dispatch'),
-                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Dispatch (whole goods)') : __('Dispatch'),
+                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Dispatch') : __('Dispatch'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return.store',
@@ -122,7 +122,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => __('Create new dispatch (Selected SKUs)'),
-                'label'   => __('Dispatch (Selected SKUs)'),
+                'label'   => __('Dropship Dispatch'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return-stored-items.store',
