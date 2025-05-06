@@ -2,7 +2,7 @@
 import { useForm } from "@inertiajs/vue3"
 import { ref, onMounted, nextTick, watch, computed } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
+// import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import { trans } from "laravel-vue-i18n"
 import Multiselect from "@vueform/multiselect"
 import Address from "@/Components/Forms/Fields/Address.vue"
@@ -21,7 +21,7 @@ import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
 // Set default layout
-defineOptions({ layout: RetinaShowIris })
+// defineOptions({ layout: RetinaShowIris })
 const props = defineProps({
 	countriesAddressData: Array,
 	polls: Array,

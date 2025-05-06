@@ -8,9 +8,11 @@
 
 use App\Actions\Retina\UI\Topup\CreateRetinaTopUp;
 use App\Actions\Retina\UI\Topup\IndexRetinaTopUp;
+use App\Actions\Retina\UI\Topup\ShowRetinaTopUpCheckout;
 use App\Actions\Retina\UI\Topup\ShowRetinaTopUpDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexRetinaTopUp::class)->name('index');
 Route::get('/dashboard', ShowRetinaTopUpDashboard::class)->name('dashboard');
 Route::get('/create', CreateRetinaTopUp::class)->name('create');
+Route::get('/{topUp}/checkout', ShowRetinaTopUpCheckout::class)->name('checkout');

@@ -56,7 +56,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'location' => $request->url(),
                 ],
                 "retina" => [
-                    "type" => $webUser?->shop?->type?->value,
+                    "type" => $website->shop->type->value,
                 ],
                 'iris'   => $this->getIrisData($website, $webUser)
             ],

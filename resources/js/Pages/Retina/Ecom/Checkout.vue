@@ -4,15 +4,19 @@ import CheckoutSummary from "./CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref } from "vue"
+import { onMounted, ref } from "vue"
 import { data } from "autoprefixer";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n"
+
+import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
+
+
 library.add(faCreditCardFront)
 
 const props = defineProps<{
     order: {},
-    paymentMethods:[]
+    paymentMethods: []
 
 }>()
 
@@ -23,7 +27,38 @@ const tabs = [
     { label: 'Bank transfer', icon: faUniversity },
 ]
 
-console.log('opop', props.order)
+
+onMounted(async () => {
+    
+    // Initialise a new Checkout Web Components instance
+    const paymentSession = props.paymentMethods[0].data.payment_session_token
+    console.log("paymentSession", paymentSession)
+    const checkout = await loadCheckoutWebComponents({
+        paymentSession: props.paymentMethods[0].data,
+        publicKey: 'pk_sbox_zwy7273yycdoyic6blqz6hkwcmk',
+        environment: 'sandbox',
+        locale: "en-GB",
+        onReady: () => {
+            console.log("onReady")
+        },
+    
+        onPaymentCompleted: (_component, paymentResponse) => {
+            console.log("Create Payment with PaymentId: ", paymentResponse.id)
+        },
+    
+        onChange: (component) => {
+            console.log( `onChange() -> isValid: "${component.isValid()}" for "${component.type}"`, )
+        },
+        onError: (component, error) => {
+            console.log("onError", error, "Component", component.type)
+        },
+    })
+    
+    // You can now create and mount a Flow component using 'checkout'
+    const flowComponent = checkout.create('flow');
+    flowComponent.mount('#flow-container');
+})
+
 </script>
 
 <template>
@@ -79,6 +114,10 @@ console.log('opop', props.order)
             <div class="py-10 w-full text-center">
                 {{ tabs[currentTab].label }}
             </div>
+        </div>
+
+        <div id="flow-container">
+
         </div>
 
         <div class="flex justify-end gap-x-4 mt-4 px-4">
