@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, toRaw, onMounted, Component, IframeHTMLAttributes, provide, nextTick  } from 'vue'
+import { ref, watch, computed, toRaw, onMounted, IframeHTMLAttributes, provide, nextTick } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -9,24 +9,20 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { notify } from "@kyvg/vue3-notification"
 import Publish from '@/Components/Publish.vue'
-import { debounce } from 'lodash-es'
 import ScreenView from "@/Components/ScreenView.vue"
 import HeaderListModal from '@/Components/CMS/Fields/ListModal.vue'
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import { irisStyleVariables, setIframeView } from '@/Composables/Workshop'
-import ProgressSpinner from 'primevue/progressspinner';
 import { useColorTheme } from '@/Composables/useStockList'
-import { set, get } from 'lodash-es'
-import ToggleSwitch from 'primevue/toggleswitch';
+import { set, get, debounce } from 'lodash-es'
 
 import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 
-import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBoothCurtain } from "@fal"
+import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeading, faHeart, faLowVision, faSignIn } from '@far'
-import { faBrowser } from '@fal'
 
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
@@ -40,12 +36,12 @@ const props = defineProps<{
     title: string
     uploadImageRoute: routeType
     data: {
-        data : {
-            header : Object,
-            topBar : Object
+        data: {
+            header: Object,
+            topBar: Object
         }
     }
-    status:boolean
+    status: boolean
     autosaveRoute: routeType
     web_block_types: {}
     route_list: {
@@ -57,9 +53,9 @@ const props = defineProps<{
 }>()
 
 provide('route_list', props.route_list)
-const usedTemplates = ref({ 
-    header : props?.data?.data?.header,
-    topBar : props?.data?.data?.topBar
+const usedTemplates = ref({
+    header: props?.data?.data?.header,
+    topBar: props?.data?.data?.topBar
 })
 const isLoading = ref(false)
 const comment = ref('')
@@ -92,11 +88,11 @@ const _iframe = ref<IframeHTMLAttributes | null>(null)
 const isLoadingTemplate = ref(false)
 const onSelectBlock = async (selectedBlock: object) => {
     isLoadingTemplate.value = true
-    
+
     setTimeout(() => {
         const selectedKey = selectedTab.value.key;
         const currentTemplate = toRaw(usedTemplates.value[selectedKey])
-        const newTemplate = { ...toRaw(selectedBlock)  }
+        const newTemplate = { ...toRaw(selectedBlock) }
 
         newTemplate.data.fieldValue = {
             ...currentTemplate?.data?.fieldValue,
@@ -110,23 +106,16 @@ const onSelectBlock = async (selectedBlock: object) => {
             isModalOpen.value = false
         })
     }, 500)
-
-    
-    // nextTick(() => {
-    // })
-    // setTimeout(() => {
-        
-    // }, 2000);
 }
 
 // Method: Publish
-const publishCancelToken = ref<{cancel: Function} | null>(null)
+const publishCancelToken = ref<{ cancel: Function } | null>(null)
 const onPublish = async (action: routeType, popover: Function) => {
     router[action.method || 'post'](
         route(action.name, action.parameters),
         {
             comment: comment.value,
-            layout: {... usedTemplates.value,  status : status.value}
+            layout: { ...usedTemplates.value, status: status.value }
         },
         {
             onStart: () => isLoading.value = true,
@@ -135,8 +124,8 @@ const onPublish = async (action: routeType, popover: Function) => {
                 isLoading.value = false
                 publishCancelToken.value = null
             },
-            onSuccess : () => {
-                comment.value  = ""
+            onSuccess: () => {
+                comment.value = ""
             },
             onError: (error) => {
                 notify({
@@ -160,7 +149,7 @@ const autoSave = async (data: {}) => {
             onStart: () => isLoadingSave.value = true,
             onFinish: () => {
                 isLoadingSave.value = false,
-                saveCancelToken.value = null
+                    saveCancelToken.value = null
                 sendToIframe({ key: 'reload', value: {} })
             },
             onProgress: (progress) => {
@@ -184,6 +173,7 @@ const autoSave = async (data: {}) => {
         }
     )
 }
+
 const debouncedSendUpdate = debounce((data) => autoSave(data), 1000, { leading: false, trailing: true })
 const openFullScreenPreview = () => {
     const url = new URL(iframeSrc, window.location.origin);
@@ -197,7 +187,7 @@ const handleIframeError = () => {
 }
 
 const openWebsite = () => {
-  window.open('https://'+ props.domain, "_blank")
+    window.open('https://' + props.domain, "_blank")
 }
 
 watch(usedTemplates, (newVal) => {
@@ -212,10 +202,10 @@ watch(usedTemplates, (newVal) => {
 
 const selectedWebBlock = computed(() => {
     const data = props.web_block_types.filter(item => item.data.component === selectedTab.value.componentName)
-    if(selectedTab.value.componentName == "topbar"){
-        if(route().params["fulfilment"]) return data.filter((item)=> item.code.includes('fulfilment'))
-        else return data.filter((item)=> !item.code.includes('fulfilment'))
-    }else return data
+    if (selectedTab.value.componentName == "topbar") {
+        if (route().params["fulfilment"]) return data.filter((item) => item.code.includes('fulfilment'))
+        else return data.filter((item) => !item.code.includes('fulfilment'))
+    } else return data
 })
 
 
@@ -224,6 +214,7 @@ const sendToIframe = (data: any) => {
     _iframe.value?.contentWindow.postMessage(data, '*')
 }
 const panelActive = ref()
+
 onMounted(() => {
     if (!get(props.data, 'theme.color', false)) {
         set(props.data, 'theme.color', [...useColorTheme[0]])
@@ -235,13 +226,13 @@ onMounted(() => {
         const { data } = event;
         if (event.data.key === 'openModalBlockList') {
             isModalOpen.value = true
-        } if (data.key === 'TopbarPanelOpen') {
+        } else if (data.key === 'TopbarPanelOpen') {
             panelActive.value = event.data.value
             selectedTab.value = tabs[0]
-        }if (data.key === 'HeaderPanelOpen') {
+        } else if (data.key === 'HeaderPanelOpen') {
             panelActive.value = event.data.value
             selectedTab.value = tabs[1]
-        }else if (data.key === 'autosave') {
+        } else if (data.key === 'autosave') {
             if (saveCancelToken.value) saveCancelToken.value()
             usedTemplates.value = data.value
         }
@@ -276,7 +267,6 @@ onMounted(() => {
                                 :class="status ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'">
                             Active
                         </div>
-
                         <div class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
                                 :class="!status ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'">
                             Inactive
@@ -285,11 +275,10 @@ onMounted(() => {
                     </div>
                     </div>
                 </template> -->
-
             </Publish>
         </template>
         <template #other>
-            <div class=" px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite" >
+            <div class=" px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite">
                 <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
             </div>
         </template>
@@ -322,17 +311,11 @@ onMounted(() => {
                         </div>
                     </div>
 
-
-                    <!-- {{ panelActive }} -->
                     <div class="">
-                        <SideEditor
-                            v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue"
-                            :key="keySidebar"
+                        <SideEditor v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue" :key="keySidebar"
                             v-model="usedTemplates[selectedTab.key].data.fieldValue"
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
-                            :uploadImageRoute="uploadImageRoute"
-                            :panelOpen="panelActive"
-                        />
+                            :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" />
                     </div>
                 </div>
             </div>
@@ -340,10 +323,9 @@ onMounted(() => {
 
         <div :class="usedTemplates ? 'col-span-8' : 'col-span-10'" class="w-full">
             <div v-if="usedTemplates?.topBar?.code || usedTemplates?.header?.code" class="bg-white h-full">
-                <!-- Section: Screenview -->
                 <div class="flex justify-between max-w-7xl mx-auto bg-slate-200 border border-b-gray-300 pr-6">
                     <div class="flex">
-                        <ScreenView @screenView="(e)=> iframeClass = setIframeView(e)" />
+                        <ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
                         <div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
                             @click="openFullScreenPreview">
                             <FontAwesomeIcon :icon='faLowVision' aria-hidden='true' />
@@ -353,34 +335,20 @@ onMounted(() => {
                     <div class="flex items-center gap-x-2">
                         <span :class="!isPreviewLoggedIn ? 'text-gray-600' : 'text-gray-400'">Logged out</span>
                         <Toggle v-model="isPreviewLoggedIn"
-                            @update:modelValue="(newVal) => sendToIframe({key: 'isPreviewLoggedIn', value: newVal})" />
+                            @update:modelValue="(newVal) => sendToIframe({ key: 'isPreviewLoggedIn', value: newVal })" />
                         <span :class="isPreviewLoggedIn ? 'text-gray-600' : 'text-gray-400'">Logged in</span>
-                        <!-- <div class="py-1 px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite" >
-                            <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" />
-                        </div> -->
                     </div>
                 </div>
 
-                <!-- <div v-if="isIframeLoading" class="flex justify-center items-center w-full h-64 p-12 bg-white">
-                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin w-6" aria-hidden="true" />
-                </div> -->
-
-                <div v-if="isIframeLoading" class="flex justify-center items-center gap-y-6 flex-col top-0 left-0 w-full h-full z-[1000]">
+                <div v-if="isIframeLoading"
+                    class="flex justify-center items-center gap-y-6 flex-col top-0 left-0 w-full h-full z-[1000]">
                     <LoadingIcon class="text-5xl" />
                     <LoadingText :text="trans('Loading iframe')" class="text-2xl" />
                 </div>
 
                 <!-- Workshop Preview -->
-                <iframe
-                    v-show="!isIframeLoading"
-                    ref="_iframe"
-                    :src="iframeSrc"
-                    :title="props.title"
-                    :class="iframeClass"
-                    @error="handleIframeError"
-                    @load="isIframeLoading = false"
-                />
-
+                <iframe v-show="!isIframeLoading" ref="_iframe" :src="iframeSrc" :title="props.title"
+                    :class="iframeClass" @error="handleIframeError" @load="isIframeLoading = false" />
             </div>
 
             <section v-else>
@@ -403,8 +371,6 @@ onMounted(() => {
 
 
 <style lang="scss" scoped>
-
-
 :deep(.loading-overlay) {
     position: block;
     top: 0;

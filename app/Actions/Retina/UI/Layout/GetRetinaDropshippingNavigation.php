@@ -120,6 +120,52 @@ class GetRetinaDropshippingNavigation
             ];
         }
 
+        $groupNavigation['topup'] = [
+            'label' => __('Top Up'),
+            'icon' => ['fal', 'fa-money-bill-wave'],
+            'root' => 'retina.dashboard.',
+            'route' => [
+                'name' => 'retina.dashboard.show'
+            ],
+            'topMenu' => [
+
+            ]
+        ];
+
+        if ($webUser->is_root) {
+            $groupNavigation['sysadmin'] = [
+                'label'   => __('manage account'),
+                'icon'    => ['fal', 'fa-users-cog'],
+                'root'    => 'retina.sysadmin.',
+                'route'   => [
+                    'name' => 'retina.sysadmin.dropshipping.dashboard'
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label' => __('users'),
+                            'icon'  => ['fal', 'fa-user-circle'],
+                            'root'  => 'retina.sysadmin.web-users.',
+                            'route' => [
+                                'name' => 'retina.sysadmin.web-users.index',
+
+                            ]
+                        ],
+
+                        [
+                            'label' => __('account settings'),
+                            'icon'  => ['fal', 'fa-cog'],
+                            'root'  => 'retina.sysadmin.settings.',
+                            'route' => [
+                                'name' => 'retina.sysadmin.settings.edit',
+
+                            ]
+                        ],
+                    ]
+                ]
+            ];
+        }
+
         return $groupNavigation;
     }
 }
