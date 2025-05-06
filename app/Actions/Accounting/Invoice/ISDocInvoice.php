@@ -185,7 +185,6 @@ class ISDocInvoice extends OrgAction
         return $manager->writer->xml($isDocInvoice);
     }
 
-
     /**
      * @throws \Adawolfa\ISDOC\WriterException
      */
