@@ -29,6 +29,9 @@ const props = defineProps<{
         preserveScroll?: boolean
         preserveState?: boolean
     }
+    url?: string
+    method?: string
+    body?: object
 }>()
 
 
@@ -37,29 +40,45 @@ const isLoadingVisit = ref(false)
 
 <template>
     <component
-        :is="props.routeTarget ? Link : 'div'"
-        :href="props.routeTarget?.name ? route(props.routeTarget?.name, props.routeTarget?.parameters) : '#'"
+        :is="props.routeTarget || props.url ? Link : 'div'"
+        :href="props.url || (props.routeTarget?.name ? route(props.routeTarget?.name, props.routeTarget?.parameters) : '#')"
         @start="() => isLoadingVisit = true"
         @finish="() => isLoadingVisit = false"
-        :method="props.routeTarget?.method || undefined"
-        :data="props.routeTarget?.body"
+        :method="props.method || props.routeTarget?.method || undefined"
+        :data="props.body ?? props.routeTarget?.body"
         v-bind="bindToLink"
     >
         <!-- Don't use v-bind make 'style' return empty object -->
         <Button
-            :style
-            :size
-            :icon
-            :iconRight
-            :action
-            :label
-            :full
-            :capitalize
-            :tooltip
+            :style="props.style"
+            :size="props.size"
+            :icon="props.icon"
+            :iconRight="props.iconRight"
+            :action="props.action"
+            :label="props.label"
+            :full="props.full"
+            :capitalize="props.capitalize"
+            :tooltip="props.tooltip"
             :loading="isLoadingVisit || props.loading"
-            :type
-            :disabled
-            :noHover
-        />
+            :type="props.type"
+            :disabled="props.disabled"
+            :noHover="props.noHover"
+        >
+            <template #loading>
+                <slot name="loading" />
+            </template>
+
+            <template #icon>
+                <slot name="icon" />
+            </template>
+
+            <template #label>
+                <slot name="label" />
+            </template>
+
+            <template #iconRight>
+                <slot name="iconRight" />
+            </template>
+        </Button>
     </component>
 </template>
