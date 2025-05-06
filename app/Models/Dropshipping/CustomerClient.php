@@ -9,6 +9,7 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\UniversalSearch;
@@ -64,6 +65,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read Group $group
+ * @property-read Collection<int, Invoice> $invoices
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read \App\Models\Dropshipping\Platform|null $platform
@@ -141,6 +143,11 @@ class CustomerClient extends Model implements Auditable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     public function stats(): HasOne

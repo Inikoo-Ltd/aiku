@@ -27,7 +27,7 @@ class GetPalletReturnBoxStats
         return [
             'collection_notes'    => $palletReturn->collection_notes ?? '',
             'recurring_bill'      => $this->getRecurringBillData($palletReturn, $parent),
-            'invoice'             => $this->getInvoiceData($palletReturn, $parent), 
+            'invoice'             => $this->getInvoiceData($palletReturn, $parent),
             'fulfilment_customer' => array_merge(
                 FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
@@ -145,7 +145,7 @@ class GetPalletReturnBoxStats
         $invoiceData = null;
         if ($palletReturn->recurringBill) {
             $recurringBill = $palletReturn->recurringBill;
-            if($recurringBill->invoices) {
+            if ($recurringBill->invoices) {
                 $invoice = $recurringBill->invoices;
                 if ($parent instanceof Fulfilment) {
                     $route = [

@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
@@ -215,6 +216,11 @@ class StoreOrder extends OrgAction
                 CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
             }
         }
+
+        if ($order->customer_client_id) {
+            CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
+        }
+
 
         if ($order->state == OrderStateEnum::CREATING) {
 

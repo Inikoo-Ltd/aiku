@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 06-05-2025-08h-45m
@@ -8,7 +9,6 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
