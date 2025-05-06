@@ -241,19 +241,19 @@ const isLoadingButtonRentalAgreement = ref(false)
                 </div>
 
                 <!-- Stats -->
-                <div v-if="data.rental_agreement.stats" class="p-5 space-y-2">
+                <div v-if="data.rental_agreement?.stats" class="p-5 space-y-2">
                     <div class="flex gap-x-1 items-center text-sm">
                         <div class="">{{ trans('Last updated') }}:</div>
                         <div class="text-gray-500">{{ useFormatTime(data?.rental_agreement?.updated_at) }}</div>
                     </div>
                     <div class="flex gap-x-1 items-center text-sm">
                         <div class="">{{ trans('Billing Cycle') }}:</div>
-                        <div class="text-gray-500 capitalize">{{ data.rental_agreement.stats?.data.billing_cycle }}
+                        <div class="text-gray-500 capitalize">{{ data.rental_agreement?.stats?.data.billing_cycle }}
                         </div>
                     </div>
                     <div class="flex gap-x-1 items-center text-sm">
                         <div class="">{{ trans('Pallet Limit') }}:</div>
-                        <div class="text-gray-500">{{ data?.rental_agreement.stats?.data.pallets_limit ||
+                        <div class="text-gray-500">{{ data?.rental_agreement?.stats?.data.pallets_limit ||
                             `(${trans('No limit')})` }}</div>
                     </div>
                 </div>
