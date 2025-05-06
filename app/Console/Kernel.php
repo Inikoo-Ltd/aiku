@@ -11,6 +11,7 @@ use App\Actions\Helpers\Intervals\ResetMonthlyIntervals;
 use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
+use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -57,6 +58,10 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'PurgeWebUserPasswordReset',
         );
 
+        $schedule->job(DeleteTempIsdoc::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'DeleteTempIsdoc',
+        );
+
         $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FetchOrdersInBasket',
         );
@@ -80,6 +85,7 @@ class Kernel extends ConsoleKernel
         $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ProcessFetchStacks',
         );
+
     }
 
 
