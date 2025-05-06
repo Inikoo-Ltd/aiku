@@ -40,9 +40,8 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             'tooltip' =>  __('Make a new topup'),
             'label'   => __('New TopUp'),
             'route'   => [
-                // 'method'     => 'post',
-                // 'name'       => 'retina.models.pallet-return.store',
-                // 'parameters' => []
+                'method'     => 'get',
+                'name'       => 'retina.topup.create',
             ]
         ];
 
