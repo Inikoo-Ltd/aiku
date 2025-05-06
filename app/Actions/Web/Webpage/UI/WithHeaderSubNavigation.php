@@ -24,8 +24,8 @@ trait WithHeaderSubNavigation
             [
                 'label'    => __('Snapshots'),
                 'route'     => [
-                    // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
-                    // 'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
+                    'name'       => 'grp.org.shops.show.web.websites.workshop.snapshots.header',
+                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],

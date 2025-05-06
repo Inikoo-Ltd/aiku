@@ -181,7 +181,7 @@ class ShowRecurringBill extends OrgAction
                     'method'     => 'patch'
                 ],
                 'status_rb'        => $recurringBill->status,
-                'box_stats'        => $this->getRecurringBillBoxStats($recurringBill),
+                'box_stats'        => $this->getRecurringBillBoxStats($recurringBill, $this->parent),
 
                 'service_list_route'       => [
                     'name'       => 'grp.json.fulfilment.recurring-bill.services.index',
@@ -242,12 +242,13 @@ class ShowRecurringBill extends OrgAction
     }
 
 
-    public function getRecurringBillBoxStats(RecurringBill $recurringBill): array
+    public function getRecurringBillBoxStats(RecurringBill $recurringBill, FulfilmentCustomer|Fulfilment $parent): array
     {
         $showGrossAndDiscount = $recurringBill->gross_amount !== $recurringBill->net_amount;
 
         return [
             'customer'      => FulfilmentCustomerResource::make($recurringBill->fulfilmentCustomer),
+            'invoice'             => $this->getInvoiceData($recurringBill, $parent), 
             'stats'         => [
                 'number_pallets'      => $recurringBill->stats->number_transactions_type_pallets,
                 'number_stored_items' => $recurringBill->stats->number_transactions_type_stored_items,
@@ -304,6 +305,42 @@ class ShowRecurringBill extends OrgAction
                 ],
             ],
         ];
+    }
+
+    public function getInvoiceData(RecurringBill $recurringBill, FulfilmentCustomer|Fulfilment $parent): ?array
+    {
+        $invoiceData = null;
+            if($recurringBill->invoices) {
+                $invoice = $recurringBill->invoices;
+                if ($parent instanceof Fulfilment) {
+                    $route = [
+                        'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+                        'parameters' => [
+                            'organisation'  => $recurringBill->organisation->slug,
+                            'fulfilment'    => $parent->slug,
+                            'invoice' => $recurringBill->invoices->slug
+                        ]
+                    ];
+                } else { //FulfilmentCustomer
+                    $route = [
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
+                        'parameters' => [
+                            'organisation'  => $recurringBill->organisation->slug,
+                            'fulfilment'    => $parent->fulfilment->slug,
+                            'fulfilmentCustomer' => $parent->slug,
+                            'invoice' => $invoice->slug
+                        ]
+                    ];
+                }
+                $invoiceData = [
+                    'reference'    => $invoice->reference,
+                    'status'       => $invoice->pay_status,
+                    'total_amount' => $invoice->total_amount,
+                    'route'        => $route
+                ];
+        }
+
+        return $invoiceData;
     }
 
     public function jsonResponse(RecurringBill $recurringBill): RecurringBillResource
