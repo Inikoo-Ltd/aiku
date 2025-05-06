@@ -63,7 +63,7 @@ trait WithInvoicesExport
                 'totalNet'      => number_format($totalNet, 2, '.', ''),
             ], [], $config);
 
-            $isAttachIsdocToPdf = Arr::get($invoice->shop->settings, "invoice_export.attach_isdoc_to_pdf", true);
+            $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
             if ($isAttachIsdocToPdf) {
                 try {
