@@ -47,9 +47,10 @@ let sizeClass = "";
 // Styling the Button depends on the 'style' props
 if (props.type == "primary" || props.type == "create" || props.type == "save" || props.type == "upload" || props.style == "primary" || props.style == "create" || props.style == "save" || props.style == "upload") {
   styleClass = `buttonPrimary`;
-} else if (props.type == "secondary" || props.style == "secondary") {
-  styleClass = "buttonSecondary";
-} else if (props.type == "tertiary" || props.style == "tertiary") styleClass = "bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70";
+}
+else if (props.type == "secondary" || props.style == "secondary") { styleClass = "buttonSecondary"; }
+else if (props.type == "tertiary" || props.style == "tertiary") styleClass = "bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70";
+else if (props.type == "transparent" || props.style == "transparent") styleClass = "bg-transparent text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70";
 else if (props.type == "exit" || props.style == "exit" || props.style == "exitEdit" || props.type == "edit" || props.style == "edit") styleClass = "buttonEdit";
 else if (props.type == "dashed" || props.style == "dashed") styleClass = "bg-transparent border border-dashed border-gray-400 text-gray-700 hover:bg-black/10";
 else if (props.type == "rainbow" || props.style == "rainbow") styleClass = "bg-indigo-500 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";

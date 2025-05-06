@@ -75,7 +75,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <div id="top_bar" class="py-2 px-4 grid md:grid-cols-5"
+    <div id="top_bar_2_iris" class="py-2 px-4 grid md:grid-cols-5"
         :style="getStyles(model?.container?.properties)"
     >
 
