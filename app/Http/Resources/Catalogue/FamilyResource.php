@@ -26,6 +26,7 @@ class FamilyResource extends JsonResource
     {
         return [
             'slug'       => $this->slug,
+            'id'         => $this->id,
             'image_id'   => $this->image_id,
             'code'       => $this->code,
             'name'       => $this->name,

@@ -65,18 +65,21 @@ const getComponentDepartment = (componentName: string) => {
 }
 
 const familyShow = (item) => {
-    item.show = !item.show;
-    /* router.patch(
-    route(props.update_route.name, {...props.update_route.parameters, id : item.id}),
+    console.log(item)
+    console.log(route(props.update_route.name, { masterProductCategory : item.id}))
+    router.patch(
+    route(props.update_route.name, { masterProductCategory : item.id}),
     {
-        show : false
+        show_in_website : !item.show
     },
     {
       preserveScroll: true,
       onStart: () => {
         item.loading = true;
       },
-      onSuccess: () => {},
+      onSuccess: (e) => {
+        console.log(e)
+      },
       onError: (errors) => {
         console.error('Save failed:', errors);
       },
@@ -84,7 +87,7 @@ const familyShow = (item) => {
         item.loading = false;
       },
     }
-  ); */
+  );
 }
 
 
@@ -165,7 +168,6 @@ const confirmSave = () => {
     });
 };
 
-import { router } from '@inertiajs/vue3';
 
 const onUpload = async (files: File[], clear: () => void) => {
   if (!files.length) return;
@@ -288,7 +290,6 @@ const onUpload = async (files: File[], clear: () => void) => {
                         <FontAwesomeIcon :icon="item.show ? faEye : faEyeSlash" />
                     </div>
                 </li>
-
             </ul>
         </div>
     </div>
