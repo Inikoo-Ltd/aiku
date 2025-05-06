@@ -35,7 +35,7 @@ class GetFulfilmentCustomerShowcase
                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.web-users.edit',
                 'parameters' => [
                     'organisation' => $fulfilmentCustomer->organisation->slug,
-                    'fulfilment'   => $fulfilmentCustomer->shop->slug,
+                    'fulfilment'   => $fulfilmentCustomer->fulfilment->slug,
                     'fulfilmentCustomer'     => $fulfilmentCustomer->slug,
                     'webUser'      => $webUser->slug
                 ]

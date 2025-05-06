@@ -523,6 +523,7 @@ test('UI create fulfilment customer', function () {
 });
 
 test('UI show fulfilment customer', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.fulfilments.show.crm.customers.show', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page

@@ -943,7 +943,7 @@ test('index invoices', function () {
 });
 
 test('show next bill', function () {
-    // $this->withoutExceptionHandling();
+    $this->withoutExceptionHandling();
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.billing.next_recurring_bill'));
     $response->assertInertia(function (AssertableInertia $page) {
