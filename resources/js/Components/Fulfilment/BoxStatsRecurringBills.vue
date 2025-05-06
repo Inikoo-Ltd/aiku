@@ -120,7 +120,7 @@ const props = defineProps<{
 							)
 						"
 						method="get"
-						v-tooltip="'Recurring Bill'"
+						v-tooltip="'Invoice'"
 						class="primaryLink">
 						{{ boxStats?.invoice?.reference }}
 					</Link>
