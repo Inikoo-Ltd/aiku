@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import LayoutRetinaAuth from '@/Layouts/RetinaShowIris.vue'
+// import LayoutRetinaAuth from '@/Layouts/RetinaShowIris.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -12,7 +12,7 @@ import { trans } from 'laravel-vue-i18n'
 library.add(faArrowLeft, faCheckCircle)
 
 
-defineOptions({ layout: LayoutRetinaAuth })
+// defineOptions({ layout: LayoutRetinaAuth })
 defineProps({
     back_label: {
         type: String,
