@@ -37,7 +37,7 @@ const isLoading = ref(false)
 const isModalFamiliesPreview = ref(false)
 const showPreviewFamilies = ref(props.web_block_types_families.data[0])
 const confirm = useConfirm();
-const departementEdit = ref(false)
+const departmentEdit = ref(false)
 
 
 const familiesOption = ref(
@@ -132,7 +132,7 @@ const onSaveAll = () => {
         isLoading.value = true;
       },
       onSuccess: () => {
-        departementEdit.value = false
+        departmentEdit.value = false
         departmentData.value = props.department.data
         // Success handler (optional)
       },
@@ -217,9 +217,9 @@ const onUpload = async (files: File[], clear: () => void) => {
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">Departement</h3>
-                <Button v-if="!departementEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit" @click="departementEdit = true"/>
+                <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit" @click="departmentEdit = true"/>
                 <div v-else class="flex gap-3">
-                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" :icon="faEdit" @click="departementEdit = false"/>
+                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" :icon="faEdit" @click="departmentEdit = false"/>
                     <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave"  @click="() => confirmSave()" />
                 </div>
             </div>
@@ -237,7 +237,7 @@ const onUpload = async (files: File[], clear: () => void) => {
             </div>
 
             <!-- Form -->
-            <div v-if="departementEdit" class="border-t pt-4 space-y-4">
+            <div v-if="departmentEdit" class="border-t pt-4 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
                     <PureInput v-model="departmentData.name" type="text" placeholder="Enter name" />
@@ -252,7 +252,7 @@ const onUpload = async (files: File[], clear: () => void) => {
                 </div>
             </div>
 
-            <div v-else="departementEdit" class="border-t pt-4 space-y-4 text-sm text-gray-700">
+            <div v-else="departmentEdit" class="border-t pt-4 space-y-4 text-sm text-gray-700">
                 <div class="text-sm font-medium">
                     <span>{{ departmentData.name || 'No label' }}</span>
                 </div>

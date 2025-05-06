@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { ref, inject, Component } from "vue";
 import PureInput from '@/Components/Pure/PureInput.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Dialog from 'primevue/dialog'
-import SwiperImage from '@/Components/Elements/SwiperImage.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronLeft, faEdit, faPlug, faPlus, faPlusCircle, faSave } from '@far'
+import { faChevronLeft, faEdit, faPlus, faSave } from '@far'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 import { faChevronRight, faEye, faEyeSlash, faImage } from '@fal'

@@ -7,16 +7,12 @@ import { trans } from 'laravel-vue-i18n'
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-// library.add(faClipboard)
 import { faArrowLeft, faArrowRight } from "@fal"
 import CheckoutSummary from "./CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import { inject } from "vue"
 import Image from "@/Components/Image.vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-const props = defineProps<{
+defineProps<{
     transactions: {}
     summary: {
         net_amount: string
@@ -27,8 +23,6 @@ const props = defineProps<{
         charges_amount: string
     }
 }>()
-
-const locale = inject('locale', aikuLocaleStructure)
 
 
 </script>
@@ -55,10 +49,6 @@ const locale = inject('locale', aikuLocaleStructure)
                     field="image"
                     class="w-24"
                 >
-                    <!-- <template #header>
-                        <div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600">
-                        </div>
-                    </template> -->
 
                     <template #body="{ data: dataBody }">
                         <div class="px-2 flex relative">
@@ -136,9 +126,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <Row>
                     <Column :colspan="3">
                         <template #footer>
-                            <div class="px-2 flex justify-end relative"
-                                xxclass="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
-                            >
+                            <div class="px-2 flex justify-end relative">
                                 For the same day dispatch of your order before 12pm (£7.50)
                             </div>
                         </template>
@@ -156,9 +144,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <Row>
                     <Column :colspan="3">
                         <template #footer>
-                            <div class="px-2 flex justify-end relative"
-                                xxclass="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
-                            >
+                            <div class="px-2 flex justify-end relative">
                                 Glass & ceramics insurance (£2.75)
                             </div>
                         </template>
@@ -193,6 +179,6 @@ const locale = inject('locale', aikuLocaleStructure)
                 }"
             />
         </div>
-        <!-- <pre>{{ transactions.data[0] }}</pre> -->
+
     </div>
 </template>

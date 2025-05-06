@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight, faImage } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from '@/Components/Image.vue'
-
-// Register all necessary icons
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
-const props = defineProps<{
+defineProps<{
     data: {
         name: string
         description: string
