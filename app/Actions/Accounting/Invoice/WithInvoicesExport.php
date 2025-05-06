@@ -14,6 +14,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Pallet;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Arr;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 
 trait WithInvoicesExport
@@ -50,7 +51,7 @@ trait WithInvoicesExport
                 'margin_top'             => 2,
                 'margin_bottom'          => 2,
                 'auto_page_break'        => true,
-                'auto_page_break_margin' => 10
+                'auto_page_break_margin' => 10,
             ];
 
             $filename = $invoice->slug . '-' . now()->format('Y-m-d');
@@ -62,7 +63,21 @@ trait WithInvoicesExport
                 'totalNet'      => number_format($totalNet, 2, '.', ''),
             ], [], $config);
 
-            return response($pdf->stream(), 200)
+            $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
+
+            if ($isAttachIsdocToPdf) {
+                try {
+                    $outputFile = AttacheIsDocToInvoicePDf::make()->handle($invoice, $pdf, $filename);
+                    return response()->file($outputFile, [
+                        'Content-Type' => 'application/pdf',
+                        'Content-Disposition' => 'inline; filename="' . $filename . '.pdf"',
+                    ]);
+                } catch (Exception $e) {
+                    return response()->json(['error' => 'Failed to generate ISDOC'], 404);
+                }
+            }
+
+            return response($pdf->stream($filename . '.pdf'), 200)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
         } catch (Exception $e) {

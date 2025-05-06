@@ -117,6 +117,11 @@ class EditOrganisationSettings extends OrgAction
                                     'label' => __('Show ISDoc invoice'),
                                     'value' => Arr::get($organisation->settings, 'invoice_export.show_isdoc', false),
                                 ],
+                                'attach_isdoc_to_pdf' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Attach ISDoc to invoice pdf'),
+                                    'value' => Arr::get($organisation->settings, 'invoice_export.attach_isdoc_to_pdf', false),
+                                ],
                                 'show_omega' => [
                                     'type'  => 'toggle',
                                     'label' => __('Show Omega'),

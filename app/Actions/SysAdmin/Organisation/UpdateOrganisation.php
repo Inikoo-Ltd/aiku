@@ -48,6 +48,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
         }
 
+        if (Arr::has($modelData, 'attach_isdoc_to_pdf')) {
+            data_set($modelData, "settings.invoice_export.attach_isdoc_to_pdf", Arr::pull($modelData, 'attach_isdoc_to_pdf'));
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -109,6 +113,7 @@ class UpdateOrganisation extends OrgAction
             'google_client_secret'    => ['sometimes', 'string'],
             'show_isdoc'              => ['sometimes', 'boolean'],
             'show_omega'              => ['sometimes', 'boolean'],
+            'attach_isdoc_to_pdf'     => ['sometimes', 'boolean'],
             'google_drive_folder_key' => ['sometimes', 'string'],
             'address'                 => ['sometimes', 'required', new ValidAddress()],
             'language_id'             => ['sometimes', 'exists:languages,id'],
