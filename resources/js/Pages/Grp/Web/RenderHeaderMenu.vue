@@ -1,5 +1,4 @@
 <script setup lang='ts'>
-import NavigationMenu from './MenuRender.vue'
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { sendMessageToParent } from '@/Composables/Workshop';
@@ -67,7 +66,7 @@ const props = defineProps<{
         key: string,
         data: object,
     }
-
+    screenType: 'mobile' | 'tablet' | 'desktop'
     loginMode:Boolean
     previewMode?:Boolean
 }>()
@@ -92,8 +91,6 @@ const { mode } = route().params;
             />
          </div>
 
-
-
         <!-- Section: Header -->
         <component
             v-if="data?.header?.code"
@@ -103,6 +100,7 @@ const { mode } = route().params;
             :fieldValue="data.header.data.fieldValue"
              @update:model-value="(e)=>emits('update:modelValue', e)"
              @setPanelActive="(data : string)=>sendMessageToParent('HeaderPanelOpen',data)"
+             :screenType="screenType"
         />
 
         <!-- Section: Menu -->

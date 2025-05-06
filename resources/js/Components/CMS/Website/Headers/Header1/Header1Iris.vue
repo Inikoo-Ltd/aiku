@@ -45,26 +45,24 @@ library.add(
 const props = defineProps<{
 	fieldValue: {
 		headerText: string
-		chip_text: string
-		container: {
-			properties: Record<string, string>
-		}
-		logo: {
-			properties: Record<string, string>
-			alt: string
-			image: {
-				source: string
-			}
-		}
-		button_1: {
-			text: string
-			visible: boolean | null
-			container: {
-				properties: Record<string, string>
-			}
-		}
+        logo: {
+            alt: string,
+            image: {
+                source: object
+            },
+        }
+        container: {
+            properties: Object
+        }
+        button_1: {
+            visible: boolean
+            text: string
+            container: {
+                properties: Object
+            }
+        }
 	}
-	loginMode: boolean
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
@@ -80,14 +78,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
 					:href="fieldValue?.logo?.link?.href || '#'"
 					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-full h-full">
-					<!-- <Image
-						:alt="fieldValue?.logo?.alt"
-						:src="fieldValue?.logo?.image?.source"
-						:style="getStyles(fieldValue?.logo?.properties)"
-						:imgAttributes="{
-							loading:'lazy'
-						}"
-					/> -->
+
 
 					<Image
 						:style="getStyles(fieldValue.logo.properties)"
@@ -117,4 +108,5 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 	</div>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
