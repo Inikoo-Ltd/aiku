@@ -27,9 +27,9 @@ class AttacheIsDocToInvoicePDF extends OrgAction
         }
 
         $baseLocation = storage_path('app/' . $baseDir);
-        $pdfLocation = $baseLocation . DIRECTORY_SEPARATOR . $filename . '_isdoc.pdf';
-        $isdocLocation = $baseLocation . DIRECTORY_SEPARATOR . $filename . '_isdoc.xml';
-        $outputFile = $baseLocation . DIRECTORY_SEPARATOR . $filename . '_isdoc_output.pdf';
+        $pdfLocation = $baseLocation . '/' . $filename . '_isdoc.pdf';
+        $isdocLocation = $baseLocation . '/' . $filename . '_isdoc.xml';
+        $outputFile = $baseLocation . '/' . $filename . '_isdoc_output.pdf';
 
         if (!$disk->exists($baseDir . '/' . $filename . '_isdoc.pdf')) {
             $pdf->save($pdfLocation);
