@@ -41,6 +41,7 @@
     },
     "dependencies": {
         "@beefree.io/sdk": "^7.0.1",
+        "@checkout.com/checkout-web-components": "^0.6.0-beta",
         "@codemirror/lang-css": "^6.3.0",
         "@codemirror/lang-html": "^6.4.9",
         "@codemirror/lang-javascript": "^6.2.2",
