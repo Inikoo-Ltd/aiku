@@ -43,7 +43,7 @@ import {
   faArrowCircleLeft,
 } from "@fal";
 import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck } from "@fas";
-import { faCheck, faTrash } from "@far";
+import { faCheck, faTrashAlt } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoiceRefundsInProcessTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceRefundsInProcessTransactions.vue";
@@ -282,7 +282,7 @@ console.log(props.pageHead);
       <div>
         <ModalConfirmationDelete :routeDelete="action.route" isFullLoading>
           <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-            <Button @click="() => changeModel()" :style="'negative'" :icon="faTrash"
+            <Button @click="() => changeModel()" :style="'negative'" :icon="faTrashAlt"
                     :loading="isLoadingdelete" :iconRight="action.iconRight" :label="''"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
 
