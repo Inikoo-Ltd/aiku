@@ -22,9 +22,14 @@ const tabs = [
     { label: 'Paypal', icon: faPaypal },
     { label: 'Bank transfer', icon: faUniversity },
 ]
+
+console.log('opop', props.order)
 </script>
 
 <template>
+    paymentMethods: <pre>{{ paymentMethods }}</pre>
+    <!-- <pre>{{ order }}</pre> -->
+
     <div v-if="!order" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
     </div>
