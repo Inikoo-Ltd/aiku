@@ -501,6 +501,27 @@ const disableBeforeToday = (date: Date) => {
 				aria-labelledby="summary-heading"
 				class="lg:max-w-xl rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
 				<!-- <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2> -->
+				<div v-if="boxStats?.invoice" class="mb-1 text-sm text-gray-500 ">
+					<FontAwesomeIcon
+						icon="fal fa-file-invoice"
+						size="xs"
+						fixed-width
+						class="text-gray-400"
+						:tooltip="'invoice'"
+						aria-hidden="true" />
+					<Link
+						:href="
+							route(
+								boxStats?.invoice?.route?.name,
+								boxStats?.invoice?.route?.parameters
+							)
+						"
+						method="get"
+						v-tooltip="'Recurring Bill'"
+						class="primaryLink">
+						{{ boxStats?.invoice?.reference }}
+					</Link>
+				</div>
 				<div class="text-gray-500 mb-2" v-if="boxStats?.recurring_bill">
 					<Link
 						:href="

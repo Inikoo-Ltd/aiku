@@ -168,6 +168,10 @@ export interface BoxStats {
             pallets_storage: boolean
         }
     }
+    invoice:{
+        reference: string,
+        route: routeType
+    }
     order_summary: FieldOrderSummary[][]
 }
 

@@ -16,7 +16,7 @@ import { routeType } from "@/types/route"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faExpandArrows, faHashtag } from "@fal"
+import { faQuestionCircle, faExpandArrows, faHashtag, faFileInvoice } from "@fal"
 import { faLevelDown } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -26,7 +26,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 // import { useTruncate } from '@/Composables/useTruncate'
 
-library.add(faQuestionCircle, faExpandArrows, faHashtag, faLevelDown)
+library.add(faQuestionCircle, faExpandArrows, faHashtag, faLevelDown, faFileInvoice)
 
 const locale = inject("locale", aikuLocaleStructure)
 const props = defineProps<{
@@ -259,40 +259,59 @@ const onUpdateCustomerReference = () => {
 						aria-hidden="true" />
 				</dt>
 
-                <Popover v-if="dataPalletDelivery.state === 'in_process'  || dataPalletDelivery.state === 'submitted' || dataPalletDelivery.state === 'confirmed'" position="" style="z-index: 20">
-                    <template #button>
-                        <div v-if="dataPalletDelivery.estimated_delivery_date"
-                            v-tooltip="useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)"
-                            class="group  text-gray-500 text-left"
-                            :class="[dataPalletDelivery.state === 'in_process' ? 'underline' : '']"
-                        >
-                            {{ useFormatTime(dataPalletDelivery?.estimated_delivery_date) }}
-                            <FontAwesomeIcon icon='fal fa-pencil' size="sm"
-                                class='text-gray-400 group-hover:text-gray-600' fixed-width aria-hidden='true' />
-                        </div>
+				<Popover
+					v-if="
+						dataPalletDelivery.state === 'in_process' ||
+						dataPalletDelivery.state === 'submitted' ||
+						dataPalletDelivery.state === 'confirmed'
+					"
+					position=""
+					style="z-index: 20">
+					<template #button>
+						<div
+							v-if="dataPalletDelivery.estimated_delivery_date"
+							v-tooltip="
+								useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)
+							"
+							class="group text-gray-500 text-left"
+							:class="[dataPalletDelivery.state === 'in_process' ? 'underline' : '']">
+							{{ useFormatTime(dataPalletDelivery?.estimated_delivery_date) }}
+							<FontAwesomeIcon
+								icon="fal fa-pencil"
+								size="sm"
+								class="text-gray-400 group-hover:text-gray-600"
+								fixed-width
+								aria-hidden="true" />
+						</div>
 
-                        <div v-else class=" text-gray-500 hover:text-gray-600 underline">
-                            {{ trans('Set estimated date') }}
-                        </div>
-                    </template>
+						<div v-else class="text-gray-500 hover:text-gray-600 underline">
+							{{ trans("Set estimated date") }}
+						</div>
+					</template>
 
-                    <template #content="{ close }">
-                        <DatePicker
-                            v-model="dataPalletDelivery.estimated_delivery_date"
-                            @update:modelValue="() => onChangeEstimateDate(close)"
-                            inline auto-apply
-                            :xxdisabled-dates="disableBeforeToday"
-                            :enable-time-picker="false"
-                        />
-                        <div v-if="isLoadingSetEstimatedDate" class="absolute inset-0 bg-white/70 flex items-center justify-center">
-                            <LoadingIcon class="text-5xl" />
-                        </div>
-                    </template>
-                </Popover>
+					<template #content="{ close }">
+						<DatePicker
+							v-model="dataPalletDelivery.estimated_delivery_date"
+							@update:modelValue="() => onChangeEstimateDate(close)"
+							inline
+							auto-apply
+							:xxdisabled-dates="disableBeforeToday"
+							:enable-time-picker="false" />
+						<div
+							v-if="isLoadingSetEstimatedDate"
+							class="absolute inset-0 bg-white/70 flex items-center justify-center">
+							<LoadingIcon class="text-5xl" />
+						</div>
+					</template>
+				</Popover>
 
 				<div v-else class="text-gray-500">
-					<span v-if="dataPalletDelivery.estimated_delivery_date">{{ useFormatTime(dataPalletDelivery.estimated_delivery_date) }}</span>
-					<span v-else class="text-gray-400">{{ trans('Estimated date is not set') }}</span>
+					<span v-if="dataPalletDelivery.estimated_delivery_date">{{
+						useFormatTime(dataPalletDelivery.estimated_delivery_date)
+					}}</span>
+					<span v-else class="text-gray-400">{{
+						trans("Estimated date is not set")
+					}}</span>
 				</div>
 			</div>
 
@@ -363,8 +382,38 @@ const onUpdateCustomerReference = () => {
 		<BoxStatPallet class="sm:col-span-2 border-t sm:border-t-0 border-gray-300">
 			<section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
 				<!-- <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2> -->
+				<div v-if="boxStats?.invoice" class="mb-1 text-sm text-gray-500 ">
+					<FontAwesomeIcon
+						icon="fal fa-file-invoice"
+						size="xs"
+						fixed-width
+						class="text-gray-400"
+						:tooltip="'invoice'"
+						aria-hidden="true" />
+					<Link
+						:href="
+							route(
+								boxStats?.invoice?.route?.name,
+								boxStats?.invoice?.route?.parameters
+							)
+						"
+						method="get"
+						v-tooltip="'Recurring Bill'"
+						class="primaryLink">
+						{{ boxStats?.invoice?.reference }}
+					</Link>
+				</div>
 				<div class="text-gray-500 mb-2" v-if="boxStats?.recurring_bill">
-					<Link :href="route(boxStats?.recurring_bill?.route?.name,boxStats?.recurring_bill?.route?.parameters)" method="get" v-tooltip="'Recurring Bill'" class="primaryLink">
+					<Link
+						:href="
+							route(
+								boxStats?.recurring_bill?.route?.name,
+								boxStats?.recurring_bill?.route?.parameters
+							)
+						"
+						method="get"
+						v-tooltip="'Recurring Bill'"
+						class="primaryLink">
 						{{ boxStats?.recurring_bill?.reference }}
 					</Link>
 				</div>
