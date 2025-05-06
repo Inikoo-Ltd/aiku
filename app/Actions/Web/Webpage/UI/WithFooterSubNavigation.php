@@ -18,7 +18,7 @@ trait WithFooterSubNavigation
         return [
             [
                 'isAnchor'   => true,
-                'label'    => __('Menu'),
+                'label'    => __('Footer'),
                 'route'     => [
                     'name'       => 'grp.org.shops.show.web.websites.workshop.footer',
                     'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
@@ -31,8 +31,8 @@ trait WithFooterSubNavigation
             [
                 'label'    => __('Snapshots'),
                 'route'     => [
-                    // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
-                    // 'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
+                    'name'       => 'grp.org.shops.show.web.websites.workshop.snapshots.footer',
+                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],

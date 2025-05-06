@@ -12,6 +12,7 @@ use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
+use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -60,6 +61,13 @@ Route::name('websites.')->group(function () {
                     Route::get('footer', [ShowFooter::class, 'inShop'])->name('.footer');
                     Route::get('header', [ShowHeader::class, 'inShop'])->name('.header');
                     Route::get('menu', [ShowMenu::class, 'inShop'])->name('.menu');
+
+                    Route::name('.snapshots')->prefix('snapshots')
+                        ->group(function () {
+                            Route::get('footer', [IndexSnapshots::class, 'inFooterWorkshop'])->name('.footer');
+                            Route::get('header', [IndexSnapshots::class, 'inHeaderWorkshop'])->name('.header');
+                            Route::get('menu', [IndexSnapshots::class, 'inMenuWorkshop'])->name('.menu');
+                        });
                 });
             Route::name('redirect')->prefix('redirect')
                 ->group(function () {
