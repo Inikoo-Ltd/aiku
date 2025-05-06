@@ -44,6 +44,7 @@ const familiesOption = ref(
     props.families.data.map((item) => ({
         ...item,  // Spread the original item properties
         show: true,  // Add the show property to each item
+        loading : false
     }))
 )
 
@@ -61,6 +62,29 @@ const componentsDepartment: Record<string, Component> = {
 
 const getComponentDepartment = (componentName: string) => {
     return componentsDepartment[componentName]
+}
+
+const familyShow = (item) => {
+    item.show = !item.show;
+    /* router.patch(
+    route(props.update_route.name, {...props.update_route.parameters, id : item.id}),
+    {
+        show : false
+    },
+    {
+      preserveScroll: true,
+      onStart: () => {
+        item.loading = true;
+      },
+      onSuccess: () => {},
+      onError: (errors) => {
+        console.error('Save failed:', errors);
+      },
+      onFinish: () => {
+        item.loading = false;
+      },
+    }
+  ); */
 }
 
 
@@ -81,7 +105,7 @@ const confirmDelete = (_event: MouseEvent, item: { id: number; name: string; sho
       severity: 'danger',
     },
     accept: () => {
-      item.show = !item.show;
+        familyShow(item)
     },
   });
 };
@@ -139,27 +163,39 @@ const confirmSave = () => {
     });
 };
 
-const onUpload = async (files: File[], clear: Function) => {
-  try {
-    const formData = new FormData();
-    files.forEach((file, index) => {
-      formData.append(`images[${index}]`, file);
-    });
+import { router } from '@inertiajs/vue3';
 
-    const response = await axios.post(
-      route(props.upload_image_route.name, props.upload_image_route.parameters),
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
-    );
-    console.log(response)
-  } catch (error) {
-    console.error(error);
+const onUpload = async (files: File[], clear: () => void) => {
+  if (!files.length) return;
+
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('image', file);
+  });
+
+  // Optional: Debug log FormData contents
+  console.log('FormData contents:');
+  for (const [key, value] of formData.entries()) {
+    console.log(key, value);
   }
+
+  router.post(
+    route(props.upload_image_route.name, props.upload_image_route.parameters),
+    formData,
+    {
+      forceFormData: true, // Ensure Inertia treats it as FormData
+      onSuccess: () => {
+        console.log('Upload successful');
+        departmentData.value = props.department.data
+        isModalGallery.value = false;
+        clear(); // Reset input after success
+      },
+      onError: (errors) => {
+        console.error('Image upload failed:', errors);
+      },
+    }
+  );
 };
-
-
 
 
 
