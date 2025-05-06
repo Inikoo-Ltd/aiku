@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Snapshot\UI;
 
-use App\Actions\InertiaAction;
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\UI\ShowFooter;
 use App\Actions\Web\Webpage\UI\ShowHeader;
@@ -21,7 +20,6 @@ use App\Http\Resources\Web\SnapshotsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Banner;
@@ -36,12 +34,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexSnapshots extends OrgAction
 {
-    private Website $website;
-    private string $scope;
-
     use WithFooterSubNavigation;
     use WithHeaderSubNavigation;
     use WithMenuSubNavigation;
+    private Website $website;
+    private string $scope;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -69,7 +66,7 @@ class IndexSnapshots extends OrgAction
         if (class_basename($parent) === 'Website') {
             $queryBuilder->where('parent_id', $parent->id)
                             ->where('parent_type', 'Website');
-        
+
             if (in_array($scope, ['header', 'footer', 'menu'], true)) {
                 $queryBuilder->where('scope', $scope);
             }
@@ -93,21 +90,21 @@ class IndexSnapshots extends OrgAction
         $afterTitle = [];
         $subNavigation = null;
 
-        if($this->scope == 'header') {
+        if ($this->scope == 'header') {
             $afterTitle = [
                 'label' => __('header'),
             ];
             $subNavigation = $this->getHeaderSubNavigation(
                 $this->website,
             );
-        } elseif($this->scope == 'menu') {
+        } elseif ($this->scope == 'menu') {
             $afterTitle = [
                 'label' => __('menu'),
             ];
             $subNavigation = $this->getMenuSubNavigation(
                 $this->website,
             );
-        } elseif($this->scope == 'footer') {
+        } elseif ($this->scope == 'footer') {
             $afterTitle = [
                 'label' => __('footer'),
             ];
@@ -115,7 +112,7 @@ class IndexSnapshots extends OrgAction
                 $this->website,
             );
         }
-        
+
         $actions = [];
 
         return Inertia::render(

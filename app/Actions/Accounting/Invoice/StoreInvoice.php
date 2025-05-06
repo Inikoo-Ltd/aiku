@@ -12,6 +12,7 @@ use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoi
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\OrgAction;
@@ -133,6 +134,10 @@ class StoreInvoice extends OrgAction
 
         if ($invoice->customer_id) {
             CustomerHydrateInvoices::dispatch($invoice->customer)->delay($this->hydratorsDelay);
+        }
+
+        if ($invoice->customer_client_id) {
+            CustomerClientHydrateInvoices::dispatch($invoice->customerClient)->delay($this->hydratorsDelay);
         }
 
 
