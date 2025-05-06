@@ -30,7 +30,7 @@ class GetFulfilmentCustomerShowcase
 
         $webUser = $fulfilmentCustomer->customer->webUsers()->first();
         $webUserRoute = null;
-        if($webUser) {
+        if ($webUser) {
             $webUserRoute = [
                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.web-users.edit',
                 'parameters' => [

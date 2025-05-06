@@ -20,7 +20,7 @@ class GetCustomerShowcase
     {
         $webUser = $customer->webUsers()->first();
         $webUserRoute = null;
-        if($webUser) {
+        if ($webUser) {
             $webUserRoute = [
                 'name'       => 'grp.org.shops.show.crm.customers.show.web-users.edit',
                 'parameters' => [

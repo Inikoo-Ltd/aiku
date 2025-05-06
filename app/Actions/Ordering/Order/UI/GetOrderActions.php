@@ -23,7 +23,7 @@ class GetOrderActions
         $actions = [];
 
         $platform  = $order->platform;
-        if(!$platform) {
+        if (!$platform) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
