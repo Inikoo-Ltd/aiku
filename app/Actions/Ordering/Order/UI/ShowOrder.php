@@ -302,7 +302,7 @@ class ShowOrder extends OrgAction
                         'rows' => [
                             [
                                 'code' => 'product-001',
-                                'quantity' => 'quantity'
+                                'quantity' => '1'
                             ]
                         ]
                     ],

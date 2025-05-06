@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import {provide, ref } from 'vue'
+import {provide, ref, onMounted, onBeforeUnmount } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -28,6 +28,7 @@ const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
@@ -56,6 +57,23 @@ const setFirstVisitToFalse = () => {
     firstVisit.value = false
 };
 
+const checkScreenType = () => {
+  const width = window.innerWidth
+  if (width < 640) screenType.value = 'mobile'
+  else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+  else screenType.value = 'desktop'
+}
+
+
+
+onMounted(() => {
+  checkScreenType()
+  window.addEventListener('resize', checkScreenType)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkScreenType)
+})
 
 </script>
 
@@ -90,7 +108,7 @@ const setFirstVisitToFalse = () => {
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']"
             :style="{ fontFamily: theme.fontFamily }">
-            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation" />
+            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation" :screen-type="screenType"/>
             <main>
                 <slot />
             </main>

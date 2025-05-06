@@ -108,12 +108,12 @@ export const resolveResponsiveValue = (
         resolveResponsiveValue(base, screen, path);
 
     const styles: Record<string, string | null> = {
-        height: getVal(properties?.dimension, ['height', 'value']) && properties?.dimension?.height?.unit
-            ? `${getVal(properties.dimension, ['height', 'value'])}${properties.dimension.height.unit}`
+        height: getVal(properties?.dimension, ['height', 'value']) && getVal(properties.dimension, ['height','unit'])
+            ? `${getVal(properties.dimension, ['height', 'value'])}${getVal(properties.dimension, ['height','unit'])}`
             : null,
 
-        width: getVal(properties?.dimension, ['width', 'value']) && properties?.dimension?.width?.unit
-            ? `${getVal(properties.dimension, ['width', 'value'])}${properties.dimension.width.unit}`
+        width: getVal(properties?.dimension, ['width', 'value']) && getVal(properties.dimension, ['width','unit'])
+            ? `${getVal(properties.dimension, ['width', 'value'])}${getVal(properties.dimension, ['width','unit'])}`
             : null,
 
         color: properties?.text?.color || null,
@@ -121,36 +121,36 @@ export const resolveResponsiveValue = (
         objectFit: getVal(properties?.object_fit),
         objectPosition: getVal(properties?.object_position),
 
-        paddingTop: getVal(properties?.padding, ['top', 'value']) && properties?.padding?.unit
-            ? `${getVal(properties.padding, ['top', 'value'])}${properties.padding.unit}`
+        paddingTop: getVal(properties?.padding, ['top', 'value']) && getVal(properties.padding, ['unit'])
+            ? `${getVal(properties.padding, ['top', 'value'])}${getVal(properties.padding, ['unit'])}`
             : null,
 
-        paddingBottom: getVal(properties?.padding, ['bottom', 'value']) && properties?.padding?.unit
-            ? `${getVal(properties.padding, ['bottom', 'value'])}${properties.padding.unit}`
+        paddingBottom: getVal(properties?.padding, ['bottom', 'value']) && getVal(properties.padding, ['unit'])
+            ? `${getVal(properties.padding, ['bottom', 'value'])}${getVal(properties.padding, ['unit'])}`
             : null,
 
-        paddingLeft: getVal(properties?.padding, ['left', 'value']) && properties?.padding?.unit
-            ? `${getVal(properties.padding, ['left', 'value'])}${properties.padding.unit}`
+        paddingLeft: getVal(properties?.padding, ['left', 'value']) && getVal(properties.padding, ['unit'])
+            ? `${getVal(properties.padding, ['left', 'value'])}${getVal(properties.padding, ['unit'])}`
             : null,
 
-        paddingRight: getVal(properties?.padding, ['right', 'value']) && properties?.padding?.unit
-            ? `${getVal(properties.padding, ['right', 'value'])}${properties.padding.unit}`
+        paddingRight: getVal(properties?.padding, ['right', 'value']) && getVal(properties.padding, ['unit'])
+            ? `${getVal(properties.padding, ['right', 'value'])}${getVal(properties.padding, ['unit'])}`
             : null,
 
-        marginTop: getVal(properties?.margin, ['top', 'value']) && properties?.margin?.unit
-            ? `${getVal(properties.margin, ['top', 'value'])}${properties.margin.unit}`
+        marginTop: getVal(properties?.margin, ['top', 'value']) && getVal(properties.margin, ['unit'])
+            ? `${getVal(properties.margin, ['top', 'value'])}${getVal(properties.margin, ['unit'])}`
             : null,
 
-        marginBottom: getVal(properties?.margin, ['bottom', 'value']) && properties?.margin?.unit
-            ? `${getVal(properties.margin, ['bottom', 'value'])}${properties.margin.unit}`
+        marginBottom: getVal(properties?.margin, ['bottom', 'value']) && getVal(properties.margin, ['unit'])
+            ? `${getVal(properties.margin, ['bottom', 'value'])}${getVal(properties.margin, ['unit'])}`
             : null,
 
-        marginLeft: getVal(properties?.margin, ['left', 'value']) && properties?.margin?.unit
-            ? `${getVal(properties.margin, ['left', 'value'])}${properties.margin.unit}`
+        marginLeft: getVal(properties?.margin, ['left', 'value']) && getVal(properties.margin, ['unit'])
+            ? `${getVal(properties.margin, ['left', 'value'])}${getVal(properties.margin, ['unit'])}`
             : null,
 
-        marginRight: getVal(properties?.margin, ['right', 'value']) && properties?.margin?.unit
-            ? `${getVal(properties.margin, ['right', 'value'])}${properties.margin.unit}`
+        marginRight: getVal(properties?.margin, ['right', 'value']) && getVal(properties.margin, ['unit'])
+            ? `${getVal(properties.margin, ['right', 'value'])}${getVal(properties.margin, ['unit'])}`
             : null,
 
         // ✅ FIXED RESPONSIVE BACKGROUND

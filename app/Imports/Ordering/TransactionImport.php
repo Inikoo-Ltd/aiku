@@ -57,7 +57,7 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         $historicAsset = $product->historicAsset;
 
         try {
-            StoreTransaction::run(
+            StoreTransaction::make()->action(
                 $this->scope,
                 $historicAsset,
                 $modelData

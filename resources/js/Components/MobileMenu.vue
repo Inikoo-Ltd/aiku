@@ -11,8 +11,8 @@ import { faChevronCircleDown } from '@fal';
 library.add(faBars, faSignIn, faSignOut, faTimesCircle);
 
 const props = defineProps<{
-    header: { logo?: { source: string } },
-    menu: { data: Array<{ type: string, label: string, subnavs?: Array<{ title: string, link: { href: string, target: string } }> }> }
+    header: { logo?: { image : {source: string }} },
+    menu?: { data: Array<{ type: string, label: string, subnavs?: Array<{ title: string, link: { href: string, target: string } }> }> }
 }>();
 
 const visible = ref(false);
