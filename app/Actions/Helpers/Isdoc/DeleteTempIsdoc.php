@@ -34,10 +34,10 @@ class DeleteTempIsdoc
         }
     }
 
-    public function asCommand($command)
+    public function asCommand($command): void
     {
-
         $this->handle();
+        $command->line('Temporary ISDOC files deleted successfully.');
     }
 
 
