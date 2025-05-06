@@ -123,9 +123,9 @@ class GetRetinaDropshippingNavigation
         $groupNavigation['topup'] = [
             'label' => __('Top Up'),
             'icon' => ['fal', 'fa-money-bill-wave'],
-            'root' => 'retina.dashboard.',
+            'root' => 'retina.topup.',
             'route' => [
-                'name' => 'retina.dashboard.show'
+                'name' => 'retina.topup.index'
             ],
             'topMenu' => [
 
