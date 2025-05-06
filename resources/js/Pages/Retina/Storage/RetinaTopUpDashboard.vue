@@ -112,7 +112,7 @@
               <div v-if="route_action" class="mt-4 flex">
                   <div class="w-64 border-gray-300 ">
                       <div class="p-1" v-for="(btn, index) in route_action" :key="index">
-                     <!--  <ButtonWithLink
+                      <ButtonWithLink
                           :label="btn.label"
                           :bindToLink="{ preserveScroll: true, preserveState: true }"
                           :type="btn.style"
@@ -120,7 +120,7 @@
                           full
                           :routeTarget="btn.route"
                           :disabled="btn.disabled"
-                      /> -->
+                      />
                       </div>
                   </div>
               </div>
