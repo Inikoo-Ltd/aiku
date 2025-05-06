@@ -374,7 +374,6 @@ const isModalUploadExcel = ref(false)
             </div>
         </template>
 
-        <template #otherBefore>
         <template #otherBefore v-if="!props.readonly">
             <!-- Section: Add notes -->
             <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
