@@ -11,6 +11,7 @@ import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 import { iframeToParent } from '@/Composables/Workshop'
 import { sendMessageToParent } from '@/Composables/Workshop'
+import { Link } from '@inertiajs/vue3'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -92,17 +93,16 @@ const layout = inject('layout', {})
             </a>
 
             <!-- Section: Cart -->
-            <a v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
+            <Link as="a" v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
                 id="header_order_totals"
-                :href="model?.cart?.link?.href || '#'"
-                :target="model?.cart?.link?.target"
+                href="/app/basket"
                 class="space-x-1.5 flex items-center whitespace-nowrap "
                 :style="getStyles(model?.cart.container?.properties)"
 
             >
                 <FontAwesomeIcon icon='fal fa-shopping-cart' class='text-base px-[5px]' v-tooltip="trans('Basket')" fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
-            </a>
+            </Link>
 
             <!-- Section: Login -->
              <span class="">
@@ -135,15 +135,19 @@ const layout = inject('layout', {})
             </span>
 
             <!-- Section: LogoutRetina -->
-            <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
-                @click="()=>onLogout()"
+            <Link as="a"
+                v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
+                @click="'()=>onLogout()'"
+                href="/app/logout"
+                method="post"
+                :data="{}"
                 class="space-x-1.5 whitespace-nowrap "
                 :style="getStyles(model?.logout.container?.properties)"
 
             >
                 <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-            </a>
+            </Link>
         </div>
     </div>
 </template>

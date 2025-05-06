@@ -7,11 +7,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
 import { data } from "autoprefixer";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { trans } from "laravel-vue-i18n"
 library.add(faCreditCardFront)
 
 const props = defineProps<{
     order: {},
-     paymentMethods:[]
+    paymentMethods:[]
 
 }>()
 
@@ -24,9 +25,11 @@ const tabs = [
 </script>
 
 <template>
-   <pre>{{paymentMethods}}</pre>
+    <div v-if="!order" class="text-center text-gray-500 text-2xl pt-6">
+        {{ trans("Your basket is empty") }}
+    </div>
 
-    <div class="w-full px-4 mt-8">
+    <div v-else class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
             <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
         </div>
