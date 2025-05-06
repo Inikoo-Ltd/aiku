@@ -22,15 +22,12 @@ const props = defineProps<{
         header: string[]
         rows: {}[]
     }
+    propsRefreshAfterFinish?: string[]
 }>()
 
 const layout = inject('layout', layoutStructure)
 
 const model = defineModel()
-
-const emits = defineEmits<{
-    (e: 'onCloseModal', value: boolean): void
-}>()
 
 const selectedEchopersonal = () => {
     switch (layout.app.name){
@@ -54,6 +51,7 @@ provide('selectedEchopersonal', selectedEchopersonal())
             :title        
             :upload_spreadsheet
             :additionalDataToSend
+            :propsRefreshAfterFinish
             :preview_template
         />
     </KeepAlive>

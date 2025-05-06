@@ -27,7 +27,7 @@ class GetOrderActions
                         'key' => 'upload-add',
                         'style' => 'secondary',
                         'icon' => ['fal', 'fa-upload'],
-                        'label' => 'cccccc',
+                        // 'label' => 'cccccc',
                         'tooltip' => __('Upload pallets via spreadsheet'),
                     ],
                     [
