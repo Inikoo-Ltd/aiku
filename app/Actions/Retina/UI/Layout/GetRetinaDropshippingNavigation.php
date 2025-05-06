@@ -125,7 +125,7 @@ class GetRetinaDropshippingNavigation
             'icon' => ['fal', 'fa-money-bill-wave'],
             'root' => 'retina.topup.',
             'route' => [
-                'name' => 'retina.topup.index'
+                'name' => 'retina.topup.dashboard'
             ],
             'topMenu' => [
 

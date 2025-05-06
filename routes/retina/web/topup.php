@@ -8,6 +8,8 @@
 
 
 use App\Actions\Retina\UI\Topup\IndexRetinaTopup;
+use App\Actions\Retina\UI\Topup\ShowRetinaTopUpDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', IndexRetinaTopup::class)->name('index');
+Route::get('/', ShowRetinaTopUpDashboard::class)->name('dashboard');
+Route::get('/index', IndexRetinaTopup::class)->name('index');
