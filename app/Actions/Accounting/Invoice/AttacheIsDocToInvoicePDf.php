@@ -31,11 +31,11 @@ class AttacheIsDocToInvoicePDF extends OrgAction
         $isdocLocation = $baseLocation . '/' . $filename . '_isdoc.xml';
         $outputFile = $baseLocation . '/' . $filename . '_isdoc_output.pdf';
 
-        if (!$disk->exists($baseDir . '/' . $filename . '_isdoc.pdf')) {
+        if ($disk->missing($baseDir . '/' . $filename . '_isdoc.pdf')) {
             $pdf->save($pdfLocation);
         }
 
-        if (!$disk->exists($baseDir . '/' . $filename . '_isdoc.xml')) {
+        if ($disk->missing($baseDir . '/' . $filename . '_isdoc.xml')) {
             $xml = ISDocInvoice::run($invoice);
             $disk->put($baseDir . '/' . $filename . '_isdoc.xml', $xml);
         }
