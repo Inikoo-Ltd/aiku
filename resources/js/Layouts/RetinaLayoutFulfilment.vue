@@ -6,7 +6,7 @@ import RetinaRightSideBar from "@/Layouts/Retina/RetinaRightSideBar.vue"
 import RetinaTopBar from "@/Layouts/Retina/RetinaTopBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
+// import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 
 import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks } from '@fal'
@@ -21,7 +21,7 @@ library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser,
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
-initialiseRetinaApp()
+// initialiseRetinaApp()
 
 const irisTheme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 

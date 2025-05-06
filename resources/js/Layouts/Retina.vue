@@ -26,7 +26,6 @@ initialiseRetinaApp()
 
 const layout = useLayoutStore()
 
-
 </script>
 
 <template>
@@ -50,12 +49,16 @@ const layout = useLayoutStore()
     
     <!-- Retina: Fulfilment -->
     <RetinaLayoutFulfilment
-        v-else
+        v-else-if="layout.retina?.type === 'fulfilment'"
     >
         <template #default>
             <slot />
         </template>
     </RetinaLayoutFulfilment>
+
+    <div v-else class="fixed inset-0 bg-slate-100 flex items-center justify-center">
+        <slot />
+    </div>
 
     <!-- Global declaration: Notification -->
     <notifications
