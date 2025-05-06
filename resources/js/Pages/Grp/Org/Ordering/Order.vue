@@ -311,7 +311,7 @@ const onSubmitNote = async (closePopup: Function) => {
                 onError: (error) => errorNote.value = error,
                 onFinish: () => isLoadingButton.value = false,
                 onSuccess: () => {
-                    closePopup(),
+                    closePopup()
                         noteToSubmit.value.selectedNote = ''
                     noteToSubmit.value.value = ''
                 },
@@ -669,12 +669,13 @@ const isModalUploadExcel = ref(false)
     </Modal>
 
     <UploadExcel
-        v-if="upload_excel"
+        v-if="props.upload_excel"
         v-model="isModalUploadExcel"
         :title="upload_excel.title"
         :progressDescription="upload_excel.progressDescription"
         :upload_spreadsheet="upload_excel.upload_spreadsheet"
         :preview_template="upload_excel.preview_template"
+        :propsRefreshAfterFinish="['transactions', 'box_stats']"
         :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined"
     />
 
