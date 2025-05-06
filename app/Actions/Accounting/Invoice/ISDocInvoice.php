@@ -32,6 +32,7 @@ use Adawolfa\ISDOC\Schema\Invoice\PostalAddress;
 use Adawolfa\ISDOC\Schema\Invoice\Quantity;
 use Adawolfa\ISDOC\Schema\Invoice\TaxCategory;
 use Adawolfa\ISDOC\Schema\Invoice\TaxSubTotal;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
 class ISDocInvoice extends OrgAction
@@ -183,6 +184,32 @@ class ISDocInvoice extends OrgAction
 
 
         return $manager->writer->xml($isDocInvoice);
+    }
+
+    public function attachIsdocToPdf(Invoice $invoice, $pdf, string $filename): string
+    {
+        $baseLocation = storage_path('temp');
+        $pdfLocation = $baseLocation . '/' . $filename . '_isdoc.pdf';
+        $isdocLocation = $baseLocation . '/' . $filename . '_isdoc.xml';
+        $outputFile = $baseLocation . '/' . $filename . '_isdoc_output.pdf';
+
+        if (!file_exists($pdfLocation)) {
+            $pdf->save($pdfLocation);
+        }
+
+        if (!file_exists($isdocLocation)) {
+            $xml = ISDocInvoice::run($invoice);
+            file_put_contents($isdocLocation, $xml);
+        }
+
+        $scriptLocation = base_path() . '/isdoc-pdf';
+        $next = Process::path($scriptLocation)->run('./isdoc-pdf ' . $pdfLocation . ' ' . $isdocLocation . ' ' . $outputFile);
+
+        if ($next->successful()) {
+            return $outputFile;
+        } else {
+            throw new \Exception('ISDoc PDF generation failed: ' . $next->errorOutput());
+        }
     }
 
 
