@@ -153,6 +153,20 @@ class ShowInvoice extends OrgAction
             ]
         ];
 
+        if (Arr::get($invoice->organisation->settings, 'invoice_export.show_isdoc')) {
+            $options[] = [
+                'type'       => 'isDoc',
+                'icon'       => 'fas fa-hockey-puck',
+                'tooltip'    => __('Download Doc'),
+                'label'      => 'IsDoc',
+                'name'       => 'grp.org.accounting.invoices.show.is_doc',
+                'parameters' => [
+                    'organisation' => $invoice->organisation->slug,
+                    'invoice'      => $invoice->slug
+                ]
+            ];
+        }
+
         if (Arr::get($invoice->organisation->settings, 'invoice_export.show_omega')) {
             $options[] = [
                 'type'       => 'omega',

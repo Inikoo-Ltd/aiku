@@ -112,6 +112,11 @@ class EditOrganisationSettings extends OrgAction
                             "label"  => __("Invoice formats"),
                             "icon"   => "fa-light fa-file-invoice",
                             "fields" => [
+                                'show_isdoc' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Show ISDoc invoice'),
+                                    'value' => Arr::get($organisation->settings, 'invoice_export.show_isdoc', false),
+                                ],
                                 'attach_isdoc_to_pdf' => [
                                     'type'  => 'toggle',
                                     'label' => __('Attach ISDoc to invoice pdf'),

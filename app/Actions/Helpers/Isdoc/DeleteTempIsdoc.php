@@ -10,6 +10,7 @@
 
 namespace App\Actions\Helpers\Isdoc;
 
+use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class DeleteTempIsdoc
@@ -21,15 +22,14 @@ class DeleteTempIsdoc
 
     public function handle(): void
     {
-        $location = storage_path('app/tmp/isdoc');
+        $disk = Storage::disk('local');
+        $directory = 'tmp/isdoc';
 
-        if (is_dir($location)) {
-            $files = glob($location . '/*');
+        if ($disk->exists($directory)) {
+            $files = $disk->files($directory);
 
             foreach ($files as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
+                $disk->delete($file);
             }
         }
     }

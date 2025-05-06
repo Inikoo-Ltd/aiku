@@ -102,4 +102,5 @@ rr
 /Han/private/
 /maya/node_modules/
 /Han/node_modules/
-/isdoc-pdf/
+isdoc-pdf
+rgb.icc
