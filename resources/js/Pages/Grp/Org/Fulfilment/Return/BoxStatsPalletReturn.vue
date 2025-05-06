@@ -517,7 +517,7 @@ const disableBeforeToday = (date: Date) => {
 							)
 						"
 						method="get"
-						v-tooltip="'Recurring Bill'"
+						v-tooltip="'Invoice'"
 						class="primaryLink">
 						{{ boxStats?.invoice?.reference }}
 					</Link>

@@ -388,7 +388,6 @@ const onUpdateCustomerReference = () => {
 						size="xs"
 						fixed-width
 						class="text-gray-400"
-						:tooltip="'invoice'"
 						aria-hidden="true" />
 					<Link
 						:href="
@@ -398,7 +397,7 @@ const onUpdateCustomerReference = () => {
 							)
 						"
 						method="get"
-						v-tooltip="'Recurring Bill'"
+						v-tooltip="'Invoice'"
 						class="primaryLink">
 						{{ boxStats?.invoice?.reference }}
 					</Link>
