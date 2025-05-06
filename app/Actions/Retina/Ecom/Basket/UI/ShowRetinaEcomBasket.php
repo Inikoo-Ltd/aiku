@@ -23,7 +23,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 {
     use IsOrder;
 
-    public function handle(Customer $customer, $prefix = null): Order|null
+    public function handle(Customer $customer): Order|null
     {
         if (!$customer->current_order_in_basket_id) {
             return null;
@@ -39,10 +39,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     public function asController(ActionRequest $request): Order|null
     {
         $this->initialisation($request);
-
-        $customer = $request->user()->customer;
-
-        return $this->handle($customer);
+        return $this->handle($this->customer);
     }
 
     public function htmlResponse(Order|null $order): Response

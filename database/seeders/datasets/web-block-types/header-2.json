@@ -80,9 +80,9 @@
 			},
 			"logo": {
 				"visible": "all",
+				"alt": "Image Logo",
 				"image": {
-					"source": null,
-					"alt": "CTA Image"
+					"source": null
 				},
 				"properties": {
 					"padding": {
@@ -147,13 +147,25 @@
 						}
 					},
 					"dimension": {
-						"height": {
-							"value": "100%",
-							"unit": "%"
+						"desktop": {
+							"height": {
+								"value": "100",
+								"unit": "%"
+							},
+							"width": {
+								"value": "200",
+								"unit": "px"
+							}
 						},
-						"width": {
-							"value": "200",
-							"unit": "px"
+						"mobile" : {
+							"height": {
+								"value": "100",
+								"unit": "%"
+							},
+							"width": {
+								"value": "80",
+								"unit": "px"
+							}
 						}
 					}
 				}

@@ -13,12 +13,13 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 
 trait WithHydrateInvoices
 {
-    public function getInvoicesStats(Group|Organisation|Shop|Customer|InvoiceCategory $model): array
+    public function getInvoicesStats(Group|Organisation|Shop|Customer|InvoiceCategory|CustomerClient $model): array
     {
         $numberInvoices = $model->invoices()->where('invoices.in_process', false)->count();
         $stats          = [

@@ -13,8 +13,8 @@ import { StackedComponent } from '@/types/LayoutRules'
 export const useLayoutStore = defineStore("retinaLayout", () => {
     const app = ref({
         name: "",  // For styling navigation depend on which App
-        color: null as unknown | Colors,  // Styling layout color
-        theme: useColorTheme[3] as string[],  // For styling app color
+        color: null as null | Colors,  // Styling layout color
+        theme: useColorTheme[3],  // For styling app color
         url: '#', // Homepage links
         environment: null as string | null // 'local' | 'staging'
     })

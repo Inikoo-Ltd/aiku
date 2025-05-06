@@ -66,7 +66,7 @@ const dataSetsSplit = computed(() => {
     }, 0);
 
     const summedGrpValue = othersShop.reduce((sum, item) => {
-        const xx = sum + (Number(item.columns.sales_grp_currency[props.intervals.value]?.raw_value) || 0); 
+        const xx = sum + (Number(item.columns.sales_grp_currency?.[props.intervals.value]?.raw_value) || 0); 
         return xx
     }, 0);
 

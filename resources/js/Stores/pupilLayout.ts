@@ -14,15 +14,12 @@ import { Colors } from "@/types/Color"
 import { ref } from 'vue'
 import { StackedComponent } from '@/types/LayoutRules'
 
-// interface LiveUsers {
-//     enabled?: boolean
-// }
 
 export const useLayoutStore = defineStore("pupilLayout", () => {
     const app = ref({
         name: "",  // For styling navigation depend on which App
-        color: null as unknown | Colors,  // Styling layout color
-        theme: ['#14b8a6', '#f3f4f6', '#0d9488', '#fde047', '#14b8a6', '#f3f4f6', '#fde047', '#374151'] as string[],  // For styling app color
+        color: null as null | Colors,  // Styling layout color
+        theme: useColorTheme[3],  // For styling app color
         url: '#', // Homepage links
         environment: null as string | null // 'local' | 'staging'
     })
@@ -35,13 +32,6 @@ export const useLayoutStore = defineStore("pupilLayout", () => {
     const leftSidebar = ref({
         show: true,
     })
-    // const liveUsers = ref<LiveUsers | null>({
-    //     enabled: false as boolean
-    // })
-    // const navigation = ref({
-    //     // grp: {} as grpNavigation,
-    //     // org: {} as { [key: string]: orgNavigation } | { [key: string]: Navigation } | Navigation
-    // })
     const rightSidebar = ref({
         activeUsers: {
             users: [],

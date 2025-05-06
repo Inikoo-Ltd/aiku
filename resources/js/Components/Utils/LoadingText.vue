@@ -2,6 +2,10 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 
+const props = defineProps<{
+    text?: string
+}>()
+
 const loadingDot = ref('')
 const dots = ref(0)
 
@@ -25,7 +29,7 @@ onUnmounted(() => {
 
 <template>
     <div class="relative w-fit">
-        <span>{{ trans('Loading') }}</span>
+        <span>{{ text ?? trans('Loading') }}</span>
         <div class="absolute bottom-0 left-full">{{ loadingDot }}</div>
     </div>
 </template>

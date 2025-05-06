@@ -41,7 +41,7 @@ const setAlt = async (imageFile) => {
         });
 
         console.log("Alt text request successful:", response.data);
-        /* emits("update:modelValue",  response.data.content,['alt']) */
+        emits("update:modelValue",response.data.content,['alt'])
 
     } catch (error) {
         console.error("Alt text request failed:", error);

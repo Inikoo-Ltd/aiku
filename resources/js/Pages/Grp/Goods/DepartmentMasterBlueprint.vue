@@ -3,8 +3,9 @@ import { ref } from "vue";
 import type { Component } from "vue";
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import axios from "axios";
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { faChevronCircleLeft, faChevronCircleRight, faImage, faEye, faEyeSlash, faExclamationTriangle } from '@far'
+import { faChevronCircleLeft, faChevronCircleRight, faImage, faEye, faEyeSlash, faExclamationTriangle, faSave } from '@far'
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRender.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -15,10 +16,13 @@ import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import ConfirmDialog from 'primevue/confirmdialog';
 import { getIrisComponent } from '@/Composables/getIrisComponents'
+import { faEdit } from "@fal";
 
 const props = defineProps<{
     pageHead: {},
     department: {},
+    update_route : routeType
+    upload_image_route : routeType
     families: { data: Array<{ id: number, name: string }> },
     web_block_types: Array<string>
     web_block_types_families : {
@@ -32,8 +36,8 @@ const isModalGallery = ref(false)
 const isLoading = ref(false)
 const isModalFamiliesPreview = ref(false)
 const showPreviewFamilies = ref(props.web_block_types_families.data[0])
-console.log(props)
 const confirm = useConfirm();
+const departementEdit = ref(false)
 
 
 const familiesOption = ref(
@@ -83,21 +87,39 @@ const confirmDelete = (_event: MouseEvent, item: { id: number; name: string; sho
 };
 
 
-const onSaveAll = (routes: routeType) => {
-    router.patch(
-        route(routes.name, routes.parameters),
-        { data: departmentData.value, families: familiesOption.value },
-        {
-            preserveScroll: true,
-            onStart: () => { isLoading.value = true },
-            onSuccess: () => { },
-            onError: errors => { },
-            onFinish: () => { isLoading.value = false },
-        }
-    )
-}
+const onSaveAll = () => {
+  router.patch(
+    route(props.update_route.name, props.update_route.parameters),
+    {
+        name: departmentData.value.name,
+        description: departmentData.value.description,
+     /*  families: familiesOption.value.map(item => ({
+        slug: item.slug,
+        show: item.show,
+      })), */
+    },
+    {
+      preserveScroll: true,
+      onStart: () => {
+        isLoading.value = true;
+      },
+      onSuccess: () => {
+        departementEdit.value = false
+        // Success handler (optional)
+      },
+      onError: (errors) => {
+        // Handle validation or server errors
+        console.error('Save failed:', errors);
+      },
+      onFinish: () => {
+        isLoading.value = false;
+      },
+    }
+  );
+};
 
-const confirmSave = (routes: routeType) => {
+
+const confirmSave = () => {
     confirm.require({
         message: 'Save changes? This will affect all webpages.',
         header: 'Confirm Save',
@@ -112,30 +134,32 @@ const confirmSave = (routes: routeType) => {
             severity: 'primary',
         },
         accept: () => {
-            onSaveAll(routes);
+            onSaveAll();
         },
     });
 };
 
 const onUpload = async (files: File[], clear: Function) => {
-    const file = files[0]
-    if (!file) return
+  try {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append(`images[${index}]`, file);
+    });
 
-    const toBase64 = (file: File): Promise<string> =>
-        new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.readAsDataURL(file)
-            reader.onload = () => resolve(reader.result as string)
-            reader.onerror = reject
-        })
-    try {
-        const base64 = await toBase64(file)
-        departmentData.value.image = base64
-        isModalGallery.value = false
-    } catch (err) {
-        console.error('Failed to convert to base64:', err)
-    }
-}
+    const response = await axios.post(
+      route(props.upload_image_route.name, props.upload_image_route.parameters),
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    console.log(response)
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+
 
 
 
@@ -144,14 +168,21 @@ const onUpload = async (files: File[], clear: Function) => {
 
 <template>
     <PageHeading :data="pageHead">
-        <template #button-save="{ action }">
+       <!--  <template #button-save="{ action }">
             <Button type="save" @click="() => confirmSave(action.route)" />
-        </template>
+        </template> -->
     </PageHeading>
 
-    <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 px-4 pb-8 m-5">
-        <!-- Sidebar -->
+    <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 px-4 pb-8 m-5 ">
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
+            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <h3 class="text-xl font-semibold">Departement</h3>
+                <Button v-if="!departementEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit" @click="departementEdit = true"/>
+                <div v-else class="flex gap-3">
+                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" :icon="faEdit" @click="departementEdit = false"/>
+                    <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave"  @click="() => confirmSave()" />
+                </div>
+            </div>
             <!-- Navigation & Preview -->
             <div class="flex items-center justify-between mb-6">
                 <button @click="goToPrev" aria-label="Previous">
@@ -166,13 +197,13 @@ const onUpload = async (files: File[], clear: Function) => {
             </div>
 
             <!-- Form -->
-            <div class="border-t pt-4 space-y-4">
+            <div v-if="departementEdit" class="border-t pt-4 space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
                     <PureInput v-model="departmentData.name" type="text" placeholder="Enter name" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <PureTextarea v-model="departmentData.description" type="text" :rows="4" placeholder="Enter name" />
                 </div>
                 <div>
@@ -180,16 +211,25 @@ const onUpload = async (files: File[], clear: Function) => {
                     <Button label="Upload Image" :type="'tertiary'" :icon="faImage" @click="isModalGallery = true" />
                 </div>
             </div>
+
+            <div v-else="departementEdit" class="border-t pt-4 space-y-4 text-sm text-gray-700">
+                <div class="text-sm font-medium">
+                    <span>{{ departmentData.name || 'No label' }}</span>
+                </div>
+                <div class="text-md">
+                    <span class="text-gray-400">{{ departmentData.description || 'No description' }}</span>
+                </div>
+            </div>
         </div>
 
         <!-- Families List -->
-        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
+        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 " >
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">Families List</h3>
                 <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye" @click="isModalFamiliesPreview = true"/>
             </div>
 
-            <ul class="divide-y divide-gray-100">
+            <ul class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
                 <li v-for="(item, index) in familiesOption" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">

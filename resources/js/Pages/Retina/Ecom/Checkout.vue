@@ -1,27 +1,40 @@
 <script setup lang="ts">
-import Button from "@/Components/Elements/Buttons/Button.vue"
-// library.add(faClipboard)
-import { faArrowLeft, faCreditCard, faUniversity } from "@fal"
+import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
 import CheckoutSummary from "./CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
+import { data } from "autoprefixer";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { trans } from "laravel-vue-i18n"
+library.add(faCreditCardFront)
 
 const props = defineProps<{
-    data: {}
+    order: {},
+    paymentMethods:[]
+
 }>()
 
 const currentTab = ref(0)
 const tabs = [
-    { label: 'Credit card', icon: faCreditCard },
+    { label: 'Credit card', icon: faCreditCardFront },
     { label: 'Paypal', icon: faPaypal },
     { label: 'Bank transfer', icon: faUniversity },
 ]
+
+console.log('opop', props.order)
 </script>
 
 <template>
-    <div class="w-full px-4 mt-8">
+    paymentMethods: <pre>{{ paymentMethods }}</pre>
+    <!-- <pre>{{ order }}</pre> -->
+
+    <div v-if="!order" class="text-center text-gray-500 text-2xl pt-6">
+        {{ trans("Your basket is empty") }}
+    </div>
+
+    <div v-else class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
             <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
         </div>

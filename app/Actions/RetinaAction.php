@@ -188,7 +188,7 @@ class RetinaAction
 
         // Option 2: Alternatively, check if the URL path contains any of these segments.
         foreach ($publicRoutes as $segment) {
-            if (Str::contains($request->path(), $segment) or Str::contains($request->route()->getName(), $segment)) {
+            if (Str::contains($request->path(), $segment) || Str::contains($request->route()->getName(), $segment)) {
                 return true;
             }
         }
@@ -199,8 +199,11 @@ class RetinaAction
             return true;
         }
 
-        if ($this->shop->type === ShopTypeEnum::DROPSHIPPING
-            && $this->webUser->id === $request->user()->id) {
+        if ($this->shop->type === ShopTypeEnum::DROPSHIPPING && $this->webUser->id === $request->user()->id) {
+            return true;
+        }
+
+        if ($this->shop->type === ShopTypeEnum::B2B && $this->webUser->id === $request->user()->id) {
             return true;
         }
 

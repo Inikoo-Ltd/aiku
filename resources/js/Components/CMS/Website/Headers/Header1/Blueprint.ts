@@ -41,7 +41,7 @@ export default {
 					type: "link",
 				},
 				{
-					key: ["image", "alt"],
+					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
 				},
@@ -49,16 +49,19 @@ export default {
 					key: ["properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["properties", "margin"],
 					label: "Margin",
 					type: "margin",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["properties", "padding"],
 					label: "Padding",
 					type: "padding",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["image","attributes", "fetchpriority"],

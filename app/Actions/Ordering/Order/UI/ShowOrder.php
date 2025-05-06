@@ -305,6 +305,52 @@ class ShowOrder extends OrgAction
                     ]
                 ],
 
+                'upload_excel' => [
+                    'title' => [
+                        'label' => __('Upload product'),
+                        'information' => __('The list of column file: code, quantity')
+                    ],
+                    'progressDescription'   => __('Adding Products'),
+                    'preview_template'    => [
+                        'header' => ['code', 'quantity'],
+                        'rows' => [
+                            [
+                                'code' => 'product-001',
+                                'quantity' => '1'
+                            ]
+                        ]
+                    ],
+                    'upload_spreadsheet'    => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['code', 'quantity'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)'
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'grp.models.order.transaction.upload',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'grp.json.order.transaction.recent_uploads',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'download' => [
+                                'name'       => 'grp.org.shops.show.ordering.order.uploads.templates',
+                                'parameters' => [
+                                    'organisation' => $order->organisation->slug,
+                                    'shop'         => $order->shop->slug,
+                                    'order'        => $order->slug
+                                ]
+                            ],
+                        ],
+                    ]
+                ],
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))

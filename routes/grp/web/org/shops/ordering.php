@@ -8,6 +8,7 @@
 
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Purge\UI\CreatePurge;
@@ -34,6 +35,7 @@ Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'i
 Route::prefix('orders/{order}')->group(function () {
     Route::get('', ShowOrder::class)->name('orders.show');
     Route::get('delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInShop'])->name('orders.show.delivery-note');
+    Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');
 });
 
 Route::get('/purges/', IndexPurges::class)->name('purges.index');

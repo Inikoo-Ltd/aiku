@@ -26,7 +26,8 @@ const props = defineProps<{
 			}
 		}
 	}
-	loginMode: boolean
+	loginMode: boolean,
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
@@ -43,10 +44,10 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 					v-if="fieldValue?.logo?.image?.source"
 					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
 					:href="fieldValue?.logo?.link?.href || '#'"
-					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-full h-full"
+					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-fit h-full"
 				>
 				    <Image 
-                        :style="getStyles(fieldValue.logo.properties)"
+                        :style="getStyles(fieldValue.logo.properties,screenType)"
                         :alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" 
                         :imageCover="true"
                         :src="fieldValue?.logo?.image?.source" 
@@ -54,9 +55,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
                     </Image>
 				</component>
 
-				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-md">
-					<!-- Search bar can be added here if needed -->
 				</div>
 
 				<div

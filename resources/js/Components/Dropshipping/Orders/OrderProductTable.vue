@@ -79,7 +79,7 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
-            <div class="w-32 flex items-center justify-end">
+            <div class="flex items-center justify-end">
                 <Transition name="spin-to-down">
                     <span :key="item.quantity_ordered">
                         {{ item['quantity_ordered'] }}

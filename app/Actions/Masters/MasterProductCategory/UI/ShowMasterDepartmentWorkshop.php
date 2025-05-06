@@ -68,17 +68,19 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                         'title' => __('department')
                     ],
                     'actions' => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'primary',
-                            'label' => 'save',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
+                        // [
+                        //     'type'  => 'button',
+                        //     'style' => 'primary',
+                        //     'label' => 'save',
+                        //     'route' => [
+                        //         'name'       => 'grp.models.master_departement.update',
+                        //         'method' => 'patch',
+                        //         'parameters' => [
+                        //             'masterProductCategory' => $masterDepartment->id
+                        //         ]
+                        //     ]
+                        // ]
                     ],
-                    // 'subNavigation' => $this->getDepartmentSubNavigation($masterDepartment)
                 ],
 
                 'upload_image_route' => [

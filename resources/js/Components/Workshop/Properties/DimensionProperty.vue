@@ -86,10 +86,10 @@ const emits = defineEmits<{
                         leave-from-class="translate-y-0 opacity-100" leave-to-class="translate-y-1 opacity-0">
                         <PopoverPanel v-slot="{ close }"
                             class="bg-white shadow mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
-                            <div @click="() => { model.width.unit = 'px', onSaveWorkshopFromId(side_editor_block_id), close() }" class="px-4 py-1.5 cursor-pointer"
+                            <div @click="() => { model.width.unit = 'px',emits('update:modelValue',model) , close() }" class="px-4 py-1.5 cursor-pointer"
                                 :class="model?.width.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px
                             </div>
-                            <div @click="() => { model.width.unit = '%', onSaveWorkshopFromId(side_editor_block_id), close() }" class="px-4 py-1.5 cursor-pointer"
+                            <div @click="() => { model.width.unit = '%', emits('update:modelValue',model), close() }" class="px-4 py-1.5 cursor-pointer"
                                 :class="model?.width.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
                         </PopoverPanel>
                     </transition>
@@ -107,7 +107,7 @@ const emits = defineEmits<{
                                 <div class="col-span-4">
                                     <PureInputNumber
                                         :modelValue="get(model, 'width.value', 0)"
-                                        @update:modelValue="(newVal) => (set(model, 'width.value', newVal), onSaveWorkshopFromId(side_editor_block_id))"
+                                        @update:modelValue="(newVal) => (set(model, 'width.value', newVal),emits('update:modelValue',model))"
                                         class=""
                                         :suffix="model?.width.unit"
                                     />

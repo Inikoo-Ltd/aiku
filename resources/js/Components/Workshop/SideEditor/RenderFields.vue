@@ -48,12 +48,11 @@ const valueForField = computed(() => {
   return rawVal?.[currentView.value!] ?? rawVal?.desktop ?? rawVal
 })
 
-const onPropertyUpdate = (newVal: any) => {
-  const rawKey = props.blueprint.key
+const onPropertyUpdate = (newVal: any, path: any) => {
+  const rawKey = Array.isArray(path) ? path : props.blueprint.key
   const prevVal = get(modelValue.value, rawKey)
   const useIn = props.blueprint.useIn
 
-  // ✅ Kalau useIn null → flat 
   if (!Array.isArray(useIn) || useIn.length === 0) {
     emits('update:modelValue', rawKey, newVal)
     return

@@ -21,7 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SendOrderBackToBasket extends OrgAction
 {
-
     use WithOrderingEditAuthorisation;
     use WithActionUpdate;
     use HasOrderHydrators;

@@ -59,9 +59,13 @@ export const dummyIrisVariables = {
     cart_amount: '£455.98',
 }
 
-export const textReplaceVariables = (text: string, piniaVariables: {}) => {
+export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
     if (!text) {
         return ''
+    }
+
+    if (!piniaVariables) {
+        return text
     }
 
     return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || '-')

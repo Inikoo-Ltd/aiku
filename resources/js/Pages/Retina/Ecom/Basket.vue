@@ -34,7 +34,11 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="w-full px-4 mt-8">
+    <div v-if="!transactions" class="text-center text-gray-500 text-2xl pt-6">
+        {{ trans("Your basket is empty") }}
+    </div>
+
+    <div v-else class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
             <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
         </div>

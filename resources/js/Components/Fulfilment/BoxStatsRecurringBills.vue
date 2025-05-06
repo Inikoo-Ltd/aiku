@@ -101,11 +101,30 @@ const props = defineProps<{
             </div>
         </BoxStatPallet>
 
-
         <!-- Box: Order summary -->
         <BoxStatPallet class="sm:col-span-2 border-t sm:border-t-0 border-gray-300">
             <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-
+                <div v-if="boxStats?.invoice" class="mb-1 text-sm text-gray-500 ">
+					<FontAwesomeIcon
+						icon="fal fa-file-invoice"
+						size="xs"
+						fixed-width
+						class="text-gray-400"
+						:tooltip="'invoice'"
+						aria-hidden="true" />
+					<Link
+						:href="
+							route(
+								boxStats?.invoice?.route?.name,
+								boxStats?.invoice?.route?.parameters
+							)
+						"
+						method="get"
+						v-tooltip="'Invoice'"
+						class="primaryLink">
+						{{ boxStats?.invoice?.reference }}
+					</Link>
+				</div>
                 <OrderSummary :order_summary="boxStats.order_summary" :currency_code="props.currency?.data?.code" />
 
             </section>
