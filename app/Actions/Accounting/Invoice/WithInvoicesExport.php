@@ -67,7 +67,8 @@ trait WithInvoicesExport
 
             if ($isAttachIsdocToPdf) {
                 try {
-                    $outputFile = ISDocInvoice::make()->attachIsdocToPdf($invoice, $pdf, $filename);
+                    $mpdfInstance = $pdf->getMpdf();
+                    $outputFile = ISDocInvoice::make()->attachIsdocToPdf($invoice, $mpdfInstance, $filename);
                     return response()->file($outputFile, [
                         'Content-Type' => 'application/pdf',
                         'Content-Disposition' => 'inline; filename="' . $filename . '.pdf"',

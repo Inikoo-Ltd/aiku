@@ -34,6 +34,7 @@ use Adawolfa\ISDOC\Schema\Invoice\TaxCategory;
 use Adawolfa\ISDOC\Schema\Invoice\TaxSubTotal;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use Mpdf\Mpdf;
 
 class ISDocInvoice extends OrgAction
 {
@@ -186,7 +187,7 @@ class ISDocInvoice extends OrgAction
         return $manager->writer->xml($isDocInvoice);
     }
 
-    public function attachIsdocToPdf(Invoice $invoice, $pdf, string $filename): string
+    public function attachIsdocToPdf(Invoice $invoice, Mpdf $pdf, string $filename): string
     {
         $baseLocation = storage_path('app/tmp/isdoc');
         if (!file_exists($baseLocation)) {
