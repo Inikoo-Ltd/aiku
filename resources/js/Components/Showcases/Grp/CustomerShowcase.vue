@@ -9,7 +9,7 @@ import { useFormatTime } from "@/Composables/useFormatTime";
 import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faLink } from "@far";
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale } from "@fal";
+import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faPencil } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n";
 import { ref } from "vue";
@@ -21,8 +21,9 @@ import { faCheck, faTimes } from "@fas";
 import ModalRejected from "@/Components/Utils/ModalRejected.vue";
 import ButtonPrimeVue from "primevue/button";
 import { Link } from "@inertiajs/vue3";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck);
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil);
 
 interface CustomerDropshipping {
   slug: string;
@@ -40,7 +41,7 @@ interface CustomerDropshipping {
   state: string;
 }
 
-defineProps<{
+const props = defineProps<{
   data: {
     address_management: {
       can_open_address_management: boolean
@@ -62,6 +63,7 @@ defineProps<{
         address: Address
       }
     }
+    editWebUser:{}
     status: string
     customer: CustomerDropshipping
     updateRoute: routeType
@@ -89,11 +91,16 @@ function openRejectedModal(customer: any) {
   customerName.value = customer.name;
   isModalUploadOpen.value = true;
 }
+
+const links = ref([
+    { label: trans("Edit Web User"), route_target: props.data.editWebUser, icon: faPencil },
+]);
+
 </script>
 
 <template>
   <!-- Section: Stats box -->
-  <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-x-8 gap-y-3">
+  <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
     <div v-if="data.customer.status === 'pending_approval'" class="w-full max-w-md justify-self-end">
       <div class="p-5 border rounded-lg bg-white">
         <div class="flex flex-col items-center text-center gap-2">
@@ -229,6 +236,19 @@ function openRejectedModal(customer: any) {
           </div>
         </dl>
       </div>
+    </div>
+    <div class="justify-self-end">
+        <div class="w-64 border border-gray-300 rounded-md p-2">
+            <div v-for="(item, index) in links" :key="index" class="p-2">
+                <ButtonWithLink
+                    :routeTarget="item.route_target"
+                    full
+                    :icon="item.icon"
+                    :label="item.label"
+                    type="secondary"
+                />
+            </div>
+        </div>
     </div>
   </div>
 
