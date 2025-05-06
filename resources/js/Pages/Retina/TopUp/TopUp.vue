@@ -45,4 +45,5 @@ const props = defineProps<{
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
+  </PageHeading>
 </template>
