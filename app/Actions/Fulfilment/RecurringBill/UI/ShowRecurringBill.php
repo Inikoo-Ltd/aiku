@@ -248,7 +248,7 @@ class ShowRecurringBill extends OrgAction
 
         return [
             'customer'      => FulfilmentCustomerResource::make($recurringBill->fulfilmentCustomer),
-            'invoice'             => $this->getInvoiceData($recurringBill, $parent), 
+            'invoice'             => $this->getInvoiceData($recurringBill, $parent),
             'stats'         => [
                 'number_pallets'      => $recurringBill->stats->number_transactions_type_pallets,
                 'number_stored_items' => $recurringBill->stats->number_transactions_type_stored_items,
@@ -310,34 +310,34 @@ class ShowRecurringBill extends OrgAction
     public function getInvoiceData(RecurringBill $recurringBill, FulfilmentCustomer|Fulfilment $parent): ?array
     {
         $invoiceData = null;
-            if($recurringBill->invoices) {
-                $invoice = $recurringBill->invoices;
-                if ($parent instanceof Fulfilment) {
-                    $route = [
-                        'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
-                        'parameters' => [
-                            'organisation'  => $recurringBill->organisation->slug,
-                            'fulfilment'    => $parent->slug,
-                            'invoice' => $recurringBill->invoices->slug
-                        ]
-                    ];
-                } else { //FulfilmentCustomer
-                    $route = [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
-                        'parameters' => [
-                            'organisation'  => $recurringBill->organisation->slug,
-                            'fulfilment'    => $parent->fulfilment->slug,
-                            'fulfilmentCustomer' => $parent->slug,
-                            'invoice' => $invoice->slug
-                        ]
-                    ];
-                }
-                $invoiceData = [
-                    'reference'    => $invoice->reference,
-                    'status'       => $invoice->pay_status,
-                    'total_amount' => $invoice->total_amount,
-                    'route'        => $route
+        if ($recurringBill->invoices) {
+            $invoice = $recurringBill->invoices;
+            if ($parent instanceof Fulfilment) {
+                $route = [
+                    'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+                    'parameters' => [
+                        'organisation'  => $recurringBill->organisation->slug,
+                        'fulfilment'    => $parent->slug,
+                        'invoice' => $recurringBill->invoices->slug
+                    ]
                 ];
+            } else { //FulfilmentCustomer
+                $route = [
+                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
+                    'parameters' => [
+                        'organisation'  => $recurringBill->organisation->slug,
+                        'fulfilment'    => $parent->fulfilment->slug,
+                        'fulfilmentCustomer' => $parent->slug,
+                        'invoice' => $invoice->slug
+                    ]
+                ];
+            }
+            $invoiceData = [
+                'reference'    => $invoice->reference,
+                'status'       => $invoice->pay_status,
+                'total_amount' => $invoice->total_amount,
+                'route'        => $route
+            ];
         }
 
         return $invoiceData;

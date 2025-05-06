@@ -153,7 +153,7 @@ class ShowPalletDelivery extends OrgAction
                         'recurringBill' => $recurringBill->slug
                     ]
                 ];
-                if ($recurringBill->invoices){
+                if ($recurringBill->invoices) {
                     $invoice = $recurringBill->invoices;
                     $invoiceRoute = [
                         'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
@@ -174,7 +174,7 @@ class ShowPalletDelivery extends OrgAction
                         'recurringBill'      => $recurringBill->slug
                     ]
                 ];
-                if ($recurringBill->invoices){
+                if ($recurringBill->invoices) {
                     $invoice = $recurringBill->invoices;
                     $invoiceRoute = [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
