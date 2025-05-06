@@ -68,6 +68,8 @@ onMounted(() => {
             });
         }
     });
+    checkScreenType()
+	window.addEventListener('resize', checkScreenType)
 });
 
 const checkScreenType = () => {
@@ -97,8 +99,14 @@ console.log(route().current())
 
         <div class="shadow-xl" :class="layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
             <div>
-                <RenderHeaderMenu v-if="header?.data" :data="header.data" :menu="navigation"
-                    :loginMode="isPreviewLoggedIn" @update:model-value="updateData(header.data)" />
+                <RenderHeaderMenu 
+                    v-if="header?.data" 
+                    :data="header.data" 
+                    :menu="navigation"
+                    :loginMode="isPreviewLoggedIn" 
+                    @update:model-value="updateData(header.data)" 
+                    :screenType="screenType"
+                />
             </div>
 
             <div  class="bg-white">
@@ -107,7 +115,7 @@ console.log(route().current())
                         :key="'block' + activityItem.id" class="w-full">
                         <component v-if="showWebpage(activityItem)" :is="getIrisComponent(activityItem.type)"
                             :key="activityItemIdx" :theme="layout"
-                            :fieldValue="activityItem.web_block?.layout?.data?.fieldValue" />
+                            :fieldValue="activityItem.web_block?.layout?.data?.fieldValue" :screenType="screenType"/>
                     </div>
                 </template>
             </div>

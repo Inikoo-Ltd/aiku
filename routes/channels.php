@@ -39,24 +39,18 @@ Broadcast::channel('grp.live.users', function (User $user) {
     ];
 });
 
-Broadcast::channel('retina.{websiteId}.website', function (Webuser $webUser, int $websiteId) {
+Broadcast::channel('retina.{websiteId}.website', function (Webuser $webUser, int|string $websiteId) {
     return $websiteId === $webUser->website_id;
 });
 
-Broadcast::channel('retina.{customerID}.customer', function (Webuser $webUser, int $customerID) {
+Broadcast::channel('retina.{customerID}.customer', function (Webuser $webUser, int|string $customerID) {
     return $customerID === $webUser->customer_id;
 });
 
-Broadcast::channel('retina.personal.{webUserID}', function (Webuser $webUser, int $webUserID) {
+Broadcast::channel('retina.personal.{webUserID}', function (Webuser $webUser, int|string $webUserID) {
     return $webUserID === $webUser->id;
 });
 
-// Broadcast::channel('retina.active.users', function (Webuser $webUser) {
-//     return [
-//         'id'    => $webUser->id,
-//         'alias' => $webUser->slug,
-//     ];
-// });
 
 Broadcast::channel('webpage.{webpage}.preview', function (User $user) {
     return true;

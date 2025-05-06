@@ -1014,7 +1014,7 @@ const isLoading = ref<string | boolean>(false)
                                 <!-- Section: FooterRows -->
                                 <slot name="footerRows" :show="show">
                                     <template v-for="(item, key) in queryBuilderProps.footerRows?.data" :key="`footerRows-rows-${key}`">
-                                        <tr class="bg-gray-100">
+                                        <tr class="bg-gray-100" :class="key == 0 ? '!border-t-3 !border-gray-400/60' : ''">
                                             <!-- Column: Check box -->
                                             <td v-if="isCheckBox" key="checkbox" class="h-full flex justify-center">
                                                 <!-- <div v-if="selectRow[item[checkboxKey]]" class="absolute inset-0 bg-lime-500/10 -z-10" />

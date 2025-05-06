@@ -6,8 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PaymentFailure;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PaymentSuccess;
 use App\Actions\Comms\Notifications\GetSnsNotification;
-use App\Actions\Dropshipping\Shopify\Fulfilment\StoreFulfilmentFromShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
@@ -18,23 +19,17 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
+    Route::post('payment-success/{paymentAccountShop:ulid}', PaymentSuccess::class)->name('payment_success');
+    Route::post('payment-failure/{paymentAccountShop:ulid}', PaymentFailure::class)->name('payment_failure');
 });
 
-//Route::post('shopify-user/app-uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('webhooks.shopify.app-uninstalled');
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {
         Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
     });
 
     Route::post('app/uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
-
-    //    Route::prefix('fulfillments')->as('fulfillments.')->group(function () {
-    //        // Dont change the create to store, its default needed from shopify
-    //        Route::post('create', StoreFulfilmentFromShopify::class)->name('create');
-    //    });
-
     Route::prefix('orders')->as('orders.')->group(function () {
-        // Dont change the create to store, its default needed from shopify
         Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
     });
 });

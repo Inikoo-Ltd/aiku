@@ -23,18 +23,12 @@ class GetOrderActions
             $actions = match ($order->state) {
                 OrderStateEnum::CREATING => [
                     [
-                        'type' => 'buttonGroup',
+                        'type' => 'button',
                         'key' => 'upload-add',
-                        'button' => [
-                            [
-                                'type' => 'button',
-                                'style' => 'secondary',
-                                'icon' => ['fal', 'fa-upload'],
-                                'label' => '',
-                                'key' => 'upload',
-                                'tooltip' => __('Upload pallets via spreadsheet'),
-                            ],
-                        ],
+                        'style' => 'secondary',
+                        'icon' => ['fal', 'fa-upload'],
+                        // 'label' => 'cccccc',
+                        'tooltip' => __('Upload pallets via spreadsheet'),
                     ],
                     [
                         'type' => 'button',

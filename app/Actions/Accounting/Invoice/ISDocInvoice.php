@@ -32,6 +32,7 @@ use Adawolfa\ISDOC\Schema\Invoice\PostalAddress;
 use Adawolfa\ISDOC\Schema\Invoice\Quantity;
 use Adawolfa\ISDOC\Schema\Invoice\TaxCategory;
 use Adawolfa\ISDOC\Schema\Invoice\TaxSubTotal;
+use Illuminate\Support\Str;
 
 class ISDocInvoice extends OrgAction
 {
@@ -70,7 +71,7 @@ class ISDocInvoice extends OrgAction
 
         $isDocInvoice = new InvoiceISDoc(
             $invoice->reference,
-            $invoice->uuid,
+            $invoice->uuid ?? Str::uuid(),
             $invoice->date,
             $invoice->tax_amount > 0,
             $invoice->currency->code,
@@ -123,9 +124,10 @@ class ISDocInvoice extends OrgAction
             $trTaxCategory = $transaction->taxCategory;
 
             $taxAmount             = $transaction->net_amount * $trTaxCategory->rate;
-            $taxAmountPerUnitPrice = $transaction->historicAsset->price * $trTaxCategory->rate;
+            $unitPrice = $transaction->historicAsset?->price ?? $transaction->net_amount;
+            $taxAmountPerUnitPrice = $unitPrice * $trTaxCategory->rate;
             $amountAfterTax        = $transaction->net_amount + $taxAmount;
-            $unitPriceAfterTax     = $transaction->historicAsset->price + $taxAmountPerUnitPrice;
+            $unitPriceAfterTax     = $unitPrice + $taxAmountPerUnitPrice;
 
             $isDocInvoice->invoiceLines->add(
                 (new InvoiceLine(
@@ -133,7 +135,7 @@ class ISDocInvoice extends OrgAction
                     $transaction->net_amount,
                     $amountAfterTax,
                     $taxAmount,
-                    $transaction->historicAsset->price,
+                    $unitPrice,
                     $unitPriceAfterTax,
                     new ClassifiedTaxCategory(
                         $trTaxCategory->rate * 100,
@@ -144,7 +146,7 @@ class ISDocInvoice extends OrgAction
                         (new Quantity())->setContent(
                             $transaction->quantity
                         )->setUnitCode(
-                            $transaction->historicAsset->unit
+                            $transaction->historicAsset?->unit
                         )
                     )
                     ->setItem(

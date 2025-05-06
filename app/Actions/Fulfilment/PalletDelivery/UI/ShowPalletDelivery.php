@@ -139,9 +139,11 @@ class ShowPalletDelivery extends OrgAction
         $showGrossAndDiscount = $palletDelivery->gross_amount !== $palletDelivery->net_amount;
 
         $recurringBillData = null;
+        $invoiceData = null;
         if ($palletDelivery->recurringBill) {
             $recurringBill      = $palletDelivery->recurringBill;
             $recurringBillRoute = null;
+            $invoiceRoute      = null;
             if ($this->parent instanceof Fulfilment) {
                 $recurringBillRoute = [
                     'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.current.show',
@@ -151,6 +153,17 @@ class ShowPalletDelivery extends OrgAction
                         'recurringBill' => $recurringBill->slug
                     ]
                 ];
+                if ($recurringBill->invoices){
+                    $invoice = $recurringBill->invoices;
+                    $invoiceRoute = [
+                        'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+                        'parameters' => [
+                            'organisation'  => $recurringBill->organisation->slug,
+                            'fulfilment'    => $this->parent->slug,
+                            'invoice' => $recurringBill->invoices->slug
+                        ]
+                    ];
+                }
             } elseif ($this->parent instanceof FulfilmentCustomer) {
                 $recurringBillRoute = [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.recurring_bills.show',
@@ -161,6 +174,18 @@ class ShowPalletDelivery extends OrgAction
                         'recurringBill'      => $recurringBill->slug
                     ]
                 ];
+                if ($recurringBill->invoices){
+                    $invoice = $recurringBill->invoices;
+                    $invoiceRoute = [
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
+                        'parameters' => [
+                            'organisation'  => $recurringBill->organisation->slug,
+                            'fulfilment'    => $this->parent->fulfilment->slug,
+                            'fulfilmentCustomer' => $this->parent->slug,
+                            'invoice' => $recurringBill->invoices->slug
+                        ]
+                    ];
+                }
             }
             if ($recurringBillRoute) {
                 $recurringBillData = [
@@ -168,6 +193,14 @@ class ShowPalletDelivery extends OrgAction
                     'status'       => $recurringBill->status,
                     'total_amount' => $recurringBill->total_amount,
                     'route'        => $recurringBillRoute
+                ];
+            }
+            if ($invoiceRoute) {
+                $invoiceData = [
+                    'reference'    => $invoice->reference,
+                    'status'       => $invoice->pay_status,
+                    'total_amount' => $invoice->total_amount,
+                    'route'        => $invoiceRoute
                 ];
             }
         }
@@ -363,6 +396,7 @@ class ShowPalletDelivery extends OrgAction
                     'fulfilment_customer' => FulfilmentCustomerResource::make($palletDelivery->fulfilmentCustomer)->getArray(),
                     'delivery_state'      => PalletDeliveryStateEnum::stateIcon()[$palletDelivery->state->value],
                     'recurring_bill'      => $recurringBillData,
+                    'invoice' => $invoiceData,
                     'order_summary'       => [
                         [
                             [

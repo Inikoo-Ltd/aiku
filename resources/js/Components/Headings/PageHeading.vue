@@ -140,9 +140,9 @@ const layout = inject('layout', layoutStructure)
                         </slot>
 
                         <!-- ButtonGroup -->
-                        <slot v-if="action.type == 'buttonGroup' && action.button?.length"
+                        <slot v-else-if="action.type == 'buttonGroup'"
                             :name="`button-group-${action.key}`" :action="action">
-                            <div class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
+                            <div v-if="action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                 (action.button?.length || 0) > 1 ? '' : '',
                             ]" :style="{
                                 // border: `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}`
@@ -190,43 +190,32 @@ const layout = inject('layout', layoutStructure)
                                 <template v-for="(action, actIndex) in data.wrapped_actions">
                                     <template v-if="action">
                                         <!-- Button -->
-                                        <slot v-if="action.type == 'button'"
-                                            :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
-                                            <slot :name="`button-index-${actIndex}`" :action="action">
-                                                <Action v-if="action" :action="action" :dataToSubmit="dataToSubmit" />
-                                            </slot>
-                                        </slot>
+                                        <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
+                                        
                                         <!-- ButtonGroup -->
-                                        <slot v-if="action.type == 'buttonGroup' && action.button?.length"
-                                            :name="`button-group-${action.key}`" :action="action">
-                                            <div class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
-                                                (action.button?.length || 0) > 1 ? '' : '',
-                                            ]" :style="{
-                                                // border: `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}`
-                                            }">
-                                                <slot v-for="(button, index) in action.button"
-                                                    :name="`button-group-${kebabCase(button.key ? button.key : button.label)}`"
-                                                    :action="button">
-                                                    <component :key="'buttonPH' + index + button.label"
-                                                        :is="button.route?.name ? Link : 'div'"
-                                                        :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
-                                                        class="" :method="button.route?.method || 'get'"
-                                                        @start="() => isButtonLoading = 'buttonGroup' + index"
-                                                        @finish="() => button.fullLoading ? false : isButtonLoading = false"
-                                                        @error="() => button.fullLoading ? isButtonLoading = false : false"
-                                                        :as="button.target ? 'a' : 'div'" :target="button.target">
-                                                        <Button :style="button.style" :label="button.label" :icon="button.icon"
-                                                            :loading="isButtonLoading === 'buttonGroup' + index"
-                                                            :iconRight="button.iconRight" :disabled="button.disabled"
-                                                            :key="`ActionButton${button.label}${button.style}`"
-                                                            :tooltip="button.tooltip"
-                                                            class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
-                                                            :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
-                                                        </Button>
-                                                    </component>
-                                                </slot>
-                                            </div>
-                                        </slot>
+                                        <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
+                                            (action.button?.length || 0) > 1 ? '' : '',
+                                        ]" :style="{
+                                            // border: `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}`
+                                        }">
+                                            <component v-for="(button, index) in action.button" :key="'buttonPH' + index + button.label"
+                                                :is="button.route?.name ? Link : 'div'"
+                                                :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
+                                                class="" :method="button.route?.method || 'get'"
+                                                @start="() => isButtonLoading = 'buttonGroup' + index"
+                                                @finish="() => button.fullLoading ? false : isButtonLoading = false"
+                                                @error="() => button.fullLoading ? isButtonLoading = false : false"
+                                                :as="button.target ? 'a' : 'div'" :target="button.target">
+                                                <Button :style="button.style" :label="button.label" :icon="button.icon"
+                                                    :loading="isButtonLoading === 'buttonGroup' + index"
+                                                    :iconRight="button.iconRight" :disabled="button.disabled"
+                                                    :key="`ActionButton${button.label}${button.style}`"
+                                                    :tooltip="button.tooltip"
+                                                    class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
+                                                    :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
+                                                </Button>
+                                            </component>
+                                        </div>
                                     </template>
                                 </template>
                             </div>

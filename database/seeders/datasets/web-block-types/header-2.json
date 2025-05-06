@@ -80,8 +80,10 @@
 			},
 			"logo": {
 				"visible": "all",
-				"image": null,
-				"alt": "image",
+				"alt": "Image Logo",
+				"image": {
+					"source": null
+				},
 				"properties": {
 					"padding": {
 						"unit": "px",
@@ -145,13 +147,25 @@
 						}
 					},
 					"dimension": {
-						"height": {
-							"value": "100%",
-							"unit": "%"
+						"desktop": {
+							"height": {
+								"value": "100",
+								"unit": "%"
+							},
+							"width": {
+								"value": "200",
+								"unit": "px"
+							}
 						},
-						"width": {
-							"value": "200",
-							"unit": "px"
+						"mobile" : {
+							"height": {
+								"value": "100",
+								"unit": "%"
+							},
+							"width": {
+								"value": "80",
+								"unit": "px"
+							}
 						}
 					}
 				}

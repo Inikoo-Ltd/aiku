@@ -10,11 +10,14 @@
 
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
+use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,44 +26,65 @@ class ShowRetinaEcomCheckout extends RetinaAction
 {
     use IsOrder;
 
-    public function handle(Customer $customer, $prefix = null): Order|null
+    public function handle(Customer $customer): array
     {
-        if (!$customer->current_order_in_basket_id) {
-            return null;
+        $order = $customer->orderInBasket;
+
+        $paymentMethods = [];
+
+        if ($order) {
+            $paymentMethods = $this->getPaymentMethods($order);
         }
-        return Order::find($customer->current_order_in_basket_id);
+
+        return [
+            'order'          => $order,
+            'paymentMethods' => $paymentMethods,
+        ];
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function getPaymentMethods(Order $order): array
     {
-        return $request->user()->is_root;
+        $paymentMethods = [];
+
+        $paymentAccountShops = $this->shop->paymentAccountShops()
+            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
+            ->where('show_in_checkout', true)
+            ->orderby('checkout_display_position')
+            ->get();
+        foreach ($paymentAccountShops as $paymentAccountShop) {
+            $paymentAccountShopData = GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop);
+
+            if ($paymentAccountShopData) {
+                $paymentMethods[] = $paymentAccountShopData;
+            }
+        }
+
+        return $paymentMethods;
     }
 
-    public function asController(ActionRequest $request): Order|null
+    public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
 
-        $customer = $request->user()->customer;
-
-        return $this->handle($customer);
+        return $this->handle($this->customer);
     }
 
-    public function htmlResponse(Order|null $order): Response
+    public function htmlResponse(array $checkoutData): Response
     {
+        $order = Arr::get($checkoutData, 'order');
+
         return Inertia::render(
             'Ecom/Checkout',
             [
-                    'breadcrumbs' => $this->getBreadcrumbs(),
-                    'title'       => __('Baskets'),
-                    'pageHead'    => [
-                        'title' => __('Baskets'),
-                        'icon'  => 'fal fa-shopping-basket'
-                    ],
-
-
-
-                    'data'     => $order ? $this->getOrderBoxStats($order) : null,
-                ]
+                'breadcrumbs'    => $this->getBreadcrumbs(),
+                'title'          => __('Basket'),
+                'pageHead'       => [
+                    'title' => __('Basket'),
+                    'icon'  => 'fal fa-shopping-basket'
+                ],
+                'order'          => $order ? $this->getOrderBoxStats($order) : null,
+                'paymentMethods' => Arr::get($checkoutData, 'paymentMethods')
+            ]
         );
     }
 
@@ -74,9 +98,9 @@ class ShowRetinaEcomCheckout extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
+                                'name' => 'retina.ecom.checkout.show'
                             ],
-                            'label'  => __('Orders'),
+                            'label' => __('Checkout'),
                         ]
                     ]
                 ]

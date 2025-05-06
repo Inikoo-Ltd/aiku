@@ -36,7 +36,6 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
 
-
         $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
         $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
 
@@ -49,8 +48,8 @@ class StoreTransaction extends OrgAction
 
         data_set($modelData, 'date', now(), overwrite: false);
         data_set($modelData, 'submitted_at', $order->submitted_at, overwrite: false);
-        data_set($modelData, 'gross_amount', $gross, overwrite: false);
-        data_set($modelData, 'net_amount', $net, overwrite: false);
+        data_set($modelData, 'gross_amount', $gross ?? 0);
+        data_set($modelData, 'net_amount', $net ?? 0);
         data_set($modelData, 'state', TransactionStateEnum::CREATING, overwrite: false);
         data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
 

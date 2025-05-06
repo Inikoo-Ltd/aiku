@@ -27,6 +27,7 @@ class GetPalletReturnBoxStats
         return [
             'collection_notes'    => $palletReturn->collection_notes ?? '',
             'recurring_bill'      => $this->getRecurringBillData($palletReturn, $parent),
+            'invoice'             => $this->getInvoiceData($palletReturn, $parent), 
             'fulfilment_customer' => array_merge(
                 FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
@@ -137,6 +138,45 @@ class GetPalletReturnBoxStats
         }
 
         return $recurringBillData;
+    }
+
+    public function getInvoiceData(PalletReturn $palletReturn, FulfilmentCustomer|Fulfilment $parent): ?array
+    {
+        $invoiceData = null;
+        if ($palletReturn->recurringBill) {
+            $recurringBill = $palletReturn->recurringBill;
+            if($recurringBill->invoices) {
+                $invoice = $recurringBill->invoices;
+                if ($parent instanceof Fulfilment) {
+                    $route = [
+                        'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+                        'parameters' => [
+                            'organisation'  => $recurringBill->organisation->slug,
+                            'fulfilment'    => $parent->slug,
+                            'invoice' => $recurringBill->invoices->slug
+                        ]
+                    ];
+                } else { //FulfilmentCustomer
+                    $route = [
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
+                        'parameters' => [
+                            'organisation'  => $recurringBill->organisation->slug,
+                            'fulfilment'    => $parent->fulfilment->slug,
+                            'fulfilmentCustomer' => $parent->slug,
+                            'invoice' => $invoice->slug
+                        ]
+                    ];
+                }
+                $invoiceData = [
+                    'reference'    => $invoice->reference,
+                    'status'       => $invoice->pay_status,
+                    'total_amount' => $invoice->total_amount,
+                    'route'        => $route
+                ];
+            }
+        }
+
+        return $invoiceData;
     }
 
 }

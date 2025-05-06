@@ -11,6 +11,8 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Image from '@/Components/Image.vue'
 import axios from 'axios';
+import { getStyles } from '@/Composables/styles'
+import MobileHeader from '@/Components/CMS/Website/Headers/MobileHeader.vue';
 
 
 const props = defineProps<{
@@ -26,6 +28,7 @@ const props = defineProps<{
         blueprint: object
     }
     colorThemed: object
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 const _menu = ref();
 const toggle = (event) => {
@@ -68,36 +71,25 @@ provide('onLogout', onLogoutAuth)
     <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :navigations="menu.data.fieldValue.navigation"
         :colorThemed="colorThemed" class="hidden md:block" />
 
+        <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue?.navigation" :screenType="screenType" />
+
     <!-- Section: Menu mobile -->
-    <div class="block md:hidden p-3">
+    <!-- <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <MobileMenu :header="data.header.data.fieldValue" :menu="menu?.data?.fieldValue?.navigation" />
-            <!-- Logo for Mobile -->
-            <!-- <pre> {{ data.header.data.fieldValue?.logo.image.source }}</pre>  -->
+            <div :style="getStyles(data?.header?.data?.fieldValue.logo.properties, screenType)">
             <Image
                 v-if="data?.header?.data?.fieldValue?.logo?.image?.source?.original"
                 :src="data?.header?.data?.fieldValue?.logo?.image?.source"
-                class="h-10 mx-2"
+                :imageCover="true"
                 :alt="data?.header?.data?.fieldValue?.logo?.alt"
             />
+            </div>
 
-            <!-- Profile Icon with Dropdown Menu -->
+          
             <div @click="toggle" class="flex items-center cursor-pointer">
                 <FontAwesomeIcon :icon="faUserCircle" class="text-2xl" />
-                <!-- <Menu ref="_menu" id="overlay_menu" :model="items" :popup="true">
-                    <template #itemicon="{ item }">
-                        <FontAwesomeIcon :icon="item.icon" />
-                    </template>
-                </Menu> -->
             </div>
         </div>
-
-        <!-- Mobile Search Bar -->
-        <!--  <div class="relative mt-2">
-                <input type="text" placeholder="Search Products"
-                    class="border border-gray-300 py-2 px-4 rounded-md w-full shadow-inner focus:outline-none focus:border-gray-500">
-                <FontAwesomeIcon icon="fas fa-search" class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500"
-                    fixed-width />
-            </div> -->
-    </div>
+    </div> -->
 </template>

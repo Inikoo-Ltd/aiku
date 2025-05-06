@@ -231,7 +231,7 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
                         <ColorGradientPicker
                             :data="model?.gradient"
                             @onChange="(e) => {
-                                console.log('eewewewewewewew', e)
+                                // console.log('eewewewewewewew', e)
                                 model.type = 'gradient',
                                 model.gradient = e
                                 emits('update:modelValue', model)

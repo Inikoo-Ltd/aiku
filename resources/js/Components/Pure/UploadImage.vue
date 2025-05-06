@@ -41,7 +41,7 @@ const setAlt = async (imageFile) => {
         });
 
         console.log("Alt text request successful:", response.data);
-        emits("update:modelValue",  response.data.content,['alt'])
+        emits("update:modelValue",response.data.content,['alt'])
 
     } catch (error) {
         console.error("Alt text request failed:", error);
@@ -59,7 +59,7 @@ const handleUpload = async () => {
         const response = await axios.post(route(props.uploadRoutes.name, props.uploadRoutes.parameters), formData, {
             headers: { "Content-Type": "multipart/form-data" },
         })
-
+        
         const updatedModelValue = { ...props.modelValue, ...cloneDeep(response.data.data[0].source) }
         emits("update:modelValue", updatedModelValue)
         emits("autoSave")
