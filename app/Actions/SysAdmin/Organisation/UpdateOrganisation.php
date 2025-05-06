@@ -111,7 +111,6 @@ class UpdateOrganisation extends OrgAction
             'contact_name'            => ['sometimes', 'string', 'max:255'],
             'google_client_id'        => ['sometimes', 'string'],
             'google_client_secret'    => ['sometimes', 'string'],
-            'show_isdoc'              => ['sometimes', 'boolean'],
             'show_omega'              => ['sometimes', 'boolean'],
             'attach_isdoc_to_pdf'     => ['sometimes', 'boolean'],
             'google_drive_folder_key' => ['sometimes', 'string'],
