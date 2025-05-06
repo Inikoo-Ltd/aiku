@@ -28,6 +28,21 @@ class GetFulfilmentCustomerShowcase
 
         $recurringBillData = null;
 
+        $webUser = $fulfilmentCustomer->customer->webUsers()->first();
+        $webUserRoute = null;
+        if($webUser) {
+            $webUserRoute = [
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show.web-users.edit',
+                'parameters' => [
+                    'organisation' => $fulfilmentCustomer->organisation->slug,
+                    'fulfilment'   => $fulfilmentCustomer->shop->slug,
+                    'fulfilmentCustomer'     => $fulfilmentCustomer->slug,
+                    'webUser'      => $webUser->slug
+                ]
+            ];
+        }
+
+
         if ($fulfilmentCustomer->currentRecurringBill) {
             $recurringBillData = [
                 'route'         => [
@@ -97,6 +112,7 @@ class GetFulfilmentCustomerShowcase
                     'customer' => $fulfilmentCustomer->customer_id
                 ]
             ],
+            'editWebUser' => $webUserRoute
         ];
     }
 
