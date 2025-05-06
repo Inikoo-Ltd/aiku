@@ -18,6 +18,19 @@ class GetCustomerShowcase
 
     public function handle(Customer $customer): array
     {
+        $webUser = $customer->webUsers()->first();
+        $webUserRoute = null;
+        if($webUser) {
+            $webUserRoute = [
+                'name'       => 'grp.org.shops.show.crm.customers.show.web-users.edit',
+                'parameters' => [
+                    'organisation' => $customer->organisation->slug,
+                    'shop'         => $customer->shop->slug,
+                    'customer'     => $customer->slug,
+                    'webUser'      => $webUser->slug
+                ]
+            ];
+        }
 
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
@@ -28,6 +41,7 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
+            'editWebUser' => $webUserRoute
         ];
     }
 }
