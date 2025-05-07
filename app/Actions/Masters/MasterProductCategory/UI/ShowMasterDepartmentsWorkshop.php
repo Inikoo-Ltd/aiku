@@ -19,6 +19,8 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Masters\MasterDepartmentsResource;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 
 class ShowMasterDepartmentsWorkshop extends GrpAction
 {
@@ -63,7 +65,8 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
      */
     public function htmlResponse(MasterShop $masterShop, ActionRequest $request): Response
     {
-        return Inertia::render('Goods/DepartmentMasterBlueprint', [
+        return Inertia::render(
+            'Goods/DepartmentsMasterBlueprint', [
             'title'       => __('department'),
             'breadcrumbs' => $this->getBreadcrumbs(
                 $masterShop,
@@ -81,7 +84,7 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
                     'title' => __('department'),
                 ],
             ],
-            'department'  => 'halooo'
+           'departments'  => DepartmentsResource::collection($masterShop->getMasterDepartments())
         ]);
     }
 
