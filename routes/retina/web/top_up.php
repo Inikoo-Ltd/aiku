@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('', IndexRetinaTopUp::class)->name('index');
 Route::get('/dashboard', ShowRetinaTopUpDashboard::class)->name('dashboard');
 //Route::get('/create', CreateRetinaTopUp::class)->name('create');
-Route::get('/checkout', ShowRetinaTopUpCheckout::class)->name('checkout');
+Route::get('/checkout/{topUpPaymentApiPoint:id}', ShowRetinaTopUpCheckout::class)->name('checkout');
 
 Route::get('paypal-payment-capture/{payment:id}', CapturePaymentOrderPaypal::class)->name('paypal.capture_payment');
 Route::get('paypal-payment-cancel/{paymentAccount:id}', CapturePaymentOrderPaypal::class)->name('paypal.cancel_payment');
