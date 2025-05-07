@@ -33,6 +33,8 @@ class GetRetinaPaymentAccountShopData
                     'label'         => __('Online payments'),
                     'key'           => 'credit_card',
                     'public_key'    => $publicKey,
+                    'environment'   => 'sandbox',  // TODO: change this to 'production' appropriately
+                    'locale'        => "en-GB",  // TODO
                     'icon'          => 'fal fa-credit-card-front',
                     'data'          => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop)
                 ];
