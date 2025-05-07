@@ -66,7 +66,6 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
         return Inertia::render('Goods/DepartmentMasterBlueprint', [
             'title'       => __('department'),
             'breadcrumbs' => $this->getBreadcrumbs(
-                $this->parent,
                 $masterShop,
                 $request->route()->getName(),
                 $request->route()->originalParameters()
@@ -82,7 +81,7 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
                     'title' => __('department'),
                 ],
             ],
-            'department'  => 'halooo' 
+            'department'  => 'halooo'
         ]);
     }
 
@@ -97,8 +96,9 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
     /**
      * Generates breadcrumb trail for the department blueprint page.
      */
-    public function getBreadcrumbs(MasterShop|Group $parent, MasterProductCategory $department, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterShop|Group $parent, string $routeName, array $routeParameters): array
     {
+        return [];
         return ShowMasterDepartment::make()->getBreadcrumbs(
             $parent,
             $department,
@@ -111,9 +111,10 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
     /**
      * Gets the previous department (based on code).
      */
-    public function getPrevious(MasterProductCategory $masterDepartment, ActionRequest $request): ?array
+    public function getPrevious(MasterShop $masterShop, ActionRequest $request): ?array
     {
-        $previous = MasterProductCategory::where('code', '<', $masterDepartment->code)
+        return [];
+        $previous = MasterProductCategory::where('code', '<', $masterShop->code)
             ->where('master_shop_id', $this->parent->id)
             ->orderBy('code', 'desc')
             ->first();
@@ -124,9 +125,10 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
     /**
      * Gets the next department (based on code).
      */
-    public function getNext(MasterProductCategory $masterDepartment, ActionRequest $request): ?array
+    public function getNext(MasterShop $masterShop, ActionRequest $request): ?array
     {
-        $next = MasterProductCategory::where('code', '>', $masterDepartment->code)
+        return [];
+        $next = MasterProductCategory::where('code', '>', $masterShop->code)
             ->where('master_shop_id', $this->parent->id)
             ->orderBy('code')
             ->first();
@@ -137,29 +139,29 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
     /**
      * Builds the navigation structure for previous/next buttons.
      */
-    private function getNavigation(?MasterProductCategory $masterDepartment, string $routeName): ?array
+    private function getNavigation(?MasterShop $masterShop, string $routeName): ?array
     {
-        if (!$masterDepartment) {
+        if (!$masterShop) {
             return null;
         }
 
         return match ($routeName) {
             'grp.masters.department.blueprint' => [
-                'label' => $masterDepartment->name,
+                'label' => $masterShop->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'masterDepartment' => $masterDepartment->slug,
+                        'masterDepartment' => $masterShop->slug,
                     ],
                 ],
             ],
             'grp.masters.shops.show.department.blueprint' => [
-                'label' => $masterDepartment->name,
+                'label' => $masterShop->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'masterShop'       => $masterDepartment->masterShop->slug,
-                        'masterDepartment' => $masterDepartment->slug,
+                        'masterShop'       => $masterShop->slug,
+                        'masterDepartment' => $masterShop->slug,
                     ],
                 ],
             ],
