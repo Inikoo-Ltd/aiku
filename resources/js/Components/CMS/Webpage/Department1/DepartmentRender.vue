@@ -10,10 +10,6 @@ const props = defineProps<{
   }
 }>()
 
-
-
-console.log(props.data)
-
 </script>
 
 <template>

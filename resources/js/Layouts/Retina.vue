@@ -101,14 +101,6 @@ const layout = useLayoutStore()
     @apply hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out
 }
 
-.bottomNavigationActive {
-    @apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all;
-    background-color: v-bind('layout.app.theme[4]');
-}
-.bottomNavigation {
-    @apply bg-gray-300 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all
-}
-
 .primaryLink {
     background: v-bind('`linear-gradient(to top, ${layout.app.theme[2]}, ${layout.app.theme[2] + "AA"})`');
     &:hover, &:focus {

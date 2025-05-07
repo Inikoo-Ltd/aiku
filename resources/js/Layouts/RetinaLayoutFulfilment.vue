@@ -94,3 +94,13 @@ const isStaging = layout.app.environment === 'staging'
 
     <RetinaFooter />
 </template>
+
+<style lang="scss" scoped>
+:deep(.bottomNavigationActive) {
+    @apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all;
+    background-color: v-bind('layout.app.theme[4]');
+}
+:deep(.bottomNavigation) {
+    @apply bg-gray-300 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all
+}
+</style>
