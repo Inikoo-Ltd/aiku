@@ -71,11 +71,15 @@ class StorePayment extends OrgAction
             ];
 
             if ($this->strict) {
-                match ($paymentAccount->type->value) {
+                $response = match ($paymentAccount->type->value) {
                     PaymentAccountTypeEnum::CHECKOUT->value => MakePaymentUsingCheckout::run($payment, $modelData),
                     PaymentAccountTypeEnum::PAYPAL->value => MakePaymentUsingPaypal::run($payment, $paypalData),
                     default => null
                 };
+
+                UpdatePayment::run($payment, [
+                    'data' => $response
+                ]);
             }
 
             $payment->refresh();

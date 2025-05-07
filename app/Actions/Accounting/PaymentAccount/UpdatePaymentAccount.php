@@ -32,9 +32,23 @@ class UpdatePaymentAccount extends OrgAction
 
     public function handle(PaymentAccount $paymentAccount, array $modelData): PaymentAccount
     {
+        if ($paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
+            $paypalData = $paymentAccount->data ?? [];
+        
+            if (Arr::exists($modelData, 'paypal_client_id')) {
+                $paypalData['paypal_client_id'] = Arr::pull($modelData, 'paypal_client_id');
+            }
+        
+            if (Arr::exists($modelData, 'paypal_client_secret')) {
+                $paypalData['paypal_client_secret'] = Arr::pull($modelData, 'paypal_client_secret');
+            }
+
+            data_set($modelData, 'data', $paypalData);
+        }
+
         if ($this->strict) {
             $paymentAccount = $this->paymentAccountUpdateActions($paymentAccount->paymentServiceProvider->code, $paymentAccount, $modelData);
-            $paymentAccount = $this->update($paymentAccount, Arr::only($modelData, ['code', 'name']), ['data']);
+            $paymentAccount = $this->update($paymentAccount, Arr::only($modelData, ['code', 'name', 'data']), ['data']);
         } else {
             $paymentAccount = $this->update($paymentAccount, $modelData, ['data']);
         }
@@ -75,6 +89,11 @@ class UpdatePaymentAccount extends OrgAction
             ],
             'name' => ['sometimes', 'required', 'max:250', 'string'],
         ];
+
+        if($this->paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
+            $rules['paypal_client_id']        = ['sometimes'];
+            $rules['paypal_client_secret']    = ['sometimes'];
+        }
 
         if (!$this->strict) {
             $rules         = $this->noStrictUpdateRules($rules);
