@@ -11,12 +11,14 @@ import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRen
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { useConfirm } from "primevue/useconfirm";
-import { router } from "@inertiajs/vue3"
+import { router, useForm } from "@inertiajs/vue3"
 import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import ConfirmDialog from 'primevue/confirmdialog';
 import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { faEdit } from "@fal";
+import ToggleSwitch from 'primevue/toggleswitch';
+import { notify } from "@kyvg/vue3-notification";
 
 const props = defineProps<{
     pageHead: {},
@@ -24,13 +26,13 @@ const props = defineProps<{
     update_route : routeType
     upload_image_route : routeType
     families: { data: Array<{ id: number, name: string }> },
-    web_block_types: Array<string>
+    web_block_types: Object
     web_block_types_families : {
         data : Array
     }
 }>()
 
-const departmentData = ref(props.department.data)
+const departmentForm = useForm(props.department.data)
 const usedTemplate = ref(props.web_block_types.data[0])
 const isModalGallery = ref(false)
 const isLoading = ref(false)
@@ -38,15 +40,6 @@ const isModalFamiliesPreview = ref(false)
 const showPreviewFamilies = ref(props.web_block_types_families.data[0])
 const confirm = useConfirm();
 const departmentEdit = ref(false)
-
-
-const familiesOption = ref(
-    props.families.data.map((item) => ({
-        ...item,  // Spread the original item properties
-        show: true,  // Add the show property to each item
-        loading : false
-    }))
-)
 
 const goToPrev = () => {
     console.log('Previous clicked')
@@ -65,12 +58,10 @@ const getComponentDepartment = (componentName: string) => {
 }
 
 const familyShow = (item) => {
-    console.log(item)
-    console.log(route(props.update_route.name, { masterProductCategory : item.id}))
     router.patch(
     route(props.update_route.name, { masterProductCategory : item.id}),
     {
-        show_in_website : !item.show
+        show_in_website : !item.show_in_website
     },
     {
       preserveScroll: true,
@@ -79,6 +70,7 @@ const familyShow = (item) => {
       },
       onSuccess: (e) => {
         console.log(e)
+        item.show_in_website = !item.show_in_website
       },
       onError: (errors) => {
         console.error('Save failed:', errors);
@@ -115,17 +107,8 @@ const confirmDelete = (_event: MouseEvent, item: { id: number; name: string; sho
 
 
 const onSaveAll = () => {
-  router.patch(
+  departmentForm.patch(
     route(props.update_route.name, props.update_route.parameters),
-    {
-        name: departmentData.value.name,
-        description: departmentData.value.description,
-        image_id : departmentData.value.image_id,
-     /*  families: familiesOption.value.map(item => ({
-        slug: item.slug,
-        show: item.show,
-      })), */
-    },
     {
       preserveScroll: true,
       onStart: () => {
@@ -133,12 +116,14 @@ const onSaveAll = () => {
       },
       onSuccess: () => {
         departmentEdit.value = false
-        departmentData.value = props.department.data
-        // Success handler (optional)
       },
       onError: (errors) => {
-        // Handle validation or server errors
         console.error('Save failed:', errors);
+          notify({
+              title: "Failed to Save",
+              text: "failed to add location",
+              type: "error"
+          })
       },
       onFinish: () => {
         isLoading.value = false;
@@ -169,7 +154,8 @@ const confirmSave = () => {
 };
 
 
-const onUpload = async (files: File[], clear: () => void) => {
+const onUpload = async (files: File[], clear) => {
+    console.log(clear)
   if (!files.length) return;
 
   const formData = new FormData();
@@ -177,8 +163,6 @@ const onUpload = async (files: File[], clear: () => void) => {
     formData.append('image', file);
   });
 
-  // Optional: Debug log FormData contents
-  console.log('FormData contents:');
   for (const [key, value] of formData.entries()) {
     console.log(key, value);
   }
@@ -188,11 +172,10 @@ const onUpload = async (files: File[], clear: () => void) => {
     formData,
     {
       forceFormData: true, // Ensure Inertia treats it as FormData
-      onSuccess: () => {
-        console.log('Upload successful');
-        departmentData.value = props.department.data
+      onSuccess: (e) => {
+        departmentForm.image = props.department.data.image
         isModalGallery.value = false;
-        clear(); // Reset input after success
+    /*     clear(); */
       },
       onError: (errors) => {
         console.error('Image upload failed:', errors);
@@ -208,7 +191,7 @@ const onUpload = async (files: File[], clear: () => void) => {
 
 <template>
     <PageHeading :data="pageHead">
-       <!--  <template #button-save="{ action }">
+        <!--  <template #button-save="{ action }">
             <Button type="save" @click="() => confirmSave(action.route)" />
         </template> -->
     </PageHeading>
@@ -217,10 +200,12 @@ const onUpload = async (files: File[], clear: () => void) => {
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">Departement</h3>
-                <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit" @click="departmentEdit = true"/>
+                <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit"
+                    @click="departmentEdit = true" />
                 <div v-else class="flex gap-3">
-                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" :icon="faEdit" @click="departmentEdit = false"/>
-                    <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave"  @click="() => confirmSave()" />
+                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" :icon="faEdit"
+                        @click="departmentEdit = false" />
+                    <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave" @click="() => confirmSave()" />
                 </div>
             </div>
             <!-- Navigation & Preview -->
@@ -229,7 +214,7 @@ const onUpload = async (files: File[], clear: () => void) => {
                     <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
                 </button>
                 <div class="flex-1 mx-4">
-                    <component :is="getComponentDepartment(usedTemplate.code)" :data="departmentData" />
+                    <component :is="getComponentDepartment(usedTemplate.code)" :data="departmentForm" />
                 </div>
                 <button @click="goToNext" aria-label="Next">
                     <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" />
@@ -240,37 +225,45 @@ const onUpload = async (files: File[], clear: () => void) => {
             <div v-if="departmentEdit" class="border-t pt-4 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
-                    <PureInput v-model="departmentData.name" type="text" placeholder="Enter name" />
+                    <PureInput v-model="departmentForm.name" type="text" placeholder="Enter name" />
+                    <p>{{departmentForm.errors.name}}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <PureTextarea v-model="departmentData.description" type="text" :rows="4" placeholder="Enter name" />
+                    <PureTextarea v-model="departmentForm.description" type="text" :rows="4" placeholder="Enter name" />
+                    <p>{{departmentForm.errors.description}}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
                     <Button label="Upload Image" :type="'tertiary'" :icon="faImage" @click="isModalGallery = true" />
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Show in website</label>
+                    <ToggleSwitch v-model="departmentForm.show_in_website" />
+                    <p>{{departmentForm.errors.show_in_website}}</p>
+                </div>
             </div>
 
             <div v-else="departmentEdit" class="border-t pt-4 space-y-4 text-sm text-gray-700">
                 <div class="text-sm font-medium">
-                    <span>{{ departmentData.name || 'No label' }}</span>
+                    <span>{{ departmentForm.name || 'No label' }}</span>
                 </div>
                 <div class="text-md">
-                    <span class="text-gray-400">{{ departmentData.description || 'No description' }}</span>
+                    <span class="text-gray-400">{{ departmentForm.description || 'No description' }}</span>
                 </div>
             </div>
         </div>
 
         <!-- Families List -->
-        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 " >
+        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 ">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">Families List</h3>
-                <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye" @click="isModalFamiliesPreview = true"/>
+                <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye"
+                    @click="isModalFamiliesPreview = true" />
             </div>
 
             <ul class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
-                <li v-for="(item, index) in familiesOption" :key="item.slug"
+                <li v-for="(item, index) in families.data" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-gray-100 flex items-center justify-center rounded-lg overflow-hidden">
@@ -287,7 +280,7 @@ const onUpload = async (files: File[], clear: () => void) => {
                     <!-- Action -->
                     <div class="text-gray-500 hover:text-primary cursor-pointer transition"
                         @click="(e) => confirmDelete(e, item)" title="Toggle visibility">
-                        <FontAwesomeIcon :icon="item.show ? faEye : faEyeSlash" />
+                        <FontAwesomeIcon :icon="item.show_in_website ? faEye : faEyeSlash" />
                     </div>
                 </li>
             </ul>
@@ -302,13 +295,9 @@ const onUpload = async (files: File[], clear: () => void) => {
 
     <!-- Gallery Modal -->
     <Modal :isOpen="isModalGallery" @onClose="() => (isModalGallery = false)" width="w-3/4">
-        <GalleryManagement 
-            :uploadRoute="{ name: '', parameters: '' }" 
-            :closePopup="() => (isModalGallery = false)" 
-            :submitUpload="onUpload" 
-            :maxSelected="1"
-            @submitSelectedImages="(e)=>{departmentData.image_id = e[0].id, isModalGallery = false, onSaveAll()}" 
-        />
+        <GalleryManagement :uploadRoute="{ name: '', parameters: '' }" :closePopup="() => (isModalGallery = false)"
+            :submitUpload="onUpload" :maxSelected="1"
+            @submitSelectedImages="(e)=>{departmentForm.image_id = e[0].id, isModalGallery = false, onSaveAll()}" />
     </Modal>
 
 
@@ -318,7 +307,8 @@ const onUpload = async (files: File[], clear: () => void) => {
                 <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
             </button>
             <div class="flex-1 mx-4">
-                <component  :is="getIrisComponent(showPreviewFamilies.code)" :fieldValue="{...showPreviewFamilies.data, family: familiesOption.filter((item) => item.show)}" />
+                <component :is="getIrisComponent(showPreviewFamilies.code)"
+                    :fieldValue="{...showPreviewFamilies.data, family: families.data.filter((item) => item.show_in_website)}" />
             </div>
             <button @click="goToNext" aria-label="Next">
                 <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" />
