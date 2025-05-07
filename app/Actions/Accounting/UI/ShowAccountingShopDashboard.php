@@ -14,8 +14,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
-use App\Enums\UI\Mail\AccoutingDashboardTabsEnum;
-use App\Enums\UI\Mail\CommsDashboardTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -36,7 +34,7 @@ class ShowAccountingShopDashboard extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
-        $this->initialisationFromShop($shop, $request)->withTab(CommsDashboardTabsEnum::values());
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop);
     }
@@ -44,37 +42,31 @@ class ShowAccountingShopDashboard extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): Fulfilment
     {
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CommsDashboardTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($fulfilment);
     }
 
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
-    {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($shop);
-    }
 
     public function htmlResponse(Shop|Fulfilment $parent, ActionRequest $request): Response
     {
-
-        $subNavigation = [];
         if ($parent instanceof Shop) {
             $subNavigation = $this->getSubNavigationShop($parent);
-        } elseif ($parent instanceof Fulfilment) {
+            $shop = $parent;
+        } else { //Fulfilment
             $subNavigation = $this->getSubNavigation($parent);
+            $shop = $parent->shop;
         }
+
         return Inertia::render(
-            'Dashboard/AccountingDashboard',
+            'Org/Shop/AccountingShopDashboard',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('mail'),
-                'pageHead'    => [
+                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'title'        => __('Accounting'),
+                'pageHead'     => [
                     'icon'          => [
-                        'icon'  => ['fal', 'fa-satellite-dish'],
-                        'title' => __('comms')
+                        'icon'  => ['fal', 'fa-coins'],
+                        'title' => __('Accounting')
                     ],
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-chart-network'],
@@ -83,11 +75,37 @@ class ShowAccountingShopDashboard extends OrgAction
                     'title'         => __('Accounting dashboard'),
                     'subNavigation' => $subNavigation,
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => AccoutingDashboardTabsEnum::navigation()
-                ],
+                'flatTreeMaps' => [
+                    [
 
+
+                        [
+                            'name'  => __('payments'),
+                            'icon'  => ['fal', 'fa-coins'],
+                            'route' => [
+                                'name'       => $parent instanceof Shop ? 'grp.org.shops.show.dashboard.payments.accounting.payments.index' : 'grp.org.fulfilments.show.operations.accounting.payments.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $shop->accountingStats->number_payments ?? 0
+                            ]
+
+                        ],
+                        [
+                            'name'  => __('invoices'),
+                            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+                            'route' => [
+                                'name'       => $parent instanceof Shop ? 'grp.org.shops.show.dashboard.invoices.index' : 'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $shop->orderingStats->number_invoices ?? 0
+                            ]
+
+                        ],
+
+                    ]
+                ]
 
             ]
         );
@@ -96,7 +114,7 @@ class ShowAccountingShopDashboard extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return match ($routeName) {
-            'grp.org.shops.show.dashboard.comms.dashboard' =>
+            'grp.org.shops.show.dashboard.payments.accounting.dashboard' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 [
@@ -104,15 +122,15 @@ class ShowAccountingShopDashboard extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.dashboard.comms.dashboard',
+                                'name'       => 'grp.org.shops.show.dashboard.payments.accounting.dashboard',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('Comms')
+                            'label' => __('Accounting')
                         ]
                     ]
                 ]
             ),
-            'grp.org.fulfilments.show.comms.dashboard', 'grp.org.fulfilments.show.operations.comms.dashboard' =>
+            'grp.org.fulfilments.show.operations.accounting.dashboard' =>
             array_merge(
                 ShowFulfilment::make()->getBreadcrumbs($routeParameters),
                 [
@@ -120,10 +138,10 @@ class ShowAccountingShopDashboard extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.operations.comms.dashboard',
+                                'name'       => 'grp.org.fulfilments.show.operations.accounting.dashboard',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('Comms')
+                            'label' => __('Accounting')
                         ]
                     ]
                 ]

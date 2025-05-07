@@ -24,9 +24,9 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
         ->name("dropshipping.")
         ->group(__DIR__."/dropshipping.php");
 
-    Route::prefix("topup")
-        ->name("topup.")
-        ->group(__DIR__."/topup.php");
+    Route::prefix("top-up")
+        ->name("top_up.")
+        ->group(__DIR__."/top_up.php");
 
     Route::prefix("/")
         ->name("ecom.")

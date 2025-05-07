@@ -11,7 +11,9 @@ namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
+use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Http\Resources\Accounting\PaymentAccountShopsResource;
 use App\InertiaTable\InertiaTable;
@@ -195,7 +197,7 @@ class IndexPaymentAccountShops extends OrgAction
                             'name'       => $routeName,
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Shops'),
+                        'label' => __('Payment Accounts'),
                         'icon'  => 'fal fa-bars',
 
                     ],
@@ -207,6 +209,16 @@ class IndexPaymentAccountShops extends OrgAction
             'grp.org.accounting.payment-accounts.show.shops.index' =>
             array_merge(
                 (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.payment-accounts.show', $routeParameters),
+                $headCrumb()
+            ),
+            'grp.org.shops.show.dashboard.payments.accounting.accounts.index' =>
+            array_merge(
+                (new ShowShop())->getBreadcrumbs($routeParameters),
+                $headCrumb()
+            ),
+            'grp.org.fulfilments.show.operations.accounting.accounts.index' =>
+            array_merge(
+                (new ShowFulfilment())->getBreadcrumbs($routeParameters),
                 $headCrumb()
             ),
             default => []

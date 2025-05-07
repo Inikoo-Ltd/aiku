@@ -49,9 +49,9 @@ const form = useForm({
 
 function paymentServiceProviderRoute(paymentServiceAccount: SelectPaymentServiceProvider) {
     switch (route().current()) {
-        case 'grp.org.accounting.org-payment-service-providers.index':
+        case 'grp.org.accounting.org_payment_service_providers.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show',
+                'grp.org.accounting.org_payment_service_providers.show',
                 [route().params['organisation'], paymentServiceAccount.org_slug])
 
         default:
@@ -62,9 +62,9 @@ function paymentServiceProviderRoute(paymentServiceAccount: SelectPaymentService
 }
 function paymentAccountRoute(paymentServiceAccount: SelectPaymentServiceProvider) {
     switch (route().current()) {
-        case 'grp.org.accounting.org-payment-service-providers.index':
+        case 'grp.org.accounting.org_payment_service_providers.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index',
+                'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index',
                 [
                     route().params['organisation'],
                     paymentServiceAccount.org_slug
@@ -78,9 +78,9 @@ function paymentAccountRoute(paymentServiceAccount: SelectPaymentServiceProvider
 function paymentsRoute(paymentServiceAccount: SelectPaymentServiceProvider) {
     switch (route().current()) {
 
-        case 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index':
+        case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.index',
+                'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index',
                 [
                     route().params['organisation'],
                     route().params['paymentServiceProvider'],
@@ -94,9 +94,9 @@ function paymentsRoute(paymentServiceAccount: SelectPaymentServiceProvider) {
                     route().params['paymentAccount']
                 ]
             )
-        case 'grp.org.accounting.org-payment-service-providers.index':
+        case 'grp.org.accounting.org_payment_service_providers.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show.payments.index',
+                'grp.org.accounting.org_payment_service_providers.show.payments.index',
                 [
                     route().params['organisation'],
                     paymentServiceAccount.org_slug

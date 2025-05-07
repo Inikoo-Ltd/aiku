@@ -10,8 +10,8 @@
 namespace App\Actions\Accounting\InvoiceCategory\UI;
 
 use App\Actions\Accounting\InvoiceCategory\WithInvoiceCategorySubNavigation;
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\UI\Accounting\InvoiceCategoryTabsEnum;
 use App\Http\Resources\Accounting\InvoiceCategoryResource;
 use App\Models\Accounting\InvoiceCategory;

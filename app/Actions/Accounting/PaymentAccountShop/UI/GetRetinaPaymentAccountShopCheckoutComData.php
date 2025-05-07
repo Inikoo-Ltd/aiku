@@ -17,6 +17,7 @@ use Checkout\Common\Address;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
+use Checkout\Payments\ThreeDsRequest;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
@@ -48,6 +49,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
 
+        $paymentSessionRequest->three_ds = new ThreeDsRequest();
+        $paymentSessionRequest->three_ds->enabled = true;
+
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
@@ -66,11 +70,8 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->billing->address = $address;
 
 
-
-
         try {
             $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
-
         } catch (\Exception $e) {
             $paymentSession = [
                 'error' => $e->getMessage(),
@@ -101,18 +102,18 @@ class GetRetinaPaymentAccountShopCheckoutComData
     private function getSuccessUrl(OrderPaymentApiPoint $orderPaymentApiPoint): string
     {
         if (app()->environment('local')) {
-            return config('app.sandbox.share_url').'/webhooks/payment-success/'.$orderPaymentApiPoint->ulid;
+            return config('app.sandbox.share_url').'/webhooks/order-payment-success/'.$orderPaymentApiPoint->ulid;
         } else {
-            return route('webhooks.payment_success', $orderPaymentApiPoint->ulid);
+            return route('webhooks.order_payment_success', $orderPaymentApiPoint->ulid);
         }
     }
 
     private function getFailureUrl(OrderPaymentApiPoint $orderPaymentApiPoint): string
     {
         if (app()->environment('local')) {
-            return config('app.sandbox.share_url').'/webhooks/payment-failure/'.$orderPaymentApiPoint->ulid;
+            return config('app.sandbox.share_url').'/webhooks/order-payment-failure/'.$orderPaymentApiPoint->ulid;
         } else {
-            return route('webhooks.payment_failure', $orderPaymentApiPoint->ulid);
+            return route('webhooks.order_payment_failure', $orderPaymentApiPoint->ulid);
         }
     }
 

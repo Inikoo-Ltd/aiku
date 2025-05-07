@@ -14,8 +14,11 @@ trait WithAccountingAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         $this->canEdit   = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
 
         return $request->user()->authTo(
             [

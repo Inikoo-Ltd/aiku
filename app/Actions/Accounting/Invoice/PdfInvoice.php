@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Traits\WithExportData;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,18 +23,14 @@ class PdfInvoice
     use WithExportData;
     use WithInvoicesExport;
 
-    /**
-     * @throws \Mpdf\MpdfException
-     */
+
     public function handle(Invoice $invoice): Response
     {
         return $this->processDataExportPdf($invoice);
     }
 
-    /**
-     * @throws \Mpdf\MpdfException
-     */
-    public function asController(Organisation $organisation, Invoice $invoice): Response
+
+    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Response
     {
         return $this->handle($invoice);
     }

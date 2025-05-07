@@ -8,8 +8,8 @@
 
 namespace App\Actions\Accounting\Payment\UI;
 
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -184,8 +184,8 @@ class ShowPayment extends OrgAction
                 case 'grp.org.accounting.payment-accounts.show.payments.show':
                     $query->where('payments.payment_account_id', $payment->payment_account_id);
                     break;
-                case 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.show':
-                case 'grp.org.accounting.org-payment-service-providers.show.payments.show':
+                case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show':
+                case 'grp.org.accounting.org_payment_service_providers.show.payments.show':
                     $query->where('payment_accounts.payment_account_id', $payment->paymentAccount->payment_service_provider_id);
                     break;
 
@@ -203,8 +203,8 @@ class ShowPayment extends OrgAction
                 case 'grp.org.accounting.payment-accounts.show.payments.show':
                     $query->where('payments.payment_account_id', $payment->paymentAccount->id);
                     break;
-                case 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.show':
-                case 'grp.org.accounting.org-payment-service-providers.show.payments.show':
+                case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show':
+                case 'grp.org.accounting.org_payment_service_providers.show.payments.show':
                     $query->where('payment_accounts.payment_account_id', $payment->paymentAccount->payment_service_provider_id);
                     break;
 
@@ -242,7 +242,7 @@ class ShowPayment extends OrgAction
 
                 ]
             ],
-            'grp.org.accounting.org-payment-service-providers.show.payments.show' => [
+            'grp.org.accounting.org_payment_service_providers.show.payments.show' => [
                 'label' => $payment->reference,
                 'route' => [
                     'name'      => $routeName,
@@ -253,7 +253,7 @@ class ShowPayment extends OrgAction
 
                 ]
             ],
-            'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.show' => [
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show' => [
                 'label' => $payment->reference,
                 'route' => [
                     'name'      => $routeName,

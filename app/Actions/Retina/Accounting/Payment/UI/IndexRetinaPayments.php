@@ -11,9 +11,9 @@ namespace App\Actions\Retina\Accounting\Payment\UI;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServiceProvider;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\RetinaAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\InertiaTable\InertiaTable;
@@ -303,14 +303,14 @@ class IndexRetinaPayments extends RetinaAction
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
                 $headCrumb()
             ),
-            'grp.org.accounting.org-payment-service-providers.show.payments.index' =>
+            'grp.org.accounting.org_payment_service_providers.show.payments.index' =>
             array_merge(
                 (new ShowOrgPaymentServiceProvider())->getBreadcrumbs($routeParameters['OrgPaymentServiceProvider']),
                 $headCrumb()
             ),
-            'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.index' =>
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index' =>
             array_merge(
-                (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.org-payment-service-providers.show.payment-accounts.show', $routeParameters),
+                (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.org_payment_service_providers.show.payment-accounts.show', $routeParameters),
                 $headCrumb()
             ),
 

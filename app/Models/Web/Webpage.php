@@ -79,6 +79,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_use_canonical_url
  * @property array<array-key, mixed> $seo_data
  * @property bool $allow_fetch If false changes in Aurora webpages will not be fetched
+ * @property bool|null $show_in_parent
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks

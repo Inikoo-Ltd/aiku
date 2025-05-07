@@ -150,9 +150,9 @@ onMounted(() => {
     <div v-if="!!selectedGroup" class="hidden md:flex items-center text-xs justify-between w-fit">
         <div class="w-fit flex gap-x-1 lg:gap-x-0 justify-end border border-gray-200 rounded">
             <!-- List of element (checkbox) -->
-            <div class="rounded overflow-hidden grid grid-rows-2 xl:grid-rows-1 grid-flow-col w-fit justify-end gap-0.5 ">
+            <div class="w-full max-w-lg rounded overflow-hidden flex flex-wrap justify-end gap-0.5 ">
                 <div v-for="(value, element, index) of elements[selectedGroup]?.elements" :key="element"
-                    class="hover:bg-gray-100 flex items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
+                    class="hover:bg-gray-100 flex flex-auto items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
                     :class="[selectedElement[selectedGroup]?.includes(element) ? 'bg-gray-50' : 'bg-white']"
                     @click="onClickCheckbox(element, selectedGroup)"
                     @dblclick="onDoubleClickCheckbox(element, selectedGroup)"

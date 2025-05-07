@@ -10,6 +10,7 @@
 
 namespace App\Actions\Comms\Traits;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 
@@ -17,6 +18,11 @@ trait WithAccountingSubNavigation
 {
     public function getSubNavigation(Fulfilment|Shop $parent): array
     {
+        if ($parent instanceof Shop) {
+            $shop = $parent;
+        } else {
+            $shop = $parent->shop;
+        }
         return [
             [
                 "isAnchor" => true,
@@ -33,6 +39,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("Accounts"),
+                'number'   => $shop->accountingStats->number_payment_accounts ?? 0,
                 "route"    => [
                     "name"       => "grp.org.fulfilments.show.operations.accounting.accounts.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -44,6 +51,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("Payments"),
+                'number'   => $shop->accountingStats->number_payments ?? 0,
                 "route"    => [
                     "name"       => "grp.org.fulfilments.show.operations.accounting.payments.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -55,6 +63,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("customers balance"),
+                'number'   => $shop->accountingStats->number_customers_with_balances ?? 0,
                 "route"    => [
                     "name"       => "grp.org.fulfilments.show.operations.accounting.customer_balances.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -68,6 +77,12 @@ trait WithAccountingSubNavigation
     }
     public function getSubNavigationShop(Shop|Fulfilment $parent): array
     {
+        if ($parent instanceof Shop) {
+            $shop = $parent;
+        } else {
+            $shop = $parent->shop;
+        }
+
         return [
             [
                 "isAnchor" => true,
@@ -84,6 +99,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("Accounts"),
+                'number'   => $shop->accountingStats->number_payment_accounts ?? 0,
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.payments.accounting.accounts.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -95,6 +111,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("Payments"),
+                'number'   => $shop->accountingStats->number_payments ?? 0,
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.payments.accounting.payments.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -105,7 +122,8 @@ trait WithAccountingSubNavigation
                 ],
             ],
             [
-                "label"    => __("customers balance"),
+                "label"    => __("Customers Balance"),
+                'number'   => $shop->accountingStats->number_customers_with_balances ?? 0,
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.payments.accounting.customer_balances.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -115,6 +133,18 @@ trait WithAccountingSubNavigation
                     "tooltip" => __("customer balance"),
                 ],
             ],
+            $shop->type == ShopTypeEnum::DROPSHIPPING ? [
+                "label"    => __("Top Ups"),
+                'number'   => $shop->accountingStats->number_top_ups ?? 0,
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.payments.accounting.top_ups.index",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-money-bill-wave"],
+                    "tooltip" => __("top ups"),
+                ],
+            ] : []
         ];
     }
 }

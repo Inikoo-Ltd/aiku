@@ -5,6 +5,8 @@ import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components
 const props = defineProps<{
     data: {
         public_key: string
+        environment: 'sandbox' | 'production'
+        locale: string
         data: {
             payment_session_token: string
             payment_method: string
@@ -29,6 +31,8 @@ onMounted(async () => {
     const checkout = await loadCheckoutWebComponents({
         paymentSession: props.data?.data,
         publicKey: props.data.public_key,
+        environment: props.data.environment,
+        locale: props.data.locale,
         onReady: () => {
             console.log("onReady")
         },

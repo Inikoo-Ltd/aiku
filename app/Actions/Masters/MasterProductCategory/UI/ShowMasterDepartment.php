@@ -106,13 +106,13 @@ class ShowMasterDepartment extends GrpAction
                 ],
 
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
-                    fn() => GetMasterProductCategoryShowcase::run($masterDepartment)
-                    : Inertia::lazy(fn() => GetMasterProductCategoryShowcase::run($masterDepartment)),
+                    fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($masterDepartment))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($masterDepartment))),
+                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
 
 
             ]
@@ -184,7 +184,7 @@ class ShowMasterDepartment extends GrpAction
                     [
                         'index' => [
                             'name'       => 'grp.masters.shops.show.departments.index',
-                            'parameters' => Arr::only($routeParameters,['masterShop']),
+                            'parameters' => Arr::only($routeParameters, ['masterShop']),
                         ],
                         'model' => [
                             'name'       => 'grp.masters.shops.show.departments.show',

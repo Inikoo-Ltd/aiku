@@ -8,10 +8,11 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
+use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Http\Resources\Accounting\CustomerBalancesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -38,8 +39,9 @@ class IndexCustomerBalances extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('customers.slug', $value)
-                    ->orWhereAnyWordStartWith('customers.name', 'ILIKE', $value);
+                $query->whereAnyWordStartWith('customers.name', $value)
+                    ->orWhereStartWith('customers.email', $value)
+                    ->orWhere('customers.reference', '=', $value);
             });
         });
 
@@ -63,16 +65,6 @@ class IndexCustomerBalances extends OrgAction
         $queryBuilder->leftjoin('shops', 'customers.shop_id', 'shops.id');
         $queryBuilder->leftjoin('fulfilments', 'fulfilments.shop_id', 'shops.id');
 
-        /*
-        foreach ($this->elementGroups as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
-        }
-        */
 
         return $queryBuilder
             ->defaultSort('customers.slug')
@@ -119,18 +111,6 @@ class IndexCustomerBalances extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        // if ($this->parent instanceof Group) {
-        //     return $request->user()->authTo("group-overview");
-        // }
-        // $this->canEdit = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
-
-        // return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-
-        // TODO: raul fix the auth
-        return true;
-    }
 
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -150,6 +130,7 @@ class IndexCustomerBalances extends OrgAction
         return $this->handle($shop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
@@ -173,6 +154,8 @@ class IndexCustomerBalances extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $paymentAccounts, ActionRequest $request): Response
     {
+        $title = __('Customer Balances');
+
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
 
@@ -189,11 +172,11 @@ class IndexCustomerBalances extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('Customer Balances'),
+                'title'       => $title,
 
                 'pageHead'    => [
                     'icon'      => ['fal', 'fa-money-check-alt'],
-                    'title'     => __('Customer Balances'),
+                    'title'     => $title,
                     'actions'   => [
                     ],
                     'subNavigation' => $subNavigation,
@@ -204,20 +187,6 @@ class IndexCustomerBalances extends OrgAction
 
 
             ]
-            // )->table($this->tableStructure(
-            //     parent: $this->parent,
-            //     modelOperations: [
-            //         'createLink' => $this->canEdit ? [
-            //             [
-            //             'route' => [
-            //                 'name'       => 'grp.org.accounting.payment-accounts.create',
-            //                 'parameters' => array_values($request->route()->originalParameters())
-            //             ],
-            //             'label' => __('payment account')
-            //         ]
-            //         ] : false,
-            //     ],
-            // ));
         )->table($this->tableStructure($this->parent));
     }
 
@@ -256,6 +225,16 @@ class IndexCustomerBalances extends OrgAction
                         'parameters' => $routeParameters
                     ]
                 )
+            ),
+            'grp.org.shops.show.dashboard.payments.accounting.customer_balances.index' =>
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb($routeParameters)
+            ),
+            'grp.org.fulfilments.show.operations.accounting.customer_balances.index' =>
+            array_merge(
+                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
+                $headCrumb($routeParameters)
             ),
             default => []
         };

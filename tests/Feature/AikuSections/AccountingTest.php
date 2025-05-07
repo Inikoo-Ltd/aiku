@@ -748,7 +748,7 @@ test('UI show accounting dashboard', function () {
 
 test('UI show list payment service providers', function () {
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.accounting.org-payment-service-providers.index', $this->organisation->slug));
+    $response = get(route('grp.org.accounting.org_payment_service_providers.index', $this->organisation->slug));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -770,7 +770,7 @@ test('UI show list payment service providers', function () {
 test('UI show organisation payment service provider', function () {
     $orgPaymentServiceProvider = $this->organisation->orgPaymentServiceProviders->first();
 
-    $response = get(route('grp.org.accounting.org-payment-service-providers.show', [$this->organisation->slug, $orgPaymentServiceProvider->slug]));
+    $response = get(route('grp.org.accounting.org_payment_service_providers.show', [$this->organisation->slug, $orgPaymentServiceProvider->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($orgPaymentServiceProvider) {
         $page
@@ -884,7 +884,7 @@ test('UI show list payment accounts in organisation payment service provider', f
     $orgPaymentServiceProvider = $this->organisation->orgPaymentServiceProviders->first();
     $response                  = get(
         route(
-            'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index',
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index',
             [$this->organisation->slug, $orgPaymentServiceProvider->slug]
         )
     );
@@ -908,7 +908,7 @@ test('UI show list payment accounts in organisation payment service provider', f
 test('UI show payment account in organisation payment service provider', function () {
     $orgPaymentServiceProvider = $this->organisation->orgPaymentServiceProviders->first();
     $paymentAccount            = $orgPaymentServiceProvider->paymentAccounts->first();
-    $response                  = get(route('grp.org.accounting.org-payment-service-providers.show.payment-accounts.show', [
+    $response                  = get(route('grp.org.accounting.org_payment_service_providers.show.payment-accounts.show', [
         $this->organisation->slug,
         $orgPaymentServiceProvider->slug,
         $paymentAccount->slug

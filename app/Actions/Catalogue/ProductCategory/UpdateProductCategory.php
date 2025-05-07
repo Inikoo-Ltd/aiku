@@ -100,7 +100,9 @@ class UpdateProductCategory extends OrgAction
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:1500'],
             'department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
-            'sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id']
+            'sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'follow_master'     => ['sometimes', 'boolean'],
+
         ];
 
         if (!$this->strict) {

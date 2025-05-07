@@ -23,10 +23,10 @@ const locale = useLocaleStore();
 function paymentAccountRoute(paymentAccount: PaymentAccount) {
     switch (route().current()) {
 
-        case 'grp.org.accounting.org-payment-service-providers.show':
-        case 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index':
+        case 'grp.org.accounting.org_payment_service_providers.show':
+        case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show',
+                'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show',
                 [route().params['organisation'], route().params['orgPaymentServiceProvider'], paymentAccount.slug])
         case 'grp.org.accounting.payment-accounts.index':
             return route(
@@ -44,7 +44,7 @@ function providersRoute(paymentAccount: PaymentAccount) {
 
         case 'grp.org.accounting.payment-accounts.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show',
+                'grp.org.accounting.org_payment_service_providers.show',
                 [route().params['organisation'], paymentAccount.slug])
 
     }
@@ -53,9 +53,9 @@ function providersRoute(paymentAccount: PaymentAccount) {
 function paymentsRoute(paymentAccount: PaymentAccount) {
     switch (route().current()) {
 
-        case 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index':
+        case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index':
             return route(
-                'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.index',
+                'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index',
                 [route().params['organisation'], route().params['orgPaymentServiceProvider'], paymentAccount.payment_service_provider_slug])
         case 'grp.org.accounting.payment-accounts.index':
             return route(

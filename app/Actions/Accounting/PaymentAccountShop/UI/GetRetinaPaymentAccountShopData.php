@@ -21,7 +21,7 @@ class GetRetinaPaymentAccountShopData
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop)
     {
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
-            
+
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
             } else {
@@ -33,6 +33,8 @@ class GetRetinaPaymentAccountShopData
                     'label'         => __('Online payments'),
                     'key'           => 'credit_card',
                     'public_key'    => $publicKey,
+                    'environment'   => 'sandbox',  // TODO: change this to 'production' appropriately
+                    'locale'        => "en-GB",  // TODO
                     'icon'          => 'fal fa-credit-card-front',
                     'data'          => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop)
                 ];

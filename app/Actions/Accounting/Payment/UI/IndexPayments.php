@@ -11,10 +11,12 @@ namespace App\Actions\Accounting\Payment\UI;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServiceProvider;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
+use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\InertiaTable\InertiaTable;
@@ -201,7 +203,7 @@ class IndexPayments extends OrgAction
         return $request->user()->authTo("accounting.{$this->organisation->id}.view");
     }
 
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
@@ -210,15 +212,16 @@ class IndexPayments extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function inOrgPaymentServiceProvider(Organisation $organisation, OrgPaymentServiceProvider $OrgPaymentServiceProvider, ActionRequest $request): LengthAwarePaginator
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrgPaymentServiceProvider(Organisation $organisation, OrgPaymentServiceProvider $orgPaymentServiceProvider, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $OrgPaymentServiceProvider;
+        $this->parent = $orgPaymentServiceProvider;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($OrgPaymentServiceProvider);
+        return $this->handle($orgPaymentServiceProvider);
     }
 
-    /** @noinspection PhpUnused */
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPaymentAccount(Organisation $organisation, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $paymentAccount;
@@ -228,13 +231,14 @@ class IndexPayments extends OrgAction
 
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPaymentAccountInOrgPaymentServiceProvider(Organisation $organisation, OrgPaymentServiceProvider $OrgPaymentServiceProvider, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function inPaymentAccountInOrgPaymentServiceProvider(Organisation $organisation, OrgPaymentServiceProvider $orgPaymentServiceProvider, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request);
         return $this->handle($paymentAccount);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
@@ -242,6 +246,7 @@ class IndexPayments extends OrgAction
         return $this->handle($shop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
@@ -250,6 +255,7 @@ class IndexPayments extends OrgAction
         return $this->handle($fulfilment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
@@ -337,14 +343,14 @@ class IndexPayments extends OrgAction
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
                 $headCrumb()
             ),
-            'grp.org.accounting.org-payment-service-providers.show.payments.index' =>
+            'grp.org.accounting.org_payment_service_providers.show.payments.index' =>
             array_merge(
                 (new ShowOrgPaymentServiceProvider())->getBreadcrumbs($routeParameters['OrgPaymentServiceProvider']),
                 $headCrumb()
             ),
-            'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.index' =>
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index' =>
             array_merge(
-                (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.org-payment-service-providers.show.payment-accounts.show', $routeParameters),
+                (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.org_payment_service_providers.show.payment-accounts.show', $routeParameters),
                 $headCrumb()
             ),
 
@@ -362,6 +368,16 @@ class IndexPayments extends OrgAction
                         'parameters' => $routeParameters
                     ]
                 )
+            ),
+            'grp.org.shops.show.dashboard.payments.accounting.payments.index' =>
+            array_merge(
+                (new ShowShop())->getBreadcrumbs($routeParameters),
+                $headCrumb()
+            ),
+            'grp.org.fulfilments.show.operations.accounting.payments.index' =>
+            array_merge(
+                (new ShowFulfilment())->getBreadcrumbs($routeParameters),
+                $headCrumb()
             ),
 
             default => []
