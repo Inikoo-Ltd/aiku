@@ -21,7 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowTopUp extends OrgAction
 {
-    private Shop $parent;
 
     public function handle(TopUp $topUp): TopUp
     {
@@ -30,7 +29,6 @@ class ShowTopUp extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, TopUp $topUp, ActionRequest $request): TopUp
     {
-        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($topUp);
@@ -45,7 +43,7 @@ class ShowTopUp extends OrgAction
                 'title'                                 => $title,
                 'breadcrumbs'                           => $this->getBreadcrumbs($topUp, $request->route()->getName(), $request->route()->originalParameters()),
                 'pageHead'    => [
-                    'model'     => __('topup'),
+                    'model'     => __('top up'),
                     'icon'      => 'fal fa-shopping-basket',
                     'title'     => $title,
                 ],
