@@ -15,6 +15,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Http\Resources\Sales\OrderResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -72,7 +73,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
     public function htmlResponse(array $checkoutData): Response
     {
         $order = Arr::get($checkoutData, 'order');
-
+        
         return Inertia::render(
             'Ecom/Checkout',
             [
@@ -82,8 +83,9 @@ class ShowRetinaEcomCheckout extends RetinaAction
                     'title' => __('Basket'),
                     'icon'  => 'fal fa-shopping-basket'
                 ],
-                'order'          => $order ? $this->getOrderBoxStats($order) : null,
-                'paymentMethods' => Arr::get($checkoutData, 'paymentMethods')
+                'order'             => OrderResource::make($order)->resolve(),
+                'summary'           => $order ? $this->getOrderBoxStats($order) : null,
+                'paymentMethods'    => Arr::get($checkoutData, 'paymentMethods')
             ]
         );
     }
