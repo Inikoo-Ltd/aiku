@@ -21,10 +21,27 @@ defineProps<{
 
 const locale = useLocaleStore();
 
+function topUpRoute(topUp: {}) {
+    console.log(route().current())
+    switch (route().current()) {
+        case "grp.org.shops.show.dashboard.payments.accounting.top_ups.index":
+            return route(
+                "grp.org.shops.show.dashboard.payments.accounting.top_ups.show",
+                [route().params["organisation"], route().params["shop"], topUp.slug])
+        default:
+            return null
+    }
+}
+
 </script>
 
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(reference)="{ item: topUp }">
+            <Link :href="topUpRoute(topUp)" class="primaryLink">
+                {{ topUp["reference"] }}
+            </Link>
+        </template>
     </Table>
 </template>

@@ -76,7 +76,7 @@ class ShowTopUp extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Payments')
+                            'label' => __('Top Ups'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
