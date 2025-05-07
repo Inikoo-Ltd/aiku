@@ -20,22 +20,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaTopUpCheckout extends RetinaAction
 {
-    public function handle(TopUp $topUp): TopUp
+    public function asController(ActionRequest $request) 
     {
-        return $topUp;
-    }
-
-    public function asController(
-        TopUp $topUp,
-        ActionRequest $request
-    ): TopUp {
         $this->initialisation($request);
 
-        return $this->handle($topUp);
+        return $request;
     }
 
 
-    public function htmlResponse(TopUp $topUp, ActionRequest $request): Response
+    public function htmlResponse(ActionRequest $request): Response
     {
 
         return Inertia::render(
@@ -43,7 +36,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             [
                 'title'       => __('TopUp Checkout'),
                 'pageHead' => [
-                    'title'     => $topUp->reference,
+                    'title'     =>  __('topup checkout'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-money-bill-wave'],
                         'title' => __('topup checkout')

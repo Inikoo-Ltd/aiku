@@ -36,6 +36,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $address
  * @property mixed $shop_name
+ * @property mixed $balance
  */
 class CustomersResource extends JsonResource
 {
@@ -67,6 +68,7 @@ class CustomersResource extends JsonResource
             'sales_org_currency_all'          => $this->sales_org_currency_all,
             'sales_grp_currency_all'          => $this->sales_grp_currency_all,
             'currency_code'                   => $this->currency_code,
+            'balance'                          => $this->balance,
         ];
 
         if ($this->organisation_name) {
