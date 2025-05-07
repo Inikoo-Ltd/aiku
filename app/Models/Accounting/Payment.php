@@ -74,7 +74,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
  * @property-read Shop $shop
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\TopUp> $topUps
+ * @property-read \App\Models\Accounting\TopUp|null $topUp
  * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Accounting\PaymentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Payment newModelQuery()
@@ -100,7 +100,7 @@ class Payment extends Model implements Auditable
         'subsequent_status' => PaymentSubsequentStatusEnum::class,
         'type'              => PaymentTypeEnum::class,
         'amount'            => 'decimal:2',
-        'grp_amount'      => 'decimal:2',
+        'grp_amount'        => 'decimal:2',
         'org_amount'        => 'decimal:2',
     ];
 

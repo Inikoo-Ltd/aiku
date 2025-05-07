@@ -22,8 +22,8 @@ class GetProductCategoryShowcase
         return [
             'departement' => FamilyResource::make($productCategory),
             'families'    => FamilyResource::collection(
-                    $productCategory->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get()
-                ),
+                $productCategory->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get()
+            ),
         ];
     }
 }

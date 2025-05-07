@@ -21,11 +21,13 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
-    Route::post('order-payment-success/{orderPaymentApiPoint:ulid}', OrderPaymentSuccess::class)->name('order_payment_success');
-    Route::post('order-payment-failure/{orderPaymentApiPoint:ulid}', OrderPaymentFailure::class)->name('order_payment_failure');
+    Route::name('checkout_com.')->prefix('checkout-com')->group(function () {
+        Route::post('order-payment-success/{orderPaymentApiPoint:ulid}', OrderPaymentSuccess::class)->name('order_payment_success');
+        Route::post('order-payment-failure/{orderPaymentApiPoint:ulid}', OrderPaymentFailure::class)->name('order_payment_failure');
 
-    Route::post('top-up-payment-success/{paymentAccountShop:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
-    Route::post('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
+        Route::post('top-up-payment-success/{{paymentAccountShop:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
+        Route::post('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
+    });
 });
 
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {

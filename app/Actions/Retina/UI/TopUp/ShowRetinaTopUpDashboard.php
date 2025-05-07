@@ -11,7 +11,6 @@ namespace App\Actions\Retina\UI\TopUp;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Accounting\TopUp\TopUpStatusEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\CRM\Customer;
 use Inertia\Inertia;
@@ -43,7 +42,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             ],
 
             'currency'     => CurrencyResource::make($customer->shop->currency),
-            'amount_shortcuts'=>[],
+            'amount_shortcuts' => [],
 
             'topUpData'  => $this->getTopUpData($customer),
         ]);

@@ -9,7 +9,6 @@
 namespace App\Actions\Accounting\OrderPaymentApiPoint;
 
 use App\Models\Accounting\OrderPaymentApiPoint;
-use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;

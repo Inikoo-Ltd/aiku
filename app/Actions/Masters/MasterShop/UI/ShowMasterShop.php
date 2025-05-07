@@ -67,7 +67,7 @@ class ShowMasterShop extends GrpAction
                             'style' => 'edit',
                             'label' => 'blueprint',
                             'route' => [
-                                'name'       => "grp.masters.shops.show.departments.master_blueprint",
+                                'name'       => "grp.masters.shops.blueprint",
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
