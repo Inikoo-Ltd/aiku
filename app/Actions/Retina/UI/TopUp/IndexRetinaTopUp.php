@@ -64,7 +64,7 @@ class IndexRetinaTopUp extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $topups): Response
     {
         return Inertia::render(
-            'Dropshipping/Client/CustomerClients',
+            'Dropshipping/Topup/Topups',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Topups'),
@@ -73,9 +73,9 @@ class IndexRetinaTopUp extends RetinaAction
                     'icon'  => 'fal fa-shopping-basket'
                 ],
 
-                'products' => RetinaTopupResources::collection($topups)
+                'data' => RetinaTopupResources::collection($topups)
             ]
-        )->table($this->tableStructure('topups'));
+        )->table($this->tableStructure());
     }
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
