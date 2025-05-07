@@ -6,8 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PaymentFailure;
-use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PaymentSuccess;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\OrderPaymentFailure;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\OrderPaymentSuccess;
+use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
+use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
@@ -19,8 +21,11 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
-    Route::post('payment-success/{paymentAccountShop:ulid}', PaymentSuccess::class)->name('payment_success');
-    Route::post('payment-failure/{paymentAccountShop:ulid}', PaymentFailure::class)->name('payment_failure');
+    Route::post('order-payment-success/{orderPaymentApiPoint:ulid}', OrderPaymentSuccess::class)->name('order_payment_success');
+    Route::post('order-payment-failure/{orderPaymentApiPoint:ulid}', OrderPaymentFailure::class)->name('order_payment_failure');
+
+    Route::post('top-up-payment-success/{paymentAccountShop:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
+    Route::post('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
 });
 
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
