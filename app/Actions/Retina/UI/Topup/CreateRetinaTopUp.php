@@ -23,7 +23,7 @@ class CreateRetinaTopUp extends RetinaAction
     public function handle(ActionRequest $request): Response
     {
         return Inertia::render(
-            'CreateModel',
+            'Dropshipping/Topup/CreateTopup',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                 ),
@@ -42,6 +42,13 @@ class CreateRetinaTopUp extends RetinaAction
                         ]
                     ]
                 ],
+                // 'current_balance' => '432532',
+                // 'currency'  => [],
+                // 'submit_route' => [
+                //     'name'       => 'retina.topup.store',
+                //     'parameters' => array_values($request->route()->originalParameters())
+                // ],
+
                 'formData' => [
                     'fullLayout' => true,
                     'blueprint'  =>
