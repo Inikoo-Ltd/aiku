@@ -12,7 +12,9 @@ use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServicePro
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
+use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -366,6 +368,16 @@ class IndexPayments extends OrgAction
                         'parameters' => $routeParameters
                     ]
                 )
+            ),
+            'grp.org.shops.show.dashboard.payments.accounting.payments.index' =>
+            array_merge(
+                (new ShowShop())->getBreadcrumbs($routeParameters),
+                $headCrumb()
+            ),
+            'grp.org.fulfilments.show.operations.accounting.payments.index' =>
+            array_merge(
+                (new ShowFulfilment())->getBreadcrumbs($routeParameters),
+                $headCrumb()
             ),
 
             default => []

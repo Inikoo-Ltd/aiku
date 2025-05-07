@@ -8,7 +8,9 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
+use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Accounting\CustomerBalancesResource;
@@ -223,6 +225,16 @@ class IndexCustomerBalances extends OrgAction
                         'parameters' => $routeParameters
                     ]
                 )
+            ),
+            'grp.org.shops.show.dashboard.payments.accounting.customer_balances.index' =>
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb($routeParameters)
+            ),
+            'grp.org.fulfilments.show.operations.accounting.customer_balances.index' =>
+            array_merge(
+                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
+                $headCrumb($routeParameters)
             ),
             default => []
         };
