@@ -12,9 +12,9 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsGroupedByAsset;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\InvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;

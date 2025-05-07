@@ -84,9 +84,9 @@ trait WithLayoutNavigation
                         [
                             'label' => __('Providers'),
                             'icon'  => ['fal', 'fa-cash-register'],
-                            'root'  => 'grp.org.accounting.org-payment-service-providers.',
+                            'root'  => 'grp.org.accounting.org_payment_service_providers.',
                             'route' => [
-                                'name'       => 'grp.org.accounting.org-payment-service-providers.index',
+                                'name'       => 'grp.org.accounting.org_payment_service_providers.index',
                                 'parameters' => [$organisation->slug],
 
                             ]

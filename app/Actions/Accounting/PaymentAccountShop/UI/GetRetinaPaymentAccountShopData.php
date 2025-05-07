@@ -21,7 +21,7 @@ class GetRetinaPaymentAccountShopData
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop)
     {
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
-            
+
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
             } else {

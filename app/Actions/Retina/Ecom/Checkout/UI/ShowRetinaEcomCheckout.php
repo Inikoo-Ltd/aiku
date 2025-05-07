@@ -73,7 +73,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
     public function htmlResponse(array $checkoutData): Response
     {
         $order = Arr::get($checkoutData, 'order');
-        
+
         return Inertia::render(
             'Ecom/Checkout',
             [

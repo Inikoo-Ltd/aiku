@@ -10,10 +10,10 @@ namespace App\Actions\Accounting\PaymentAccount\UI;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServiceProvider;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\UI\Accounting\PaymentAccountTabsEnum;
 use App\Http\Resources\Accounting\PaymentAccountsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -87,7 +87,7 @@ class ShowPaymentAccount extends OrgAction
                     'title'  => $paymentAccount->name,
                     'create' => $this->canEdit
                     && (
-                        $request->route()->getName() == 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show' or
+                        $request->route()->getName() == 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' or
                         $request->route()->getName() == 'grp.org.accounting.payment-accounts.show'
                     ) ? [
                         'route' => [
@@ -101,8 +101,8 @@ class ShowPaymentAccount extends OrgAction
 //                            'name'     => trans_choice('payment | payments', $paymentAccount->stats->number_payments),
 //                            'number'   => $paymentAccount->stats->number_payments,
 //                            'route'     => match ($request->route()->getName()) {
-//                                'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show' => [
-//                                    'name'       => 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show.payments.index',
+//                                'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' => [
+//                                    'name'       => 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index',
 //                                    'parameters' => [$paymentAccount->organisation->slug, $paymentAccount->orgPaymentServiceProvider->slug, $paymentAccount->slug]
 //                                ],
 //                                default => [
@@ -295,18 +295,18 @@ class ShowPaymentAccount extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show' =>
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' =>
             array_merge(
                 ShowOrgPaymentServiceProvider::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $paymentAccount,
                     [
                         'index' => [
-                            'name'       => 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index',
+                            'name'       => 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show',
+                            'name'       => 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -349,7 +349,7 @@ class ShowPaymentAccount extends OrgAction
 
                 ]
             ],
-            'grp.org.accounting.org-payment-service-providers.show.payment-accounts.show' => [
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' => [
                 'label' => $paymentAccount->name,
                 'route' => [
                     'name'       => $routeName,

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 19 Feb 2025 11:08:12 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Wed, 07 May 2025 12:26:31 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -10,7 +10,7 @@ namespace App\Actions\Traits\Authorisations;
 
 use Lorisleiva\Actions\ActionRequest;
 
-trait WithAccountingAuthorisation
+trait WithAccountingEditAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -18,11 +18,9 @@ trait WithAccountingAuthorisation
             return true;
         }
 
-        $this->canEdit   = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
-
         return $request->user()->authTo(
             [
-                "accounting.{$this->organisation->id}.view"
+                "accounting.{$this->organisation->id}.edit"
             ]
         );
     }
