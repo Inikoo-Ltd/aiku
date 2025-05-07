@@ -14,6 +14,7 @@ use App\Models\CRM\Customer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -49,9 +50,9 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
 
     public function htmlResponse(TopUpPaymentApiPoint $topUpPaymentApiPoint): RedirectResponse
     {
-        return Redirect::route('retina.top_up.checkout', [
+        return Inertia::location(route('retina.top_up.checkout', [
             'topUpPaymentApiPoint' => $topUpPaymentApiPoint->id
-        ]);
+        ]));
     }
 
 
