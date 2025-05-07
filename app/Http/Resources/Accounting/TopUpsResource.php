@@ -24,6 +24,7 @@ class TopUpsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'slug'                  => $this->slug,    
             'reference'                => $this->reference,
             'amount'                => $this->amount,
             'status'                => $this->status
