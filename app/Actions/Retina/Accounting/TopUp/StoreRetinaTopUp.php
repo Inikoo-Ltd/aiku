@@ -14,40 +14,43 @@ use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\TopUp;
 use App\Models\CRM\Customer;
-use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
+//todo to be deleted
 class StoreRetinaTopUp extends RetinaAction
 {
     use WithNoStrictRules;
 
-    public $commandSignature = 'make:topup {customer} {amount}';
-
     public function handle(Customer $customer, PaymentAccount $paymentAccount, array $modelData): TopUp
     {
-        return DB::transaction(function () use ($customer, $paymentAccount, $modelData) {
+        $topUp = DB::transaction(function () use ($customer, $paymentAccount, $modelData) {
             $payment = StorePayment::make()->action($customer, $paymentAccount, [
                 'amount' => Arr::get($modelData, 'amount'),
                 'type'   => PaymentTypeEnum::PAYMENT,
             ]);
 
-            return StoreTopUp::make()->action($payment, [
+            $topUp = StoreTopUp::make()->action($payment, [
                 'amount' => Arr::get($modelData, 'amount'),
             ]);
+
+            return $topUp;
         });
+
+        return $topUp;
     }
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'amount' => ['required', 'numeric'],
         ];
+
+        return $rules;
     }
 
     public function asController(PaymentAccount $paymentAccount, ActionRequest $request)
@@ -55,15 +58,5 @@ class StoreRetinaTopUp extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($this->customer, $paymentAccount, $this->validatedData);
-    }
-
-    public function asCommand(Command $command)
-    {
-        $customer = Customer::where('email', $command->argument('customer'))->first();
-        $paymentAccount = PaymentAccount::where('code', PaymentAccountTypeEnum::PAYPAL->value)->first();
-
-        return $this->handle($customer, $paymentAccount, [
-            'amount' => $command->argument('amount')
-        ]);
     }
 }
