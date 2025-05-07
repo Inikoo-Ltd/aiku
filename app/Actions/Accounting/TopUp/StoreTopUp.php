@@ -50,7 +50,7 @@ class StoreTopUp extends OrgAction
 
 
         /** @var TopUp $topUp */
-        $topUp = $payment->topUps()->create($modelData);
+        $topUp = $payment->topUp()->create($modelData);
 
 
         CustomerHydrateTopUps::dispatch($topUp->customer)->delay($this->hydratorsDelay);
@@ -68,6 +68,7 @@ class StoreTopUp extends OrgAction
         $rules = [
             'amount' => ['required', 'numeric'],
             'status' => ['sometimes', 'required', Rule::enum(TopUpStatusEnum::class)],
+            'reference' => ['sometimes', 'required'],
 
         ];
         if (!$this->strict) {

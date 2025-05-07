@@ -11,6 +11,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -28,7 +29,8 @@ class RetinaTopupResources extends JsonResource
         return [
             'reference'                => $this->reference,
             'amount'                => $this->amount,
-            'status'                => $this->status
+            'status'                => $this->status,
+            'payment_url'                => Arr::get($this->payment, 'data.payment_url'),
         ];
     }
 }

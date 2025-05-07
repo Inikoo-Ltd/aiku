@@ -15,12 +15,14 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Http\Resources\Fulfilment\RetinaTopupResources;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\TopUp;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaTopUp extends RetinaAction
@@ -34,12 +36,17 @@ class StoreRetinaTopUp extends RetinaAction
         return DB::transaction(function () use ($customer, $paymentAccount, $modelData) {
             $payment = StorePayment::make()->action($customer, $paymentAccount, [
                 'amount' => Arr::get($modelData, 'amount'),
+                'currency_code' => $customer->shop->currency->code,
                 'type'   => PaymentTypeEnum::PAYMENT,
             ]);
 
-            return StoreTopUp::make()->action($payment, [
+            $topup = StoreTopUp::make()->action($payment, [
                 'amount' => Arr::get($modelData, 'amount'),
+                // This only for testing, we need to remove later
+                'reference' => Str::random()
             ]);
+
+            return $topup;
         });
     }
 
@@ -48,6 +55,11 @@ class StoreRetinaTopUp extends RetinaAction
         return [
             'amount' => ['required', 'numeric'],
         ];
+    }
+
+    public function htmlResponse(TopUp $topUp): RetinaTopupResources
+    {
+        return RetinaTopupResources::make($topUp);
     }
 
     public function asController(PaymentAccount $paymentAccount, ActionRequest $request)
@@ -62,7 +74,7 @@ class StoreRetinaTopUp extends RetinaAction
         $customer = Customer::where('email', $command->argument('customer'))->first();
         $paymentAccount = PaymentAccount::where('code', PaymentAccountTypeEnum::PAYPAL->value)->first();
 
-        return $this->handle($customer, $paymentAccount, [
+        $this->handle($customer, $paymentAccount, [
             'amount' => $command->argument('amount')
         ]);
     }
