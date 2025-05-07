@@ -116,12 +116,13 @@ const onSaveAll = () => {
       },
       onSuccess: () => {
         departmentEdit.value = false
+        departmentForm.clearErrors()
       },
       onError: (errors) => {
         console.error('Save failed:', errors);
           notify({
               title: "Failed to Save",
-              text: "failed to add location",
+              text: errors,
               type: "error"
           })
       },
@@ -203,7 +204,7 @@ const onUpload = async (files: File[], clear) => {
                 <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit"
                     @click="departmentEdit = true" />
                 <div v-else class="flex gap-3">
-                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" :icon="faEdit"
+                    <Button label="Cancel" :size="'xs'" :type="'tertiary'" 
                         @click="departmentEdit = false" />
                     <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave" @click="() => confirmSave()" />
                 </div>
@@ -226,12 +227,12 @@ const onUpload = async (files: File[], clear) => {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
                     <PureInput v-model="departmentForm.name" type="text" placeholder="Enter name" />
-                    <p>{{departmentForm.errors.name}}</p>
+                    <p class="text-red-500 text-xs">{{departmentForm.errors?.name}}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <PureTextarea v-model="departmentForm.description" type="text" :rows="4" placeholder="Enter name" />
-                    <p>{{departmentForm.errors.description}}</p>
+                    <p class="text-red-500 text-xs">{{departmentForm.errors?.description}}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
@@ -240,7 +241,7 @@ const onUpload = async (files: File[], clear) => {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Show in website</label>
                     <ToggleSwitch v-model="departmentForm.show_in_website" />
-                    <p>{{departmentForm.errors.show_in_website}}</p>
+                    <p class="text-red-500 text-xs">{{departmentForm.errors?.show_in_website}}</p>
                 </div>
             </div>
 

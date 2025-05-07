@@ -15,4 +15,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('', IndexRetinaTopUp::class)->name('index');
 Route::get('/dashboard', ShowRetinaTopUpDashboard::class)->name('dashboard');
 Route::get('/create', CreateRetinaTopUp::class)->name('create');
-Route::get('/{topUp}/checkout', ShowRetinaTopUpCheckout::class)->name('checkout');
+Route::get('/checkout', ShowRetinaTopUpCheckout::class)->name('checkout');

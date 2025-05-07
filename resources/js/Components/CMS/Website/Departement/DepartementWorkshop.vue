@@ -27,6 +27,7 @@
       }
   }>()
   
+  console.log(props)
   const isModalOpen = ref(false)
   const usedTemplates = ref(
       props.modelValue?.department?.code ? 
@@ -85,7 +86,6 @@
   
           <div class="bg-gray-100 h-full col-span-3 rounded-lg shadow-lg overflow-auto">
               <div class="bg-gray-100 px-6 py-6 h-[79vh] rounded-lg">
-                 
                   <div v-if="usedTemplates?.code" class="bg-white shadow-md rounded-lg w-full p-4">
                       <section>
                           <component class="w-full" :is="getIrisComponent(usedTemplates.code)"

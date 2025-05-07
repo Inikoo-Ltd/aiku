@@ -71,5 +71,4 @@ const onPublish = (routeData) => {
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" v-model="template" />
-  <!--   {{ template }} -->
 </template>

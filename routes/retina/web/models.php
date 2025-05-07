@@ -11,6 +11,7 @@ use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
@@ -178,4 +179,8 @@ Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('at
 Route::name('transaction.')->prefix('transaction')->group(function () {
     Route::delete('{transaction:id}', RetinaEcomDeleteTransaction::class)->name('delete')->withoutScopedBindings();
     Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update')->withoutScopedBindings();
+});
+
+Route::name('top-up.')->prefix('top-up')->group(function () {
+    Route::post('{paymentAccount:id}', StoreRetinaTopUp::class)->name('store')->withoutScopedBindings();
 });
