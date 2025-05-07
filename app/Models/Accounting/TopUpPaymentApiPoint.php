@@ -21,7 +21,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $organisation_id
  * @property int $customer_id
  * @property int|null $top_up_id
- * @property int $payment_account_shop_id
  * @property string $ulid
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -30,7 +29,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Accounting\PaymentAccountShop $paymentAccountShop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUpPaymentApiPoint newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUpPaymentApiPoint newQuery()
@@ -59,10 +57,5 @@ class TopUpPaymentApiPoint extends Model
     public function topUp(): BelongsTo
     {
         return $this->belongsTo(TopUp::class);
-    }
-
-    public function paymentAccountShop(): BelongsTo
-    {
-        return $this->belongsTo(PaymentAccountShop::class);
     }
 }

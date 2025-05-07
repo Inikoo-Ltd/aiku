@@ -12,13 +12,21 @@ return new class extends Migration
             $table->dropForeign(['payment_account_shop_id']);
             $table->dropColumn('payment_account_shop_id');
         });
+        Schema::table('order_payment_api_points', function (Blueprint $table) {
+            $table->dropForeign(['payment_account_shop_id']);
+            $table->dropColumn('payment_account_shop_id');
+        });
     }
 
     public function down()
     {
         Schema::table('top_up_payment_api_points', function (Blueprint $table) {
             $table->unsignedBigInteger('payment_account_shop_id')->nullable();
-            $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shops');
+            $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop');
+        });
+        Schema::table('order_payment_api_points', function (Blueprint $table) {
+            $table->unsignedBigInteger('payment_account_shop_id')->nullable();
+            $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop');
         });
     }
 };
