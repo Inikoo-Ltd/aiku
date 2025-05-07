@@ -8,7 +8,7 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faArrowLeft, faArrowRight } from "@fal"
-import CheckoutSummary from "./CheckoutSummary.vue"
+import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Image from "@/Components/Image.vue"
 
