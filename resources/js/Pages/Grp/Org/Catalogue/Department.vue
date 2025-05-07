@@ -27,7 +27,6 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize"
-import DepartementMasterWorkshop from '@/Components/Showcases/Grp/DepartementMasterWorkshop.vue';
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 library.add(
     faFolder,
@@ -58,16 +57,16 @@ const props = defineProps<{
     customers?: object;
     mailshots?: object;
     history: object;
+    department : object
+    showcase : object
 }>()
 
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
-
     const components = {
         showcase : DepartmentShowcase,
-        /* showcase : DepartementMasterWorkshop, */
         products: TableProducts,
         families: TableFamilies,
         mailshots: TableMailshots,
@@ -78,6 +77,8 @@ const component = computed(() => {
     return components[currentTab.value];
 
 });
+
+console.log(props)
 
 </script>
 

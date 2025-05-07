@@ -61,6 +61,17 @@ class ShowMasterShop extends GrpAction
                         'icon'  => 'fal fa-store-alt'
                     ],
                     'subNavigation' => $subNavigation,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => 'blueprint',
+                            'route' => [
+                                'name'       => "grp.masters.shops.show.departments.master_blueprint",
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ],
+                    ],
                 ],
                 'tabs'     => [
                     'current'    => $this->tab,

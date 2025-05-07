@@ -43,7 +43,8 @@ class DepartmentWebsiteResource extends JsonResource
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
             'current_families'  => $this->stats->number_families ?? 0,
-            'current_products'  => $this->stats->number_products ?? 0
+            'current_products'  => $this->stats->number_products ?? 0,
+            'follow_master'    =>  $this->follow_master
         ];
     }
 }

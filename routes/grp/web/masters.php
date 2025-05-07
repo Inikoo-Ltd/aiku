@@ -19,15 +19,17 @@ use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentsWorkshop;
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
 
 
 Route::get('/shops', IndexMasterShops::class)->name('shops.index');
+
 Route::get('/products', IndexMasterAssets::class)->name('products.index');
 Route::get('/departments', [IndexMasterDepartments::class, 'inGroup'])->name('departments.index');
 Route::get('/departments/{masterDepartment}', [ShowMasterDepartment::class, 'inGroup'])->name('departments.show');
-Route::get('departments/{masterDepartment}/blueprint', [ShowMasterDepartmentWorkshop::class,'inGroup'])->name('departments.blueprint');
+Route::get('departments/{masterDepartment}/blueprint', [ShowMasterDepartmentWorkshop::class,'inGroup'])->name('department.blueprint');
 
 Route::get('/families', [IndexMasterFamilies::class, 'inGroup'])->name('families.index');
 Route::get('/families/{masterFamily}', [ShowMasterFamily::class, 'inGroup'])->name('families.show');
@@ -38,6 +40,7 @@ Route::prefix('/shops/{masterShop}')->as('shops.show')->group(function () {
         Route::get('', IndexMasterDepartments::class)->name('index');
         Route::get('{masterDepartment}', ShowMasterDepartment::class)->name('show');
         Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
+        Route::get('departments-blueprint', ShowMasterDepartmentsWorkshop::class)->name('master_blueprint');
     });
     Route::prefix('families')->as('.families.')->group(function () {
         Route::get('', IndexMasterFamilies::class)->name('index');

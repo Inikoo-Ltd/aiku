@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -19,7 +20,10 @@ class GetProductCategoryShowcase
     public function handle(ProductCategory $productCategory): array
     {
         return [
-            'family' => FamilyResource::make($productCategory),
+            'departement' => FamilyResource::make($productCategory),
+            'families'    => FamilyResource::collection(
+                    $productCategory->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get()
+                ),
         ];
     }
 }
