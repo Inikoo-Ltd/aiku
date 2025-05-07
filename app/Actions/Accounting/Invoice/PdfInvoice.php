@@ -17,7 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 
-class PdfInvoice extends OrgAction
+class PdfInvoice
 {
 
     use AsAction;
@@ -34,8 +34,6 @@ class PdfInvoice extends OrgAction
 
     public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Response
     {
-        $this->initialisation($organisation, $request);
-
         return $this->handle($invoice);
     }
 }

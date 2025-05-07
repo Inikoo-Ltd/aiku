@@ -52,8 +52,10 @@ class ShowAccountingShopDashboard extends OrgAction
     {
         if ($parent instanceof Shop) {
             $subNavigation = $this->getSubNavigationShop($parent);
+            $shop = $parent;
         } else { //Fulfilment
             $subNavigation = $this->getSubNavigation($parent);
+            $shop = $parent->shop;
         }
 
         return Inertia::render(
@@ -85,7 +87,7 @@ class ShowAccountingShopDashboard extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ],
                             'index' => [
-                                'number' => $parent->accountingStats->number_payments
+                                'number' => $shop->accountingStats->number_payments ?? 0
                             ]
 
                         ],
@@ -97,7 +99,7 @@ class ShowAccountingShopDashboard extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ],
                             'index' => [
-                                'number' => $parent->orderingStats->number_invoices
+                                'number' => $shop->orderingStats->number_invoices ?? 0
                             ]
 
                         ],
