@@ -10,7 +10,6 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Support\Facades\Process;
@@ -55,7 +54,7 @@ class AttacheIsDocToInvoicePdf
             return $outputFile;
         } else {
 
-            $errorMsg='ISDoc PDF generation failed '.$result->output().' '.$result->errorOutput();
+            $errorMsg = 'ISDoc PDF generation failed '.$result->output().' '.$result->errorOutput();
 
             \Sentry\captureMessage($errorMsg);
 

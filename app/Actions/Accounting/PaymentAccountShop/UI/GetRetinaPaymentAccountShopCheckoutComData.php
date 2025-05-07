@@ -50,7 +50,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->reference = $order->reference;
 
         $paymentSessionRequest->three_ds = new ThreeDsRequest();
-        $paymentSessionRequest->three_ds->enabled=true;
+        $paymentSessionRequest->three_ds->enabled = true;
 
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);

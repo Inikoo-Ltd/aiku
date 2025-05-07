@@ -10,7 +10,6 @@ namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use Inertia\Inertia;
 use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class ShowRetinaLogin
