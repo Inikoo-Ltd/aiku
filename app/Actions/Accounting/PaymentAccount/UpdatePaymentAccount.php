@@ -34,11 +34,11 @@ class UpdatePaymentAccount extends OrgAction
     {
         if ($paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
             $paypalData = $paymentAccount->data ?? [];
-        
+
             if (Arr::exists($modelData, 'paypal_client_id')) {
                 $paypalData['paypal_client_id'] = Arr::pull($modelData, 'paypal_client_id');
             }
-        
+
             if (Arr::exists($modelData, 'paypal_client_secret')) {
                 $paypalData['paypal_client_secret'] = Arr::pull($modelData, 'paypal_client_secret');
             }
@@ -90,7 +90,7 @@ class UpdatePaymentAccount extends OrgAction
             'name' => ['sometimes', 'required', 'max:250', 'string'],
         ];
 
-        if($this->paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
+        if ($this->paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
             $rules['paypal_client_id']        = ['sometimes'];
             $rules['paypal_client_secret']    = ['sometimes'];
         }

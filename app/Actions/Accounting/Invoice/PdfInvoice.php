@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
@@ -19,7 +18,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PdfInvoice
 {
-
     use AsAction;
     use WithAttributes;
     use WithExportData;

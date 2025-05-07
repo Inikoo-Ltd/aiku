@@ -10,7 +10,6 @@ namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
 use App\Actions\OrgAction;
 use App\Models\Accounting\OrderPaymentApiPoint;
-use App\Models\Accounting\PaymentAccountShop;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 

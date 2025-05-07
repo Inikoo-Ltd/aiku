@@ -17,6 +17,7 @@ use Checkout\Common\Address;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
+use Checkout\Payments\ThreeDsRequest;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
@@ -48,6 +49,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
 
+        $paymentSessionRequest->three_ds = new ThreeDsRequest();
+        $paymentSessionRequest->three_ds->enabled = true;
+
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
@@ -66,11 +70,8 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->billing->address = $address;
 
 
-
-
         try {
             $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
-
         } catch (\Exception $e) {
             $paymentSession = [
                 'error' => $e->getMessage(),

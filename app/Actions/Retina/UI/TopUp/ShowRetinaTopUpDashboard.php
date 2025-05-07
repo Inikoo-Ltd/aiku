@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\UI\Topup;
+namespace App\Actions\Retina\UI\TopUp;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
@@ -28,23 +28,9 @@ class ShowRetinaTopUpDashboard extends RetinaAction
 
     public function htmlResponse(Customer $customer): Response
     {
-        $routeActions = [];
-
-        $routeActions[] = [
-            'type'    => 'button',
-            'style'   => 'create',
-            'tooltip' =>  __('Make a new topup'),
-            'label'   => __('New TopUp'),
-            'route'   => [
-                'method'     => 'get',
-                'name'       => 'retina.topup.create',
-            ]
-        ];
-
-        $routeActions = array_filter($routeActions);
 
         return Inertia::render('Storage/RetinaTopUpDashboard', [
-            'title'        => __('TopUp Dashboard'),
+            'title'        => __('Top Ups Dashboard'),
             'breadcrumbs'    => $this->getBreadcrumbs(),
             'pageHead'    => [
 
@@ -56,9 +42,9 @@ class ShowRetinaTopUpDashboard extends RetinaAction
 
             ],
 
-            'route_action' => $routeActions,
-
             'currency'     => CurrencyResource::make($customer->shop->currency),
+            'amount_shortcuts'=>[],
+
             'topUpData'  => $this->getTopUpData($customer),
         ]);
     }
@@ -72,18 +58,10 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             'count'         => $customer->stats->number_top_ups,
             'description'   => __('number of top ups'),
             'route'         => [
-                'name' => 'retina.topup.index'
+                'name' => 'retina.top_up.index'
             ]
         ];
 
-        // foreach (TopUpStatusEnum::cases() as $case) {
-        //     $stats['topUps']['status'][$case->value] = [
-        //         'value' => $case->value,
-        //         'icon'  => TopUpStatusEnum::stateIcon()[$case->value],
-        //         'count' => TopUpStatusEnum::count($fulfilmentCustomer)[$case->value] ?? 0,
-        //         'label' => TopUpStatusEnum::labels()[$case->value]
-        //     ];
-        // }
         return $stats;
     }
 
@@ -98,9 +76,9 @@ class ShowRetinaTopUpDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.topup.dashboard'
+                                'name' => 'retina.top_up.dashboard'
                             ],
-                            'label' => __('TopUp'),
+                            'label' => __('Top Up dashboard'),
                         ]
                     ]
                 ]

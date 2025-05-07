@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\UI\Topup;
+namespace App\Actions\Retina\UI\TopUp;
 
 use App\Actions\RetinaAction;
 use Inertia\Inertia;
