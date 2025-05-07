@@ -12,11 +12,17 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
+use Exception;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
+use Lorisleiva\Actions\Concerns\AsObject;
 
-class AttacheIsDocToInvoicePDF extends OrgAction
+class AttacheIsDocToInvoicePdf
 {
+    use AsObject;
+    /**
+     * @throws \Exception
+     */
     public function handle(Invoice $invoice, $pdf, string $filename): string
     {
         $baseDir = 'tmp/isdoc';
@@ -41,12 +47,19 @@ class AttacheIsDocToInvoicePDF extends OrgAction
         }
 
         $scriptLocation = base_path();
-        $next = Process::path($scriptLocation)->run('./isdoc-pdf ' . $pdfLocation . ' ' . $isdocLocation . ' ' . $outputFile);
 
-        if ($next->successful()) {
+        $result = Process::path($scriptLocation)->run('./isdoc-pdf ' . $pdfLocation . ' ' . $isdocLocation . ' ' . $outputFile);
+
+
+        if ($result->successful()) {
             return $outputFile;
         } else {
-            throw new \Exception('ISDoc PDF generation failed: ' . $next->errorOutput());
+
+            $errorMsg='ISDoc PDF generation failed '.$result->output().' '.$result->errorOutput();
+
+            \Sentry\captureMessage($errorMsg);
+
+            throw new Exception($errorMsg);
         }
     }
 }
