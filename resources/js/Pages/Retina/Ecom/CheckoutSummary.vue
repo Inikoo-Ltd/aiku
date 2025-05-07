@@ -44,6 +44,7 @@ console.log('ppp', props.summary)
         <div class="border border-gray-200 p-2 rounded">
             <OrderSummary
                 :order_summary="summary.order_summary"
+                :currency_code="summary.order_summary?.currency?.data?.code"
             />
         </div>
 

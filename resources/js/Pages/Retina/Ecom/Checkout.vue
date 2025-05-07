@@ -17,8 +17,17 @@ library.add(faCreditCardFront)
 const props = defineProps<{
     order: {},
     paymentMethods: []
-
+    summary: {
+        net_amount: string
+        gross_amount: string
+        tax_amount: string
+        goods_amount: string
+        services_amount: string
+        charges_amount: string
+    }
 }>()
+
+console.log('prporpor', props)
 
 const currentTab = ref(0)
 const tabs = [
@@ -65,19 +74,16 @@ onMounted(async () => {
     paymentMethods: <pre>{{ paymentMethods }}</pre>
     <!-- <pre>{{ order }}</pre> -->
 
-    <div v-if="!order" class="text-center text-gray-500 text-2xl pt-6">
+    <div v-if="!summary" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
     </div>
 
     <div v-else class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
-            <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
+            <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>
         
-        <!-- <pre>{{ data }}</pre> -->
-        <CheckoutSummary :summary="data"></CheckoutSummary>
-
-        <!-- <div class="border border-t border-orange-300"></div> -->
+        <CheckoutSummary :summary="summary"></CheckoutSummary>
 
         <!-- Section: Tabs -->
         <div class="mx-10 border border-gray-300 rounded">
@@ -90,7 +96,6 @@ onMounted(async () => {
                             {{ tab.label }}
                         </option>
                     </select>
-                    <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end fill-gray-500" aria-hidden="true" />
                 </div>
                 
                 <div class="hidden sm:block">
