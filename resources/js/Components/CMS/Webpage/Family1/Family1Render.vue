@@ -22,7 +22,7 @@ defineProps<{
         class="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl">
         <div class="relative w-full mb-3">
             <!-- Display image or fallback icon -->
-            <Image v-if="data.image?.source" :src="data.image?.source" alt="Product image"
+            <Image v-if="data.image" :src="data.image" alt="Product image"
                 class="w-full h-48 object-cover" />
             <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
                 <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />

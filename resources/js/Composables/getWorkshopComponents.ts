@@ -34,9 +34,11 @@ import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
+import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
 
 
 export const getComponent = (componentName: string) => {
+    console.log(componentName)
     const components: Component = {
         'footer-1': Footer1,
         'banner': WowsbarBanner,
@@ -69,7 +71,8 @@ export const getComponent = (componentName: string) => {
         'button' : Button,
         'column-layout-2': ColumnWorkshop,
         'disclosure': DisclosureWorkshop,
-        'timeline' : Timeline
+        'timeline' : Timeline,
+        /* 'department' : Department1Iris */
     }
     return components[componentName] ?? NotFoundComponents
 }

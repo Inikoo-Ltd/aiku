@@ -45,6 +45,7 @@ class MasterProductsResource extends JsonResource
             'master_family_slug'     => $this->master_family_slug,
             'master_family_code'     => $this->master_family_code,
             'master_family_name'     => $this->master_family_name,
+            'show_in_website'        => $this->show_in_website,
         ];
     }
 }

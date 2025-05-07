@@ -156,7 +156,6 @@ const confirmSave = () => {
 
 
 const onUpload = async (files: File[], clear) => {
-    console.log(clear)
   if (!files.length) return;
 
   const formData = new FormData();

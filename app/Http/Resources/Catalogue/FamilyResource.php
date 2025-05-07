@@ -33,9 +33,10 @@ class FamilyResource extends JsonResource
             'name'       => $this->name,
             'state'      => $this->state,
             'description' => $this->description,
-            'image'       => $this->image,
+            'image'        => $this ->imageSources(720, 480),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'show_in_website'  => $this->show_in_website,
         ];
     }
 }
