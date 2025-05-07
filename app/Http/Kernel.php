@@ -12,6 +12,8 @@ use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
 use App\Http\Middleware\HandleCorneaInertiaRequests;
+use App\Http\Middleware\HandleInertiaCrossToIris;
+use App\Http\Middleware\HandleInertiaCrossToRetina;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
@@ -67,7 +69,6 @@ class Kernel extends HttpKernel
     public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Routing\Router $router)
     {
         parent::__construct($app, $router);
-
     }
 
     protected $middleware = [
@@ -108,12 +109,12 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
         ],
 
-        'api' => [
+        'api'         => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
         ],
-        'grp' => [
+        'grp'         => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -126,7 +127,7 @@ class Kernel extends HttpKernel
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ],
-        'web_errors' => [
+        'web_errors'  => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -154,6 +155,7 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            HandleInertiaCrossToRetina::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
@@ -168,12 +170,13 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            HandleInertiaCrossToIris::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class
         ],
-        'pupil'      => [
+        'pupil'       => [
             VerifyShopify::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -183,10 +186,10 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandlePupilInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-//            SameSiteSession::class,
+            //            SameSiteSession::class,
         ],
 
-        'cornea'      => [
+        'cornea'  => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -199,7 +202,7 @@ class Kernel extends HttpKernel
         ],
 
         //==== Other Middleware Groups
-        'horizon'     => [
+        'horizon' => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
