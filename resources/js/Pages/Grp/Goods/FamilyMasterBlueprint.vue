@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, Component } from "vue";
+import { ref, inject } from "vue";
 import PureInput from '@/Components/Pure/PureInput.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
@@ -80,7 +80,7 @@ const goToNext = () => {
     console.log('Next clicked')
 }
 
-const componentsFamily: Record<string, Component> = {
+const componentsFamily: Record<string> = {
     'family-1': Family1Render,
 }
 
