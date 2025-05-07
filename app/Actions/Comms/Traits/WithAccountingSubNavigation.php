@@ -10,6 +10,7 @@
 
 namespace App\Actions\Comms\Traits;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 
@@ -81,6 +82,7 @@ trait WithAccountingSubNavigation
         } else {
             $shop = $parent->shop;
         }
+
         return [
             [
                 "isAnchor" => true,
@@ -131,6 +133,18 @@ trait WithAccountingSubNavigation
                     "tooltip" => __("customer balance"),
                 ],
             ],
+            $shop->type == ShopTypeEnum::DROPSHIPPING ? [
+                "label"    => __("Top Ups"),
+                'number'   => $shop->accountingStats->number_top_ups ?? 0,
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.payments.accounting.top_ups.index",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-money-bill-wave"],
+                    "tooltip" => __("top ups"),
+                ],
+            ] : []
         ];
     }
 }
