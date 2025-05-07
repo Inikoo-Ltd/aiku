@@ -149,7 +149,7 @@ const layout = inject("layout", layoutStructure)
 // Tabs radio: v-model
 // const radioValue = ref<string[]>(Object.keys(props.data.fulfilment_customer.radioTabs).filter(key => props.data.fulfilment_customer.radioTabs[key]))
 const radioValue = computed(() => {
-	return Object.keys(props.fulfilment_customer.radioTabs).filter(
+	return Object.keys(props.fulfilment_customer?.radioTabs || {}).filter(
 		(key) => props.fulfilment_customer.radioTabs[key]
 	)
 })
@@ -209,7 +209,7 @@ function openRejectedModal(customer: any) {
 								<div class="flex flex-col gap-y-2 w-full py-6">
 									<!-- Field: Contact name -->
 									<div
-										v-if="fulfilment_customer.customer.contact_name"
+										v-if="fulfilment_customer?.customer?.contact_name"
 										class="flex items-center w-full flex-none gap-x-4 px-6">
 										<dt v-tooltip="'Contact name'" class="flex-none">
 											<FontAwesomeIcon
@@ -366,7 +366,7 @@ function openRejectedModal(customer: any) {
 						<!-- Amount Display -->
 						<div class="text-2xl font-bold">
 							<CountUp
-								:endVal="balance.current"
+								:endVal="balance?.current"
 								:duration="1.5"
 								:scrollSpyOnce="true"
 								:options="{
@@ -449,7 +449,7 @@ function openRejectedModal(customer: any) {
 					</div>
 
 					<!-- Stats -->
-					<div v-if="rental_agreement.stats" class="p-5 space-y-2">
+					<div v-if="rental_agreement?.stats" class="p-5 space-y-2">
 						<div class="flex gap-x-1 items-center text-sm">
 							<div class="">{{ trans("Last updated") }}:</div>
 							<div class="text-gray-500">
@@ -478,6 +478,7 @@ function openRejectedModal(customer: any) {
 							The rental agreement is not created yet.
 						</div>
 						<Link
+							v-if="rental_agreement?.createRoute?.name"
 							:href="
 								route(
 									rental_agreement.createRoute.name,
