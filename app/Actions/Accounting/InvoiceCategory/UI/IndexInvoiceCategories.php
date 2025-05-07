@@ -9,8 +9,8 @@
 
 namespace App\Actions\Accounting\InvoiceCategory\UI;
 
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Http\Resources\Accounting\InvoiceCategoriesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\InvoiceCategory;
@@ -26,7 +26,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceCategories extends OrgAction
 {
-    private Organisation $parent;
 
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
     {
@@ -61,9 +60,9 @@ class IndexInvoiceCategories extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -95,6 +94,9 @@ class IndexInvoiceCategories extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $invoiceCategories, ActionRequest $request): Response
     {
+
+        $title=__('Invoice Categories');
+
         return Inertia::render(
             'Org/Accounting/InvoiceCategories',
             [
@@ -102,10 +104,10 @@ class IndexInvoiceCategories extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Invoice Categories'),
+                'title'       => $title,
                 'pageHead'    => [
                     'icon'      => ['fal', 'fa-sitemap'],
-                    'title'     => __('Invoice Categories'),
+                    'title'     => $title,
                     'actions'   => [
                         [
                             'type'    =>    'button',
@@ -121,12 +123,11 @@ class IndexInvoiceCategories extends OrgAction
                 ],
                 'data'             => InvoiceCategoriesResource::collection($invoiceCategories)
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request)
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);

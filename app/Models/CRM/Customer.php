@@ -17,6 +17,7 @@ use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\TopUp;
+use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
@@ -443,5 +444,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function orderInBasket(): HasOne
     {
         return $this->hasOne(Order::class, 'id', 'current_order_in_basket_id');
+    }
+
+    public function topUpPaymentApiPoint(): HasMany
+    {
+        return $this->hasMany(TopUpPaymentApiPoint::class);
     }
 }

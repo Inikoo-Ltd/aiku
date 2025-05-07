@@ -41,6 +41,10 @@ class UpdateProduct extends OrgAction
             $product->orgStocks()->sync($orgStocks);
         }
 
+        $assetData = [];
+        if (Arr::has($modelData, 'follow_master')) {
+            data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));
+        }
 
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -54,7 +58,7 @@ class UpdateProduct extends OrgAction
             );
         }
 
-        UpdateAsset::run($product->asset, [], $this->hydratorsDelay);
+        UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
 
         if (Arr::hasAny($changed, ['state', 'status'])) {
             $this->productHydrators($product);
@@ -81,7 +85,7 @@ class UpdateProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code'          => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -96,15 +100,16 @@ class UpdateProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'         => ['sometimes', 'required', 'max:250', 'string'],
-            'price'        => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'  => ['sometimes', 'required', 'max:1500'],
-            'rrp'          => ['sometimes', 'required', 'numeric'],
-            'data'         => ['sometimes', 'array'],
-            'settings'     => ['sometimes', 'array'],
-            'status'       => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
-            'state'        => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'trade_config' => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
+            'name'          => ['sometimes', 'required', 'max:250', 'string'],
+            'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'   => ['sometimes', 'required', 'max:1500'],
+            'rrp'           => ['sometimes', 'required', 'numeric'],
+            'data'          => ['sometimes', 'array'],
+            'settings'      => ['sometimes', 'array'],
+            'status'        => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
+            'state'         => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'trade_config'  => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
+            'follow_master' => ['sometimes', 'boolean'],
 
 
             'org_stocks' => ['sometimes', 'present', 'array']

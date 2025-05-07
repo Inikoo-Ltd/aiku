@@ -11,7 +11,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInGroup;
 use App\Actions\Accounting\Invoice\UI\IndexRefundsInGroup;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
-use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
+use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccountsInGroup;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Catalogue\Collection\UI\IndexCollection;
@@ -142,7 +142,7 @@ Route::name('procurement.')->prefix('procurement')->group(function () {
 });
 
 Route::name('accounting.')->prefix('accounting')->group(function () {
-    Route::get('/payment-accounts', [IndexPaymentAccounts::class, 'inGroup'])->name('payment-accounts.index');
+    Route::get('/payment-accounts', IndexPaymentAccountsInGroup::class)->name('payment-accounts.index');
     Route::get('/payments', [IndexPayments::class, 'inGroup'])->name('payments.index');
     Route::get('/customer-balances', [IndexCustomerBalances::class, 'inGroup'])->name('customer-balances.index');
     Route::get('/invoices', IndexInvoicesInGroup::class)->name('invoices.index');

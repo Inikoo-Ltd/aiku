@@ -30,7 +30,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class MasterDepartmentsResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         /** @var MasterProductCategory $masterDepartment */

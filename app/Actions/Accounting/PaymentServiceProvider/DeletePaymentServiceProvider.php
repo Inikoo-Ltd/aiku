@@ -54,7 +54,7 @@ class DeletePaymentServiceProvider extends GrpAction
 
     public function htmlResponse(): RedirectResponse
     {
-        return Redirect::route('grp.org.accounting.org-payment-service-providers.index');
+        return Redirect::route('grp.org.accounting.org_payment_service_providers.index');
     }
 
 }

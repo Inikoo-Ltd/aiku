@@ -11,9 +11,9 @@ namespace App\Actions\Accounting\OrgPaymentServiceProvider\UI;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\UI\Accounting\OrgPaymentServiceProviderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\OrgPaymentServiceProviderResource;
@@ -76,7 +76,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                             'name'     => trans_choice('account | accounts', $orgPaymentServiceProvider->stats->number_payment_accounts),
                             'number'   => $orgPaymentServiceProvider->stats->number_payment_accounts,
                             'route'     => [
-                                'name'       => 'grp.org.accounting.org-payment-service-providers.show.payment-accounts.index',
+                                'name'       => 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.index',
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $orgPaymentServiceProvider->slug
@@ -91,7 +91,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                             'name'     => trans_choice('payment | payments', $orgPaymentServiceProvider->stats->number_payments),
                             'number'   => $orgPaymentServiceProvider->stats->number_payments,
                             'route'     => [
-                                'name'       => 'grp.org.accounting.org-payment-service-providers.show.payments.index',
+                                'name'       => 'grp.org.accounting.org_payment_service_providers.show.payments.index',
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $orgPaymentServiceProvider->slug
@@ -166,7 +166,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                     modelOperations: [
                         'createLink' => $this->canEdit ? [
                             'route' => [
-                                'name'       => 'grp.org.accounting.org-payment-service-providers.show.payments.create',
+                                'name'       => 'grp.org.accounting.org_payment_service_providers.show.payments.create',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                             'label' => __('payment')
@@ -207,14 +207,14 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.accounting.org-payment-service-providers.index',
+                                'name'       => 'grp.org.accounting.org_payment_service_providers.index',
                                 'parameters' => Arr::only($routeParameters, 'organisation')
                             ],
                             'label' => __('Providers')
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.accounting.org-payment-service-providers.show',
+                                'name'       => 'grp.org.accounting.org_payment_service_providers.show',
                                 'parameters' => $routeParameters
                             ],
                             'label' => $orgPaymentServiceProvider->slug,
@@ -251,7 +251,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
         }
 
         return match ($routeName) {
-            'grp.org.accounting.org-payment-service-providers.show' => [
+            'grp.org.accounting.org_payment_service_providers.show' => [
                 'label' => $orgPaymentServiceProvider->code,
                 'route' => [
                     'name'       => $routeName,

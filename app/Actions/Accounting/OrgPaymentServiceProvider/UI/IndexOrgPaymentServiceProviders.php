@@ -8,13 +8,14 @@
 
 namespace App\Actions\Accounting\OrgPaymentServiceProvider\UI;
 
+use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
-use App\Actions\UI\Accounting\ShowAccountingDashboard;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Http\Resources\Accounting\SelectOrgPaymentServiceProvidersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,9 +24,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Services\QueryBuilder;
 
-class SelectOrgPaymentServiceProviders extends OrgAction
+class IndexOrgPaymentServiceProviders extends OrgAction
 {
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
     {
@@ -133,7 +133,7 @@ class SelectOrgPaymentServiceProviders extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.accounting.org-payment-service-providers.index',
+                            'name'       => 'grp.org.accounting.org_payment_service_providers.index',
                             'parameters' => $routeParameters
                         ],
                         'label' => __('Providers'),

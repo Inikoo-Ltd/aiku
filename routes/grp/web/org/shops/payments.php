@@ -14,7 +14,7 @@ use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\ShowAccountingShopDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('accounting-dashboard', [ShowAccountingShopDashboard::class, 'inShop'])->name('accounting.dashboard');
+Route::get('accounting-dashboard', ShowAccountingShopDashboard::class)->name('accounting.dashboard');
 
 Route::get('accounting-dashboard/accounts', [IndexPaymentAccountShops::class, 'inShop'])->name('accounting.accounts.index');
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inShop'])->name('accounting.payments.index');

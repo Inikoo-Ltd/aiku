@@ -11,7 +11,6 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
@@ -33,7 +32,6 @@ class UpdateWebpage extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    // use HasWebAuthorisation;
 
     private Webpage $webpage;
 
@@ -66,8 +64,6 @@ class UpdateWebpage extends OrgAction
             data_set($modelData, 'seo_data', $newData);
         }
 
-        // $modelData = StoreWebpageHasRedirect::make()->action($webpage, $modelData);
-
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
 
@@ -87,11 +83,10 @@ class UpdateWebpage extends OrgAction
     }
 
 
-
     public function rules(): array
     {
         $rules = [
-            'url'           => [
+            'url'            => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -113,7 +108,7 @@ class UpdateWebpage extends OrgAction
                     ]
                 ),
             ],
-            'code'          => [
+            'code'           => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -133,22 +128,22 @@ class UpdateWebpage extends OrgAction
                 ),
 
             ],
-            'level'         => ['sometimes', 'integer'],
-            'sub_type'      => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
-            'type'          => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
-            'state'         => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'google_search' => ['sometimes', 'array'],
-            'webpage_type'  => ['sometimes', 'array'],
-            'ready_at'      => ['sometimes', 'date'],
-            'live_at'       => ['sometimes', 'date'],
-            'title'         => ['sometimes', 'string'],
-            'description'   => ['sometimes', 'string'],
+            'level'          => ['sometimes', 'integer'],
+            'sub_type'       => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
+            'type'           => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
+            'state'          => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'google_search'  => ['sometimes', 'array'],
+            'webpage_type'   => ['sometimes', 'array'],
+            'ready_at'       => ['sometimes', 'date'],
+            'live_at'        => ['sometimes', 'date'],
+            'title'          => ['sometimes', 'string'],
+            'description'    => ['sometimes', 'string'],
+            'show_in_parent' => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules                   = $this->noStrictUpdateRules($rules);
             $rules['migration_data'] = ['sometimes', 'array'];
-
         }
 
         return $rules;
@@ -172,7 +167,6 @@ class UpdateWebpage extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->webpage = $webpage;
-        $this->scope  = $webpage->organisation;
 
         $this->initialisation($webpage->organisation, $request);
 
@@ -183,7 +177,6 @@ class UpdateWebpage extends OrgAction
     public function inShop(Shop $shop, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->webpage = $webpage;
-        $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request);
 
         $modelData = [];
@@ -191,8 +184,7 @@ class UpdateWebpage extends OrgAction
             data_set(
                 $modelData,
                 match ($key) {
-                    'google_search' => 'seo_data',
-                    'webpage_type' => 'seo_data',
+                    'google_search', 'webpage_type' => 'seo_data',
                     default => $key
                 },
                 $value
