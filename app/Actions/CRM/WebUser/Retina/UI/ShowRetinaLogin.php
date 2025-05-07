@@ -18,7 +18,7 @@ class ShowRetinaLogin
     use AsController;
 
 
-    public function handle(ActionRequest $request): Response
+    public function handle(): Response
     {
         return Inertia::render('Auth/RetinaLogin');
     }
