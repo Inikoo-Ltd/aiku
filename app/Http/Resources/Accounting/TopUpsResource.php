@@ -1,17 +1,15 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
+ * author Arya Permana - Kirin
+ * created on 07-05-2025-14h-35m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
 */
 
-namespace App\Http\Resources\Fulfilment;
+namespace App\Http\Resources\Accounting;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -22,15 +20,15 @@ use Illuminate\Support\Arr;
  * @property mixed $state
  * @property mixed $number_item_transactions
  */
-class RetinaTopupResources extends JsonResource
+class TopUpsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
+            'slug'                  => $this->slug,    
             'reference'                => $this->reference,
             'amount'                => $this->amount,
-            'status'                => $this->status,
-            'payment_url'                => Arr::get($this->payment, 'data.payment_url'),
+            'status'                => $this->status
         ];
     }
 }

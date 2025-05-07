@@ -130,7 +130,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-    <div class="flex rounded-md">
+    <div class="flex rounded-md" v-tooltip="trans('Filter data by dates')">
         <Popover v-slot="{ open }" class="relative">
             <PopoverButton
                 :class="open ? '' : ''"

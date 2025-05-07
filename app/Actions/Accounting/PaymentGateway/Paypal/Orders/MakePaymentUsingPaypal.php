@@ -2,6 +2,7 @@
 
 namespace App\Actions\Accounting\PaymentGateway\Paypal\Orders;
 
+use App\Actions\Accounting\Payment\UpdatePayment;
 use App\Actions\Accounting\PaymentGateway\Paypal\Traits\WithPaypalConfiguration;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Payment;
@@ -23,6 +24,11 @@ class MakePaymentUsingPaypal
 
         data_set($modelData, 'data', $paypalResponse);
 
-        return $this->update($payment, Arr::only($modelData, 'data'), ['data']);
+        return UpdatePayment::run($payment, [
+            'data' => [
+                'payment_id' => Arr::get($paypalResponse, 'id'),
+                'payment_url' => Arr::get($paypalResponse, 'url')
+            ]
+        ]);
     }
 }

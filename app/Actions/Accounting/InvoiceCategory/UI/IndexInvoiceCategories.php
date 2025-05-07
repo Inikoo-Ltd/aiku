@@ -26,7 +26,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceCategories extends OrgAction
 {
-
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -95,7 +94,7 @@ class IndexInvoiceCategories extends OrgAction
     public function htmlResponse(LengthAwarePaginator $invoiceCategories, ActionRequest $request): Response
     {
 
-        $title=__('Invoice Categories');
+        $title = __('Invoice Categories');
 
         return Inertia::render(
             'Org/Accounting/InvoiceCategories',

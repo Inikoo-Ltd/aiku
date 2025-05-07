@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\PaymentAccount;
 
 use App\Actions\Accounting\PaymentAccount\Search\PaymentAccountRecordSearch;
+use App\Actions\Accounting\PaymentGateway\Paypal\Traits\WithPaypalConfiguration;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,6 +28,7 @@ class UpdatePaymentAccount extends OrgAction
     use WithActionUpdate;
     use HasPaymentAccountUpdateActions;
     use WithNoStrictRules;
+    use WithPaypalConfiguration;
 
     private PaymentAccount $paymentAccount;
 
@@ -34,11 +36,11 @@ class UpdatePaymentAccount extends OrgAction
     {
         if ($paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
             $paypalData = $paymentAccount->data ?? [];
-        
+
             if (Arr::exists($modelData, 'paypal_client_id')) {
                 $paypalData['paypal_client_id'] = Arr::pull($modelData, 'paypal_client_id');
             }
-        
+
             if (Arr::exists($modelData, 'paypal_client_secret')) {
                 $paypalData['paypal_client_secret'] = Arr::pull($modelData, 'paypal_client_secret');
             }
@@ -50,7 +52,16 @@ class UpdatePaymentAccount extends OrgAction
             $paymentAccount = $this->paymentAccountUpdateActions($paymentAccount->paymentServiceProvider->code, $paymentAccount, $modelData);
             $paymentAccount = $this->update($paymentAccount, Arr::only($modelData, ['code', 'name', 'data']), ['data']);
         } else {
+            /** @var PaymentAccount $paymentAccount */
             $paymentAccount = $this->update($paymentAccount, $modelData, ['data']);
+        }
+
+        if ($paymentAccount->wasChanged('data')) {
+            $clientId = Arr::get($paymentAccount->data, 'paypal_client_id');
+            $secretKey = Arr::get($paymentAccount->data, 'paypal_client_secret');
+
+            $provider = $this->getPaypalConfiguration($clientId, $secretKey);
+            $provider->createWebHook(route('webhooks.paypal.payment_success', $paymentAccount->id), ['PAYMENT.CAPTURE.COMPLETED']);
         }
 
         PaymentAccountRecordSearch::dispatch($paymentAccount);
@@ -90,7 +101,7 @@ class UpdatePaymentAccount extends OrgAction
             'name' => ['sometimes', 'required', 'max:250', 'string'],
         ];
 
-        if($this->paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
+        if ($this->paymentAccount->type == PaymentAccountTypeEnum::PAYPAL) {
             $rules['paypal_client_id']        = ['sometimes'];
             $rules['paypal_client_secret']    = ['sometimes'];
         }

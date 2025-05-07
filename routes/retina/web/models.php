@@ -6,11 +6,13 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
@@ -67,6 +69,10 @@ use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
 use Illuminate\Support\Facades\Route;
+
+
+Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place-order-pay-by-bank');
+Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
 
 Route::patch('/profile', UpdateRetinaProfile::class)->name('profile.update');
 Route::patch('/settings', UpdateRetinaCustomerSettings::class)->name('settings.update');

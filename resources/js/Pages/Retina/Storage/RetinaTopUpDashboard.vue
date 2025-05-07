@@ -5,7 +5,7 @@
   import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
   import { useLocaleStore } from "@/Stores/locale"
   import { PalletCustomer, FulfilmentCustomerStats } from '@/types/Pallet'
-  import { Link } from "@inertiajs/vue3"
+  import { Link, router } from "@inertiajs/vue3"
   
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
   import { faCheckCircle, faInfoCircle, faExclamationTriangle } from '@fal'
@@ -24,8 +24,12 @@
   
   import '@/Composables/Icon/PalletStateEnum'
   import Tag from '@/Components/Tag.vue'
-  import { inject } from 'vue'
+  import { inject, ref } from 'vue'
   import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import { notify } from '@kyvg/vue3-notification'
+import InputNumber from 'primevue/inputnumber'
+import Button from '@/Components/Elements/Buttons/Button.vue'
   
   library.add(faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross)
   
@@ -63,12 +67,51 @@
           return route(storageData[key].route.name)
       }
   }
+
+
+
+const isModalTopupOpen = ref(false)
+const amount = ref<number | null>(100)
+const privateNote = ref<string>("")
+
+const onSubmitTopup = () => {
+    router.post(route('retina.models.top_up_payment_api_point.store'), {
+        amount: amount.value,
+        // notes: privateNote.value,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Topup request has been submitted successfully."),
+                type: "error",
+            })
+            amount.value = null
+            privateNote.value = ""
+        },
+        onError: () => {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("Please try again or contact support."),
+                type: "error",
+            })
+        }
+    })
+}
   </script>
   
   <template>
   
       <Head :title="title" />
       <PageHeading :data="pageHead">
+        <template #other>
+            <Button
+                :label="trans('New Toup')"
+                @click="() => isModalTopupOpen = true"
+                icon="fas fa-plus"
+            />
+        </template>
       </PageHeading>
   
       <!-- <pre>{{ discounts }}</pre> -->
@@ -109,6 +152,7 @@
                   </div>
               </div>
   
+                
               <div v-if="route_action" class="mt-4 flex">
                   <div class="w-64 border-gray-300 ">
                       <div class="p-1" v-for="(btn, index) in route_action" :key="index">
@@ -167,6 +211,64 @@
               </div> -->
           </div>
           <!-- <pre>{{ props }}</pre> -->
+
+            <Modal
+                width="w-full max-w-xl"
+                :isOpen="isModalTopupOpen"
+                @close="() => isModalTopupOpen = false"
+            >
+                <div class="p-6 max-w-lg mx-auto w-full">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold">{{ trans("Topup Balance") }}</h2>
+                        <span class="text-sm italic text-gray-400">
+                            <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+                            {{ trans("Deposit funds for various purposes such as orders payment.") }}
+                        </span>
+                    </div>
+                    <div class="space-y-8">
+                        <div>
+                            <label for="amount" class="block font-medium mb-2">
+                                {{ trans("Amount to deposit") }}
+                            </label>
+                            <InputNumber v-model="amount" inputId="currency-germany" mode="currency" placeholder="100" currency="EUR" locale="de-DE" fluid />
+                        </div>
+
+                        <div class="flex gap-x-4">
+                            <div @click="amount = 100" class="h-12 w-fit border border-gray-300 rounded flex items-center px-7 font-bold">
+                                100
+                            </div>
+                            <div @click="amount = 200" class="h-12 w-fit border border-gray-300 rounded flex items-center px-7 font-bold">
+                                200
+                            </div>
+                            <div @click="amount = 300" class="h-12 w-fit border border-gray-300 rounded flex items-center px-7 font-bold">
+                                300
+                            </div>
+                        </div>
+
+                        <!-- <div>
+                            <label for="privateNote" class="block font-medium mb-2">
+                                {{ trans("Note") }}
+                            </label>
+                            <PureTextarea
+                                id="privateNote"
+                                name="privateNote"
+                                :rows="4"
+                                placeholder="Add any private notes here..."
+                                v-model="privateNote"
+                            />
+                        </div> -->
+                    </div>
+
+                    <div class="mt-8 flex justify-end space-x-4">
+                        <Button
+                            full
+                            @click="() => onSubmitTopup()"
+                            :label="trans('Submit')"
+                        />
+                    </div>
+                </div>
+
+            </Modal>
       </div>
   </template>
   

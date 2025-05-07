@@ -81,6 +81,7 @@
     "spatie/temporary-directory": "^2.2",
     "spiral/roadrunner-cli": "^2.6.0",
     "spiral/roadrunner-http": "^3.3.0",
+    "srmklive/paypal": "^3.0",
     "stevebauman/location": "^7.2",
     "symfony/psr-http-message-bridge": "^7.2",
     "theodo-group/llphant": "^0.9.9",

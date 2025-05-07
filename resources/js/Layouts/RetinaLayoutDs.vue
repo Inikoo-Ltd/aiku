@@ -10,9 +10,9 @@ import IrisFooter from '@/Layouts/Iris/Footer.vue'
 import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 
 // import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faFax } from "@fal"
+import { faShoppingBasket, faFax, faCog, faUserCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faShoppingBasket, faFax)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())

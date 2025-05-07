@@ -18,9 +18,8 @@ class StoreOrderPaymentApiPoint
 {
     use AsObject;
 
-    public function handle(Order $order, PaymentAccountShop $paymentAccountShop): OrderPaymentApiPoint
+    public function handle(Order $order): OrderPaymentApiPoint
     {
-        data_set($modelData, 'payment_account_shop_id', $paymentAccountShop->id);
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
         data_set($modelData, 'ulid', Str::ulid());

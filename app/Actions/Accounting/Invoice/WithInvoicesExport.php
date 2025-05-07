@@ -67,13 +67,13 @@ trait WithInvoicesExport
 
             if ($isAttachIsdocToPdf) {
                 try {
-                    $outputFile = AttacheIsDocToInvoicePDf::make()->handle($invoice, $pdf, $filename);
+                    $outputFile = AttacheIsDocToInvoicePdf::make()->handle($invoice, $pdf, $filename);
                     return response()->file($outputFile, [
                         'Content-Type' => 'application/pdf',
                         'Content-Disposition' => 'inline; filename="' . $filename . '.pdf"',
                     ]);
                 } catch (Exception $e) {
-                    return response()->json(['error' => 'Failed to generate ISDOC'], 404);
+                    return response()->json(['error' => 'Failed to generate ISDOC'.' '.$e->getMessage()], 404);
                 }
             }
 

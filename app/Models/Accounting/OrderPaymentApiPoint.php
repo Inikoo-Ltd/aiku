@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $group_id
  * @property int $organisation_id
  * @property int $order_id
- * @property int $payment_account_shop_id
  * @property string $ulid
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -28,7 +27,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Order $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Accounting\PaymentAccountShop $paymentAccountShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint query()
@@ -51,11 +49,6 @@ class OrderPaymentApiPoint extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
-    }
-
-    public function paymentAccountShop(): BelongsTo
-    {
-        return $this->belongsTo(PaymentAccountShop::class);
     }
 
 }

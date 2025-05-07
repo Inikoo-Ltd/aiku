@@ -61,25 +61,21 @@ class StorePayment extends OrgAction
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'amount') * GetCurrencyExchange::run($customer->shop->currency, $paymentAccount->organisation->group->currency), overwrite: false);
 
 
-        $payment = DB::transaction(function () use ($paymentAccount, $modelData, $currencyCode, $totalAmount) {
+        $payment = DB::transaction(function () use ($paymentAccount, $modelData, $currencyCode) {
             /** @var Payment $payment */
             $payment = $paymentAccount->payments()->create($modelData);
 
             $paypalData = [
-                'total_amount'  => $totalAmount,
+                'total_amount'  => $payment->amount,
                 'currency_code' => $currencyCode,
             ];
 
             if ($this->strict) {
-                $response = match ($paymentAccount->type->value) {
+                match ($paymentAccount->type->value) {
                     PaymentAccountTypeEnum::CHECKOUT->value => MakePaymentUsingCheckout::run($payment, $modelData),
                     PaymentAccountTypeEnum::PAYPAL->value => MakePaymentUsingPaypal::run($payment, $paypalData),
                     default => null
                 };
-
-                UpdatePayment::run($payment, [
-                    'data' => $response
-                ]);
             }
 
             $payment->refresh();

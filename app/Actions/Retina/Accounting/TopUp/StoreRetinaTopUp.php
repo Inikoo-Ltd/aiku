@@ -14,43 +14,52 @@ use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Http\Resources\Fulfilment\RetinaTopupResources;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\TopUp;
 use App\Models\CRM\Customer;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
-//todo to be deleted
 class StoreRetinaTopUp extends RetinaAction
 {
     use WithNoStrictRules;
 
+    public $commandSignature = 'make:topup {customer} {amount}';
+
     public function handle(Customer $customer, PaymentAccount $paymentAccount, array $modelData): TopUp
     {
-        $topUp = DB::transaction(function () use ($customer, $paymentAccount, $modelData) {
+        return DB::transaction(function () use ($customer, $paymentAccount, $modelData) {
             $payment = StorePayment::make()->action($customer, $paymentAccount, [
                 'amount' => Arr::get($modelData, 'amount'),
+                'currency_code' => $customer->shop->currency->code,
                 'type'   => PaymentTypeEnum::PAYMENT,
             ]);
 
-            $topUp = StoreTopUp::make()->action($payment, [
+            $topup = StoreTopUp::make()->action($payment, [
                 'amount' => Arr::get($modelData, 'amount'),
+                // This only for testing, we need to remove later
+                'reference' => Str::random()
             ]);
 
-            return $topUp;
+            return $topup;
         });
-
-        return $topUp;
     }
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'amount' => ['required', 'numeric'],
         ];
+    }
 
-        return $rules;
+    public function htmlResponse(TopUp $topUp): RetinaTopupResources
+    {
+        return RetinaTopupResources::make($topUp);
     }
 
     public function asController(PaymentAccount $paymentAccount, ActionRequest $request)
@@ -58,5 +67,15 @@ class StoreRetinaTopUp extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($this->customer, $paymentAccount, $this->validatedData);
+    }
+
+    public function asCommand(Command $command)
+    {
+        $customer = Customer::where('email', $command->argument('customer'))->first();
+        $paymentAccount = PaymentAccount::where('code', PaymentAccountTypeEnum::PAYPAL->value)->first();
+
+        $this->handle($customer, $paymentAccount, [
+            'amount' => $command->argument('amount')
+        ]);
     }
 }
