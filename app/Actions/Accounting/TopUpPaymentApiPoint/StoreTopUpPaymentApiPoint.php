@@ -50,9 +50,9 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
 
     public function htmlResponse(TopUpPaymentApiPoint $topUpPaymentApiPoint): RedirectResponse
     {
-        return Inertia::location(route('retina.top_up.checkout', [
+        return Redirect::route('retina.top_up.checkout', [
             'topUpPaymentApiPoint' => $topUpPaymentApiPoint->id
-        ]));
+        ]);
     }
 
 
