@@ -13,15 +13,12 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\HistoricAsset;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,8 +41,8 @@ class StoreRetinaOrder extends RetinaAction
             ->first();
 
         CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
-        
-        if($parent instanceof CustomerClient) {
+
+        if ($parent instanceof CustomerClient) {
             CustomerClientHydrateOrders::dispatch($parent);
         } elseif ($parent instanceof Customer) {
             CustomerHydrateOrders::dispatch($parent);

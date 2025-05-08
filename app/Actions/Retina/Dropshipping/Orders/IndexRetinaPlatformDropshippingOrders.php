@@ -110,7 +110,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
         return $this->handle($shopifyUser);
     }
 
-    public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request ): Response
+    public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         if (!($this->platformUser instanceof WebUser)) {
             $resource = RetinaDropshippingFulfilmentOrdersResources::collection($orders);
@@ -141,7 +141,6 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
     {
-        // dd($this->platformUser);
         return function (InertiaTable $table) use ($prefix, $modelOperations) {
             if ($prefix) {
                 $table
@@ -160,7 +159,6 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
                 ->withModelOperations($modelOperations);
 
             $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            // $table->column(key: 'model', label: __('model'), canBeHidden: false, searchable: true);
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
 
             if ($this->platformUser instanceof ShopifyUser) {
@@ -170,13 +168,11 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             if ($this->platformUser instanceof TiktokUser) {
                 $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
             }
-            
+
             if ($this->platformUser instanceof WebUser) {
                 $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
             }
 
-            // $table->column(key: 'client_name', label: __('client'), canBeHidden: false, searchable: true);
-            // $table->column(key: 'actions', label: __('actions'), canBeHidden: false, searchable: true);
         };
     }
 

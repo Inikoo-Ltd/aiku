@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-05-2025-15h-01m
@@ -10,8 +11,6 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\Helpers\CurrencyResource;
-use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
@@ -23,24 +22,24 @@ class ShowRetinaPlatformDashboard extends RetinaAction
     public function asController(Platform $platform, ActionRequest $request): CustomerHasPlatform
     {
         $this->initialisationFromPlatform($platform, $request);
-        $customerHasPlatform = $this->customer->customerHasPlatforms()
+        return $this->customer->customerHasPlatforms()
             ->where('platform_id', $platform->id)
             ->first();
-        return $customerHasPlatform;
     }
 
     public function htmlResponse(CustomerHasPlatform $customerHasPlatform): Response
     {
 
+        $title=__('Channel Dashboard');
         return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
-            'title'        => __('Channel Dashboard'),
+            'title'        => $title,
             'breadcrumbs'    => $this->getBreadcrumbs(),
             'pageHead'    => [
 
-                'title'         => __('Channel Dashboard'),
+                'title'         => $title,
                 'icon'          => [
                     'icon'  => ['fal', 'fa-tachometer-alt'],
-                    'title' => __('Channel Dashboard')
+                    'title' => $title
                 ],
 
             ],
