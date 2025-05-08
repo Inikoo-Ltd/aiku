@@ -25,7 +25,7 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['x-inertia', 'x-inertia-location'],
 
     'max_age' => 0,
 

@@ -36,9 +36,9 @@ Route::get('/families/{masterFamily}', [ShowMasterFamily::class, 'inGroup'])->na
 
 Route::prefix('/shops/{masterShop}')->as('shops.show')->group(function () {
     Route::get('', ShowMasterShop::class)->name('');
+
     Route::prefix('departments')->as('.departments.')->group(function () {
         Route::get('', IndexMasterDepartments::class)->name('index');
-        Route::get('departments-blueprint', ShowMasterDepartmentsWorkshop::class)->name('master_blueprint');
         Route::get('{masterDepartment}', ShowMasterDepartment::class)->name('show');
         Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
     });
@@ -55,3 +55,5 @@ Route::prefix('/shops/{masterShop}')->as('shops.show')->group(function () {
         Route::get('', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
     });
 });
+Route::get('/shops/{masterShop}/blueprint', ShowMasterDepartmentsWorkshop::class)->name('shops.blueprint');
+

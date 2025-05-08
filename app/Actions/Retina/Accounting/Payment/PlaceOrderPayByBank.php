@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 07-05-2025-15h-53m
@@ -8,7 +9,6 @@
 
 namespace App\Actions\Retina\Accounting\Payment;
 
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
 use Lorisleiva\Actions\ActionRequest;
 

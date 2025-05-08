@@ -33,7 +33,7 @@ class StoreRetinaManualPlatform extends OrgAction
         $customer = AttachCustomerToPlatform::make()->action($customer, $platform, []);
 
         $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->customer_id)
-        ->where('platform_id', $platform->platform_id)
+        ->where('platform_id', $platform->id)
         ->first();
 
         CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);

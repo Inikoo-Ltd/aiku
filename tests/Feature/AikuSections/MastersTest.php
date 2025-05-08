@@ -201,6 +201,23 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
     });
 })->depends('create master shop');
 
+test("UI Master Dashboard", function () {
+    $response = get(
+        route("grp.masters.dashboard")
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Masters/MastersDashboard")
+            ->has("title")
+            ->has("breadcrumbs", 2)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) =>
+                    $page->has('title')->etc()
+            );
+    });
+});
+
 test("UI Index Master Families", function (MasterShop $masterShop) {
     $response = get(
         route("grp.masters.shops.show.families.index", [$masterShop->slug])

@@ -18,10 +18,9 @@ class GetRetinaPaymentAccountShopData
 {
     use AsObject;
 
-    public function handle(Order $order, PaymentAccountShop $paymentAccountShop)
+    public function handle(Order $order, PaymentAccountShop $paymentAccountShop): ?array
     {
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
-
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
             } else {
@@ -30,29 +29,29 @@ class GetRetinaPaymentAccountShopData
 
             return
                 [
-                    'label'         => __('Online payments'),
-                    'key'           => 'credit_card',
-                    'public_key'    => $publicKey,
-                    'environment'   => 'sandbox',  // TODO: change this to 'production' appropriately
-                    'locale'        => "en-GB",  // TODO
-                    'icon'          => 'fal fa-credit-card-front',
-                    'data'          => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop)
+                    'label'       => __('Online payments'),
+                    'key'         => 'credit_card',
+                    'public_key'  => $publicKey,
+                    'environment' => app()->environment('production') ? 'production' : 'sandbox',
+                    'locale'      => $paymentAccountShop->shop->language->code,
+                    'icon'        => 'fal fa-credit-card-front',
+                    'data'        => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop)
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BANK) {
-
             return
                 [
                     'label' => __('Bank transfer'),
                     'key'   => 'bank_transfer',
                     'icon'  => 'fal fa-university',
                     'data'  => [
-                        'bank_name' => 'AAA',
+                        'bank_name'      => 'AAA',
                         'account_number' => 'xxxx',
-                        'iban' => 'yyyy'
+                        'iban'           => 'yyyy'
                     ]
                 ];
         }
 
         return null;
     }
+
 }

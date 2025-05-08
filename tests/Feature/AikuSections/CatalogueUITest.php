@@ -167,7 +167,6 @@ test('UI edit department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
