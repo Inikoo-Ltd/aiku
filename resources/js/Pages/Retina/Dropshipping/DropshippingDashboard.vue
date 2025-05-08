@@ -184,11 +184,8 @@ const onCreateStore = () => {
 
                 <div class="w-full flex justify-end">
                     <a v-if="!tiktokAuth?.isAuthenticated" target="_blank" class="w-full" :href="tiktokAuth?.url">
-                        <Button v-if="layout?.app?.environment === 'local'" :label="trans('Connect')" type="primary" full/>
-                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
-                        <!-- <Button label="Connect" type="primary" full/> -->
-                        <Button label="Coming soon" type="tertiary" disabled full/>
-                        <Button :label="tiktokAuth?.isAuthenticatedExpired ? 'Re-Connect' : 'Connect'" type="primary" full/>
+                        <Button v-if="layout?.app?.environment === 'local'" :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')" type="primary" full />
+                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
                     </a>
 
                     <div v-else class="relative w-full">
