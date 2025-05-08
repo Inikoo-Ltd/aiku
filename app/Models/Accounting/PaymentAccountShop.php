@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -36,7 +37,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $last_activated_at
  * @property \Illuminate\Support\Carbon|null $inactive_at
  * @property bool $show_in_checkout
- * @property int $checkout_display_position for the order in which will be show in checkout UI
+ * @property int $checkout_display_position for the order in which will be shown in checkout UI
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
@@ -98,4 +99,44 @@ class PaymentAccountShop extends Model implements Auditable
     {
         return $this->hasOne(PaymentAccountShopStats::class);
     }
+
+    public function getCredentials(): array
+    {
+        $credentials = [];
+
+        if ($this->type == PaymentAccountTypeEnum::CHECKOUT) {
+            $credentials = $this->getCheckoutComCredentials();
+        }
+
+        return $credentials;
+
+    }
+
+    public function getCheckoutComCredentials(): array
+    {
+        if (app()->environment('production')) {
+            return [
+                Arr::get($this->paymentAccount->data, 'credentials.public_key'),
+                Arr::get($this->paymentAccount->data, 'credentials.secret_key'),
+            ];
+        } else {
+            return [
+                config('app.sandbox.checkout_com.public_key'),
+                config('app.sandbox.checkout_com.secret_key'),
+            ];
+        }
+    }
+
+    public function getCheckoutComChannel(): array
+    {
+        if (app()->environment('production')) {
+            return  Arr::get($this->data, 'credentials.payment_channel');
+        } else {
+            return config('app.sandbox.checkout_com.payment_channel');
+        }
+    }
+
+
+
+
 }

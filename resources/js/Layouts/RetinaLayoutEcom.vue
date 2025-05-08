@@ -9,6 +9,8 @@ import { isArray } from "lodash"
 
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 import IrisFooter from '@/Layouts/Iris/Footer.vue'
+import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
+initialiseRetinaApp()
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())

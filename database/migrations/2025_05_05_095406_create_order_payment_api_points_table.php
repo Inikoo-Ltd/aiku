@@ -18,9 +18,9 @@ return new class () extends Migration {
         Schema::create('order_payment_api_points', function (Blueprint $table) {
             $table->id();
             $table = $this->groupOrgRelationship($table);
-            $table->unsignedBigInteger('order_id')->index();
+            $table->unsignedInteger('order_id')->index();
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
-            $table->unsignedBigInteger('payment_account_shop_id')->index();
+            $table->unsignedInteger('payment_account_shop_id')->index();
             $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop')->onDelete('cascade');
             $table->ulid()->index();
             $table->jsonb('data');

@@ -127,7 +127,7 @@ class ShowWebpage extends OrgAction
                     $this->canEdit ? [
                         'type'  => 'button',
                         'style' => 'secondary',
-                        'label' => __('bluprint'),
+                        'label' => __('blueprint'),
                         'route' => $webpage->shop?->fulfilment ? [
                             'name'       => 'grp.org.fulfilments.show.web.webpages.show.blueprint.show',
                             'parameters' => [

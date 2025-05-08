@@ -1,36 +1,90 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Thu, 08 Feb 2024 12:36:21 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2024, Raul A Perusquia Flores
-  -->
+<script setup lang="ts">
+import SetVisibleList from '@/Components/Departement&Family/SetVisibleList.vue';
+import { faChevronCircleLeft, faChevronCircleRight, faSave } from '@far'
+import { faExclamation, faWindWarning } from '@fas';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Message from 'primevue/message';
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { Head } from "@inertiajs/vue3"
+import { capitalize } from "@/Composables/capitalize"
 
-  <script setup lang="ts">
-  import { faGlobe, faLink, faPencil } from "@fal";
-  import { ref } from "vue";
-  import { library } from "@fortawesome/fontawesome-svg-core";
-  import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-  import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
-  import { trans } from "laravel-vue-i18n";
-  
-  library.add(faGlobe, faLink);
-  
-  const props = defineProps<{
-    data: {
-      slug: string
-      url: string
-      domain: string
-      state: string
-      status: string
-      created_at: string
-      updated_at: string
-      layout: string
-    },
-  }>();
-  
+const props = defineProps<{
+  title: string,
+  pageHead: object,
+  data: {
+    families: Array<any>
+    departement: {
+      data: {
+        name: string,
+        description: string
+      }
+    }
+  }
+}>()
 
-  
-  </script>
-  <template>
-  haloooo
-  </template>
-  
+const goToPrev = () => {
+  console.log('Previous clicked')
+}
+
+const goToNext = () => {
+  console.log('Next clicked')
+}
+
+/* const componentsDepartment: Record<string, Component> = {
+    'department-1': DepartmentRender,
+}
+
+const getComponentDepartment = (componentName: string) => {
+    return componentsDepartment[componentName]
+} */
+
+</script>
+
+<template>
+
+  <Head :title="capitalize(title)" />
+  <PageHeading :data="pageHead" />
+  <div class="px-4 pb-8 m-5">
+    <Message severity="warn" closable>
+      <template #icon>
+        <FontAwesomeIcon :icon="faExclamation" />
+      </template>
+      <span class="ml-2">Right Now you follow the master data </span>
+    </Message>
+    <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
+      <!--    <div >
+        <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
+          <div class="flex justify-between items-center border-b pb-4 mb-4">
+          <h3 class="text-xl font-semibold">Departement</h3>
+        </div>
+        <div class="flex items-center justify-between mb-6">
+          <button @click="goToPrev" aria-label="Previous">
+            <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
+          </button>
+          <div class="flex-1 mx-4">
+          </div>
+          <button @click="goToNext" aria-label="Next">
+            <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" />
+          </button>
+        </div>
+
+
+        <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
+          <div class="text-sm font-medium">
+            <span>{{ data.departement.data.name || 'No label' }}</span>
+          </div>
+          <div class="text-md">
+            <span class="text-gray-400">{{ data.departement.data.description || 'No description' }}</span>
+          </div>
+        </div>
+        </div>
+        
+      </div>
+
+      <SetVisibleList :title="'Family List'" :list_data="data.families.data" /> -->
+    </div>
+  </div>
+
+
+
+</template>

@@ -56,4 +56,3 @@ Route::prefix('/shops/{masterShop}')->as('shops.show')->group(function () {
     });
 });
 Route::get('/shops/{masterShop}/blueprint', ShowMasterDepartmentsWorkshop::class)->name('shops.blueprint');
-

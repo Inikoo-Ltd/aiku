@@ -20,9 +20,9 @@ return new class () extends Migration {
             $table = $this->groupOrgRelationship($table);
             $table->unsignedBigInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
-            $table->unsignedBigInteger('top_up_id')->nullable()->index();
+            $table->unsignedInteger('top_up_id')->nullable()->index();
             $table->foreign('top_up_id')->references('id')->on('top_ups')->nullOnUpdate();
-            $table->unsignedBigInteger('payment_account_shop_id')->index();
+            $table->unsignedInteger('payment_account_shop_id')->index();
             $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop')->onDelete('cascade');
             $table->ulid()->index();
             $table->jsonb('data');

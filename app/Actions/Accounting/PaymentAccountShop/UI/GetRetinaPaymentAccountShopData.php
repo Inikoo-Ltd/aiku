@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -18,8 +19,9 @@ class GetRetinaPaymentAccountShopData
 {
     use AsObject;
 
-    public function handle(Order $order, PaymentAccountShop $paymentAccountShop): ?array
+    public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): ?array
     {
+
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
@@ -35,7 +37,7 @@ class GetRetinaPaymentAccountShopData
                     'environment' => app()->environment('production') ? 'production' : 'sandbox',
                     'locale'      => $paymentAccountShop->shop->language->code,
                     'icon'        => 'fal fa-credit-card-front',
-                    'data'        => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop)
+                    'data'        => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop, $orderPaymentApiPoint)
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BANK) {
             return

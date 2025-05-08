@@ -233,12 +233,16 @@ export default {
 						required: true,
 						options: [
 							{
-								label: "Cart amount (£455.98)",
+								label: "£999.99",
 								value: "{{ cart_amount }}",
 							},
 							{
-								label: "Items count (95 items)",
+								label: "95 items",
 								value: "{{ cart_count }} items",
+							},
+							{
+								label: "£999.99 (95 items)",
+								value: "{{ cart_amount }} ({{ cart_count }} items)",
 							},
 						],
 						defaultValue: '{{ cart_amount }}',
