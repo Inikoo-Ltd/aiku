@@ -163,7 +163,7 @@ const props = defineProps<{
     attachmentRoutes?: {}
     address_update_route?: routeType
     addresses: {
-        
+
     }
 }>()
 
@@ -278,7 +278,7 @@ const onSubmitPayment = () => {
                         })
                 },
                 onSuccess: (response) => {
-                    paymentData.value.payment_method = null, 
+                    paymentData.value.payment_method = null,
                         paymentData.value.payment_amount = 0,
                         paymentData.value.payment_reference = ''
                 }
@@ -640,9 +640,9 @@ const openModal = (action :any) => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes.updateOrderRoute" :state="data?.data?.state"
-            :detachRoute="attachmentRoutes.detachRoute" 
-            :fetchRoute="routes.products_list"
+            :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
+            :detachRoute="attachmentRoutes?.detachRoute"
+            :fetchRoute="routes?.products_list"
 			:modalOpen="isModalUploadOpen"
 			:action="currentAction"
 			@update:tab="handleTabUpdate"/>
