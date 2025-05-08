@@ -15,6 +15,7 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import { faEdit } from "@fal";
 import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification";
+import SelectButton from 'primevue/selectbutton';
 
 import Family1Render from '@/Components/CMS/Webpage/Family1/Family1Render.vue'
 import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRender.vue'
@@ -54,7 +55,7 @@ const getComponentDepartment = (componentName: string) => {
 
 const onSaveAll = () => {
     form.patch(
-        route(props.update_route.name, props.update_route.parameters),
+        route(props.update_route.name, {...props.update_route.parameters, masterProductCategory: data.id }),
         {
             preserveScroll: true,
             onStart: () => {
@@ -136,6 +137,7 @@ const onUpload = async (files: File[], clear) => {
 
 <template>
     <div>
+        
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">{{ title }}</h3>
