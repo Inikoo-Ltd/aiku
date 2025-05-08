@@ -21,7 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowTopUp extends OrgAction
 {
-
     public function handle(TopUp $topUp): TopUp
     {
         return $topUp;

@@ -35,6 +35,7 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::middleware('webhooks')
             ->domain(config('app.domain'))
+            ->domain('https://a674-2a09-bac5-4d44-97d-00-f2-22.ngrok-free.app')
             ->prefix('webhooks')
             ->group(base_path('routes/grp/webhooks/webhooks.php'));
 
