@@ -31,7 +31,7 @@ class ShowRetinaDropshippingSysAdminDashboard extends RetinaAction
 
     public function handle(ActionRequest $request): Response
     {
-        $title = __('Account');
+        $title = __('Manage Account');
 
         return Inertia::render(
             'SysAdmin/RetinaSysAdminDashboard',
@@ -56,6 +56,10 @@ class ShowRetinaDropshippingSysAdminDashboard extends RetinaAction
                         ]
                     ]
 
+                ],
+                'users' => [
+                    'active' => 2,
+                    'inactive' => 4,
                 ],
                 'customer'     => CustomersResource::make($this->customer),
                 'status'              => $this->customer->status,

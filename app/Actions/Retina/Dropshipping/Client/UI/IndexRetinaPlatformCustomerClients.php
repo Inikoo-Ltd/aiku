@@ -70,24 +70,25 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
     {
         $icon      = ['fal', 'fa-user'];
         $title     = $this->platformUser->name;
+        $title = __('Clients');
         $iconRight = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('customer client')
         ];
 
-        if ($this->platformUser instanceof TiktokUser) {
-            $afterTitle = [
-                'label' => __('Tiktok Clients')
-            ];
-        } elseif ($this->platformUser instanceof ShopifyUser) {
-            $afterTitle = [
-                'label' => __('Shopify Clients')
-            ];
-        } else {
-            $afterTitle = [
-                'label' => __('Clients')
-            ];
-        }
+        // if ($this->platformUser instanceof TiktokUser) {
+        //     $afterTitle = [
+        //         'label' => __('Tiktok Clients')
+        //     ];
+        // } elseif ($this->platformUser instanceof ShopifyUser) {
+        //     $afterTitle = [
+        //         'label' => __('Shopify Clients')
+        //     ];
+        // } else {
+        //     $afterTitle = [
+        //         'label' => __('Clients')
+        //     ];
+        // }
 
 
         return Inertia::render(
@@ -100,9 +101,13 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'title'       => __('customer clients'),
                 'pageHead'    => [
                     'title'      => $title,
-                    'afterTitle' => $afterTitle,
-                    'iconRight'  => $iconRight,
-                    'icon'       => $icon,
+                    'model'      => $this->platformUser->name ?? __('Manual'),
+                    // 'afterTitle' => $afterTitle,
+                    // 'iconRight'  => $iconRight,
+                    'icon'       => [
+                        'icon'  => ['fal', 'fa-user-friends'],
+                        'title' => __('customer client')
+                    ],
                     'actions'    => [
                         match (class_basename($this->platformUser)) {
                             'ShopifyUser' => [

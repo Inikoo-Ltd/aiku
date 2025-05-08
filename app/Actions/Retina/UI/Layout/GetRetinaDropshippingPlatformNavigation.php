@@ -72,7 +72,7 @@ class GetRetinaDropshippingPlatformNavigation
         ];
 
         $platformNavigation['client'] = [
-            'label' => __('Client'),
+            'label' => __('Clients'),
             'icon' => ['fal', 'fa-user-friends'],
             'root' => 'retina.dropshipping.platforms.client.',
             'route' => [

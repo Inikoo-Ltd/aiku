@@ -120,6 +120,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
                 'pageHead'    => [
+                    'model' => $this->platformUser->name ?? __('Manual'),
                     'title' => __('Orders'),
                     'icon'  => 'fal fa-money-bill-wave'
                 ],
