@@ -23,8 +23,10 @@ import { debounce } from 'lodash'
 import Pagination from '@/Components/Table/Pagination.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBookmark, faStore, faTimes } from "@fal";
+import { faCheckCircle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTimes,faStore,faBookmark)
+import Image from '@/Components/Image.vue'
+library.add(faTimes,faStore,faBookmark, faCheckCircle)
 
 const props = defineProps<{
     data: {}
@@ -134,7 +136,7 @@ watch(isOpenModalPortfolios, (newVal) => {
                 :type="'secondary'"
                 icon="fal fa-plus"
                 :xxstooltip="'action.tooltip'"
-                :label="trans('Add portfolios')"
+                :label="trans('Add products to portfolios')"
             />
         </template>
     </PageHeading>
@@ -144,7 +146,7 @@ watch(isOpenModalPortfolios, (newVal) => {
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false, selectedProduct = []" width="w-full max-w-6xl">
         <div class="">
             <div class="mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans("Add portfolios") }}
+                {{ trans("Add products to portfolios") }}
             </div>
             <div class="mb-2">
                 <PureInput
@@ -154,11 +156,11 @@ watch(isOpenModalPortfolios, (newVal) => {
                 />
             </div>
             
-            <div class="h-[500px] grid grid-cols-5 text-base font-normal">
-                <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
+            <div class="h-[500px] text-base font-normal">
+                <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
                     <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                </div>
+                </div> -->
 
                 <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
@@ -178,16 +180,25 @@ watch(isOpenModalPortfolios, (newVal) => {
                                         v-for="(item, index) in portfoliosList"
                                         :key="index"
                                         @click="() => selectProduct(item)"
-                                        class="h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
-                                        :class="compSelectedProduct.includes(item.id) ? 'bg-indigo-100 border-indigo-300' : 'bg-white hover:bg-gray-200 border-transparent'"
+                                        class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
+                                        :class="compSelectedProduct.includes(item.id)
+                                            ? 'bg-indigo-100 border-indigo-300'
+                                            : 'bg-white hover:bg-gray-200 border-gray-300'"
                                     >
-                                        <img :src="item.image" class="w-16 h-16 object-cover" alt="" />
+                                        <Transition name="spin-to-right">
+                                            <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
+                                        </Transition>
+                                        <Image :src="item.image" class="w-16 h-16" imageCover alt="" />
                                         <div class="flex flex-col justify-between">
                                             <div>
-                                                <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                                <div class="text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                                <div v-tooltip="trans('Name')" class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                                                <div v-tooltip="trans('Code')" class="text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                                <div v-if="item.weight" v-tooltip="trans('Weight')" class="text-xs text-gray-400 italic">{{ item.weight }}</div>
                                             </div>
-                                            <div class="text-xs text-gray-500">{{ item.price || 'no price' }}</div>
+
+                                            <div v-tooltip="trans('Price')" class="text-xs text-gray-500">
+                                                {{ item.price || 'no price' }}
+                                            </div>
                                         </div>
                                     </div>
                                 </template>
@@ -238,9 +249,10 @@ watch(isOpenModalPortfolios, (newVal) => {
                             @click="() => onSubmitAddItem(() => isOpenModalPortfolios = false, selectedProduct.map(item => item.id))"
                             :disabled="selectedProduct.length < 1"
                             v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                            :label="`${trans('Submit')} (${selectedProduct.length} ${trans('portfolios')})`"
+                            :label="`${trans('Add')} ${selectedProduct.length} ${trans('products to portfolios')}`"
                             type="primary"
                             full
+                            icon="fas fa-plus"
                             :loading="isLoadingSubmit"
                         />
                         
