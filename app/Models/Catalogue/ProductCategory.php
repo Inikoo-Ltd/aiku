@@ -266,7 +266,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     public function masterProductCategory(): BelongsTo
     {
-        return $this->belongsTo(MasterProductCategory::class, );
+        return $this->belongsTo(MasterProductCategory::class);
     }
 
 }
