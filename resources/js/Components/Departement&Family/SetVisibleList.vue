@@ -85,7 +85,7 @@ const SaveShowAndHide = (item) => {
                 @click="isModalFamiliesPreview = true" /> -->
             </div>
 
-            <ul v-if="list_data.length > 0" class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
+            <ul v-if="list_data?.length > 0" class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
                 <li v-for="(item, index) in list_data" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">
