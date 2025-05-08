@@ -46,7 +46,7 @@ const confirmHideAndShow = (event: MouseEvent, item: { id: number; name: string;
 
 const SaveShowAndHide = (item) => {
     router.patch(
-        route(props.updateRoute.name, { masterProductCategory: item.id }),
+        route(props.updateRoute.name, { ...props.updateRoute.parameters, masterProductCategory: item.id }),
         {
             show_in_website: !item.show_in_website
         },
