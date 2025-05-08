@@ -33,6 +33,7 @@ class IndexOrganisationsSalesTable extends OrgAction
                 'name',
                 'slug',
                 'type',
+                'colour',
                 'organisations.currency_id as organisation_currency_id',
                 'organisation_sales_intervals.*',
                 'organisation_ordering_intervals.*',

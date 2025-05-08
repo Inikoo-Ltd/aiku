@@ -11,6 +11,30 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus);
 
 interface ModelTopbar1 {
+  profile: {
+    text: string
+    visible: string
+  };
+  favourite: {
+    text: string
+    visible: string
+  };
+  cart: {
+    text: string
+    visible: string
+  };
+  register: {
+    text: string
+    visible: string
+  };
+  logout: {
+    text: string
+    visible: string
+  };
+  login: {
+    text: string
+    visible: string
+  };
   greeting: {
     text: string
   };

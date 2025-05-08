@@ -118,12 +118,11 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
         );
 
-
         return [
             'slug'    => $this->slug,
             'state'   => $this->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
-            'columns' => $columns
-
+            'columns' => $columns,
+            'colour'  => $this?->colour,
 
         ];
     }

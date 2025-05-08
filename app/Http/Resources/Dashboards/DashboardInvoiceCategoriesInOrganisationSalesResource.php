@@ -110,7 +110,8 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
         return [
             'slug'    => $this->slug,
             'state'   => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
-            'columns' => $columns
+            'columns' => $columns,
+            'colour'  => $this?->colour,
 
 
         ];

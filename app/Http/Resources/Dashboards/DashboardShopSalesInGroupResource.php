@@ -115,8 +115,8 @@ class DashboardShopSalesInGroupResource extends JsonResource
         return [
             'slug'    => $this->slug,
             'state'   => $this->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
-            'columns' => $columns
-
+            'columns' => $columns,
+            'colour' => $this?->colour,
 
         ];
     }

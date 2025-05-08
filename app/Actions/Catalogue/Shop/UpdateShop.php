@@ -106,8 +106,8 @@ class UpdateShop extends OrgAction
             }
         }
 
-        if (Arr::exists($modelData, 'registration_auto_approve')) {
-            data_set($modelData, "settings.customer.registration_auto_approve", Arr::pull($modelData, 'registration_auto_approve'));
+        if (Arr::exists($modelData, 'required_approval')) {
+            data_set($modelData, "settings.customer.required_approval", Arr::pull($modelData, 'required_approval'));
         }
 
 
@@ -191,7 +191,7 @@ class UpdateShop extends OrgAction
             'shopify_access_token'      => ['sometimes', 'string'],
             'registration_number'       => ['sometimes', 'string'],
             'vat_number'                => ['sometimes', 'string'],
-            'registration_auto_approve' => ['sometimes', 'boolean'],
+            'required_approval'         => ['sometimes', 'boolean'],
             'invoice_footer'            => ['sometimes', 'string', 'max:10000'],
             'image'                     => [
                 'sometimes',

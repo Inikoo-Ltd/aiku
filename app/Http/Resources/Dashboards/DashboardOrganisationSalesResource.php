@@ -112,7 +112,8 @@ class DashboardOrganisationSalesResource extends JsonResource
         return [
             'slug'    => $this->slug,
             'state'   => 'active',
-            'columns' => $columns
+            'columns' => $columns,
+            'colour'  => $this?->colour,
 
 
         ];

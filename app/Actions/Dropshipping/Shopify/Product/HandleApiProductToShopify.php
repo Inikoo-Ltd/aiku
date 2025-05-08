@@ -49,15 +49,20 @@ class HandleApiProductToShopify extends OrgAction
                         $variants[] = [
                             "option1"      => $variant->name,
                             "price"        => $variant->price,
-                            "barcode"      => $variant->slug
+                            "barcode"      => $variant->slug,
+                            "inventory_management"      => "shopify"
                         ];
                     }
                 }
 
-                foreach ($product->images as $image) {
-                    $images[] = [
-                        "attachment" => $image->getBase64Image()
-                    ];
+                try {
+                    foreach ($product->images as $image) {
+                        $images[] = [
+                            "attachment" => $image->getBase64Image()
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    // do nothing
                 }
 
                 $body = [
@@ -82,12 +87,22 @@ class HandleApiProductToShopify extends OrgAction
                     throw ValidationException::withMessages(['Internal server error, please wait a while']);
                 }
 
+                $productShopify = Arr::get($response, 'body.product');
+
+                $inventoryVariants = [];
+                foreach (Arr::get($productShopify, 'variants') as $variant) {
+                    $variant['available_quantity'] = $product->available_quantity;
+                    $inventoryVariants[] = $variant;
+                }
+
+                HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
+
                 $shopifyUser->products()->attach($product, [
                     'shopify_user_id' => $shopifyUser->id,
                     'product_type' => class_basename($product),
                     'product_id' => $product->id,
                     'portfolio_id' => $portfolio->id,
-                    'shopify_product_id' => $response['body']['product']['id']
+                    'shopify_product_id' => Arr::get($productShopify, 'id')
                 ]);
 
                 $uploaded++;

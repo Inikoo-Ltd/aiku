@@ -12,6 +12,7 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomerSubNavigation
@@ -121,7 +122,7 @@ trait WithCustomerSubNavigation
             ],
         ];
 
-        if ($customer->status != CustomerStatusEnum::APPROVED) {
+        if ($customer->status != CustomerStatusEnum::APPROVED && Arr::get($customer->shop->settings, 'customer.required_approval')) {
             return $baseNavigation;
         }
 

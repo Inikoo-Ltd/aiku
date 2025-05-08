@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
@@ -50,7 +51,7 @@ class StoreOrderFromShopify extends OrgAction
             'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
             'date'             => $modelData['created_at'],
             'delivery_address' => new Address($deliveryAddress),
-            'billing_address'  => new Address($deliveryAddress),
+            'billing_address'  => new Address($deliveryAddress)
         ]);
 
         if (!$customerClient) {
@@ -61,6 +62,7 @@ class StoreOrderFromShopify extends OrgAction
         foreach ($shopifyProducts as $shopifyProduct) {
             /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
             $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_product_id', $shopifyProduct['product_id'])->first();
+
             if ($shopifyUserHasProduct) {
                 /** @var \App\Models\Catalogue\Product $product */
                 $product = $shopifyUserHasProduct->product;
@@ -95,5 +97,7 @@ class StoreOrderFromShopify extends OrgAction
             'state'                 => ChannelFulfilmentStateEnum::OPEN,
             'customer_client_id'    => $customerClient->id
         ]);
+
+        SubmitOrder::run($order);
     }
 }

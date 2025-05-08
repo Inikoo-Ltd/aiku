@@ -28,14 +28,13 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
         data_set($modelData, 'ulid', Str::ulid());
 
         return $customer->topUpPaymentApiPoint()->create($modelData);
-
-
     }
 
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric','gt:0','max:1000000'],
+            'amount' => ['required', 'numeric', 'gt:0', 'max:1000000'],
+            'data'   => ['sometimes', 'array'],
         ];
     }
 
@@ -43,6 +42,7 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
     public function asController(ActionRequest $request): TopUpPaymentApiPoint
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer, $this->validatedData);
     }
 
@@ -53,10 +53,6 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
             'topUpPaymentApiPoint' => $topUpPaymentApiPoint->id
         ]);
     }
-
-
-
-
 
 
 }
