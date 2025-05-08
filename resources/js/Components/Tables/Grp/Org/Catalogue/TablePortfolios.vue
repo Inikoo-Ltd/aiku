@@ -22,6 +22,7 @@ import {
 	faThLarge,
 	faListUl,
 	faStar as falStar,
+	faTrashAlt,
 } from "@fal"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -44,6 +45,7 @@ import IconField from "primevue/iconfield"
 import Select from "primevue/select"
 import { faStar } from "@fas"
 import route from "../../../../../../../vendor/tightenco/ziggy/src/js/index"
+import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(
 	faConciergeBell,
@@ -54,7 +56,8 @@ library.add(
 	faThLarge,
 	faListUl,
 	faStar,
-	falStar
+	falStar,
+	faTrashAlt
 )
 
 const props = defineProps<{
@@ -127,7 +130,10 @@ const optionsView = [
 	},
 ]
 
+const isDeleting = ref(false)
+const showConfirmModal = ref(false)
 const productQuantities = ref<{ [key: number]: number }>({})
+const productToDelete = ref<any>(null)
 const isLoadingDetach = ref<string[]>([])
 const sortKey = ref()
 const sortOrder = ref()
@@ -181,6 +187,9 @@ const addNewTag = async (option: tag, idProduct: number) => {
 	}
 }
 
+const closeModal = () => {
+	showConfirmModal.value = false
+}
 // On update data Tags (add tag or delete tag)
 const updateTagItemTable = async (tags: string[], idProduct: number) => {
 	try {
@@ -232,6 +241,15 @@ const toggleItem = (id) => {
 		// If item is not found, add it
 		selectedProducts.value.push({ id: id })
 	}
+}
+
+function openConfirmModal(item: any) {
+	productToDelete.value = item
+	showConfirmModal.value = true
+}
+function cancelDelete() {
+	showConfirmModal.value = false
+	productToDelete.value = null
 }
 
 const onChangeDisplay = (type: string) => {
@@ -289,6 +307,27 @@ const onSubmitProduct = () => {
 			},
 		}
 	)
+}
+
+function confirmDelete() {
+	if (!productToDelete.value) return
+
+	const deleteDef = productToDelete.value.delete_product ?? {
+		name: productToDelete.value.delete_product.name,
+		parameters: productToDelete.value.delete_product.parameters,
+		method: productToDelete.value.delete_product.method || "delete",
+	}
+
+	const verb = deleteDef.method.toLowerCase()
+	console.log(productToDelete.value, "xxx")
+
+	isDeleting.value = true
+	router[verb](route(deleteDef.name, deleteDef.parameters), {
+		onFinish: () => {
+			isDeleting.value = false
+			cancelDelete()
+		},
+	})
 }
 
 watch(
@@ -388,7 +427,7 @@ watch(
 					<Column field="code" header="Code" sortable style="min-width: 12rem">
 						<template #body="{ data }">
 							<Link :href="productRoute(data)" class="primaryLink">
-							{{ data.code }}
+								{{ data.code }}
 							</Link>
 						</template>
 					</Column>
@@ -404,8 +443,25 @@ watch(
 					<Column field="weight" header="Weight" style="min-width: 8rem"> </Column>
 					<Column field="price" header="Price" style="min-width: 8rem">
 						<template #body="{ data }">
-						<div>{{ useLocaleStore().currencyFormat( data.currency_code, data.price)  }}</div>
-					</template>
+							<div>
+								{{
+									useLocaleStore().currencyFormat(data.currency_code, data.price)
+								}}
+							</div>
+						</template>
+					</Column>
+					<Column
+						field="action"
+						header="Action"
+						style="min-width: 8rem; align-items: center">
+						<template #body="{ data }">
+							<FontAwesomeIcon
+								@click="openConfirmModal(data)"
+								:icon="faTrashAlt"
+								class="text-red-500"
+								fixed-width
+								aria-hidden="true" />
+						</template>
 					</Column>
 					<Column
 						field="action"
@@ -461,52 +517,35 @@ watch(
 										</div>
 									</div>
 									<div class="absolute top-1.5 right-2">
-										<input
-											:checked="isSelected(item.id)"
-											name="checkboxProduct"
-											type="checkbox"
-											class="cursor-pointer h-5 w-5 rounded border-stone-300 text-stone-800 shadow-sm focus:ring-0 focus:outline-none" />
+										<button
+											@click.stop="openConfirmModal(item)"
+											class="p-1 bg-white rounded-full shadow hover:bg-red-500 transition-colors">
+											<FontAwesomeIcon
+												:icon="faTrashAlt"
+												class="text-red-500 hover:text-white w-4 h-4"
+												aria-hidden="true" />
+										</button>
 									</div>
 								</div>
-								<div class="py-4 px-6 h-full flex flex-col justify-between">
-									<div class="flex flex-row justify-between items-start gap-2">
-										<div>
-											<span class="text-stone-500 text-sm">{{
-												item.code
-											}}</span>
-											<div class="text-lg font-medium">{{ item.name }}</div>
-										</div>
+								<!-- Info Block -->
+								<div class="py-4 px-6 flex-1 flex flex-col justify-between">
+									<!-- Code & Name -->
+									<div>
+										<span class="text-stone-500 text-sm">{{ item.code }}</span>
+										<div class="text-lg font-medium">{{ item.name }}</div>
 									</div>
 
-									<!-- Section: Price -->
-									<div class="flex justify-between mt-6">
-										<span class="text-2xl font-semibold"
-											>${{ item.price }}</span
-										>
-										<div class="p-1" style="border-radius: 30px">
-											<div
-												class="flex items-center gap-2 justify-center py-1 px-2"
-												style="
-													border-radius: 30px;
-													box-shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.04),
-														0px 1px 2px 0px rgba(0, 0, 0, 0.06);
-												">
-												<span class="font-medium text-sm">{{
-													item.rating || 0
-												}}</span>
-												<FontAwesomeIcon
-													v-if="item.rating > 0"
-													icon="fas fa-star"
-													class="text-yellow-500"
-													fixed-width
-													aria-hidden="true" />
-												<FontAwesomeIcon
-													v-else
-													icon="fal fa-star"
-													class="text-gray-500"
-													fixed-width
-													aria-hidden="true" />
-											</div>
+									<div
+										class="mt-4 grid grid-cols-3 gap-1 text-xl font-semibold text-gray-800">
+										<div class="text-center">{{ item.quantity_left }}</div>
+										<div class="text-center">{{ item.weight }}</div>
+										<div class="text-center">
+											{{
+												useLocaleStore().currencyFormat(
+													item.currency_code,
+													item.price
+												)
+											}}
 										</div>
 									</div>
 								</div>
@@ -649,6 +688,33 @@ watch(
 			</div>
 		</template>
 	</Table>
+
+	<Modal :isOpen="showConfirmModal" @onClose="closeModal" :closeButton="true" width="max-w-sm">
+		<div class="px-6 pt-6">
+			<h3 class="text-xl font-semibold">Confirm Deletion</h3>
+		</div>
+
+		<div class="px-6 py-4">
+			<p class="text-gray-700">Are you sure you want to delete this product?</p>
+		</div>
+
+		<div class="px-6 pb-6 flex justify-end space-x-3">
+			<div class="flex justify-end gap-2 p-4">
+				<Button
+					@click="cancelDelete"
+					:key="'buttonSubmit' + isLoadingSubmit"
+					:loading="isLoadingSubmit"
+					label="Cancel"
+					type="tertiary" />
+				<Button
+					@click="confirmDelete"
+					:key="'buttonSubmit' + isLoadingSubmit"
+					:loading="isLoadingSubmit"
+					label="Confirm"
+					type="red" />
+			</div>
+		</div>
+	</Modal>
 </template>
 
 <style src="../../../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>
