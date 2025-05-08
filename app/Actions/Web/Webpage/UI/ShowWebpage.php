@@ -119,6 +119,36 @@ class ShowWebpage extends OrgAction
             if (!empty($mainWebpageAction)) {
                 array_splice($actions, 1, 0, [$mainWebpageAction]);
             }
+        } elseif ($webpage->model instanceof ProductCategory) {
+
+            $actions = array_merge(
+                $actions,
+                [
+                    $this->canEdit ? [
+                        'type'  => 'button',
+                        'style' => 'secondary',
+                        'label' => __('bluprint'),
+                        'route' => $webpage->shop?->fulfilment ? [
+                            'name'       => 'grp.org.fulfilments.show.web.webpages.show.blueprint.show',
+                            'parameters' => [
+                                'organisation' => $webpage->organisation->slug,
+                                'fulfilment'   => $webpage->shop?->fulfilment->slug,
+                                'website'      => $webpage->website->slug,
+                                'webpage'      => $webpage->slug
+                            ]
+                        ] : [
+                            'name'       => 'grp.org.shops.show.web.webpages.show.blueprint.show',
+                            'parameters' => [
+                                'organisation' => $webpage->organisation->slug,
+                                'shop'         => $webpage->shop->slug,
+                                'website'      => $webpage->website->slug,
+                                'webpage'      => $webpage->slug
+                            ]
+                        ]
+                    ] : []
+                ]
+            );
+
         } elseif (in_array(
             $webpage->type,
             [
