@@ -177,10 +177,13 @@ const onCreateStore = () => {
                         <div class="text-xs text-gray-500">({{ trans("Manage product") }})</div>
                     </div>
                 </div>
+
                 <div class="w-full flex justify-end">
                     <a v-if="!tiktokAuth?.isAuthenticated" target="_blank" class="w-full" :href="tiktokAuth?.url">
-                        <Button label="Connect" type="primary" full/>
+                        <!-- <Button label="Connect" type="primary" full/> -->
+                        <Button label="Coming soon" type="tertiary" disabled full/>
                     </a>
+
                     <div v-else class="relative w-full">
                         <Transition name="spin-to-down">
                             <div class="w-full flex justify-end gap-x-2">
