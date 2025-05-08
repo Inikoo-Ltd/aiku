@@ -18,6 +18,7 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Masters\MasterDepartmentsResource;
 
 class ShowMasterDepartmentsWorkshop extends GrpAction
 {
@@ -56,7 +57,13 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
                         'title' => __('department'),
                     ],
                 ],
-                'departments' => DepartmentsResource::collection($masterShop->getMasterDepartments())
+
+                'update_route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.master_product.update',
+                    'parameters' => []
+                ],
+                'departments' => MasterDepartmentsResource::collection($masterShop->getMasterDepartments())
             ]
         );
     }
