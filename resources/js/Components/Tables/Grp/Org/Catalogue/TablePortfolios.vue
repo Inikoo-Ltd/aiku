@@ -454,6 +454,7 @@ watch(
 					<Column
 						field="action"
 						header="Action"
+						v-if="!props.orderMode"
 						style="min-width: 8rem; align-items: center">
 						<template #body="{ data }">
 							<FontAwesomeIcon
