@@ -20,7 +20,7 @@ class GetRetinaDropshippingNavigation
     {
         $customer = $webUser->customer;
         $groupNavigation = [];
-
+        // dd($customer->shop->type);
         if ($customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
             $groupNavigation['dashboard'] = [
                 'label' => __('Dashboard'),
@@ -86,6 +86,27 @@ class GetRetinaDropshippingNavigation
 
                 ]
             ];
+            $groupNavigation['topup'] = [
+                'label' => __('Top Up'),
+                'icon' => ['fal', 'fa-money-bill-wave'],
+                'root' => 'retina.topup.',
+                'route' => [
+                    'name' => 'retina.top_up.dashboard'
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label' => __('Topups'),
+                            'icon'  => ['fal', 'fa-money-bill-wave'],
+                            'root'  => 'retina.topup.',
+                            'route' => [
+                                'name' => 'retina.topup.index',
+    
+                            ]
+                        ],
+                    ]
+                ]
+            ];
         }
 
         $groupNavigation['platform'] = [
@@ -119,28 +140,6 @@ class GetRetinaDropshippingNavigation
                 ],
             ];
         }
-
-        $groupNavigation['topup'] = [
-            'label' => __('Top Up'),
-            'icon' => ['fal', 'fa-money-bill-wave'],
-            'root' => 'retina.topup.',
-            'route' => [
-                'name' => 'retina.top_up.dashboard'
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label' => __('Topups'),
-                        'icon'  => ['fal', 'fa-money-bill-wave'],
-                        'root'  => 'retina.topup.',
-                        'route' => [
-                            'name' => 'retina.topup.index',
-
-                        ]
-                    ],
-                ]
-            ]
-        ];
 
         if ($webUser->is_root) {
             $groupNavigation['sysadmin'] = [
