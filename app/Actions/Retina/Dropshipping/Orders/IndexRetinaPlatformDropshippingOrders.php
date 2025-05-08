@@ -12,6 +12,7 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
@@ -107,7 +108,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
         return $this->handle($shopifyUser);
     }
 
-    public function htmlResponse(LengthAwarePaginator $orders): Response
+    public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request ): Response
     {
         if (!($this->platformUser instanceof WebUser)) {
             $resource = RetinaDropshippingFulfilmentOrdersResources::collection($orders);
@@ -115,7 +116,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             $resource = OrdersResource::collection($orders);
         }
         return Inertia::render(
-            'Dropshipping/Orders',
+            'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
@@ -128,6 +129,8 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
                 ],
+
+                'currency' => CurrencyResource::make($request->user()->customer->shop->currency)->toArray(request()),
 
                 'orders' => $resource
             ]

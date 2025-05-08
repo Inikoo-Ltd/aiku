@@ -12,7 +12,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlus } from "@fas"
 import TagPallet from '@/Components/TagPallet.vue'
 
-import { PalletDelivery } from "@/types/pallet-delivery"
 import Icon from "@/Components/Icon.vue"
 import { inject } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -25,146 +24,68 @@ const props = defineProps<{
     data: {}
     tab?: string
     location?: string
+    currency: {
+        code: string
+        symbol: string
+        name: string
+    }
 }>()
 
 const layout = inject('layout', layoutStructure)
+const locale = inject('locale', null)
 
-function palletReturnRoute(palletReturn: PalletDelivery) {
+function orderRoute(order) {
     switch (route().current()) {
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.index':
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index':
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.picking.index':
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index':
+        
+        case 'retina.dropshipping.platforms.orders.index':
             return route(
-                'grp.org.warehouses.show.dispatching.pallet-returns.show',
-                [
-                    route().params['organisation'],
-                    route().params['warehouse'],
-                    palletReturn.slug
-                ]);
-        case 'grp.org.fulfilments.show.operations.pallet-returns.index':
-        case 'grp.org.fulfilments.show.operations.pallet-returns.confirmed.index':
-        case 'grp.org.fulfilments.show.operations.pallet-returns.picking.index':
-        case 'grp.org.fulfilments.show.operations.pallet-returns.picked.index':
-            return route(
-                'grp.org.fulfilments.show.operations.pallet-returns.show',
-                [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    palletReturn.slug
-                ]);
-        case 'retina.fulfilment.storage.pallet_returns.index':
-            return route(
-                'retina.fulfilment.storage.pallet_returns.show',
-                [
-                    palletReturn.slug
-                ]);
-        default:
-            return route(
-                'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
-                [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['fulfilmentCustomer'],
-                    palletReturn.slug
-                ]);
+                'retina.dropshipping.platforms.orders.show',
+                {
+                    platform: route().params.platform,
+                    order: order.slug
+                });
+        // default:
+        //     return route(
+        //         'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+        //         [
+        //             route().params['organisation'],
+        //             route().params['fulfilment'],
+        //             route().params['fulfilmentCustomer'],
+        //             palletReturn.slug
+        //         ]);
     }
 }
 
-function storedItemReturnRoute(palletReturn: PalletDelivery) {
-    switch (route().current()) {
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.index':
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index':
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.picking.index':
-        case 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index':
-            return route(
-                'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show',
-                [
-                    route().params['organisation'],
-                    route().params['warehouse'],
-                    palletReturn.slug
-                ]);
-        case 'grp.org.fulfilments.show.operations.pallet-returns.index':
-        case 'grp.org.fulfilments.show.operations.pallet-returns.confirmed.index':
-        case 'grp.org.fulfilments.show.operations.pallet-returns.picking.index':
-        case 'grp.org.fulfilments.show.operations.pallet-returns.picked.index':
-            return route(
-                'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
-                [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    palletReturn.slug
-                ]);
-        case 'retina.fulfilment.storage.pallet_returns.index':
-            return route(
-                'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
-                [
-                    palletReturn.slug
-                ]);
-        case 'retina.dropshipping.orders.index':
-        case 'retina.dropshipping.platforms.orders.index':
-            return route(
-                'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
-                [
-                    palletReturn.slug
-                ]);
-        default:
-            return route(
-                'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
-                [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['fulfilmentCustomer'],
-                    palletReturn.slug
-                ]);
-    }
-}
-
-function orderRoute(palletReturn: PalletDelivery) {
-    switch (route().current()) {
-        case 'retina.dropshipping.orders.index':
-        case 'retina.dropshipping.platforms.orders.index':
-            return route(
-                'retina.dropshipping.orders.show',
-                [
-                    palletReturn.slug
-                ]);
-        default:
-            return route(
-                'retina.dropshipping.orders.show',
-                [
-                    palletReturn.slug
-                ]);
-        }
-    }
+// function storedItemReturnRoute(palletReturn: PalletDelivery) {
+//     switch (route().current()) {
+       
+//         case 'retina.dropshipping.platforms.orders.index':
+//             return route(
+//                 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
+//                 [
+//                     palletReturn.slug
+//                 ]);
+//         default:
+//             return route(
+//                 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
+//                 [
+//                     route().params['organisation'],
+//                     route().params['fulfilment'],
+//                     route().params['fulfilmentCustomer'],
+//                     palletReturn.slug
+//                 ]);
+//     }
+// }
 
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Reference -->
-        <template #cell(reference)="{ item: palletReturn }">
-            <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
+        <template #cell(reference)="{ item }">
+            <Link :href="orderRoute(item)" class="primaryLink">
+                {{ item['reference'] }}
             </Link>
-
-            <div v-else-if="palletReturn.type === 'stored_item'">
-                <Link v-if="location !== 'pupil'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
-                    {{ palletReturn['reference'] }}
-                </Link>
-                <div v-else>
-                    {{ palletReturn['reference'] }}
-                </div>
-            </div>
-
-            <div v-else-if="palletReturn.model === 'Order'">
-                <Link v-if="location !== 'pupil'" :href="orderRoute(palletReturn)" class="primaryLink">
-                    {{ palletReturn['reference'] }}
-                </Link>
-                <div v-else>
-                    {{ palletReturn['reference'] }}
-                </div>
-            </div>
         </template>
 
         <!-- Column: Customer Reference -->
@@ -216,6 +137,10 @@ function orderRoute(palletReturn: PalletDelivery) {
             <div class="tabular-nums">
                 {{ palletReturn.number_pallets }}
             </div>
+        </template>
+
+        <template #cell(total_amount)="{ item }">
+            {{ locale?.currencyFormat(currency.code || 'usd', item.total_amount || 0) }}
         </template>
 
         <template #cell(date)="{ item: palletReturn }">

@@ -59,7 +59,9 @@ console.log('LayoutDs')
                 <!-- Section: Subsections (Something will teleport to this section) -->
                 <div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 h-full" />
 
-                <slot name="default" />
+                <div style="max-width: calc(1280px - 200px);">
+                    <slot name="default" />
+                </div>
             </div>
         </main>
 
