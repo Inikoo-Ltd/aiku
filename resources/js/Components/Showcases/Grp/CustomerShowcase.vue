@@ -101,7 +101,7 @@ const links = ref([
 <template>
   <!-- Section: Stats box -->
   <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
-    <div v-if="data.customer.status === 'pending_approval'" class="w-full max-w-md justify-self-end">
+    <div v-if="data.required_approval === true" class="w-full max-w-md justify-self-end">
       <div class="p-5 border rounded-lg bg-white">
         <div class="flex flex-col items-center text-center gap-2">
           <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
