@@ -40,9 +40,13 @@ class DropshippingPortfolioResource extends JsonResource
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
             $itemId = $this->item->id;
+            $weight = 0;
+            $price = 0;
         } elseif ($this->item instanceof Product) {
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
+            $weight = $this->item->gross_weight;
+            $price = $this->item->price;
         }
 
         return [
@@ -50,8 +54,11 @@ class DropshippingPortfolioResource extends JsonResource
             'item_id'                   => $itemId,
             'slug'                      => $this->item?->slug,
             'code'                      => $this->item?->code,
+            'currency_code'             => $this->item?->currency?->code,
             'name'                      => $this->item?->name ?? $this->item?->code,
             'quantity_left'             => $quantity,
+            'weight'                    => $weight,
+            'price'                     => $price,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
