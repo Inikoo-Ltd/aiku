@@ -33,22 +33,22 @@ export const initialiseRetinaApp = () => {
         // Echo: Personal
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
-        router.on('navigate', (event) => {
-            // console.log('layout env', layout.app.environment)
-            layout.currentParams = route().v().params  // current params
-            layout.currentRoute = route().current()  // current route
-
-            if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
-                layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
-
-                localStorage.setItem('layout', JSON.stringify({
-                    ...storageLayout,
-                    currentPlatform: layout.currentPlatform
-                }))
-            }
-        })
     }
+    
+    router.on('navigate', (event) => {
+        // console.log('layout env', layout.app.environment)
+        layout.currentParams = route().v().params  // current params
+        layout.currentRoute = route().current()  // current route
 
+        if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
+            layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
+
+            localStorage.setItem('layout', JSON.stringify({
+                ...storageLayout,
+                currentPlatform: layout.currentPlatform
+            }))
+        }
+    })
 
     // Echo: Website wide websocket
     echoWebsite.subscribe(usePage().props.iris.website.id)  // Websockets: notification

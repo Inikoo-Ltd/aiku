@@ -13,6 +13,8 @@ import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 import { faShoppingBasket, faFax, faCog, faUserCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle)
+import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
+initialiseRetinaApp()
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())

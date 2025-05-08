@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getIrisComponent } from "@/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
-import { ref, inject, provide } from "vue";
+import { ref, inject, provide, computed } from "vue";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
@@ -25,7 +25,9 @@ defineProps<{
 
 
 const layout = inject("layout", {});
-const isLoggedIn = ref(layout.iris.user_auth ? true : false);
+const isLoggedIn = computed(() => {
+  return layout.iris?.user_auth ? true : false;
+})
 provide("isPreviewLoggedIn", isLoggedIn);
 
 const onLogoutAuth = async () => {
