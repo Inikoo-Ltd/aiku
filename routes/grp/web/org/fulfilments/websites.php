@@ -20,7 +20,7 @@ use App\Actions\Web\Webpage\UI\CreateArticle;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
-use App\Actions\Web\Webpage\UI\ShowBlueprint;
+use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooter;
 use App\Actions\Web\Webpage\UI\ShowHeader;
 use App\Actions\Web\Webpage\UI\ShowMenu;
@@ -76,7 +76,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::prefix('{webpage}')
         ->group(function () {
             Route::get('', [ShowWebpage::class, 'inFulfilment'])->name('show');
-            Route::get('blueprint', [ShowBlueprint::class, 'inFulfilment'])->name('show.blueprint.show');
+            Route::get('blueprint', [ShowWorkshopBlueprint::class, 'inFulfilment'])->name('show.blueprint.show');
             Route::get('edit', [EditWebpage::class, 'inFulfilment'])->name('edit');
             Route::get('workshop', [ShowWebpageWorkshop::class, 'inFulfilment'])->name('workshop');
             Route::get('webpages', [IndexWebpages::class, 'inWebpageInFulfilment'])->name('show.webpages.index');

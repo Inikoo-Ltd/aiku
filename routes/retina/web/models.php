@@ -19,6 +19,7 @@ use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
+use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
@@ -156,8 +157,11 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
     Route::post('delivery-address/store', AddRetinaDeliveryAddressToFulfilmentCustomer::class)->name('delivery_address.store');
 });
 
-Route::post('customer-client', StoreRetinaCustomerClient::class)->name('customer-client.store');
-Route::post('platform-customer-client/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform-customer-client.store');
+Route::name('customer-client.')->prefix('customer-client')->group(function () {
+    Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::post('platform/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform.store');
+    Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
+});
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('customer/{customer:id}/products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();

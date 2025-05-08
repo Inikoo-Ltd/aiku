@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -85,7 +86,10 @@ class CreateRetinaCustomerClient extends RetinaAction
                             ]
                         ],
                     'route'     => [
-                        'name'      => 'retina.models.customer-client.store'
+                        'name'      => 'retina.models.customer-client.platform.store',
+                        'parameters' => [
+                            'platform' => $this->platform->id
+                        ]
                     ]
                 ]
 
@@ -103,6 +107,13 @@ class CreateRetinaCustomerClient extends RetinaAction
     {
         $this->initialisation($request);
         $this->parent = $this->customer;
+
+        return $this->handle($request);
+    }
+
+    public function inPlatform(Platform $platform, ActionRequest $request): Response
+    {
+        $this->initialisationFromPlatform($platform, $request);
 
         return $this->handle($request);
     }

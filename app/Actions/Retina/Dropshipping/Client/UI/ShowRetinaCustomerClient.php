@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Client\UI;
 
+use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
 use App\Actions\RetinaAction;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
@@ -56,12 +57,31 @@ class ShowRetinaCustomerClient extends RetinaAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('customer client')
                     ],
+                    'actions'    => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Create Order'),
+                            'route' => [
+                                'name'       => 'retina.models.customer-client.order.store',
+                                'parameters' => [
+                                    'customerClient' => $customerClient->id,
+                                    'platform' => $customerClient->platform->id
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ]
+                    ]
                 ],
                 'tabs'          => [
                     'current'    => $this->tab,
                     'navigation' => CustomerClientTabsEnum::navigation()
 
                 ],
+
+                CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
+                    fn () => GetCustomerClientShowcase::run($customerClient)
+                    : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
 
 
 

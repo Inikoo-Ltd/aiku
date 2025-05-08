@@ -26,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Web\Website;
 
-class ShowBlueprint extends OrgAction
+class ShowWorkshopBlueprint extends OrgAction
 {
     use AsAction;
     use WithFooterSubNavigation;
