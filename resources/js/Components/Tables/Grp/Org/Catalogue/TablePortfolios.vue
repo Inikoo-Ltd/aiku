@@ -404,7 +404,7 @@ watch(
 					<Column field="weight" header="Weight" style="min-width: 8rem"> </Column>
 					<Column field="price" header="Price" style="min-width: 8rem">
 						<template #body="{ data }">
-						<div class="text-gray-500">{{ useLocaleStore().currencyFormat( data.currency_code, data.price)  }}</div>
+						<div>{{ useLocaleStore().currencyFormat( data.currency_code, data.price)  }}</div>
 					</template>
 					</Column>
 					<Column
