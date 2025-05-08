@@ -23,9 +23,9 @@ class GetRetinaDropshippingPlatformNavigation
 
         $tabs = [];
 
-        $platformNavigation['basket'] = [
-            'label' => __('Basket'),
-            'icon' => ['fal', 'fa-shopping-cart'],
+        $platformNavigation['baskets'] = [
+            'label' => __('Baskets'),
+            'icon' => ['fal', 'fa-shopping-basket'],
             'root' => 'retina.dropshipping.platforms.basket.',
             'route' => [
                 'name' => 'retina.dropshipping.platforms.basket.index',
