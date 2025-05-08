@@ -79,6 +79,7 @@ class IndexFilteredProducts extends OrgAction
                 'products.state',
                 'products.created_at',
                 'products.updated_at',
+                'products.gross_weight',
                 'products.slug',
                 'currencies.code as currency_code',
                 'currencies.id as currency_id',
