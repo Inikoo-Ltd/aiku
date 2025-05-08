@@ -46,6 +46,7 @@ import Select from "primevue/select"
 import { faStar } from "@fas"
 import route from "../../../../../../../vendor/tightenco/ziggy/src/js/index"
 import Modal from "@/Components/Utils/Modal.vue"
+import Image from "@/Components/Image.vue"
 
 library.add(
 	faConciergeBell,
@@ -453,6 +454,7 @@ watch(
 					<Column
 						field="action"
 						header="Action"
+						v-if="!props.orderMode"
 						style="min-width: 8rem; align-items: center">
 						<template #body="{ data }">
 							<FontAwesomeIcon
@@ -495,27 +497,24 @@ watch(
 							<div
 								v-for="(item, index) in items"
 								:key="index"
-								@click="() => toggleItem(item.id)"
+								
 								class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3"
-								:class="[
-									isSelected(item.id)
-										? 'bg-stone-200 ring-1 ring-stone-500'
-										: 'hover:bg-stone-100',
-								]">
+								>
 								<!-- == {{ isSelected(item.id) }} == -->
 								<div class="relative flex justify-center rounded">
-									<img
+									<Image
+										:src="item.source"
+										:imageCover="true"
 										class="rounded w-full"
-										:src="`https://primefaces.org/cdn/primevue/images/product/gaming-set.jpg`"
-										:alt="item.name"
-										style="max-width: 300px" />
-									<div class="absolute top-1.5 left-2">
+										style="max-width: 300px"
+										:alt="'image alt'" />
+								<!-- 	<div class="absolute top-1.5 left-2">
 										<div
 											class="capitalize text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500"
-											:theme="13">
+											:theme="13">xx
 											{{ item.state }}
 										</div>
-									</div>
+									</div> -->
 									<div class="absolute top-1.5 right-2">
 										<button
 											@click.stop="openConfirmModal(item)"
