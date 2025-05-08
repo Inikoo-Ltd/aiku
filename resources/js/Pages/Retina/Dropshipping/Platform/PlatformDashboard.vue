@@ -34,10 +34,10 @@ const stats = [
 
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="mx-auto max-w-2xl lg:mx-0">
-                <h2 class="text-5xl font-semibold tracking-tight text-white sm:text-7xl">
+                <h2 class="text-5xl font-semibold tracking-tight sm:text-7xl">
                     Work with us
                 </h2>
-                <p class="mt-8 text-pretty text-lg font-medium text-gray-300 sm:text-xl/8">
+                <p class="mt-8 text-pretty text-lg font-medium sm:text-xl/8">
                     Anim aute id magna aliqua ad
                     ad non deserunt sunt. Qui irure qui lorem cupidatat commodo. Elit sunt amet fugiat veniam occaecat
                     fugiat.
@@ -46,14 +46,14 @@ const stats = [
 
             <div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
                 <div
-                    class="grid grid-cols-1 gap-x-8 gap-y-6 text-base/7 font-semibold text-white sm:grid-cols-2 md:flex lg:gap-x-10">
+                    class="grid grid-cols-1 gap-x-8 gap-y-6 text-base/7 font-semibold sm:grid-cols-2 md:flex lg:gap-x-10">
                     <a v-for="link in links" :key="link.name" :href="link.href">{{ link.name }} <span
                             aria-hidden="true">&rarr;</span></a>
                 </div>
                 <dl class="mt-16 grid grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 lg:grid-cols-4">
                     <div v-for="stat in stats" :key="stat.name" class="flex flex-col-reverse gap-1">
-                        <dt class="text-base/7 text-gray-300">{{ stat.name }}</dt>
-                        <dd class="text-4xl font-semibold tracking-tight text-white">{{ stat.value }}</dd>
+                        <dt class="text-base/7">{{ stat.name }}</dt>
+                        <dd class="text-4xl font-semibold tracking-tight">{{ stat.value }}</dd>
                     </div>
                 </dl>
             </div>
