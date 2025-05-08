@@ -66,6 +66,7 @@ class ShowRetinaDropshipping extends RetinaAction
                 'tiktokAuth' => [
                     'url' => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
                     'isAuthenticated' => AuthenticateTiktokAccount::make()->checkIsAuthenticated($customer),
+                    'isAuthenticatedExpired' => AuthenticateTiktokAccount::make()->checkIsAuthenticatedExpired($customer),
                     'tiktokName' => $customer->tiktokUser?->name,
                     'deleteAccountRoute' => [
                         'method' => 'delete',

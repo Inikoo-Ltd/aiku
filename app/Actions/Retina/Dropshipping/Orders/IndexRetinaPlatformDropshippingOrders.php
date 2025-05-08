@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -59,6 +60,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
         } else {
             $query->where('orders.customer_id', $this->customer->id);
+            $query->where('orders.state', '!=', OrderStateEnum::CREATING);
         }
 
         if (!($this->platformUser instanceof WebUser)) {
@@ -108,7 +110,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
         return $this->handle($shopifyUser);
     }
 
-    public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request ): Response
+    public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         if (!($this->platformUser instanceof WebUser)) {
             $resource = RetinaDropshippingFulfilmentOrdersResources::collection($orders);
@@ -139,7 +141,6 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
     {
-        // dd($this->platformUser);
         return function (InertiaTable $table) use ($prefix, $modelOperations) {
             if ($prefix) {
                 $table
@@ -158,7 +159,6 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
                 ->withModelOperations($modelOperations);
 
             $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            // $table->column(key: 'model', label: __('model'), canBeHidden: false, searchable: true);
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
 
             if ($this->platformUser instanceof ShopifyUser) {
@@ -168,13 +168,11 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             if ($this->platformUser instanceof TiktokUser) {
                 $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
             }
-            
+
             if ($this->platformUser instanceof WebUser) {
                 $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
             }
 
-            // $table->column(key: 'client_name', label: __('client'), canBeHidden: false, searchable: true);
-            // $table->column(key: 'actions', label: __('actions'), canBeHidden: false, searchable: true);
         };
     }
 

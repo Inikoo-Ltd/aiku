@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreRetinaShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
+use App\Actions\Retina\Accounting\CreditCard\ShowRetinaSavedCreditCard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -26,6 +27,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
+use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platform')->as('platform.')->group(function () {
@@ -58,8 +60,12 @@ Route::prefix('orders')->as('orders.')->group(function () {
 });
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
+
+    Route::get('/dashboard', ShowRetinaPlatformDashboard::class)->name('dashboard');
+
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
+        Route::get('{order}', [ShowRetinaDropshippingOrder::class, 'inBasket'])->name('show');
     });
 
     Route::prefix('client')->as('client.')->group(function () {
@@ -81,4 +87,8 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
+});
+
+Route::prefix('saved-credit-card')->name('saved-credit-card.')->group(function () {
+    Route::get('', ShowRetinaSavedCreditCard::class)->name('show');
 });

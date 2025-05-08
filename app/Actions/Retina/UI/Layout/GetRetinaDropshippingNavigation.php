@@ -136,6 +136,15 @@ class GetRetinaDropshippingNavigation
             ];
         }
 
+        $groupNavigation['saved_credit_card'] = [
+            'label' => __('Saved Credit Card'),
+            'icon' => ['fal', 'fa-money-bill-wave'],
+            'root' => 'retina.top_up.',
+            'route' => [
+                'name' => 'retina.dropshipping.saved-credit-card.show'
+            ],
+        ];
+
         return $groupNavigation;
     }
 }

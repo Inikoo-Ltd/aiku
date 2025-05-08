@@ -68,6 +68,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $follow_master
+ * @property bool $show_in_website
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -266,7 +267,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     public function masterProductCategory(): BelongsTo
     {
-        return $this->belongsTo(MasterProductCategory::class, );
+        return $this->belongsTo(MasterProductCategory::class);
     }
 
 }

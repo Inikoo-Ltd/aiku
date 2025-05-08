@@ -45,6 +45,13 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return $this->handle($order);
     }
 
+    public function inBasket(Platform $platform, Order $order, ActionRequest $request): Order
+    {
+        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
+
+        return $this->handle($order);
+    }
+
     public function inPlatform(Platform $platform, Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
