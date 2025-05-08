@@ -6,8 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\OrderPaymentFailure;
-use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\OrderPaymentSuccess;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentFailure;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentSuccess;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
 use App\Actions\Comms\Notifications\GetSnsNotification;
@@ -22,13 +22,14 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
     Route::name('checkout_com.')->prefix('checkout-com')->group(function () {
-        Route::post('order-payment-success/{orderPaymentApiPoint:ulid}', OrderPaymentSuccess::class)->name('order_payment_success');
-        Route::post('order-payment-failure/{orderPaymentApiPoint:ulid}', OrderPaymentFailure::class)->name('order_payment_failure');
+        Route::get('order-payment-success/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentSuccess::class)->name('order_payment_success');
+        Route::get('order-payment-failure/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentFailure::class)->name('order_payment_failure');
 
-        Route::post('top-up-payment-success/{{paymentAccountShop:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
-        Route::post('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
+        Route::get('top-up-payment-success/{{paymentAccountShop:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
+        Route::get('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
     });
 });
+
 
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {

@@ -16,7 +16,6 @@ use App\Http\Middleware\HandleInertiaCrossToIris;
 use App\Http\Middleware\HandleInertiaCrossToRetina;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RetinaPreparingAccount;
-use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
@@ -66,11 +65,6 @@ use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
 
 class Kernel extends HttpKernel
 {
-    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Routing\Router $router)
-    {
-        parent::__construct($app, $router);
-    }
-
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
         TrustProxies::class,
