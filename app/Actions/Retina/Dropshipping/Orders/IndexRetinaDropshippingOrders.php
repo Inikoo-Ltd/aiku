@@ -73,7 +73,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Dropshipping/Orders',
+            'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),

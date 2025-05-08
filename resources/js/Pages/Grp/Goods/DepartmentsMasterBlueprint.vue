@@ -10,8 +10,6 @@ const props = defineProps<{
 }>()
 
 
-console.log(props)
-
 </script>
 
 
@@ -20,5 +18,4 @@ console.log(props)
     <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 px-4 ">
         <SetVisibleList title="Departments List" :list_data="departments.data" :updateRoute="update_route" />
     </div>
-
 </template>

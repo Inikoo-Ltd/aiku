@@ -10,9 +10,9 @@ import IrisFooter from '@/Layouts/Iris/Footer.vue'
 import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 
 // import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave } from "@fal"
+import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 initialiseRetinaApp()
 
@@ -59,7 +59,9 @@ console.log('LayoutDs')
                 <!-- Section: Subsections (Something will teleport to this section) -->
                 <div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 h-full" />
 
-                <slot name="default" />
+                <div style="max-width: calc(1280px - 200px);">
+                    <slot name="default" />
+                </div>
             </div>
         </main>
 

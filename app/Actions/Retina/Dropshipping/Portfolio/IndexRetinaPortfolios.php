@@ -110,6 +110,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'is_manual'   => $manual,
                 'pageHead'    => [
                     'title'   => $title,
+                    'model'   => $this->platformUser->name ?? __('Manual'),
                     'icon'    => 'fal fa-cube',
                     'actions' => [
                         $this->customer->is_fulfilment && ($this->platformUser instanceof ShopifyUser) ? [

@@ -20,7 +20,6 @@ const props = defineProps<{
 
 <template>
     <PageHeading :data="pageHead"/>
-    {{  }}
     <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 px-4 pb-8 m-5 ">
         <EditPreviewBluprintData title="Department" :data="department.data" :update_route="update_route"
             :web_block_types="web_block_types" :upload_image_route="upload_image_route">
