@@ -19,7 +19,7 @@ class GetWebsiteWorkshopFamily
 
     public function handle(Website $website): array
     {
-       
+
         $productCategory = ProductCategory::first();
 
         if (!$productCategory) {

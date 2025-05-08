@@ -196,4 +196,3 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 });
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
-

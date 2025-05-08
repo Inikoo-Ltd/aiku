@@ -127,7 +127,7 @@ class PaymentAccountShop extends Model implements Auditable
         }
     }
 
-    public function getCheckoutComChannel(): array
+    public function getCheckoutComChannel(): string
     {
         if (app()->environment('production')) {
             return  Arr::get($this->data, 'credentials.payment_channel');

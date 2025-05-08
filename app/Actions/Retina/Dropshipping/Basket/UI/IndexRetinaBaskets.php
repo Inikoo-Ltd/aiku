@@ -12,16 +12,11 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Fulfilment\RetinaBasketsResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
-use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -97,7 +92,6 @@ class IndexRetinaBaskets extends RetinaAction
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
     {
-        // dd($this->platformUser);
         return function (InertiaTable $table) use ($prefix, $modelOperations) {
             if ($prefix) {
                 $table
