@@ -25,6 +25,8 @@ class FilteredProductsResource extends JsonResource
             'image' => $product->imageSources(64, 64),
             'price' => $this->price,
             'name'  => $this->name,
+            'currency_code' => $this->currency_code,
+            'currency_id' => $this->currency_id,
         ];
     }
 }
