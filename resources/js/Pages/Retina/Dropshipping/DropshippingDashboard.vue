@@ -2,7 +2,7 @@
 import {Head, Link, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import {capitalize} from "@/Composables/capitalize"
-import {ref} from 'vue'
+import { inject, ref } from 'vue'
 
 import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
 import {Tabs as TSTabs} from '@/types/Tabs'
@@ -17,6 +17,7 @@ import {notify} from '@kyvg/vue3-notification'
 
 import {faGlobe, faExternalLinkAlt, faUnlink, faUsers} from '@fal'
 import {library} from '@fortawesome/fontawesome-svg-core'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
 
@@ -42,6 +43,8 @@ const props = defineProps<{
         isAuthenticated: boolean
     }
 }>()
+
+const layout = inject('layout', layoutStructure)
 
 const isModalOpen = ref<string | boolean>(false)
 const websiteInput = ref<string | null>(null)
@@ -180,8 +183,8 @@ const onCreateStore = () => {
 
                 <div class="w-full flex justify-end">
                     <a v-if="!tiktokAuth?.isAuthenticated" target="_blank" class="w-full" :href="tiktokAuth?.url">
-                        <!-- <Button label="Connect" type="primary" full/> -->
-                        <Button label="Coming soon" type="tertiary" disabled full/>
+                        <Button v-if="layout?.app?.environment === 'local'" :label="trans('Connect')" type="primary" full/>
+                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                     </a>
 
                     <div v-else class="relative w-full">
