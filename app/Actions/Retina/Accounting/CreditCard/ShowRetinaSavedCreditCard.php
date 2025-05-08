@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Accounting\CreditCard;
 
+use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopCheckoutComData;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -37,6 +38,16 @@ class ShowRetinaSavedCreditCard extends RetinaAction
                     'icon'  => ['fal', 'fa-tachometer-alt'],
                     'title' => __('Saved Credit Card')
                 ],
+                'checkout_com_data'=>
+                    [
+                        'label'       => __('Online payments'),
+                        'key'         => 'credit_card',
+                        'public_key'  => 'XXX',
+                        'environment' => app()->environment('production') ? 'production' : 'sandbox',
+                        'locale'      => 'en',
+                        'icon'        => 'fal fa-credit-card-front',
+                        'data'        => []
+                    ]
 
             ],
         ]);
