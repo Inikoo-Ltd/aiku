@@ -98,7 +98,16 @@ class AuthenticateTiktokAccount extends RetinaAction
             return false;
         }
 
-        return $customer->tiktokUser && now()->lessThan(Carbon::createFromTimestamp($customer->tiktokUser?->access_token_expire_in));
+        return (bool) $customer->tiktokUser;
+    }
+
+    public function checkIsAuthenticatedExpired(Customer $customer): bool
+    {
+        if (!$customer->tiktokUser) {
+            return false;
+        }
+
+        return $customer->tiktokUser && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($customer->tiktokUser?->access_token_expire_in));
     }
 
     public function rules(): array
