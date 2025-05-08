@@ -39,4 +39,11 @@ class DeletePortfolio extends OrgAction
 
         $this->handle($portfolio);
     }
+
+    public function action(Portfolio $portfolio): void
+    {
+        $this->initialisationFromShop($portfolio->shop, []);
+
+        $this->handle($portfolio);
+    }
 }
