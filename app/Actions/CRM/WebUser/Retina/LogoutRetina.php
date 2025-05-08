@@ -14,20 +14,24 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Lorisleiva\Actions\Concerns\AsController;
 use Illuminate\Support\Facades\Redirect;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 class LogoutRetina
 {
     use AsController;
 
 
-    public function handle(Request $request): RedirectResponse
+    public function handle(Request $request): Response
     {
         Auth::guard('retina')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         Session::put('reloadLayout', '1');
 
-        return Redirect::route('retina.login.show');
+        // return Redirect::route('retina.login.show');  // No refresh page
+        return Inertia::location(route('retina.login.show'));  // Refresh
+
     }
 
 }

@@ -48,13 +48,21 @@ const layout = useLayoutStore()
     </RetinaLayoutEcom>
     
     <!-- Retina: Fulfilment -->
-    <RetinaLayoutFulfilment
-        v-else-if="layout.retina?.type === 'fulfilment'"
-    >
-        <template #default>
-            <slot />
-        </template>
-    </RetinaLayoutFulfilment>
+    <template v-else-if="layout.retina?.type === 'fulfilment'">
+        <RetinaLayoutFulfilment v-if="layout.user">
+            <template #default>
+                <slot />
+            </template>
+        </RetinaLayoutFulfilment>
+
+        <main v-else
+            class="bg-gray-50 min-h-screen pt-16 pb-10 mx-auto flex justify-center transition-all px-8 lg:px-0"
+        >
+            <div class="bg-white border border-gray-300 w-full mx-auto max-w-5xl shadow-lg rounded-md h-fit relative flex flex-col text-gray-700">
+                <slot name="default" />
+            </div>
+        </main>
+    </template>
 
     <div v-else class="fixed inset-0 bg-slate-100 flex items-center justify-center">
         <slot />

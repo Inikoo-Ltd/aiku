@@ -43,7 +43,7 @@ onMounted(async () => {
 
     <Head title="Login" />
 
-    <div class="flex items-center justify-center bg-gray-50 px-6 py-12 lg:px-8">
+    <div class="rounded-md flex items-center justify-center bg-gray-50 px-6 py-12 lg:px-8">
     <div class="w-full max-w-sm bg-transparent">
 
 
@@ -92,10 +92,10 @@ onMounted(async () => {
             <!-- Registration Link -->
             <div class="flex justify-center items-center mt-4">
                 <p class="text-sm text-gray-500">
-                    Don't have an account?
+                    {{ trans("Don\'t have an account") }}?
                     <Link :href="route('retina.register')"
                         class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
-                    Register here
+                        {{ trans("Register here") }}
                     </Link>
                 </p>
             </div>
