@@ -23,8 +23,14 @@ class UploadProductImageToTiktok extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, Media $media, $useCase = 'MAIN_IMAGE')
     {
+        try {
+            $imageData = $media->getBase64Image();
+        } catch (\Exception $e) {
+            $imageData = base64_encode(file_get_contents("https://sf-static.tiktokcdn.com/obj/eden-sg/uhtyvueh7nulogpoguhm/tiktok-icon2.png"));
+        }
+
         $productData = [
-            'data' => $media->getBase64Image(),
+            'data' => $imageData,
             'use_case' => $useCase
         ];
 

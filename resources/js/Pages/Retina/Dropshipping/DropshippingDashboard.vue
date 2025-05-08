@@ -35,6 +35,7 @@ const props = defineProps<{
     tiktokAuth: {
         url: string
         isAuthenticated: boolean
+        isAuthenticatedExpired: boolean
         tiktokName: string
         deleteAccountRoute: routeType
     }
@@ -185,6 +186,9 @@ const onCreateStore = () => {
                     <a v-if="!tiktokAuth?.isAuthenticated" target="_blank" class="w-full" :href="tiktokAuth?.url">
                         <Button v-if="layout?.app?.environment === 'local'" :label="trans('Connect')" type="primary" full/>
                         <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+                        <!-- <Button label="Connect" type="primary" full/> -->
+                        <Button label="Coming soon" type="tertiary" disabled full/>
+                        <Button :label="tiktokAuth?.isAuthenticatedExpired ? 'Re-Connect' : 'Connect'" type="primary" full/>
                     </a>
 
                     <div v-else class="relative w-full">
@@ -200,8 +204,6 @@ const onCreateStore = () => {
                                             icon="fal fa-unlink" size="xs" full/>
                                 </Link>
                             <Button :capitalize="false" :label="`Connected`" type="positive" icon="fal fa-check" size="xs" full/>
-                            <Button :loading="isLoading === 'fetch-customers'" type="positive"
-                                    icon="fal fa-users" size="xs"/>
                             </div>
                         </Transition>
                     </div>
