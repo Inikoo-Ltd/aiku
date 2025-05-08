@@ -44,7 +44,7 @@ const getComponentDepartment = (componentName: string) => {
       </template>
       <span class="ml-2">Right Now you follow the master data </span>
     </Message>
-    <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
+   <!--  <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
       <div >
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
           <div class="flex justify-between items-center border-b pb-4 mb-4">
@@ -75,7 +75,7 @@ const getComponentDepartment = (componentName: string) => {
       </div>
 
       <SetVisibleList :title="'Family List'" :list_data="data.families.data" />
-    </div>
+    </div> -->
   </div>
 
 
