@@ -107,7 +107,7 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::exists($modelData, 'required_approval')) {
-            data_set($modelData, "settings.customer.required_approval", Arr::pull($modelData, 'required_approval'));
+            data_set($modelData, "settings.registration.require_approval", Arr::pull($modelData, 'required_approval'));
         }
 
 

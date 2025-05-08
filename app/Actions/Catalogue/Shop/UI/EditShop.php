@@ -185,7 +185,7 @@ class EditShop extends OrgAction
                                 'required_approval' => [
                                     'type'  => 'toggle',
                                     'label' => __('Require approval'),
-                                    'value' => Arr::get($shop->settings, 'customer.required_approval', false),
+                                    'value' => Arr::get($shop->settings, 'registration.require_approval', false),
                                 ],
                             ],
 

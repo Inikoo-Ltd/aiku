@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-05-2025-09h-58m
@@ -11,7 +12,6 @@ namespace App\Actions\Fulfilment\FulfilmentCustomer\Notification;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
@@ -39,16 +39,16 @@ class RetinaFulfilmentCustomerNotification extends Notification implements Shoul
 
         $route = null;
 
-        if($this->parent instanceof PalletDelivery) {
+        if ($this->parent instanceof PalletDelivery) {
             $route = route('retina.fulfilment.storage.pallet_deliveries.show', [
                 'palletDelivery' => $this->parent->slug
             ]);
-        } elseif($this->parent instanceof PalletReturn) {
-            if($this->parent->type == PalletReturnTypeEnum::PALLET) {
+        } elseif ($this->parent instanceof PalletReturn) {
+            if ($this->parent->type == PalletReturnTypeEnum::PALLET) {
                 $route = route('retina.fulfilment.storage.pallet_returns.show', [
                     'palletReturn' => $this->parent->slug
                 ]);
-            } elseif($this->parent->type == PalletReturnTypeEnum::STORED_ITEM) {
+            } elseif ($this->parent->type == PalletReturnTypeEnum::STORED_ITEM) {
                 $route = route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
                     'palletReturn' => $this->parent->slug
                 ]);
