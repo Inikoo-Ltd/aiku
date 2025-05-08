@@ -179,10 +179,10 @@ class EditShop extends OrgAction
                             'label'  => __('customer'),
                             'icon'   => 'fal fa-transporter',
                             'fields' => [
-                                'registration_auto_approve' => [
+                                'required_approval' => [
                                     'type'  => 'toggle',
                                     'label' => __('Customer registration auto approve'),
-                                    'value' => Arr::get($shop->settings, 'customer.registration_auto_approve', false),
+                                    'value' => Arr::get($shop->settings, 'customer.required_approval', false),
                                 ],
                             ],
 

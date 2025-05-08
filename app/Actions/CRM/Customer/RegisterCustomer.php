@@ -38,8 +38,8 @@ class RegisterCustomer extends OrgAction
         data_set($modelData, 'status', CustomerStatusEnum::PENDING_APPROVAL);
 
         if ($shop->type != ShopTypeEnum::FULFILMENT) {
-            $autoApprove = Arr::get($shop->settings, 'customer.registration_auto_approve', false);
-            if ($autoApprove) {
+            $requireApproval = Arr::get($shop->settings, 'customer.required_approval', false);
+            if (!$requireApproval) {
                 data_set($modelData, 'status', CustomerStatusEnum::APPROVED);
                 data_set($modelData, 'state', CustomerStateEnum::ACTIVE);
             }
