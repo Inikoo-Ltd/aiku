@@ -65,6 +65,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
+        Route::get('{order}', [ShowRetinaDropshippingOrder::class, 'inBasket'])->name('show');
     });
 
     Route::prefix('client')->as('client.')->group(function () {

@@ -497,9 +497,7 @@ watch(
 							<div
 								v-for="(item, index) in items"
 								:key="index"
-								
-								class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3"
-								>
+								class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3">
 								<!-- == {{ isSelected(item.id) }} == -->
 								<div class="relative flex justify-center rounded">
 									<Image
@@ -508,7 +506,7 @@ watch(
 										class="rounded w-full"
 										style="max-width: 300px"
 										:alt="'image alt'" />
-								<!-- 	<div class="absolute top-1.5 left-2">
+									<!-- 	<div class="absolute top-1.5 left-2">
 										<div
 											class="capitalize text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500"
 											:theme="13">xx
@@ -689,29 +687,27 @@ watch(
 	</Table>
 
 	<Modal :isOpen="showConfirmModal" @onClose="closeModal" :closeButton="true" width="max-w-sm">
-		<div class="px-6 pt-6">
-			<h3 class="text-xl font-semibold">Confirm Deletion</h3>
+		<!-- Header with Icon -->
+		<div class="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-200">
+			<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="w-5 h-5 text-red-600" />
+			<h3 class="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
 		</div>
 
+		<!-- Body -->
 		<div class="px-6 py-4">
-			<p class="text-gray-700">Are you sure you want to delete this product?</p>
+			<p class="text-sm text-gray-700">
+				Are you sure you want to delete this product? This action cannot be undone.
+			</p>
 		</div>
 
-		<div class="px-6 pb-6 flex justify-end space-x-3">
-			<div class="flex justify-end gap-2 p-4">
-				<Button
-					@click="cancelDelete"
-					:key="'buttonSubmit' + isLoadingSubmit"
-					:loading="isLoadingSubmit"
-					label="Cancel"
-					type="tertiary" />
-				<Button
-					@click="confirmDelete"
-					:key="'buttonSubmit' + isLoadingSubmit"
-					:loading="isLoadingSubmit"
-					label="Confirm"
-					type="red" />
-			</div>
+		<!-- Footer Buttons -->
+		<div class="flex justify-end space-x-3 px-6 pb-6 pt-2 border-t border-gray-200">
+			<Button
+				@click="cancelDelete"
+				:loading="isLoadingSubmit"
+				label="Cancel"
+				type="tertiary" />
+			<Button @click="confirmDelete" :loading="isLoadingSubmit" label="Delete" type="red" />
 		</div>
 	</Modal>
 </template>
