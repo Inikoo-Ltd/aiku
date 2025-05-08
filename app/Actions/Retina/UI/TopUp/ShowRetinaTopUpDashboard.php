@@ -47,7 +47,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             'topUpData'  => $this->getTopUpData($customer),
 
             'balance' => $customer->balance,
-            'currency' => CurrencyResource::make($customer->shop->currency),
+            'currency' => CurrencyResource::make($customer->shop->currency)->toArray(request()),
         ]);
     }
 
@@ -58,7 +58,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
         $stats['topUps'] = [
             'label'         => __('Top Ups'),
             'count'         => $customer->stats->number_top_ups,
-            'description'   => __('number of top ups'),
+            'description'   => __('previous top ups'),
             'route'         => [
                 'name' => 'retina.top_up.index'
             ]
