@@ -26,6 +26,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
+use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platform')->as('platform.')->group(function () {
@@ -58,6 +59,9 @@ Route::prefix('orders')->as('orders.')->group(function () {
 });
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
+
+    Route::get('/dashboard', ShowRetinaPlatformDashboard::class)->name('dashboard');
+
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
     });
