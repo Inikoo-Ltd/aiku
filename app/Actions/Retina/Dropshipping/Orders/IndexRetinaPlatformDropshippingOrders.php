@@ -135,6 +135,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
     {
+        // dd($this->platformUser);
         return function (InertiaTable $table) use ($prefix, $modelOperations) {
             if ($prefix) {
                 $table
@@ -163,9 +164,12 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             if ($this->platformUser instanceof TiktokUser) {
                 $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
             }
+            
+            if ($this->platformUser instanceof WebUser) {
+                $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
+            }
 
             // $table->column(key: 'client_name', label: __('client'), canBeHidden: false, searchable: true);
-            $table->column(key: 'reason_notes', label: __('reason message'), canBeHidden: false, searchable: true);
             // $table->column(key: 'actions', label: __('actions'), canBeHidden: false, searchable: true);
         };
     }

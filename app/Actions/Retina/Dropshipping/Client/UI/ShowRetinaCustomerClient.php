@@ -62,12 +62,14 @@ class ShowRetinaCustomerClient extends RetinaAction
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Create Order'),
-                            // 'route' => [
-                            //     'name'       => 'retina.dropshipping.platforms.client.create',
-                            //     'parameters' => [
-                            //         'platform' => $this->platform->slug
-                            //     ]
-                            // ]
+                            'route' => [
+                                'name'       => 'retina.models.customer-client.order.store',
+                                'parameters' => [
+                                    'customerClient' => $customerClient->id,
+                                    'platform' => $customerClient->platform->id
+                                ],
+                                'method'     => 'post'
+                            ]
                         ]
                     ]
                 ],
