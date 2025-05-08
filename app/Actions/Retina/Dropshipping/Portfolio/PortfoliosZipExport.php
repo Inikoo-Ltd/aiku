@@ -19,7 +19,7 @@ class PortfoliosZipExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, Platform $platform): string
+    public function handle(Customer $customer, Platform $platform): array
     {
 
 
@@ -82,6 +82,6 @@ class PortfoliosZipExport
         }
 
 
-        return $zipFilePath;
+        return [$zipFilePath, $zipFilePathRelative];
     }
 }

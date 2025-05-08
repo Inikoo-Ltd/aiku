@@ -16,6 +16,7 @@ use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Maatwebsite\Excel\Facades\Excel;
+use Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadPortfolios extends RetinaAction
@@ -41,12 +42,14 @@ class DownloadPortfolios extends RetinaAction
         } elseif ($type == 'portfolio_images') {
             $filename .= '_images.zip';
 
-            $zipPath = PortfoliosZipExport::make()->handle($customer, $platform);
-
-            return response()->download($zipPath, $filename, [
+            [$zipPath, $zipFilePathRelative] = PortfoliosZipExport::make()->handle($customer, $platform);
+            return response()->streamDownload(function () use ($zipPath, $zipFilePathRelative) {
+                readfile($zipPath);
+                Storage::disk('local')->delete($zipFilePathRelative);
+            }, $filename, [
                 'Content-Type' => 'application/zip',
                 'Cache-Control' => 'max-age=0',
-            ])->deleteFileAfterSend(true);
+            ]);
         }
 
         $filename .= '.csv';
