@@ -14,29 +14,29 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteRetinaPortfolio extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Portfolio $portfolio)
+
+    private Portfolio $portfolio;
+
+    public function handle(Portfolio $portfolio): void
     {
-        return DeletePortfolio::make()->action($portfolio);
+        DeletePortfolio::make()->action($portfolio);
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        return true;
+        return $this->portfolio->customer_id == $this->customer->id;
     }
 
-    public function asController(Portfolio $portfolio, ActionRequest $request)
+    public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
+        $this->portfolio = $portfolio;
         $this->initialisation($request);
 
-        return $this->handle($portfolio);
+        $this->handle($portfolio);
     }
 }
