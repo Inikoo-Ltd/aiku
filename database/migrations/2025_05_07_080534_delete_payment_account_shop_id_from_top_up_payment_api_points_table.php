@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
-    public function up()
+    public function up(): void
     {
         Schema::table('top_up_payment_api_points', function (Blueprint $table) {
             $table->dropForeign(['payment_account_shop_id']);
@@ -17,14 +17,14 @@ return new class () extends Migration {
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::table('top_up_payment_api_points', function (Blueprint $table) {
-            $table->unsignedBigInteger('payment_account_shop_id')->nullable();
+            $table->unsignedInteger('payment_account_shop_id')->nullable();
             $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop');
         });
         Schema::table('order_payment_api_points', function (Blueprint $table) {
-            $table->unsignedBigInteger('payment_account_shop_id')->nullable();
+            $table->unsignedInteger('payment_account_shop_id')->nullable();
             $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop');
         });
     }

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 07 May 2025 12:38:25 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 05 May 2025 19:14:09 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -13,7 +13,7 @@ use App\Models\Accounting\OrderPaymentApiPoint;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrderPaymentSuccess extends OrgAction
+class CheckoutComOrderPaymentFailure extends OrgAction
 {
     use AsAction;
 

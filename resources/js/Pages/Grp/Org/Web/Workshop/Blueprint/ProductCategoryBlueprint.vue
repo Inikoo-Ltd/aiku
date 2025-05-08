@@ -4,9 +4,13 @@ import { faChevronCircleLeft, faChevronCircleRight, faSave } from '@far'
 import { faExclamation, faWindWarning } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Message from 'primevue/message';
-
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { Head } from "@inertiajs/vue3"
+import { capitalize } from "@/Composables/capitalize"
 
 const props = defineProps<{
+  title: string,
+  pageHead: object,
   data: {
     families: Array<any>
     departement: {
@@ -37,6 +41,9 @@ const getComponentDepartment = (componentName: string) => {
 </script>
 
 <template>
+
+  <Head :title="capitalize(title)" />
+  <PageHeading :data="pageHead" />
   <div class="px-4 pb-8 m-5">
     <Message severity="warn" closable>
       <template #icon>
@@ -45,7 +52,7 @@ const getComponentDepartment = (componentName: string) => {
       <span class="ml-2">Right Now you follow the master data </span>
     </Message>
     <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
-      <div >
+      <!--    <div >
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
           <div class="flex justify-between items-center border-b pb-4 mb-4">
           <h3 class="text-xl font-semibold">Departement</h3>
@@ -74,7 +81,7 @@ const getComponentDepartment = (componentName: string) => {
         
       </div>
 
-      <SetVisibleList :title="'Family List'" :list_data="data.families.data" />
+      <SetVisibleList :title="'Family List'" :list_data="data.families.data" /> -->
     </div>
   </div>
 

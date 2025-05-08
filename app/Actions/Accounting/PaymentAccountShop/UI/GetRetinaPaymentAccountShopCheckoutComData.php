@@ -8,50 +8,41 @@
 
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
-use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
+use App\Actions\Accounting\WithCheckoutCom;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
-use Checkout\CheckoutSdk;
 use Checkout\Common\Address;
-use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Checkout\Payments\ThreeDsRequest;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
 
 class GetRetinaPaymentAccountShopCheckoutComData
 {
     use AsObject;
+    use WithCheckoutCom;
 
 
-    public function handle(Order $order, PaymentAccountShop $paymentAccountShop): array
+    public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): array
     {
-        list($publicKey, $secretKey, $channelID) = $this->getCredentials($paymentAccountShop);
-        $checkoutApi = null;
-        try {
-            $checkoutApi = CheckoutSdk::builder()->staticKeys()
-                ->publicKey($publicKey) // optional, only required for operations related with tokens
-                ->secretKey($secretKey)
-                ->environment(app()->environment('production') ? Environment::production() : Environment::sandbox())
-                ->build();
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-        }
+        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+
+        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $orderPaymentApiPoint             = StoreOrderPaymentApiPoint::run($order, $paymentAccountShop);
+
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = (int)$order->total_amount * 100;
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
 
-        $paymentSessionRequest->three_ds = new ThreeDsRequest();
+        $paymentSessionRequest->three_ds          = new ThreeDsRequest();
         $paymentSessionRequest->three_ds->enabled = true;
 
+        $channelID                                    = $paymentAccountShop->getCheckoutComChannel();
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
@@ -82,22 +73,6 @@ class GetRetinaPaymentAccountShopCheckoutComData
         return $paymentSession;
     }
 
-    public function getCredentials(PaymentAccountShop $paymentAccountShop): array
-    {
-        if (app()->environment('production')) {
-            return [
-                Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key'),
-                Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.secret_key'),
-                Arr::get($paymentAccountShop->data, 'credentials.payment_channel'),
-            ];
-        } else {
-            return [
-                config('app.sandbox.checkout_com.public_key'),
-                config('app.sandbox.checkout_com.secret_key'),
-                config('app.sandbox.checkout_com.payment_channel'),
-            ];
-        }
-    }
 
     private function getSuccessUrl(OrderPaymentApiPoint $orderPaymentApiPoint): string
     {

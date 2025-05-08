@@ -24,6 +24,7 @@ use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
+use App\Actions\Web\Webpage\UI\ShowBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooter;
 use App\Actions\Web\Webpage\UI\ShowHeader;
 use App\Actions\Web\Webpage\UI\ShowMenu;
@@ -92,6 +93,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
         ->group(function () {
             Route::get('edit', EditWebpage::class)->name('edit');
             Route::get('', ShowWebpage::class)->name('show');
+            Route::get('blueprint', ShowBlueprint::class)->name('show.blueprint.show');
             Route::get('workshop', ShowWebpageWorkshop::class)->name('workshop');
             Route::get('workshop/preview', ShowWebpageWorkshopPreview::class)->name('preview');
             Route::get('webpages', [IndexWebpages::class, 'inWebpage'])->name('show.webpages.index');

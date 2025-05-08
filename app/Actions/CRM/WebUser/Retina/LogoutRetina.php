@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\WebUser\Retina;
 
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
