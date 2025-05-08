@@ -88,13 +88,13 @@ const onCreateStore = () => {
         <div class="text-xl py-2 w-fit">E-Commerce</div>
         <div class="flex gap-4">
             <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
-                <div class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                <Link :href="route('retina.dropshipping.platforms.dashboard', ['manual'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
-                        <div class="font-semibold">Manual</div>
-                        <div class="text-xs text-gray-500">({{ trans("Manage product") }})</div>
+                        <div class="font-semibold">{{ trans("Manual") }}</div>
+                        <div class="text-xs opacity-70">({{ trans("Manage product") }})</div>
                     </div>
-                </div>
+                </Link>
                 <div class="w-full flex justify-end">
                     <Link as="button" v-if="!aikuConnectRoute?.isAuthenticated" class="w-full" :href="aikuConnectRoute?.url" :method="'post'">
                         <Button label="Connect" type="primary" full/>
@@ -110,13 +110,13 @@ const onCreateStore = () => {
             </div>
 
             <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
-                <div class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                <Link :href="route('retina.dropshipping.platforms.dashboard', ['shopify'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
-                        <div class="text-xs text-gray-500">({{ trans("Manage product") }})</div>
+                        <div class="text-xs">({{ trans("Manage product") }})</div>
                     </div>
-                </div>
+                </Link>
 
                 <!-- Button: Connect -->
                 <div class="relative w-full">
@@ -164,7 +164,7 @@ const onCreateStore = () => {
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfkm8ggJ5zlVCHbmIzc9oTvtAiwMG4q3ROWA&s" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">WooCommerce</div>
-                        <div class="text-xs text-gray-500">({{ trans("Manage product") }})</div>
+                        <div class="text-xs">({{ trans("Manage product") }})</div>
                     </div>
                 </div>
                 <div class="w-full flex justify-end">
@@ -173,13 +173,13 @@ const onCreateStore = () => {
             </div>-->
 
             <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
-                <div class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                <Link :href="route('retina.dropshipping.platforms.dashboard', ['tiktok'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/3046/3046126.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
-                        <div class="text-xs text-gray-500">({{ trans("Manage product") }})</div>
+                        <div class="text-xs">({{ trans("Manage product") }})</div>
                     </div>
-                </div>
+                </Link>
 
                 <div class="w-full flex justify-end">
                     <a v-if="!tiktokAuth?.isAuthenticated" target="_blank" class="w-full" :href="tiktokAuth?.url">
