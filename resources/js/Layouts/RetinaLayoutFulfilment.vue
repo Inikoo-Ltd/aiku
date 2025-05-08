@@ -6,14 +6,14 @@ import RetinaRightSideBar from "@/Layouts/Retina/RetinaRightSideBar.vue"
 import RetinaTopBar from "@/Layouts/Retina/RetinaTopBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-// import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
+import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 
 import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks } from '@fal'
 import { faSearch, faBell } from '@far'
 import { ref, provide } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { useColorTheme } from "@/Composables/useStockList"
+// import { useColorTheme } from "@/Composables/useStockList"
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
@@ -21,9 +21,10 @@ library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser,
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
-// initialiseRetinaApp()
+initialiseRetinaApp()
 
-const irisTheme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
+
+// const irisTheme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 
 
 const layout = useLayoutStore()
@@ -48,7 +49,8 @@ const isStaging = layout.app.environment === 'staging'
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div @click="sidebarOpen = !sidebarOpen" class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen" />
-            <RetinaLeftSideBar class="-left-2/3 transition-all z-20 block md:left-[0]"
+            <RetinaLeftSideBar
+                class="-left-2/3 transition-all z-20 block md:left-[0]"
                 :class="[
                     { 'left-[0]': sidebarOpen },
                 ]" @click="sidebarOpen = !sidebarOpen" />
@@ -64,17 +66,13 @@ const isStaging = layout.app.environment === 'staging'
             <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
                 <!-- Section: Breadcrumbs -->
                 <div class="mt-1">
-                    <!-- <Breadcrumbs v-if="usePage().props.breadcrumbs?.length > 0"
-                        :breadcrumbs="usePage().props.breadcrumbs ?? []"
-                        :navigation="usePage().props.navigation ?? []"
-                    /> -->
-
                     <Breadcrumbs
                         class="bg-white w-full transition-all duration-200 ease-in-out"
                         :class="[
                             layout.leftSidebar.show ? 'left-0 md:left-48' : 'left-0 md:left-12',
                         ]"
-                        :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
+                        :breadcrumbs="usePage().props.breadcrumbs ?? []"
+                        :navigation="usePage().props.navigation ?? []"
                         :layout="layout"    
                     />
                 </div>

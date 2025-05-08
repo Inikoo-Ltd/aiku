@@ -48,6 +48,7 @@ console.log('LayoutDs')
             class="flex gap-x-2 max-w-7xl w-full mx-auto min-h-[500px] h-fit my-10 transition-all px-8 xl:px-0"
         >
             <RetinaDsLeftSidebar
+                v-if="layout.user"
                 class="z-20 block h-fit right-full -translate-x-3 w-48 xabsolute xpb-20 xpx-2 md:flex md:flex-col  transition-all"
                 @click="sidebarOpen = !sidebarOpen"
             />
