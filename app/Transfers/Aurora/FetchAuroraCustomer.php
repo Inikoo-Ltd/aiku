@@ -42,6 +42,11 @@ class FetchAuroraCustomer extends FetchAurora
             $state = CustomerStateEnum::LOST->value;
         }
 
+        if (!$shop->registration_needs_approval  &&  $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
+            $status = CustomerStatusEnum::APPROVED->value;
+        }
+
+
         $billingAddress  = $this->parseAddress(prefix: 'Customer Invoice', auAddressData: $this->auroraModelData);
         $deliveryAddress = $this->parseAddress(prefix: 'Customer Delivery', auAddressData: $this->auroraModelData);
 
