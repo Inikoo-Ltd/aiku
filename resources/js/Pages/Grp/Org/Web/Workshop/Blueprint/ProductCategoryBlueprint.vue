@@ -32,7 +32,6 @@ console.log(props)
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead" />
   <div class="px-4 pb-8 m-5">
@@ -44,7 +43,7 @@ console.log(props)
     </Message>
     <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
       <EditPreviewBluprintData 
-            title="Department" 
+            :title="productCategory.data.type != 'family' ? 'Department' : 'Family'" 
             :data="productCategory.data" 
             :update_route="updateRoute"
             :web_block_types="web_block_types" 

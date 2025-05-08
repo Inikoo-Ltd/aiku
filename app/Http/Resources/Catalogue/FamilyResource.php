@@ -37,6 +37,8 @@ class FamilyResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'show_in_website'  => $this->show_in_website,
+            'type'              => $this->type,
+            'follow_master'     => $this->follow_master
         ];
     }
 }

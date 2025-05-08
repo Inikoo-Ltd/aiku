@@ -138,7 +138,7 @@ const onUpload = async (files: File[], clear) => {
     <div>
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
-                <h3 class="text-xl font-semibold">Departement</h3>
+                <h3 class="text-xl font-semibold">{{ title }}</h3>
                 <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit"
                     @click="departmentEdit = true" />
                 <div v-else class="flex gap-3">
