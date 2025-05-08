@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\Notifications;
 
+use App\Actions\Fulfilment\FulfilmentCustomer\StoreRetinaFulfilmentCustomerNotification;
 use App\Actions\OrgAction;
 use App\Events\BroadcastFulfilmentCustomerNotification;
 use App\Models\Fulfilment\PalletReturn;
@@ -27,5 +28,7 @@ class SendPalletReturnNotification extends OrgAction
             $palletReturn->group,
             $palletReturn
         ))->toOthers();
+
+        StoreRetinaFulfilmentCustomerNotification::dispatch($palletReturn);
     }
 }
