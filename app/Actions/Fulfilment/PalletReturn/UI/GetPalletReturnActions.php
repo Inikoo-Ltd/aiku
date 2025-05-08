@@ -19,7 +19,6 @@ class GetPalletReturnActions
     use AsObject;
 
     private bool $isSupervisor = false;
-    private string $addIcon = 'fal fa-plus';
     private string $deleteIcon = 'fal fa-trash-alt';
 
     public function handle(PalletReturn $palletReturn, $canEdit = false, $isSupervisor = false): array
@@ -212,26 +211,7 @@ class GetPalletReturnActions
                 ];
 
         }
-        //else{
-        //todo , Kirin if this will not be implemented remove it and delete the action/route
-        //                $actions = array_merge(
-        //                    $actions,
-        //                    [
-        //                        'type'    => 'button',
-        //                        'style'   => 'save',
-        //                        'tooltip' => __('Set all pending as picked'),
-        //                        'label'   => __('pick all*'),
-        //                        'key'     => 'pick all',
-        //                        'route'   => [
-        //                            'method'     => 'post',
-        //                            'name'       => 'grp.models.pallet-return.pick_all_with_stored_items',
-        //                            'parameters' => [
-        //                                'palletReturn' => $palletReturn->id
-        //                            ]
-        //                        ]
-        //                    ]
-        //                );
-        //}
+
 
         return $actions;
     }
