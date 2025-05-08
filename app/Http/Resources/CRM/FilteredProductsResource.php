@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -16,11 +17,12 @@ class FilteredProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $product = Product::find($this->id);
         return [
             'id'    => $this->id,
             'slug'  => $this->slug,
             'code'  => $this->code,
-            'image' => $this->media,
+            'image' => $product->imageSources(64, 64),
             'price' => $this->price,
             'name'  => $this->name,
         ];

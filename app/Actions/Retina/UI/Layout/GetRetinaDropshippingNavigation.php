@@ -35,17 +35,17 @@ class GetRetinaDropshippingNavigation
                 ]
             ];
 
-            $groupNavigation['orders'] = [
-                'label' => __('Orders'),
-                'icon' => ['fal', 'fa-box'],
-                'root' => 'retina.dropshipping.orders.',
-                'route' => [
-                    'name' => 'retina.dropshipping.orders.index'
-                ],
-                'topMenu' => [
+            // $groupNavigation['orders'] = [
+            //     'label' => __('Orders'),
+            //     'icon' => ['fal', 'fa-box'],
+            //     'root' => 'retina.dropshipping.orders.',
+            //     'route' => [
+            //         'name' => 'retina.dropshipping.orders.index'
+            //     ],
+            //     'topMenu' => [
 
-                ]
-            ];
+            //     ]
+            // ];
             $groupNavigation['top_up'] = [
                 'label' => __('Top Up'),
                 'icon' => ['fal', 'fa-money-bill-wave'],
