@@ -44,6 +44,13 @@ function orderRoute(order) {
                     platform: route().params.platform,
                     order: order.slug
                 });
+        case 'retina.dropshipping.platforms.basket.index':
+            return route(
+                'retina.dropshipping.platforms.basket.show',
+                {
+                    platform: route().params.platform,
+                    order: order.slug
+                });
         // default:
         //     return route(
         //         'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',

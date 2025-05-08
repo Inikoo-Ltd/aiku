@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Http\Resources\SysAdmin\SupervisorUsersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
@@ -45,19 +44,12 @@ class GetSupervisorUsers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $permission = null;
 
         if ($scope instanceof Fulfilment) {
-            // $permission = Permission::where('name', "supervisor-fulfilment-shop.".$scope->id)->first();
             $role = Role::where('name', "fulfilment-shop-supervisor-".$scope->id)->first();
         }
 
         $queryBuilder = QueryBuilder::for(User::class);
-        // $queryBuilder->leftJoin('model_has_permissions', function ($join) {
-        //     $join->on('users.id', '=', 'model_has_permissions.model_id')
-        //         ->where('model_has_permissions.model_type', '=', 'User');
-        // });
-        // $queryBuilder->where('model_has_permissions.permission_id', $permission->id);
 
         $queryBuilder->leftJoin('model_has_roles', function ($join) {
             $join->on('users.id', '=', 'model_has_roles.model_id')
