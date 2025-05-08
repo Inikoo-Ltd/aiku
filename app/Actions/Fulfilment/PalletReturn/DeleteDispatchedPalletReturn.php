@@ -47,11 +47,11 @@ class DeleteDispatchedPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData = []): void
     {
+
         $fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
         $recurringBill = $palletReturn->recurringBill;
 
         DB::transaction(function () use ($palletReturn, $fulfilmentCustomer, $recurringBill, $modelData) {
-            if (in_array($palletReturn->state, [PalletReturnStateEnum::IN_PROCESS, PalletReturnStateEnum::SUBMITTED])) {
                 if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
                     $palletIds = $palletReturn->pallets->pluck('id')->toArray();
                     foreach ($palletReturn->pallets as $pallet) {
@@ -69,6 +69,7 @@ class DeleteDispatchedPalletReturn extends OrgAction
                 }
 
                 foreach ($palletReturn->transactions as $transaction) {
+        
                     DeleteFulfilmentTransaction::make()->action($transaction);
                     if ($recurringBill && $recurringBill->status == RecurringBillStatusEnum::CURRENT && $transaction->recurringBillTransaction) {
                         DeleteRecurringBillTransaction::make()->action($transaction->recurringBillTransaction); //delete recurring bill transaction
@@ -96,10 +97,6 @@ class DeleteDispatchedPalletReturn extends OrgAction
                     CancelFulfilmentRequestToShopify::dispatch($palletReturn);
                 }
                 $palletReturn->delete();
-
-            } else {
-                abort(401);
-            }
         });
 
         StoreDeletePalletReturnHistory::run($palletReturn, $fulfilmentCustomer->customer);
