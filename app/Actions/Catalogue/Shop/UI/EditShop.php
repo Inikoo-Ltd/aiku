@@ -73,7 +73,7 @@ class EditShop extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Detail'),
+                            'label'  => __('Shop details'),
                             'icon'   => 'fa-light fa-id-card',
                             'fields' => [
                                 'code' => [
@@ -93,45 +93,7 @@ class EditShop extends OrgAction
                                     "label" => __("Logo"),
                                     "value" => $shop->imageSources(320, 320)
                                 ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'country_id'  => [
-                                    'type'          => 'select',
-                                    'label'         => __('country'),
-                                    'placeholder'   => __('Select your country'),
-                                    'value'         => $shop->country_id,
-                                    'options'       => GetCountriesOptions::run(),
-                                    'searchable'    => true
-                                ],
-                                'currency_id' => [
-                                    'type'          => 'select',
-                                    'label'         => __('currency'),
-                                    'placeholder'   => __('Select your currency'),
-                                    'required'      => true,
-                                    'value'         => $shop->currency_id,
-                                    'options'       => GetCurrenciesOptions::run(),
-                                    'searchable'    => true
-                                ],
-                                'language_id' => [
-                                    'type'          => 'select',
-                                    'label'         => __('language'),
-                                    'placeholder'   => __('Select your language'),
-                                    'required'      => true,
-                                    'value'         => $shop->language_id,
-                                    'options'       => GetLanguagesOptions::make()->all(),
-                                    'searchable'    => true
-                                ]
-                            ],
 
-                        ],
-                        [
-                            'label'  => __('contact/details'),
-                            'icon'   => 'fa-light fa-user',
-                            'fields' => [
                                 'contact_name' => [
                                     'type'  => 'input',
                                     'label' => __('contact name'),
@@ -173,10 +135,51 @@ class EditShop extends OrgAction
                                     'label' => __('VAT number'),
                                     'value' => $shop->data['vat_number'] ?? '',
                                 ],
+
                             ]
                         ],
                         [
-                            'label'  => __('customer'),
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
+                            'fields' => [
+                                'country_id'  => [
+                                    'type'          => 'select',
+                                    'label'         => __('country'),
+                                    'placeholder'   => __('Select your country'),
+                                    'value'         => $shop->country_id,
+                                    'options'       => GetCountriesOptions::run(),
+                                    'searchable'    => true
+                                ],
+                                'currency_id' => [
+                                    'type'          => 'select',
+                                    'label'         => __('currency'),
+                                    'placeholder'   => __('Select your currency'),
+                                    'required'      => true,
+                                    'value'         => $shop->currency_id,
+                                    'options'       => GetCurrenciesOptions::run(),
+                                    'searchable'    => true
+                                ],
+                                'language_id' => [
+                                    'type'          => 'select',
+                                    'label'         => __('language'),
+                                    'placeholder'   => __('Select your language'),
+                                    'required'      => true,
+                                    'value'         => $shop->language_id,
+                                    'options'       => GetLanguagesOptions::make()->all(),
+                                    'searchable'    => true
+                                ]
+                            ],
+
+                        ],
+                        [
+                            'label'  => __('contact/details'),
+                            'icon'   => 'fa-light fa-user',
+                            'fields' => [
+
+                            ]
+                        ],
+                        [
+                            'label'  => __('Registration'),
                             'icon'   => 'fal fa-transporter',
                             'fields' => [
                                 'required_approval' => [
