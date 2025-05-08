@@ -86,7 +86,7 @@ class CreateRetinaCustomerClient extends RetinaAction
                             ]
                         ],
                     'route'     => [
-                        'name'      => 'retina.models.platform-customer-client.store',
+                        'name'      => 'retina.models.customer-client.platform.store',
                         'parameters' => [
                             'platform' => $this->platform->id
                         ]
