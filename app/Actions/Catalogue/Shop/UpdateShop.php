@@ -144,15 +144,16 @@ class UpdateShop extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'master_shop_id' => [
+            'registration_needs_approval' => ['sometimes', 'boolean'],
+            'master_shop_id'              => [
                 'sometimes',
                 'nullable',
                 Rule::Exists('master_shops', 'id')->where('group_id', $this->organisation->group_id)
 
             ],
 
-            'name'                      => ['sometimes', 'required', 'string', 'max:255'],
-            'code'                      => [
+            'name'                     => ['sometimes', 'required', 'string', 'max:255'],
+            'code'                     => [
                 'sometimes',
                 'required',
                 'max:8',
@@ -171,35 +172,35 @@ class UpdateShop extends OrgAction
                 ),
 
             ],
-            'contact_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'                     => ['sometimes', 'nullable', 'email'],
-            'phone'                     => ['sometimes', 'nullable'],
-            'identity_document_number'  => ['sometimes', 'nullable', 'string'],
-            'identity_document_type'    => ['sometimes', 'nullable', 'string'],
-            'type'                      => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
-            'currency_id'               => ['sometimes', 'required', 'exists:currencies,id'],
-            'country_id'                => ['sometimes', 'required', 'exists:countries,id'],
-            'language_id'               => ['sometimes', 'required', 'exists:languages,id'],
-            'timezone_id'               => ['sometimes', 'required', 'exists:timezones,id'],
-            'address'                   => ['sometimes', 'required', new ValidAddress()],
-            'collection_address'        => ['sometimes', 'required', new ValidAddress()],
-            'state'                     => ['sometimes', Rule::enum(ShopStateEnum::class)],
-            'shopify_shop_name'         => ['sometimes', 'string'],
-            'shopify_api_key'           => ['sometimes', 'string'],
-            'shopify_api_secret'        => ['sometimes', 'string'],
-            'shopify_access_token'      => ['sometimes', 'string'],
-            'registration_number'       => ['sometimes', 'string'],
-            'vat_number'                => ['sometimes', 'string'],
-            'required_approval'         => ['sometimes', 'boolean'],
-            'invoice_footer'            => ['sometimes', 'string', 'max:10000'],
-            'image'                     => [
+            'contact_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'                    => ['sometimes', 'nullable', 'email'],
+            'phone'                    => ['sometimes', 'nullable'],
+            'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'identity_document_type'   => ['sometimes', 'nullable', 'string'],
+            'type'                     => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
+            'currency_id'              => ['sometimes', 'required', 'exists:currencies,id'],
+            'country_id'               => ['sometimes', 'required', 'exists:countries,id'],
+            'language_id'              => ['sometimes', 'required', 'exists:languages,id'],
+            'timezone_id'              => ['sometimes', 'required', 'exists:timezones,id'],
+            'address'                  => ['sometimes', 'required', new ValidAddress()],
+            'collection_address'       => ['sometimes', 'required', new ValidAddress()],
+            'state'                    => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'shopify_shop_name'        => ['sometimes', 'string'],
+            'shopify_api_key'          => ['sometimes', 'string'],
+            'shopify_api_secret'       => ['sometimes', 'string'],
+            'shopify_access_token'     => ['sometimes', 'string'],
+            'registration_number'      => ['sometimes', 'string'],
+            'vat_number'               => ['sometimes', 'string'],
+            'required_approval'        => ['sometimes', 'boolean'],
+            'invoice_footer'           => ['sometimes', 'string', 'max:10000'],
+            'image'                    => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                    => ['sometimes', 'string'],
+            'colour'                   => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

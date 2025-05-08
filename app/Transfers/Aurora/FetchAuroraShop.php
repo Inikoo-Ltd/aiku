@@ -42,6 +42,7 @@ class FetchAuroraShop extends FetchAurora
                 number: $this->auroraModelData->{'Store VAT Number'},
                 countryID: $this->parseCountryID($auroraSettings['tax_country_code'])
             );
+
             return $this->parsedData;
         }
 
@@ -58,7 +59,6 @@ class FetchAuroraShop extends FetchAurora
 
     protected function parseModel(): void
     {
-
         $type = match (strtolower($this->auroraModelData->{'Store Type'})) {
             'b2b' => ShopTypeEnum::B2B,
             'b2c' => ShopTypeEnum::B2C,
@@ -124,6 +124,21 @@ class FetchAuroraShop extends FetchAurora
 
         $settings['collect_address_link'] = 'Organisation:default';
 
+        $registrationNeedsApproval = false;
+
+        $auroraWebsiteData = DB::connection('aurora')
+            ->table('Website Dimension')
+            ->where('Website Key', $this->auroraModelData->{'Store Website Key'})->first();
+
+
+        if ($auroraWebsiteData && $auroraWebsiteData->{'Website Registration Type'} == 'ApprovedOnly') {
+            $registrationNeedsApproval = true;
+        }
+
+        if ($this->auroraModelData->{'Store Type'} == 'Fulfilment') {
+            $registrationNeedsApproval = true;
+        }
+
 
         $this->parsedData['shop'] = [
             'master_shop_id' => $masterShopId,
@@ -141,17 +156,18 @@ class FetchAuroraShop extends FetchAurora
 
             'type' => $type,
 
-            'country_id'      => $this->parseCountryID($this->auroraModelData->{'Store Home Country Code 2 Alpha'}),
-            'language_id'     => $this->parseLanguageID($this->auroraModelData->{'Store Locale'}),
-            'currency_id'     => $this->parseCurrencyID($this->auroraModelData->{'Store Currency Code'}),
-            'timezone_id'     => $this->parseTimezoneID($this->auroraModelData->{'Store Timezone'}),
-            'open_at'         => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
-            'closed_at'       => $this->parseDatetime($this->auroraModelData->{'Store Valid To'}),
-            'created_at'      => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Store Key'},
-            'settings'        => $settings,
-            'fetched_at'      => now(),
-            'last_fetched_at' => now(),
+            'country_id'                  => $this->parseCountryID($this->auroraModelData->{'Store Home Country Code 2 Alpha'}),
+            'language_id'                 => $this->parseLanguageID($this->auroraModelData->{'Store Locale'}),
+            'currency_id'                 => $this->parseCurrencyID($this->auroraModelData->{'Store Currency Code'}),
+            'timezone_id'                 => $this->parseTimezoneID($this->auroraModelData->{'Store Timezone'}),
+            'open_at'                     => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
+            'closed_at'                   => $this->parseDatetime($this->auroraModelData->{'Store Valid To'}),
+            'created_at'                  => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
+            'source_id'                   => $this->organisation->id.':'.$this->auroraModelData->{'Store Key'},
+            'settings'                    => $settings,
+            'fetched_at'                  => now(),
+            'last_fetched_at'             => now(),
+            'registration_needs_approval' => $registrationNeedsApproval
 
         ];
 
@@ -176,7 +192,6 @@ class FetchAuroraShop extends FetchAurora
             $this->parsedData['shop']['warehouses'] = [$warehouse->id];
         }
     }
-
 
 
     protected function fetchData($id): object|null
