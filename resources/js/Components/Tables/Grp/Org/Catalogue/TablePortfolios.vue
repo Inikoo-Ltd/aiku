@@ -400,9 +400,12 @@ watch(
 						style="min-width: 16rem"
 						frozen></Column>
 
-					<Column field="type" header="Type" sortable style="min-width: 8rem"> </Column>
-
-					<Column field="quantity_left" header="Quantity" style="min-width: 8rem">
+					<Column field="quantity_left" header="Stock" style="min-width: 8rem"> </Column>
+					<Column field="weight" header="Weight" style="min-width: 8rem"> </Column>
+					<Column field="price" header="Price" style="min-width: 8rem">
+						<template #body="{ data }">
+						<div class="text-gray-500">{{ useLocaleStore().currencyFormat( data.currency_code, data.price)  }}</div>
+					</template>
 					</Column>
 					<Column
 						field="action"
