@@ -15,8 +15,6 @@ use App\Actions\Comms\Email\SendNewCustomerNotification;
 use App\Actions\CRM\PollReply\StoreMultiPollReply;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -36,14 +34,6 @@ class RegisterCustomer extends OrgAction
 
         data_set($modelData, 'registered_at', now());
         data_set($modelData, 'status', CustomerStatusEnum::PENDING_APPROVAL);
-
-        if ($shop->type != ShopTypeEnum::FULFILMENT) {
-            $requireApproval = Arr::get($shop->settings, 'customer.required_approval', false);
-            if (!$requireApproval) {
-                data_set($modelData, 'status', CustomerStatusEnum::APPROVED);
-                data_set($modelData, 'state', CustomerStateEnum::ACTIVE);
-            }
-        }
 
         $customer = StoreCustomer::make()->action($shop, $modelData);
 
