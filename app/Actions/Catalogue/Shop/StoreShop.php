@@ -83,6 +83,11 @@ class StoreShop extends OrgAction
         data_set($modelData, 'group_id', $organisation->group_id);
         data_set($modelData, 'colour', GetRandomColour::run());
 
+        if (Arr::get($addressData, 'type') == ShopTypeEnum::FULFILMENT) {
+            data_set($modelData, 'registration_needs_approval', true);
+        }
+
+
         $shop = DB::transaction(function () use ($organisation, $modelData, $addressData, $warehouses) {
             /** @var Shop $shop */
             $shop = $organisation->shops()->create($modelData);
@@ -214,15 +219,14 @@ class StoreShop extends OrgAction
                 $paymentAccount,
                 $shop,
                 [
-                   'currency_id' => $shop->currency_id,
-                   'state'       => PaymentAccountShopStateEnum::ACTIVE
+                    'currency_id' => $shop->currency_id,
+                    'state'       => PaymentAccountShopStateEnum::ACTIVE
                 ]
             );
             $shop->refresh();
+
             return $shop;
-
         });
-
 
 
         GroupHydrateShops::dispatch($organisation->group)->delay($this->hydratorsDelay);

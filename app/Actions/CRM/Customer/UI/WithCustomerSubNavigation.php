@@ -122,7 +122,7 @@ trait WithCustomerSubNavigation
             ],
         ];
 
-        if ($customer->status != CustomerStatusEnum::APPROVED && Arr::get($customer->shop->settings, 'customer.required_approval')) {
+        if ($customer->status != CustomerStatusEnum::APPROVED && Arr::get($customer->shop->settings, 'registration.require_approval')) {
             return $baseNavigation;
         }
 

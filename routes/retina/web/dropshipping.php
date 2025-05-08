@@ -64,6 +64,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
 
     Route::prefix('client')->as('client.')->group(function () {
         Route::get('/', IndexRetinaPlatformCustomerClients::class)->name('index');
+        Route::get('create', [CreateRetinaCustomerClient::class, 'inPlatform'])->name('create');
         Route::get('fetch', [FetchRetinaCustomerClientFromShopify::class, 'inPlatform'])->name('fetch');
     });
 

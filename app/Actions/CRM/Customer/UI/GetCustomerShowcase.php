@@ -33,10 +33,11 @@ class GetCustomerShowcase
             ];
         }
 
+
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
-            'required_approval' => Arr::get($customer->shop->settings, 'customer.required_approval', false),
+            'require_approval' => Arr::get($customer->shop->settings, 'registration.require_approval', false),
             'approveRoute'       => [
                 'name'       => 'grp.models.customer.approve',
                 'parameters' => [

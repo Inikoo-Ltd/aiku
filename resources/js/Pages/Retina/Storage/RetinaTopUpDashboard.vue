@@ -107,7 +107,7 @@ const onSubmitTopup = () => {
       <PageHeading :data="pageHead">
         <template #other>
             <Button
-                :label="trans('New Toup')"
+                :label="trans('New Top Up')"
                 @click="() => isModalTopupOpen = true"
                 icon="fas fa-plus"
             />

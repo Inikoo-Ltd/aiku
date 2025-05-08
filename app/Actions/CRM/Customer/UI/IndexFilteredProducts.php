@@ -4,6 +4,7 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\FilteredProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -40,6 +41,8 @@ class IndexFilteredProducts extends OrgAction
         $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         $queryBuilder = QueryBuilder::for(Product::class);
 
+        $queryBuilder->where('products.status', ProductStatusEnum::FOR_SALE);
+
         if (class_basename($parent) == 'Shop') {
             $queryBuilder->where('products.shop_id', $parent->id);
         } elseif (class_basename($parent) == 'Organisation') {
@@ -61,6 +64,7 @@ class IndexFilteredProducts extends OrgAction
             });
         }
 
+        $queryBuilder->leftJoin('currencies', 'currencies.id', 'products.currency_id');
 
 
         $queryBuilder
@@ -73,7 +77,10 @@ class IndexFilteredProducts extends OrgAction
                 'products.state',
                 'products.created_at',
                 'products.updated_at',
+                'products.gross_weight',
                 'products.slug',
+                'currencies.code as currency_code',
+                'currencies.id as currency_id',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
             ->leftJoin('media', 'products.image_id', '=', 'media.id');

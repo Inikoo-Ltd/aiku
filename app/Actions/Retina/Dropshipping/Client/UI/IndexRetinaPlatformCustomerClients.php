@@ -119,6 +119,17 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                             ],
                             default => []
                         },
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Create Customer Client'),
+                            'route' => [
+                                'name'       => 'retina.dropshipping.platforms.client.create',
+                                'parameters' => [
+                                    'platform' => $this->platform->slug
+                                ]
+                            ]
+                        ]
                     ],
 
                 ],

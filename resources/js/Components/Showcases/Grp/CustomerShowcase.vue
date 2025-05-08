@@ -25,24 +25,30 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil);
 
-interface CustomerDropshipping {
+interface Customer {
   slug: string;
   reference: string;
   name: string;
+  state: string;
+  phone: string;
+  status: string;
+
+  approved_at: string;
+
   contact_name: string;
   company_name: string;
   location: string[];
   email: string;
-  phone: string;
+
   created_at: string;
   number_current_customer_clients: number | null;
   address: Address;
   is_dropshipping: boolean;
-  state: string;
 }
 
 const props = defineProps<{
   data: {
+    customer: Customer
     address_management: {
       can_open_address_management: boolean
       updateRoute: routeType
@@ -50,41 +56,20 @@ const props = defineProps<{
       address_update_route: routeType,
       address_modal_title: string
     }
-    fulfilment_customer: {
-      radioTabs: {
-        [key: string]: boolean
-      }
-      number_pallets?: number
-      number_pallets_state_received?: number
-      number_stored_items?: number
-      number_pallets_deliveries?: number
-      number_pallets_returns?: number
-      customer: {
-        address: Address
-      }
-    }
-    editWebUser:{}
-    status: string
-    customer: CustomerDropshipping
-    updateRoute: routeType
+    require_approval: boolean
     approveRoute: routeType
+    editWebUser: routeType
   },
   tab: string
 }>();
 
 const isModalAddress = ref(false);
 const isModalUploadOpen = ref(false);
-const isModalBalanceOpen = ref(false);
-const balanceModalType = ref("");
+
 const visible = ref(false);
 
 const customerID = ref();
 const customerName = ref();
-
-function openModalBalance(type: string) {
-  balanceModalType.value = type;
-  isModalBalanceOpen.value = true;
-}
 
 function openRejectedModal(customer: any) {
   customerID.value = customer.id;
@@ -93,7 +78,11 @@ function openRejectedModal(customer: any) {
 }
 
 const links = ref([
-    { label: trans("Edit Web User"), route_target: props.data.editWebUser, icon: faPencil },
+    {
+      label: trans("Edit Web User"),
+      route_target: props.data.editWebUser,
+      icon: 'fal fa-pencil'
+    },
 ]);
 
 </script>
@@ -101,7 +90,7 @@ const links = ref([
 <template>
   <!-- Section: Stats box -->
   <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
-    <div v-if="data.required_approval === true && data.customer.status != 'approved'" class="w-full max-w-md justify-self-end">
+    <div v-if="data.require_approval && data.customer.status === 'pending_approval'" class="w-full max-w-md justify-self-end">
       <div class="p-5 border rounded-lg bg-white">
         <div class="flex flex-col items-center text-center gap-2">
           <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
@@ -130,7 +119,7 @@ const links = ref([
             severity="danger"
             size="small"
             variant="outlined"
-            @click="() => openRejectedModal(data.fulfilment_customer.customer)">
+            @click="() => openRejectedModal(data.customer)">
             <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
             <span> Reject </span>
           </ButtonPrimeVue>

@@ -33,7 +33,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             'breadcrumbs'    => $this->getBreadcrumbs(),
             'pageHead'    => [
 
-                'title'         => __('TopUp Dashboard'),
+                'title'         => __('Top Up Dashboard'),
                 'icon'          => [
                     'icon'  => ['fal', 'fa-tachometer-alt'],
                     'title' => __('TopUp Dashboard')
@@ -45,6 +45,9 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             'amount_shortcuts' => [],
 
             'topUpData'  => $this->getTopUpData($customer),
+
+            'balance' => $customer->balance,
+            'currency' => CurrencyResource::make($customer->shop->currency),
         ]);
     }
 
@@ -53,7 +56,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
         $stats = [];
 
         $stats['topUps'] = [
-            'label'         => __('TopUps'),
+            'label'         => __('Top Ups'),
             'count'         => $customer->stats->number_top_ups,
             'description'   => __('number of top ups'),
             'route'         => [

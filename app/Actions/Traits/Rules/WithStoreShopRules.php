@@ -19,6 +19,7 @@ trait WithStoreShopRules
     protected function getStoreShopRules(): array
     {
         $rules = [
+            'registration_needs_approval' => ['sometimes', 'boolean'],
             'master_shop_id' => [
                 'sometimes',
                 'nullable',

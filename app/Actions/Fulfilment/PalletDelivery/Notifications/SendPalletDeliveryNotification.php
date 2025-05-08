@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\PalletDelivery\Notifications;
 
+use App\Actions\Fulfilment\FulfilmentCustomer\StoreRetinaFulfilmentCustomerNotification;
 use App\Actions\OrgAction;
 use App\Events\BroadcastFulfilmentCustomerNotification;
 use App\Models\Fulfilment\PalletDelivery;
@@ -29,5 +30,7 @@ class SendPalletDeliveryNotification extends OrgAction
             $palletDelivery->group,
             $palletDelivery
         ))->toOthers();
+
+        StoreRetinaFulfilmentCustomerNotification::dispatch($palletDelivery);
     }
 }
