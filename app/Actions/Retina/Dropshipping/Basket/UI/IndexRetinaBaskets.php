@@ -11,11 +11,16 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaBasketsResources;
+use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
 use Closure;
@@ -27,12 +32,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaBaskets extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $parent, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
+    public function handle(Customer $parent, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('product_name', $value)
-                    ->orWhereWith('product_name', $value);
+                $query->whereAnyWordStartWith('pallets.reference', $value)
+                    ->orWhereWith('pallets.reference', $value);
             });
         });
 
@@ -40,28 +45,12 @@ class IndexRetinaBaskets extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Transaction::class);
+        $query = QueryBuilder::for(Order::class);
+        $query->where('orders.customer_id', $this->customer->id);
+        $query->where('orders.state', OrderStateEnum::CREATING);
 
-        if ($parent instanceof Customer) {
-            $query->where('customer_id', $parent->id);
-        }
-        $query->where('transactions.state', OrderStateEnum::CREATING);
-        $query->where('model_type', Product::class);
-
-        $query->leftJoin('products', 'transactions.model_id', '=', 'products.id');
-
-
-        return $query->defaultSort('products_id')
-            ->select([
-                'products.code as product_code',
-                'products.name as product_name',
-                'products.id as product_id',
-                'products.slug as product_slug',
-                'transactions.quantity_ordered as quantity',
-                'transactions.net_amount as net_amount',
-                'transactions.date as date',
-            ])
-            ->allowedSorts(['products.id'])
+        return $query->defaultSort('id')
+            ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -84,22 +73,31 @@ class IndexRetinaBaskets extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Dropshipping/Client/CustomerClients',
+            'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Baskets'),
+                'title'       => __('Orders'),
                 'pageHead'    => [
-                    'title' => __('Baskets'),
-                    'icon'  => 'fal fa-shopping-basket'
+                    'model' => $this->platformUser->name ?? __('Manual'),
+                    'title' => __('Orders'),
+                    'icon'  => 'fal fa-money-bill-wave'
                 ],
 
-                'products' => RetinaBasketsResources::collection($orders)
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => ProductTabsEnum::navigation()
+                ],
+
+                'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+
+                'orders' => OrdersResource::collection($orders)
             ]
-        )->table($this->tableStructure('baskets'));
+        )->table($this->tableStructure('orders'));
     }
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
     {
+        // dd($this->platformUser);
         return function (InertiaTable $table) use ($prefix, $modelOperations) {
             if ($prefix) {
                 $table
@@ -117,12 +115,9 @@ class IndexRetinaBaskets extends RetinaAction
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
 
-            $table->column(key: 'product_code', label: __('Code'), canBeHidden: false, searchable: true);
-            $table->column(key: 'product_name', label: __('Name'), canBeHidden: false, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, searchable: true);
-            $table->column(key: 'net_amount', label: __('net amount'), canBeHidden: false, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, searchable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
         };
     }
 

@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -59,6 +60,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
         } else {
             $query->where('orders.customer_id', $this->customer->id);
+            $query->where('orders.state', '!=', OrderStateEnum::CREATING);
         }
 
         if (!($this->platformUser instanceof WebUser)) {
