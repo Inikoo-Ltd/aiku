@@ -11,6 +11,11 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\DepartmentResource;
+use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\Catalogue\FamilyResource;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -34,6 +39,18 @@ class ShowBlueprint extends OrgAction
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+        $families = [];
+
+        /** @var ProductCategory $productCategory */
+        $productCategory = $webpage->model;
+
+        if ($productCategory->type === ProductCategoryTypeEnum::DEPARTMENT) {
+            $families = FamiliesResource::collection($productCategory->getFamilies());
+            $productCategory = DepartmentResource::make($productCategory);
+        } elseif ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+            $productCategory = FamilyResource::make($productCategory);
+        }
+
         return Inertia::render(
             'Org/Web/Workshop/Blueprint/ProductCategoryBlueprint',
             [
@@ -51,6 +68,8 @@ class ShowBlueprint extends OrgAction
                     ],
                 ],
                 'showcase' => GetBlueprintShowcase::run($webpage),
+                'productCategory' => $productCategory,
+                'families' => $families
             ]
         );
     }
