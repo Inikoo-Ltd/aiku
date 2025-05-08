@@ -6,6 +6,7 @@ import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
 import { router } from '@inertiajs/vue3';
 import { notify } from '@kyvg/vue3-notification';
+import EmptyState from '../Utils/EmptyState.vue';
 
 
 const props = withDefaults(defineProps<{
@@ -84,7 +85,7 @@ const SaveShowAndHide = (item) => {
                 @click="isModalFamiliesPreview = true" /> -->
             </div>
 
-            <ul class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
+            <ul v-if="list_data.length > 0" class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
                 <li v-for="(item, index) in list_data" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">
@@ -105,6 +106,8 @@ const SaveShowAndHide = (item) => {
                     </div>
                 </li>
             </ul>
+
+            <EmptyState v-else />
         </div>
     </div>
 
