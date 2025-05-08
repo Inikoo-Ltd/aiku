@@ -25,6 +25,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Web\Website;
+use App\Http\Resources\Web\WebBlockTypesResource;
+use App\Models\Web\WebBlockType;
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 
 class ShowBlueprint extends OrgAction
 {
@@ -50,7 +53,7 @@ class ShowBlueprint extends OrgAction
         } elseif ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
             $productCategory = FamilyResource::make($productCategory);
         }
-
+        
         return Inertia::render(
             'Org/Web/Workshop/Blueprint/ProductCategoryBlueprint',
             [
@@ -69,7 +72,16 @@ class ShowBlueprint extends OrgAction
                 ],
                 'showcase' => GetBlueprintShowcase::run($webpage),
                 'productCategory' => $productCategory,
-                'families' => $families
+                'families' => $families,
+                'web_block_types'          => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
+                'updateRoute' => [
+                        'name'       => 'grp.models.org.catalogue.departments.update',
+                        'parameters' => [
+                            'organisation'      => $webpage->organisation_id,
+                            'shop'              => $webpage->shop_id,
+                            'productCategory'   => $webpage->id
+                        ]
+                ],
             ]
         );
     }
