@@ -69,6 +69,13 @@ class DropshippingPortfolioResource extends JsonResource
                     'product' => $this->id
                 ]
             ],
+            'delete_portfolio' => [
+                'method' => 'delete',
+                'name'       => 'retina.models.portfolio.delete',
+                'parameters' => [
+                    'portfolio' => $this->id
+                ]
+            ],
         ];
     }
 }
