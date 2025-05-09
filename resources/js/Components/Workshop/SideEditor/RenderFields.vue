@@ -45,7 +45,7 @@ const valueForField = computed(() => {
     return rawVal
   }
 
-  return rawVal?.[currentView.value!] ?? rawVal?.desktop ?? rawVal
+  return rawVal?.[currentView.value!]
 })
 
 const onPropertyUpdate = (newVal: any, path: any) => {
@@ -58,17 +58,15 @@ const onPropertyUpdate = (newVal: any, path: any) => {
     return
   }
 
-  const current = isPlainObject(prevVal) ? prevVal : {}
-
-  const updatedValue = Array.isArray(props.blueprint.useIn) && props.blueprint.useIn.length > 0
-  ? {
-      ...current,
-      [currentView.value]: newVal
-    }
-  : newVal
+  const current = isPlainObject(prevVal) ? { ...prevVal } : {}
+  const updatedValue = {
+    ...current,
+    [currentView.value]: newVal
+  }
 
   emits('update:modelValue', rawKey, updatedValue)
 }
+
 
 
 </script>

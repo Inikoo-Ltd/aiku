@@ -112,6 +112,18 @@ export default {
 			],
 		},
 		{
+			name: "Block Properties",
+			key: ["container", "properties"],
+			replaceForm: [
+				{
+					key: ["block","dimension"],
+					label: "Dimension",
+					type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
+				},
+			],
+		},
+		{
 			name: "Button",
 			key: ["button"],
 			editGlobalStyle : "button",
@@ -162,11 +174,6 @@ export default {
 			name: "Properties",
 			key: ["container", "properties"],
 			replaceForm: [
-				{
-					key: ["background"],
-					label: "Background",
-					type: "background",
-				},
 				{
 					key: ["padding"],
 					label: "Padding",

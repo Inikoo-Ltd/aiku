@@ -75,7 +75,7 @@ provide('onSaveWorkshop', onSaveWorkshop)
                 <SideEditor 
                      v-if="usedTemplates.code"
                     v-model="modelValue.family" 
-			        :blueprint="getBlueprint(modelValue.family.code)" 
+			        :blueprint="getBlueprint(usedTemplates.code)" 
                     @update:model-value="(a)=>console.log('sdsdsd',a)"
 			        :uploadImageRoute="null" 
                 />
