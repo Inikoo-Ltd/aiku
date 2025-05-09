@@ -59,6 +59,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -185,6 +187,8 @@ class Customer extends Model implements HasMedia, Auditable
     use InShop;
     use HasAttachments;
     use HasEmail;
+    use HasApiTokens;
+    use Notifiable;
 
     protected $casts = [
         'data'                        => 'array',
