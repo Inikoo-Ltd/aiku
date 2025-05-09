@@ -25,6 +25,7 @@ class OrderResource extends JsonResource
             'state'         => $order->state->value,
             'state_label'   => $order->state->labels()[$order->state->value],
             'state_icon'    => $order->state->stateIcon()[$order->state->value],
+            'public_notes'  => $order->public_notes,
         ];
     }
 }

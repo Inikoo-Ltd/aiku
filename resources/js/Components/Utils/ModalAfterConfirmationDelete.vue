@@ -240,7 +240,7 @@ const onClickDelete = () => {
 													:label="trans('Cancel')"
 													@click="closeModal" />
 												<Button
-													type="tertiary"
+													 type="delete"
 													:label="trans('Delete')"
 													:disabled="messageDelete !== (data?.reference || invoice?.reference)"
 													@click="onClickDelete" />
