@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaCreditCardDashboard;
+use App\Actions\Retina\Dropshipping\Api\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -83,6 +84,10 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::get('/', [IndexRetinaPlatformDropshippingOrders::class, 'inPlatform'])->name('index');
         Route::get('/{order}', [ShowRetinaDropshippingOrder::class, 'inPlatform'])->name('show');
+    });
+
+    Route::prefix('api')->as('api.')->group(function () {
+        Route::get('/', ShowApiTokenRetinaDropshipping::class)->name('show');
     });
 });
 
