@@ -2,11 +2,11 @@
 // import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 
-import { faSpinnerThird } from '@fad'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from '@fortawesome/fontawesome-svg-core'
-
-library.add(faSpinnerThird)
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { faExclamationCircle, faCheckCircle } from "@fas"
+library.add(faExclamationCircle, faCheckCircle)
 
 defineOptions({
     inheritAttrs: false
@@ -19,6 +19,8 @@ const props = defineProps<{
     full?: boolean
     disabled?: boolean
     loading?: boolean
+    isSuccess?: boolean
+    isError?: boolean
     rows?:Number|null
     inputName?: string
 }>()
@@ -38,15 +40,18 @@ const emits = defineEmits<{
             :name="inputName"
             :id="inputName"
             :rows
-            :placeholder="placeholder || trans('Enter text here')" class="block w-full rounded-md placeholder:text-gray-400 placeholder:italic placeholder:text-xs 
+            :placeholder="placeholder || trans('Enter text here')"
+            class="pr-6 block w-full rounded-md placeholder:text-gray-400 placeholder:italic placeholder:text-xs 
             disabled:text-gray-500 disabled:border-gray-300 disabled:bg-gray-100
             border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
         />
         <!-- Loading icon -->
         
-        <div class="absolute bottom-2 right-2 flex items-center justify-center">
+        <div class="absolute top-2 right-2 flex items-center justify-center">
             <slot name='stateIcon'>
-                <FontAwesomeIcon v-if="loading" :icon="faSpinnerThird" />
+                <FontAwesomeIcon v-if="isError" icon="fas fa-exclamation-circle" class="h-5 w-5 text-red-500" aria-hidden="true" />
+                <FontAwesomeIcon v-if="isSuccess" icon="fas fa-check-circle" class="h-5 w-5 text-green-500" aria-hidden="true" />
+                <LoadingIcon v-if="loading" class="h-5 w-5 text-gray-500" />
             </slot>
         </div>
     </div>

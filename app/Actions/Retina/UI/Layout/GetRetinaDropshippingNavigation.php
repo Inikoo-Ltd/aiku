@@ -141,7 +141,7 @@ class GetRetinaDropshippingNavigation
             'icon' => ['fal', 'fa-money-bill-wave'],
             'root' => 'retina.top_up.',
             'route' => [
-                'name' => 'retina.dropshipping.saved-credit-card.show'
+                'name' => 'retina.dropshipping.saved-credit-card.dashboard'
             ],
         ];
 

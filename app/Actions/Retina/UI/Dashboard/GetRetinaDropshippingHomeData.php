@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Http\Resources\CRM\CustomerClientResource;
 
 class GetRetinaDropshippingHomeData
 {
@@ -94,7 +95,12 @@ class GetRetinaDropshippingHomeData
                     ],
                 ]
             ],
+            'clients'  => $customer->clients ? CustomerClientResource::collection($customer->clients) : [],
             'currency_code' => $customer->shop->currency->code,
+            'order_route' => [
+                'name'       => 'retina.models.customer-client.dashboard-order.store',
+                'method'     => 'post'
+            ]
         ];
     }
 }

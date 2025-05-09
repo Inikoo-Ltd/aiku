@@ -60,7 +60,7 @@ const props = defineProps<{
 
 const emits = defineEmits<{
 	(e: "onSave", value: string | number): void
-	(e: "update:modelValue", value: number): void
+	(e: "update:modelValue", value: number, saveFunction: Function): void
 	(e: "onSuccess", newValue: number, oldValue: number): void
 	(e: "onError", value: {}): void
 }>()
@@ -124,7 +124,7 @@ defineOptions({
 watch(
 	() => form.quantity,
 	(newVal: number) => {
-		emits("update:modelValue", newVal)
+		emits("update:modelValue", newVal, onSaveViaForm)
 	}
 )
 
@@ -266,7 +266,7 @@ const onClickPlusButton = () => {
 		<div
             v-if="readonly"
 			class="mx-1 text-center tabular-nums rounded-md"
-			>
+		>
 			<InputNumber
 				v-model="form.quantity"
 				@update:model-value="(e) => (form.quantity = e)"
@@ -284,7 +284,8 @@ const onClickPlusButton = () => {
 					textAlign: 'center',
 					background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
 				}"
-				v-bind="bindToTarget" />
+				v-bind="bindToTarget"
+			/>
 		</div>
 	</div>
 </template>

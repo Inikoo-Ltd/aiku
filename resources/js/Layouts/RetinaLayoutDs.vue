@@ -11,8 +11,9 @@ import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 
 // import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder } from "@fal"
+import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faExclamationCircle, faCheckCircle, faArrowRight)
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 initialiseRetinaApp()
 
@@ -55,11 +56,11 @@ console.log('LayoutDs')
                 @click="sidebarOpen = !sidebarOpen"
             />
 
-            <div class="w-full min-h-full bg-white shadow-lg rounded-md h-full relative flex flex-col pb-6 text-gray-700">
+            <div class="w-full min-h-full h-full relative flex flex-col text-gray-700">
                 <!-- Section: Subsections (Something will teleport to this section) -->
-                <div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 h-full" />
+                <div id="RetinaTopBarSubsections" class="pl-2 flex gap-x-2 h-full" />
 
-                <div style="max-width: calc(1280px - 200px);">
+                <div style="max-width: calc(1280px - 200px);" class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
                     <slot name="default" />
                 </div>
             </div>
@@ -83,5 +84,9 @@ console.log('LayoutDs')
     &:hover {
         background-color: v-bind('layout.app.theme[4] + "25"');
     }
+}
+
+#RetinaTopBarSubsections:has(> *) {
+    @apply pb-2;
 }
 </style>

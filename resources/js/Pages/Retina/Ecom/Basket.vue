@@ -11,6 +11,7 @@ import { faArrowLeft, faArrowRight } from "@fal"
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Image from "@/Components/Image.vue"
+import { debounce } from "lodash"
 
 defineProps<{
     transactions: {}
@@ -24,6 +25,10 @@ defineProps<{
     }
 }>()
 
+
+const debSubmitForm = debounce((save: Function) => {
+    save()
+}, 500)
 
 </script>
 
@@ -93,12 +98,18 @@ defineProps<{
                     </template>
 
                     <template #body="{ data: dataBody }">
+                        <!-- <pre>{{ dataBody.updateRoute }}</pre> -->
                         <div class="px-2 relative text-right">
                             <NumberWithButtonSave
                                 v-model="dataBody.quantity_ordered"
+                                @update:modelValue="(value, save: Function) => {
+                                    debSubmitForm(save)
+                                }"
                                 :routeSubmit="dataBody.updateRoute"
                                 key-submit="quantity_ordered"
-                                saveOnForm
+                                xxsaveOnForm
+                                noSaveButton
+                                noUndoButton
                             />
                         </div>
                     </template>

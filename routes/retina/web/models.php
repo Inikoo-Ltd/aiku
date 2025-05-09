@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
@@ -22,6 +23,7 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
@@ -150,6 +152,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 });
 
 Route::name('order.')->prefix('order')->group(function () {
+    Route::patch('{order:id}/update', UpdateRetinaOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitRetinaOrder::class)->name('submit');
 });
 
@@ -160,6 +163,7 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
 
 Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
     Route::post('platform/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform.store');
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
 });
@@ -196,3 +200,7 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 });
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
+
+Route::name('mit-saved-card.')->prefix('mit-saved-card')->group(function () {
+    Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
+});
