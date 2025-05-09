@@ -13,6 +13,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
+use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PortfoliosJsonExport
@@ -71,7 +72,9 @@ class PortfoliosJsonExport
             ->with(['item.image'])
             ->get();
 
-        return $portfolios->map(function ($row) use ($portfolios) {
+        return $portfolios->map(function ($row) {
+            $webpage = Webpage::where('model_id', $row->item_id)->where('model_type', $row->item_type)->first();
+
             return [
                 $row->status,
                 $row->item_code,
@@ -90,7 +93,7 @@ class PortfoliosJsonExport
                 '', // TODO: unit dimensions
                 '', // TODO: materials/ingredients
                 '', // TODO: webpage description (html)
-                '', // webpage description (plain text)
+                $webpage?->description, // webpage description (plain text)
                 $row->item?->currency?->code,
                 '', // TODO: tariff code
                 '', // TODO: duty rate

@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
+use App\Models\Web\Webpage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Maatwebsite\Excel\Concerns\Exportable;
@@ -39,6 +40,7 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
 
     public function map($row): array
     {
+        $webpage = Webpage::where('model_id', $row->item_id)->where('model_type', $row->item_type)->first();
 
         return [
             $row->status,
@@ -52,22 +54,22 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
             $row->item?->unit,
             $row->item?->price, // unit price
             $row->item_name,
-            '', // unit RRP
-            '', // unit net weight
+            '', // TODO: unit RRP
+            '', // TODO: unit net weight
             $row->item?->gross_weight,
-            '', // unit dimensions
-            '', // materials/ingredients
-            '', // webpage description (html)
-            '', // webpage description (plain text)
+            '', // TODO: unit dimensions
+            '', // TODO: materials/ingredients
+            '', // TODO: webpage description (html)
+            $webpage?->description, // webpage description (plain text)
             $row->item?->currency->code, // country of origin
-            '', // tariff code
-            '', // duty rate
-            '', // HTS US
+            '', // TODO: tariff code
+            '', // TODO: duty rate
+            '', // TODO: HTS US
             $row->item?->available_quantity,
-            $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '', // images
+            $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '',
             $row->item?->updated_at,
-            '', // stock updated
-            '', // price updated
+            '', // TODO: stock updated
+            '', // TODO: price updated
             $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
         ];
     }
