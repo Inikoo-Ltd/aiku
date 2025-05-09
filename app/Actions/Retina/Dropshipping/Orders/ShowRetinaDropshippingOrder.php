@@ -18,6 +18,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Ordering\TransactionsResource;
@@ -72,6 +73,21 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $action = [];
 
+        $action[] = $this->platform && $this->platform->type == PlatformTypeEnum::MANUAL ? [
+            'type' => 'buttonGroup',
+            'key' => 'upload-add',
+            'button' => [
+                [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'icon' => ['fal', 'fa-upload'],
+                    'label' => '',
+                    'key' => 'upload',
+                    'tooltip' => __('Upload pallets via spreadsheet'),
+                ],
+            ],
+        ] : [];
+
         // if($order->state == OrderStateEnum::CREATING) {
         //     $action[] = [
         //         'type'  => 'button',
@@ -86,6 +102,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         //         ]
         //     ];
         // }
+
         return Inertia::render(
             'Dropshipping/RetinaOrder',
             [
@@ -121,6 +138,51 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                             'order' => $order->id
                         ],
                         'method'     => 'patch'
+                    ]
+                ],
+
+                'upload_excel' => [
+                    'title' => [
+                        'label' => __('Upload product'),
+                        'information' => __('The list of column file: code, quantity')
+                    ],
+                    'progressDescription'   => __('Adding Products'),
+                    'preview_template'    => [
+                        'header' => ['code', 'quantity'],
+                        'rows' => [
+                            [
+                                'code' => 'product-001',
+                                'quantity' => '1'
+                            ]
+                        ]
+                    ],
+                    'upload_spreadsheet'    => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['code', 'quantity'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)'
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'retina.models.order.transaction.upload',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'retina.dropshipping.orders.recent_uploads',
+                                'parameters' => [
+                                    'order' => $order->slug
+                                ]
+                            ],
+                            'download' => [
+                                'name'       => 'retina.dropshipping.orders.upload_templates',
+                                'parameters' => [
+                                    'order'        => $order->slug
+                                ]
+                            ],
+                        ],
                     ]
                 ],
 
