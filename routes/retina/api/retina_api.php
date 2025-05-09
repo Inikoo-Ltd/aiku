@@ -13,6 +13,8 @@ Route::get('/ping', function () {
 })->name('ping');
 Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
     Route::get('/profile', function (Request $request) {
-        return $request->user();
+        return response()->json([
+            'user' => 'hello',
+        ]);
     })->name('profile');
 });

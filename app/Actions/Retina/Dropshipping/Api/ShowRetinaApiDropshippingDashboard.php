@@ -12,10 +12,12 @@ namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Platform;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Redirect;
 
 class ShowRetinaApiDropshippingDashboard extends RetinaAction
 {
@@ -42,16 +44,19 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         );
     }
 
-    public function asController(Platform $platform, ActionRequest $request): Response
+    public function asController(Platform $platform, ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisation($request);
 
-        return $this->handle($platform, $request);
-    }
+        $customer = $this->customer;
 
-    public function inPupil(Platform $platform, ActionRequest $request): Response
-    {
-        $this->initialisationFromPupil($request);
+        $existingToken = $customer->tokens()->where('name', 'api-token')->first();
+
+        if ($existingToken) {
+            return Redirect::route('retina.dropshipping.platforms.api.show', [
+                'platform' => $platform->slug,
+            ]);
+        }
 
         return $this->handle($platform, $request);
     }
