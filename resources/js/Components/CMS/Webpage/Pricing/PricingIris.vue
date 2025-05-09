@@ -39,11 +39,8 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 				<div
 					v-for="tier in fieldValue.tiers"
 					:key="tier.id"
-					:class="[
-						'flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg transition-transform transform',
-						'hover:scale-105',
-						tier.mostPopular ? 'ring-4 ring-indigo-500' : '',
-					]"
+					class="relative flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg"
+					:class="tier.mostPopular ? 'ring-4 ring-indigo-500' : ''"
 					:style="getBackgroundStyle(tier.background)">
 					<div>
 						<div class="flex items-center justify-between gap-x-4">
