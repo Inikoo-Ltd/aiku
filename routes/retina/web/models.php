@@ -23,6 +23,9 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
@@ -154,6 +157,16 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 Route::name('order.')->prefix('order')->group(function () {
     Route::patch('{order:id}/update', UpdateRetinaOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitRetinaOrder::class)->name('submit');
+
+    Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+        Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
+        Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
+    });
+
+    Route::name('transaction.')->prefix('transaction')->group(function () {
+        //        Route::post('upload', ImportTransactionInOrder::class, )->name('upload');
+        Route::post('/', StoreRetinaTransaction::class)->name('store')->withoutScopedBindings();
+    });
 });
 
 Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->group(function () {
