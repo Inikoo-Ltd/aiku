@@ -90,6 +90,12 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
         ],
 
+        'retina-api' => [
+            ForceJsonResponse::class,
+            EnsureFrontendRequestsAreStateful::class,
+            SubstituteBindings::class,
+        ],
+
         'han' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,

@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,31 +22,38 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
     use AsAction;
 
 
-    public function handle(ActionRequest $request): Response
+    public function handle(Platform $platform, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Dashboard/RetinaDropshippingDashboard',
+            'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     __('Api Token')
                 ),
-                'data'       => [],
+                'data'       => [
+                    'route_generate' => [
+                        'name' => 'retina.dropshipping.platforms.api.show',
+                        'parameters' => [
+                            'platform' => $platform->slug,
+                        ],
+                    ]
+                ],
             ]
         );
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(Platform $platform, ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->handle($request);
+        return $this->handle($platform, $request);
     }
 
-    public function inPupil(ActionRequest $request): Response
+    public function inPupil(Platform $platform, ActionRequest $request): Response
     {
         $this->initialisationFromPupil($request);
 
-        return $this->handle($request);
+        return $this->handle($platform, $request);
     }
 
     public function getBreadcrumbs($label = null): array
