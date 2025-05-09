@@ -22,7 +22,6 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
 
     public function handle(ActionRequest $request): array
     {
-
         $customer = $request->user()->customer;
 
         $existingToken = $customer->tokens()->where('name', 'api-token')->first();
@@ -41,7 +40,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     }
 
 
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
 
@@ -53,14 +52,12 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
         return Inertia::render(
             'Dropshipping/Api/ApiTokenRetinaDropshipping',
             [
-                'title'        => __('API token'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    __('Api')
-                ),
+                'title'       => __('API token'),
+                'breadcrumbs' => $this->getBreadcrumbs(),
 
-                'pageHead'    => [
-                    'title'     => 'API token',
-                    'icon'      => [
+                'pageHead' => [
+                    'title' => 'API token',
+                    'icon'  => [
                         'title' => __('Api token'),
                         'icon'  => 'fal fa-key'
                     ],
@@ -72,21 +69,21 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                             'label'  => __('Token'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
-                                'api_token' => [
-                                    'type'         => 'input',
-                                    'label'        => __('api token'),
-                                    'value'        => Arr::get($data, 'token') ?? '',
+                                'api_token'               => [
+                                    'type'  => 'input',
+                                    'label' => __('api token'),
+                                    'value' => Arr::get($data, 'token') ?? '',
                                 ],
-                                'api_base_sandbox_url' => [
-                                    'type'         => 'input',
-                                    'label'        => __('url api sandbox'),
-                                    'value'        => 'https://app.aiku-sandbox.uk/',
-                                    
+                                'api_base_sandbox_url'    => [
+                                    'type'  => 'input',
+                                    'label' => __('url api sandbox'),
+                                    'value' => 'https://app.aiku-sandbox.uk/',
+
                                 ],
                                 'api_base_production_url' => [
-                                    'type'         => 'input',
-                                    'label'        => __('url api production'),
-                                    'value'        => 'https://app.aiku.io/',
+                                    'type'  => 'input',
+                                    'label' => __('url api production'),
+                                    'value' => 'https://app.aiku.io/',
                                 ],
                             ],
 
@@ -110,7 +107,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
         return $data;
     }
 
-    public function getBreadcrumbs($label = null): array
+    public function getBreadcrumbs(): array
     {
         return [
             [
