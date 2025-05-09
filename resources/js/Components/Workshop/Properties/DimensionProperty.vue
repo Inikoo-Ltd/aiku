@@ -29,7 +29,7 @@ const emits = defineEmits<{
                 <div class="text-xs">{{ trans('Height') }}</div>
                 <Popover v-slot="{ open }" class="relative">
                     <PopoverButton :class="open ? 'text-indigo-500' : ''" class="underline">
-                        {{ model?.height.unit }}
+                        {{ model?.height?.unit ? model?.height.unit : '%' }}
                     </PopoverButton>
 
                     <transition enter-active-class="transition duration-200 ease-out"
@@ -61,7 +61,7 @@ const emits = defineEmits<{
                                         :modelValue="get(model, 'height.value', 0)"
                                         @update:modelValue="(newVal) => (set(model, 'height.value', newVal), emits('update:modelValue',model))"
                                         class=""
-                                        :suffix="model?.height.unit"
+                                        :suffix="model?.height?.unit ? model?.height.unit : '%'"
                                     />
                                 </div>
                             </div>
@@ -77,7 +77,7 @@ const emits = defineEmits<{
                 <div class="text-xs">{{ trans('Width') }}</div>
                 <Popover v-slot="{ open }" class="relative">
                     <PopoverButton :class="open ? 'text-indigo-500' : ''" class="underline">
-                        {{ model?.width.unit }}
+                        {{ model?.width?.unit ? model?.width.unit : '%' }}
                     </PopoverButton>
 
                     <transition enter-active-class="transition duration-200 ease-out"
@@ -109,7 +109,7 @@ const emits = defineEmits<{
                                         :modelValue="get(model, 'width.value', 0)"
                                         @update:modelValue="(newVal) => (set(model, 'width.value', newVal),emits('update:modelValue',model))"
                                         class=""
-                                        :suffix="model?.width.unit"
+                                        :suffix="model?.width?.unit ? model?.width.unit : '%'"
                                     />
                                 </div>
                             </div>

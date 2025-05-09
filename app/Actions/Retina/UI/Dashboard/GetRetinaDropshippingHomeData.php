@@ -97,6 +97,10 @@ class GetRetinaDropshippingHomeData
             ],
             'clients'  => $customer->clients ? CustomerClientResource::collection($customer->clients) : [],
             'currency_code' => $customer->shop->currency->code,
+            'order_route' => [
+                'name'       => 'retina.models.customer-client.dashboard-order.store',
+                'method'     => 'post'
+            ]
         ];
     }
 }

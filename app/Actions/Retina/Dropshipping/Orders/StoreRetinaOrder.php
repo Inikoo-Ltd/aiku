@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatforms
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -73,6 +74,19 @@ class StoreRetinaOrder extends RetinaAction
 
     public function inCustomerClient(CustomerClient $customerClient, Platform $platform, ActionRequest $request): Order
     {
+        $this->initialisationFromPlatform($platform, $request);
+
+        return $this->handle($customerClient, $platform);
+    }
+
+    public function inDashboard(CustomerClient $customerClient, ActionRequest $request): Order
+    {
+        $platform = $customerClient->platform;
+
+        if ($platform) {
+            $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+        }
+        
         $this->initialisationFromPlatform($platform, $request);
 
         return $this->handle($customerClient, $platform);
