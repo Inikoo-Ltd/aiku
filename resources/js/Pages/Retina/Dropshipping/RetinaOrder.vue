@@ -71,6 +71,7 @@ import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
+import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 
@@ -321,8 +322,41 @@ const openModal = (action :any) => {
     isModalProductListOpen.value = true;
 };
 
-console.log(props.data)
 
+
+// Method: Submit the selected item
+const isLoadingSubmit = ref(false)
+const onAddProducts = async (products: number[]) => {
+    const productsMapped = products.map((item: any) => {
+        return {
+            id: item.id,
+            quantity: item.quantity_selected ?? 1
+        }
+    })
+
+    router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
+        products: productsMapped
+    }, {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: "Something went wrong.",
+                text: error.products || undefined,
+                type: "error"
+            })
+        },
+        onSuccess: () => {
+            router.reload({only: ['data']})
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            })
+            isModalProductListOpen.value = false
+        },
+        onFinish: () => isLoadingSubmit.value = false
+    })
+}
 </script>
 
 <template>
@@ -414,8 +448,8 @@ console.log(props.data)
             <Button
                 v-if="is_in_basket"
                 @click="() => isModalProductListOpen = true"
-                label="xxx"
-                icon="upload"
+                :label="trans('Add products')"
+                icon="plus"
                 type="secondary"
             />
         </template>
@@ -626,16 +660,21 @@ console.log(props.data)
         </div>
     </div>
 
-	<ModalProductList
-        v-model="isModalProductListOpen"
-        :fetchRoute="{
-            name: 'retina.dropshipping.portfolios.index'
-        }"
-        :action="currentAction"
-        :current="currentTab"
-        v-model:currentTab="currentTab"
-        :typeModel="'order'"
-    />
+
+    <!-- Modal: add products to Order -->
+    <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
+        <ProductsSelector
+            :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
+            :routeFetch="{
+                name: 'retina.dropshipping.portfolios.index',
+            }"
+            :isLoadingSubmit
+            @submit="(products: {}[]) => onAddProducts(products)"
+            withQuantity
+        >
+        </ProductsSelector>
+    </Modal>
+
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
-import { inject, ref, watch, computed, toRefs, onMounted, onUnmounted } from 'vue'
+import { inject, ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -8,7 +8,7 @@ import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Tag from '@/Components/Tag.vue'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash'
+import { debounce, get, set } from 'lodash'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '@/Components/Image.vue'
 import { RouteParams } from '@/types/route-params'
@@ -18,12 +18,15 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import NumberWithButtonSave from '../NumberWithButtonSave.vue'
 library.add(faCheckCircle)
 
 const props = defineProps<{
     routeFetch: routeType
     isLoadingSubmit?: boolean
     headLabel?: string
+    submitLabel?: string
+    withQuantity?: boolean
 }>()
 
 
@@ -59,6 +62,7 @@ const getPortfoliosList = async (url?: string) => {
             'filter[global]': queryPortfolio.value
         })
         const response = await axios.get(urlToFetch)
+        console.log('wwwwwwwwwww', response.data)
         portfoliosList.value = response.data.data
         portfoliosMeta.value = response?.data.meta || null
         portfoliosLinks.value = response?.data.links || null
@@ -66,8 +70,8 @@ const getPortfoliosList = async (url?: string) => {
     } catch {
         isLoadingFetch.value = false
         notify({
-            title: "Something went wrong.",
-            text: "Error while get the products list.",
+            title: trans("Something went wrong."),
+            text: trans("Error while get the products list."),
             type: "error"
         })
     }
@@ -137,7 +141,7 @@ onUnmounted(() => {
                                 <div
                                     v-for="(item, index) in portfoliosList"
                                     :key="index"
-                                    @click="() => selectProduct(item)"
+                                    @click.self="() => selectProduct(item)"
                                     class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
                                     :class="compSelectedProduct.includes(item.id)
                                         ? 'bg-indigo-100 border-indigo-300'
@@ -157,6 +161,15 @@ onUnmounted(() => {
                                         <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                             {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
                                         </div>
+
+                                        <NumberWithButtonSave
+                                            v-if="withQuantity"
+                                            :modelValue="get(item, 'quantity_selected', 1)"
+                                            :bindToTarget="{ min: 1 }"
+                                            @update:modelValue="(e: number) => set(item, 'quantity_selected', e)"
+                                            noUndoButton
+                                            noSaveButton
+                                        />
                                     </div>
                                 </div>
                             </template>
@@ -207,7 +220,7 @@ onUnmounted(() => {
                         @click="() => emits('submit', selectedProduct)"
                         :disabled="selectedProduct.length < 1"
                         v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                        :label="`${trans('Add')} ${selectedProduct.length} ${trans('products to portfolios')}`"
+                        :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length} ${trans('products')}`"
                         type="primary"
                         full
                         icon="fas fa-plus"
