@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Permission\Traits\HasPermissions;
@@ -105,6 +107,8 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
     use HasImage;
     use InCustomer;
     use HasRoles;
+    use HasApiTokens;
+    use Notifiable;
 
     protected $casts = [
 
