@@ -21,12 +21,12 @@ const emits = defineEmits<{
 }>()
 
 const getBackgroundStyle = (bg: any): Record<string, string> => {
-  if (bg && bg.type === "color" && bg.color) {
-    return { backgroundColor: bg.color }
-  } else if (bg && bg.type === "image" && bg.image?.original) {
-    return { backgroundImage: `url(${bg.image.original})` }
-  }
-  return {}
+	if (bg && bg.type === "color" && bg.color) {
+		return { backgroundColor: bg.color }
+	} else if (bg && bg.type === "image" && bg.image?.original) {
+		return { backgroundImage: `url(${bg.image.original})` }
+	}
+	return {}
 }
 </script>
 
@@ -34,30 +34,29 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 	<div
 		class="container flex flex-wrap justify-between"
 		:style="getStyles(modelValue?.container?.properties)">
-		<div class="mx-auto max-w-7xl px-6 lg:px-8">
+		<div class="container mx-auto px-6 py-12">
 			<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" />
 			<div
 				class="isolate mx-auto mt-5 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
 				<div
-					v-for="(tier, tierIdx) in modelValue?.tiers"
+					v-for="tier in modelValue.tiers"
 					:key="tier.id"
 					:class="[
-						tier.mostPopular ? 'lg:z-10 lg:rounded-b-none' : 'lg:mt-8',
-						tierIdx === 0 ? 'lg:rounded-r-none' : '',
-						tierIdx === modelValue?.tiers?.length - 1 ? 'lg:rounded-l-none' : '',
-						`flex flex-col justify-between rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10`,
+						'flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg transition-transform transform',
+						'hover:scale-105',
+						tier.mostPopular ? 'ring-4 ring-indigo-500' : '',
 					]"
 					:style="getBackgroundStyle(tier.background)">
 					<div>
 						<div class="flex items-center justify-between gap-x-4">
 							<Editor
-							v-model="tier.title"
-							@update:modelValue="() => emits('autoSave')" />
+								v-model="tier.title"
+								@update:modelValue="() => emits('autoSave')" />
 
 							<p
 								v-if="tier.badge.show"
 								class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs/5 font-semibold text-indigo-600">
-								{{tier.badge.text}}
+								{{ tier.badge.text }}
 							</p>
 						</div>
 						<Editor
@@ -76,7 +75,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 								class="flex gap-x-3">
 								<FontAwesomeIcon
 									:icon="faCheck"
-									class="h-6 w-5 flex-none text-indigo-600"
+									class="h-6 w-5 flex-none text-[#C1A027]"
 									fixed-width
 									aria-hidden="true" />
 
@@ -94,8 +93,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 									)
 							"
 							typeof="button"
-							:style="getStyles(tier.button.container.properties)"
-							>
+							:style="getStyles(tier.button.container.properties)">
 							{{ tier.button.text }}
 						</div>
 					</div>
