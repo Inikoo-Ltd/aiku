@@ -16,7 +16,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBrackets, faBracketsCurly, faFileExcel, faImage } from "@fal"
+import { faBrackets, faBracketsCurly, faFileCsv, faFileExcel, faImage } from "@fal"
 
 library.add(faFileExcel, faBracketsCurly, faImage)
 
@@ -66,6 +66,12 @@ const downloadUrl = (type: string) => {
 	<PageHeading :data="pageHead">
 		<template #other="{ action }">
 			<a :href="downloadUrl('csv')" rel="noopener">
+				<Button
+					:icon="faFileCsv"
+					label="Download CSV"
+					:style="'tertiary'" />
+			</a>
+			<a :href="downloadUrl('xlsx')" rel="noopener">
 				<Button
 					:icon="faFileExcel"
 					label="Download Excel"

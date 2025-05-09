@@ -137,6 +137,13 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 'download_route' => [
+                    'xlsx' => [
+                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'parameters' => [
+                            'platform' => $this->platform->slug,
+                            'type'     => 'portfolio_xlsx'
+                        ]
+                    ],
                     'csv' => [
                         'name'       => 'retina.dropshipping.platforms.portfolios.download',
                         'parameters' => [
