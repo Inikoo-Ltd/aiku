@@ -33,6 +33,7 @@ class MitSavedCardResource extends JsonResource
             'priority'       => $mitSavedCard->priority,
             'state'          => $mitSavedCard->state,
             'failure_status' => $mitSavedCard->failure_status,
+            'failure_msg'    => $mitSavedCard->failure_status,
             'label'          => $mitSavedCard->label,
             'created_at'     => $mitSavedCard->created_at,
             'updated_at'     => $mitSavedCard->updated_at,
