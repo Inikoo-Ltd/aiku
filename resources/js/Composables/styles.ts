@@ -159,8 +159,8 @@ export const resolveResponsiveValue = (
             const backgroundType = getVal(backgroundBase, ['type']);
             const backgroundColor = getVal(backgroundBase, ['color']);
             const backgroundGradient = getVal(backgroundBase, ['gradient', 'value']);
-            const backgroundImage = getVal(backgroundBase, ['image', 'original']);
-
+            const backgroundImage = getVal(backgroundBase, ['image','source','original']);
+            /* console.log(backgroundBase) */
             if (!backgroundType) return null;
             if (backgroundType === 'color') {
                 return backgroundColor
