@@ -104,6 +104,7 @@ interface Notification {
       token: string
       last_four_digits: string
       card_type: string
+      failure_status: string
       expires_at: string
       processed_at: string
       priority: number
@@ -123,9 +124,9 @@ const getDataWarning = (notif: Notification) => {
       icon: 'fas fa-check-circle',
       description: `Your ${notif.mit_saved_card.data.card_type} ending in ${notif.mit_saved_card.data.last_four_digits} has been saved successfully.`,
     }
-  } else if (notif.status === 'error') {
+  } else if (notif.status === 'failure') {
     return {
-      message: trans('Something went wrong'),
+      message: notif.mit_saved_card.data.failure_status,
       bgColor: 'bg-red-200',
       textColor: 'text-red-600',
       icon: 'fad fa-exclamation-triangle',
