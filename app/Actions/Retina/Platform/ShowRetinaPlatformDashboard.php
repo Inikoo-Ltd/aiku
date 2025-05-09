@@ -30,7 +30,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
     public function htmlResponse(CustomerHasPlatform $customerHasPlatform): Response
     {
 
-        $title=__('Channel Dashboard');
+        $title = __('Channel Dashboard');
         return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
             'title'        => $title,
             'breadcrumbs'    => $this->getBreadcrumbs(),

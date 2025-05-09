@@ -25,11 +25,11 @@ enum WebsiteWorkshopTabsEnum: string
     {
         return match ($this) {
             WebsiteWorkshopTabsEnum::DEPARTMENT => [
-                'title' => __('department class'),
+                'title' => __('departments class'),
                 'icon'  => 'fal fa-th',
             ],
             WebsiteWorkshopTabsEnum::FAMILY => [
-                'title' => __('family class'),
+                'title' => __('families class'),
                 'icon'  => 'fal fa-th-large',
             ],
             WebsiteWorkshopTabsEnum::PRODUCT => [

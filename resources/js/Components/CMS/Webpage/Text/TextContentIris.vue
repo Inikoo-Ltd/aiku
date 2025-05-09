@@ -8,13 +8,13 @@ const props = defineProps<{
             properties: {}
         }
     }
-    // properties: {}
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 </script>
 
 <template>
-    <div id="blockTextContent" :style="getStyles(fieldValue?.container?.properties)">
+    <div id="blockTextContent" :style="getStyles(fieldValue?.container?.properties,screenType)">
         <div class="editor-class" v-html="fieldValue?.value"></div>
     </div>
 </template>

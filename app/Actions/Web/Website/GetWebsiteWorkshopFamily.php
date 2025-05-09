@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 19 Jul 2024 15:58:48 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
-
 namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
@@ -23,8 +17,18 @@ class GetWebsiteWorkshopFamily
 {
     use AsObject;
 
-    public function handle(Website $website, ProductCategory $productCategory): array
+    public function handle(Website $website): array
     {
+
+        $productCategory = ProductCategory::first();
+
+        if (!$productCategory) {
+            return [
+                'web_block_types' => [],
+                'website'         => $website->settings,
+            ];
+        }
+
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get();
 
         $webBlockTypes->each(function ($blockType) use ($website, $productCategory) {

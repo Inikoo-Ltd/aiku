@@ -8,8 +8,11 @@
 
 namespace App\Actions\Accounting;
 
+use App\Models\Helpers\Address;
 use Checkout\CheckoutSdk;
 use Checkout\Environment;
+use Checkout\Payments\BillingInformation;
+use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Sentry;
 
 trait WithCheckoutCom
@@ -30,5 +33,24 @@ trait WithCheckoutCom
 
         return $checkoutApi;
     }
+
+
+    private function setBillingInformation(PaymentSessionsRequest $paymentSessionRequest, Address $billingAddress)
+    {
+        $address                = new \Checkout\Common\Address();
+        $address->address_line1 = $billingAddress->address_line_1;
+        $address->address_line2 = $billingAddress->address_line_2;
+
+        $address->city    = $billingAddress->locality;
+        $address->state   = $billingAddress->administrative_area;
+        $address->zip     = $billingAddress->postal_code;
+        $address->country = $billingAddress->country->code;
+
+        $paymentSessionRequest->billing          = new BillingInformation();
+        $paymentSessionRequest->billing->address = $address;
+
+        return $paymentSessionRequest;
+    }
+
 
 }

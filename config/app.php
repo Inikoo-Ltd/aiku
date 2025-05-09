@@ -271,7 +271,7 @@ return [
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
 
     'sandbox' => [
-        'share_url' => env('SANDBOX_SHARE_URL'),
+        'local_share_url' => env('SANDBOX_SHARE_URL'),
         'checkout_com' => [
             'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
