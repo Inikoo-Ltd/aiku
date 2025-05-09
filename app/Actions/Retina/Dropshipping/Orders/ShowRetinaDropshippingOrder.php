@@ -133,6 +133,43 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => OrderResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
+                // 'upload_spreadsheet' => [
+                //     'event'           => 'action-progress',
+                //     'channel'         => 'grp.personal.'.$this->organisation->id,
+                //     'required_fields' => ['type', 'customer_reference', 'notes', 'stored_item_reference', 'quantity', 'stored_item_name'],
+                //     'template'        => [
+                //         'label' => 'Download template (.xlsx)',
+                //     ],
+                //     'route'           => [
+                //         'upload'   => [
+                //             'name'       => 'grp.models.pallet-delivery.pallet.upload.with-stored-items',
+                //             'parameters' => [
+                //                 'palletDelivery' => $palletDelivery->id
+                //             ]
+                //         ],
+                //         'uploadWithStoredItems'   => [
+                //             'name'       => 'grp.models.pallet-delivery.pallet.upload.with-stored-items',
+                //             'parameters' => [
+                //                 'palletDelivery' => $palletDelivery->id
+                //             ]
+                //         ],
+                //         'history'  => [
+                //             'name'       => 'grp.json.pallet_delivery.recent_uploads',
+                //             'parameters' => [
+                //                 'palletDelivery' => $palletDelivery->id
+                //             ]
+                //         ],
+                //         'download' => [
+                //             'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.templates',
+                //             'parameters' => [
+                //                 'organisation'       => $palletDelivery->organisation->slug,
+                //                 'fulfilment'         => $palletDelivery->fulfilment->slug,
+                //                 'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
+                //                 'palletDelivery'     => $palletDelivery->slug
+                //             ]
+                //         ],
+                //     ],
+                // ],
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
