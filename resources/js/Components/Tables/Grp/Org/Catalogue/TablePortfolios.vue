@@ -313,14 +313,13 @@ const onSubmitProduct = () => {
 function confirmDelete() {
 	if (!productToDelete.value) return
 
-	const deleteDef = productToDelete.value.delete_product ?? {
-		name: productToDelete.value.delete_product.name,
-		parameters: productToDelete.value.delete_product.parameters,
-		method: productToDelete.value.delete_product.method || "delete",
+	const deleteDef = productToDelete.value.delete_portfolio ?? {
+		name: productToDelete.value.delete_portfolio.name,
+		parameters: productToDelete.value.delete_portfolio.parameters,
+		method: productToDelete.value.delete_portfolio.method || "delete",
 	}
 
 	const verb = deleteDef.method.toLowerCase()
-	console.log(productToDelete.value, "xxx")
 
 	isDeleting.value = true
 	router[verb](route(deleteDef.name, deleteDef.parameters), {

@@ -15,6 +15,7 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\MitSavedCard;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\TopUp;
 use App\Models\Accounting\TopUpPaymentApiPoint;
@@ -138,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, Invoice> $invoices
  * @property-read MediaCollection<int, Media> $media
+ * @property-read Collection<int, MitSavedCard> $mitSavedCard
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read Order|null $orderInBasket
  * @property-read Collection<int, Order> $orders
@@ -185,21 +187,21 @@ class Customer extends Model implements HasMedia, Auditable
     use HasEmail;
 
     protected $casts = [
-        'data'                          => 'array',
-        'settings'                      => 'array',
-        'location'                      => 'array',
-        'migration_data'                => 'array',
-        'state'                         => CustomerStateEnum::class,
-        'status'                        => CustomerStatusEnum::class,
-        'trade_state'                   => CustomerTradeStateEnum::class,
-        'rejected_reason'               => CustomerRejectReasonEnum::class,
-        'last_submitted_order_at'       => 'datetime',
-        'last_dispatched_delivery_at'   => 'datetime',
-        'last_invoiced_at'              => 'datetime',
-        'fetched_at'                    => 'datetime',
-        'rejected_at'                   => 'datetime',
-        'last_fetched_at'               => 'datetime',
-        'amount_in_basket'              => 'decimal:2'
+        'data'                        => 'array',
+        'settings'                    => 'array',
+        'location'                    => 'array',
+        'migration_data'              => 'array',
+        'state'                       => CustomerStateEnum::class,
+        'status'                      => CustomerStatusEnum::class,
+        'trade_state'                 => CustomerTradeStateEnum::class,
+        'rejected_reason'             => CustomerRejectReasonEnum::class,
+        'last_submitted_order_at'     => 'datetime',
+        'last_dispatched_delivery_at' => 'datetime',
+        'last_invoiced_at'            => 'datetime',
+        'fetched_at'                  => 'datetime',
+        'rejected_at'                 => 'datetime',
+        'last_fetched_at'             => 'datetime',
+        'amount_in_basket'            => 'decimal:2'
     ];
 
 
@@ -450,5 +452,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function topUpPaymentApiPoint(): HasMany
     {
         return $this->hasMany(TopUpPaymentApiPoint::class);
+    }
+
+    public function mitSavedCard(): HasMany
+    {
+        return $this->hasMany(MitSavedCard::class);
     }
 }
