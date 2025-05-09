@@ -21,8 +21,8 @@ class RouteServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $webHooksDomain = app()->environment('local') && config('app.sandbox.local_share_url') ?
-            config('app.sandbox.local_share_url') : config('app.domain');
+        $webHooksDomain = app()->environment('local') && config('app.sandbox.local_webhooks_url') ?
+            config('app.sandbox.local_webhooks_url') : config('app.domain');
 
         $this->configureRateLimiting();
 

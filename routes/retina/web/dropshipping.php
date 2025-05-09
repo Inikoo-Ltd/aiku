@@ -14,7 +14,7 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
-use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaCreditCardDashboard;
+use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\Api\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\Api\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -97,7 +97,7 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });
 
-Route::prefix('saved-credit-card')->name('saved-credit-card.')->group(function () {
-    Route::get('', CreateMitSavedCard::class)->name('show');
-    Route::get('dashboard', ShowRetinaCreditCardDashboard::class)->name('dashboard');
+Route::prefix('saved-credit-cards')->name('saved_credit_card.')->group(function () {
+    Route::get('', ShowRetinaMitSavedCardsDashboard::class)->name('dashboard');
+    Route::get('create', CreateMitSavedCard::class)->name('create');
 });

@@ -132,6 +132,9 @@ class RetinaAction
         return $this;
     }
 
+
+
+
     public function initialisationFromPupil(ActionRequest $request): static
     {
         $this->asPupil = true;
