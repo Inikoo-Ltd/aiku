@@ -8,7 +8,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
@@ -17,4 +16,3 @@ Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
         return $request->user();
     })->name('profile');
 });
-

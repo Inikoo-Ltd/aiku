@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 07 May 2025 12:38:25 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Fri, 09 May 2025 16:17:16 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -16,12 +16,11 @@ use App\Http\Resources\Accounting\MitSavedCardResource;
 use App\Models\Accounting\MitSavedCard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
-use Carbon\Carbon;
 use Checkout\CheckoutApiException;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class CheckoutComMitSavedCardSuccess extends RetinaWebhookAction
+class CheckoutComMitSavedCardFailure extends RetinaWebhookAction
 {
     use WithCheckoutCom;
 
@@ -48,13 +47,10 @@ class CheckoutComMitSavedCardSuccess extends RetinaWebhookAction
         return UpdateMitSavedCard::make()->asAction(
             $mitSavedCard,
             [
-                'state'            => MitSavedCardStateEnum::SUCCESS,
-                'token'            => Arr::get($payment, 'id'),
-                'last_four_digits' => Arr::get($payment, 'source.last4'),
-                'card_type'        => Arr::get($payment, 'source.scheme'),
-                'expires_at'       => Carbon::parse(Arr::get($payment, 'source.expiry_year').'-'.Arr::get($payment, 'source.expiry_month').'-01'),
-                'processed_at'     => now(),
-                'data'             => [
+                'state'          => MitSavedCardStateEnum::FAILURE,
+                'processed_at'   => now(),
+                'failure_status' => Arr::get($payment, 'status'),
+                'data'           => [
                     'payment' => Arr::except($payment, ['http_metadata', '_links'])
                 ]
 
@@ -77,10 +73,10 @@ class CheckoutComMitSavedCardSuccess extends RetinaWebhookAction
         $mitSavedCard = $this->handle($mitSavedCard, $this->validatedData);
 
 
-        return Redirect::route('retina.dropshipping.mit_saved_cards.dashboard')->with(
+        return Redirect::route('retina.dropshipping.mit_saved_cards.create')->with(
             'notification',
             [
-                'status'         => 'success',
+                'status'         => 'failure',
                 'mit_saved_card' => MitSavedCardResource::make($mitSavedCard)
             ]
         );

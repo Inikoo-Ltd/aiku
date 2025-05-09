@@ -35,6 +35,7 @@ class UpdateMitSavedCard extends OrgAction
             'priority'         => ['sometimes', 'integer'],
             'data'             => ['sometimes', 'array'],
             'processed_at'     => ['sometimes', 'date'],
+            'failure_status'   => ['sometimes', 'nullable','string'],
         ];
     }
 

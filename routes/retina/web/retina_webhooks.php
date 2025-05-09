@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\MitSavedCard\WebHooks\CheckoutComMitSavedCardFailure;
 use App\Actions\Accounting\MitSavedCard\WebHooks\CheckoutComMitSavedCardSuccess;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentFailure;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentSuccess;
@@ -25,7 +26,7 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
         Route::get('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
 
         Route::get('mit-saved-card-success/{mitSavedCard:ulid}', CheckoutComMitSavedCardSuccess::class)->name('mit_saved_card_success');
-        Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComOrderPaymentFailure::class)->name('mit_saved_card_failure');
+        Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComMitSavedCardFailure::class)->name('mit_saved_card_failure');
 
     });
 });

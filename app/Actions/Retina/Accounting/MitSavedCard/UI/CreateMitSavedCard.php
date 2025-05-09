@@ -95,7 +95,7 @@ class CreateMitSavedCard extends RetinaAction
 
     private function getFailureUrl(MitSavedCard $mitSavedCard): string
     {
-        return route('retina.webhooks.checkout_com.order_payment_failure', $mitSavedCard->ulid);
+        return route('retina.webhooks.checkout_com.mit_saved_card_failure', $mitSavedCard->ulid);
     }
 
 
