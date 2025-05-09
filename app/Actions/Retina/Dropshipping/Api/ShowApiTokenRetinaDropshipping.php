@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
+use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,16 +28,12 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
         $existingToken = $customer->tokens()->where('name', 'api-token')->first();
 
         if ($existingToken) {
-            $existingToken->delete();
-
-            $newToken = $customer->createToken('api-token');
-
             return [
-                'token' => $newToken->plainTextToken,
+                'message' => __('Token already exists'),
             ];
         }
 
-        $token = $customer->createToken('api-token');
+        $token = $customer->createToken('api-token', ['retina']);
 
         return [
             'token' => $token->plainTextToken,
@@ -78,7 +75,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                                 'api_token' => [
                                     'type'         => 'input',
                                     'label'        => __('api token'),
-                                    'value'        => $data['token'],
+                                    'value'        => Arr::get($data, 'token') ?? '',
                                 ],
                                 'api_base_sandbox_url' => [
                                     'type'         => 'input',
@@ -109,9 +106,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
 
     public function jsonResponse(array $data): array
     {
-        return [
-            'token' => $data['token'],
-        ];
+        return $data;
     }
 
     public function getBreadcrumbs($label = null): array

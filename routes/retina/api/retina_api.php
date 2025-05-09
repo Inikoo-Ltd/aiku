@@ -8,13 +8,13 @@
 
 use Illuminate\Support\Facades\Route;
 
-
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
     Route::get('/profile', function (Request $request) {
-        return $request->user();
+        return response()->json([
+            'user' => 'hello',
+        ]);
     })->name('profile');
 });
-
