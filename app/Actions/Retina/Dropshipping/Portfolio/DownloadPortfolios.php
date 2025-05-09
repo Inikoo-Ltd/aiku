@@ -27,7 +27,7 @@ class DownloadPortfolios extends RetinaAction
      */
     public function handle(Customer $customer, Platform $platform, string $type): BinaryFileResponse|Response
     {
-        $filename = now()->format('Y-m-d') . '-' . 'portofolio' . '-' . rand(111, 999);
+        $filename =  'portofolio' . '_' . now()->format('Ymd');
 
         if ($type == 'portfolio_json') {
             $filename .= '_json.txt';
