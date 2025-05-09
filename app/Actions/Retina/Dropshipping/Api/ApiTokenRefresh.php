@@ -27,8 +27,12 @@ class ApiTokenRefresh extends RetinaAction
         $existingToken = $customer->tokens()->where('name', 'api-token')->first();
 
         if ($existingToken) {
+            $existingToken->delete();
+
+            $newToken = $customer->createToken('api-token', ['retina']);
+
             return [
-                'message' => __('Token already exists'),
+                'token' => $newToken->plainTextToken,
             ];
         }
 
