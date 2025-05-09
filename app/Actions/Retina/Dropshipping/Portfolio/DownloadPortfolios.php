@@ -11,18 +11,16 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithExportData;
-use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
+use Maatwebsite\Excel\Facades\Excel;
 use Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadPortfolios extends RetinaAction
 {
-    use WithExportData;
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
@@ -53,11 +51,18 @@ class DownloadPortfolios extends RetinaAction
                 'Cache-Control' => 'max-age=0',
             ]);
         } elseif ($type == 'portfolio_xlsx') {
-            return $this->export(new PortfoliosCsvOrExcelExport($customer, $platform), 'portofolio', ExportTypeEnum::XLSX->value);
+            $filename .= '.xlsx';
+            return Excel::download(new PortfoliosCsvOrExcelExport($customer, $platform), $filename, null, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'max-age=0',
+            ]);
         }
 
-        return $this->export(new PortfoliosCsvOrExcelExport($customer, $platform), 'portofolio', ExportTypeEnum::CSV->value);
-        ;
+        $filename .= '.csv';
+        return Excel::download(new PortfoliosCsvOrExcelExport($customer, $platform), $filename, null, [
+            'Content-Type' => 'text/csv',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception

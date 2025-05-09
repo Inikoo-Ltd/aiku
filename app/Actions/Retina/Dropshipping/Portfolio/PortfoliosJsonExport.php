@@ -68,7 +68,6 @@ class PortfoliosJsonExport
             ->where('platform_id', $platform->id)
 
             ->with(['item.family', 'item.currency'])
-            ->get()
             ->with(['item.image'])
             ->get();
 
