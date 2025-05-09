@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
 import { faExclamationTriangle, faClock } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 library.add(faCheckCircle, faClock, faExclamationTriangle)
 
 const props = defineProps<{
@@ -166,9 +167,21 @@ const getDataWarning = (notif: Notification) => {
           </div>
         </Transition>
 
-        <pre>{{ props.mitSavedCards }}</pre>
+        <!-- <pre>{{ props.mitSavedCards }}</pre> -->
 
         <div v-if="props.mitSavedCards?.data?.length" class="mt-8 flow-root px-8">
+
+          <div class="flex justify-end">
+            <ButtonWithLink
+              :routeTarget="{
+                name: 'retina.dropshipping.mit_saved_cards.create'
+              }"
+              :label="trans('Add credit card')"
+              type="secondary"
+              icon="fas fa-plus"
+            />
+          </div>
+
           <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
               <table class="min-w-full divide-y divide-gray-300">
@@ -250,11 +263,18 @@ const getDataWarning = (notif: Notification) => {
               Control your orders and products with our easy-to-use dashboard. You can manage your orders, products, and customers all in one place.
             </p>
             <div class="mt-10 flex items-center gap-x-6">
-              <span class="cursor-pointer rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+              <!-- <span class="cursor-pointer rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                 <Link :href="route('retina.dropshipping.mit_saved_cards.create')">
                   {{trans('Save credit card')}}
                 </Link>
-              </span>
+              </span> -->
+              <ButtonWithLink
+                :routeTarget="{
+                  name: 'retina.dropshipping.mit_saved_cards.create'
+                }"
+                :label="trans('Save credit card')"
+                icon="fas fa-plus"
+              />
 
             </div>
           </div>
