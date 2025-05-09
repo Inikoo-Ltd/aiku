@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $token
  * @property string|null $last_four_digits
  * @property string|null $card_type Visa, Mastercard, etc
- * @property string|null $expires_at Card expiration date
+ * @property \Illuminate\Support\Carbon|null $expires_at Card expiration date
  * @property string|null $label User defined label
  * @property string|null $state
  * @property int $priority
@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
+ * @property string|null $failure_status
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation

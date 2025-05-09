@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-05-2025-10h-20m
@@ -29,6 +30,7 @@ class ShowRetinaMitSavedCardsDashboard extends RetinaAction
     public function htmlResponse(): Response
     {
         $title = __('Credit Card Dashboard');
+
 
         return Inertia::render('Dropshipping/DashboardRetinaMitCreditCards', [
             'title'       => $title,
@@ -75,7 +77,7 @@ class ShowRetinaMitSavedCardsDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.saved_credit_card.dashboard'
+                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
                             ],
                             'label' => __('Credit Card Dashboard'),
                         ]

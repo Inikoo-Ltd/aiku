@@ -21,19 +21,21 @@ class MitSavedCardResource extends JsonResource
         /** @var MitSavedCard $mitSavedCard */
         $mitSavedCard = $this;
 
+
         return [
             'id'               => $mitSavedCard->id,
             'token'            => '****',// Never expose the token,
             'last_four_digits' => $mitSavedCard->last_four_digits,
             'card_type'        => $mitSavedCard->card_type,
-            'expires_at'       => $mitSavedCard->expires_at->format('m/y'),
+            'expires_at'       => $mitSavedCard->expires_at?->format('m/y'),
             'processed_at'     => $mitSavedCard->processed_at,
 
-            'priority'   => $mitSavedCard->priority,
-            'state'      => $mitSavedCard->state,
-            'label'      => $mitSavedCard->label,
-            'created_at' => $mitSavedCard->created_at,
-            'updated_at' => $mitSavedCard->updated_at,
+            'priority'       => $mitSavedCard->priority,
+            'state'          => $mitSavedCard->state,
+            'failure_status' => $mitSavedCard->failure_status,
+            'label'          => $mitSavedCard->label,
+            'created_at'     => $mitSavedCard->created_at,
+            'updated_at'     => $mitSavedCard->updated_at,
 
         ];
     }
