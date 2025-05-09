@@ -164,7 +164,6 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
-        //        Route::post('upload', ImportTransactionInOrder::class, )->name('upload');
         Route::post('/', StoreRetinaTransaction::class)->name('store')->withoutScopedBindings();
     });
 });
@@ -214,6 +213,6 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 
-Route::name('mit-saved-card.')->prefix('mit-saved-card')->group(function () {
+Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
 });

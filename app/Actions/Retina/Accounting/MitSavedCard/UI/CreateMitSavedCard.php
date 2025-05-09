@@ -90,20 +90,12 @@ class CreateMitSavedCard extends RetinaAction
 
     private function getSuccessUrl(MitSavedCard $mitSavedCard): string
     {
-        if (app()->environment('local')) {
-            return config('app.sandbox.local_share_url').'/webhooks/checkout-com/mit-saved-card-success/'.$mitSavedCard->ulid;
-        } else {
-            return route('webhooks.checkout_com.mit_saved_card_success', $mitSavedCard->ulid);
-        }
+        return route('retina.webhooks.checkout_com.mit_saved_card_success', $mitSavedCard->ulid);
     }
 
     private function getFailureUrl(MitSavedCard $mitSavedCard): string
     {
-        if (app()->environment('local')) {
-            return config('app.sandbox.local_share_url').'/webhooks/checkout-com/mit-saved-card-failure/'.$mitSavedCard->ulid;
-        } else {
-            return route('webhooks.checkout_com.mit_saved_card_failure', $mitSavedCard->ulid);
-        }
+        return route('retina.webhooks.checkout_com.order_payment_failure', $mitSavedCard->ulid);
     }
 
 

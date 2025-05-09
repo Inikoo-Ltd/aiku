@@ -35,38 +35,8 @@ class GetRetinaDropshippingNavigation
                 ]
             ];
 
-            // $groupNavigation['orders'] = [
-            //     'label' => __('Orders'),
-            //     'icon' => ['fal', 'fa-box'],
-            //     'root' => 'retina.dropshipping.orders.',
-            //     'route' => [
-            //         'name' => 'retina.dropshipping.orders.index'
-            //     ],
-            //     'topMenu' => [
 
-            //     ]
-            // ];
-            $groupNavigation['top_up'] = [
-                'label' => __('Top Up'),
-                'icon' => ['fal', 'fa-money-bill-wave'],
-                'root' => 'retina.top_up.',
-                'route' => [
-                    'name' => 'retina.top_up.dashboard'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label' => __('Top ups'),
-                            'icon'  => ['fal', 'fa-money-bill-wave'],
-                            'root'  => 'retina.top_up.',
-                            'route' => [
-                                'name' => 'retina.top_up.index',
 
-                            ]
-                        ],
-                    ]
-                ]
-            ];
         }
 
         $groupNavigation['platform'] = [
@@ -136,12 +106,34 @@ class GetRetinaDropshippingNavigation
             ];
         }
 
-        $groupNavigation['saved_credit_card'] = [
-            'label' => __('Saved Credit Card'),
+        $groupNavigation['top_up'] = [
+            'label' => __('Top Up'),
             'icon' => ['fal', 'fa-money-bill-wave'],
             'root' => 'retina.top_up.',
             'route' => [
-                'name' => 'retina.dropshipping.saved-credit-card.dashboard'
+                'name' => 'retina.top_up.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('Top ups'),
+                        'icon'  => ['fal', 'fa-money-bill-wave'],
+                        'root'  => 'retina.top_up.',
+                        'route' => [
+                            'name' => 'retina.top_up.index',
+
+                        ]
+                    ],
+                ]
+            ]
+        ];
+
+        $groupNavigation['saved_credit_cards'] = [
+            'label' => __('Saved Cards'),
+            'icon' => ['fal', 'fa-credit-card'],
+            'root' => 'retina.top_up.',
+            'route' => [
+                'name' => 'retina.dropshipping.saved_credit_card.dashboard'
             ],
         ];
 
