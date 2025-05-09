@@ -24,6 +24,7 @@ const props = defineProps<{
 	tabs: TSTabs
 	products: {}
 	is_manual: boolean
+	download_route: any
 	order_route: routeType
 }>()
 
@@ -50,28 +51,47 @@ const component = computed(() => {
 
 	return components[currentTab.value]
 })
+
+
+const downloadUrl = (type: string) => {
+return route(
+    props.download_route[type].name,
+    props.download_route[type].parameters
+  )
+}
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-	
 		<template #other="{ action }">
 			<Button
 				v-if="!orderMode && is_manual"
 				@click="onCreateOrder"
 				:label="'Create Order'"
-				:style="'create'"
-				 />
+				:style="'create'" />
 			<Button
 				v-if="orderMode && is_manual"
 				@click="onCancelOrder"
 				:label="'Cancel'"
-				:style="'cancel'"
-			 />
+				:style="'cancel'" />
+
+ <a :href="downloadUrl('csv')"    target="_blank" rel="noopener">
+        <Button label="Download CSV"   style="cancel" />
+      </a>
+      <a :href="downloadUrl('json')"   target="_blank" rel="noopener">
+        <Button label="Download JSON"  style="cancel" />
+      </a>
+      <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+        <Button label="Download Images" style="cancel" />
+      </a>
 		</template>
 	</PageHeading>
-	<!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
-	<!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-	<TablePortfolios :data="props.products" :tab="'products'" :is_manual :orderMode="orderMode" :order_route />
+
+	<TablePortfolios
+		:data="props.products"
+		:tab="'products'"
+		:is_manual
+		:orderMode="orderMode"
+		:order_route />
 </template>
