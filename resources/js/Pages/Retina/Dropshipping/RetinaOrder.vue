@@ -411,6 +411,13 @@ console.log(props.data)
         <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
+            <Button
+                v-if="is_in_basket"
+                @click="() => isModalProductListOpen = true"
+                label="xxx"
+                icon="upload"
+                type="secondary"
+            />
         </template>
     </PageHeading>
 
@@ -619,7 +626,16 @@ console.log(props.data)
         </div>
     </div>
 
-	<ModalProductList v-if="routes?.products_list?.name" v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
+	<ModalProductList
+        v-model="isModalProductListOpen"
+        :fetchRoute="{
+            name: 'retina.dropshipping.portfolios.index'
+        }"
+        :action="currentAction"
+        :current="currentTab"
+        v-model:currentTab="currentTab"
+        :typeModel="'order'"
+    />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal
