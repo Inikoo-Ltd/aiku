@@ -5,7 +5,8 @@ import { getStyles } from '@/Composables/styles'
 const props = defineProps<{
     modelValue: any
     webpageData?: any
-    blockData?: Object
+    blockData?: Object,
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -16,7 +17,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <div id="blockTextContent" :style="getStyles(modelValue?.container.properties)">
+    <div id="blockTextContent" :style="getStyles(modelValue?.container.properties,screenType)">
         <EditorV2 
             v-model="modelValue.value" 
             @update:modelValue="() => emits('autoSave')" 
