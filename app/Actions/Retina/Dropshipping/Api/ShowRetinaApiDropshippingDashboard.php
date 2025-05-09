@@ -25,7 +25,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
     public function handle(Platform $platform, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Dashboard/RetinaDropshippingDashboard',
+            'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     __('Api Token')
