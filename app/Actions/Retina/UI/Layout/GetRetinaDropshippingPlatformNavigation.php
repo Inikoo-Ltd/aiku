@@ -96,7 +96,7 @@ class GetRetinaDropshippingPlatformNavigation
             'icon' => ['fal', 'fa-key'],
             'root' => 'retina.dropshipping.platforms.api.',
             'route' => [
-                'name' => 'retina.dropshipping.platforms.api.dashboard',
+                'name' => 'retina.dropshipping.platforms.api.show',
                 'parameters' => [$platform->slug]
             ],
         ];

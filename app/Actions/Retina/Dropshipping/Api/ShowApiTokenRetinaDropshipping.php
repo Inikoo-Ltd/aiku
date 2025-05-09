@@ -9,12 +9,13 @@
 namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CreateApiTokenRetinaDropshipping extends RetinaAction
+class ShowApiTokenRetinaDropshipping extends RetinaAction
 {
     use AsAction;
 
@@ -50,7 +51,7 @@ class CreateApiTokenRetinaDropshipping extends RetinaAction
     }
 
 
-    public function asController(ActionRequest $request)
+    public function asController(Platform $platform, ActionRequest $request)
     {
         $this->initialisation($request);
 
