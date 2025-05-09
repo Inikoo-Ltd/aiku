@@ -53,6 +53,11 @@ class ShowRetinaCreditCardDashboard extends RetinaAction
             ],
 
             'creditCardData'  => $this->getcreditCardData($customer),
+
+            'delete_route' => [
+                'name' => 'retina.models.mit-saved-card.delete',
+                'method' => 'delete',
+            ]
         ]);
     }
 
