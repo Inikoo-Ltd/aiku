@@ -131,9 +131,9 @@ class GetRetinaDropshippingNavigation
         $groupNavigation['saved_credit_cards'] = [
             'label' => __('Saved Cards'),
             'icon' => ['fal', 'fa-credit-card'],
-            'root' => 'retina.dropshipping.saved_credit_card.',
+            'root' => 'retina.dropshipping.mit_saved_cards.',
             'route' => [
-                'name' => 'retina.dropshipping.saved_credit_card.dashboard'
+                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
             ],
         ];
 

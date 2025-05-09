@@ -147,6 +147,7 @@ const props = defineProps<{
 
     // }
     is_in_basket: boolean  // true if Order state is 'created'
+    upload_spreadsheet: UploadPallet
 }>()
 
 
@@ -357,6 +358,8 @@ const onAddProducts = async (products: number[]) => {
         onFinish: () => isLoadingSubmit.value = false
     })
 }
+
+const isModalUploadSpreadsheet = ref(false)
 </script>
 
 <template>
@@ -443,7 +446,17 @@ const onAddProducts = async (products: number[]) => {
 
         
         <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+            <Button
+                v-if="is_in_basket && props.upload_spreadsheet"
+                @click="() => isModalUploadSpreadsheet = true"
+                :label="trans('Upload spreadsheet')"
+                icon="upload"
+                type="tertiary"
+            />
+            <Button
+                v-if="currentTab === 'attachments'"
+                @click="() => isModalUploadOpen = true"
+                :label="trans('Attach')"
                 icon="upload" />
             <Button
                 v-if="is_in_basket"
@@ -751,6 +764,16 @@ const onAddProducts = async (products: number[]) => {
             </div>
         </div>
     </Modal>
+
+    <UploadExcel
+        v-if="upload_spreadsheet"
+        v-model="isModalUploadSpreadsheet"
+        :title="upload_spreadsheet.title"
+        :progressDescription="upload_spreadsheet.progressDescription"
+        :preview_template="upload_spreadsheet.preview_template"
+        :upload_spreadsheet="upload_spreadsheet.upload_spreadsheet"
+        xxxadditionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
+    />
 
     <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
