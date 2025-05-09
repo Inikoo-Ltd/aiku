@@ -162,6 +162,7 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
 
 Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
     Route::post('platform/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform.store');
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
 });
