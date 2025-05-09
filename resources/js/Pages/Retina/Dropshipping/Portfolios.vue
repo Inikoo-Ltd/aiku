@@ -15,6 +15,10 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBrackets, faBracketsCurly, faFileExcel, faImage } from "@fal"
+
+library.add(faFileExcel, faBracketsCurly, faImage)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -52,12 +56,8 @@ const component = computed(() => {
 	return components[currentTab.value]
 })
 
-
 const downloadUrl = (type: string) => {
-return route(
-    props.download_route[type].name,
-    props.download_route[type].parameters
-  )
+	return route(props.download_route[type].name, props.download_route[type].parameters)
 }
 </script>
 
@@ -65,6 +65,24 @@ return route(
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #other="{ action }">
+			<a :href="downloadUrl('csv')" rel="noopener">
+				<Button
+					:icon="faFileExcel"
+					label="Download Excel"
+					:style="'tertiary'" />
+			</a>
+			<a :href="downloadUrl('json')" rel="noopener">
+				<Button
+					:icon="faBracketsCurly"
+					label="Download JSON"
+					:style="'tertiary'" />
+			</a>
+			<a :href="downloadUrl('images')" rel="noopener">
+				<Button
+					:icon="faImage"
+					label="Download Image"
+					:style="'tertiary'" />
+			</a>
 			<Button
 				v-if="!orderMode && is_manual"
 				@click="onCreateOrder"
@@ -75,16 +93,6 @@ return route(
 				@click="onCancelOrder"
 				:label="'Cancel'"
 				:style="'cancel'" />
-
- <a :href="downloadUrl('csv')"    rel="noopener">
-        <Button label="Download CSV"   style="cancel" />
-      </a>
-      <a :href="downloadUrl('json')"   rel="noopener">
-        <Button label="Download JSON"  style="cancel" />
-      </a>
-      <a :href="downloadUrl('images')" rel="noopener">
-        <Button label="Download Images" style="cancel" />
-      </a>
 		</template>
 	</PageHeading>
 
