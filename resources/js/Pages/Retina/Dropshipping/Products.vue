@@ -122,7 +122,7 @@ const onSubmitProduct = () => {
     router.post(
         route(props.routes.store_product.name, props.routes.store_product.parameters),
         {
-            products: selectedProducts.value.map(sel => sel.id)
+            items: selectedProducts.value.map(sel => sel.id)
         },
         {
             headers: {

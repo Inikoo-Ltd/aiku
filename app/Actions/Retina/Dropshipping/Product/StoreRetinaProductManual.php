@@ -37,7 +37,7 @@ class StoreRetinaProductManual extends RetinaAction
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'items' => ['required', 'array']
         ];
     }
 

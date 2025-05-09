@@ -68,6 +68,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
+        $this->platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         $customer = $request->user()->customer;
 
         $this->initialisation($request);
