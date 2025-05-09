@@ -76,13 +76,13 @@ return route(
 				:label="'Cancel'"
 				:style="'cancel'" />
 
- <a :href="downloadUrl('csv')"    target="_blank" rel="noopener">
+ <a :href="downloadUrl('csv')"    rel="noopener">
         <Button label="Download CSV"   style="cancel" />
       </a>
-      <a :href="downloadUrl('json')"   target="_blank" rel="noopener">
+      <a :href="downloadUrl('json')"   rel="noopener">
         <Button label="Download JSON"  style="cancel" />
       </a>
-      <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+      <a :href="downloadUrl('images')" rel="noopener">
         <Button label="Download Images" style="cancel" />
       </a>
 		</template>
