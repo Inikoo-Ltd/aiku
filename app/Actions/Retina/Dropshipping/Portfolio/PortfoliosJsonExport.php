@@ -66,39 +66,41 @@ class PortfoliosJsonExport
     {
         $portfolios = $customer->portfolios()
             ->where('platform_id', $platform->id)
+
             ->with(['item.family', 'item.currency'])
+            ->get()
             ->with(['item.image'])
             ->get();
 
-        return $portfolios->map(function ($row) {
+        return $portfolios->map(function ($row) use ($portfolios) {
             return [
                 $row->status,
                 $row->item_code,
                 $row->reference,
                 $row->item?->family?->name,
                 $row->item?->barcode,
-                '', // CPNP number
-                $row->item?->price, // total price
+                '', // TODO: CPNP number
+                '', // TODO: need add column for total price in protfolio
                 $row->item?->units,
                 $row->item?->unit,
-                $row->item?->price, // unit price
+                $row->item?->price,
                 $row->item_name,
-                '', // unit RRP
-                '', // unit net weight
-                $row->item?->gross_weight,
-                '', // unit dimensions
-                '', // materials/ingredients
-                '', // webpage description (html)
+                '', // TODO: unit RRP
+                '', // TODO: unit net weight
+                '', // TODO: package weight (shipping)
+                '', // TODO: unit dimensions
+                '', // TODO: materials/ingredients
+                '', // TODO: webpage description (html)
                 '', // webpage description (plain text)
-                $row->item?->currency?->code, // country of origin
-                '', // tariff code
-                '', // duty rate
-                '', // HTS US
+                $row->item?->currency?->code,
+                '', // TODO: tariff code
+                '', // TODO: duty rate
+                '', // TODO: HTS US
                 $row->item?->available_quantity,
-                $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '', // images
+                $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '',
                 $row->item?->updated_at,
-                '', // stock updated
-                '', // price updated
+                '', // TODO: stock updated
+                '', // TODO: price updated
                 $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
             ];
         })->toArray();

@@ -11,23 +11,25 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithExportData;
+use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
-use Maatwebsite\Excel\Facades\Excel;
 use Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadPortfolios extends RetinaAction
 {
+    use WithExportData;
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
     public function handle(Customer $customer, Platform $platform, string $type): BinaryFileResponse|Response
     {
-        $filename = 'portofolio_' . now()->format('Ymd');
+        $filename = now()->format('Y-m-d') . '-' . 'portofolio' . '-' . rand(111, 999);
 
         if ($type == 'portfolio_json') {
             $filename .= '_json.txt';
@@ -50,13 +52,12 @@ class DownloadPortfolios extends RetinaAction
                 'Content-Type' => 'application/zip',
                 'Cache-Control' => 'max-age=0',
             ]);
+        } elseif ($type == 'portfolio_xlsx') {
+            return $this->export(new PortfoliosCsvOrExcelExport($customer, $platform), 'portofolio', ExportTypeEnum::XLSX->value);
         }
 
-        $filename .= '.csv';
-        return Excel::download(new PortfoliosCsvExport($customer, $platform), $filename, null, [
-            'Content-Type' => 'text/csv',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return $this->export(new PortfoliosCsvOrExcelExport($customer, $platform), 'portofolio', ExportTypeEnum::CSV->value);
+        ;
     }
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
@@ -70,7 +71,7 @@ class DownloadPortfolios extends RetinaAction
 
         $type = $request->query('type', 'portfolio_csv');
 
-        if (!in_array($type, ['portfolio_csv', 'portfolio_json', 'portfolio_images'])) {
+        if (!in_array($type, ['portfolio_csv', 'portfolio_xlsx', 'portfolio_json', 'portfolio_images'])) {
             abort(404);
         }
 

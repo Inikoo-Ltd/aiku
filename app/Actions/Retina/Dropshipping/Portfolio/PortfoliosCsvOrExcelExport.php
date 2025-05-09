@@ -23,7 +23,7 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, ShouldQueue
+class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings, ShouldQueue
 {
     use AsAction;
     use Exportable;
@@ -47,7 +47,7 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
             $row->item?->family?->name,
             $row->item?->barcode,
             '', // CPNP number
-            $row->item?->price, // total price
+            '', // TODO: need add column for total price in protfolio
             $row->item?->units,
             $row->item?->unit,
             $row->item?->price, // unit price
