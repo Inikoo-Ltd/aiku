@@ -22,6 +22,7 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
@@ -150,6 +151,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 });
 
 Route::name('order.')->prefix('order')->group(function () {
+    Route::patch('{order:id}/update', UpdateRetinaOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitRetinaOrder::class)->name('submit');
 });
 
