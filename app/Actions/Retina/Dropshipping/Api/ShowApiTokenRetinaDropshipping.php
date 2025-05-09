@@ -54,7 +54,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
         return Inertia::render(
-            'EditModel',
+            'Dropshipping/Api/ApiTokenRetinaDropshipping',
             [
                 'title'        => __('API token'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -84,6 +84,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                                     'type'         => 'input',
                                     'label'        => __('url api sandbox'),
                                     'value'        => 'https://app.aiku-sandbox.uk/',
+                                    
                                 ],
                                 'api_base_production_url' => [
                                     'type'         => 'input',

@@ -333,7 +333,6 @@ function confirmDelete() {
 watch(
 	() => selectedProducts.value,
 	(newVal, oldVal) => {
-		// Set default 1 untuk produk yang baru ditambahkan
 		newVal.forEach((product) => {
 			if (
 				productQuantities.value[product.item_id] === undefined ||
@@ -342,7 +341,7 @@ watch(
 				productQuantities.value[product.item_id] = 1
 			}
 		})
-		// Kosongkan quantity untuk produk yang dihapus
+
 		oldVal.forEach((product) => {
 			if (!newVal.some((p) => p.item_id === product.item_id)) {
 				productQuantities.value[product.item_id] = ""
