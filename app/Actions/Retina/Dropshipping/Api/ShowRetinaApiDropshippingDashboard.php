@@ -1,10 +1,12 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 19 Sep 2023 14:12:54 Malaysia Time, Pantai Lembeng, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 09-05-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
+*/
 
 namespace App\Actions\Retina\Dropshipping\Api;
 
@@ -14,19 +16,18 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowApiRetinaDropshippingDashboard extends RetinaAction
+class ShowRetinaApiDropshippingDashboard extends RetinaAction
 {
     use AsAction;
 
 
     public function handle(ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Dashboard/RetinaDropshippingDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    __('Api')
+                    __('Api Token')
                 ),
                 'data'       => [],
             ]
@@ -36,6 +37,13 @@ class ShowApiRetinaDropshippingDashboard extends RetinaAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
+
+        return $this->handle($request);
+    }
+
+    public function inPupil(ActionRequest $request): Response
+    {
+        $this->initialisationFromPupil($request);
 
         return $this->handle($request);
     }

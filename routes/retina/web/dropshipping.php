@@ -14,9 +14,9 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
-use App\Actions\Retina\Dropshipping\Api\CreateApiTokenRetinaDropshipping;
-use App\Actions\Retina\Dropshipping\Api\ShowApiRetinaDropshippingDashboard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaCreditCardDashboard;
+use App\Actions\Retina\Dropshipping\Api\ShowApiTokenRetinaDropshipping;
+use App\Actions\Retina\Dropshipping\Api\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -88,8 +88,8 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     });
 
     Route::prefix('api')->as('api.')->group(function () {
-        Route::get('/', ShowApiRetinaDropshippingDashboard::class)->name('dashboard');
-        Route::get('/create', CreateApiTokenRetinaDropshipping::class)->name('create');
+        Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
+        Route::get('/show', ShowApiTokenRetinaDropshipping::class)->name('show');
     });
 });
 

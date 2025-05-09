@@ -14,7 +14,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CreateApiTokenRetinaDropshipping extends RetinaAction
+class ShowApiTokenRetinaDropshipping extends RetinaAction
 {
     use AsAction;
 
@@ -22,27 +22,21 @@ class CreateApiTokenRetinaDropshipping extends RetinaAction
     public function handle(ActionRequest $request): array
     {
 
-        $webUser = $request->user();
+        $customer = $request->user()->customer;
 
-        $existingToken = $request->user()->tokens()->where('name', 'api-token')->first();
+        $existingToken = $customer->tokens()->where('name', 'api-token')->first();
 
         if ($existingToken) {
             $existingToken->delete();
 
-            $newToken = $request->user()->createToken(
-                'api-token',
-                ['is_root' => $webUser->is_root ??= false]
-            );
+            $newToken = $customer->createToken('api-token');
 
             return [
                 'token' => $newToken->plainTextToken,
             ];
         }
 
-        $token = $request->user()->createToken(
-            'api-token',
-            ['is_root' => $webUser->is_root ??= false]
-        );
+        $token = $customer->createToken('api-token');
 
         return [
             'token' => $token->plainTextToken,
