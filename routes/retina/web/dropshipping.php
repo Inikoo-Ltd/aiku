@@ -99,7 +99,7 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });
 
-Route::prefix('saved-credit-cards')->name('saved_credit_card.')->group(function () {
+Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
     Route::get('', ShowRetinaMitSavedCardsDashboard::class)->name('dashboard');
     Route::get('create', CreateMitSavedCard::class)->name('create');
 });
