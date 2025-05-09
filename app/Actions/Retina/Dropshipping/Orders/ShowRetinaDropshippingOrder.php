@@ -17,6 +17,7 @@ use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Ordering\TransactionsResource;
@@ -69,7 +70,22 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
+        $action = [];
 
+        if($order->state == OrderStateEnum::CREATING) {
+            $action[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Submit'),
+                'route' => [
+                    'name'       => 'retina.models.order.submit',
+                    'parameters' => [
+                        'order' => $order->id
+                    ],
+                    'method'     => 'patch'
+                ]
+            ];
+        }
         return Inertia::render(
             'Dropshipping/Order',
             [
@@ -84,13 +100,20 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'icon'  => 'fal fa-shopping-cart',
                         'title' => __('customer client')
                     ],
-                    'actions' => []
+                    'actions' => $action,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
 
+                'update_route' => [
+                    'name'       => 'retina.models.order.update',
+                    'parameters' => [
+                        'order' => $order->id
+                    ],
+                    'method'     => 'patch'
+                ],
 
                 'timelines'   => $finalTimeline,
 
