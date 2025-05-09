@@ -11,8 +11,9 @@ import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 
 // import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder } from "@fal"
+import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faExclamationCircle, faCheckCircle, faArrowRight)
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 initialiseRetinaApp()
 

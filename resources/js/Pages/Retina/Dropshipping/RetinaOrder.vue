@@ -20,7 +20,7 @@ import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { get } from 'lodash'
+import { get, debounce } from 'lodash'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
@@ -32,6 +32,7 @@ import '@vuepic/vue-datepicker/dist/main.css'
 
 import '@/Composables/Icon/PalletDeliveryStateEnum'
 
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
@@ -77,36 +78,20 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
 
-    products: TableTS
+    // products: TableTS
 
     data?: {
-        data: PalletDelivery
+        data: {
+            
+        }
     }
 
     pageHead: PageHeadingTypes
-    alert?: {
-        status: string
-        title?: string
-        description?: string
-    }
-    notes: {
-        note_list: {
-            label: string
-            note: string
-            editable?: boolean
-            bgColor?: string
-            textColor?: string
-            color?: string
-            lockMessage?: string
-            field: string  // customer_notes, public_notes, internal_notes
-        }[]
-        // updateRoute: routeType
-    }
     timelines: {
         [key: string]: TSTimeline
     }
 
-    upload_spreadsheet: UploadPallet
+    // upload_spreadsheet: UploadPallet
 
     box_stats: {
         customer: {
@@ -136,18 +121,13 @@ const props = defineProps<{
 
         }
     }
-    pallet_limits?: {
-        status: string
-        message: string
-    }
-
+    // pallet_limits?: {
+    //     status: string
+    //     message: string
+    // }
     routes?: {
-        updateOrderRoute: routeType
-        products_list: routeType
-        delivery_note: {
-            deliveryNoteRoute: routeType
-            deliveryNotePdfRoute: routeType
-        }
+        update_route: routeType
+        submite_route: routeType
     }
     // nonProductItems: {}
     transactions: {}
@@ -155,16 +135,17 @@ const props = defineProps<{
     delivery_notes: {
         data: Array<any>
     },
-    delivery_note: {
-        reference: String
-    }
+    // delivery_note: {
+    //     reference: String
+    // }
     attachments?: {}
     invoices?: {}
-    attachmentRoutes?: {}
-    address_update_route?: routeType
-    addresses: {
+    // attachmentRoutes?: {}
+    // address_update_route?: routeType
+    // addresses: {
 
-    }
+    // }
+    is_in_basket: boolean  // true if Order state is 'created'
 }>()
 
 
@@ -193,35 +174,35 @@ const isLoadingButton = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
 
 // Tabs: Products
-const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1, })
-const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
-    isLoadingButton.value = 'addProducts'
+// const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1, })
+// const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
+//     isLoadingButton.value = 'addProducts'
 
-    formProducts
-        .transform((data) => ({
-            quantity_ordered: data.quantity_ordered,
-        }))
-        .post(
-            route(data.route?.name || '#', { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    closedPopover()
-                    formProducts.reset()
-                },
-                onError: (errors) => {
-                    notify({
-                        title: trans('Something went wrong.'),
-                        text: trans('Failed to add service, please try again.'),
-                        type: 'error',
-                    })
-                },
-                onFinish: () => {
-                    isLoadingButton.value = false
-                }
-            }
-        )
-}
+//     formProducts
+//         .transform((data) => ({
+//             quantity_ordered: data.quantity_ordered,
+//         }))
+//         .post(
+//             route(data.route?.name || '#', { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
+//             {
+//                 preserveScroll: true,
+//                 onSuccess: () => {
+//                     closedPopover()
+//                     formProducts.reset()
+//                 },
+//                 onError: (errors) => {
+//                     notify({
+//                         title: trans('Something went wrong.'),
+//                         text: trans('Failed to add service, please try again.'),
+//                         type: 'error',
+//                     })
+//                 },
+//                 onFinish: () => {
+//                     isLoadingButton.value = false
+//                 }
+//             }
+//         )
+// }
 
 
 // Section: Payment invoice
@@ -292,29 +273,40 @@ const onSubmitPayment = () => {
 
 
 // Section: add notes (on popup pageheading)
-const errorNote = ref('')
-const noteToSubmit = ref({
-    selectedNote: '',
-    value: ''
-})
-const onSubmitNote = async (closePopup: Function) => {
-
+const noteToSubmit = ref(props.data.data.public_notes)
+const recentlySuccessNote = ref(false)
+const recentlyErrorNote = ref(false)
+const isLoadingNote = ref(false)
+const onSubmitNote = async () => {
     try {
-        router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
-            [noteToSubmit.value.selectedNote]: noteToSubmit.value.value
-        },
-            {
-                headers: { "Content-Type": 'application/json' },
-                onStart: () => isLoadingButton.value = 'submitNote',
-                onError: (error) => errorNote.value = error,
-                onFinish: () => isLoadingButton.value = false,
-                onSuccess: () => {
-                    closePopup(),
-                        noteToSubmit.value.selectedNote = ''
-                    noteToSubmit.value.value = ''
-                },
-            })
-    } catch (error) {
+        isLoadingNote.value = true
+        await axios.patch(route(props.routes.update_route.name, props.routes.update_route.parameters), {
+            public_notes: noteToSubmit.value
+        })
+
+        // {
+        //     headers: { "Content-Type": 'application/json' },
+        //     onStart: () => isLoadingButton.value = 'submitNote',
+        //     onError: (error) => errorNote.value = error,
+        //     onFinish: () => isLoadingButton.value = false,
+        //     onSuccess: () => {
+        //         recentlySuccessNote.value = true
+        //         setTimeout(() => {
+        //             recentlySuccessNote.value = false
+        //         }, 3000)
+        //     },
+        // })
+        isLoadingNote.value = false
+        recentlySuccessNote.value = true
+        setTimeout(() => {
+            recentlySuccessNote.value = false
+        }, 3000)
+    } catch  {
+        recentlyErrorNote.value = true
+        setTimeout(() => {
+            recentlyErrorNote.value = false
+        }, 3000)
+
         notify({
             title: trans("Something went wrong"),
             text: trans("Failed to update the note, try again."),
@@ -322,18 +314,21 @@ const onSubmitNote = async (closePopup: Function) => {
         })
     }
 }
+const debounceSubmitNote = debounce(onSubmitNote, 800)
 
 const openModal = (action :any) => {
 	currentAction.value = action;
     isModalProductListOpen.value = true;
 };
 
+console.log(props.data)
+
 </script>
 
 <template>
     <!-- <pre>{{ data.data }}</pre> -->
     <!-- {{ props.service_list_route.name }} -->
-
+    
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <!-- Button: Add service -->
@@ -412,66 +407,15 @@ const openModal = (action :any) => {
             </div>
         </template>
 
-        <template #otherBefore>
-            <!-- Section: Add notes -->
-            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                <template #button="{ open }">
-                    <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
-                </template>
-                <template #content="{ close: closed }">
-                    <div class="w-[350px]">
-                        <span class="text-xs px-1 my-2">{{ trans('Select type note') }}: </span>
-                        <div class="">
-                            <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
-                                required
-                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                valueProp="value" />
-
-                            <!-- <p v-if="get(formAddService, ['errors', 'service_id'])" class="mt-2 text-sm text-red-500">
-                                {{ formAddService.errors.service_id }}
-                            </p> -->
-                        </div>
-
-                        <div class="mt-3">
-                            <span class="text-xs px-1 my-2">{{ trans('Note') }}: </span>
-                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                @keydown.enter="() => onSubmitNote(closed)" />
-                        </div>
-
-                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                            *{{ errorNote }}
-                        </p>
-
-                        <div class="flex justify-end mt-3">
-                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
-                                full />
-                        </div>
-
-                        <!-- Loading: fetching service list -->
-                        <div v-if="isLoadingButton === 'submitNote'"
-                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                            <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-5xl' fixed-width
-                                aria-hidden='true' />
-                        </div>
-                    </div>
-                </template>
-            </Popover>
-        </template>
+        
         <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
         </template>
     </PageHeading>
 
-    <!-- Section: Pallet Warning -->
-    <div v-if="alert?.status" class="p-2 pb-0">
-        <AlertMessage :alert />
-    </div>
-
     <!-- Section: Box Note -->
-    <div class="relative">
+    <!-- <div class="relative">
         <Transition name="headlessui">
             <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
@@ -479,7 +423,7 @@ const openModal = (action :any) => {
                     :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
-    </div>
+    </div> -->
 
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'" class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
@@ -573,12 +517,13 @@ const openModal = (action :any) => {
 
         <!-- Box: Product stats -->
         <BoxStatPallet class="py-4 pl-1.5 pr-3" icon="fal fa-user">
-            <div class="relative flex items-start w-full flex-none gap-x-1">
+            <div v-if="!is_in_basket" class="relative flex items-start w-full flex-none gap-x-1">
                 <dt class="flex-none pt-0.5">
                     <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
                 </dt>
 
                 <NeedToPay
+                    
                     @click="() => box_stats.products.payment.pay_amount > 0 ? (isOpenModalPayment = true, fetchPaymentMethod()) : false"
                     :totalAmount="box_stats.products.payment.total_amount"
                     :paidAmount="box_stats.products.payment.paid_amount"
@@ -641,11 +586,37 @@ const openModal = (action :any) => {
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
-            :detachRoute="attachmentRoutes?.detachRoute"
+            detachRoute="attachmentRoutes?.detachRoute"
             :fetchRoute="routes?.products_list"
 			:modalOpen="isModalUploadOpen"
 			:action="currentAction"
 			@update:tab="handleTabUpdate"/>
+    </div>
+
+    <div class="flex justify-end px-6">
+        <div class="w-72">
+            <PureTextarea
+                v-model="noteToSubmit"
+                @update:modelValue="() => debounceSubmitNote()"
+                :placeholder="trans('Special instructions if needed')"
+                xkeydown.enter="() => onSubmitNote(closed)"
+                rows="4"
+                :disabled="!is_in_basket"
+                :loading="isLoadingNote"
+                :isSuccess="recentlySuccessNote"
+                :isError="recentlyErrorNote"
+                class="mb-2"
+            />
+            
+            <ButtonWithLink
+                v-if="is_in_basket"
+                iconRight="fas fa-arrow-right"
+                :label="trans('Submit order')"
+                :routeTarget="routes.submit_route"
+                class="w-full"
+                full
+            />
+        </div>
     </div>
 
 	<ModalProductList v-if="routes?.products_list?.name" v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
@@ -726,8 +697,8 @@ const openModal = (action :any) => {
         </div>
     </Modal>
 
-    <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
+    <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" /> -->
 </template>

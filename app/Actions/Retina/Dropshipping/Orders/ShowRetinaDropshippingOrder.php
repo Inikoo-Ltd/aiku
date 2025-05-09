@@ -72,22 +72,22 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $action = [];
 
-        if($order->state == OrderStateEnum::CREATING) {
-            $action[] = [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('Submit'),
-                'route' => [
-                    'name'       => 'retina.models.order.submit',
-                    'parameters' => [
-                        'order' => $order->id
-                    ],
-                    'method'     => 'patch'
-                ]
-            ];
-        }
+        // if($order->state == OrderStateEnum::CREATING) {
+        //     $action[] = [
+        //         'type'  => 'button',
+        //         'style' => 'create',
+        //         'label' => __('Submit'),
+        //         'route' => [
+        //             'name'       => 'retina.models.order.submit',
+        //             'parameters' => [
+        //                 'order' => $order->id
+        //             ],
+        //             'method'     => 'patch'
+        //         ]
+        //     ];
+        // }
         return Inertia::render(
-            'Dropshipping/Order',
+            'Dropshipping/RetinaOrder',
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -107,12 +107,21 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'navigation' => OrderTabsEnum::navigation()
                 ],
 
-                'update_route' => [
-                    'name'       => 'retina.models.order.update',
-                    'parameters' => [
-                        'order' => $order->id
+                'routes'    => [
+                    'update_route' => [
+                        'name'       => 'retina.models.order.update',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
                     ],
-                    'method'     => 'patch'
+                    'submit_route' => [
+                        'name'       => 'retina.models.order.submit',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ]
                 ],
 
                 'timelines'   => $finalTimeline,
@@ -123,7 +132,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'box_stats'      => ShowOrder::make()->getOrderBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => OrderResource::make($order),
-
+                'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
