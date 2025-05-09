@@ -154,9 +154,9 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     });
 });
 
-Route::name('order.')->prefix('order')->group(function () {
-    Route::patch('{order:id}/update', UpdateRetinaOrder::class)->name('update');
-    Route::patch('{order:id}/submit', SubmitRetinaOrder::class)->name('submit');
+Route::name('order.')->prefix('order/{order:id}')->group(function () {
+    Route::patch('/', UpdateRetinaOrder::class)->name('update');
+    Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
 
     Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
         Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
