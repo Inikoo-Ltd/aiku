@@ -11,7 +11,7 @@ library.add(faCube, faLink, faImage)
 const props = defineProps<{
 	modelValue: any
 	webpageData?: any
-	blockData?: Object
+	blockData: Object
 }>()
 
 const emits = defineEmits<{
@@ -43,7 +43,7 @@ const updateData = (newVal: any) => {
 			class="w-full"
 			:is="getComponent(modelValue.code)"
 			:webpageData="webpageData"
-			:blockData="modelValue"
+			:blockData="{...modelValue, id : blockData.id }"
 			@autoSave="() => updateData(modelValue)"
 			v-model="modelValue.data.fieldValue"
 		/>
