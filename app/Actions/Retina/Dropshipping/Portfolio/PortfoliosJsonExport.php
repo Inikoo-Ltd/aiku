@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -66,6 +67,7 @@ class PortfoliosJsonExport
         $portfolios = $customer->portfolios()
             ->where('platform_id', $platform->id)
             ->with(['item.family', 'item.currency'])
+            ->with(['item.image'])
             ->get();
 
         return $portfolios->map(function ($row) {
@@ -76,12 +78,12 @@ class PortfoliosJsonExport
                 $row->item?->family?->name,
                 $row->item?->barcode,
                 '', // CPNP number
-                $row->item?->price,
+                $row->item?->price, // total price
                 $row->item?->units,
                 $row->item?->unit,
-                $row->item?->price,
+                $row->item?->price, // unit price
                 $row->item_name,
-                $row->item?->rrp,
+                '', // unit RRP
                 '', // unit net weight
                 $row->item?->gross_weight,
                 '', // unit dimensions
@@ -93,7 +95,11 @@ class PortfoliosJsonExport
                 '', // duty rate
                 '', // HTS US
                 $row->item?->available_quantity,
-                '', // images
+                $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '', // images
+                $row->item?->updated_at,
+                '', // stock updated
+                '', // price updated
+                $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
             ];
         })->toArray();
     }

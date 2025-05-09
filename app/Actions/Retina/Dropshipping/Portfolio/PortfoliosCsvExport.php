@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Events\FileDownloadProgress;
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
@@ -30,9 +30,6 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
 
     private Customer $customer;
     private Platform $platform;
-    private array $columns;
-    public int $processed = 0;
-    public int $totalCount = 0;
 
     public function __construct(Customer $customer, Platform $platform)
     {
@@ -42,13 +39,6 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
 
     public function map($row): array
     {
-        $this->processed++;
-
-        // $progress = $this->totalCount > 0
-        //     ? ($this->processed / $this->totalCount) * 100
-        //     : 100;
-
-        // broadcast(new FileDownloadProgress($this->customer->id, (int) $progress));
 
         return [
             $row->status,
@@ -57,12 +47,12 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
             $row->item?->family?->name,
             $row->item?->barcode,
             '', // CPNP number
-            $row->item?->price,
+            $row->item?->price, // total price
             $row->item?->units,
             $row->item?->unit,
-            $row->item?->price,
+            $row->item?->price, // unit price
             $row->item_name,
-            $row->item?->rrp,
+            '', // unit RRP
             '', // unit net weight
             $row->item?->gross_weight,
             '', // unit dimensions
@@ -74,8 +64,11 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
             '', // duty rate
             '', // HTS US
             $row->item?->available_quantity,
-            '', // images
-            '', // data updated
+            $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '', // images
+            $row->item?->updated_at,
+            '', // stock updated
+            '', // price updated
+            $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
         ];
     }
 
@@ -121,6 +114,7 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
         $query->where('platform_id', $this->platform->id);
 
         $query->with(['item']);
+        $query->with(['item.image']);
         $query->with(['item.family:name']);
         $query->with(['item.currency']);
 
@@ -129,9 +123,6 @@ class PortfoliosCsvExport implements FromQuery, WithMapping, WithHeadings, Shoul
         } else {
             $query->where('item_type', class_basename(Product::class));
         }
-
-
-        $this->totalCount = $query->count();
 
         return $query;
     }
