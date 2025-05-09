@@ -83,6 +83,7 @@ class StoreStoredItemAudit extends OrgAction
 
     public function rules(): array
     {
+        /** @noinspection DuplicatedCode */
         $rules = [];
 
         if (!request()->user() instanceof WebUser) {

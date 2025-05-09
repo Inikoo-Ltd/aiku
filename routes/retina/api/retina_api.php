@@ -12,7 +12,7 @@ Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
-    Route::get('/profile', function (Request $request) {
+    Route::get('/profile', function () {
         return response()->json([
             'user' => 'hello',
         ]);

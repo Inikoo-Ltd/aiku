@@ -17,31 +17,24 @@ use App\Models\Accounting\MitSavedCard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Carbon\Carbon;
-use Checkout\CheckoutApiException;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class CheckoutComMitSavedCardSuccess extends RetinaWebhookAction
 {
     use WithCheckoutCom;
+    use withCheckoutComMitSavedCardWebhook;
 
 
     public function handle(MitSavedCard $mitSavedCard, array $modelData): ?MitSavedCard
     {
-        list($publicKey, $secretKey) = $mitSavedCard->paymentAccountShop->getCredentials();
+        $payment = $this->getCheckOutPayment(
+            $mitSavedCard->paymentAccountShop,
+            $modelData['cko-payment-id']
+        );
 
-
-        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
-
-        try {
-            $payment = $checkoutApi->getPaymentsClient()->getPaymentDetails($modelData['cko-payment-id']);
-        } catch (CheckoutApiException $e) {
-            \Sentry\captureException($e);
-            $error_details    = $e->error_details;
-            $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
-            print $http_status_code.' '.$error_details;
-
-            return null;
+        if (Arr::get($payment, 'error')) {
+            return $this->processError($mitSavedCard, $payment);
         }
 
 
@@ -76,6 +69,9 @@ class CheckoutComMitSavedCardSuccess extends RetinaWebhookAction
         $this->initialisation($request);
         $mitSavedCard = $this->handle($mitSavedCard, $this->validatedData);
 
+        if ($mitSavedCard->state == MitSavedCardStateEnum::ERROR) {
+            return $this->errorRedirect($mitSavedCard);
+        }
 
         return Redirect::route('retina.dropshipping.mit_saved_cards.dashboard')->with(
             'notification',

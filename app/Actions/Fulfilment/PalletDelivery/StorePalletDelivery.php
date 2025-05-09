@@ -19,6 +19,7 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletDeliveries;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -36,6 +37,7 @@ class StorePalletDelivery extends OrgAction
 {
     use HasRentalAgreement;
     use WithDeliverableStoreProcessing;
+    use WithFulfilmentShopEditAuthorisation;
 
 
     public Customer $customer;
@@ -81,23 +83,6 @@ class StorePalletDelivery extends OrgAction
         return $palletDelivery;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->action) {
-            return true;
-        }
-
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-        if ($this->hasRentalAgreement($this->fulfilmentCustomer)) {
-            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-        }
-
-        return false;
-    }
-
     public function prepareForValidation(ActionRequest $request): void
     {
         if ($this->fulfilment->warehouses()->count() == 1) {
@@ -110,6 +95,7 @@ class StorePalletDelivery extends OrgAction
 
     public function rules(): array
     {
+        /** @noinspection DuplicatedCode */
         $rules = [];
 
         if (!request()->user() instanceof WebUser) {

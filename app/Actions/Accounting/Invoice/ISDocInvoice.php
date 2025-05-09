@@ -81,7 +81,6 @@ class ISDocInvoice extends OrgAction
         );
 
 
-        // set customer party
         $customer        = $invoice->customer;
         $customerAddress = $customer->address;
         $customerParty   = new Party(
