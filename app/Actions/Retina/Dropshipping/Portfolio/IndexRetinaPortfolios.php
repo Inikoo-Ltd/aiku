@@ -138,6 +138,36 @@ class IndexRetinaPortfolios extends RetinaAction
                         ] : [],
                     ]
                 ],
+                'download_route' => [
+                    'xlsx' => [
+                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'parameters' => [
+                            'platform' => $this->platform->slug,
+                            'type'     => 'portfolio_xlsx'
+                        ]
+                    ],
+                    'csv' => [
+                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'parameters' => [
+                            'platform' => $this->platform->slug,
+                            'type'     => 'portfolio_csv'
+                        ]
+                    ],
+                    'json' => [
+                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'parameters' => [
+                            'platform' => $this->platform->slug,
+                            'type'     => 'portfolio_json'
+                        ]
+                    ],
+                    'images' => [
+                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'parameters' => [
+                            'platform' => $this->platform->slug,
+                            'type'     => 'portfolio_images'
+                        ]
+                    ]
+                ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [

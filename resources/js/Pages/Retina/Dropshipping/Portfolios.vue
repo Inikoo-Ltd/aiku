@@ -15,6 +15,10 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBrackets, faBracketsCurly, faFileCsv, faFileExcel, faImage } from "@fal"
+
+library.add(faFileExcel, faBracketsCurly, faImage)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -24,6 +28,7 @@ const props = defineProps<{
 	tabs: TSTabs
 	products: {}
 	is_manual: boolean
+	download_route: any
 	order_route: routeType
 }>()
 
@@ -50,28 +55,57 @@ const component = computed(() => {
 
 	return components[currentTab.value]
 })
+
+const downloadUrl = (type: string) => {
+	return route(props.download_route[type].name, props.download_route[type].parameters)
+}
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-	
 		<template #other="{ action }">
+			<a :href="downloadUrl('csv')" rel="noopener">
+				<Button
+					:icon="faFileCsv"
+					label="Download CSV"
+					:style="'tertiary'" />
+			</a>
+			<a :href="downloadUrl('xlsx')" rel="noopener">
+				<Button
+					:icon="faFileExcel"
+					label="Download Excel"
+					:style="'tertiary'" />
+			</a>
+			<a :href="downloadUrl('json')" rel="noopener">
+				<Button
+					:icon="faBracketsCurly"
+					label="Download JSON"
+					:style="'tertiary'" />
+			</a>
+			<a :href="downloadUrl('images')" rel="noopener">
+				<Button
+					:icon="faImage"
+					label="Download Image"
+					:style="'tertiary'" />
+			</a>
 			<Button
 				v-if="!orderMode && is_manual"
 				@click="onCreateOrder"
 				:label="'Create Order'"
-				:style="'create'"
-				 />
+				:style="'create'" />
 			<Button
 				v-if="orderMode && is_manual"
 				@click="onCancelOrder"
 				:label="'Cancel'"
-				:style="'cancel'"
-			 />
+				:style="'cancel'" />
 		</template>
 	</PageHeading>
-	<!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
-	<!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-	<TablePortfolios :data="props.products" :tab="'products'" :is_manual :orderMode="orderMode" :order_route />
+
+	<TablePortfolios
+		:data="props.products"
+		:tab="'products'"
+		:is_manual
+		:orderMode="orderMode"
+		:order_route />
 </template>
