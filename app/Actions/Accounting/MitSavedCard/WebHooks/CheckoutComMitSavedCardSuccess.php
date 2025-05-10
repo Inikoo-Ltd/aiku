@@ -77,6 +77,8 @@ class CheckoutComMitSavedCardSuccess extends RetinaWebhookAction
             'notification',
             [
                 'status'         => 'success',
+                'title'          => __('Success!'),
+                'message'        => __('Your saved card has been successfully processed. and ca be used in future purchases.'),
                 'mit_saved_card' => MitSavedCardResource::make($mitSavedCard)
             ]
         );

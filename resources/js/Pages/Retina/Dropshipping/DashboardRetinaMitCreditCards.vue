@@ -7,93 +7,44 @@
 <script setup lang="ts">
 
 import { trans } from "laravel-vue-i18n";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheckCircle } from "@fas";
 import { faExclamationTriangle, faClock } from "@fad";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+import FlashNotification from "@/Components/UI/FlashNotification.vue";
+import {FlashNotification  as FlashNotificationType} from "@/types/FlashNotification";
+
+import { PageProps as InertiaPageProps } from "@inertiajs/core";
+import { usePage } from "@inertiajs/vue3";
 
 library.add(faCheckCircle, faClock, faExclamationTriangle);
 
 const props = defineProps<{
-  mitSavedCards: {}
+  mitSavedCards: {
+    data: {
+      id: number;
+      image: string;
+      card_type: string;
+      last_four_digits: string;
+      expires_at: string;
+    }[]
+  }
   delete_route: {}
 }>();
 
-
-interface Notification {
-  status: string;
-  mit_saved_card: {
-    data: {
-      id: number
-      token: string
-      last_four_digits: string
-      card_type: string
-      failure_status: string
-      expires_at: string
-      processed_at: string
-      priority: number
-      state: string
-      label: null | string
-      created_at: string
-      updated_at: string
-    }
+interface PagePropsWithFlash extends InertiaPageProps {
+  flash: {
+    notification?: FlashNotificationType
   };
 }
 
-const getDataWarning = (notif: Notification) => {
-  if (notif.status === "success") {
-    return {
-      message: trans("Success!"),
-      bgColor: "bg-green-200",
-      textColor: "text-green-600",
-      icon: "fas fa-check-circle",
-      description: `Your ${notif.mit_saved_card.data.card_type} ending in ${notif.mit_saved_card.data.last_four_digits} has been saved successfully.`
-    };
-  } else if (notif.status === "failure") {
-    return {
-      message: notif.mit_saved_card.data.failure_status,
-      bgColor: "bg-red-200",
-      textColor: "text-red-600",
-      icon: "fad fa-exclamation-triangle",
-      description: `Your ${notif.mit_saved_card.data.card_type} ending in ${notif.mit_saved_card.data.last_four_digits} is not successfully stored. Please contact administrator.`
-    };
-  } else {
-    return {
-      message: trans("Pending"),
-      bgColor: "bg-gray-200",
-      textColor: "text-gray-600",
-      icon: "fad fa-clock",
-      description: `We will review your ${notif.mit_saved_card.data.card_type} card ending in ${notif.mit_saved_card.data.last_four_digits}. It may take awhile to process.`
-    };
-  }
-};
+const page = usePage<PagePropsWithFlash>();
+
 </script>
 
 <template>
   <div>
-
-
-    <Transition name="slide-to-right">
-      <div v-if="$page.props.flash.notification" class="p-4">
-        <div class="px-4 py-3 rounded-md"
-             :class="getDataWarning($page.props.flash.notification).bgColor"
-        >
-          <div class="flex items-center" :class="getDataWarning($page.props.flash.notification).textColor">
-            <div class="text-3xl">
-              <FontAwesomeIcon :icon="getDataWarning($page.props.flash.notification).icon" class="" fixed-width aria-hidden="true" />
-            </div>
-            <div class="ml-3">
-              <h3 class="text-sm font-bold">{{ getDataWarning($page.props.flash.notification).message }}</h3>
-              <div class="text-xs opacity-90 ">
-                <p>{{ getDataWarning($page.props.flash.notification).description }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
+    <FlashNotification :notification="page.props.flash.notification" />
 
     <div v-if="props.mitSavedCards?.data?.length" class="mt-8 flow-root px-8">
 

@@ -17,11 +17,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaTopUpCheckout extends RetinaAction
 {
-    public function asController(TopUpPaymentApiPoint $topUpPaymentApiPoint, ActionRequest $request)
+    public function asController(TopUpPaymentApiPoint $topUpPaymentApiPoint, ActionRequest $request): ActionRequest
     {
-        dd($topUpPaymentApiPoint);
         $this->initialisation($request);
-
         return $request;
     }
 
@@ -29,15 +27,16 @@ class ShowRetinaTopUpCheckout extends RetinaAction
     public function htmlResponse(ActionRequest $request): Response
     {
 
+        $title = __('Top Up Checkout');
         return Inertia::render(
-            'Ecom/RetinaTopupCheckout',
+            'Ecom/RetinaTopUpCheckout',
             [
-                'title'       => __('TopUp Checkout'),
+                'title'       => $title,
                 'pageHead' => [
-                    'title'     =>  __('topup checkout'),
+                    'title'     =>  $title,
                     'icon'      => [
                         'icon'  => ['fal', 'fa-money-bill-wave'],
-                        'title' => __('topup checkout')
+                        'title' => $title
                     ],
                 ],
             ]
