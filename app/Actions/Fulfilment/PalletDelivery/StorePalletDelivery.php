@@ -41,8 +41,6 @@ class StorePalletDelivery extends OrgAction
 
 
     public Customer $customer;
-
-    private bool $action = false;
     private FulfilmentCustomer $fulfilmentCustomer;
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): PalletDelivery
@@ -92,7 +90,6 @@ class StorePalletDelivery extends OrgAction
         }
     }
 
-
     public function rules(): array
     {
         /** @noinspection DuplicatedCode */
@@ -117,19 +114,6 @@ class StorePalletDelivery extends OrgAction
         ];
     }
 
-
-    public function fromRetina(ActionRequest $request): PalletDelivery
-    {
-        /** @var FulfilmentCustomer $fulfilmentCustomer */
-        $fulfilmentCustomer = $request->user()->customer->fulfilmentCustomer;
-        $this->fulfilment   = $fulfilmentCustomer->fulfilment;
-
-        $this->initialisation($request->get('website')->organisation, $request);
-
-        return $this->handle($fulfilmentCustomer, $this->validatedData);
-    }
-
-
     public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): PalletDelivery
     {
         $this->fulfilmentCustomer = $fulfilmentCustomer;
@@ -140,10 +124,8 @@ class StorePalletDelivery extends OrgAction
 
     public function action(FulfilmentCustomer $fulfilmentCustomer, $modelData): PalletDelivery
     {
-        $this->action = true;
+        $this->asAction = true;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $modelData);
-        $this->setRawAttributes($modelData);
-
         return $this->handle($fulfilmentCustomer, $this->validatedData);
     }
 
