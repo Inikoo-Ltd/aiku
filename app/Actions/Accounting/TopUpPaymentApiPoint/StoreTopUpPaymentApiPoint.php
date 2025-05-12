@@ -9,9 +9,13 @@
 namespace App\Actions\Accounting\TopUpPaymentApiPoint;
 
 use App\Actions\RetinaAction;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\CRM\Customer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,6 +30,23 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'ulid', Str::ulid());
+
+
+        $paymentMethodsData  = [];
+        $paymentAccountShops = $this->shop->paymentAccountShops()
+            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
+            ->where('type', PaymentAccountTypeEnum::CHECKOUT)
+            ->where('show_in_checkout', true)
+            ->orderby('checkout_display_position')
+            ->get();
+        /** @var PaymentAccountShop $paymentAccountShop */
+        foreach ($paymentAccountShops as $paymentAccountShop) {
+            $paymentMethodsData[$paymentAccountShop->type->value] = $paymentAccountShop->id;
+        }
+
+        $data                            = Arr::get($modelData, 'data', []);
+        $data['payment_account_shop_id'] = $paymentMethodsData;
+        data_set($modelData, 'data', $data);
 
         return $customer->topUpPaymentApiPoint()->create($modelData);
     }
