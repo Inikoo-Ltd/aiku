@@ -8,6 +8,7 @@
 
 use App\Actions\Retina\Api\GetProfile;
 use App\Actions\Retina\Api\Order\StoreApiOrder;
+use App\Actions\Retina\Api\Order\SubmitApiOrder;
 use App\Actions\Retina\Api\Order\UpdateApiOrder;
 use Illuminate\Support\Facades\Route;
 
@@ -21,5 +22,6 @@ Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
     Route::prefix('order')->as('order.')->group(function () {
         Route::post('{customer:id}/store', StoreApiOrder::class)->name('store');
         Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
+        Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
     });
 });
