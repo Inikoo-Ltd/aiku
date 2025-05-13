@@ -77,7 +77,7 @@ export default {
 					name: "Line",
 					replaceForm: [
 						{
-							key: ["background"],
+							key: ["properties","background"],
 							label: "Background",
 							type: "background",
 						},
