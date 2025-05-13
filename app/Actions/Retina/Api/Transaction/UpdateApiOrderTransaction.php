@@ -26,11 +26,6 @@ class UpdateApiOrderTransaction
         return UpdateTransaction::make()->action($transaction, $modelData);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
-
     public function rules(): array
     {
         $rules = [

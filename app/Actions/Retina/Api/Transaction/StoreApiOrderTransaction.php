@@ -30,11 +30,6 @@ class StoreApiOrderTransaction
         return $transaction;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
-
     public function rules(): array
     {
         $rules = [

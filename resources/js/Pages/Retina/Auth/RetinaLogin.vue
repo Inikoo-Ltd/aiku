@@ -6,10 +6,10 @@ import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
 import { onMounted, ref, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-// import LayoutRetinaAuth from '@/Layouts/RetinaShowIris.vue'
+import LayoutRetinaAuth from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 
-// defineOptions({ layout: LayoutRetinaAuth })
+defineOptions({ layout: LayoutRetinaAuth })
 const form = useForm({
     username: '',
     password: '',
