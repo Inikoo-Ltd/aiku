@@ -65,6 +65,7 @@ trait IsIndexPaymentAccounts
                 'payment_accounts.name',
                 'payment_account_stats.number_payments',
                 'payment_account_stats.number_pas',
+                'payment_account_stats.number_customers',
                 'payment_accounts.slug as slug',
                 'payment_service_providers.slug as payment_service_provider_slug',
                 'payment_service_providers.name as payment_service_provider_name',
@@ -127,6 +128,7 @@ trait IsIndexPaymentAccounts
             $table->column(key: 'number_pas_state_active', label: __('shops'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_amount_successfully_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type:'number');
 
             $table->defaultSort('code');

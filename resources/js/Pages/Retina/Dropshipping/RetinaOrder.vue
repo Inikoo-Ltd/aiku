@@ -128,7 +128,7 @@ const props = defineProps<{
     // }
     routes?: {
         update_route: routeType
-        submite_route: routeType
+        submit_route: routeType
     }
     // nonProductItems: {}
     transactions: {}
@@ -216,6 +216,7 @@ const fetchPaymentMethod = async () => {
         const { data } = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
         listPaymentMethod.value = data.data
     } catch (error) {
+        console.log('erropr', error)
         notify({
             title: trans('Something went wrong'),
             text: trans('Failed to fetch payment method list'),
@@ -368,6 +369,10 @@ const onNoStructureUpload = () => {
         type: "error",
     })
 }
+
+
+// Section: Modal confirmation order
+const isModalConfirmationOrder = ref(false)
 </script>
 
 <template>
@@ -569,7 +574,8 @@ const onNoStructureUpload = () => {
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <div class="pb-12">
-        <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+        <component :is="component"
+            :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
             detachRoute="attachmentRoutes?.detachRoute"
             :fetchRoute="routes?.products_list"
@@ -593,17 +599,32 @@ const onNoStructureUpload = () => {
                 class="mb-2"
             />
             
-            <ButtonWithLink
+            <!-- <ButtonWithLink
                 v-if="is_in_basket"
                 iconRight="fas fa-arrow-right"
                 :label="trans('Submit order')"
-                :routeTarget="routes.submit_route"
+                :routeTarget="routes?.submit_route"
+                disabled
+                class="w-full"
+                full
+            /> -->
+
+            <Button
+                v-if="is_in_basket && 'products more than 0'"
+                @click="() => isModalConfirmationOrder = true"
+                iconRight="fas fa-arrow-right"
+                :label="trans('Submit order')"
                 class="w-full"
                 full
             />
         </div>
     </div>
 
+
+    <!-- Modal: Confirmation order -->
+    <Modal :isOpen="isModalConfirmationOrder" @onClose="isModalConfirmationOrder = false" width="w-full max-w-4xl">
+        xxxxxxxxxxxxxxxxxx
+    </Modal>
 
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
@@ -619,7 +640,7 @@ const onNoStructureUpload = () => {
         </ProductsSelector>
     </Modal>
 
-
+    <!-- Section: Address -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal
             :addresses="addresses"
@@ -628,7 +649,7 @@ const onNoStructureUpload = () => {
         />
     </Modal>
 
-
+    <!-- Section: Payment -->
     <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
@@ -686,7 +707,10 @@ const onNoStructureUpload = () => {
             </div>
 
             <div class="mt-6 mb-4 relative">
-                <Button @click="() => onSubmitPayment()" label="Submit" :disabled="!(!!paymentData.payment_method)"
+                <Button
+                    @click="() => onSubmitPayment()"
+                    label="Submit"
+                    :disabled="!(!!paymentData.payment_method)"
                     :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
