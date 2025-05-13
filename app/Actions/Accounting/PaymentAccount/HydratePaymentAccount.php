@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentAccount;
 
+use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydratePAS;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydratePayments;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
@@ -27,6 +28,7 @@ class HydratePaymentAccount
     public function handle(PaymentAccount $paymentAccount): void
     {
         PaymentAccountHydratePayments::run($paymentAccount);
+        PaymentAccountHydrateCustomers::run($paymentAccount);
         PaymentAccountHydratePAS::run($paymentAccount);
     }
 

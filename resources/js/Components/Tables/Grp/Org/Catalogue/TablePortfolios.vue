@@ -400,18 +400,19 @@ watch(
 					:rowsPerPageOptions="[5, 10, 20, 40]"
 					currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products">
 					<template #header headerStyle="background: #ff0000">
-						<div class="flex flex-wrap gap-2 items-center justify-between">
-							<IconField>
+						<div
+							class="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center justify-between">
+							<IconField class="w-full sm:w-auto">
 								<InputIcon>
 									<FontAwesomeIcon
 										icon="fal fa-search"
-										class=""
 										fixed-width
 										aria-hidden="true" />
 								</InputIcon>
 								<InputText
 									v-model="filters['global'].value"
-									placeholder="Search..." />
+									placeholder="Search..."
+									class="w-full" />
 							</IconField>
 						</div>
 					</template>
@@ -431,12 +432,7 @@ watch(
 						</template>
 					</Column>
 
-					<Column
-						field="name"
-						header="Name"
-						sortable
-						style="min-width: 16rem"
-						frozen></Column>
+					<Column field="name" header="Name" sortable style="min-width: 16rem"></Column>
 
 					<Column field="quantity_left" header="Stock" style="min-width: 8rem"> </Column>
 					<Column field="weight" header="Weight" style="min-width: 8rem"> </Column>

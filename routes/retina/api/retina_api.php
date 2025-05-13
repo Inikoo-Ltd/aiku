@@ -34,7 +34,7 @@ Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
         Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
         Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
         Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
-        Route::post('/{order:id}/product/{product:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
+        Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     });
 
     Route::prefix('transaction')->as('transaction.')->group(function () {
