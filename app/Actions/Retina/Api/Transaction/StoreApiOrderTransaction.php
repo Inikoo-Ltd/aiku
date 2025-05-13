@@ -23,21 +23,24 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+
+use function Pest\Laravel\json;
 
 class StoreApiOrderTransaction
 {
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order, Product $product, array $modelData): Order
+    public function handle(Order $order, Product $product, array $modelData): Transaction
     {
         $transaction = StoreTransaction::make()->action($order, $product->historicAsset, $modelData);
 
-        return $transaction->order;
+        return $transaction;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -54,7 +57,7 @@ class StoreApiOrderTransaction
         return $rules;
     }
 
-    public function asController(Order $order, Product $product, ActionRequest $request): Order
+    public function asController(Order $order, Product $product, ActionRequest $request): Transaction
     {
         $this->fillFromRequest($request);
         $validatedData = $this->validateAttributes();
@@ -62,13 +65,10 @@ class StoreApiOrderTransaction
         return $this->handle($order, $product, $validatedData);
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(Transaction $transaction)
     {
-        return OrderResource::make($order) //TODO: TransactionResource
-            ->additional([
-                'meta' => [
-                    'message' => __('Product added to order successfully'),
-                ],
-            ]);
+        return [
+            'transaction' => $transaction, //todo: transaction resource
+        ];
     }
 }
