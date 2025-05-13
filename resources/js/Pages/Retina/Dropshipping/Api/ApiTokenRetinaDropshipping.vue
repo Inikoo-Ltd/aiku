@@ -35,6 +35,7 @@ const props = defineProps<{
             }
         }
     },
+    data: {}
     formData: {
         current?:string,
         blueprint: {

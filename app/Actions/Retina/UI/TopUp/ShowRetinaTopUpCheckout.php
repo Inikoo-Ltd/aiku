@@ -107,8 +107,9 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             return Redirect::route('retina.top_up.dashboard')->with(
                 'notification',
                 [
-                    'status'         => 'failure',
-                    'title'          => Arr::has($checkoutComData, 'error'),
+                    'status'               => 'error',
+                    'title'                => __('Failed to Top Up'),
+                    'description'          => Arr::get($checkoutComData, 'error'),
                 ]
             );
         }

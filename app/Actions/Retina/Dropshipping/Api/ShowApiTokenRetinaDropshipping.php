@@ -9,7 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
-use Arr;
+use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,35 +20,11 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     use AsAction;
 
 
-    public function handle(ActionRequest $request): array
+    public function handle(Platform $platform, ActionRequest $request): Response
     {
-        $customer = $request->user()->customer;
-
-        $existingToken = $customer->tokens()->where('name', 'api-token')->first();
-
-        if ($existingToken) {
-            return [
-                'message' => __('Token already exists'),
-            ];
-        }
-
-        $token = $customer->createToken('api-token', ['retina']);
-
-        return [
-            'token' => $token->plainTextToken,
-        ];
-    }
-
-
-    public function asController(ActionRequest $request): \Illuminate\Http\Response|array
-    {
-        $this->initialisation($request);
-
-        return $this->handle($request);
-    }
-
-    public function htmlResponse(array $data, ActionRequest $request): Response
-    {
+        $env = app()->environment('production')
+            ? 'production'
+            : 'sandbox';
         return Inertia::render(
             'Dropshipping/Api/ApiTokenRetinaDropshipping',
             [
@@ -63,44 +39,35 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                     ],
                 ],
 
-                'formData' => [
-                    'blueprint' => [
-                        [
-                            'label'  => __('Token'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'api_token'               => [
-                                    'type'  => 'input',
-                                    'label' => __('api token'),
-                                    'value' => Arr::get($data, 'token') ?? '',
-                                ],
-                                'api_base_sandbox_url'    => [
-                                    'type'  => 'input',
-                                    'label' => __('url api sandbox'),
-                                    'value' => 'https://app.aiku-sandbox.uk/',
+                'data' => [
+                    'api_base_url' => app()->environment('production')
+                        ? 'https://v2.aw-dropship.com/'
+                        : 'https://canary.aw-dropship.com/',
 
-                                ],
-                                'api_base_production_url' => [
-                                    'type'  => 'input',
-                                    'label' => __('url api production'),
-                                    'value' => 'https://app.aiku.io/',
-                                ],
-                            ],
+                    'redirect_link' => [
+                        'message' => __('Generate API token in ') . $env ,
+                        'link' => $env == 'production' ? 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/',
+                    ],
 
+                    'route_generate' => [
+                        'name' => 'retina.dropshipping.platforms.api.show.token',
+                        'parameters' => [
+                            'platform' => $platform->slug,
                         ],
                     ],
-                    'args'      => [
-                        'updateRoute' => [
-                            'name'       => '',
-                            'parameters' => [
-                            ]
-                        ],
-                    ]
                 ],
-
             ]
         );
     }
+
+
+    public function asController(Platform $platform, ActionRequest $request): Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($platform, $request);
+    }
+
 
     public function jsonResponse(array $data): array
     {

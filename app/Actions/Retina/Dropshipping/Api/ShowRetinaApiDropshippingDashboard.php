@@ -34,11 +34,18 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 ),
                 'data'       => [
                     'route_generate' => [
+                        'name' => 'retina.dropshipping.platforms.api.show.token',
+                        'parameters' => [
+                            'platform' => $platform->slug,
+                        ],
+                    ],
+                    'route_documentation' => '#',
+                    'route_show' => [
                         'name' => 'retina.dropshipping.platforms.api.show',
                         'parameters' => [
                             'platform' => $platform->slug,
                         ],
-                    ]
+                    ],
                 ],
             ]
         );
