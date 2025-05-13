@@ -35,8 +35,8 @@ class PaymentAccountHydrateCustomers implements ShouldBeUnique
     {
         $customers = DB::table('payments')
             ->where('payment_account_id', $paymentAccount->id)
-            ->where('type', PaymentTypeEnum::PAYMENT)
-            ->where('status',PaymentStatusEnum::SUCCESS)
+            ->where('type', PaymentTypeEnum::PAYMENT->value)
+            ->where('status',PaymentStatusEnum::SUCCESS->value)
             ->distinct()
             ->count('customer_id');
 
