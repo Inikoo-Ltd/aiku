@@ -7,8 +7,7 @@
  * Copyright: 2025
  *
 */
-
-namespace App\Http\Resources\Api\Dropshipping;
+namespace App\Http\Resources\Api;
 
 use App\Http\Resources\HasSelfCall;
 use App\Models\CRM\Customer;
@@ -26,6 +25,15 @@ class CustomersResource extends JsonResource
         return [
             'id'                     => $customer->id,
             'slug'                   => $customer->slug,
+            'reference'              => $customer->reference,
+            'name'                   => $customer->name,
+            'contact_name'           => $customer->contact_name,
+            'company_name'           => $customer->company_name,
+            'location'               => $customer->location,
+            'email'                  => $customer->email,
+            'phone'                  => $customer->phone,
+            'created_at'             => $customer->created_at,
+            'updated_at'             => $customer->updated_at,
         ];
     }
 }

@@ -11,7 +11,7 @@
 namespace App\Actions\Retina\Api\Order;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Sales\OrderResource;
+use App\Http\Resources\Api\OrdersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\Rule;
@@ -119,7 +119,7 @@ class GetOrders
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
     {
-        return OrderResource::collection($orders);
+        return OrdersResource::collection($orders);
     }
 
     public function rules(): array
