@@ -112,7 +112,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 'shops.code as shop_code',
                 'shops.name as shop_name',
             ])
-            ->allowedSorts([])
+            ->allowedSorts(['total_amount_paid', 'total_payments', 'reference', 'name', 'shop_code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -138,7 +138,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'total_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'total_amount_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->defaultSort('-created_at');
         };
@@ -159,7 +159,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 'title'                             => __('customers'),
                 'pageHead'                          => [
                     'subNavigation' => $subNavigation,
-                    'title' => __('Customers').' @'.$this->paymentAccount->name,
+                    'title' => __('Customers').' ('.$this->paymentAccount->name.')',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('customer')

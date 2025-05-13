@@ -15,7 +15,7 @@ class CustomersInPaymentAccountResource extends JsonResource
             'slug'                            => $this->slug,
             'reference'                       => $this->reference,
             'name'                            => $this->name,
-            'number_payments'                 => $this->total_payments,
+            'total_payments'                 => $this->total_payments,
             'total_amount_paid'               => $this->total_amount_paid,
             'currency_code'                   => $this->currency_code,
             'shop_code'                       => $this->shop_code,
