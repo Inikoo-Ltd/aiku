@@ -167,7 +167,7 @@ class IndexOrders extends OrgAction
             });
         }
 
-        $test =  $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
+        return $query->defaultSort('orders.id')
         ->select([
             'orders.id',
             'orders.reference',
@@ -175,13 +175,8 @@ class IndexOrders extends OrgAction
             'orders.state',
             'orders.created_at',
             'orders.updated_at',
-            'orders.slug',
             'orders.net_amount',
             'orders.total_amount',
-            'customers.name as customer_name',
-            'customers.slug as customer_slug',
-            'customer_clients.name as client_name',
-            'customer_clients.ulid as client_ulid',
             'payments.state as payment_state',
             'payments.status as payment_status',
             'currencies.code as currency_code',
@@ -192,12 +187,11 @@ class IndexOrders extends OrgAction
             'organisations.slug as organisation_slug',
         ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date'])
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
-        return $test;
     }
 
     public function tableStructure(Organisation|Shop|Customer|CustomerClient|Asset|ShopifyUser $parent, $prefix = null, $bucket = null): Closure
