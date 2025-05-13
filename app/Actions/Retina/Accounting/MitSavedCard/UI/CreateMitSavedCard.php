@@ -137,7 +137,7 @@ class CreateMitSavedCard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.saved-credit-card.show'
+                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
                             ],
                             'label' => __('Saved Credit Card'),
                         ]
