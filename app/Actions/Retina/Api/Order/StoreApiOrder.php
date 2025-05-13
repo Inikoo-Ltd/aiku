@@ -43,9 +43,7 @@ class StoreApiOrder
     {
         return OrderResource::make($order)
             ->additional([
-                'meta' => [
-                    'message' => __('Order created successfully'),
-                ],
+                'message' => __('Order created successfully'),
             ]);
     }
 }

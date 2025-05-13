@@ -31,7 +31,7 @@ class UpdateApiOrder
     public function rules(): array
     {
         return [
-            'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'        => ['required', 'nullable', 'string', 'max:4000'],
         ];
     }
 
@@ -39,9 +39,7 @@ class UpdateApiOrder
     {
         return OrderResource::make($order)
             ->additional([
-                'meta' => [
-                    'message' => __('Order updated successfully'),
-                ],
+                'message' => __('Order updated successfully'),
             ]);
     }
 

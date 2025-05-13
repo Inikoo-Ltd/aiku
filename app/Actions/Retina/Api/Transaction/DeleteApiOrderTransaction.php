@@ -35,9 +35,7 @@ class DeleteApiOrderTransaction
     {
         return TransactionResource::make($transaction)
             ->additional([
-                'meta' => [
-                    'message' => __('Transaction deleted successfully'),
-                ],
+                'message' => __('Transaction deleted successfully'),
             ]);
     }
 

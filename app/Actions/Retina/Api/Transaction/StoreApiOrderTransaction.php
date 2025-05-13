@@ -56,9 +56,7 @@ class StoreApiOrderTransaction
     {
         return TransactionResource::make($transaction)
             ->additional([
-                'meta' => [
-                    'message' => __('Transaction created successfully'),
-                ],
+                'message' => __('Transaction created successfully'),
             ]);
     }
 }

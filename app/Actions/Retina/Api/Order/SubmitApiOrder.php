@@ -32,9 +32,7 @@ class SubmitApiOrder
     {
         return OrderResource::make($order)
             ->additional([
-                'meta' => [
-                    'message' => __('Order submitted successfully'),
-                ],
+                'message' => __('Order submitted successfully'),
             ]);
     }
 

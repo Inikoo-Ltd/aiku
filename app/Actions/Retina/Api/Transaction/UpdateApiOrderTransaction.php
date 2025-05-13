@@ -44,9 +44,7 @@ class UpdateApiOrderTransaction
     {
         return TransactionResource::make($transaction)
             ->additional([
-                'meta' => [
-                    'message' => __('Transaction updated successfully'),
-                ],
+                'message' => __('Transaction updated successfully'),
             ]);
     }
 
