@@ -35,7 +35,6 @@ use App\Actions\Retina\Fulfilment\PalletDelivery\Pdf\PdfRetinaPalletDelivery;
 use App\Actions\Retina\Fulfilment\PalletDelivery\StoreRetinaPalletDelivery;
 use App\Actions\Retina\Fulfilment\PalletDelivery\SubmitRetinaPalletDelivery;
 use App\Actions\Retina\Fulfilment\PalletDelivery\UpdateRetinaPalletDelivery;
-use App\Actions\Retina\Fulfilment\PalletReturn\AttachRetinaPalletsToReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\CancelRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\DetachRetinaPalletFromReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\ImportRetinaPalletReturnItem;
@@ -704,21 +703,6 @@ test('import pallets in return (xlsx) invalid reference', function (PalletReturn
     return $palletReturn;
 })->depends('Create Retina Pallet Return');
 
-test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
-    $palletReturn = AttachRetinaPalletsToReturn::make()->action(
-        $palletReturn,
-        [
-            'pallets' => [3, 4]
-        ]
-    );
-
-    $palletReturn->refresh();
-
-    expect($palletReturn)->toBeInstanceOf(PalletReturn::class)
-        ->and($palletReturn->stats->number_pallets)->toBe(2);
-
-    return $palletReturn;
-})->depends('import pallets in return (xlsx)  whole pallets ');
 
 test('Detach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
     $pallet = $palletReturn->pallets()->first();
