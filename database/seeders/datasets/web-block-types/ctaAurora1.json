@@ -4,6 +4,7 @@
 	"name": "CTA",
 	"scope": "webpage",
 	"icon": ["fal", "rectangle-wide"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 			"text": "<p style=\"text-align: center\"></p><p style=\"text-align: center\"><span style=\"font-size: 20px; color: rgb(209, 209, 209)\">Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim</span></p><p style=\"text-align: center\"><span style=\"font-size: 20px; color: rgb(209, 209, 209)\">id veniam aliqua proident excepteur commodo do ea.</span></p>",

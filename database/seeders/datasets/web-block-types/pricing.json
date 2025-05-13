@@ -4,6 +4,7 @@
 	"code": "pricing",
 	"name": "Pricing",
 	"icon": ["fal", "text"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 			"text": "<p style=\"text-align: center\">Choose an affordable plan that’s packed with the best features for engaging your audience, creating customer loyalty, and driving sales.</p>",

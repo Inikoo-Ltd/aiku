@@ -8,13 +8,13 @@
  *
 */
 
-namespace App\Actions\Retina\Dropshipping\Api;
+namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ApiTokenRefresh extends RetinaAction
+class GetApiToken extends RetinaAction
 {
     use AsAction;
 
@@ -27,8 +27,12 @@ class ApiTokenRefresh extends RetinaAction
         $existingToken = $customer->tokens()->where('name', 'api-token')->first();
 
         if ($existingToken) {
+            $existingToken->delete();
+
+            $newToken = $customer->createToken('api-token', ['retina']);
+
             return [
-                'message' => __('Token already exists'),
+                'token' => $newToken->plainTextToken,
             ];
         }
 
@@ -50,23 +54,5 @@ class ApiTokenRefresh extends RetinaAction
     public function jsonResponse(array $data): array
     {
         return $data;
-    }
-
-    public function getBreadcrumbs($label = null): array
-    {
-        return [
-            [
-
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-home',
-                    'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
-                ]
-
-            ],
-
-        ];
     }
 }

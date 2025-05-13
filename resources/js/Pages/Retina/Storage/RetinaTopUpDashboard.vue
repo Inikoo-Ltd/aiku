@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
-import { Link, router, Head } from "@inertiajs/vue3"
+import { Link, router, Head, usePage } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {  faCheckCircle, faInfoCircle, faExclamationTriangle,faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -14,6 +14,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { notify } from '@kyvg/vue3-notification'
 import InputNumber from 'primevue/inputnumber'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import FlashNotification from "@/Components/UI/FlashNotification.vue"
 
 library.add(faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross)
 
@@ -59,12 +60,12 @@ const onSubmitTopUp = () => {
             isLoading.value = false
         },
         onSuccess: () => {
-            notify({
-                title: trans("Success!"),
-                text: trans("Top up request has been submitted successfully."),
-                type: "error",
-            })
-            amount.value = null
+            // notify({
+            //     title: trans("Success!"),
+            //     text: trans("Top up request has been submitted successfully."),
+            //     type: "success",
+            // })
+            amount.value = 100
             privateNote.value = ""
         },
         onError: () => {
@@ -86,6 +87,8 @@ const onSubmitTopUp = () => {
             <Button :label="trans('Top Up Balance')" @click="() => isModalTopUpOpen = true" icon="fas fa-plus" />
         </template>
     </PageHeading>
+    
+    <FlashNotification :notification="usePage().props.flash.notification" />
 
     <div class="px-4 py-5 md:px-6 lg:px-8 ">
 

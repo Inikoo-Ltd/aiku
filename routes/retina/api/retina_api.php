@@ -6,15 +6,12 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Retina\Api\ShowProfile;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
-    Route::get('/profile', function () {
-        return response()->json([
-            'user' => 'hello',
-        ]);
-    })->name('profile');
+    Route::get('/profile', ShowProfile::class)->name('profile');
 });

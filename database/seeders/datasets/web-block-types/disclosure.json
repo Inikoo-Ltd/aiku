@@ -4,6 +4,7 @@
 	"name": "disclosure",
 	"scope": "webpage",
 	"icon": ["fal", "rectangle-wide"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 			"value": [

@@ -4,6 +4,7 @@
 	"name": "Images",
 	"code": "images",
 	"icon": ["fal", "image"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 			"value": {

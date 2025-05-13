@@ -35,6 +35,7 @@ import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
+import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -72,6 +73,7 @@ export const getComponent = (componentName: string) => {
         'column-layout-2': ColumnWorkshop,
         'disclosure': DisclosureWorkshop,
         'timeline' : Timeline,
+        'step-1' : Step2Workshop
         /* 'department' : Department1Iris */
     }
     return components[componentName] ?? NotFoundComponents

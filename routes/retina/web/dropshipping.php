@@ -15,8 +15,9 @@ use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
-use App\Actions\Retina\Dropshipping\Api\ShowApiTokenRetinaDropshipping;
-use App\Actions\Retina\Dropshipping\Api\ShowRetinaApiDropshippingDashboard;
+use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
+use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
+use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -92,6 +93,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     Route::prefix('api')->as('api.')->group(function () {
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
         Route::get('/show', ShowApiTokenRetinaDropshipping::class)->name('show');
+        Route::get('/token', GetApiToken::class)->name('show.token');
     });
 });
 

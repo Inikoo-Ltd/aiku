@@ -3,6 +3,7 @@
 	"code": "cta1",
 	"name": "CTA (with Image)",
 	"scope": "webpage",
+	"category": "block",
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {
