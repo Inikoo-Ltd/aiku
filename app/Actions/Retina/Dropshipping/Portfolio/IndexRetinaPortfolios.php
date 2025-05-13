@@ -94,6 +94,11 @@ class IndexRetinaPortfolios extends RetinaAction
         return $this->handle($this->shopifyUser);
     }
 
+    public function jsonResponse(LengthAwarePaginator $portfolios)
+    {
+        return DropshippingPortfolioResource::collection($portfolios);
+    }
+
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
         $manual = false;
