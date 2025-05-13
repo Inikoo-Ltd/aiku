@@ -54,7 +54,8 @@ const layout = inject('layout', layoutStructure)
 
     </slot>
 
-    <div class="relative px-4 py-2 md:pb-2 md:pt-2 lg:py-2 grid grid-flow-col justify-between items-center">
+    <div class="relative px-4 py-2 flex flex-col sm:flex-row 
+            justify-between items-start sm:items-center gap-y-2">
         <div class="flex items-end gap-x-3">
 
             <!-- Section: Main Title -->
