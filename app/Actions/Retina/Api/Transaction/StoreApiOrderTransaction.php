@@ -22,6 +22,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Redirect;
@@ -36,9 +37,9 @@ class StoreApiOrderTransaction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order, Product $product, array $modelData): Transaction
+    public function handle(Order $order, Portfolio $portfolio, array $modelData): Transaction
     {
-        $transaction = StoreTransaction::make()->action($order, $product->historicAsset, $modelData);
+        $transaction = StoreTransaction::make()->action($order, $portfolio->item->historicAsset, $modelData);
 
         return $transaction;
     }
@@ -57,12 +58,12 @@ class StoreApiOrderTransaction
         return $rules;
     }
 
-    public function asController(Order $order, Product $product, ActionRequest $request): Transaction
+    public function asController(Order $order, Portfolio $portfolio, ActionRequest $request): Transaction
     {
         $this->fillFromRequest($request);
         $validatedData = $this->validateAttributes();
 
-        return $this->handle($order, $product, $validatedData);
+        return $this->handle($order, $portfolio, $validatedData);
     }
 
     public function jsonResponse(Transaction $transaction)
