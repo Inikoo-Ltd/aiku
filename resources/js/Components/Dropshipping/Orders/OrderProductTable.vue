@@ -125,6 +125,7 @@ const debounceUpdateQuantity = debounce(
                     @start="() => isLoading = 'unselect' + item.id"
                     @finish="() => isLoading = false"
                     v-tooltip="trans('Unselect this product')"
+                    :preserveScroll="true"
                 >
                     <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + item.id" />
                 </Link>

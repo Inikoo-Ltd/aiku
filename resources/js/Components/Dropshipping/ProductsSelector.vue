@@ -152,13 +152,13 @@ onUnmounted(() => {
                                     </Transition>
                                     <Image :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                                     <div class="flex flex-col justify-between">
-                                        <div class="w-fit">
+                                        <div class="w-fit" @click="() => selectProduct(item)">
                                             <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
                                             <div v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
                                             <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                                         </div>
 
-                                        <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                        <div @click="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                             {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
                                         </div>
 
@@ -169,6 +169,7 @@ onUnmounted(() => {
                                             @update:modelValue="(e: number) => set(item, 'quantity_selected', e)"
                                             noUndoButton
                                             noSaveButton
+                                            parentClass="w-min"
                                         />
                                     </div>
                                 </div>
