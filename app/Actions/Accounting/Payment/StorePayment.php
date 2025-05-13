@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Payment;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Hydrators\OrgPaymentServiceProviderHydratePayments;
 use App\Actions\Accounting\Payment\Search\PaymentRecordSearch;
+use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydratePayments;
 use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePayments;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -56,6 +57,7 @@ class StorePayment extends OrgAction
         OrganisationHydratePayments::dispatch($paymentAccount->organisation)->delay($this->hydratorsDelay);
         PaymentServiceProviderHydratePayments::dispatch($payment->paymentAccount->paymentServiceProvider)->delay($this->hydratorsDelay);
         PaymentAccountHydratePayments::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
+        PaymentAccountHydrateCustomers::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
         ShopHydratePayments::dispatch($payment->shop)->delay($this->hydratorsDelay);
         OrgPaymentServiceProviderHydratePayments::dispatch($payment->orgPaymentServiceProvider)->delay($this->hydratorsDelay);
 
