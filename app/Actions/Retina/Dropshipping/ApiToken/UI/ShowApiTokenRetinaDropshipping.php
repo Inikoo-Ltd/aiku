@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Api;
+namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Platform;

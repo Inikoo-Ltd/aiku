@@ -4,6 +4,7 @@
 	"slug": "cta2",
 	"name": "CTA (C) to delete",
 	"fixed": true,
+	"category": "block",
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {

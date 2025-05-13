@@ -3,6 +3,7 @@
 	"slug": "bento-grid",
 	"code": "bento-grid-1",
 	"name": "Showcase (Bento Grid)",
+	"category": "block",
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {

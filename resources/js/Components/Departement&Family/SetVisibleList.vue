@@ -80,7 +80,7 @@ const SaveShowAndHide = (item) => {
     <div>
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 ">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
-                <h3 class="text-xl font-semibold">Families List</h3>
+                <h3 class="text-xl font-semibold">{{ title }}</h3>
                 <!-- <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye"
                 @click="isModalFamiliesPreview = true" /> -->
             </div>

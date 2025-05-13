@@ -11,7 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
@@ -26,15 +26,11 @@ class SubmitOrder extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
-    use HasOrderingAuthorisation;
+    use WithOrderingEditAuthorisation;
 
 
     private Order $order;
 
-    public function __construct()
-    {
-        $this->authorisationType = 'update';
-    }
 
     public function handle(Order $order): Order
     {
