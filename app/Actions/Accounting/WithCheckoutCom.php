@@ -8,7 +8,9 @@
 
 namespace App\Actions\Accounting;
 
+use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Helpers\Address;
+use Checkout\CheckoutApiException;
 use Checkout\CheckoutSdk;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
@@ -19,7 +21,6 @@ trait WithCheckoutCom
 {
     public function getCheckoutApi($publicKey, $secretKey): ?\Checkout\CheckoutApi
     {
-
         $checkoutApi = null;
         try {
             $checkoutApi = CheckoutSdk::builder()->staticKeys()
@@ -35,7 +36,7 @@ trait WithCheckoutCom
     }
 
 
-    private function setBillingInformation(PaymentSessionsRequest $paymentSessionRequest, Address $billingAddress)
+    private function setBillingInformation(PaymentSessionsRequest $paymentSessionRequest, Address $billingAddress): PaymentSessionsRequest
     {
         $address                = new \Checkout\Common\Address();
         $address->address_line1 = $billingAddress->address_line_1;
@@ -50,6 +51,29 @@ trait WithCheckoutCom
         $paymentSessionRequest->billing->address = $address;
 
         return $paymentSessionRequest;
+    }
+
+    private function getCheckOutPayment(PaymentAccountShop $paymentAccountShop, string $paymentID): array
+    {
+        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+
+
+        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+
+        try {
+            return $checkoutApi->getPaymentsClient()->getPaymentDetails($paymentID);
+        } catch (CheckoutApiException $e) {
+            \Sentry\captureException($e);
+            $error_details    = $e->error_details;
+            $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
+
+            return [
+                'error' => true,
+                'message' => $error_details,
+                'http_status_code' => $http_status_code
+            ];
+        }
+
     }
 
 

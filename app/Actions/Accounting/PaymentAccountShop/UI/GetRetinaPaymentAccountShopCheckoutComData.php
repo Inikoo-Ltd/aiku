@@ -12,8 +12,6 @@ use App\Actions\Accounting\WithCheckoutCom;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
-use Checkout\Common\Address;
-use Checkout\Payments\BillingInformation;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Checkout\Payments\ThreeDsRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -48,18 +46,8 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
         $billingAddress         = $order->billingAddress;
-        $address                = new Address();
-        $address->address_line1 = $billingAddress->address_line_1;
-        $address->address_line2 = $billingAddress->address_line_2;
 
-        $address->city    = $billingAddress->locality;
-        $address->state   = $billingAddress->administrative_area;
-        $address->zip     = $billingAddress->postal_code;
-        $address->country = $billingAddress->country->code;
-
-        $paymentSessionRequest->billing          = new BillingInformation();
-        $paymentSessionRequest->billing->address = $address;
-
+        $paymentSessionRequest = $this->setBillingInformation($paymentSessionRequest, $billingAddress);
 
         try {
             $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);

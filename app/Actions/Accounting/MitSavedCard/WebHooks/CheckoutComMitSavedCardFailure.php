@@ -16,31 +16,22 @@ use App\Http\Resources\Accounting\MitSavedCardResource;
 use App\Models\Accounting\MitSavedCard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
-use Checkout\CheckoutApiException;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class CheckoutComMitSavedCardFailure extends RetinaWebhookAction
 {
     use WithCheckoutCom;
-
+    use withCheckoutComMitSavedCardWebhook;
 
     public function handle(MitSavedCard $mitSavedCard, array $modelData): ?MitSavedCard
     {
-        list($publicKey, $secretKey) = $mitSavedCard->paymentAccountShop->getCredentials();
-
-
-        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
-
-        try {
-            $payment = $checkoutApi->getPaymentsClient()->getPaymentDetails($modelData['cko-payment-id']);
-        } catch (CheckoutApiException $e) {
-            \Sentry\captureException($e);
-            $error_details    = $e->error_details;
-            $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
-            print $http_status_code.' '.$error_details;
-
-            return null;
+        $payment = $this->getCheckOutPayment(
+            $mitSavedCard->paymentAccountShop,
+            $modelData['cko-payment-id']
+        );
+        if (Arr::get($payment, 'error')) {
+            return $this->processError($mitSavedCard, $payment);
         }
 
 
@@ -72,14 +63,50 @@ class CheckoutComMitSavedCardFailure extends RetinaWebhookAction
         $this->initialisation($request);
         $mitSavedCard = $this->handle($mitSavedCard, $this->validatedData);
 
+        if ($mitSavedCard->state == MitSavedCardStateEnum::ERROR) {
+            return $this->errorRedirect($mitSavedCard);
+        }
 
         return Redirect::route('retina.dropshipping.mit_saved_cards.create')->with(
             'notification',
             [
                 'status'         => 'failure',
+                'title'          => $this->getFailureTitle($mitSavedCard->failure_status),
+                'message'          => $this->getFailureMessage($mitSavedCard->failure_status),
                 'mit_saved_card' => MitSavedCardResource::make($mitSavedCard)
             ]
         );
+    }
+
+    protected function getFailureTitle($status): string
+    {
+        $title = __('Error');
+        if ($status == 'Declined') {
+            $title = __('Declined');
+        } elseif ($status == 'Expired') {
+            $title = __('Expired');
+        } elseif ($status == 'Canceled') {
+            $title = __('Canceled');
+        }
+
+        return $title;
+    }
+
+    protected function getFailureMessage($status): string
+    {
+        $message = __('There was an error processing your card. Please try again or use a different payment method.');
+
+        if ($status == 'Declined') {
+            $message = __('Your card was declined by the issuing bank. Please try another payment method or contact your bank for more information.');
+        } elseif ($status == 'Expired') {
+            $message = __('Your payment session has expired. Please try the transaction again.');
+        } elseif ($status == 'Canceled') {
+            $message = __('This payment was canceled. Please try again when you are ready to complete your payment.');
+        } elseif ($status == 'Failed') {
+            $message = __('The payment processing failed. Please verify your card details and try again.');
+        }
+
+        return $message;
     }
 
 

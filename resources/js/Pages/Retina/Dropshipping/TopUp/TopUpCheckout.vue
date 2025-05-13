@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useCheckoutCom } from "@/Composables/useCheckoutComFlow";
-import { faCheckCircle } from "@fas";
-import { faExclamationTriangle, faClock } from "@fad";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { Head, usePage } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { capitalize } from "@/Composables/capitalize";
+import { PageHeading as TSPageHeading } from "@/types/PageHeading";
 import { CheckoutComFlow } from "@/types/CheckoutComFlow";
-import { usePage } from "@inertiajs/vue3";
+import { FlashNotification as FlashNotificationType } from "@/types/FlashNotification";
+import { useCheckoutCom } from "@/Composables/useCheckoutComFlow";
+import { onMounted } from "vue";
 import { PageProps as InertiaPageProps } from "@inertiajs/core";
 import FlashNotification from "@/Components/UI/FlashNotification.vue";
-import {FlashNotification  as FlashNotificationType} from "@/types/FlashNotification";
 
-library.add(faCheckCircle, faClock, faExclamationTriangle);
 
 const props = defineProps<{
+  title: string,
+  pageHead: TSPageHeading
   checkout_com_data: CheckoutComFlow
 }>();
 
@@ -29,11 +30,12 @@ onMounted(() => {
   initializeCheckout("flow-container");
 });
 
-
-
 </script>
 
+
 <template>
+  <Head :title="capitalize(title)" />
+  <PageHeading :data="pageHead" />
   <FlashNotification :notification="page.props.flash.notification" />
   <div class="p-8 text-xl font-bold w-full text-center">
     <div class="relative w-full max-w-xl mx-auto my-8 overflow-hidden">
