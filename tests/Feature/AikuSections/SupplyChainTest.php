@@ -337,7 +337,6 @@ test('UI Index suppliers product in supplier', function () {
 
 test('UI supply chain dashboard', function () {
     $this->withoutExceptionHandling();
-    $supplier = Supplier::first();
     $response = $this->get(route('grp.supply-chain.dashboard'));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -407,7 +406,7 @@ test('UI show supplier', function () {
 });
 
 test('UI edit supplier', function () {
-    $agent = Agent::first();
+    $agent    = Agent::first();
     $supplier = $agent->suppliers()->first();
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.show.suppliers.edit', [$agent->slug, $supplier->slug]));
