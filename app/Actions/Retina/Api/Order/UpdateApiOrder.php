@@ -10,7 +10,7 @@
 namespace App\Actions\Retina\Api\Order;
 
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Http\Resources\Sales\OrderResource;
+use App\Http\Resources\Api\OrderResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 13-05-2025-11h-02m
@@ -8,29 +9,14 @@
 
 namespace App\Actions\Retina\Api\Transaction;
 
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
-use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
-use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
-use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\Sales\OrderResource;
-use App\Models\Catalogue\HistoricAsset;
-use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
+use App\Http\Resources\Api\TransactionResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-
-use function Pest\Laravel\json;
 
 class StoreApiOrderTransaction
 {
@@ -68,8 +54,11 @@ class StoreApiOrderTransaction
 
     public function jsonResponse(Transaction $transaction)
     {
-        return [
-            'transaction' => $transaction, //todo: transaction resource
-        ];
+        return TransactionResource::make($transaction)
+            ->additional([
+                'meta' => [
+                    'message' => __('Transaction created successfully'),
+                ],
+            ]);
     }
 }

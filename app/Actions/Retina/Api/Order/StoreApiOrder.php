@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Api\Order;
 
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\Sales\OrderResource;
+use App\Http\Resources\Api\OrderResource;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
