@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Retina\Dropshipping\Api;
+namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
 use Lorisleiva\Actions\ActionRequest;
