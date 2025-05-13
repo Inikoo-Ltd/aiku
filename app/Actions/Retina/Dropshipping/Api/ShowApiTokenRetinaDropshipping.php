@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,8 +20,11 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     use AsAction;
 
 
-    public function handle(ActionRequest $request): Response
+    public function handle(Platform $platform, ActionRequest $request): Response
     {
+        $env = app()->environment('production')
+            ? 'production'
+            : 'sandbox';
         return Inertia::render(
             'Dropshipping/Api/ApiTokenRetinaDropshipping',
             [
@@ -37,13 +41,18 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
 
                 'data' => [
                     'api_base_url' => app()->environment('production')
-                        ? 'https://app.aiku.io/'
-                        : 'https://app.aiku-sandbox.uk/',
+                        ? 'https://v2.aw-dropship.com/'
+                        : 'https://canary.aw-dropship.com/',
+
+                    'redirect_link' => [
+                        'message' => __('Generate API token in ') . $env ,
+                        'link' => $env == 'production' ? 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/',
+                    ],
 
                     'route_generate' => [
                         'name' => 'retina.dropshipping.platforms.api.show.token',
                         'parameters' => [
-                            'platform' => $this->platform->slug,
+                            'platform' => $platform->slug,
                         ],
                     ],
                 ],
@@ -52,11 +61,11 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     }
 
 
-    public function asController(ActionRequest $request): Response
+    public function asController(Platform $platform, ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->handle($request);
+        return $this->handle($platform, $request);
     }
 
 
