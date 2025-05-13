@@ -14,7 +14,7 @@ use App\Actions\RetinaAction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ApiTokenRefresh extends RetinaAction
+class GetApiToken extends RetinaAction
 {
     use AsAction;
 
@@ -54,23 +54,5 @@ class ApiTokenRefresh extends RetinaAction
     public function jsonResponse(array $data): array
     {
         return $data;
-    }
-
-    public function getBreadcrumbs($label = null): array
-    {
-        return [
-            [
-
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-home',
-                    'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
-                ]
-
-            ],
-
-        ];
     }
 }
