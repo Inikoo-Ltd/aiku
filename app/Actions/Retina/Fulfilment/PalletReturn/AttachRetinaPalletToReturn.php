@@ -44,4 +44,14 @@ class AttachRetinaPalletToReturn extends RetinaAction
         $this->handle($palletReturn, $pallet);
     }
 
+    public function action(PalletReturn $palletReturn, Pallet $pallet)
+    {
+        $this->asAction = true;
+        $this->initialisationActions($palletReturn->fulfilmentCustomer->customer, []);
+
+        return $this->handle($palletReturn, $pallet);
+    }
+
+
+
 }
