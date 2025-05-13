@@ -31,6 +31,7 @@ import Topbar3FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Top
 import ButtonIris from '@/Components/CMS/Webpage/Button/ButtonIris.vue'
 import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
 import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
+import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
@@ -69,7 +70,8 @@ const components: Record<string, Component> = {
     'disclosure': DisclosureIris,
     'family-1' : FamilyIris1,
     'product-1' : ProductIris1,
-    'timeline': Timeline
+    'timeline': Timeline,
+    'step-1' : Step2Iris
 }
 
 

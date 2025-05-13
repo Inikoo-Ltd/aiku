@@ -4,6 +4,7 @@
 	"code": "script",
 	"name": "Script",
 	"show": true,
+	"category": "element",
 	"visibility": {
 		"in": true,
 		"out": true

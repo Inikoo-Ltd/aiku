@@ -5,6 +5,7 @@
 	"name": "Showcase (A)",
 	"fixed": true,
 	"icon": ["fal", "text"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 				"texts": {

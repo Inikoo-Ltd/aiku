@@ -4,6 +4,7 @@
 	"code": "cta3",
 	"name": "CTA (with Image)",
 	"icon": ["fal", "rectangle-wide"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 			"text": "<h3>Ut dolorem reprehenderit</h3><p>In natus quas aut dolores vero et voluptatum esse et culpa voluptas aut fugit ipsa.</>",

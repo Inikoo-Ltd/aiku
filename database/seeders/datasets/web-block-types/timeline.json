@@ -4,6 +4,8 @@
 	"code": "timeline",
 	"name": "timeline",
 	"icon": ["fal", "text"],
+	"category": "block",
+	"fixed": true,
 	"data": {
 		"fieldValue": {
 			"container": {
@@ -76,7 +78,6 @@
                   "icon": ["fal","cubes"]
                 }
               ]
-              
 		}
 	}
 }

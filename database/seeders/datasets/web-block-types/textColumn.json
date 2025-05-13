@@ -4,6 +4,7 @@
 	"code": "text-column",
 	"name": "Text (Columns)",
 	"icon": ["fal", "text"],
+	"category": "block",
 	"data": {
 		"fieldValue": {
 			"value": {
