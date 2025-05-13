@@ -73,7 +73,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $action = [];
 
-        $action[] = $this->platform && $this->platform->type == PlatformTypeEnum::MANUAL ? [
+        $action[] = $this->platform && $this->platform->type == PlatformTypeEnum::MANUAL && OrderStateEnum::CREATING == $order->state ? [
             'type' => 'buttonGroup',
             'key' => 'upload-add',
             'button' => [
@@ -141,10 +141,10 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ]
                 ],
 
-                'upload_excel' => [
+                'upload_spreadsheet' => [
                     'title' => [
                         'label' => __('Upload product'),
-                        'information' => __('The list of column file: code, quantity')
+                        'information' => __('The list of column file') . ": code, quantity"
                     ],
                     'progressDescription'   => __('Adding Products'),
                     'preview_template'    => [
@@ -195,6 +195,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => OrderResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
+
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
