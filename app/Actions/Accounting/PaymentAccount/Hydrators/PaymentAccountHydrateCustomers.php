@@ -9,8 +9,11 @@
 
 namespace App\Actions\Accounting\PaymentAccount\Hydrators;
 
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PaymentAccountHydrateCustomers implements ShouldBeUnique
@@ -27,8 +30,8 @@ class PaymentAccountHydrateCustomers implements ShouldBeUnique
     {
         $customers = DB::table('payments')
             ->where('payment_account_id', $paymentAccount->id)
-            ->where('type', 'payment')
-            ->where('status', 'success')
+            ->where('type', PaymentTypeEnum::PAYMENT->value)
+            ->where('status',PaymentStatusEnum::SUCCESS->value)
             ->distinct()
             ->count('customer_id');
 
