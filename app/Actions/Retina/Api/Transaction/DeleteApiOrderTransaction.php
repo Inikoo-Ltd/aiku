@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 13-05-2025-13h-30m
@@ -9,10 +10,7 @@
 namespace App\Actions\Retina\Api\Transaction;
 
 use App\Actions\Ordering\Transaction\DeleteTransaction;
-use App\Actions\Ordering\Transaction\UpdateTransaction;
-use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Models\Ordering\Order;
+use App\Http\Resources\Api\TransactionResource;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,9 +33,10 @@ class DeleteApiOrderTransaction
 
     public function jsonResponse(Transaction $transaction)
     {
-        return [
-            'transaction' => $transaction, //todo: transaction resource
-        ];
+        return TransactionResource::make($transaction)
+            ->additional([
+                'message' => __('Transaction deleted successfully'),
+            ]);
     }
 
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
