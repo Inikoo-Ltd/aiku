@@ -79,11 +79,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             'button' => [
                 [
                     'type' => 'button',
-                    'style' => 'secondary',
-                    'icon' => ['fal', 'fa-upload'],
-                    'label' => '',
-                    'key' => 'upload',
-                    'tooltip' => __('Upload pallets via spreadsheet'),
+                    // 'style' => 'secondary',
+                    // 'icon' => ['fal', 'fa-upload'],
+                    // 'label' => '',
+                    // 'key' => 'upload',
+                    // 'tooltip' => __('Upload pallets via spreadsheet'),
                 ],
             ],
         ] : [];
