@@ -4,6 +4,7 @@
 	"code": "text",
 	"name": "Text",
 	"icon": ["fal", "text"],
+	"category": "element",
 	"data": {
 		"fieldValue": {
 			"value": "<h2 style='text-align: center'><strong><span>New Text</span></strong></h2>",

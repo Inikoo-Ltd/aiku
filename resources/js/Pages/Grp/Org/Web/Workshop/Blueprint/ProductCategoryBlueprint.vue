@@ -11,7 +11,7 @@ import { Head } from "@inertiajs/vue3";
 import Message from 'primevue/message';
 import SelectButton from 'primevue/selectbutton';
 
-import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationTriangle, faExclamation } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 import { capitalize } from "@/Composables/capitalize";
@@ -127,7 +127,7 @@ const confirmFollowMaster = (item) => {
           :upload_image_route="upload_image_route" />
       </div>
 
-      <SetVisibleList title="Family List" :list_data="families.data" :update-route="updateRoute" />
+      <SetVisibleList :title="productCategory.data.type != 'family' ? 'Family List' : 'Products List'" :list_data="families.data" :update-route="updateRoute" />
     </div>
   </div>
 

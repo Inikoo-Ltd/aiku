@@ -4,6 +4,7 @@
 	"code": "iframe",
 	"name": "I Frame",
 	"icon": ["fal", "paperclip"],
+	"category": "element",
 	"data": {
 		"fieldValue": {
 			"link": null,

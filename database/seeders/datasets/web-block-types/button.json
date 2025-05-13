@@ -3,6 +3,7 @@
 	"code": "button",
 	"name": "Button",
 	"scope": "webpage",
+	"category": "element",
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {

@@ -1,0 +1,137 @@
+{
+	"scope": "webpage",
+	"slug": "step-1",
+	"code": "step-1",
+	"name": "Step",
+	"icon": ["fal", "text"],
+	"category": "block",
+	"data": {
+		"fieldValue": {
+			"timeline": {
+				"line": {
+					"properties": {
+						"background": {
+							"type": "color",
+							"color": "#ffffff",
+							"image": {
+								"original": null
+							}
+						}
+					}
+				},
+				"bullet": {
+					"type": "icon",
+					"properties": {
+						"background": {
+							"type": "color",
+							"color": "rgba(130, 0, 255, 1)",
+							"image": {
+								"original": null
+							}
+						}
+					}
+				},
+				"timeline_data": [
+					{
+						"icon": ["fal", "user"],
+						"text": "<h2 style=\"text-align: right\">What is Lorem Ipsum?</h2><p style=\"text-align: right\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys </p>"
+					},
+					{
+						"icon": ["fal", "info-circle"],
+						"text": "<h2 style=\"text-align: left\">What is Lorem Ipsum?</h2><p style=\"text-align: justify\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</p>"
+					},
+					{
+						"icon": ["fal", "info-circle"],
+						"text": "<h2 style=\"text-align: right\">What is Lorem Ipsum?</h2><p style=\"text-align: right\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's </p>"
+					},
+					{
+						"icon": ["fal", "info-circle"],
+						"text": "<h2 style=\"text-align: left\">What is Lorem Ipsum?</h2><p style=\"text-align: justify\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</p>"
+					}
+				]
+			},
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": null
+							},
+							"topright": {
+								"value": null
+							},
+							"bottomleft": {
+								"value": null
+							},
+							"bottomright": {
+								"value": null
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"padding": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"dimension": {
+						"width": {
+							"unit": "%",
+							"value": "100"
+						},
+						"height": {
+							"unit": "%",
+							"value": "100"
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#ffffff",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			}
+		}
+	}
+}
