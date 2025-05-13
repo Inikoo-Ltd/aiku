@@ -62,7 +62,6 @@ class ImportTransactionInOrder extends OrgAction
         ];
     }
 
-
     public function asController(Order $order, ActionRequest $request): Upload
     {
         $this->parent = $order->shop;
