@@ -139,7 +139,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_amount_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'total_amount_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->defaultSort('-created_at');
         };
     }
@@ -159,7 +159,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 'title'                             => __('customers'),
                 'pageHead'                          => [
                     'subNavigation' => $subNavigation,
-                    'title'         => __('customers'),
+                    'title' => __('Customers').' @'.$this->paymentAccount->name,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('customer')
