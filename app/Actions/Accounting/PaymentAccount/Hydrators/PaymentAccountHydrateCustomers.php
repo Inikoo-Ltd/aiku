@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\PaymentAccount\Hydrators;
 
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PaymentAccountHydrateCustomers implements ShouldBeUnique
