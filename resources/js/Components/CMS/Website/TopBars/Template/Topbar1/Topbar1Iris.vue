@@ -90,7 +90,7 @@ const layout = inject("layout", {});
 
       <!-- Section: Favourite -->
       <ButtonWithLink
-        v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
+        v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
         v-tooltip="trans('Favourites')"
         url="/app/favourites"
         icon="fal fa-heart"

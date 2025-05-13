@@ -69,7 +69,7 @@ console.log("Layout Ds")
 		}">
 		<!-- header always on top -->
 		<IrisHeader
-			class="relative z-50"
+			class="relative z-50 md:z-0"
 			v-if="layout.iris?.header?.header"
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
@@ -100,7 +100,7 @@ console.log("Layout Ds")
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
-						'fixed inset-y-0 left-0 w-auto md:h-fit bg-white shadow-lg transform transition-transform z-50',
+						'fixed inset-y-0 left-0 w-auto md:h-fit bg-white shadow-lg transform transition-transform z-50 md:z-0',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
 						'md:relative md:translate-x-0 md:flex md:flex-col',
 					]" />
