@@ -149,6 +149,7 @@ const layout = inject('layout', layoutStructure)
                         <!-- ButtonGroup -->
                         <slot v-else-if="action.type == 'buttonGroup'"
                             :name="`button-group-${action.key}`" :action="action">
+                            <!-- {{ `button-group-${action.key}` }} -->
                             <div v-if="action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                 (action.button?.length || 0) > 1 ? '' : '',
                             ]" :style="{

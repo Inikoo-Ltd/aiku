@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Api;
+namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Platform;
@@ -46,7 +46,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
 
                     'redirect_link' => [
                         'message' => __('Generate API token in ') . $env ,
-                        'link' => $env == 'production' ? 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/',
+                        'link' => $env == 'production' ? 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/',
                     ],
 
                     'route_generate' => [

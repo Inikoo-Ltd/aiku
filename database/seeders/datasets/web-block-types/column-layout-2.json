@@ -3,6 +3,7 @@
 	"code": "column-layout-2",
 	"name": "column-layout-2",
 	"scope": "webpage",
+	"category": "column",
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {

@@ -138,13 +138,13 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     }
 
 
-    public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         if ($prefix === null) {
             $prefix = '';
         }
 
-        $argumentName = ($prefix ? $prefix.'_' : '').'perPage';
+        $argumentName = ($prefix ? $prefix.'_' : '').$queryName;
         if ($numberOfRecords === null && request()->has($argumentName)) {
             $numberOfRecords = (int)request()->input($argumentName);
         }

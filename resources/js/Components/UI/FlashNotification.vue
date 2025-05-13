@@ -5,40 +5,37 @@
   -->
 
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useNotificationStyles } from "@/Composables/useNotificationStyles";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckCircle } from "@fas";
-import { faExclamationTriangle, faClock } from "@fad";
-import {FlashNotification  as FlashNotificationType} from "@/types/FlashNotification";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { getNotificationData } from "@/Composables/useNotificationStyles"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCheckCircle } from "@fas"
+import { faExclamationTriangle, faClock } from "@fad"
+import { FlashNotification as FlashNotificationType } from "@/types/FlashNotification"
 
-library.add(faCheckCircle, faClock, faExclamationTriangle);
+library.add(faCheckCircle, faClock, faExclamationTriangle)
 
 defineProps<{
-  notification?: FlashNotificationType
-}>();
+    notification?: FlashNotificationType
+}>()
 
-const { getDataWarning } = useNotificationStyles();
 </script>
 
 <template>
-  <Transition name="slide-to-right">
-    <div v-if="notification" class="p-4">
-      <div class="px-4 py-3 rounded-md"
-           :class="getDataWarning(notification).bgColor"
-      >
-        <div class="flex items-center" :class="getDataWarning(notification).textColor">
-          <div class="text-3xl">
-            <FontAwesomeIcon :icon="getDataWarning(notification).icon" class="" fixed-width aria-hidden="true" />
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-bold">{{ getDataWarning(notification).message }}</h3>
-            <div class="text-xs opacity-90 ">
-              <p>{{ getDataWarning(notification).description }}</p>
+    <Transition name="slide-to-right">
+        <div v-if="notification" class="p-4">
+            <div class="px-4 py-3 rounded-md flex items-center" :class="getNotificationData(notification).class">
+                <div class="text-3xl">
+                    <FontAwesomeIcon :icon="getNotificationData(notification).icon" class="" fixed-width
+                        aria-hidden="true" />
+                </div>
+                
+                <div class="ml-3">
+                    <h3 class="text-sm font-bold">{{ getNotificationData(notification).title }}</h3>
+                    <div class="text-xs opacity-90 ">
+                        <p>{{ getNotificationData(notification).description }}</p>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  </Transition>
+    </Transition>
 </template>

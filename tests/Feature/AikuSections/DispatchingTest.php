@@ -348,7 +348,7 @@ test('update second delivery note item state to in queue', function (DeliveryNot
 //    $deliveryNote = $picking->deliveryNoteItem->deliveryNote;
 //    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class);
 //
-//    $deliveryNote = UpdateDeliveryNoteStateToPacked::make()->action($deliveryNote);
+//    $deliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote);
 //    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED);
 //
 //    return $deliveryNote;
@@ -356,7 +356,7 @@ test('update second delivery note item state to in queue', function (DeliveryNot
 //
 //test('update delivery note state to finalised', function (DeliveryNote $deliveryNote) {
 //
-//    $deliveryNote = UpdateDeliveryNoteStateToFinalised::make()->action($deliveryNote);
+//    $deliveryNote = FinaliseDeliveryNote::make()->action($deliveryNote);
 //    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED);
 //
 //    return $deliveryNote;

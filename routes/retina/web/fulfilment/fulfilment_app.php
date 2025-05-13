@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
+use App\Actions\Retina\Fulfilment\Notification\IndexRetinaFulfilmentCustomerNotification;
 use App\Actions\Retina\Fulfilment\UI\IndexRetinaPricing;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +30,7 @@ Route::prefix("spaces")
 
 
 // \Route::get('pricing', IndexRetinaPricing::class)->name('pricing');
+Route::get('/notifications', IndexRetinaFulfilmentCustomerNotification::class)->name('notifications');
 
 Route::prefix("pricing")
     ->name("pricing")

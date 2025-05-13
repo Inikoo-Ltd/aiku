@@ -3,6 +3,7 @@
 	"slug": "banner",
 	"code": "banner",
 	"name": "Banner",
+	"category": "block",
 	"icon": ["fal", "presentation"],
 	"data": {
 		"fieldValue": {
