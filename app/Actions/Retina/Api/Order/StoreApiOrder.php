@@ -45,7 +45,7 @@ class StoreApiOrder
         return true;
     }
 
-    public function asController(Customer $customer, ActionRequest $request): Order
+    public function asController(Customer $customer): Order
     {
         return $this->handle($customer);
     }
