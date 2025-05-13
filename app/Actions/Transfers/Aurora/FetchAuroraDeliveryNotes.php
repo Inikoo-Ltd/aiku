@@ -8,6 +8,7 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
@@ -78,7 +79,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             return $deliveryNote;
         } else {
             if ($deliveryNoteData['order']) {
-                //z        try {
+                //try {
                 $deliveryNote = StoreDeliveryNote::make()->action(
                     $deliveryNoteData['order'],
                     $deliveryNoteData['delivery_note'],
@@ -151,6 +152,9 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
         DB::connection('aurora')->table('Delivery Note Dimension')
             ->where('Delivery Note Key', $sourceData[1])
             ->update(['aiku_all_id' => $deliveryNote->id]);
+
+
+        CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
     }
 
 

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 13-05-2025-15h-21m
@@ -9,29 +10,17 @@
 namespace App\Actions\Accounting\PaymentAccount\UI;
 
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\CRM\Customer\CustomerStateEnum;
-use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\UI\CRM\CustomersTabsEnum;
 use App\Http\Resources\Accounting\CustomersInPaymentAccountResource;
-use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\PaymentAccount;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -87,7 +76,8 @@ class IndexCustomersInPaymentAccount extends OrgAction
             ->where('payments.payment_account_id', $paymentAccount->id)
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
-            ->groupBy('customers.id',
+            ->groupBy(
+                'customers.id',
                 'customers.location',
                 'customers.reference',
                 'customers.id',
@@ -129,7 +119,8 @@ class IndexCustomersInPaymentAccount extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->withEmptyState([
+                ->withEmptyState(
+                    [
                             'title'       => __("No customers found"),
                             'description' => __('No customers found for this payment account.'),
                             'count'       => $paymentAccount->stats->number_customers,

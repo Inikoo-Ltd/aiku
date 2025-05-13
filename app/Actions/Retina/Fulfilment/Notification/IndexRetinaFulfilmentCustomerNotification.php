@@ -22,7 +22,6 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\QueryBuilder\AllowedFilter;
 
-
 class IndexRetinaFulfilmentCustomerNotification extends RetinaAction
 {
     use AsAction;
