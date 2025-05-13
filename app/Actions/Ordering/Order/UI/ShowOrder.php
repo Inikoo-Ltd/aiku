@@ -20,7 +20,6 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
-use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -49,7 +48,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrder extends OrgAction
 {
-    use HasOrderingAuthorisation;
     use IsOrder;
 
     private Shop|Customer|CustomerClient|Purge|CustomerHasPlatform $parent;

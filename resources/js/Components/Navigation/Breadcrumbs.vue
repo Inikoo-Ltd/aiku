@@ -205,7 +205,7 @@ const isLoading = ref<string | boolean>(false)
             </transition>
         </Menu>
 
-        <div v-if="props.navigation.previous || props.navigation.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-sm text-gray-700 font-semibold">
+        <div v-if="props.navigation?.previous || props.navigation?.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-sm text-gray-700 font-semibold">
             <!-- Button: Previous -->
             <div class="flex justify-center items-center w-8">
                 <Link v-if="props.navigation.previous"

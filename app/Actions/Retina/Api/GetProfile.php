@@ -10,12 +10,12 @@
 
 namespace App\Actions\Retina\Api;
 
-use App\Http\Resources\CRM\CustomerResource;
+use App\Http\Resources\Api\Dropshipping\CustomersResource;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowProfile
+class GetProfile
 {
     use AsAction;
 
@@ -26,9 +26,9 @@ class ShowProfile
         return $customer;
     }
 
-    public function jsonResponse(Customer $customer): CustomerResource
+    public function jsonResponse(Customer $customer): CustomersResource
     {
-        return CustomerResource::make($customer);
+        return CustomersResource::make($customer);
     }
 
 }

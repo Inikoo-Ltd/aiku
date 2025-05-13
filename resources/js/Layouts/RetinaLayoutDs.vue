@@ -15,6 +15,7 @@ import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faExclamationCircle, faCheckCircle, faArrowRight)
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
+import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 initialiseRetinaApp()
 
 provide('layout', useLayoutStore())
@@ -26,7 +27,7 @@ const layout = useLayoutStore()
 const sidebarOpen = ref(false)
 
 
-console.log('LayoutDs')
+console.log('Layout Ds')
 </script>
 
 <template>
@@ -55,12 +56,18 @@ console.log('LayoutDs')
                 class="z-20 block h-fit right-full -translate-x-3 w-48 xabsolute xpb-20 xpx-2 md:flex md:flex-col  transition-all"
                 @click="sidebarOpen = !sidebarOpen"
             />
-
             <div class="w-full min-h-full h-full relative flex flex-col text-gray-700">
-                <!-- Section: Subsections (Something will teleport to this section) -->
-                <div id="RetinaTopBarSubsections" class="pl-2 flex gap-x-2 h-full" />
-
+                <Breadcrumbs
+                    class="absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1"
+                    :breadcrumbs="usePage().props.breadcrumbs ?? []"
+                    :navigation="usePage().props.navigation ?? []"
+                    :layout="layout"
+                    style="max-width: calc(1280px - 200px);"
+                />
+                
                 <div style="max-width: calc(1280px - 200px);" class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
+                    <!-- Section: Subsections (Something will teleport to this section) -->
+                    <div id="RetinaTopBarSubsections" class="pl-2 pt-2.5 w-fit flex space-x-2 h-full" />
                     <slot name="default" />
                 </div>
             </div>

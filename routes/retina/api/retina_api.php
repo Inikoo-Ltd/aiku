@@ -6,12 +6,28 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Retina\Api\ShowProfile;
+use App\Actions\Retina\Api\GetProfile;
+use App\Actions\Retina\Api\Order\GetOrders;
+use App\Actions\Retina\Api\Order\StoreApiOrder;
+use App\Actions\Retina\Api\Order\SubmitApiOrder;
+use App\Actions\Retina\Api\Order\UpdateApiOrder;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
+
 Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
-    Route::get('/profile', ShowProfile::class)->name('profile');
+    Route::get('/profile', GetProfile::class)->name('profile');
+
+
+    Route::get('/orders', GetOrders::class)->name('orders');
+
+    Route::prefix('order')->as('order.')->group(function () {
+        Route::get('', GetOrders::class)->name('index');
+        Route::post('/store', StoreApiOrder::class)->name('store');
+        Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
+        Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
+    });
+
 });
