@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Retina\Api\GetProfile;
+use App\Actions\Retina\Api\Order\GetOrders;
 use App\Actions\Retina\Api\Order\StoreApiOrder;
 use App\Actions\Retina\Api\Order\SubmitApiOrder;
 use App\Actions\Retina\Api\Order\UpdateApiOrder;
@@ -19,9 +20,14 @@ Route::get('/ping', function () {
 Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
     Route::get('/profile', GetProfile::class)->name('profile');
 
+
+    Route::get('/orders', GetOrders::class)->name('orders');
+
     Route::prefix('order')->as('order.')->group(function () {
-        Route::post('{customer:id}/store', StoreApiOrder::class)->name('store');
+        Route::get('', GetOrders::class)->name('index');
+        Route::post('/store', StoreApiOrder::class)->name('store');
         Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
         Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
     });
+
 });

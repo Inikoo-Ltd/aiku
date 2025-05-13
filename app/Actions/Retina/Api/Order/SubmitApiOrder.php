@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 13-05-2025-10h-41m
@@ -9,9 +10,6 @@
 namespace App\Actions\Retina\Api\Order;
 
 use App\Actions\Ordering\Order\SubmitOrder;
-use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,11 +26,6 @@ class SubmitApiOrder
         $order = SubmitOrder::make()->action($order);
 
         return $order;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     public function jsonResponse(Order $order)
