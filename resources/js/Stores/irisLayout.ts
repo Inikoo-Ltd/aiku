@@ -41,7 +41,7 @@ export const useIrisLayoutStore = defineStore('irisLayout', () => {
     const app = ref<App>({
         name: "",  // For styling navigation depend on which App
         color: null,  // Styling layout color
-        theme: useColorTheme[0],  // For styling app color
+        theme: useColorTheme[3],  // For styling app color (same as Retina)
         url: null, // For url on logo top left
         environment: null // 'local' | 'staging'
     })
