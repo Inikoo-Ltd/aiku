@@ -94,7 +94,9 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 'customers.name',
                 'customers.slug',
                 'customers.created_at',
-                'currencies.code'
+                'currencies.code',
+                'shops.code',
+                'shops.name'
             );
 
         return $queryBuilder
@@ -107,6 +109,8 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 'customers.slug',
                 'customers.created_at',
                 'currencies.code as currency_code',
+                'shops.code as shop_code',
+                'shops.name as shop_name',
             ])
             ->allowedSorts([])
             ->allowedFilters([$globalSearch])
@@ -133,6 +137,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 )
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'total_amount_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('-created_at');
