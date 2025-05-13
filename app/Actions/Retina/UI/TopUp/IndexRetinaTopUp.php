@@ -114,7 +114,7 @@ class IndexRetinaTopUp extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.topup.index'
+                                'name' => 'retina.top_up.index'
                             ],
                             'label'  => __('Topup'),
                         ]
