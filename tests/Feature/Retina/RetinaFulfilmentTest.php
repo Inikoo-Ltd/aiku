@@ -708,13 +708,15 @@ test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletRetu
     $pallet1 = Pallet::Find(3);
     $pallet2 = Pallet::Find(4);
     $palletReturn = AttachRetinaPalletToReturn::make()->action(
-        $palletReturn, $pallet1
+        $palletReturn,
+        $pallet1
     );
 
     $palletReturn->refresh();
 
     $palletReturn = AttachRetinaPalletToReturn::make()->action(
-        $palletReturn, $pallet2
+        $palletReturn,
+        $pallet2
     );
     $palletReturn->refresh();
 

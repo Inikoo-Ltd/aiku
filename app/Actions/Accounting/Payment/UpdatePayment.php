@@ -9,9 +9,11 @@
 namespace App\Actions\Accounting\Payment;
 
 use App\Actions\Accounting\Payment\Search\PaymentRecordSearch;
+use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Models\Accounting\Payment;
 use Illuminate\Support\Arr;
@@ -26,9 +28,17 @@ class UpdatePayment extends OrgAction
     {
         $payment = $this->update($payment, $modelData, ['data']);
         $changes = Arr::except($payment->getChanges(), ['updated_at', 'last_fetched_at']);
+
+
+        if (Arr::has($changes, 'status')) {
+            PaymentAccountHydrateCustomers::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
+        }
+
+
         if (count($changes) > 0) {
             PaymentRecordSearch::dispatch($payment);
         }
+
         return $payment;
     }
 
@@ -44,15 +54,15 @@ class UpdatePayment extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'    => ['sometimes', 'nullable', 'max:255', 'string'],
-            'amount'       => ['sometimes', 'decimal:0,2'],
-            'org_amount'   => ['sometimes', 'numeric'],
+            'reference'  => ['sometimes', 'nullable', 'max:255', 'string'],
+            'amount'     => ['sometimes', 'decimal:0,2'],
+            'org_amount' => ['sometimes', 'numeric'],
             'grp_amount' => ['sometimes', 'numeric'],
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
-            $rules['shop_id'] = ['sometimes', 'required', 'exists:shops,id'];
+            $rules                = $this->noStrictUpdateRules($rules);
+            $rules['shop_id']     = ['sometimes', 'required', 'exists:shops,id'];
             $rules['customer_id'] = ['sometimes', 'required', 'exists:customers,id'];
         }
 
