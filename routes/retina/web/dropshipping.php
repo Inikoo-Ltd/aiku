@@ -60,6 +60,8 @@ Route::prefix('portfolios')->as('portfolios.')->group(function () {
 Route::prefix('orders')->as('orders.')->group(function () {
     Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
     Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
+
+    Route::get('/{order}/upload-templates', ShowRetinaDropshippingOrder::class)->name('upload_templates');
 });
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
