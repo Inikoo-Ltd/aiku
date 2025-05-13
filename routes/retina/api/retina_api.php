@@ -21,8 +21,6 @@ Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
     Route::get('/profile', GetProfile::class)->name('profile');
 
 
-    Route::get('/orders', GetOrders::class)->name('orders');
-
     Route::prefix('order')->as('order.')->group(function () {
         Route::get('', GetOrders::class)->name('index');
         Route::post('/store', StoreApiOrder::class)->name('store');
