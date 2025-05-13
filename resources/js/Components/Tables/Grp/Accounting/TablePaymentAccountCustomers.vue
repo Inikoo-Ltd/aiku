@@ -9,20 +9,24 @@ const props = defineProps<{
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
 import { PaymentServiceProvider } from "@/types/payment-service-provider"
+import { inject } from 'vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
+const locale = inject('locale', aikuLocaleStructure)
 
-// function paymentServiceProviderRoute(paymentServiceAccount: PaymentServiceProvider) {
-//     console.log(route().current())
-//     switch (route().current()) {
-//         case 'grp.org.accounting.org_payment_service_providers.index':
-//             return route(
-//                 'grp.org.accounting.org_payment_service_providers.show',
-//                 [route().params['organisation'], paymentServiceAccount.slug])
+function paymentServiceProviderRoute(paymentServiceAccount: PaymentServiceProvider) {
+    console.log(route().current())
+    switch (route().current()) {
+        case 'grp.org.accounting.org_payment_service_providers.index':
+            return route(
+                'grp.org.accounting.org_payment_service_providers.show',
+                [route().params['organisation'], paymentServiceAccount.slug])
 
-//         default:
-//             return null
+        default:
+            return null
 
-//     }
+    }
+}
 
 // }
 // function paymentAccountRoute(paymentServiceAccount: PaymentServiceProvider) {
@@ -75,23 +79,26 @@ import { PaymentServiceProvider } from "@/types/payment-service-provider"
 
 
 <template>
+    <!-- <pre>{{ data }}</pre> -->
     <Table :resource="data" class="mt-5">
-        <!-- <template #cell(codex)="{ item: paymentServiceProvider }">
-            <Link :href="paymentServiceProviderRoute(paymentServiceProvider)" class="primaryLink">
-                {{ paymentServiceProvider['slug'] }}
-            </Link>
-        </template>
-
-        <template #cell(number_payment_accountsx)="{ item: paymentServiceProvider }">
-            <Link :href="paymentAccountRoute(paymentServiceProvider)" class="secondaryLink">
-                {{ paymentServiceProvider['number_payment_accounts'] }}
-            </Link>
-        </template>
-        <template #cell(number_paymentsx)="{ item: paymentServiceProvider }">
-            <Link :href="paymentsRoute(paymentServiceProvider)" class="secondaryLink">
-                {{ paymentServiceProvider['number_payments'] }}
+        <!-- <template #cell(reference)="{ item }">
+            <Link :href="paymentServiceProviderRoute(item)" class="primaryLink">
+                {{ item['slug'] }}
             </Link>
         </template> -->
+        <!--
+
+        
+        -->
+        <template #cell(shop_code)="{ item }">
+            <div v-tooltip="item.shop_name" class="w-fit cursor-default">
+                {{ item.shop_code }}
+            </div>
+        </template>
+
+        <template #cell(total_amount_paid)="{ item }">
+            {{ locale.currencyFormat(item.currency_code, item['total_amount_paid']) }}
+        </template>
 
 
     </Table>
