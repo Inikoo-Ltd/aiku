@@ -138,13 +138,6 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                'routeStorePallet' => [
-                    'name'       => 'retina.models.pallet-return.pallet.store',
-                    'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
-                ],
-
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'retina.models.pallet-return.attachment.attach',
