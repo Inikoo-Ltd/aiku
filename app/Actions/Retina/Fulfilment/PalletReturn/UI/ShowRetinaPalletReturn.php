@@ -192,15 +192,6 @@ class ShowRetinaPalletReturn extends RetinaAction
                         ],
                     ],
                 ],
-
-                'routeStorePallet' => [
-                    'name'       => 'retina.models.pallet-return.pallet.store',
-                    'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
-                ],
-
-
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'retina.models.pallet-return.attachment.attach',
