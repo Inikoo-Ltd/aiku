@@ -11,6 +11,7 @@ use App\Actions\Retina\Api\Order\GetOrders;
 use App\Actions\Retina\Api\Order\StoreApiOrder;
 use App\Actions\Retina\Api\Order\SubmitApiOrder;
 use App\Actions\Retina\Api\Order\UpdateApiOrder;
+use App\Actions\Retina\Api\Transaction\StoreApiOrderTransaction;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
@@ -28,6 +29,8 @@ Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
         Route::post('/store', StoreApiOrder::class)->name('store');
         Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
         Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
+        Route::post('/{order:id}/product/{product:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     });
+
 
 });
