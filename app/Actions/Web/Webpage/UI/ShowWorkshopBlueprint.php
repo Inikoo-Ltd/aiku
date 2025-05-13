@@ -88,7 +88,7 @@ class ShowWorkshopBlueprint extends OrgAction
                     'parameters' => [
                         'organisation'    => $webpage->organisation_id,
                         'shop'            => $webpage->shop_id,
-                        'productCategory' => $webpage->id
+                        'productCategory' => $productCategory->id
                     ]
                 ],
             ]
