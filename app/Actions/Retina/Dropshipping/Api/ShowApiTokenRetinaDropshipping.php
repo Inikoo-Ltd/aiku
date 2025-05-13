@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\Dropshipping\Api;
 
 use App\Actions\RetinaAction;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,34 +19,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     use AsAction;
 
 
-    public function handle(ActionRequest $request): array
-    {
-        $customer = $request->user()->customer;
-
-        $existingToken = $customer->tokens()->where('name', 'api-token')->first();
-
-        if ($existingToken) {
-            return [
-                'message' => __('Token already exists'),
-            ];
-        }
-
-        $token = $customer->createToken('api-token', ['retina']);
-
-        return [
-            'token' => $token->plainTextToken,
-        ];
-    }
-
-
-    public function asController(ActionRequest $request): \Illuminate\Http\Response|array
-    {
-        $this->initialisation($request);
-
-        return $this->handle($request);
-    }
-
-    public function htmlResponse(array $data, ActionRequest $request): Response
+    public function handle(ActionRequest $request): Response
     {
         return Inertia::render(
             'Dropshipping/Api/ApiTokenRetinaDropshipping',
@@ -63,44 +35,30 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                     ],
                 ],
 
-                'formData' => [
-                    'blueprint' => [
-                        [
-                            'label'  => __('Token'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'api_token'               => [
-                                    'type'  => 'input',
-                                    'label' => __('api token'),
-                                    'value' => Arr::get($data, 'token') ?? '',
-                                ],
-                                'api_base_sandbox_url'    => [
-                                    'type'  => 'input',
-                                    'label' => __('url api sandbox'),
-                                    'value' => 'https://app.aiku-sandbox.uk/',
+                'data' => [
+                    'api_base_url' => app()->environment('production')
+                        ? 'https://app.aiku.io/'
+                        : 'https://app.aiku-sandbox.uk/',
 
-                                ],
-                                'api_base_production_url' => [
-                                    'type'  => 'input',
-                                    'label' => __('url api production'),
-                                    'value' => 'https://app.aiku.io/',
-                                ],
-                            ],
-
+                    'route_generate' => [
+                        'name' => 'retina.dropshipping.platforms.api.show.token',
+                        'parameters' => [
+                            'platform' => $this->platform->slug,
                         ],
                     ],
-                    'args'      => [
-                        'updateRoute' => [
-                            'name'       => '',
-                            'parameters' => [
-                            ]
-                        ],
-                    ]
                 ],
-
             ]
         );
     }
+
+
+    public function asController(ActionRequest $request): Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($request);
+    }
+
 
     public function jsonResponse(array $data): array
     {
