@@ -10,7 +10,7 @@
 namespace App\Actions\Retina\Api\Order;
 
 use App\Actions\Ordering\Order\SubmitOrder;
-use App\Http\Resources\Sales\OrderResource;
+use App\Http\Resources\Api\OrderResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,9 +32,7 @@ class SubmitApiOrder
     {
         return OrderResource::make($order)
             ->additional([
-                'meta' => [
-                    'message' => __('Order submitted successfully'),
-                ],
+                'message' => __('Order submitted successfully'),
             ]);
     }
 
