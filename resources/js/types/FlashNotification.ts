@@ -7,6 +7,6 @@
 export interface FlashNotification
 {
   status: string
-  title: string
-  message: string
+  title?: string
+  description?: string
 }
