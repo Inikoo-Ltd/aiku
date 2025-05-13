@@ -170,6 +170,7 @@ class IndexOrders extends OrgAction
         return $query->defaultSort('orders.id')
         ->select([
             'orders.id',
+            'orders.slug',
             'orders.reference',
             'orders.date',
             'orders.state',
