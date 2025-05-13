@@ -170,6 +170,7 @@ class IndexOrders extends OrgAction
         return $query->defaultSort('orders.id')
         ->select([
             'orders.id',
+            'orders.slug',
             'orders.reference',
             'orders.date',
             'orders.state',
@@ -185,6 +186,8 @@ class IndexOrders extends OrgAction
             'shops.slug as shop_slug',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'customers.slug as customer_slug',
+            'customers.name as customer_name',
         ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date'])
