@@ -70,6 +70,9 @@ class AppServiceProvider extends ServiceProvider
                 'PaymentAccount'                => 'App\Models\Accounting\PaymentAccount',
                 'PaymentAccountShop'            => 'App\Models\Accounting\PaymentAccountShop',
                 'PaymentServiceProvider'        => 'App\Models\Accounting\PaymentServiceProvider',
+                'TopUpPaymentApiPoint'          => 'App\Models\Accounting\TopUpPaymentApiPoint',
+                'MiscPaymentApiPoint'           => 'App\Models\Accounting\MiscPaymentApiPoint',
+                'OrderPaymentApiPoint'          => 'App\Models\Accounting\OrderPaymentApiPoint',
 
                 // Assets
                 'Country'                       => 'App\Models\Helpers\Country',

@@ -64,6 +64,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $with_refund
  * @property string|null $source_id
  * @property int|null $original_payment_id Only use when payment refund to original payment
+ * @property int|null $payment_account_shop_id
+ * @property string|null $api_point_type
+ * @property int|null $api_point_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read Customer $customer

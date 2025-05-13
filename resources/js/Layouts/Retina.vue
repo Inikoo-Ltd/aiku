@@ -16,6 +16,9 @@ import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
 import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
+import { watch } from "vue"
+import { notify } from "@kyvg/vue3-notification"
+import { usePage } from "@inertiajs/vue3"
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
@@ -26,6 +29,16 @@ initialiseRetinaApp()
 
 const layout = useLayoutStore()
 
+watch(() => usePage().props?.flash?.notification, (notif) => {
+    console.log('notif ret', notif)
+    if (!notif) return
+
+    notify({
+        title: notif.title,
+        text: notif.description,
+        type: notif.status,
+    })
+})
 </script>
 
 <template>

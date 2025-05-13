@@ -91,6 +91,16 @@ class GetRetinaDropshippingPlatformNavigation
             ],
         ];
 
+        $platformNavigation['api_token'] = [
+            'label' => __('Api Token'),
+            'icon' => ['fal', 'fa-key'],
+            'root' => 'retina.dropshipping.platforms.api.',
+            'route' => [
+                'name' => 'retina.dropshipping.platforms.api.dashboard',
+                'parameters' => [$platform->slug]
+            ],
+        ];
+
         return $platformNavigation;
     }
 }

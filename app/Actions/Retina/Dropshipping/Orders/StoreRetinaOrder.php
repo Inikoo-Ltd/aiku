@@ -86,7 +86,7 @@ class StoreRetinaOrder extends RetinaAction
         if ($platform) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
-        
+
         $this->initialisationFromPlatform($platform, $request);
 
         return $this->handle($customerClient, $platform);

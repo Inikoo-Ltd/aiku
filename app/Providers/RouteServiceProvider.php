@@ -21,8 +21,8 @@ class RouteServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $webHooksDomain = app()->environment('local') && config('app.sandbox.local_share_url') ?
-            config('app.sandbox.local_share_url') : config('app.domain');
+        $webHooksDomain = app()->environment('local') && config('app.sandbox.local_webhooks_url') ?
+            config('app.sandbox.local_webhooks_url') : config('app.domain');
 
         $this->configureRateLimiting();
 
@@ -66,6 +66,11 @@ class RouteServiceProvider extends ServiceProvider
             ->prefix('app')
             ->name('retina.')
             ->group(base_path('routes/retina/web/app.php'));
+
+        Route::middleware('retina-api')
+            ->prefix('app/api')
+            ->name('retina.api.')
+            ->group(base_path('routes/retina/api/retina_api.php'));
 
         Route::middleware('iris')
             ->name('iris.')

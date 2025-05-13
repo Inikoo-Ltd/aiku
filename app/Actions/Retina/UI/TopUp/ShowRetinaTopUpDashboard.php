@@ -40,14 +40,10 @@ class ShowRetinaTopUpDashboard extends RetinaAction
                 ],
 
             ],
-
-            'currency'     => CurrencyResource::make($customer->shop->currency),
             'amount_shortcuts' => [],
-
             'topUpData'  => $this->getTopUpData($customer),
-
             'balance' => $customer->balance,
-            'currency' => CurrencyResource::make($customer->shop->currency)->toArray(request()),
+            'currency' => CurrencyResource::make($customer->shop->currency)->getArray()
         ]);
     }
 

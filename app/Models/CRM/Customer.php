@@ -59,6 +59,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -157,6 +159,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read TaxNumber|null $taxNumber
  * @property-read TiktokUser|null $tiktokUser
+ * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
  * @property-read Collection<int, Transaction> $transactions
@@ -185,6 +188,8 @@ class Customer extends Model implements HasMedia, Auditable
     use InShop;
     use HasAttachments;
     use HasEmail;
+    use HasApiTokens;
+    use Notifiable;
 
     protected $casts = [
         'data'                        => 'array',

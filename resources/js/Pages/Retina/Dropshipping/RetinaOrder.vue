@@ -71,6 +71,7 @@ import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
+import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 
@@ -146,6 +147,7 @@ const props = defineProps<{
 
     // }
     is_in_basket: boolean  // true if Order state is 'created'
+    upload_spreadsheet: UploadPallet
 }>()
 
 
@@ -321,8 +323,43 @@ const openModal = (action :any) => {
     isModalProductListOpen.value = true;
 };
 
-console.log(props.data)
 
+
+// Method: Submit the selected item
+const isLoadingSubmit = ref(false)
+const onAddProducts = async (products: number[]) => {
+    const productsMapped = products.map((item: any) => {
+        return {
+            id: item.id,
+            quantity: item.quantity_selected ?? 1
+        }
+    })
+
+    router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
+        products: productsMapped
+    }, {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: "Something went wrong.",
+                text: error.products || undefined,
+                type: "error"
+            })
+        },
+        onSuccess: () => {
+            router.reload({only: ['data']})
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            })
+            isModalProductListOpen.value = false
+        },
+        onFinish: () => isLoadingSubmit.value = false
+    })
+}
+
+const isModalUploadSpreadsheet = ref(false)
 </script>
 
 <template>
@@ -409,8 +446,25 @@ console.log(props.data)
 
         
         <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+            <Button
+                v-if="is_in_basket && props.upload_spreadsheet"
+                @click="() => isModalUploadSpreadsheet = true"
+                :label="trans('Upload spreadsheet')"
+                icon="upload"
+                type="tertiary"
+            />
+            <Button
+                v-if="currentTab === 'attachments'"
+                @click="() => isModalUploadOpen = true"
+                :label="trans('Attach')"
                 icon="upload" />
+            <Button
+                v-if="is_in_basket"
+                @click="() => isModalProductListOpen = true"
+                :label="trans('Add products')"
+                icon="plus"
+                type="secondary"
+            />
         </template>
     </PageHeading>
 
@@ -619,7 +673,21 @@ console.log(props.data)
         </div>
     </div>
 
-	<ModalProductList v-if="routes?.products_list?.name" v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  v-model:currentTab="currentTab" :typeModel="'order'" />
+
+    <!-- Modal: add products to Order -->
+    <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
+        <ProductsSelector
+            :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
+            :routeFetch="{
+                name: 'retina.dropshipping.portfolios.index',
+            }"
+            :isLoadingSubmit
+            @submit="(products: {}[]) => onAddProducts(products)"
+            withQuantity
+        >
+        </ProductsSelector>
+    </Modal>
+
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal
@@ -696,6 +764,16 @@ console.log(props.data)
             </div>
         </div>
     </Modal>
+
+    <UploadExcel
+        v-if="upload_spreadsheet"
+        v-model="isModalUploadSpreadsheet"
+        :title="upload_spreadsheet.title"
+        :progressDescription="upload_spreadsheet.progressDescription"
+        :preview_template="upload_spreadsheet.preview_template"
+        :upload_spreadsheet="upload_spreadsheet.upload_spreadsheet"
+        xxxadditionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
+    />
 
     <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

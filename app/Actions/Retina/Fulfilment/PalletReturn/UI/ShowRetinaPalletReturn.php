@@ -189,25 +189,9 @@ class ShowRetinaPalletReturn extends RetinaAction
                                     'palletReturn' => $palletReturn->slug
                                 ]
                             ],
-                            // 'download' => [
-                            //     'name'       => $downloadRoute,
-                            //     'parameters' => [
-                            //         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                            //         'type'               => 'xlsx'
-                            //     ]
-                            // ],
                         ],
                     ],
                 ],
-
-                'routeStorePallet' => [
-                    'name'       => 'retina.models.pallet-return.pallet.store',
-                    'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
-                ],
-
-
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'retina.models.pallet-return.attachment.attach',

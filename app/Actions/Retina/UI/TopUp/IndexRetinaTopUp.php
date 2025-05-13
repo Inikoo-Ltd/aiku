@@ -64,7 +64,7 @@ class IndexRetinaTopUp extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $topups): Response
     {
         return Inertia::render(
-            'Dropshipping/Topup/Topups',
+            'Dropshipping/TopUp/TopUps',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Topups'),

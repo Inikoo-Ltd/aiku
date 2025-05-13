@@ -20,9 +20,13 @@ use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
+use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
@@ -99,7 +103,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet-return-item-upload', ImportRetinaPalletReturnItem::class)->name('pallet-return-item.upload');
     Route::post('stored-item', StoreRetinaStoredItemsToReturn::class)->name('stored_item.store');
 
-    Route::post('pallet', AttachRetinaPalletsToReturn::class)->name('pallet.store'); //No longer used (free to delete) but idk
     Route::patch('update', UpdateRetinaPalletReturn::class)->name('update');
     Route::post('submit', SubmitRetinaPalletReturn::class)->name('submit');
     Route::post('cancel', CancelRetinaPalletReturn::class)->name('cancel');
@@ -151,9 +154,19 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     });
 });
 
-Route::name('order.')->prefix('order')->group(function () {
-    Route::patch('{order:id}/update', UpdateRetinaOrder::class)->name('update');
-    Route::patch('{order:id}/submit', SubmitRetinaOrder::class)->name('submit');
+Route::name('order.')->prefix('order/{order:id}')->group(function () {
+    Route::patch('/', UpdateRetinaOrder::class)->name('update');
+    Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
+
+    Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+        Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
+        Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
+    });
+
+    Route::name('transaction.')->prefix('transaction')->group(function () {
+        Route::post('upload', ImportRetinaOrderTransaction::class)->name('upload');
+        Route::post('/', StoreRetinaTransaction::class)->name('store')->withoutScopedBindings();
+    });
 });
 
 Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->group(function () {
@@ -201,6 +214,6 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 
-Route::name('mit-saved-card.')->prefix('mit-saved-card')->group(function () {
+Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
 });

@@ -8,7 +8,7 @@
 
 import { inject, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends } from "@fal"
+import { faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey } from "@fal"
 import { useLayoutStore } from "@/Stores/retinaLayout.js"
 
 import RetinaNavigationSimple from '@/Layouts/Retina/RetinaNavigationSimple.vue'
@@ -17,7 +17,7 @@ import { generateNavigationName, generateCurrentString } from '@/Composables/use
 
 import { get } from "lodash"
 import RetinaNavigationGroup from "@/Layouts/Retina/RetinaNavigationGroup.vue"
-library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends)
+library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey)
 
 const layout = inject('layout', {})
 

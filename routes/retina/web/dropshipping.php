@@ -14,7 +14,10 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
-use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaCreditCardDashboard;
+use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Dropshipping\Api\GetApiToken;
+use App\Actions\Retina\Dropshipping\Api\ShowApiTokenRetinaDropshipping;
+use App\Actions\Retina\Dropshipping\Api\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -58,6 +61,8 @@ Route::prefix('portfolios')->as('portfolios.')->group(function () {
 Route::prefix('orders')->as('orders.')->group(function () {
     Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
     Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
+
+    Route::get('/{order}/upload-templates', ShowRetinaDropshippingOrder::class)->name('upload_templates');
 });
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
@@ -84,13 +89,19 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
         Route::get('/', [IndexRetinaPlatformDropshippingOrders::class, 'inPlatform'])->name('index');
         Route::get('/{order}', [ShowRetinaDropshippingOrder::class, 'inPlatform'])->name('show');
     });
+
+    Route::prefix('api')->as('api.')->group(function () {
+        Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
+        Route::get('/show', ShowApiTokenRetinaDropshipping::class)->name('show');
+        Route::get('/token', GetApiToken::class)->name('show.token');
+    });
 });
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });
 
-Route::prefix('saved-credit-card')->name('saved-credit-card.')->group(function () {
-    Route::get('', CreateMitSavedCard::class)->name('show');
-    Route::get('dashboard', ShowRetinaCreditCardDashboard::class)->name('dashboard');
+Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
+    Route::get('', ShowRetinaMitSavedCardsDashboard::class)->name('dashboard');
+    Route::get('create', CreateMitSavedCard::class)->name('create');
 });

@@ -10,10 +10,10 @@ import IrisFooter from '@/Layouts/Iris/Footer.vue'
 import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 
 // import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder } from "@fal"
+import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard } from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faExclamationCircle, faCheckCircle, faArrowRight)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faExclamationCircle, faCheckCircle, faArrowRight)
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 initialiseRetinaApp()
 

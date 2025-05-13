@@ -1,59 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
-import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
+import { onMounted } from "vue";
+import { useCheckoutCom } from "@/Composables/useCheckoutComFlow";
+import { faCheckCircle } from "@fas";
+import { faExclamationTriangle, faClock } from "@fad";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { CheckoutComFlow } from "@/types/CheckoutComFlow";
+import { usePage } from "@inertiajs/vue3";
+import { PageProps as InertiaPageProps } from "@inertiajs/core";
+import FlashNotification from "@/Components/UI/FlashNotification.vue";
+import {FlashNotification  as FlashNotificationType} from "@/types/FlashNotification";
 
-interface CheckoutComData {
-  label: string;
-  key: string;
-  public_key: string;
-  environment: "production" | "sandbox";
-  locale: string;
-  icon: string;
-  data: any; // The payment session data from Checkout.com
-}
+library.add(faCheckCircle, faClock, faExclamationTriangle);
 
 const props = defineProps<{
-  checkout_com_data: CheckoutComData
-}>()
+  checkout_com_data: CheckoutComFlow
+}>();
 
-const isLoading = ref(false)
-onMounted(async () => {
-    isLoading.value = true
-    const checkout = await loadCheckoutWebComponents({
-        paymentSession: props.checkout_com_data.data,
-        publicKey: props.checkout_com_data.public_key,
-        environment: props.checkout_com_data.environment,
-        locale: props.checkout_com_data.locale,
-        onReady: () => {
-            console.log("onReady")
-        },
-    
-        onPaymentCompleted: (_component, paymentResponse) => {
-            console.log("Create Payment with PaymentId: ", paymentResponse.id)
-        },
-    
-        onChange: (component) => {
-            console.log( `onChange() -> isValid: "${component.isValid()}" for "${component.type}"`, )
-        },
-        onError: (component, error) => {
-            console.log("onError", error, "Component", component.type)
-        },
-    })
-    
-    const flowComponent = checkout.create('flow');
-    flowComponent.mount('#flow-container');
-    isLoading.value = false
-})
+interface PagePropsWithFlash extends InertiaPageProps {
+  flash: {
+    notification?: FlashNotificationType
+  };
+}
+
+const page = usePage<PagePropsWithFlash>();
+
+const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data);
+onMounted(() => {
+  initializeCheckout("flow-container");
+});
+
+
+
 </script>
 
 <template>
-
-    <div class="p-8 text-xl font-bold w-full text-center">
-        <div class="relative w-full max-w-xl mx-auto my-8 overflow-hidden">
-            <div v-show="!isLoading" id="flow-container" class="absolute " />
-            <div class="w-full h-[450px]" :class="isLoading ? 'skeleton' : ''">
-
-            </div>
-        </div>
+  <FlashNotification :notification="page.props.flash.notification" />
+  <div class="p-8 text-xl font-bold w-full text-center">
+    <div class="relative w-full max-w-xl mx-auto my-8 overflow-hidden">
+      <div v-show="!isLoading" id="flow-container" class="absolute " />
+      <div class="w-full h-[450px]" :class="isLoading ? 'skeleton' : ''">
+      </div>
     </div>
+  </div>
 </template>

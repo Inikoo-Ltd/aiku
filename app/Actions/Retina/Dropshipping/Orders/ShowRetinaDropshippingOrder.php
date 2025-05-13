@@ -18,6 +18,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Ordering\TransactionsResource;
@@ -72,6 +73,21 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $action = [];
 
+        $action[] = $this->platform && $this->platform->type == PlatformTypeEnum::MANUAL ? [
+            'type' => 'buttonGroup',
+            'key' => 'upload-add',
+            'button' => [
+                [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'icon' => ['fal', 'fa-upload'],
+                    'label' => '',
+                    'key' => 'upload',
+                    'tooltip' => __('Upload pallets via spreadsheet'),
+                ],
+            ],
+        ] : [];
+
         // if($order->state == OrderStateEnum::CREATING) {
         //     $action[] = [
         //         'type'  => 'button',
@@ -86,6 +102,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         //         ]
         //     ];
         // }
+
         return Inertia::render(
             'Dropshipping/RetinaOrder',
             [
@@ -124,6 +141,51 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ]
                 ],
 
+                'upload_excel' => [
+                    'title' => [
+                        'label' => __('Upload product'),
+                        'information' => __('The list of column file: code, quantity')
+                    ],
+                    'progressDescription'   => __('Adding Products'),
+                    'preview_template'    => [
+                        'header' => ['code', 'quantity'],
+                        'rows' => [
+                            [
+                                'code' => 'product-001',
+                                'quantity' => '1'
+                            ]
+                        ]
+                    ],
+                    'upload_spreadsheet'    => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['code', 'quantity'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)'
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'retina.models.order.transaction.upload',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'retina.dropshipping.orders.recent_uploads',
+                                'parameters' => [
+                                    'order' => $order->slug
+                                ]
+                            ],
+                            'download' => [
+                                'name'       => 'retina.dropshipping.orders.upload_templates',
+                                'parameters' => [
+                                    'order'        => $order->slug
+                                ]
+                            ],
+                        ],
+                    ]
+                ],
+
                 'timelines'   => $finalTimeline,
 
                 'address_management' => GetOrderAddressManagement::run(order: $order, isRetina:true),
@@ -133,6 +195,43 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => OrderResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
+                // 'upload_spreadsheet' => [
+                //     'event'           => 'action-progress',
+                //     'channel'         => 'grp.personal.'.$this->organisation->id,
+                //     'required_fields' => ['type', 'customer_reference', 'notes', 'stored_item_reference', 'quantity', 'stored_item_name'],
+                //     'template'        => [
+                //         'label' => 'Download template (.xlsx)',
+                //     ],
+                //     'route'           => [
+                //         'upload'   => [
+                //             'name'       => 'grp.models.pallet-delivery.pallet.upload.with-stored-items',
+                //             'parameters' => [
+                //                 'palletDelivery' => $palletDelivery->id
+                //             ]
+                //         ],
+                //         'uploadWithStoredItems'   => [
+                //             'name'       => 'grp.models.pallet-delivery.pallet.upload.with-stored-items',
+                //             'parameters' => [
+                //                 'palletDelivery' => $palletDelivery->id
+                //             ]
+                //         ],
+                //         'history'  => [
+                //             'name'       => 'grp.json.pallet_delivery.recent_uploads',
+                //             'parameters' => [
+                //                 'palletDelivery' => $palletDelivery->id
+                //             ]
+                //         ],
+                //         'download' => [
+                //             'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.pallets.uploads.templates',
+                //             'parameters' => [
+                //                 'organisation'       => $palletDelivery->organisation->slug,
+                //                 'fulfilment'         => $palletDelivery->fulfilment->slug,
+                //                 'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
+                //                 'palletDelivery'     => $palletDelivery->slug
+                //             ]
+                //         ],
+                //     ],
+                // ],
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?

@@ -42,7 +42,6 @@ class DetectWebsiteFromDomain
             }
         }
 
-
         /** @var Website $website */
         $website = Website::where('domain', $domain)->first();
         if (!$website) {

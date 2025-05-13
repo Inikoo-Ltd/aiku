@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-05-2025-10h-20m
@@ -10,67 +11,64 @@ namespace App\Actions\Retina\Accounting\MitSavedCard\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum;
+use App\Http\Resources\Accounting\MitSavedCardResource;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
-use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowRetinaCreditCardDashboard extends RetinaAction
+class ShowRetinaMitSavedCardsDashboard extends RetinaAction
 {
     public function asController(ActionRequest $request): Customer
     {
         $this->initialisation($request);
+
         return $this->customer;
     }
 
-    public function htmlResponse(Customer $customer): Response
+    public function htmlResponse(): Response
     {
-
         $title = __('Credit Card Dashboard');
-        return Inertia::render('Dropshipping/DashboardRetinaCreditCard', [
-            'title'        => $title,
-            'breadcrumbs'    => $this->getBreadcrumbs(),
+
+
+        return Inertia::render('Dropshipping/DashboardRetinaMitCreditCards', [
+            'title'       => $title,
+            'breadcrumbs' => $this->getBreadcrumbs(),
             'pageHead'    => [
 
-                'title'         => $title,
-                'icon'          => [
+                'title'   => $title,
+                'icon'    => [
                     'icon'  => ['fal', 'fa-tachometer-alt'],
                     'title' => $title
                 ],
-                'actions'       => [
+                'actions' => [
                     [
                         'type'  => 'button',
                         'style' => 'create',
                         'label' => __('Save Credit Card'),
                         'route' => [
-                            'name'       => 'retina.dropshipping.saved-credit-card.show',
+                            'name' => 'retina.dropshipping.saved-credit-card.show',
                         ],
                     ]
                 ]
 
             ],
 
-            'creditCardData'  => $this->getcreditCardData($customer),
+            'mitSavedCards' => MitSavedCardResource::collection(
+                $this->customer->mitSavedCard()->where('state', MitSavedCardStateEnum::SUCCESS)->orderBy('priority')->get()
+            ),
 
             'delete_route' => [
-                'name' => 'retina.models.mit-saved-card.delete',
+                'name'   => 'retina.models.mit_saved_card.delete',
                 'method' => 'delete',
             ]
         ]);
     }
 
-    public function getcreditCardData(Customer $customer): array
-    {
-        $stats = [];
-
-        return $stats;
-    }
 
     public function getBreadcrumbs(): array
     {
-
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
@@ -79,13 +77,12 @@ class ShowRetinaCreditCardDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.saved-credit-card.dashboard'
+                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
                             ],
                             'label' => __('Credit Card Dashboard'),
                         ]
                     ]
                 ]
             );
-
     }
 }
