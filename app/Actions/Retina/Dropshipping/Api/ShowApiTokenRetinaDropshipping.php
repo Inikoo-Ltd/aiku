@@ -46,7 +46,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
 
                     'redirect_link' => [
                         'message' => __('Generate API token in ') . $env ,
-                        'link' => $env == 'production' ? 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/',
+                        'link' => $env == 'production' ? 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/',
                     ],
 
                     'route_generate' => [
