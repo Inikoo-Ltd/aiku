@@ -8,39 +8,29 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Http\Resources\HasSelfCall;
+use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $slug
- * @property string $code
- * @property mixed $created_at
- * @property mixed $updated_at
- * @property string $name
- * @property string $state
- * @property string $shop_slug
- * @property string $date
- * @property string $reference
- *
- */
 class DeliveryNoteResource extends JsonResource
 {
+    use HasSelfCall;
+
     public function toArray($request): array
     {
+        /** @var DeliveryNote $deliverNote */
+        $deliverNote = $this;
+
         return [
-            'id'             => $this->id,
-            'slug'           => $this->slug,
-            'reference'      => $this->reference,
-            'date'           => $this->date,
-            'state'          => $this->state,
-            'type'           => $this->type,
-            'status'         => $this->status,
-            'weight'         => $this->weight,
-            'created_at'     => $this->created_at,
-            'updated_at'     => $this->updated_at,
-            'shop_slug'      => $this->shop_slug,
-            'customer_slug'  => $this->customer_slug,
-            'customer_name'  => $this->customer_name,
-            'number_items'   => $this->number_items,
+            'id'             => $deliverNote->id,
+            'slug'           => $deliverNote->slug,
+            'reference'      => $deliverNote->reference,
+            'date'           => $deliverNote->date,
+            'state'          => $deliverNote->state,
+            'type'           => $deliverNote->type,
+            'weight'         => $deliverNote->weight,
+            'created_at'     => $deliverNote->created_at,
+            'updated_at'     => $deliverNote->updated_at,
         ];
     }
 }

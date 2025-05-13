@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Retina\Dropshipping\Api;
+namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Platform;
@@ -55,15 +55,15 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
     {
         $this->initialisation($request);
 
-        $customer = $this->customer;
+        // $customer = $this->customer;
 
-        $existingToken = $customer->tokens()->where('name', 'api-token')->first();
+        // $existingToken = $customer->tokens()->where('name', 'api-token')->first();
 
-        if ($existingToken) {
-            return Redirect::route('retina.dropshipping.platforms.api.show', [
-                'platform' => $platform->slug,
-            ]);
-        }
+        // if ($existingToken) {
+        //     return Redirect::route('retina.dropshipping.platforms.api.show', [
+        //         'platform' => $platform->slug,
+        //     ]);
+        // }
 
         return $this->handle($platform, $request);
     }
