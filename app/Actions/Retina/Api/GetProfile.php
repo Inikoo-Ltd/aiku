@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\Api;
 
-use App\Http\Resources\Api\Dropshipping\CustomersResource;
+use App\Http\Resources\Api\CustomersResource;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

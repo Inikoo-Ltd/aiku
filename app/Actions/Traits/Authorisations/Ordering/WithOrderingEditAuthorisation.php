@@ -24,6 +24,7 @@ trait WithOrderingEditAuthorisation
             return $request->user()->authTo(["orders.{$this->shop->id}.edit", "crm.{$this->shop->id}.edit",]);
         }
 
+        $this->canEdit = $request->user()->authTo(["orders.{$this->shop->id}.edit"]);
 
         return $request->user()->authTo(["orders.{$this->shop->id}.edit"]);
     }

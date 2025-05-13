@@ -104,7 +104,10 @@ class StoreOrder extends OrgAction
             $modelData['customer_client_id'] = $parent->id;
             $modelData['currency_id']        = $parent->shop->currency_id;
             $modelData['shop_id']            = $parent->shop_id;
-            $modelData['platform_id']        = $parent->platform_id;
+
+            if (!$modelData['platform_id']) {
+                $modelData['platform_id']        = $parent->platform_id;
+            }
         } else {
             $modelData['currency_id'] = $parent->currency_id;
             $modelData['shop_id']     = $parent->id;

@@ -42,11 +42,13 @@ class DropshippingPortfolioResource extends JsonResource
             $itemId = $this->item->id;
             $weight = 0;
             $price = 0;
+            $image = null;
         } elseif ($this->item instanceof Product) {
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
             $price = $this->item->price;
+            $image = $this->item->imageSources(64, 64);
         }
 
         return [
@@ -59,7 +61,7 @@ class DropshippingPortfolioResource extends JsonResource
             'quantity_left'             => $quantity,
             'weight'                    => $weight,
             'price'                     => $price,
-            'image'                     => $this->item?->image,  // TODO: Kirin
+            'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
