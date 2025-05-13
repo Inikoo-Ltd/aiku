@@ -7,9 +7,9 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToFinalised;
+use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacked;
+use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPickerAssigned;
@@ -85,8 +85,8 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
-        Route::patch('packed', UpdateDeliveryNoteStateToPacked::class)->name('packed');
-        Route::patch('finalised', UpdateDeliveryNoteStateToFinalised::class)->name('finalised');
+        Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
+        Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('settled', UpdateDeliveryNoteStateToSettled::class)->name('settled');
     });
 });

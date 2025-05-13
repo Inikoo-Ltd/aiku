@@ -12,7 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNo
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -30,15 +30,11 @@ class SendOrderToWarehouse extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
-    use HasOrderingAuthorisation;
+    use WithOrderingEditAuthorisation;
 
 
     private Order $order;
 
-    public function __construct()
-    {
-        $this->authorisationType = 'update';
-    }
 
     /**
      * @throws \Throwable
@@ -143,7 +139,6 @@ class SendOrderToWarehouse extends OrgAction
     public function action(Order $order, array $modelData): DeliveryNote
     {
         $this->asAction = true;
-        $this->scope    = $order->shop;
         $this->order    = $order;
         $this->initialisationFromShop($order->shop, $modelData);
 
@@ -156,7 +151,6 @@ class SendOrderToWarehouse extends OrgAction
     public function asController(Order $order, ActionRequest $request): DeliveryNote
     {
         $this->order = $order;
-        $this->scope = $order->shop;
         $this->initialisationFromShop($order->shop, $request);
 
         return $this->handle($order, $this->validatedData);
