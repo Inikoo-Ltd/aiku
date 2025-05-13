@@ -167,7 +167,7 @@ class IndexOrders extends OrgAction
             });
         }
 
-        return $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
+        $test =  $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
         ->select([
             'orders.id',
             'orders.reference',
@@ -197,6 +197,7 @@ class IndexOrders extends OrgAction
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+        return $test;
     }
 
     public function tableStructure(Organisation|Shop|Customer|CustomerClient|Asset|ShopifyUser $parent, $prefix = null, $bucket = null): Closure

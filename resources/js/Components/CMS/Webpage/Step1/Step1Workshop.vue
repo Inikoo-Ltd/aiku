@@ -53,9 +53,10 @@ const emits = defineEmits<{
 
 <template>
 	<div class="container mx-auto max-w-7xl px-6 lg:px-8"
-		:style="getStyles(modelValue?.container?.properties, screenType)">
+		:style="getStyles(modelValue?.line?.properties, screenType)">
 		<div class="relative py-8">
-			<div class="absolute left-1/2 top-0 transform -translate-x-1/2 h-full w-1 bg-gray-200 rounded-full z-0">
+			<div :style="getStyles(modelValue?.timeline?.line.properties, screenType)" class="absolute left-1/2 top-0 transform -translate-x-1/2 h-full w-1 bg-gray-200 rounded-full z-0">
+				
 			</div>
 
 			<div v-for="(step, idx) in modelValue.timeline.timeline_data" :key="idx"
