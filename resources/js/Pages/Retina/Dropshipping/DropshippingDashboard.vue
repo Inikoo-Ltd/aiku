@@ -87,8 +87,8 @@ const onCreateStore = () => {
     <!-- <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" /> -->
     <div class="px-6">
         <div class="text-xl py-2 w-fit">E-Commerce</div>
-        <div class="flex gap-4">
-            <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
+         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <Link :href="route('retina.dropshipping.platforms.dashboard', ['manual'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
@@ -110,7 +110,7 @@ const onCreateStore = () => {
                 </div>
             </div>
 
-            <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <Link :href="route('retina.dropshipping.platforms.dashboard', ['shopify'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-12">
                     <div class="flex flex-col">
@@ -160,7 +160,7 @@ const onCreateStore = () => {
                 </div>
             </div>
 
-<!--            <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
+<!--            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfkm8ggJ5zlVCHbmIzc9oTvtAiwMG4q3ROWA&s" alt="" class="h-12">
                     <div class="flex flex-col">
@@ -173,7 +173,7 @@ const onCreateStore = () => {
                 </div>
             </div>-->
 
-            <div class="bg-gray-50 border border-gray-200 rounded-md w-72 p-4">
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <Link :href="route('retina.dropshipping.platforms.dashboard', ['tiktok'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/3046/3046126.png" alt="" class="h-12">
                     <div class="flex flex-col">
