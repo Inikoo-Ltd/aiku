@@ -59,6 +59,21 @@ trait WithPaymentAccountSubNavigation
                     "tooltip" => __("payment account shops"),
                 ],
             ],
+            [
+                "number"   => $parent->stats->number_customers,
+                "label"    => __("Customers"),
+                "route"     => [
+                    "name"       => "grp.org.accounting.payment-accounts.show.customers.index",
+                    "parameters" => [
+                        'organisation' => $parent->organisation->slug,
+                        'paymentAccount' => $parent->slug
+                    ],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-store-alt"],
+                    "tooltip" => __("payment account customers"),
+                ],
+            ],
         ];
     }
 }

@@ -62,6 +62,10 @@ class StorePayment extends OrgAction
         OrgPaymentServiceProviderHydratePayments::dispatch($payment->orgPaymentServiceProvider)->delay($this->hydratorsDelay);
 
 
+        if($payment->status==PaymentStatusEnum::SUCCESS ){
+            PaymentAccountHydrateCustomers::dispatch($paymentAccount)->delay($this->hydratorsDelay);
+        }
+
         PaymentRecordSearch::dispatch($payment);
 
         return $payment;
