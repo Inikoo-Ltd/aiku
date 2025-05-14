@@ -19,7 +19,7 @@ trait WithPalletReturnSubNavigation
         $subNavigation = [];
 
         $subNavigation[] = [
-            'isAnchor' => true,
+
             'route' => [
                 'name' => match (class_basename($parent)) {
                     'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.new.index',
@@ -32,12 +32,12 @@ trait WithPalletReturnSubNavigation
 
             ],
 
-            'label' => __('New'),
+            'label' => __('To do'),
             'leftIcon' => [
                 'icon' => 'fal fa-stream',
-                'tooltip' => __('New'),
+                'tooltip' => __('To do'),
             ],
-            'number' => $parent->stats->number_pallets_state_confirmed
+            'number' => $parent->stats->number_pallet_returns_state_confirmed
         ];
 
         $subNavigation[] = [

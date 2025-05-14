@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import JsBarcode from "jsbarcode"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, inject } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
@@ -27,7 +27,6 @@ import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerR
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
-import { inject } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
 library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
@@ -347,7 +346,7 @@ const disableBeforeToday = (date: Date) => {
 			<!-- Field: Delivery Address -->
 			<div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
 				<dt class="flex-none">
-					<span class="sr-only">{{ boxStats.delivery_state.tooltip }}</span>
+					<span class="sr-only">{{ boxStats?.delivery_state?.tooltip }}</span>
 					<FontAwesomeIcon :icon="['fal', 'calendar-day']" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
 				</dt>
 				<Popover v-if="dataPalletReturn.state === 'in_process'" position="">
@@ -458,12 +457,11 @@ const disableBeforeToday = (date: Date) => {
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
 			<!-- Customer reference -->
-			<div class="mb-1">
+			<div class="mb-1" v-if="address_management">
 				<PalletEditCustomerReference
           :dataPalletDelivery="dataPalletReturn"
           :updateRoute="address_management.updateRoute"
         />
-				<!-- :disabled="dataPalletReturn?.state !== 'in_process' && dataPalletReturn?.state !== 'submit'"-->
 			</div>
 
 			<!-- Barcode -->

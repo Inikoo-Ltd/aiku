@@ -200,7 +200,26 @@ class IndexWarehousePalletReturns extends OrgAction
         $queryBuilder->defaultSort('-date');
 
         return $queryBuilder
-            ->select('pallet_returns.id', 'state', 'slug', 'reference', 'customer_reference', 'number_pallets', 'number_services', 'number_physical_goods', 'date', 'dispatched_at', 'type', 'total_amount', 'currencies.code as currency_code')
+            ->select([
+                'pallet_returns.id',
+                'state',
+                'slug',
+                'reference',
+                'customer_reference',
+                'number_pallets',
+                'number_services',
+                'number_physical_goods',
+                'date',
+                'dispatched_at',
+                'type',
+                'number_stored_items',
+                'total_amount',
+                'confirmed_at',
+                'picked_at',
+                'picking_at',
+                'cancel_at',
+                'currencies.code as currency_code',
+            ])
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -240,7 +259,29 @@ class IndexWarehousePalletReturns extends OrgAction
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->restriction) {
+                switch ($this->restriction) {
+                    case 'dispatched':
+                        $table->column(key: 'dispatched_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        break;
+                    case 'confirmed':
+                        $table->column(key: 'confirmed_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        break;
+                    case 'picking':
+                        $table->column(key: 'picking_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        break;
+                    case 'picked':
+                        $table->column(key: 'picked_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        break;
+                    case 'cancelled':
+                        $table->column(key: 'cancel_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        break;
+                    default:
+                        $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                }
+            }
         };
     }
 
