@@ -36,7 +36,7 @@ const props = defineProps<{
     total_amount: string
 }>()
 
-console.log('prporpor', props)
+// console.log('prporpor', props)
 
 const currentTab = ref({
     index: 0,
@@ -132,7 +132,7 @@ const component = computed(() => {
         <div v-else class="ml-10 mr-4 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded">
             <div class="text-center text-gray-500">
                 This is your final confirmation.
-                <br> Your order will being processed by the system after click the button.
+                <br> You can pay totally with your current balance.
             </div>
             <Button @click="'isModalConfirmationOrder = true'" label="Place Order" size="l" />
         </div>

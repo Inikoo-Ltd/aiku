@@ -32,6 +32,7 @@ const props = defineProps<{
     url?: string
     method?: string
     body?: object
+    fullLoading?: boolean
 }>()
 
 
@@ -43,7 +44,7 @@ const isLoadingVisit = ref(false)
         :is="props.routeTarget || props.url ? Link : 'div'"
         :href="props.url || (props.routeTarget?.name ? route(props.routeTarget?.name, props.routeTarget?.parameters) : '#')"
         @start="() => isLoadingVisit = true"
-        @finish="() => isLoadingVisit = false"
+        @finish="() => fullLoading ? '' : isLoadingVisit = false"
         :method="props.method || props.routeTarget?.method || undefined"
         :data="props.body ?? props.routeTarget?.body"
         v-bind="bindToLink"
