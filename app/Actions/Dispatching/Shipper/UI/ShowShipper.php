@@ -114,7 +114,7 @@ class ShowShipper extends OrgAction
                     $shipper,
                     [
                         'index' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.shippers.index',
+                            'name'       => 'grp.org.warehouses.show.dispatching.shippers.current.index',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                         ],
                         'model' => [
