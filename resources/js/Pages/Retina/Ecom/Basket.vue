@@ -26,6 +26,7 @@ defineProps<{
         charges_amount: string
     }
     balance: string
+    total_to_pay: string
 }>()
 
 
@@ -202,8 +203,11 @@ const debSubmitForm = debounce((save: Function) => {
                         name: 'retina.ecom.checkout.show'
                     }"
                 />
-                <div class="text-xs text-gray-500 italic tracking-wide">
-                    You can pay totally with your current balance
+                <div v-if="balance > total_to_pay" class="text-xs text-gray-500 italic tracking-wide">
+                    {{ trans("You can pay totally with your current balance") }}
+                </div>
+                <div v-else-if="balance > 0" class="text-xs text-gray-500 italic tracking-wide">
+                    {{ trans("you can pay partly with your balance now") }}
                 </div>
             </div>
         </div>

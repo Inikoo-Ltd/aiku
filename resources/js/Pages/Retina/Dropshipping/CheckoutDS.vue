@@ -372,18 +372,50 @@ const isModalConfirmationOrder = ref(false)
     />
 
 
-    <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+    <!-- Section: Payment Tabs -->
+    <!-- <div v-if="balance > total_amount" class="mx-10 border border-gray-300">
+        <div v-if="props.paymentMethods?.length" class="max-w-lg">
+            <div class="grid grid-cols-1 sm:hidden">
+                <select aria-label="Select a tab" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+                    <option v-for="(tab, tabIdx) in paymentMethods" :key="tabIdx" :selected="currentTab === tabIdx">
+                        <FontAwesomeIcon :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+                        {{ tab.label }}
+                    </option>
+                </select>
+            </div>
+            
+            <div class="hidden sm:block">
+                <nav class="isolate flex divide-x divide-gray-200 rounded-lg shadow" aria-label="Tabs">
+                    <div
+                        v-for="(tab, tabIdx) in props.paymentMethods"
+                        @click="currentTab.index = tabIdx, currentTab.key = tab.key"
+                        :key="tabIdx"
+                        :class="[currentTab.index === tabIdx ? '' : 'text-gray-500 hover:text-gray-700', tabIdx === 0 ? 'rounded-l-lg' : '', tabIdx === props.paymentMethods?.length - 1 ? 'rounded-r-lg' : '']"
+                        class="cursor-pointer group relative min-w-0 flex-1 overflow-hidden bg-white px-4 py-4 text-center text-sm font-medium hover:bg-gray-100 focus:z-10"
+                    >
+                        <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="mr-1" fixed-width aria-hidden="true" />
+                        <span>{{ tab.label }}</span>
+                        <span aria-hidden="true" :class="[currentTab.index === tabIdx ? 'bg-indigo-500' : 'bg-transparent', 'absolute inset-x-0 bottom-0 h-0.5']" />
+                    </div>
+                </nav>
+            </div>
+        </div>
 
-    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200">
-        <component :is="component"
-            :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
-            detachRoute="attachmentRoutes?.detachRoute"
-            :fetchRoute="routes?.products_list"
-			:modalOpen="isModalUploadOpen"
-			:action="currentAction"
-			@update:tab="handleTabUpdate"/>
+        <KeepAlive>
+            <component
+                :is="component"
+                :data="paymentMethods[currentTab.index]"
+            />
+        </KeepAlive>
     </div>
+
+    <div v-else class="ml-10 mr-4 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded">
+        <div class="text-center text-gray-500">
+            This is your final confirmation.
+            <br> You can pay totally with your current balance.
+        </div>
+        <Button @click="'isModalConfirmationOrder = true'" label="Place Order" size="l" />
+    </div> -->
 
     <div class="flex justify-end px-6">
         <div class="w-72">
