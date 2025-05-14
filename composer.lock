@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c8f60d0dc3ec6bfe83835f2ddfca8f1f",
+    "content-hash": "14bc2c6988a8faad6325f99f196fad88",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -19272,6 +19272,127 @@
                 "source": "https://github.com/tijsverkoyen/CssToInlineStyles/tree/v2.3.0"
             },
             "time": "2024-12-21T16:25:41+00:00"
+        },
+        {
+            "name": "treblle/treblle-laravel",
+            "version": "v5.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Treblle/treblle-laravel.git",
+                "reference": "8251ad61f438a6d5ee0c7a655ad8f93f7c02462c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Treblle/treblle-laravel/zipball/8251ad61f438a6d5ee0c7a655ad8f93f7c02462c",
+                "reference": "8251ad61f438a6d5ee0c7a655ad8f93f7c02462c",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "php": "^8.2",
+                "treblle/treblle-php": "^4.0.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.15",
+                "orchestra/testbench": "^7.0 || ^8.5.9"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Treblle\\Laravel\\TreblleServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Treblle\\Laravel\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Vedran Cindrić",
+                    "email": "vedran@treblle.com",
+                    "homepage": "https://treblle.com/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Stay in tune with your APIs",
+            "homepage": "https://treblle.com/",
+            "keywords": [
+                "api",
+                "debuging",
+                "documentation",
+                "laravel",
+                "monitoring",
+                "treblle"
+            ],
+            "support": {
+                "issues": "https://github.com/Treblle/treblle-laravel/issues",
+                "source": "https://github.com/Treblle/treblle-laravel/tree/v5.0.4"
+            },
+            "time": "2025-03-17T06:16:56+00:00"
+        },
+        {
+            "name": "treblle/treblle-php",
+            "version": "4.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Treblle/treblle-php.git",
+                "reference": "669952d8f5754b8c0a22066c3a217d150d43201e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Treblle/treblle-php/zipball/669952d8f5754b8c0a22066c3a217d150d43201e",
+                "reference": "669952d8f5754b8c0a22066c3a217d150d43201e",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "guzzlehttp/guzzle": "^7.4.5|^8.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.15"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Treblle\\Php\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Vedran Cindrić",
+                    "email": "vedran@treblle.com",
+                    "homepage": "https://treblle.com/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Stay in tune with your APIs",
+            "homepage": "https://treblle.com/",
+            "keywords": [
+                "api",
+                "debuging",
+                "documentation",
+                "monitoring",
+                "phpunit",
+                "treblle"
+            ],
+            "support": {
+                "issues": "https://github.com/Treblle/treblle-php/issues",
+                "source": "https://github.com/Treblle/treblle-php/tree/4.0.2"
+            },
+            "time": "2025-02-05T15:56:53+00:00"
         },
         {
             "name": "tuupola/base32",

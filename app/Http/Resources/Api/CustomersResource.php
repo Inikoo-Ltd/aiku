@@ -7,6 +7,7 @@
  * Copyright: 2025
  *
 */
+
 namespace App\Http\Resources\Api;
 
 use App\Http\Resources\HasSelfCall;

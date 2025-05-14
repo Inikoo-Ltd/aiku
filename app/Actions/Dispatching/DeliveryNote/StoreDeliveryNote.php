@@ -116,10 +116,11 @@ class StoreDeliveryNote extends OrgAction
                     ->where('organisation_id', $this->organisation->id),
             ],
             'delivery_locked' => ['sometimes', 'boolean'],
+            'weight'          => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
 
         if (!$this->strict) {
-            $rules['stats'] = [
+            $rules['state'] = [
                 'sometimes',
                 'required',
                 new Enum(DeliveryNoteStateEnum::class)
@@ -132,7 +133,7 @@ class StoreDeliveryNote extends OrgAction
             $rules['created_at']       = ['sometimes', 'date'];
             $rules['cancelled_at']     = ['sometimes', 'date'];
             $rules['submitted_at']     = ['sometimes', 'date'];
-            $rules['source_id']        = ['sometimes', 'string', 'max:64',];
+            $rules['source_id']        = ['sometimes', 'string', 'max:64'];
         }
 
         return $rules;

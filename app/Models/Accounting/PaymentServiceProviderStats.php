@@ -58,6 +58,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $grp_amount_refunded
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_customers Number distinct customer with successful payments
  * @property-read \App\Models\Accounting\PaymentServiceProvider $paymentServiceProvider
  * @method static Builder<static>|PaymentServiceProviderStats newModelQuery()
  * @method static Builder<static>|PaymentServiceProviderStats newQuery()
