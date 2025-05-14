@@ -138,8 +138,8 @@ const props = defineProps<{
 
 
 const isModalUploadOpen = ref(false)
-const isModalProductListOpen = ref(false)
-const locale = inject('locale', aikuLocaleStructure)
+// const isModalProductListOpen = ref(false)
+// const locale = inject('locale', aikuLocaleStructure)
 
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -157,7 +157,7 @@ const component = computed(() => {
 })
 
 
-const isLoadingButton = ref<string | boolean>(false)
+// const isLoadingButton = ref<string | boolean>(false)
 // const isLoadingData = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
 
@@ -194,71 +194,71 @@ const isModalAddress = ref<boolean>(false)
 
 
 // Section: Payment invoice
-const listPaymentMethod = ref([])
-const isLoadingFetch = ref(false)
-const fetchPaymentMethod = async () => {
-    try {
-        isLoadingFetch.value = true
-        const { data } = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
-        listPaymentMethod.value = data.data
-    } catch (error) {
-        console.log('erropr', error)
-        notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to fetch payment method list'),
-            type: 'error',
-        })
-    }
-    finally {
-        isLoadingFetch.value = false
-    }
-}
+// const listPaymentMethod = ref([])
+// const isLoadingFetch = ref(false)
+// const fetchPaymentMethod = async () => {
+//     try {
+//         isLoadingFetch.value = true
+//         const { data } = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
+//         listPaymentMethod.value = data.data
+//     } catch (error) {
+//         console.log('erropr', error)
+//         notify({
+//             title: trans('Something went wrong'),
+//             text: trans('Failed to fetch payment method list'),
+//             type: 'error',
+//         })
+//     }
+//     finally {
+//         isLoadingFetch.value = false
+//     }
+// }
 
-const paymentData = ref({
-    payment_method: null as number | null,
-    payment_amount: 0 as number | null,
-    payment_reference: ''
-})
+// const paymentData = ref({
+//     payment_method: null as number | null,
+//     payment_amount: 0 as number | null,
+//     payment_reference: ''
+// })
 const currentAction = ref(null);
-const isOpenModalPayment = ref(false)
-const isLoadingPayment = ref(false)
-const errorPaymentMethod = ref<null | unknown>(null)
-const onSubmitPayment = () => {
-    try {
-        router[props.box_stats.products.payment.routes.submit_payment.method || 'post'](
-            route(props.box_stats.products.payment.routes.submit_payment.name, {
-                ...props.box_stats.products.payment.routes.submit_payment.parameters,
-                paymentAccount: paymentData.value.payment_method
-            }),
-            {
-                amount: paymentData.value.payment_amount,
-                reference: paymentData.value.payment_reference,
-                status: 'success',
-                state: 'completed',
-            },
-            {
-                onStart: () => isLoadingPayment.value = true,
-                onFinish: (response) => {
-                    isLoadingPayment.value = false,
-                        isOpenModalPayment.value = false,
-                        notify({
-                            title: trans('Success'),
-                            text: trans('Successfully add payment invoice'),
-                            type: 'success',
-                        })
-                },
-                onSuccess: (response) => {
-                    paymentData.value.payment_method = null,
-                        paymentData.value.payment_amount = 0,
-                        paymentData.value.payment_reference = ''
-                }
-            }
-        )
+// const isOpenModalPayment = ref(false)
+// const isLoadingPayment = ref(false)
+// const errorPaymentMethod = ref<null | unknown>(null)
+// const onSubmitPayment = () => {
+//     try {
+//         router[props.box_stats.products.payment.routes.submit_payment.method || 'post'](
+//             route(props.box_stats.products.payment.routes.submit_payment.name, {
+//                 ...props.box_stats.products.payment.routes.submit_payment.parameters,
+//                 paymentAccount: paymentData.value.payment_method
+//             }),
+//             {
+//                 amount: paymentData.value.payment_amount,
+//                 reference: paymentData.value.payment_reference,
+//                 status: 'success',
+//                 state: 'completed',
+//             },
+//             {
+//                 onStart: () => isLoadingPayment.value = true,
+//                 onFinish: (response) => {
+//                     isLoadingPayment.value = false,
+//                         isOpenModalPayment.value = false,
+//                         notify({
+//                             title: trans('Success'),
+//                             text: trans('Successfully add payment invoice'),
+//                             type: 'success',
+//                         })
+//                 },
+//                 onSuccess: (response) => {
+//                     paymentData.value.payment_method = null,
+//                         paymentData.value.payment_amount = 0,
+//                         paymentData.value.payment_reference = ''
+//                 }
+//             }
+//         )
 
-    } catch (error: unknown) {
-        errorPaymentMethod.value = error
-    }
-}
+//     } catch (error: unknown) {
+//         errorPaymentMethod.value = error
+//     }
+// }
 
 
 // Section: add notes (on popup pageheading)
@@ -305,56 +305,56 @@ const onSubmitNote = async () => {
 }
 const debounceSubmitNote = debounce(onSubmitNote, 800)
 
-const openModal = (action :any) => {
-	currentAction.value = action;
-    isModalProductListOpen.value = true;
-};
+// const openModal = (action :any) => {
+// 	currentAction.value = action;
+//     isModalProductListOpen.value = true;
+// };
 
 
 
 // Method: Submit the selected item
-const isLoadingSubmit = ref(false)
-const onAddProducts = async (products: number[]) => {
-    const productsMapped = products.map((item: any) => {
-        return {
-            id: item.id,
-            quantity: item.quantity_selected ?? 1
-        }
-    })
+// const isLoadingSubmit = ref(false)
+// const onAddProducts = async (products: number[]) => {
+//     const productsMapped = products.map((item: any) => {
+//         return {
+//             id: item.id,
+//             quantity: item.quantity_selected ?? 1
+//         }
+//     })
 
-    router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
-        products: productsMapped
-    }, {
-        onBefore: () => isLoadingSubmit.value = true,
-        onError: (error) => {
-            notify({
-                title: "Something went wrong.",
-                text: error.products || undefined,
-                type: "error"
-            })
-        },
-        onSuccess: () => {
-            router.reload({only: ['data']})
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
-                type: "success"
-            })
-            isModalProductListOpen.value = false
-        },
-        onFinish: () => isLoadingSubmit.value = false
-    })
-}
+//     router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
+//         products: productsMapped
+//     }, {
+//         onBefore: () => isLoadingSubmit.value = true,
+//         onError: (error) => {
+//             notify({
+//                 title: "Something went wrong.",
+//                 text: error.products || undefined,
+//                 type: "error"
+//             })
+//         },
+//         onSuccess: () => {
+//             router.reload({only: ['data']})
+//             notify({
+//                 title: trans("Success!"),
+//                 text: trans("Successfully added portfolios"),
+//                 type: "success"
+//             })
+//             isModalProductListOpen.value = false
+//         },
+//         onFinish: () => isLoadingSubmit.value = false
+//     })
+// }
 
-const isModalUploadSpreadsheet = ref(false)
+// const isModalUploadSpreadsheet = ref(false)
 
-const onNoStructureUpload = () => {
-    notify({
-        title: trans("Something went wrong"),
-        text: trans("Upload structure is not provided. Please contact support."),
-        type: "error",
-    })
-}
+// const onNoStructureUpload = () => {
+//     notify({
+//         title: trans("Something went wrong"),
+//         text: trans("Upload structure is not provided. Please contact support."),
+//         type: "error",
+//     })
+// }
 
 
 // Section: Modal confirmation order
@@ -364,29 +364,6 @@ const isModalConfirmationOrder = ref(false)
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-group-upload-add>
-            <Button
-                @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-                :label="trans('Upload products')"
-                icon="upload"
-                type="tertiary"
-            />
-        </template>
-
-        <template #other>
-            <Button
-                v-if="currentTab === 'attachments'"
-                @click="() => isModalUploadOpen = true"
-                :label="trans('Attach')"
-                icon="upload" />
-            <Button
-                v-if="is_in_basket"
-                @click="() => isModalProductListOpen = true"
-                :label="trans('Add products')"
-                icon="plus"
-                type="secondary"
-            />
-        </template>
     </PageHeading>
 
     <DSCheckoutSummary
@@ -423,46 +400,27 @@ const isModalConfirmationOrder = ref(false)
                 class="mb-2"
             />
             
-            <ButtonWithLink
+            <!-- <ButtonWithLink
+                v-if="is_in_basket"
                 iconRight="fas fa-arrow-right"
-                :label="trans('Continue to Checkout')"
-                :routeTarget="{
-                    name: 'retina.dropshipping.checkout.show'
-                }"
-                class="w-full"
-                full
-            />
-
-            <!-- <Button
-                v-if="is_in_basket && 'products more than 0'"
-                @click="() => isModalConfirmationOrder = true"
-                iconRight="fas fa-arrow-right"
-                :label="trans('Continue to Checkout')"
+                :label="trans('Submit order')"
+                :routeTarget="routes?.submit_route"
+                disabled
                 class="w-full"
                 full
             /> -->
+
+            <Button
+                v-if="is_in_basket && 'products more than 0'"
+                @click="() => isModalConfirmationOrder = true"
+                iconRight="fas fa-arrow-right"
+                :label="trans('Submit order')"
+                class="w-full"
+                full
+            />
         </div>
     </div>
 
-
-    <!-- Modal: Confirmation order -->
-    <Modal :isOpen="isModalConfirmationOrder" @onClose="isModalConfirmationOrder = false" width="w-full max-w-4xl">
-        xxxxxxxxxxxxxxxxxx
-    </Modal>
-
-    <!-- Modal: add products to Order -->
-    <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
-        <ProductsSelector
-            :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
-            :routeFetch="{
-                name: 'retina.dropshipping.portfolios.index',
-            }"
-            :isLoadingSubmit
-            @submit="(products: {}[]) => onAddProducts(products)"
-            withQuantity
-        >
-        </ProductsSelector>
-    </Modal>
 
     <!-- Section: Address -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
@@ -473,20 +431,4 @@ const isModalConfirmationOrder = ref(false)
         />
     </Modal>
 
-    
-
-    <UploadExcel
-        v-if="upload_spreadsheet"
-        v-model="isModalUploadSpreadsheet"
-        :title="upload_spreadsheet.title"
-        :progressDescription="upload_spreadsheet.progressDescription"
-        :preview_template="upload_spreadsheet.preview_template"
-        :upload_spreadsheet="upload_spreadsheet.upload_spreadsheet"
-        xxxadditionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
-    />
-
-    <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
-        label: 'Upload your file',
-        information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" /> -->
 </template>
