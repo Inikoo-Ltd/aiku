@@ -215,6 +215,19 @@ class GetWarehouseNavigation
                                 'parameters' => [$warehouse->organisation->slug, $warehouse->slug]
                             ],
                         ] : null,
+                        [
+                            'label' => __('shippers'),
+                            'tooltip' => __('shippers'),
+                            'icon'  => ['fal', 'fa-shipping-fast'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.shippers.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.shippers.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ],
                     ]
                 ],
             ];

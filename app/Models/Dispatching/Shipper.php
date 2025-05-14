@@ -94,6 +94,11 @@ class Shipper extends Model implements Auditable
         ];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     protected array $auditInclude = [
         'code',
         'api_shipper',

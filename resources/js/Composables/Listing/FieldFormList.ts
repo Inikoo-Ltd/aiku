@@ -62,6 +62,7 @@ export const componentsList: {[key: string]: Component} = {
     'country': Country,
     'currency': Currency,
     'password': GeneratePassword,
+    'purePassword': Password,
     'customerRoles': CustomerRoles,
     'textarea': Textarea,
     'textEditor': TextEditor,

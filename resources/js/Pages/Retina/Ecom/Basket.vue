@@ -12,8 +12,10 @@ import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Image from "@/Components/Image.vue"
 import { debounce } from "lodash"
+import { Head } from "@inertiajs/vue3"
 
 defineProps<{
+    order: {}
     transactions: {}
     summary: {
         net_amount: string
@@ -23,6 +25,7 @@ defineProps<{
         services_amount: string
         charges_amount: string
     }
+    balance: string
 }>()
 
 
@@ -33,16 +36,21 @@ const debSubmitForm = debounce((save: Function) => {
 </script>
 
 <template>
+    <Head title="Basket" />
+
     <div v-if="!transactions" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
     </div>
 
     <div v-else class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
-            <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
+            <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>
         
-        <CheckoutSummary :summary></CheckoutSummary>
+        <CheckoutSummary
+            :summary
+            :balance
+        />
 
         <DataTable :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
             <template #empty>
@@ -98,7 +106,6 @@ const debSubmitForm = debounce((save: Function) => {
                     </template>
 
                     <template #body="{ data: dataBody }">
-                        <!-- <pre>{{ dataBody.updateRoute }}</pre> -->
                         <div class="px-2 relative text-right">
                             <NumberWithButtonSave
                                 v-model="dataBody.quantity_ordered"
@@ -175,21 +182,30 @@ const debSubmitForm = debounce((save: Function) => {
             </ColumnGroup>
         </DataTable>
 
-        <div class="flex justify-end gap-x-4 mt-4 px-4">
+        <div class="flex justify-between gap-x-4 mt-4 px-4">
             
-            <Button
-                type="tertiary"
-                :icon="faArrowLeft"
-                label="Continue shopping"
-            />
+            <div>
+                <ButtonWithLink
+                    :icon="faArrowLeft"
+                    label="Continue shopping"
+                    url="/"
+                    type="tertiary"
+                    fullLoading
+                />
+            </div>
 
-            <ButtonWithLink
-                :iconRight="faArrowRight"
-                label="Go to Checkout"
-                :routeTarget="{
-                    name: 'retina.ecom.checkout.show'
-                }"
-            />
+            <div class="flex flex-col items-end gap-y-1.5">
+                <ButtonWithLink
+                    :iconRight="faArrowRight"
+                    label="Go to Checkout"
+                    :routeTarget="{
+                        name: 'retina.ecom.checkout.show'
+                    }"
+                />
+                <div class="text-xs text-gray-500 italic tracking-wide">
+                    You can pay totally with your current balance
+                </div>
+            </div>
         </div>
 
     </div>

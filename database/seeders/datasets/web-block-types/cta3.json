@@ -5,6 +5,7 @@
 	"name": "CTA (with Image)",
 	"icon": ["fal", "rectangle-wide"],
 	"category": "block",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"text": "<h3>Ut dolorem reprehenderit</h3><p>In natus quas aut dolores vero et voluptatum esse et culpa voluptas aut fugit ipsa.</>",
