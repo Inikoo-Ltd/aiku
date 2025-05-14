@@ -79,6 +79,11 @@ class IndexShippers extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function jsonResponse(LengthAwarePaginator $shippers): LengthAwarePaginator
+    {
+        return ShippersResource::collection($shippers);
+    }
+
     public function htmlResponse(LengthAwarePaginator $shippers, ActionRequest $request): Response
     {
         return Inertia::render(
