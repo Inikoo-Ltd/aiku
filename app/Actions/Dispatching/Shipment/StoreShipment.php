@@ -55,7 +55,13 @@ class StoreShipment extends OrgAction
             default => $shipper->shipments()->create($modelData),
         };
 
-        $shipment->deliveryNotes()->attach($deliveryNote->id);
+        if ($parent instanceof DeliveryNote) {
+            $shipment->deliveryNotes()->attach($parent->id);
+        } else {
+
+        }
+
+
         $shipment->refresh();
 
 

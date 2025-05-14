@@ -20,7 +20,6 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateService extends OrgAction
 {
@@ -33,19 +32,19 @@ class UpdateService extends OrgAction
     {
         if (Arr::exists($modelData, 'fixed_price')) {
             $fixedPrice = Arr::pull($modelData, 'fixed_price');
-            if ($fixedPrice == true) {
+            if ($fixedPrice) {
                 data_set($modelData, 'edit_type', ServiceEditTypeEnum::QUANTITY);
-            } elseif ($fixedPrice == false) {
+            } else {
                 data_set($modelData, 'edit_type', ServiceEditTypeEnum::NET);
             }
         }
 
         if (Arr::exists($modelData, 'active')) {
             $active = Arr::pull($modelData, 'active');
-            if ($active == true) {
+            if ($active) {
                 data_set($modelData, 'status', true);
                 data_set($modelData, 'state', ServiceStateEnum::ACTIVE);
-            } elseif ($active == false) {
+            } else {
                 data_set($modelData, 'status', false);
                 data_set($modelData, 'state', ServiceStateEnum::DISCONTINUED);
             }
@@ -83,14 +82,6 @@ class UpdateService extends OrgAction
         return $service;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return true; //TODO: Fix Auth
-    }
 
     public function rules(): array
     {
@@ -130,13 +121,6 @@ class UpdateService extends OrgAction
         ];
     }
 
-    public function asController(Service $service, ActionRequest $request): Service
-    {
-        $this->service = $service;
-        $this->initialisationFromShop($service->shop, $request);
-
-        return $this->handle($service, $this->validatedData);
-    }
 
     public function action(Service $service, array $modelData, int $hydratorsDelay = 0): Service
     {
@@ -144,7 +128,6 @@ class UpdateService extends OrgAction
         $this->service        = $service;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($service->shop, $modelData);
-
         return $this->handle($service, $this->validatedData);
     }
 

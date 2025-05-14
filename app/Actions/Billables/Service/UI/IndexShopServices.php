@@ -11,18 +11,13 @@
 namespace App\Actions\Billables\Service\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Fulfilment\UI\Catalogue\ShowFulfilmentCatalogueDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\UI\Fulfilment\ServicesTabsEnum;
 use App\Http\Resources\Fulfilment\ServicesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -34,18 +29,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexShopServices extends OrgAction
 {
-    // use WithFulfilmentShopAuthorisation;
-    // use WithCatalogueAuthorisation;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return true; //TODO: Fix Auth
-    }
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request)->withTab(ServicesTabsEnum::values());
@@ -133,20 +116,6 @@ class IndexShopServices extends OrgAction
     public function htmlResponse(LengthAwarePaginator $services, ActionRequest $request): Response
     {
         $actions = null;
-        // if ($request->user()->authTo("supervisor-fulfilment-shop.".$this->fulfilment->id)) {
-        //     $actions = [
-        //         [
-        //             'type'  => 'button',
-        //             'style' => 'primary',
-        //             'icon'  => 'fal fa-plus',
-        //             'label' => __('Create service'),
-        //             'route' => [
-        //                 'name'       => 'grp.org.fulfilments.show.catalogue.services.create',
-        //                 'parameters' => array_values($request->route()->originalParameters())
-        //             ]
-        //         ],
-        //     ];
-        // }
 
 
         return Inertia::render(
@@ -178,26 +147,25 @@ class IndexShopServices extends OrgAction
             ]
         )->table(
             $this->tableStructure(
-                parent: $this->shop,
+                shop: $this->shop,
                 prefix: ServicesTabsEnum::SERVICES->value
             )
         );
     }
 
     public function tableStructure(
-        Shop $parent,
+        Shop $shop,
         ?array $modelOperations = null,
         $prefix = null,
-        $canEdit = false
     ): Closure {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($shop, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
@@ -209,10 +177,10 @@ class IndexShopServices extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
-                    match (class_basename($parent)) {
+                    match (class_basename($shop)) {
                         'Fulfilment' => [
                             'title' => __("No services found"),
-                            'count' => $parent->shop->stats->number_assets_type_service,
+                            'count' => $shop->stats->number_assets_type_service,
                         ],
                         default => null
                     }
@@ -244,62 +212,17 @@ class IndexShopServices extends OrgAction
             ];
         };
 
-        return match ($routeName) {
-            'grp.org.shops.show.billables.services.index' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.billables.services.index' =>
-            array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-
-
-            default => []
-        };
+        return array_merge(
+            ShowShop::make()->getBreadcrumbs($routeParameters),
+            $headCrumb(
+                [
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters
+                ],
+                $suffix
+            )
+        );
     }
-
-    // public function getBreadcrumbs(array $routeParameters, $suffix = null): array
-    // {
-    //     $headCrumb = function (array $routeParameters = []) use ($suffix) {
-    //         return [
-    //             [
-    //                 'type'   => 'simple',
-    //                 'simple' => [
-    //                     'route' => $routeParameters,
-    //                     'label' => __('Services'),
-    //                     'icon'  => 'fal fa-bars'
-    //                 ],
-    //                 'suffix' => $suffix
-    //             ],
-    //         ];
-    //     };
-
-    //     return
-    //         array_merge(
-    //             ShowFulfilmentCatalogueDashboard::make()->getBreadcrumbs(routeParameters: $routeParameters, icon: 'fal fa-ballot'),
-    //             $headCrumb(
-    //                 [
-    //                     'name'       => 'grp.org.fulfilments.show.catalogue.services.index',
-    //                     'parameters' => $routeParameters
-    //                 ]
-    //             )
-    //         );
-    // }
 
 
 }

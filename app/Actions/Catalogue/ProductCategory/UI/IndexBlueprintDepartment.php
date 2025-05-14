@@ -36,7 +36,6 @@ class IndexBlueprintDepartment extends OrgAction
 
     public function handle(Group|Shop|ProductCategory|Organisation|Collection $parent, $prefix = null): LengthAwarePaginator
     {
-        // dd($parent);
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('product_categories.name', $value)
@@ -123,7 +122,6 @@ class IndexBlueprintDepartment extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $department;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle(parent: $department);
