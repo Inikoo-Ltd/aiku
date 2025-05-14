@@ -119,6 +119,7 @@ export interface PalletReturn {
     number_stored_items: number
     number_services: number
     number_physical_goods: number
+    is_collection?: boolean  // if true then no delivery address
 }
 
 
