@@ -87,6 +87,7 @@ function orderRoute(order) {
 </script>
 
 <template>
+    <div class="overflow-x-auto">
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Reference -->
         <template #cell(reference)="{ item }">
@@ -168,4 +169,5 @@ function orderRoute(order) {
             </Link>
         </template>
     </Table>
+    </div>
 </template>

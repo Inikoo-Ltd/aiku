@@ -56,19 +56,21 @@ function customerRoute(customer: FulfilmentCustomer) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(name)="{ item: customer }">
-            <Link :href="customerRoute(customer)" class="primaryLink">
-                {{ customer["name"] }}
-            </Link>
-        </template>
+    <div class="overflow-x-auto">
+        <Table :resource="data" :name="tab" class="mt-5">
+            <template #cell(name)="{ item: customer }">
+                <Link :href="customerRoute(customer)" class="primaryLink">
+                    {{ customer["name"] }}
+                </Link>
+            </template>
 
-        <template #cell(location)="{ item: customer }">
-            <AddressLocation :data="customer['location']" />
-        </template>
+            <template #cell(location)="{ item: customer }">
+                <AddressLocation :data="customer['location']" />
+            </template>
 
-        <template #cell(created_at)="{ item: customer }">
-            <div class="text-gray-500">{{ useFormatTime(customer["created_at"]) }}</div>
-        </template>
-    </Table>
+            <template #cell(created_at)="{ item: customer }">
+                <div class="text-gray-500">{{ useFormatTime(customer["created_at"]) }}</div>
+            </template>
+        </Table>
+    </div>
 </template>
