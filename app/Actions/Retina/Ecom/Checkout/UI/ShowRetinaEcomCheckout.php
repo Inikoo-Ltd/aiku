@@ -105,6 +105,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'summary'        => $order ? $this->getOrderBoxStats($order) : null,
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer?->balance,
+                'total_amount'   => $order->total_amount
             ]
         );
     }
