@@ -4,6 +4,7 @@
 	"code": "top-bar-1-fulfilment",
 	"name": "Topbar Simple [fulfilment]",
 	"component": "topbar",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",
