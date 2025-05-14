@@ -26,7 +26,8 @@ const layout = inject('layout', layoutStructure)
 
 function shipperRoute(shipper: {}) {
     switch (route().current()) {
-         case "grp.org.warehouses.show.dispatching.shippers.index":
+         case "grp.org.warehouses.show.dispatching.shippers.inactive.index":
+         case "grp.org.warehouses.show.dispatching.shippers.current.index":
             return route(
                "grp.org.warehouses.show.dispatching.shippers.show",
                 [route().params["organisation"], route().params["warehouse"], shipper.slug])

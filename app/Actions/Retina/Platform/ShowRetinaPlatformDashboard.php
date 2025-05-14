@@ -22,6 +22,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
     public function asController(Platform $platform, ActionRequest $request): CustomerHasPlatform
     {
         $this->initialisationFromPlatform($platform, $request);
+
         return $this->customer->customerHasPlatforms()
             ->where('platform_id', $platform->id)
             ->first();

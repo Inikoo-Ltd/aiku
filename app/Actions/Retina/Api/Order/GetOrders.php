@@ -14,10 +14,8 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Carbon\Carbon;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -48,28 +46,8 @@ class GetOrders
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
 
-        $state = Arr::get($modelData, 'state');
+        $query->where('orders.state', '!=', OrderStateEnum::CREATING);
 
-        if ($state === OrderStateEnum::CREATING->value) {
-            $query->where('orders.state', OrderStateEnum::CREATING);
-        } elseif ($state === OrderStateEnum::SUBMITTED->value) {
-            $query->where('orders.state', OrderStateEnum::SUBMITTED);
-        } elseif ($state === OrderStateEnum::HANDLING->value) {
-            $query->where('orders.state', OrderStateEnum::HANDLING);
-        } elseif ($state === OrderStateEnum::HANDLING_BLOCKED->value) {
-            $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
-        } elseif ($state === OrderStateEnum::PACKED->value) {
-            $query->where('orders.state', OrderStateEnum::PACKED);
-        } elseif ($state === OrderStateEnum::FINALISED->value) {
-            $query->where('orders.state', OrderStateEnum::FINALISED);
-        } elseif ($state === OrderStateEnum::DISPATCHED->value) {
-            $query->where('orders.state', OrderStateEnum::DISPATCHED);
-        } elseif ($state === OrderStateEnum::CANCELLED->value) {
-            $query->where('orders.state', OrderStateEnum::CANCELLED);
-        } elseif ($state === 'dispatched_today') {
-            $query->where('orders.state', OrderStateEnum::DISPATCHED)
-            ->whereDate('dispatched_at', Carbon::today());
-        }
 
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
@@ -125,7 +103,6 @@ class GetOrders
     public function rules(): array
     {
         return [
-            'state' => ['nullable', Rule::enum(OrderStateEnum::class)],
             'search' => ['nullable', 'string'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
@@ -138,7 +115,6 @@ class GetOrders
         $request->merge(
             [
                 'search' => $request->query('search', null),
-                'state' => $request->query('state', null),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),

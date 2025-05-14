@@ -20,6 +20,7 @@ use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
+use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentPhysicalGoods;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
@@ -84,3 +85,4 @@ Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliv
 Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransactionUploads::class)->name('order.transaction.recent_uploads');
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
+Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');

@@ -319,7 +319,7 @@ onMounted(async () => {
     <!-- Submit Button -->
     <div class="flex justify-end">
       <button type="submit"
-        class="inline-flex items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#C1A027] text-white">
+        class="inline-flex items-center px-6 bg-[#C1A027] text-white py-3 border border-transparent text-sm font-medium rounded-md shadow-sm">
         <span v-if="isLoading" class="loader mr-2"></span>
         {{trans("Register")}}
       </button>

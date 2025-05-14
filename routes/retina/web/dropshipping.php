@@ -19,6 +19,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
+use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
@@ -26,6 +27,7 @@ use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaPlatformDropshippingOrders;
+use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
@@ -71,7 +73,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
-        Route::get('{order}', [ShowRetinaDropshippingOrder::class, 'inBasket'])->name('show');
+        Route::get('{order}', ShowRetinaDropshippingBasket::class)->name('show');
     });
 
     Route::prefix('client')->as('client.')->group(function () {
@@ -104,4 +106,8 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
     Route::get('', ShowRetinaMitSavedCardsDashboard::class)->name('dashboard');
     Route::get('create', CreateMitSavedCard::class)->name('create');
+});
+
+Route::prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('{order}', ShowRetinaDropshippingCheckout::class)->name('show');
 });

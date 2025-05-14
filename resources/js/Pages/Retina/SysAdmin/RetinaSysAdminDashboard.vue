@@ -61,7 +61,7 @@ const props = defineProps<{
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
-	
+
 	<div class="px-4 py-5 md:px-6 lg:px-8 grid md:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-3">
 		<!-- Section: Radio -->
 		<div class="space-y-3 relative w-full max-w-[500px]">
@@ -81,6 +81,6 @@ const props = defineProps<{
 				</div>
 			</div>
 		</div>
-		
-	</div>	
+
+	</div>
 </template>
