@@ -28,6 +28,7 @@ const props = defineProps<{
         services_amount: string
         charges_amount: string
     }
+    balance: string
 }>()
 
 console.log('prporpor', props)
@@ -50,7 +51,7 @@ const component = computed(() => {
 </script>
 
 <template>
-    <!-- paymentMethods: <pre>{{ paymentMethods }}</pre> -->
+    <!-- paymentMethods: <pre>{{ balance }}</pre> -->
 
     <div v-if="!summary" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
@@ -61,7 +62,10 @@ const component = computed(() => {
             <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>
         
-        <CheckoutSummary :summary="summary"></CheckoutSummary>
+        <CheckoutSummary
+            :summary
+            :balance
+        />
 
         <!-- Section: Payment Tabs -->
         <div class="mx-10 border border-gray-300 rounded">

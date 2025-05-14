@@ -103,7 +103,8 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $order ? $this->getOrderBoxStats($order) : null,
-                'paymentMethods' => Arr::get($checkoutData, 'paymentMethods')
+                'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
+                'balance'        => $this->customer?->balance,
             ]
         );
     }
