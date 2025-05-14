@@ -133,7 +133,7 @@ class IndexWarehousePalletReturns extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('reference', $value)
                     ->orWhereStartWith('customer_reference', $value)
-                    ->orWhereStartWith('slug', $value);
+                    ->orWhereStartWith('pallet_returns.slug', $value);
             });
         });
 
@@ -144,6 +144,7 @@ class IndexWarehousePalletReturns extends OrgAction
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
+        $queryBuilder->leftJoin('platforms', 'platforms.id', '=', 'pallet_returns.platform_id');
 
         $queryBuilder->where('pallet_returns.warehouse_id', $warehouse->id);
 
@@ -203,7 +204,7 @@ class IndexWarehousePalletReturns extends OrgAction
             ->select([
                 'pallet_returns.id',
                 'state',
-                'slug',
+                'pallet_returns.slug',
                 'reference',
                 'customer_reference',
                 'number_pallets',
@@ -211,13 +212,15 @@ class IndexWarehousePalletReturns extends OrgAction
                 'number_physical_goods',
                 'date',
                 'dispatched_at',
-                'type',
+                'pallet_returns.type',
                 'number_stored_items',
                 'total_amount',
                 'confirmed_at',
                 'picked_at',
                 'picking_at',
                 'cancel_at',
+                'platforms.name as platform_name',
+                'platforms.type as platform_type',
                 'currencies.code as currency_code',
             ])
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state'])
@@ -256,10 +259,16 @@ class IndexWarehousePalletReturns extends OrgAction
                     ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'platform_name', label: __('platform'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->restriction == 'picking') {
+                $table->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
+            } else {
+                $table->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
+            }
 
             if ($this->restriction) {
                 switch ($this->restriction) {

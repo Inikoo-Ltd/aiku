@@ -38,7 +38,8 @@ class PalletReturnsResource extends JsonResource
             $totalOrder = (int) $query->sum('quantity_ordered');
             $totalPicked = (int) $query->sum('quantity_picked');
 
-            $this->number_stored_items = '' . $totalPicked .' / ' . $totalOrder;
+            $percentagePicked = $totalOrder > 0 ? round(($totalPicked / $totalOrder) * 100, 2) : 0;
+            $this->number_stored_items = '' . $totalPicked . ' / ' . $totalOrder . ' (' . $percentagePicked . '%)';
         }
 
         return [
@@ -46,6 +47,7 @@ class PalletReturnsResource extends JsonResource
             'created_at'            => $this->created_at,
             'slug'                  => $this->slug,
             'reference'             => $this->reference,
+            'platform_name'         => $this->platform_name,
             'state'                 => $this->state,
             'state_label'           => $this->state->labels()[$this->state->value],
             'state_icon'            => $this->state->stateIcon()[$this->state->value],
