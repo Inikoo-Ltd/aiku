@@ -194,7 +194,7 @@ class EditShop extends OrgAction
                             'icon'   => 'fal fa-code',
                             'fields' => [
                                 'treblle_api_key' => [
-                                    'type'  => 'input',
+                                    'type'  => 'purePassword',
                                     'label' => __('API Key'),
                                     'value' => Arr::get($shop->settings, 'treblle.api_key', ''),
                                 ],

@@ -249,7 +249,7 @@ class Kernel extends HttpKernel
         'abilities'              => CheckAbilities::class,
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
-        'treblle'                => TreblleMiddleware::class,
         'set.treblle.authorize'  => SetTreblleAuthorize::class,
+        'treblle'                => TreblleMiddleware::class,
     ];
 }
