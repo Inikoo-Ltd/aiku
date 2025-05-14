@@ -31,7 +31,7 @@ class StoreProductShopify extends OrgAction
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
         DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
-            foreach (Arr::get($modelData, 'products') as $product) {
+            foreach (Arr::get($modelData, 'items') as $product) {
                 $portfolio = StorePortfolio::run(
                     $shopifyUser->customer,
                     $product,
@@ -48,7 +48,7 @@ class StoreProductShopify extends OrgAction
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'items' => ['required', 'array']
         ];
     }
 
