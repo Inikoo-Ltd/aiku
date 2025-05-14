@@ -59,7 +59,7 @@ class IndexShippers extends OrgAction
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($organisation);
     }
@@ -135,6 +135,7 @@ class IndexShippers extends OrgAction
                     ]
                 )
             ),
+            default => []
 
         };
     }
