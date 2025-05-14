@@ -91,7 +91,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         return Inertia::render(
             'Ecom/Checkout',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs(),
+                'breadcrumbs'    => $this->getBreadcrumbs($order),
                 'title'          => __('Basket'),
                 'pageHead'       => [
                     'title' => __('Basket'),
@@ -106,7 +106,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         );
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(Order $order): array
     {
         return
             array_merge(
@@ -116,7 +116,10 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.checkout.show'
+                                'name' => 'retina.dropshipping.checkout.show',
+                                'parameters' => [
+                                    'order' => $order->slug
+                                ]
                             ],
                             'label' => __('Checkout'),
                         ]
