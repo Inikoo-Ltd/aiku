@@ -24,9 +24,25 @@ const props = defineProps<{
 const locale = useLocaleStore();
 const layout = inject('layout', layoutStructure)
 
+function shipperRoute(shipper: {}) {
+    switch (route().current()) {
+         case "grp.org.warehouses.show.dispatching.shippers.index":
+            return route(
+               "grp.org.warehouses.show.dispatching.shippers.show",
+                [route().params["organisation"], route().params["warehouse"], shipper.slug])
+        default:
+            return ''
+    }
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+         <template #cell(code)="{ item: shipper }">
+            <Link :href="shipperRoute(shipper)" class="primaryLink">
+                {{ shipper["code"] }}
+            </Link>
+        </template>
     </Table>
 </template>
