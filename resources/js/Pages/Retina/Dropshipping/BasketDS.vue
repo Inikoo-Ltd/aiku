@@ -317,7 +317,7 @@ const isLoadingSubmit = ref(false)
 const onAddProducts = async (products: number[]) => {
     const productsMapped = products.map((item: any) => {
         return {
-            id: item.id,
+            id: item.item_id,
             quantity: item.quantity_selected ?? 1
         }
     })
