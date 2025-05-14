@@ -94,7 +94,7 @@ class GetApiProductsFromShopify extends OrgAction
                         ]]);
 
                         UpdateStoredItem::run($storedItem, [
-                            'state' => StoredItemStateEnum::SUBMITTED,
+                            'state' => StoredItemStateEnum::ACTIVE,
                             'total_quantity' => $variant['inventory_quantity']
                         ]);
                     }

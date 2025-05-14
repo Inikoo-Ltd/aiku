@@ -124,9 +124,11 @@ export interface PalletReturn {
 
 export interface FieldOrderSummary {
     label: string
+    label_class?: string
     quantity: number
     price_base?: number
     price_total: number | string
+    price_total_class?: string
     information_icon?: string
     information?: string
     currency: {
