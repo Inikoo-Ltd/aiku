@@ -3,6 +3,7 @@
 	"slug": "header-1",
 	"code": "header-1",
 	"name": "Header 1",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"component": "header",
 	"data": {
 		"fieldValue": {

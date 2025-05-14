@@ -4,6 +4,7 @@
 	"code": "header-2",
 	"name": "Header 2",
 	"component": "header",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"container": {

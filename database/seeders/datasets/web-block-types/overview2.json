@@ -5,6 +5,7 @@
 	"name": "Showcase (Simple)",
 	"icon": ["fal", "text"],
 	"category": "block",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"text": "<span><h2 style='font-size: 2.25rem; font-weight: 700; color: #1f2937; line-height: 1.25;'> Jordan Proto-Lyte <br /> <span style='font-size: 0.875rem; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280;'> Running Collection </span> </h2> <p style='margin-top: 1rem; font-size: 0.875rem; color: #374151; max-width: 85%;'> Featuring soft foam cushioning and lightweight, woven fabric in the upper, the Jordan Proto-Lyte is made for all-day, bouncy comfort. Lightweight Breathability: Lightweight woven fabric with real or synthetic leather provides breathable support. Cushioned Comfort: A full-length foam midsole delivers lightweight, plush cushioning. Secure Traction: Exaggerated herringbone-pattern outsole offers traction on a variety of surfaces. </p> </span>",

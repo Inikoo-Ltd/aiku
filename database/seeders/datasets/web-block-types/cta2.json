@@ -6,6 +6,7 @@
 	"fixed": true,
 	"category": "block",
 	"icon": ["fal", "rectangle-wide"],
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"headline": "<h2><strong><span style='color: #FFFFFF'>Boost your productivity today</span></strong></h2><p style='text-align: center'><span style='color: #D1D1D1; font-size: 20px'>Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim</span></p><p style='text-align: center'><span style='color: #D1D1D1; font-size: 20px'> id veniam aliqua proident excepteur commodo do ea.</span></p><p></p>",
