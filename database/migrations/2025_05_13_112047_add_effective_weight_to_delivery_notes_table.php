@@ -14,16 +14,16 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('delivery_notes', function (Blueprint $table) {
-            $table->unsignedInteger('weight')->nullable()->comment('actual weight, grams')->change();
-            $table->unsignedInteger('estimated_weight')->default(0)->comment('grams');
-            $table->unsignedInteger('effective_weight')->default(0)->index()
+            $table->unsignedBigInteger('weight')->nullable()->comment('actual weight, grams')->change();
+            $table->unsignedBigInteger('estimated_weight')->default(0)->comment('grams');
+            $table->unsignedBigInteger('effective_weight')->default(0)->index()
                 ->comment('Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams');
 
         });
 
         Schema::table('delivery_note_items', function (Blueprint $table) {
-            $table->unsignedInteger('estimated_required_weight')->default(0)->comment('grams');
-            $table->unsignedInteger('estimated_picked_weight')->default(0)->comment('grams');
+            $table->unsignedBigInteger('estimated_required_weight')->default(0)->comment('grams');
+            $table->unsignedBigInteger('estimated_picked_weight')->default(0)->comment('grams');
 
         });
 
