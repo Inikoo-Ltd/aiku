@@ -37,8 +37,11 @@ class PalletReturnsResource extends JsonResource
 
         if ($this->state == PalletReturnStateEnum::PICKING) {
             $query = PalletReturnItem::where('pallet_return_id', $this->id);
-            $totalStoredItem = (int) $query->count();
-            $totalStoredItemPicking = (int) $query->where('state', '==', PalletReturnItemStateEnum::PICKING)->count();
+            $totalStoredItem = (int) $query->sum('quantity_ordered');
+            $totalStoredItemPicking = (int) $query->sum('quantity_picked');
+
+            // $totalStoredItem = (int) $query->count();
+            // $totalStoredItemPicking = (int) $query->where('state', '==', PalletReturnItemStateEnum::PICKING)->count();
 
             $percentageStoredItem = $totalStoredItem > 0 ? round(($totalStoredItemPicking / $totalStoredItem) * 100, 2) : 0;
             $result = '' . $totalStoredItemPicking . ' / ' . $totalStoredItem . ' (' . $percentageStoredItem . '%)';
