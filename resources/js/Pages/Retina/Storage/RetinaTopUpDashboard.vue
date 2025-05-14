@@ -161,7 +161,7 @@ const onSubmitTopUp = () => {
                             :currency="currency.code" locale="en-GB" fluid />
                     </div>
 
-                    <div class="flex gap-x-4">
+                     <div class="flex flex-wrap gap-2 sm:gap-x-4">
                         <div @click="amount = 100"
                             :class="amount === 100 ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
                             class="h-12 w-fit cursor-pointer border border-gray-300 rounded-md flex items-center px-7 font-bold">
