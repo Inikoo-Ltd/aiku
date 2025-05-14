@@ -59,9 +59,9 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'order'          => $order ? OrderResource::make($order)->resolve() : [],
                     'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 
-                    'balance' => $this->customer?->balance,
-
-                    'transactions' => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
+                    'balance'       => $this->customer?->balance,
+                    'total_to_pay'  => $order ? $order->total_amount : null,
+                    'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
                 ]
         );
     }

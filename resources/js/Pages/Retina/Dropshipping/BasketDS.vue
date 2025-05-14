@@ -86,7 +86,7 @@ const props = defineProps<{
         }
     }
     pageHead: PageHeadingTypes
-
+    order: {}
     // upload_spreadsheet: UploadPallet
 
     box_stats: {
@@ -356,6 +356,7 @@ const onNoStructureUpload = () => {
     })
 }
 
+console.log('basket ds', props)
 
 // Section: Modal confirmation order
 const isModalConfirmationOrder = ref(false)
@@ -427,7 +428,10 @@ const isModalConfirmationOrder = ref(false)
                 iconRight="fas fa-arrow-right"
                 :label="trans('Continue to Checkout')"
                 :routeTarget="{
-                    name: 'retina.dropshipping.checkout.show'
+                    name: 'retina.dropshipping.checkout.show',
+                    parameters: {
+                        order: props?.data?.data?.slug
+                    }
                 }"
                 class="w-full"
                 full
