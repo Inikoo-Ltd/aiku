@@ -3,6 +3,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faPencil } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
+import { trans } from "laravel-vue-i18n"
+import { inject } from "vue"
 
 const props = defineProps<{
     summary: {
@@ -13,31 +15,57 @@ const props = defineProps<{
         services_amount: string
         charges_amount: string
     }
+    balance?: string
 }>()
-console.log('ppp', props.summary)
+
+const locale = inject('locale', {})
+
 </script>
 
 <template>
     <div class="py-4 grid grid-cols-3 px-4">
         <div>
-            <div class="font-semibold">
-                <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
-                Delivery Address
-                <FontAwesomeIcon :icon="faPencil" class="text-gray-400 hover:text-gray-600 text-sm" fixed-width aria-hidden="true" />
-            </div>
-            <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
-                
+            <!-- Section: Current balance -->
+            <dl class="ml-5 mb-6 relative isolate bg-indigo-50 border border-indigo-200 rounded shadow px-4 py-5 sm:px-5 sm:py-3 overflow-hidden grid items-center max-w-72">
+                <div class="-z-10 absolute  top-1/2 -translate-y-1/2 transform-gpu blur-2xl" aria-hidden="true">
+                    <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#ff80b5] to-[#9089fc] opacity-30" style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)" />
+                </div>
+
+                <dt class="text-base font-normal opacity-70">
+                    {{ trans("Current balance") }}
+                </dt>
+
+                <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+                    <div class="flex items-baseline text-2xl font-semibold text-indigo-600">
+                        {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
+                    </div>
+                </dd>
+            </dl>
+
+            <!-- Section: Delivery Address -->
+            <div class="">
+                <div class="font-semibold">
+                    <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Delivery Address") }}
+                    <FontAwesomeIcon :icon="faPencil" class="text-gray-400 hover:text-gray-600 text-sm" fixed-width aria-hidden="true" />
+                </div>
+                <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
+            
+                </div>
             </div>
         </div>
-
+        
         <div>
-            <div class="font-semibold">
-                <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
-                Invoice Address
-                <FontAwesomeIcon :icon="faPencil" class="text-gray-400 hover:text-gray-600 text-sm" fixed-width aria-hidden="true" />
-            </div>
-            <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
-                
+            <!-- Section: Invoice Address -->
+            <div class="">
+                <div class="font-semibold">
+                    <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Invoice Address") }}
+                    <FontAwesomeIcon :icon="faPencil" class="text-gray-400 hover:text-gray-600 text-sm" fixed-width aria-hidden="true" />
+                </div>
+                <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
+            
+                </div>
             </div>
         </div>
 

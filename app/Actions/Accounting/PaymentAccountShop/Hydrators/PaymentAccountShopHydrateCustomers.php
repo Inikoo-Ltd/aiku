@@ -20,13 +20,6 @@ class PaymentAccountShopHydrateCustomers implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'asas';
-
-    public function asCommand($command){
-        $f = PaymentAccountShop::find(1);
-        $this->handle($f);
-    }
-
     public function getJobUniqueId(PaymentAccountShop $paymentAccountShop): string
     {
         return $paymentAccountShop->id;

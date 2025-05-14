@@ -15,6 +15,7 @@ use App\Actions\RetinaAction;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Http\Resources\Sales\OrderResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,6 +56,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
 
 
+                    'order'          => OrderResource::make($order)->resolve(),
                     'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 
                     'balance' => $this->customer?->balance,
