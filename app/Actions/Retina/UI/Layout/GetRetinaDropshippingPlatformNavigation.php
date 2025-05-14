@@ -23,15 +23,17 @@ class GetRetinaDropshippingPlatformNavigation
 
         $tabs = [];
 
-        $platformNavigation['baskets'] = [
-            'label' => __('Baskets'),
-            'icon' => ['fal', 'fa-shopping-basket'],
-            'root' => 'retina.dropshipping.platforms.basket.',
-            'route' => [
-                'name' => 'retina.dropshipping.platforms.basket.index',
-                'parameters' => [$platform->slug]
-            ],
-        ];
+        if ($webUser->customer->is_dropshipping) {
+            $platformNavigation['baskets'] = [
+                'label' => __('Baskets'),
+                'icon' => ['fal', 'fa-shopping-basket'],
+                'root' => 'retina.dropshipping.platforms.basket.',
+                'route' => [
+                    'name' => 'retina.dropshipping.platforms.basket.index',
+                    'parameters' => [$platform->slug]
+                ],
+            ];
+        }
 
         if (!$webUser->customer->is_fulfilment or $platform->type !== PlatformTypeEnum::SHOPIFY) {
             $tabs = [
@@ -48,7 +50,7 @@ class GetRetinaDropshippingPlatformNavigation
         }
 
         $platformNavigation['portfolios'] = [
-            'label' => __('Portfolios'),
+            'label' => __('SKUs'),
             'icon' => ['fal', 'fa-cube'],
             'root' => 'retina.dropshipping.platforms.portfolios.',
             'route' => [
@@ -91,15 +93,17 @@ class GetRetinaDropshippingPlatformNavigation
             ],
         ];
 
-        $platformNavigation['api_token'] = [
-            'label' => __('Api Token'),
-            'icon' => ['fal', 'fa-key'],
-            'root' => 'retina.dropshipping.platforms.api.',
-            'route' => [
-                'name' => 'retina.dropshipping.platforms.api.dashboard',
-                'parameters' => [$platform->slug]
-            ],
-        ];
+        if ($webUser->customer->is_dropshipping) {
+            $platformNavigation['api_token'] = [
+                'label' => __('Api Token'),
+                'icon' => ['fal', 'fa-key'],
+                'root' => 'retina.dropshipping.platforms.api.',
+                'route' => [
+                    'name' => 'retina.dropshipping.platforms.api.dashboard',
+                    'parameters' => [$platform->slug]
+                ],
+            ];
+        }
 
         return $platformNavigation;
     }
