@@ -26,7 +26,6 @@ const emits = defineEmits<{
 		class="container mx-auto max-w-7xl px-6 lg:px-8"
 		:style="getStyles(modelValue?.container?.properties)">
 		<div class="relative py-8">
-			<!-- ➊ thicker, rounded, full‑height line, behind everything -->
 			<div
 				class="absolute left-1/2 top-0 transform -translate-x-1/2 h-full w-1 bg-gray-200 rounded-full z-0"></div>
 

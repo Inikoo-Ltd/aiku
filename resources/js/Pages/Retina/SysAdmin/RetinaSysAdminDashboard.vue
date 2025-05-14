@@ -73,11 +73,11 @@ const props = defineProps<{
 				class="relative px-5 py-4 ring-1 ring-gray-300 rounded-lg bg-gray-50 shadow-sm space-y-2">
 				<div class="text-gray-600">
 					<strong class="text-gray-500">{{ trans("Active") }}:</strong>
-					{{ users.active }}
+					{{ users?.active }}
 				</div>
 				<div class="text-gray-600">
 					<strong class="text-gray-500">{{ trans("Inactive") }}:</strong>
-					{{ users.inactive }}
+					{{ users?.inactive }}
 				</div>
 			</div>
 		</div>
