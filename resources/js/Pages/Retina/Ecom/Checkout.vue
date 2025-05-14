@@ -17,6 +17,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
 import { faExclamationTriangle } from "@fas"
+import { Head } from "@inertiajs/vue3"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -52,28 +53,29 @@ const component = computed(() => {
     return components[currentTab.value.key];
 })
 
-const isModalConfirmationOrder = ref(false)
-const onProcessOrder = () => {
-    console.log('onProcessOrder')
-    isModalConfirmationOrder.value = false
-    // router.post(route('retina.models.top_up_payment_api_point.store'), {
-    //     amount: amount.value,
-    //     // notes: privateNote.value,
-    // }, {
-    //     preserveState: true,
-    //     preserveScroll: true,
-    //     onStart: () => {
-    //         isLoading.value = true
-    //     },
-    //     onFinish: () => {
-    //         isLoading.value = false
-    //     }
-    // })
-}
+// const isModalConfirmationOrder = ref(false)
+// const onProcessOrder = () => {
+//     console.log('onProcessOrder')
+//     isModalConfirmationOrder.value = false
+//     // router.post(route('retina.models.top_up_payment_api_point.store'), {
+//     //     amount: amount.value,
+//     //     // notes: privateNote.value,
+//     // }, {
+//     //     preserveState: true,
+//     //     preserveScroll: true,
+//     //     onStart: () => {
+//     //         isLoading.value = true
+//     //     },
+//     //     onFinish: () => {
+//     //         isLoading.value = false
+//     //     }
+//     // })
+// }
 </script>
 
 <template>
     <!-- paymentMethods: <pre>{{ total_amount }}</pre> -->
+    <Head title="Checkout" />
 
     <div v-if="!summary" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
@@ -90,8 +92,8 @@ const onProcessOrder = () => {
         />
 
         <!-- Section: Payment Tabs -->
-        <div v-if="balance < total_amount" class="mx-10 border border-gray-300 rounded">
-            <div class="max-w-lg">
+        <div v-if="balance > total_amount" class="mx-10 border border-gray-300">
+            <div v-if="props.paymentMethods?.length" class="max-w-lg">
                 <div class="grid grid-cols-1 sm:hidden">
                     <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
                     <select aria-label="Select a tab" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
@@ -110,9 +112,8 @@ const onProcessOrder = () => {
                             :key="tabIdx"
                             :class="[currentTab.index === tabIdx ? '' : 'text-gray-500 hover:text-gray-700', tabIdx === 0 ? 'rounded-l-lg' : '', tabIdx === props.paymentMethods?.length - 1 ? 'rounded-r-lg' : '']"
                             class="cursor-pointer group relative min-w-0 flex-1 overflow-hidden bg-white px-4 py-4 text-center text-sm font-medium hover:bg-gray-100 focus:z-10"
-            
                         >
-                            <FontAwesomeIcon :icon="tab.icon" class="mr-1" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="mr-1" fixed-width aria-hidden="true" />
                             <span>{{ tab.label }}</span>
                             <span aria-hidden="true" :class="[currentTab.index === tabIdx ? 'bg-indigo-500' : 'bg-transparent', 'absolute inset-x-0 bottom-0 h-0.5']" />
                         </div>
@@ -120,22 +121,24 @@ const onProcessOrder = () => {
                 </div>
             </div>
 
-            <component
-                :is="component"
-                :data="paymentMethods[currentTab.index]"
-            />
+            <KeepAlive>
+                <component
+                    :is="component"
+                    :data="paymentMethods[currentTab.index]"
+                />
+            </KeepAlive>
         </div>
 
-        <div v-else class="mx-10 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded">
-            <div class="text-gray-500">
-                You can pay with your current balance.
+        <div v-else class="ml-10 mr-4 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded">
+            <div class="text-center text-gray-500">
+                This is your final confirmation.
+                <br> Your order will being processed by the system after click the button.
             </div>
-            <Button @click="isModalConfirmationOrder = true" label="Place Order" size="l" />
+            <Button @click="'isModalConfirmationOrder = true'" label="Place Order" size="l" />
         </div>
 
 
-        <div class="flex justify-end gap-x-4 mt-4 px-4">
-            
+        <div class="xflex xjustify-end gap-x-4 mt-4 px-10">
             <ButtonWithLink
                 :icon="faArrowLeft"
                 type="tertiary"
@@ -146,33 +149,34 @@ const onProcessOrder = () => {
             />
         </div>
 
-        <Modal
+        <!-- <Modal
             :isOpen="isModalConfirmationOrder"
             @close="() => isModalConfirmationOrder = false"
             width="w-full max-w-lg"
         >
-            <div>
-                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100">
-                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-600 text-xl" fixed-width aria-hidden="true" />
-                </div>
-                <div class="mt-3 text-center sm:mt-2">
-                    <div as="h3" class="text-base font-semibold">
-                        Final confirmation
+            <div class="px-3">
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-600 text-xl" fixed-width aria-hidden="true" />
                     </div>
-                    <div class="mt-2">
-                        <p class="text-sm text-gray-500">
-                            This is your final confirmation. Your order will being processed by the system after click the button.
-                        </p>
+                    <div class="mt-3 text-center sm:mt-2">
+                        <div as="h3" class="text-base font-semibold">
+                            Final confirmation
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">
+                                
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="mt-5 sm:mt-6 flex gap-x-4">
-                <!-- <button type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2" @click="open = false">Deactivate</button>
-                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold  shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0" @click="open = false" ref="cancelButtonRef">Cancel</button> -->
-                <Button @click="isModalConfirmationOrder = false" label="cancel" type="tertiary" />
-                <Button @click="onProcessOrder" label="Yes, process order" icon="" full />
+
+                <div class="mt-5 sm:mt-6 flex gap-x-4">
+                    <Button @click="isModalConfirmationOrder = false" label="cancel" type="tertiary" />
+                    <Button @click="onProcessOrder" label="Yes, process order" icon="" full />
+                </div>
             </div>
 
-        </Modal>
+        </Modal> -->
     </div>
 </template>

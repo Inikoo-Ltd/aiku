@@ -103,7 +103,13 @@ trait IsOrder
                     [
                         'label'       => 'Total',
                         'price_total' => $order->total_amount
-                    ]
+                    ],
+                    [
+                        'label'             => 'Total to pay',
+                        'label_class'       => 'text-indigo-500 font-bold',
+                        'price_total'       => $order->total_amount - $order->customer->balance,
+                        'price_total_class' => 'text-indigo-500 font-bold',
+                    ],
                 ],
                 'currency' => CurrencyResource::make($order->currency),
             ],

@@ -48,7 +48,7 @@ const debSubmitForm = debounce((save: Function) => {
             :summary
             :balance
         />
-        
+
         <DataTable :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
             <template #empty>
                 <div class="flex items-center justify-center h-full text-center">
@@ -180,7 +180,7 @@ const debSubmitForm = debounce((save: Function) => {
             </ColumnGroup>
         </DataTable>
 
-        <div class="flex justify-end gap-x-4 mt-4 px-4">
+        <div class="flex justify-between gap-x-4 mt-4 px-4">
             
             <Button
                 type="tertiary"
