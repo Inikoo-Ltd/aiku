@@ -221,7 +221,7 @@ class GetWarehouseNavigation
                             'icon'  => ['fal', 'fa-shipping-fast'],
                             'root'  => 'grp.org.warehouses.show.dispatching.shippers.',
                             'route' => [
-                                "name"       => "grp.org.warehouses.show.dispatching.shippers.index",
+                                "name"       => "grp.org.warehouses.show.dispatching.shippers.current.index",
                                 "parameters" => [
                                     $warehouse->organisation->slug,
                                     $warehouse->slug
