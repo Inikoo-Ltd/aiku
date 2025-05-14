@@ -29,10 +29,8 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 {
     use IsOrder;
 
-    public function handle(Customer $customer): array
+    public function handle(Order $order, Customer $customer): array
     {
-        $order = $customer->orderInBasket;
-
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
         $paymentMethods = [];
@@ -79,11 +77,11 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         return $paymentMethods;
     }
 
-    public function asController(ActionRequest $request): array
+    public function asController(Order $order, ActionRequest $request): array
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer);
+        return $this->handle($order, $this->customer);
     }
 
     public function htmlResponse(array $checkoutData): Response
