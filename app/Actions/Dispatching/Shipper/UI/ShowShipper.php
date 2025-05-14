@@ -104,6 +104,7 @@ class ShowShipper extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.warehouses.show.dispatching.shippers.edit',
             'grp.org.warehouses.show.dispatching.shippers.show',
             => array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(

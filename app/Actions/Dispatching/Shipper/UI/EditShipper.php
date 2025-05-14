@@ -26,6 +26,7 @@ class EditShipper extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $shipper,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -93,18 +94,19 @@ class EditShipper extends OrgAction
 
         return $this->handle($shipper, $request);
     }
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Shipper $shipper, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexShippers::make()->getBreadcrumbs(
-                routeName: preg_replace('/create$/', 'index', $routeName),
+            ShowShipper::make()->getBreadcrumbs(
+                $shipper,
+                routeName: $routeName,
                 routeParameters: $routeParameters,
             ),
             [
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating shipper'),
+                        'label' => __('Editing shipper'),
                     ]
                 ]
             ]
