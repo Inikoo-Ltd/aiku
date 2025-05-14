@@ -91,7 +91,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         //     ];
         // }
         $actions = [];
-
+        $shopifyActions = [];
         $shopifyActions = match (class_basename($this->platformUser)) {
             'ShopifyUser' => [
                 'type'    => 'button',
@@ -124,11 +124,11 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                         ];
         }
 
-        $actions[] = array_merge(
+        $actions = array_merge(
             [$shopifyActions],
-            $createButton
+            [$createButton]
         );
-
+        // dd($actions);
         return Inertia::render(
             'Dropshipping/Client/CustomerClients',
             [
