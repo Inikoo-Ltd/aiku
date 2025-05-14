@@ -8,6 +8,7 @@ import { onMounted, ref, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import Background from '@/Components/CMS/Fields/Background.vue'
 
 defineOptions({ layout: RetinaShowIris })
 const form = useForm({
@@ -84,7 +85,7 @@ onMounted(async () => {
 
                 <!-- Submit Button -->
                 <div class="space-y-2">
-                    <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" type="primary"/>
+                    <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :style="'tertiary'" :class="'bg-[#C1A027] text-white'" />
                 </div>
 
                 <!-- Registration Link -->
