@@ -8,24 +8,27 @@ import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
 import { onMounted, provide, ref } from 'vue'
-import { initialiseIrisApp } from '@/Composables/initialiseIris'
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
+// import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { trans } from 'laravel-vue-i18n'
 import Modal from '@/Components/Utils/Modal.vue'
 import "@/../css/Iris/editor.css"
+import { useLayoutStore } from "@/Stores/retinaLayout"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { initialiseRetinaApp } from '@/Composables/initialiseRetinaApp'
+import { initialiseIrisApp } from '@/Composables/initialiseIris'
 library.add(faExclamationTriangle)
 
-initialiseIrisApp()
+initialiseIrisApp()  // Init Iris app
+initialiseRetinaApp()  // Init Retina app
 
 const props = defineProps<{}>()
-const layout = useIrisLayoutStore()
-
+// const layout = useIrisLayoutStore()
+const layout = useLayoutStore()
 provide('layout', layout)
 
 const header = usePage().props?.iris?.header
