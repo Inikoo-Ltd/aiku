@@ -48,9 +48,9 @@ class GetWebsiteWorkshopFamily
 
     public function getFamilies(ProductCategory $productCategory): AnonymousResourceCollection
     {
-        if ($productCategory->follow_master && $productCategory->master_product_category_id) {
+        /* if ($productCategory->follow_master && $productCategory->master_product_category_id) {
             return MasterFamiliesResource::collection($productCategory->masterProductCategory->masterFamilies()->where('show_in_website', true));
-        }
+        } */
 
         return FamilyWebsiteResource::collection($productCategory->getFamilies());
     }

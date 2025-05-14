@@ -52,7 +52,6 @@ const components: Record<string, Component> = {
     'cta1': CTAIris,
     'cta2': CTA2Iris,
     'cta3': CTA3Iris,
-    'department-1': Department1Iris,
     'iframe': IframeIris,
     'images': ImageIris,
     'overview_aurora': OverviewIris,
@@ -71,7 +70,8 @@ const components: Record<string, Component> = {
     'family-1' : FamilyIris1,
     'product-1' : ProductIris1,
     'timeline': Timeline,
-    'step-1' : Step2Iris
+    'step-1' : Step2Iris,
+    'department-1' : Department1Iris
 }
 
 
