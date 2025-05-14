@@ -62,6 +62,7 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
+use Treblle\Laravel\Middlewares\TreblleMiddleware;
 
 class Kernel extends HttpKernel
 {
@@ -247,5 +248,6 @@ class Kernel extends HttpKernel
         'abilities'              => CheckAbilities::class,
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
+        'treblle'                => TreblleMiddleware::class,
     ];
 }

@@ -51,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pas_state_in_process Number of Payment Account Shops in in_process
  * @property int $number_pas_state_active Number of Payment Account Shops in active
  * @property int $number_pas_state_inactive Number of Payment Account Shops in inactive
+ * @property int $number_customers Number distinct customer with successful payments
  * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
  * @method static Builder<static>|PaymentAccountStats newModelQuery()
  * @method static Builder<static>|PaymentAccountStats newQuery()

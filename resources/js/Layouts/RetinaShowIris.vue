@@ -9,11 +9,12 @@ import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
 import { onMounted, provide, ref } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
+// import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { trans } from 'laravel-vue-i18n'
 import Modal from '@/Components/Utils/Modal.vue'
 import "@/../css/Iris/editor.css"
+import { useLayoutStore } from "@/Stores/retinaLayout"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationTriangle } from '@fas'
@@ -24,7 +25,8 @@ library.add(faExclamationTriangle)
 initialiseIrisApp()
 
 const props = defineProps<{}>()
-const layout = useIrisLayoutStore()
+// const layout = useIrisLayoutStore()
+const layout = useLayoutStore()
 
 provide('layout', layout)
 

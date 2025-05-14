@@ -125,7 +125,7 @@ test('create delivery note item', function (DeliveryNote $deliveryNote) {
     $stock       = UpdateStock::make()->action($stock, [
         'state' => StockStateEnum::ACTIVE
     ]);
-    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock, []);
+    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
     $transaction = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
 
     $deliveryNoteData = [
@@ -178,7 +178,7 @@ test('create second delivery note item', function (DeliveryNote $deliveryNote) {
     $stock       = UpdateStock::make()->action($stock, [
         'state' => StockStateEnum::ACTIVE
     ]);
-    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock, []);
+    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
     $transaction = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
 
     $deliveryNoteData = [

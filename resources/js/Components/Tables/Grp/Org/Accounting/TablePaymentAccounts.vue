@@ -75,6 +75,16 @@ function shopsRoute(paymentAccount: PaymentAccount) {
     }
 }
 
+function customersRoute(paymentAccount: PaymentAccount) {
+    switch (route().current()) {
+        case 'grp.org.accounting.payment-accounts.index':
+            return route(
+                'grp.org.accounting.payment-accounts.show.customers.index',
+                [route().params['organisation'], paymentAccount.slug])
+
+    }
+}
+
 
 
 </script>
@@ -107,6 +117,13 @@ function shopsRoute(paymentAccount: PaymentAccount) {
         <template #cell(number_pas_state_active)="{ item: paymentAccount }">
             <Link :href="shopsRoute(paymentAccount)" class="secondaryLink">
                 {{ useLocaleStore().number(paymentAccount['number_pas_state_active']) }}
+            </Link>
+        </template>
+
+        <!-- Column: Customer -->
+        <template #cell(number_customers)="{ item: paymentAccount }">
+            <Link :href="customersRoute(paymentAccount)" class="secondaryLink">
+                {{ useLocaleStore().number(paymentAccount['number_customers']) }}
             </Link>
         </template>
 

@@ -50,7 +50,7 @@ class GetPortfolios
         }
 
 
-        return $query->withPaginator(null)
+        return $query->withPaginator(null, queryName: 'per_page')
         ->withQueryString();
     }
 

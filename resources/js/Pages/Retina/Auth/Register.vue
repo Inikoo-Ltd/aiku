@@ -2,7 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import { ref, onMounted, nextTick, watch} from 'vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
-// import RetinaShowIris from '@/Layouts/RetinaShowIris.vue';
+import RetinaShowIris from '@/Layouts/RetinaShowIris.vue';
 import { trans } from 'laravel-vue-i18n'
 import Multiselect from '@vueform/multiselect'
 import Address from '@/Components/Forms/Fields/Address.vue';
@@ -11,7 +11,7 @@ import CustomerDataForm from '@/Components/CustomerDataForm.vue';
 
 
 // Set default layout
-// defineOptions({ layout: RetinaShowIris });
+defineOptions({ layout: RetinaShowIris });
 const props = defineProps({
   countriesAddressData : Array,
   registerRoute: {
@@ -319,7 +319,7 @@ onMounted(async () => {
     <!-- Submit Button -->
     <div class="flex justify-end">
       <button type="submit"
-        class="inline-flex items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        class="inline-flex items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#C1A027] text-white">
         <span v-if="isLoading" class="loader mr-2"></span>
         {{trans("Register")}}
       </button>

@@ -110,6 +110,7 @@ const debSubmitForm = debounce((save: Function) => {
                                 xxsaveOnForm
                                 noSaveButton
                                 noUndoButton
+                                :min="0"
                             />
                         </div>
                     </template>

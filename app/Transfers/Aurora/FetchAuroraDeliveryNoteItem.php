@@ -84,8 +84,15 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             $createdAt = $deliveryNote->created_at;
         }
 
-        $weight = $this->auroraModelData->{'Inventory Transaction Weight'};
-        $weight = abs($weight);
+        $estimatedPickedWeight = 0;
+
+        $estimatedRequiredWeight = $this->auroraModelData->{'Inventory Transaction Weight'};
+        $estimatedRequiredWeight = abs($estimatedRequiredWeight);
+        $estimatedRequiredWeight = (int)floor($estimatedRequiredWeight * 1000);
+
+        if ($quantity_required != 0) {
+            $estimatedPickedWeight = (int)floor($this->auroraModelData->{'Picked'} * $estimatedRequiredWeight / $quantity_required);
+        }
 
 
         $revenueAmount = $this->auroraModelData->{'Amount In'};
@@ -95,36 +102,38 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
 
 
         $this->parsedData['delivery_note_item'] = [
-            'transaction_id'      => $transactionID,
-            'state'               => $state,
-            'quantity_required'   => $quantity_required,
-            'quantity_picked'     => $this->auroraModelData->{'Picked'},
-            'quantity_packed'     => $this->auroraModelData->{'Packed'},
-            'quantity_dispatched' => $quantity_dispatched,
-            'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
-            'created_at'          => $createdAt,
-            'fetched_at'          => now(),
-            'last_fetched_at'     => now(),
-            'org_stock_id'        => $orgStock?->id,
-            'org_stock_family_id' => $orgStock?->org_stock_family_id,
-            'stock_id'            => $stock ? $stock->id : null,
-            'stock_family_id'     => $stock ? $stock->stock_family_id : null,
-            'weight'              => $weight,
-            'date'                => $deliveryNote->date,
-            'queued_at'           => $deliveryNote->queued_at,
-            'handling_at'         => $deliveryNote->handling_at,
-            'handling_blocked_at' => $deliveryNote->handling_blocked_at,
-            'packed_at'           => $deliveryNote->packed_at,
-            'finalised_at'        => $deliveryNote->finalised_at,
-            'dispatched_at'       => $deliveryNote->dispatched_at,
-            'cancelled_at'        => $deliveryNote->cancelled_at,
-            'start_picking'       => $deliveryNote->start_picking,
-            'end_picking'         => $deliveryNote->end_picking,
-            'start_packing'       => $deliveryNote->start_packing,
-            'end_packing'         => $deliveryNote->end_packing,
-            'revenue_amount'      => $revenueAmount,
-            'org_revenue_amount'  => $revenueAmountOrgCurrency,
-            'grp_revenue_amount'  => $revenueAmountGroupCurrency,
+            'transaction_id'            => $transactionID,
+            'state'                     => $state,
+            'quantity_required'         => $quantity_required,
+            'quantity_picked'           => $this->auroraModelData->{'Picked'},
+            'quantity_packed'           => $this->auroraModelData->{'Packed'},
+            'quantity_dispatched'       => $quantity_dispatched,
+            'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
+            'created_at'                => $createdAt,
+            'fetched_at'                => now(),
+            'last_fetched_at'           => now(),
+            'org_stock_id'              => $orgStock?->id,
+            'org_stock_family_id'       => $orgStock?->org_stock_family_id,
+            'stock_id'                  => $stock ? $stock->id : null,
+            'stock_family_id'           => $stock ? $stock->stock_family_id : null,
+            'weight'                    => $estimatedRequiredWeight / 1000,
+            'estimated_required_weight' => $estimatedRequiredWeight,
+            'estimated_picked_weight'   => $estimatedPickedWeight,
+            'date'                      => $deliveryNote->date,
+            'queued_at'                 => $deliveryNote->queued_at,
+            'handling_at'               => $deliveryNote->handling_at,
+            'handling_blocked_at'       => $deliveryNote->handling_blocked_at,
+            'packed_at'                 => $deliveryNote->packed_at,
+            'finalised_at'              => $deliveryNote->finalised_at,
+            'dispatched_at'             => $deliveryNote->dispatched_at,
+            'cancelled_at'              => $deliveryNote->cancelled_at,
+            'start_picking'             => $deliveryNote->start_picking,
+            'end_picking'               => $deliveryNote->end_picking,
+            'start_packing'             => $deliveryNote->start_packing,
+            'end_packing'               => $deliveryNote->end_packing,
+            'revenue_amount'            => $revenueAmount,
+            'org_revenue_amount'        => $revenueAmountOrgCurrency,
+            'grp_revenue_amount'        => $revenueAmountGroupCurrency,
         ];
 
         if ($transaction) {

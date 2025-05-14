@@ -93,28 +93,10 @@ trait IsIndexPaymentAccounts
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->withEmptyState(
-                    $parent instanceof OrgPaymentServiceProvider ?
-
-                        [
-                            'title'       => __('no payment accounts'),
-                            'description' => $this->canEdit ? __('Get started by creating a new payment account.') : null,
-                            'count'       => $parent->stats->number_payment_accounts,
-                            'action'      => $this->canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new payment account'),
-                                'label'   => __('payment account'),
-                                'route'   => [
-                                    'name'       => 'grp.org.accounting.payment-accounts.create',
-                                    'parameters' => $parent->organisation->slug
-                                ]
-                            ] : null
-                        ] : null
-                )
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
@@ -129,7 +111,7 @@ trait IsIndexPaymentAccounts
 
             $table->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_amount_successfully_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type:'number');
+            $table->column(key: 'org_amount_successfully_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
 
             $table->defaultSort('code');
         };

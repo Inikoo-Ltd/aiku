@@ -99,12 +99,11 @@ const confirmFollowMaster = (item) => {
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead" />
 
   <div class="px-4 pb-8 m-5">
-    <Message severity="warn" closable>
+    <Message v-if="productCategory.data.follow_master" severity="warn" closable>
       <template #icon>
         <FontAwesomeIcon :icon="faExclamation" />
       </template>
@@ -124,10 +123,15 @@ const confirmFollowMaster = (item) => {
 
         <EditPreviewBluprintData :title="productCategory.data.type !== 'family' ? 'Department' : 'Family'"
           :data="productCategory.data" :update_route="updateRoute" :web_block_types="web_block_types"
-          :upload_image_route="upload_image_route" />
+          :upload_image_route="upload_image_route" :disabled="productCategory.data.follow_master"/>
       </div>
 
-      <SetVisibleList :title="productCategory.data.type != 'family' ? 'Family List' : 'Products List'" :list_data="families.data" :update-route="updateRoute" />
+      <SetVisibleList 
+        :title="productCategory.data.type != 'family' ? 'Family List' : 'Products List'" 
+        :list_data="families.data" 
+        :update-route="updateRoute" 
+        :disabled="productCategory.data.follow_master"
+      />
     </div>
   </div>
 

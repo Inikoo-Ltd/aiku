@@ -393,7 +393,7 @@ test('store redirect', function (Webpage $webpage) {
     return $redirect;
 })->depends('create webpage');
 
-test('upadte redirect', function (Redirect $redirect) {
+test('update redirect', function (Redirect $redirect) {
     $redirect = UpdateRedirect::make()->action($redirect, [
         'path' => 'hello5'
     ]);

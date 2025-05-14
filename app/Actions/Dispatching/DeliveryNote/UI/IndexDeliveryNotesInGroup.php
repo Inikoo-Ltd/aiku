@@ -22,14 +22,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexDeliveryNotesInGroup extends OrgAction
 {
-    public function handle(Group $group, $prefix = null): LengthAwarePaginator
+    use IsDeliveryNotesIndex;
+
+    public function handle(Group $parent, $prefix = null): LengthAwarePaginator
     {
-        return IndexDeliveryNotes::run($group, $prefix);
+        return IndexDeliveryNotes::run($parent, $prefix);
     }
 
-    public function tableStructure(Group $group, $prefix = null): Closure
+    public function tableStructure(Group $parent, $prefix = null): Closure
     {
-        return IndexDeliveryNotes::make()->tableStructure($group, $prefix);
+        return IndexDeliveryNotes::make()->tableStructure($parent, $prefix);
     }
 
     public function jsonResponse(LengthAwarePaginator $deliveryNotes): AnonymousResourceCollection
@@ -50,7 +52,7 @@ class IndexDeliveryNotesInGroup extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-truck'],
-            'title' => __('Delivery notes')
+            'title' => $title
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -60,12 +62,12 @@ class IndexDeliveryNotesInGroup extends OrgAction
         return Inertia::render(
             'Org/Dispatching/DeliveryNotes',
             [
-                'breadcrumbs'                                => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'                                      => __('delivery notes'),
-                'pageHead'                                   => [
+                'title'       => $title,
+                'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -74,18 +76,17 @@ class IndexDeliveryNotesInGroup extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'                                       => DeliveryNotesResource::collection($deliveryNotes),
+                'data'        => DeliveryNotesResource::collection($deliveryNotes),
             ]
-        )->table($this->tableStructure(group: $this->group));
+        )->table($this->tableStructure(parent: $this->group));
     }
-
-
-
 
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
+
         $group = group();
+        $this->parent = $group;
         $this->initialisationFromGroup($group, $request)->withTab(DeliveryNotesTabsEnum::values());
 
         return $this->handle($group, DeliveryNotesTabsEnum::DELIVERY_NOTES->value);
@@ -110,7 +111,7 @@ class IndexDeliveryNotesInGroup extends OrgAction
             ShowGroupOverviewHub::make()->getBreadcrumbs(),
             $headCrumb(
                 [
-                    'name' => $routeName,
+                    'name'       => $routeName,
                     'parameters' => $routeParameters
                 ]
             )

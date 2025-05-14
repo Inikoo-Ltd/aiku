@@ -23,7 +23,7 @@ Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
+Route::middleware(['treblle','auth:sanctum', 'ability:retina'])->group(function () {
     Route::get('/profile', GetProfile::class)->name('profile');
 
 

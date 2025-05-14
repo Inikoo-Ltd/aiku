@@ -16,19 +16,28 @@ import { faEdit } from "@fal";
 import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification";
 import SelectButton from 'primevue/selectbutton';
+import { trans } from "laravel-vue-i18n";
 
 import Family1Render from '@/Components/CMS/Webpage/Family1/Family1Render.vue'
 import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRender.vue'
 
-const props = defineProps<{
-    title: String
-    data: Object
-    update_route: routeType
-    web_block_types?: Object
-    upload_image_route : routeType
-}>()
+const props = withDefaults(defineProps<{
+  title: string
+  data: object
+  update_route: routeType
+  web_block_types?: object
+  upload_image_route: routeType
+  disabled?: boolean
+}>(), {
+  disabled: false
+})
 
-const form = useForm(props.data)
+
+const form = useForm({
+    name : props.data.name,
+    description :  props.data.description,
+    show_in_website :  props.data.show_in_website
+})
 const usedTemplate = ref(props.web_block_types.data[0])
 const isLoading = ref(false)
 const confirm = useConfirm("alert-save");
@@ -55,7 +64,7 @@ const getComponentDepartment = (componentName: string) => {
 
 const onSaveAll = () => {
     form.patch(
-        route(props.update_route.name, {...props.update_route.parameters, masterProductCategory: data.id }),
+        route(props.update_route.name, {...props.update_route.parameters, masterProductCategory: props.data.id }),
         {
             preserveScroll: true,
             onStart: () => {
@@ -141,15 +150,18 @@ const onUpload = async (files: File[], clear) => {
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">{{ title }}</h3>
-                <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit"
+                <div v-if="!disabled">
+                    <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit"
                     @click="departmentEdit = true" />
                 <div v-else class="flex gap-3">
                     <Button label="Cancel" :size="'xs'" :type="'tertiary'" @click="departmentEdit = false" />
                     <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave"  @click="() => confirmSave()" />
                 </div>
+                </div>
+                
             </div>
             <div class="flex items-center justify-between mb-6">
-                <button @click="goToPrev" aria-label="Previous">
+                <button @click="goToPrev" aria-label="Previous">    
                     <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
                 </button>
                 <div class="flex-1 mx-4">
@@ -163,22 +175,22 @@ const onUpload = async (files: File[], clear) => {
             <div v-if="departmentEdit" class="border-t pt-4 space-y-4">
                 <slot name="form" :form="form">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Label')}}</label>
                         <PureInput v-model="form.name" type="text" placeholder="Enter name" />
                         <p class="text-red-500 text-xs">{{ form.errors?.name }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Description')}}</label>
                         <PureTextarea v-model="form.description" type="text" :rows="4" placeholder="Enter name" />
                         <p class="text-red-500 text-xs">{{ form.errors?.description }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Show in website</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Show in website')}}</label>
                         <ToggleSwitch v-model="form.show_in_website" />
                         <p class="text-red-500 text-xs">{{ form.errors?.show_in_website }}</p>
                     </div>
                     <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Image')}}</label>
                     <Button label="Upload Image" :type="'tertiary'" :icon="faImage" @click="isModalGallery = true" />
                 </div>
                     <slot name="another-form" :form="form"></slot>

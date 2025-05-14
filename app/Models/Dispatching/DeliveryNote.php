@@ -61,7 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $delivery_locked
  * @property int|null $address_id
  * @property int|null $delivery_country_id
- * @property string|null $weight
+ * @property int|null $weight actual weight, grams
  * @property int $number_stocks
  * @property int $number_picks
  * @property bool $has_out_of_stocks
@@ -93,6 +93,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_vip Indicate if delivery note is for a VIP customer
  * @property int|null $as_organisation_id Indicate if delivery note is for an organisation in this group
  * @property int|null $as_employee_id Indicate if delivery note is for an employee
+ * @property int $estimated_weight grams
+ * @property int $effective_weight Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
