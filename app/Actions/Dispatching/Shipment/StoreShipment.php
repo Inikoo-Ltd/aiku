@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\Shipment;
 
 use App\Actions\Dispatching\Shipment\ApiCalls\ApcGbCallShipperApi;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\DpdGbCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\DpdSkCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\PostmenCallShipperApi;
@@ -50,6 +51,7 @@ class StoreShipment extends OrgAction
             'dpd-sk' => DpdSkCallShipperApi::run($deliveryNote, $shipper),
             'pst-mn' => PostmenCallShipperApi::run($deliveryNote, $shipper),
             'whl-gb' => WhistlGbCallShipperApi::run($deliveryNote, $shipper),
+            'itd' => CallApiItdShipping::run($deliveryNote, $shipper),
             default => $shipper->shipments()->create($modelData),
         };
 
@@ -66,7 +68,7 @@ class StoreShipment extends OrgAction
     public function rules(): array
     {
         return [
-            'reference' => ['required', 'max:64', 'string']
+            'tracking' => ['sometimes', 'max:64', 'string']
         ];
     }
 
