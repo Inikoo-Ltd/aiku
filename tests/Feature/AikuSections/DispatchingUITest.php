@@ -98,7 +98,7 @@ test("UI Index dispatching delivery-notes", function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component("Org/Dispatching/DeliveryNotes")
-            ->where("title", 'delivery notes')
+            ->where("title", 'Delivery notes')
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",

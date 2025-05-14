@@ -21,7 +21,7 @@ return [
     /*
      * Define which environments should Treblle ignore and not monitor
      */
-    'ignored_environments' => env('TREBLLE_IGNORED_ENV', 'dev,test,testing'),
+    'ignored_environments' => env('TREBLLE_IGNORED_ENV', 'local,dev,test,testing'),
 
     /*
      * Define which fields should be masked before leaving the server
