@@ -80,11 +80,26 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
             <div class="flex items-center justify-end">
-                <Transition name="spin-to-down">
+                
+                <div v-if="state === 'creating' || state === 'submitted'" class="w-fit">
+                    <NumberWithButtonSave
+                        :modelValue="item.quantity_ordered"
+                        :routeSubmit="item.updateRoute"
+                        :bindToTarget="{ min: 0 }"
+                        keySubmit="quantity_ordered"
+                        :isLoading="isLoading === 'quantity' + item.id"
+                        :readonly="readonly"
+                        @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                        noUndoButton
+                        noSaveButton
+                    />
+                </div>
+                
+                <!-- <Transition name="spin-to-down">
                     <span :key="item.quantity_ordered">
                         {{ item['quantity_ordered'] }}
                     </span>
-                </Transition>
+                </Transition> -->
 
                 <!-- <PureInput
                     :modelValue="item.quantity_ordered"
@@ -103,19 +118,6 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Action -->
         <template #cell(actions)="{ item }">
             <div class="flex gap-2">
-                <div v-if="state === 'creating' || state === 'submitted'" class="w-fit">
-                    <NumberWithButtonSave
-                        :modelValue="item.quantity_ordered"
-                        :routeSubmit="item.updateRoute"
-                        :bindToTarget="{ min: 0 }"
-                        keySubmit="quantity_ordered"
-                        :isLoading="isLoading === 'quantity' + item.id"
-                        :readonly="readonly"
-                        @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
-                        noUndoButton
-                        noSaveButton
-                    />
-                </div>
                 
                 <Link
                     v-if="state === 'creating' || state === 'submitted'"
