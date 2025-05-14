@@ -76,7 +76,7 @@ class IndexShippers extends OrgAction
                 'title'       => __('Shippers'),
                 'pageHead'    => [
                     'title' => __('Shippers'),
-                    'icon'  => 'fal fa-shopping-basket'
+                    'icon'  => 'fal fa-shipping-fast'
                 ],
 
                 'data' => ShippersResource::collection($shippers)

@@ -39,7 +39,7 @@ class ShowShipper extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, Shipper $shipper, ActionRequest $request): Shipper
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(ShipperTabsEnum::values());
 
         return $this->handle($shipper);
     }
@@ -55,7 +55,7 @@ class ShowShipper extends OrgAction
                     'title'     => $shipper->name,
                     'model'     => __('shipper'),
                     'icon'      => [
-                        'icon'  => ['fal', 'fa-folder'],
+                        'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('shipper')
                     ],
                     // 'actions'    => [

@@ -218,7 +218,7 @@ class GetWarehouseNavigation
                         [
                             'label' => __('shippers'),
                             'tooltip' => __('shippers'),
-                            'icon'  => ['fal', 'fa-tasks-alt'],
+                            'icon'  => ['fal', 'fa-shipping-fast'],
                             'root'  => 'grp.org.warehouses.show.dispatching.shippers.',
                             'route' => [
                                 "name"       => "grp.org.warehouses.show.dispatching.shippers.index",
