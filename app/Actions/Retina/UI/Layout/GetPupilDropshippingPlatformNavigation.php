@@ -39,7 +39,7 @@ class GetPupilDropshippingPlatformNavigation
             }
 
             $platformNavigation['portfolios'] = [
-                'label' => __('Portfolios'),
+                'label' => __('SKUs'),
                 'icon' => ['fal', 'fa-cube'],
                 'root' => 'pupil.dropshipping.platforms.portfolios.',
                 'route' => [
