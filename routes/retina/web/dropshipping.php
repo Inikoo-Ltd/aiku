@@ -19,6 +19,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
+use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
@@ -105,4 +106,8 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
     Route::get('', ShowRetinaMitSavedCardsDashboard::class)->name('dashboard');
     Route::get('create', CreateMitSavedCard::class)->name('create');
+});
+
+Route::prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('/', ShowRetinaDropshippingCheckout::class)->name('show');
 });
