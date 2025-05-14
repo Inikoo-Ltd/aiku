@@ -23,5 +23,5 @@ const props = defineProps<{
       <DepartmentRender :data="item" />
     </div>
   </div>
-   <EmptyState :data="{title:'Empty Departments'}" />
+   <EmptyState v-else :data="{title:'Empty Departments'}" />
 </template>
