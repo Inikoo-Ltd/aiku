@@ -12,7 +12,8 @@ import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Image from "@/Components/Image.vue"
 import { debounce } from "lodash"
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
+import { ref } from "vue"
 
 defineProps<{
     order: {}
@@ -34,6 +35,7 @@ const debSubmitForm = debounce((save: Function) => {
     save()
 }, 500)
 
+const isLoading = ref<string | boolean>(false)
 </script>
 
 <template>
@@ -137,6 +139,33 @@ const debSubmitForm = debounce((save: Function) => {
                     <template #body="{ data: dataBody }">
                         <div class="px-2 relative text-right">
                             {{ new Intl.NumberFormat('en', { style: "currency", currency: dataBody.currency_code, }).format(dataBody.net_amount) }}
+                        </div>
+                    </template>
+                </Column>
+
+                <!-- Column: Actions -->
+                <Column
+                    class="w-36"
+                >
+                    <template #header>
+                        <div class="px-2 text-xs md:text-base w-full gap-x-2 font-semibold text-gray-600">
+                            {{ trans("Actions") }}
+                        </div>
+                    </template>
+
+                    <template #body="{ data: dataBody }">
+                        <div class="flex gap-2 px-2">
+                            <Link
+                                :href="dataBody.deleteRoute?.name ? route(dataBody.deleteRoute.name, dataBody.deleteRoute.parameters) : '#'"
+                                as="button"
+                                :method="dataBody.deleteRoute.method"
+                                @start="() => isLoading = 'unselect' + dataBody.id"
+                                @finish="() => isLoading = false"
+                                v-tooltip="trans('Unselect this product')"
+                                :preserveScroll="true"
+                            >
+                                <Button icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + dataBody.id" />
+                            </Link>
                         </div>
                     </template>
                 </Column>

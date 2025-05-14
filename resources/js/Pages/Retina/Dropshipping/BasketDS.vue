@@ -315,10 +315,13 @@ const openModal = (action :any) => {
 // Method: Submit the selected item
 const isLoadingSubmit = ref(false)
 const onAddProducts = async (products: number[]) => {
-    const productsMapped = products.map((item: any) => {
+    // console.log('products', products)
+    // return 
+
+    const productsMapped = products.map((product: any) => {
         return {
-            id: item.item_id,
-            quantity: item.quantity_selected ?? 1
+            id: product.item_id,
+            quantity: product.quantity_selected ?? 1
         }
     })
 
