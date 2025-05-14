@@ -31,8 +31,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexShippers extends OrgAction
 {
-    private Organisation $parent;
-
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -76,7 +74,22 @@ class IndexShippers extends OrgAction
                 'title'       => __('Shippers'),
                 'pageHead'    => [
                     'title' => __('Shippers'),
-                    'icon'  => 'fal fa-shipping-fast'
+                    'icon'  => 'fal fa-shipping-fast',
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Create New Shippers'),
+                            'label'   => __('Create Shipper'),
+                            'route'   => [
+                                'name'       => 'grp.org.warehouses.show.dispatching.shippers.create',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'warehouse'         => $this->warehouse->slug,
+                                ]
+                            ]
+                        ],
+                    ]
                 ],
 
                 'data' => ShippersResource::collection($shippers)
