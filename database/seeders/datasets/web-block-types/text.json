@@ -4,6 +4,7 @@
 	"code": "text",
 	"name": "Text",
 	"icon": ["fal", "text"],
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"category": "element",
 	"data": {
 		"fieldValue": {

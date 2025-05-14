@@ -56,7 +56,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
 
 
-                    'order'          => OrderResource::make($order)->resolve(),
+                    'order'          => $order ? OrderResource::make($order)->resolve() : [],
                     'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 
                     'balance' => $this->customer?->balance,

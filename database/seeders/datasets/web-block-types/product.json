@@ -5,6 +5,7 @@
 	"name": "Product showcase A",
 	"icon": ["fal", "cube"],
 	"category": "product",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"fixed": true,
 	"data": {
 		"fieldValue": {

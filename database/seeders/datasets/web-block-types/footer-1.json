@@ -4,6 +4,7 @@
 	"code": "footer-1",
 	"name": "footer 1",
 	"component": "footer",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"icon": ["fal", "folder"],
 	"data": {
 		"fieldValue": {

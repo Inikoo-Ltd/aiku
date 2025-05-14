@@ -3,6 +3,7 @@
 	"slug": "categories",
 	"code": "categories",
 	"name": "Categories",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"fixed": true,
 	"icon": ["fal", "bars"],
 	"data": {

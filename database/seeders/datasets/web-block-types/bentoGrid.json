@@ -5,6 +5,7 @@
 	"name": "Showcase (Bento Grid)",
 	"category": "block",
 	"icon": ["fal", "rectangle-wide"],
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 				"title": "<h3 style=\"text-align: center\"><span style=\"color: #a200ff\"><strong>Dep</strong></span><span style=\"color: #9900ff\"><strong>loy faster</strong></span></h3><h1 style=\"text-align: center\"><strong>Everything you need to deploy your app.</strong></h1>",

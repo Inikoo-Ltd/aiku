@@ -25,6 +25,11 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
         $env = app()->environment('production')
             ? 'production'
             : 'sandbox';
+        $domain = $this->customer->shop?->website?->domain;
+        $baseUrl = app()->environment('production')
+        ? 'https://v2.' . $domain
+        : 'https://canary.' . $domain;
+
         return Inertia::render(
             'Dropshipping/Api/ApiTokenRetinaDropshipping',
             [
@@ -40,13 +45,11 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                 ],
 
                 'data' => [
-                    'api_base_url' => app()->environment('production')
-                        ? 'https://v2.aw-dropship.com/'
-                        : 'https://canary.aw-dropship.com/',
+                    'api_base_url' => $baseUrl,
 
                     'redirect_link' => [
                         'message' => __('Generate API token in ') . $env ,
-                        'link' => $env == 'production' ? 'https://canary.aw-dropship.com/app/dropshipping/platforms/manual/api/' : 'https://v2.aw-dropship.com/app/dropshipping/platforms/manual/api/',
+                        'link' => $baseUrl .  '/app/dropshipping/platforms/manual/api/',
                     ],
 
                     'route_generate' => [

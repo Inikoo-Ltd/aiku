@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentServiceProvider;
 
+use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydrateCustomers;
 use App\Actions\HydrateModel;
 use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePaymentAccounts;
 use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePayments;
@@ -22,6 +23,7 @@ class HydratePaymentServiceProvider extends HydrateModel
     {
         PaymentServiceProviderHydratePaymentAccounts::run($paymentServiceProvider);
         PaymentServiceProviderHydratePayments::run($paymentServiceProvider);
+        PaymentServiceProviderHydrateCustomers::run($paymentServiceProvider);
     }
 
 
