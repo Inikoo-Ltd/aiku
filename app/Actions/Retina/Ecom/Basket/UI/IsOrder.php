@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -104,13 +105,15 @@ trait IsOrder
                         'label'       => 'Total',
                         'price_total' => $order->total_amount
                     ],
+                ],
+                $order->state == OrderStateEnum::CREATING ? [
                     [
                         'label'             => 'Total to pay',
                         'label_class'       => 'text-indigo-500 font-bold',
                         'price_total'       => $order->total_amount - $order->customer->balance,
                         'price_total_class' => 'text-indigo-500 font-bold',
                     ],
-                ],
+                ] : [],
                 'currency' => CurrencyResource::make($order->currency),
             ],
         ];

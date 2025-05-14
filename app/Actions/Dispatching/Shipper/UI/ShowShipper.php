@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 14-05-2025-11h-09m
@@ -8,30 +9,21 @@
 
 namespace App\Actions\Dispatching\Shipper\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Dispatch\ShipperTabsEnum;
-use App\Http\Resources\Accounting\TopUpsResource;
-use App\Http\Resources\Dispatching\ShippersResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\Accounting\TopUp;
-use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use App\Services\QueryBuilder;
-use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class ShowShipper extends OrgAction
 {
+    use WithActionButtons;
     public function handle(Shipper $shipper): Shipper
     {
         return $shipper;
@@ -58,21 +50,21 @@ class ShowShipper extends OrgAction
                         'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('shipper')
                     ],
-                    // 'actions'    => [
-                    //     [
-                    //         'type'  => 'button',
-                    //         'style' => 'create',
-                    //         'label' => __('Create Order'),
-                    //         'route' => [
-                    //             'name'       => 'retina.models.customer-client.order.store',
-                    //             'parameters' => [
-                    //                 'customerClient' => $customerClient->id,
-                    //                 'platform' => $customerClient->platform->id
-                    //             ],
-                    //             'method'     => 'post'
-                    //         ]
-                    //     ]
-                    // ]
+                    'actions'    => [
+                        [
+                            'type'    => 'button',
+                            'tooltip' => __('Edit'),
+                            'icon'    => 'fal fa-pencil',
+                            'label'   => 'edit',
+                            'style'   => 'edit',
+                            'route'   => [
+                                'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+
+                            ]
+                        ],
+
+                    ]
                 ],
                 'tabs'          => [
                     'current'    => $this->tab,
@@ -112,6 +104,7 @@ class ShowShipper extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.warehouses.show.dispatching.shippers.edit',
             'grp.org.warehouses.show.dispatching.shippers.show',
             => array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(

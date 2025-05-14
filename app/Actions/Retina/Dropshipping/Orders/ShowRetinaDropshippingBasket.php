@@ -1,8 +1,7 @@
 <?php
-
 /*
  * author Arya Permana - Kirin
- * created on 04-03-2025-13h-50m
+ * created on 14-05-2025-13h-53m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -33,42 +32,22 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Models\Dropshipping\Platform;
 
-class ShowRetinaDropshippingOrder extends RetinaAction
+class ShowRetinaDropshippingBasket extends RetinaAction
 {
     public function handle(Order $order): Order
     {
         return $order;
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
-    {
-        $this->initialisation($request)->withTab(OrderTabsEnum::values());
-
-        return $this->handle($order);
-    }
-
-    public function inBasket(Platform $platform, Order $order, ActionRequest $request): Order
+    public function asController(Platform $platform, Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
-
-    public function inPlatform(Platform $platform, Order $order, ActionRequest $request): Order
-    {
-        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
-
-        return $this->handle($order);
-    }
-
-
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-
-        $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
-
-
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $action = [];
@@ -186,10 +165,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ]
                 ],
 
-                'timelines'   => $finalTimeline,
-
                 'address_management' => GetOrderAddressManagement::run(order: $order, isRetina:true),
-
 
                 'box_stats'      => ShowOrder::make()->getOrderBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
