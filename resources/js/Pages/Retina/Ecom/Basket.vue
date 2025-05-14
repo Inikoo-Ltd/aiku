@@ -14,6 +14,7 @@ import Image from "@/Components/Image.vue"
 import { debounce } from "lodash"
 
 defineProps<{
+    order: {}
     transactions: {}
     summary: {
         net_amount: string
@@ -23,6 +24,7 @@ defineProps<{
         services_amount: string
         charges_amount: string
     }
+    balance: string
 }>()
 
 
@@ -39,11 +41,14 @@ const debSubmitForm = debounce((save: Function) => {
 
     <div v-else class="w-full px-4 mt-8">
         <div class="px-4 text-xl">
-            <span class="text-gray-500">Order number</span> <span class="font-bold">#GB550706</span>
+            <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>
         
-        <CheckoutSummary :summary></CheckoutSummary>
-
+        <CheckoutSummary
+            :summary
+            :balance
+        />
+        
         <DataTable :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
             <template #empty>
                 <div class="flex items-center justify-center h-full text-center">
@@ -110,6 +115,7 @@ const debSubmitForm = debounce((save: Function) => {
                                 xxsaveOnForm
                                 noSaveButton
                                 noUndoButton
+                                :min="0"
                             />
                         </div>
                     </template>

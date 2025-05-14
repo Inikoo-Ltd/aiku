@@ -36,6 +36,7 @@ use App\Http\Middleware\IrisAuthenticate;
 use App\Http\Middleware\LogWebUserRequestMiddleware;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\SetTreblleAuthorize;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -248,6 +249,7 @@ class Kernel extends HttpKernel
         'abilities'              => CheckAbilities::class,
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
+        'set.treblle.authorize'  => SetTreblleAuthorize::class,
         'treblle'                => TreblleMiddleware::class,
     ];
 }

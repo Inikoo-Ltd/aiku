@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3'
-// import LayoutRetinaAuth from '@/Layouts/RetinaShowIris.vue'
+import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -12,7 +12,7 @@ import { trans } from 'laravel-vue-i18n'
 library.add(faArrowLeft, faCheckCircle)
 
 
-// defineOptions({ layout: LayoutRetinaAuth })
+defineOptions({ layout: RetinaShowIris })
 defineProps({
     back_label: {
         type: String,
@@ -86,7 +86,7 @@ const submit = () => {
 
 
     <!-- Header Section -->
-    <div class="flex items-center justify-center bg-gray-100  px-6 py-12 lg:px-8">
+    <div class="flex items-center justify-center px-6 py-12 lg:px-8">
     <div class="w-full max-w-md">
       <!-- Conditional Form for Reset Link -->
       <template v-if="!isResetLinkSent">

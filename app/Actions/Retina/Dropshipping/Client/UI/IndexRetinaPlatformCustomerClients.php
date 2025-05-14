@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Dropshipping\Platform;
@@ -89,8 +90,45 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         //         'label' => __('Clients')
         //     ];
         // }
+        $actions = [];
+        $shopifyActions = [];
+        $shopifyActions = match (class_basename($this->platformUser)) {
+            'ShopifyUser' => [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('Fetch Client'),
+                'label'   => __('Fetch Client'),
+                'route'   => [
+                    'name'       => $this->asPupil ? 'pupil.dropshipping.platforms.client.fetch' : 'retina.dropshipping.platforms.client.fetch',
+                    'parameters' => [
+                        'platform' => $this->platform->slug
+                    ]
+                ]
+            ],
+            default => []
+        };
 
+        $createButton = [];
+        
+        if($this->shop->type != ShopTypeEnum::FULFILMENT) {
+                    $createButton = [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Create Customer Client'),
+                            'route' => [
+                                'name'       => 'retina.dropshipping.platforms.client.create',
+                                'parameters' => [
+                                    'platform' => $this->platform->slug
+                                ]
+                            ]
+                        ];
+        }
 
+        $actions = array_merge(
+            [$shopifyActions],
+            [$createButton]
+        );
+        // dd($actions);
         return Inertia::render(
             'Dropshipping/Client/CustomerClients',
             [
@@ -108,34 +146,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                         'icon'  => ['fal', 'fa-user-friends'],
                         'title' => __('customer client')
                     ],
-                    'actions'    => [
-                        match (class_basename($this->platformUser)) {
-                            'ShopifyUser' => [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('Fetch Client'),
-                                'label'   => __('Fetch Client'),
-                                'route'   => [
-                                    'name'       => $this->asPupil ? 'pupil.dropshipping.platforms.client.fetch' : 'retina.dropshipping.platforms.client.fetch',
-                                    'parameters' => [
-                                        'platform' => $this->platform->slug
-                                    ]
-                                ]
-                            ],
-                            default => []
-                        },
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Create Customer Client'),
-                            'route' => [
-                                'name'       => 'retina.dropshipping.platforms.client.create',
-                                'parameters' => [
-                                    'platform' => $this->platform->slug
-                                ]
-                            ]
-                        ]
-                    ],
+                    'actions'    => $actions
 
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),

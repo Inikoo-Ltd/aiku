@@ -35,7 +35,7 @@ class StoreRetinaProductShopify extends RetinaAction
     {
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
         DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
-            foreach (Arr::get($modelData, 'products') as $productId) {
+            foreach (Arr::get($modelData, 'items') as $productId) {
                 $product = Product::find($productId);
                 $portfolio = StorePortfolio::make()->action($shopifyUser->customer, $product, [
                     'platform_id' => $platform->id,
@@ -60,7 +60,7 @@ class StoreRetinaProductShopify extends RetinaAction
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'items' => ['required', 'array']
         ];
     }
 
