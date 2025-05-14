@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { Head } from '@inertiajs/vue3'
 import LayoutIris from '@/Layouts/Iris.vue'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { trans } from 'laravel-vue-i18n'
+
 
 const props = defineProps<{
   meta: {
@@ -20,23 +20,13 @@ const props = defineProps<{
     image: string,
     structured_data: JSON
   },
-  data: any,
-  header: any,
-  blocks: any,
+  web_blocks: any,
 }>()
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
 
-const layout = inject('layout', {})
-const isPreviewLoggedIn = ref(layout.iris.user_auth)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
-const showWebpage = (activityItem) => {
-  if (activityItem?.web_block?.layout && activityItem.show) {
-    if (isPreviewLoggedIn.value && activityItem.visibility.in) return true
-    else return !isPreviewLoggedIn.value && activityItem.visibility.out;
-  } else return false
-}
 
 
 const checkScreenType = () => {
@@ -61,6 +51,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', checkScreenType)
 })
 
+const layout: any = inject("layout", {});
+
 </script>
 
 <template>
@@ -70,26 +62,20 @@ onBeforeUnmount(() => {
   </Head>
 
 
- <!--  <div class="text-center text-sm text-gray-600 my-4">
-  Current screen type: <strong>{{ screenType }}</strong>
-</div> -->
-
-
   <div class="bg-white">
-    <template v-if="props.blocks?.web_blocks?.length">
-      <div v-for="(activityItem, activityItemIdx) in props.blocks.web_blocks" :key="'block' + activityItem.id"
-        class="w-full">
-        <component 
-          v-if="showWebpage(activityItem)" 
-          :screenType="screenType"
-          :is="getIrisComponent(activityItem.type)"
-          :theme="data.published_layout.theme" :key="activityItemIdx"
-          :fieldValue="activityItem.web_block.layout.data.fieldValue" />
-      </div>
-    </template>
 
-    <div v-else class="text-center text-2xl sm:text-4xl font-bold text-gray-400 mt-16 pb-20">
-      {{ trans("This page have no data") }}
-    </div>
+
+      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks" :key="'block' + web_block_data.id"
+        class="w-full">
+
+        <component
+          :screenType="screenType"
+          :is="getIrisComponent(web_block_data.type)"
+          :theme="layout?.app?.theme" :key="web_block_data_idx"
+          :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
+      </div>
+
+
+
   </div>
 </template>
