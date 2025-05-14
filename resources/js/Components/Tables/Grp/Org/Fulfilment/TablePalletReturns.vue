@@ -177,9 +177,21 @@ const locale = inject('locale', aikuLocaleStructure)
         </template>
 
         <!-- Column: Pallets -->
-        <template #cell(pallets)="{ item: palletReturn }">
-            <div class="tabular-nums">
+        <template #cell(number_pallets)="{ item: palletReturn }">
+            <div v-if="palletReturn.number_pallets" class="tabular-nums">
                 {{ palletReturn.number_pallets }}
+            </div>
+            <div v-else class="text-gray-400">
+                -
+            </div>
+        </template>
+
+        <template #cell(number_stored_items)="{ item: palletReturn }">
+            <div v-if="palletReturn.number_stored_items" class="tabular-nums">
+                {{ palletReturn.number_stored_items }}
+            </div>
+            <div v-else class="text-gray-400">
+                -
             </div>
         </template>
 
