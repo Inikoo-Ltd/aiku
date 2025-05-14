@@ -73,8 +73,8 @@ export const getComponent = (componentName: string) => {
         'column-layout-2': ColumnWorkshop,
         'disclosure': DisclosureWorkshop,
         'timeline' : Timeline,
-        'step-1' : Step2Workshop
-        /* 'department' : Department1Iris */
+        'step-1' : Step2Workshop,
+        'department-1' : Department1Iris
     }
     return components[componentName] ?? NotFoundComponents
 }
