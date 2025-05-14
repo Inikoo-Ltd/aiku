@@ -13,9 +13,9 @@ const props = withDefaults(defineProps<{
     title: string,
     list_data: Array<any>,
     updateRoute: routeType,
-    disable?: boolean,
+    disabled?: boolean,
 }>(), {
-    disable: false,
+    disabled: false,
 })
 
 
@@ -101,7 +101,7 @@ const SaveShowAndHide = (item) => {
                     </div>
 
                     <div class="text-gray-500 hover:text-primary cursor-pointer transition" title="Toggle visibility"
-                        v-tooltip="'halooo'" @click="(e) => confirmHideAndShow(e, item)">
+                        v-tooltip="'halooo'" @click="(e) => disabled ? null : confirmHideAndShow(e, item)">
                         <FontAwesomeIcon :icon="item.show_in_website ? faEye : faEyeSlash" />
                     </div>
                 </li>
