@@ -183,6 +183,17 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
         </template>
 
+        <template #cell(platform_name)="{ item: palletReturn }">
+            <div v-if="palletReturn.platform_name">
+                {{ palletReturn.platform_name }}
+            </div>
+
+            <div v-else class="text-gray-400">
+                -
+            </div>
+            
+        </template>
+
         <template #cell(confirmed_at)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.confirmed_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
