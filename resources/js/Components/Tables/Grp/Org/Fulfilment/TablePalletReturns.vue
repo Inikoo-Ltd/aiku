@@ -18,6 +18,7 @@ import { inject } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(faPlus)
 
@@ -128,6 +129,8 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
     }
 }
 
+const locale = inject('locale', aikuLocaleStructure)
+
 </script>
 
 <template>
@@ -162,7 +165,7 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
         <template #cell(state)="{ item: palletReturn }">
             <Icon :data="palletReturn['type_icon']" class="px-1"/>
             <TagPallet v-if="layout.app.name == 'retina'" :stateIcon="palletReturn.state_icon" />
-            <Icon v-else :data="palletReturn['state_icon']" class="px-1"/>
+            <!-- <Icon v-else :data="palletReturn['state_icon']" class="px-1"/> -->
         </template>
 
         <template #cell(customer)="{ item: palletReturn }">
@@ -180,8 +183,23 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
             </div>
         </template>
 
+        <template #cell(confirmed_at)="{ item: palletReturn }">
+            {{ useFormatTime(palletReturn.confirmed_at, { localeCode: locale.language.code, formatTime: "hm" })}}
+        </template>
+        <template #cell(picked_at)="{ item: palletReturn }">
+            {{ useFormatTime(palletReturn.picked_at, { localeCode: locale.language.code, formatTime: "hm" })}}
+        </template>
+        <template #cell(picking_at)="{ item: palletReturn }">
+            {{ useFormatTime(palletReturn.picking_at, { localeCode: locale.language.code, formatTime: "hm" })}}
+        </template>
+        <template #cell(dispatched_at)="{ item: palletReturn }">
+            {{ useFormatTime(palletReturn.dispatched_at, { localeCode: locale.language.code, formatTime: "hm" })}}
+        </template>
+        <template #cell(cancel_at)="{ item: palletReturn }">
+            {{ useFormatTime(palletReturn.cancel_at, { localeCode: locale.language.code, formatTime: "hm" })}}
+        </template>
         <template #cell(date)="{ item: palletReturn }">
-            {{ useFormatTime(palletReturn.dispatched_at) }}
+            {{ useFormatTime(palletReturn.date, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
 
         <template #buttonreturns="{ linkButton: linkButton }">
