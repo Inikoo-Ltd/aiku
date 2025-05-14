@@ -214,7 +214,7 @@ const onClickDelete = () => {
 												<!-- Button disabled until the user types in the text area -->
 												<Button
 													full
-													type="tertiary"
+													type="negative"
 													:label="trans('I Have read and understand these effects')"
 													:disabled="!confirmationRead"
 													@click="onConfirm" />
