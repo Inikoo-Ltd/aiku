@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\Shipper\StoreShipper;
+use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -28,4 +29,4 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::delete('', DeleteWarehouse::class)->name('delete');
 });
 Route::post('organisation/{organisation:id}/shipper', StoreShipper::class)->name('shipper.store');
-
+Route::patch('organisation/{organisation:id}/shipper/{shipper}', UpdateShipper::class)->name('shipper.update');

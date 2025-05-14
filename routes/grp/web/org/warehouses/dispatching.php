@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
+use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\Dispatching\Shipper\UI\ShowShipper;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowStoredItemReturn;
@@ -42,3 +43,4 @@ Route::get('return-stored-items/{palletReturn}', [ShowStoredItemReturn::class, '
 Route::get('shippers', IndexShippers::class)->name('shippers.index');
 Route::get('shippers/create', CreateShipper::class)->name('shippers.create');
 Route::get('shippers/{shipper}', ShowShipper::class)->name('shippers.show');
+Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit');
