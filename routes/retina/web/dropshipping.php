@@ -109,5 +109,5 @@ Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function ()
 });
 
 Route::prefix('checkout')->name('checkout.')->group(function () {
-    Route::get('/', ShowRetinaDropshippingCheckout::class)->name('show');
+    Route::get('{order}', ShowRetinaDropshippingCheckout::class)->name('show');
 });

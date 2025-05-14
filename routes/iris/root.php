@@ -7,7 +7,7 @@
  */
 
 
-use App\Actions\UI\Iris\ShowHome;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
 
 Route::get(".well-known/apple-developer-merchantid-domain-association", function () {
@@ -18,7 +18,7 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
 Route::middleware(["iris-auth:retina"])->group(function () {
     Route::prefix("")->group(function () {
         Route::group([], __DIR__ . '/system.php');
-        Route::get('/{path?}', ShowHome::class)->where("path", ".*")->name('home');
+        Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
     });
 });
 

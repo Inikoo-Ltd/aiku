@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Retina\Api\Client\GetClients;
 use App\Actions\Retina\Api\GetProfile;
 use App\Actions\Retina\Api\Order\GetOrder;
 use App\Actions\Retina\Api\Order\GetOrders;
@@ -44,6 +45,10 @@ Route::middleware(['auth:sanctum', 'ability:retina', 'set.treblle.authorize', 't
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
         Route::get('', GetPortfolios::class)->name('index');
+    });
+
+    Route::prefix('clients')->as('clients.')->group(function () {
+        Route::get('', GetClients::class)->name('index');
     });
 
 
