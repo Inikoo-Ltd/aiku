@@ -46,6 +46,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
         return [
             'order'          => $order,
             'paymentMethods' => $paymentMethods,
+            'balance' => $customer?->balance,
         ];
     }
 
