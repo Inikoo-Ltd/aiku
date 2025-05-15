@@ -77,7 +77,7 @@ class UpdatePalletReturn extends OrgAction
             Arr::forget($modelData, 'address');
         }
 
-        $palletReturn = $this->update($palletReturn, $modelData, ['parcels']);
+        $palletReturn = $this->update($palletReturn, $modelData);
         PalletReturnRecordSearch::dispatch($palletReturn);
 
         return $palletReturn;
