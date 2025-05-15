@@ -263,6 +263,10 @@ const onSubmitShipment = () => {
 	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }),
 		{
 			parcels: parcelsCopy.value,
+			// parcels: [{
+			// 	weight: 1,
+			// 	dimensions: [40, 40, 40],
+			// }],
 		},
 		{
 			preserveScroll: true,
@@ -423,7 +427,7 @@ const onSubmitShipment = () => {
 					<template #button>
 						<div v-if="dataPalletReturn?.estimated_delivery_date"
 							v-tooltip="retinaUseDaysLeftFromToday(dataPalletReturn?.estimated_delivery_date)"
-							class="group ">ffff
+							class="group ">
 							{{ useFormatTime(dataPalletReturn?.estimated_delivery_date) }}
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400 group-hover:text-gray-600" fixed-width aria-hidden="true" />
 						</div>
@@ -530,21 +534,26 @@ const onSubmitShipment = () => {
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-sm flex justify-between w-full">
-						<div>{{ trans("Parcels") }} ({{ boxStats.parcels?.length }})</div>
-						<div @click="() => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+						<div>{{ trans("Parcels") }} ({{ boxStats.parcels?.length ?? 0 }})</div>
+						<div v-if="boxStats.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
 							{{ trans("Edit") }}
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 						</div>
-
+						<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitShipment())" class="cursor-pointer text-gray-400 hover:text-gray-600">
+							{{ trans("Add") }}
+							<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+						</div>
+						
 					</div>
-					<ul class="list-disc pl-4">
+					
+					<ul v-if="boxStats.parcels?.length" class="list-disc pl-4">
 						<li v-for="(parcel, parcelIdx) in boxStats.parcels" :key="parcelIdx" class="text-xs tabular-nums">
 							<span class="truncate">
 								{{ parcel.weight }} kg
 							</span>
 
 							<span class="text-gray-500 truncate">
-								({{ parcel.dimension[0] }}x{{ parcel.dimension[1] }}x{{ parcel.dimension[2] }} cm)
+								({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }} cm)
 							</span>
 						</li>
 					</ul>
@@ -682,25 +691,43 @@ const onSubmitShipment = () => {
 				<!--  -->
 				<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
 					<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
-					<TransitionGroup v-if="parcelsCopy?.length" name="list-to-down">
+					<TransitionGroup v-if="parcelsCopy?.length" name="list">
 						<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex" class="grid grid-cols-12 items-center gap-x-6">
 							<div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
-								<FontAwesomeIcon icon="fal fa-trash-alt" class="hover:text-red-500 cursor-pointer" fixed-width aria-hidden="true" />
+								<FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
 							</div>
 							<div class="col-span-2 flex items-center space-x-2">
-								<InputNumber v-model="parcel.weight" class="w-16" size="small" placeholder="0" fluid />
+								<InputNumber :min="0.001" v-model="parcel.weight" class="w-16" size="small" placeholder="0" fluid />
 							</div>
 							<div class="col-span-9 flex items-center gap-x-1 font-light">
-								<InputNumber v-model="parcel.dimension[0]" class="w-16" size="small" placeholder="0" fluid />
+								<InputNumber :min="0.001" v-model="parcel.dimensions[0]" class="w-16" size="small" placeholder="0" fluid />
 								<div class="text-gray-400">x</div>
-								<InputNumber v-model="parcel.dimension[1]" class="w-16" size="small" placeholder="0" fluid />
+								<InputNumber :min="0.001" v-model="parcel.dimensions[1]" class="w-16" size="small" placeholder="0" fluid />
 								<div class="text-gray-400">x</div>
-								<InputNumber v-model="parcel.dimension[2]" class="w-16" size="small" placeholder="0" fluid />
-								<button class="text-gray-600">≡</button>
+								<InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small" placeholder="0" fluid />
+								<!-- <button class="text-gray-600">≡</button> -->
+
+								<!-- <Popover>
+									<template #button="{ open }">
+										<Button
+											@click="() => (open ? false : onOpenModalAddService())"
+											:style="action.style"
+											:label="action.label"
+											:icon="action.icon"
+											:key="`ActionButton${action.label}${action.style}`"
+											:tooltip="action.tooltip" />
+									</template>
+
+									<template #content="{ close: closed }">
+										<div class="w-[350px]">
+											
+										</div>
+									</template>
+								</Popover> -->
 							</div>
 						</div>
 					</TransitionGroup>
-					<div v-else>
+					<div v-else class="text-center text-gray-400">
 						{{ trans('No parcels') }}
 					</div>
 				</div>
@@ -708,7 +735,7 @@ const onSubmitShipment = () => {
 				<!-- Repeat for more rows -->
 				<div class=" grid grid-cols-12 mt-2">
 					<div></div>
-					<div @click="() => parcelsCopy.push({ weight: 0, dimension: [0,0,0]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+					<div @click="() => parcelsCopy.push({ weight: 0, dimensions: [0,0,0]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
 						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
 						{{ trans("Add another parcel") }}
 					</div>
