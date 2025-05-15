@@ -251,6 +251,25 @@ const disableBeforeToday = (date: Date) => {
 		class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
 		<!-- Box: Customer -->
 		<BoxStatPallet class="py-1 sm:py-2 px-3">
+			<!-- Field: Platform -->
+			<div v-if="boxStats.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
+				<div v-tooltip="trans('Platform')" class="flex-none">
+					<FontAwesomeIcon
+						icon="fal fa-parachute-box"
+						size="xs"
+						class="text-gray-400"
+						fixed-width
+						aria-hidden="true" />
+				</div>
+				<div class="flex items-center gap-x-2">
+					{{ boxStats.platform.name }}
+					<img v-if="boxStats.platform.code === 'tiktok'" v-tooltip="boxStats.platform.name" src="https://cdn-icons-png.flaticon.com/512/3046/3046126.png" alt="" class="h-6">
+					<img v-if="boxStats.platform.code === 'shopify'" v-tooltip="boxStats.platform.name" src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-6">
+					<img v-if="boxStats.platform.code === 'woocommerce'" v-tooltip="boxStats.platform.name" src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png" alt="" class="h-12">
+				</div>
+			</div>
+
+
 			<!-- Field: Reference -->
 			<Link
 				as="a"
@@ -338,7 +357,7 @@ const disableBeforeToday = (date: Date) => {
 
 			<!-- Field: Phone -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer.phone"
+				v-if="boxStats.is_platform_address ? boxStats.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
@@ -381,8 +400,8 @@ const disableBeforeToday = (date: Date) => {
 					</template>
 				</Popover>
 				<div v-else>
-					<dd class="">
-						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('Not Set') }}
+					<dd :class="dataPalletReturn?.estimated_delivery_date ? '' : 'text-gray-400'">
+						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('(Not Set)') }}
 					</dd>
 				</div>
 			</div>
