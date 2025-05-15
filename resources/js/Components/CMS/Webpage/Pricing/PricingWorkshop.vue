@@ -40,7 +40,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 					class="relative flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg"
 					:class="tier.mostPopular ? 'ring-4 ring-indigo-500' : ''"
 					:style="getBackgroundStyle(tier.background)">
-					<div class="flex justify-center mb-4">
+					<div class="flex justify-center items-center mb-4">
 						<!-- real image -->
 						<template v-if="tier?.image?.source">
 							<Image :src="tier?.image?.source" :imageCover="true" :alt="tier?.image?.alt"
