@@ -13,7 +13,7 @@ defineOptions({
 })
 
 const props = defineProps<{
-    modelValue: string
+    modelValue: string | null
     placeholder?: string
     counter?: boolean
     full?: boolean
