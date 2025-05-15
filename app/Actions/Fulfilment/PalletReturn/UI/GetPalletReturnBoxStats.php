@@ -11,7 +11,6 @@ namespace App\Actions\Fulfilment\PalletReturn\UI;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Helpers\CurrencyResource;
-use App\Http\Resources\Platform\PlatformsResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -35,7 +34,12 @@ class GetPalletReturnBoxStats
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
             ),
             'is_platform_address' => !blank($palletReturn->platform_id),
-            'platform' => PlatformsResource::make($palletReturn->platform),
+            'platform' => [
+                'id' => $palletReturn->platform->id,
+                'code' => $palletReturn->platform->code,
+                'slug' => $palletReturn->platform->slug,
+                'name' => $palletReturn->platform->name
+            ],
             'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [
