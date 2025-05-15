@@ -17,6 +17,8 @@ class ShipmentsResource extends JsonResource
 {
     use HasSelfCall;
 
+    public static $wrap = null;
+
     public function toArray($request): array
     {
         return [

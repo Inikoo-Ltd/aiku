@@ -42,7 +42,7 @@ class GetPalletReturnBoxStats
                 'name' => $palletReturn->platform->name
             ] : null,
             'parcels'   => $palletReturn->parcels,
-            'shipments' => $palletReturn?->shipments ? ShipmentsResource::collection($palletReturn->shipments()->with('shipper')->get()) : null,
+            'shipments' => $palletReturn?->shipments ? ShipmentsResource::collection($palletReturn->shipments()->with('shipper')->get())->toArray(request()) : null,
             'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [
