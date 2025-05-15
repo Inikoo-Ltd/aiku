@@ -6,6 +6,7 @@ import { faExclamation, faCaretDown, faCaretLeft } from "@fas"
 import SideEditor from "../SideEditor/SideEditor.vue"
 import { watch, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
+import { routeType } from "@/types/route"
 
 library.add(
 	faExclamation,
@@ -23,126 +24,123 @@ library.add(
 const emit = defineEmits(["update:modelValue"])
 
 /* const props = defineProps({
-    modelValue: {
-        type: Object,
-        required: true,
-    },
+	modelValue: {
+		type: Object,
+		required: true,
+	},
 });
 
 const data = ref(props.modelValue) */
+defineProps<{ uploadRoutes: routeType }>()
 
 const model = defineModel()
 
 const blueprint = [
-    {
-		key: ["image"],
-		replaceForm: [
-			{
-				key: ["source"],
-				label: "Image",
-				type: "upload_image",
-			},
-			{
-				key: ["alt"],
-				label: "Alternate Text",
-				type: "text",
-			},
-			{
-				key: ["properties", "object_fit"],
-				label: "Object Image",
-				useIn: ["desktop", "tablet", "mobile"],
-				type: "select",
-				props_data: {
-					placeholder: "Object",
-					options: [
-						{
-							label: "contain",
-							value: "contain",
-						},
-						{
-							label: "cover",
-							value: "cover",
-						},
-						{
-							label: "none",
-							value: "none",
-						},
-						{
-							label: "scale-down",
-							value: "scale-down",
-						},
-					],
-				},
-			},
-			{
-				key: ["properties", "object_position"],
-				label: "Object Position",
-				type: "select",
-				props_data: {
-					placeholder: "Object",
-					options: [
-						{
-							label: "Bottom",
-							value: "bottom",
-						},
-						{
-							label: "Center",
-							value: "center",
-						},
-						{
-							label: "Left",
-							value: "left",
-						},
-						{
-							label: "Right",
-							value: "right",
-						},
-						{
-							label: "Top",
-							value: "top",
-						},
-						{
-							label: "Left Bottom",
-							value: "left bottom",
-						},
-						{
-							label: "Left Top",
-							value: "left top",
-						},
-						{
-							label: "Right Bottom",
-							value: "right bottom",
-						},
-						{
-							label: "Right Top",
-							value: "right top",
-						},
-					],
-				},
-			},
-			{
-				key: ["attributes", "fetchpriority"],
-				label: trans("Fetch Priority"),
-				information: trans(
-					"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
-				),
-				type: "select",
-				props_data: {
-					placeholder: trans("Priority"),
-					options: [
-						{
-							label: trans("High"),
-							value: "high",
-						},
-						{
-							label: trans("Low"),
-							value: "low",
-						},
-					],
-				},
-			},
-		],
+	{
+		key: ["source"],
+		label: "Image",
+		type: "upload_image",
 	},
+	{
+		key: ["alt"],
+		label: "Alternate Text",
+		type: "text",
+	},
+	{
+		key: ["properties", "object_fit"],
+		label: "Object Image",
+		useIn: ["desktop", "tablet", "mobile"],
+		type: "select",
+		props_data: {
+			placeholder: "Object",
+			options: [
+				{
+					label: "contain",
+					value: "contain",
+				},
+				{
+					label: "cover",
+					value: "cover",
+				},
+				{
+					label: "none",
+					value: "none",
+				},
+				{
+					label: "scale-down",
+					value: "scale-down",
+				},
+			],
+		},
+	},
+	{
+		key: ["properties", "object_position"],
+		label: "Object Position",
+		type: "select",
+		props_data: {
+			placeholder: "Object",
+			options: [
+				{
+					label: "Bottom",
+					value: "bottom",
+				},
+				{
+					label: "Center",
+					value: "center",
+				},
+				{
+					label: "Left",
+					value: "left",
+				},
+				{
+					label: "Right",
+					value: "right",
+				},
+				{
+					label: "Top",
+					value: "top",
+				},
+				{
+					label: "Left Bottom",
+					value: "left bottom",
+				},
+				{
+					label: "Left Top",
+					value: "left top",
+				},
+				{
+					label: "Right Bottom",
+					value: "right bottom",
+				},
+				{
+					label: "Right Top",
+					value: "right top",
+				},
+			],
+		},
+	},
+	{
+		key: ["attributes", "fetchpriority"],
+		label: trans("Fetch Priority"),
+		information: trans(
+			"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
+		),
+		type: "select",
+		props_data: {
+			placeholder: trans("Priority"),
+			options: [
+				{
+					label: trans("High"),
+					value: "high",
+				},
+				{
+					label: trans("Low"),
+					value: "low",
+				},
+			],
+		},
+	},
+
 	{
 		key: ["button"],
 		replaceForm: [
@@ -208,79 +206,79 @@ const blueprint = [
 		label: "Features",
 		type: "arrayPhone",
 	},
-	
+
 	/*   {
-        key: ["properties","object_fit"],
-        label: "Object Image",
-        type: "select",
-        props_data: {
-            placeholder : 'Object',
-            options : [
-                {
-                    label : 'contain',
-                    value :  'contain' 
-                },
-                {
-                    label : 'cover',
-                    value :  'cover' 
-                },
-                {
-                    label : 'none',
-                    value :  'none' 
-                },
-                {
-                    label : 'scale-down',
-                    value :  'scale-down' 
-                },
-            ]
-        }
-    },
-    {
-        key: ["properties","object_position"],
-        label: "Object Position",
-        type: "select",
-        props_data: {
-            placeholder : 'Object',
-            options : [
-                {
-                    label : 'Bottom',
-                    value :  'bottom' 
-                },
-                {
-                    label : 'Center',
-                    value :  'center' 
-                },
-                {
-                    label : 'Left',
-                    value :  'left' 
-                },
-                {
-                    label : 'Right',
-                    value :  'right' 
-                },
-                {
-                    label : 'Top',
-                    value :  'top' 
-                },
-                {
-                    label : 'Left Bottom',
-                    value :  'left bottom' 
-                },
-                {
-                    label : 'Left Top',
-                    value :  'left top' 
-                },
-                {
-                    label : 'Right Bottom',
-                    value :  'right bottom' 
-                },
-                {
-                    label : 'Right Top',
-                    value :  'right top' 
-                },
-            ]
-        }
-    }, */
+		key: ["properties","object_fit"],
+		label: "Object Image",
+		type: "select",
+		props_data: {
+			placeholder : 'Object',
+			options : [
+				{
+					label : 'contain',
+					value :  'contain' 
+				},
+				{
+					label : 'cover',
+					value :  'cover' 
+				},
+				{
+					label : 'none',
+					value :  'none' 
+				},
+				{
+					label : 'scale-down',
+					value :  'scale-down' 
+				},
+			]
+		}
+	},
+	{
+		key: ["properties","object_position"],
+		label: "Object Position",
+		type: "select",
+		props_data: {
+			placeholder : 'Object',
+			options : [
+				{
+					label : 'Bottom',
+					value :  'bottom' 
+				},
+				{
+					label : 'Center',
+					value :  'center' 
+				},
+				{
+					label : 'Left',
+					value :  'left' 
+				},
+				{
+					label : 'Right',
+					value :  'right' 
+				},
+				{
+					label : 'Top',
+					value :  'top' 
+				},
+				{
+					label : 'Left Bottom',
+					value :  'left bottom' 
+				},
+				{
+					label : 'Left Top',
+					value :  'left top' 
+				},
+				{
+					label : 'Right Bottom',
+					value :  'right bottom' 
+				},
+				{
+					label : 'Right Top',
+					value :  'right top' 
+				},
+			]
+		}
+	}, */
 ]
 
 const value = ref({ ...model.value })
@@ -296,7 +294,7 @@ watch(
 
 <template>
 	<div>
-		<SideEditor :blueprint="blueprint" v-model="value" />
+		<SideEditor :blueprint="blueprint" v-model="value" :uploadImageRoute="uploadRoutes" />
 	</div>
 </template>
 

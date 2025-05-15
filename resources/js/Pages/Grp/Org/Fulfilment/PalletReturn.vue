@@ -271,7 +271,7 @@ const onOpenModalTrackingNumber = async () => {
 	try {
 		const xxx = await axios.get(
 			route('grp.json.shippers.index', {
-				organisation: 'aw',
+				organisation: route().params.organisation,
 			})
 		)
 		optionShippingList.value = xxx?.data?.data || []
@@ -291,23 +291,29 @@ const onSubmitShipment = () => {
 	// )[0].historic_asset_id
 	// isLoadingButton.value = "addTrackingNumber"
 
-	// formTrackingNumber.post('route(data.route?.name, { ...data.route?.parameters })', {
-	// 	preserveScroll: true,
-	// 	onSuccess: () => {
-	// 		isModalTrackingNumber.value = false
-	// 		formTrackingNumber.reset()
-	// 	},
-	// 	onError: (errors) => {
-	// 		notify({
-	// 			title: trans("Something went wrong."),
-	// 			text: trans("Failed to add Shipment. Please try again or contact administrator."),
-	// 			type: "error",
-	// 		})
-	// 	},
-	// 	onFinish: () => {
-	// 		isLoadingButton.value = false
-	// 	},
-	// })
+	formTrackingNumber
+		.transform((data) => ({
+			shipping_id: data.shipping_id?.id,
+			tracking_number: data.tracking_number,
+			parcels: xxx.value,
+		}))
+		.post(route(props.updateRoute.name, { ...props.updateRoute.parameters }), {
+		preserveScroll: true,
+		onSuccess: () => {
+			isModalTrackingNumber.value = false
+			formTrackingNumber.reset()
+		},
+		onError: (errors) => {
+			notify({
+				title: trans("Something went wrong."),
+				text: trans("Failed to add Shipment. Please try again or contact administrator."),
+				type: "error",
+			})
+		},
+		onFinish: () => {
+			isLoadingButton.value = false
+		},
+	})
 }
 
 const xxx = ref([
