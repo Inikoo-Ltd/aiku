@@ -61,6 +61,9 @@ class ShowWarehousePalletReturn extends OrgAction
 
         $navigation = PalletReturnTabsEnum::navigation($palletReturn);
 
+        unset($navigation[PalletReturnTabsEnum::STORED_ITEMS->value]);
+
+        $this->tab = $request->get('tab', array_key_first($navigation));
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [

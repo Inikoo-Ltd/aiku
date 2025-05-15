@@ -11,6 +11,7 @@ namespace App\Actions\UI\Dispatch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -29,7 +30,7 @@ class ShowDispatchHub extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
     {
-        $this->initialisationFromWarehouse($warehouse, []);
+        $this->initialisationFromWarehouse($warehouse, [])->withTab(DispatchHubTabsEnum::values());
 
         return $this->handle($warehouse);
     }
@@ -51,6 +52,14 @@ class ShowDispatchHub extends OrgAction
                     'title' => __('Dispatching backlog'),
                 ],
 
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => DispatchHubTabsEnum::navigation()
+                ],
+
+                DispatchHubTabsEnum::DASHBOARD->value => $this->tab == DispatchHubTabsEnum::DASHBOARD->value
+                ? fn () => GetDispatchHubShowcase::make($warehouse)
+                : Inertia::lazy(fn () => GetDispatchHubShowcase::make($warehouse)),
 
             ]
         );

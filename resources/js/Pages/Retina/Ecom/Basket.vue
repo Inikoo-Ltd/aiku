@@ -14,9 +14,27 @@ import Image from "@/Components/Image.vue"
 import { debounce } from "lodash"
 import { Head, Link } from "@inertiajs/vue3"
 import { ref } from "vue"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
+import { routeType } from "@/types/route"
+import IftaLabel from "primevue/iftalabel"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
 
-defineProps<{
-    order: {}
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTag } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Textarea from "primevue/textarea"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+library.add(faTag)
+
+const props = defineProps<{
+    order: {
+        public_notes: string | null
+        voucher_code: string | null
+    }
     transactions: {}
     summary: {
         net_amount: string
@@ -28,18 +46,77 @@ defineProps<{
     }
     balance: string
     total_to_pay: string
+    routes: {
+        update_route: routeType
+        submit_route: routeType
+    }
 }>()
 
-
+// console.log('ewewew', props.order)
 const debSubmitForm = debounce((save: Function) => {
     save()
 }, 500)
 
 const isLoading = ref<string | boolean>(false)
+
+
+// Section: add notes (on popup pageheading)
+const noteToSubmit = ref(props.order.public_notes)
+const recentlySuccessNote = ref(false)
+const recentlyErrorNote = ref(false)
+const isLoadingNote = ref(false)
+const onSubmitNote = async () => {
+    try {
+        isLoadingNote.value = true
+        await axios.patch(route(props.routes.update_route.name, props.routes.update_route.parameters), {
+            public_notes: noteToSubmit.value
+        })
+
+        // {
+        //     headers: { "Content-Type": 'application/json' },
+        //     onStart: () => isLoadingButton.value = 'submitNote',
+        //     onError: (error) => errorNote.value = error,
+        //     onFinish: () => isLoadingButton.value = false,
+        //     onSuccess: () => {
+        //         recentlySuccessNote.value = true
+        //         setTimeout(() => {
+        //             recentlySuccessNote.value = false
+        //         }, 3000)
+        //     },
+        // })
+        isLoadingNote.value = false
+        recentlySuccessNote.value = true
+        setTimeout(() => {
+            recentlySuccessNote.value = false
+        }, 3000)
+    } catch  {
+        recentlyErrorNote.value = true
+        setTimeout(() => {
+            recentlyErrorNote.value = false
+        }, 3000)
+
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to update the note, try again."),
+            type: "error",
+        })
+    }
+}
+const debounceSubmitNote = debounce(onSubmitNote, 800)
 </script>
 
 <template>
-    <Head title="Basket" />
+    <Head :title="trans('Basket')" />
+    
+    <div class="mt-5 ml-6">
+        <ButtonWithLink
+            :icon="faArrowLeft"
+            label="Continue shopping"
+            url="/"
+            type="tertiary"
+            fullLoading
+        />
+    </div>
 
     <div v-if="!transactions" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
@@ -75,11 +152,13 @@ const isLoading = ref<string | boolean>(false)
                     </template>
                 </Column>
             
+                <!-- Column: Code -->
                 <Column
                     xxsortable="columnHeader.sortable"
                     xxsortField="`columns.${colSlug}.${intervals.value}.raw_value`"
                     field="asset_code"
                     class="w-28"
+                    sortable
                 >
                     <template #header>
                         <div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600">
@@ -88,12 +167,14 @@ const isLoading = ref<string | boolean>(false)
                     </template>
                 </Column>
                 
+                <!-- Column: Product name -->
                 <Column
                     field="asset_name"
+                    sortable
                 >
                     <template #header>
                         <div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600">
-                            Product name
+                            {{ trans("Product name") }}
                         </div>
                     </template>
                 </Column>
@@ -126,13 +207,15 @@ const isLoading = ref<string | boolean>(false)
                     </template>
                 </Column>
 
+                <!-- Column: Amount net -->
                 <Column
                     field="net_amount"
                     class="w-36"
+                    sortable
                 >
                     <template #header>
                         <div class="text-right px-2 text-xs md:text-base w-full gap-x-2 font-semibold text-gray-600">
-                            Amount net
+                            {{ trans("Amount net") }}
                         </div>
                     </template>
 
@@ -173,7 +256,7 @@ const isLoading = ref<string | boolean>(false)
             <!-- Row: Total (footer) -->
             <ColumnGroup type="footer">
                 <Row>
-                    <Column :colspan="3">
+                    <Column :colspan="4">
                         <template #footer>
                             <div class="px-2 flex justify-end relative">
                                 For the same day dispatch of your order before 12pm (£7.50)
@@ -191,7 +274,7 @@ const isLoading = ref<string | boolean>(false)
                 </Row>
                 
                 <Row>
-                    <Column :colspan="3">
+                    <Column :colspan="4">
                         <template #footer>
                             <div class="px-2 flex justify-end relative">
                                 Glass & ceramics insurance (£2.75)
@@ -212,25 +295,39 @@ const isLoading = ref<string | boolean>(false)
             </ColumnGroup>
         </DataTable>
 
-        <div class="flex justify-between gap-x-4 mt-4 px-4">
-            
+        <div class="flex justify-between gap-x-4 mt-8 px-4">
             <div>
-                <ButtonWithLink
-                    :icon="faArrowLeft"
-                    label="Continue shopping"
-                    url="/"
-                    type="tertiary"
-                    fullLoading
-                />
+                
             </div>
 
-            <div class="flex flex-col items-end gap-y-1.5">
+            <div class="w-72">
+                <!-- Section: Voucher code -->
+                <IconField v-tooltip="trans('Voucher code (to apply the discount)')" class="mb-1.5">
+                    <InputIcon>
+                        <FontAwesomeIcon icon="fas fa-tag" class="" fixed-width aria-hidden="true" />
+                    </InputIcon>
+                    <InputText v-model="order.voucher_code" :placeholder="trans('Input voucher code')" fluid />
+                </IconField>
+
+                <!-- Section: Special instructions -->
+                <div v-tooltip="trans('Special instructions')" class="relative">
+                    <Textarea v-model="noteToSubmit" @update:modelValue="() => debounceSubmitNote()" rows="4" fluid :placeholder="trans('Special instructions if needed')" class="mb-2" style="resize: none" />
+                    <div class="absolute top-2 right-2 flex items-center justify-center">
+                        <LoadingIcon v-if="isLoadingNote" class="h-5 w-5 text-gray-500" />
+                        <template v-else>
+                            <FontAwesomeIcon v-if="recentlyErrorNote" icon="fas fa-exclamation-circle" class="h-5 w-5 text-red-500" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="recentlySuccessNote" icon="fas fa-check-circle" class="h-5 w-5 text-green-500" aria-hidden="true" />
+                        </template>
+                    </div>
+                </div>
+                
                 <ButtonWithLink
                     :iconRight="faArrowRight"
                     label="Go to Checkout"
                     :routeTarget="{
                         name: 'retina.ecom.checkout.show'
                     }"
+                    full
                 />
                 <div v-if="balance > total_to_pay" class="text-xs text-gray-500 italic tracking-wide">
                     {{ trans("You can pay totally with your current balance") }}
@@ -239,6 +336,10 @@ const isLoading = ref<string | boolean>(false)
                     {{ trans("you can pay partly with your balance now") }}
                 </div>
             </div>
+            
+            <!-- <div class="flex flex-col items-end gap-y-1.5">
+                
+            </div> -->
         </div>
 
     </div>
