@@ -276,7 +276,6 @@ const onSubmitShipment = () => {
 			onSuccess: () => {
 				isModalParcels.value = false
 				// formTrackingNumber.reset()
-				console.log('listError', listError, listError.box_stats_parcel)
 				listError.box_stats_parcel = false
 				set(listError, 'box_stats_parcel', false)
 			},
@@ -323,7 +322,7 @@ const listError = inject('listError', {})
 			<!-- Field: Reference -->
 			<Link
 				as="a"
-				v-if="boxStats?.fulfilment_customer?.customer?.reference"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.id : boxStats?.fulfilment_customer?.customer?.reference"
 				:href="
 					route('grp.org.fulfilments.show.crm.customers.show', [
 						route().params.organisation,
@@ -347,7 +346,7 @@ const listError = inject('listError', {})
 
 			<!-- Field: Contact name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.contact_name"
+				v-if="boxStats.is_platform ? (boxStats.platform_customer?.first_name || boxStats.platform_customer?.last_name) : boxStats?.fulfilment_customer?.customer?.contact_name"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Contact name')" class="flex-none">
 					<span class="sr-only">Contact name</span>
@@ -380,7 +379,7 @@ const listError = inject('listError', {})
 
 			<!-- Field: Email -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer.email"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.email : boxStats?.fulfilment_customer?.customer.email"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Email')" class="flex-none">
 					<span class="sr-only">Email</span>
@@ -535,6 +534,7 @@ const listError = inject('listError', {})
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
+			<!-- Section: Parcels -->
 			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
@@ -562,6 +562,14 @@ const listError = inject('listError', {})
 							</span>
 						</li>
 					</ul>
+				</div>
+			</div>
+
+			<!-- Section: Shipments -->
+			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group w-full">
+					{{boxStats.shipments}}
 				</div>
 			</div>
 
