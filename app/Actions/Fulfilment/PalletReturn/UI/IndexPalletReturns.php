@@ -284,6 +284,7 @@ class IndexPalletReturns extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $returns, ActionRequest $request): Response
     {
+
         $navigation = PalletReturnsTabsEnum::navigation();
 
         $subNavigation = [];

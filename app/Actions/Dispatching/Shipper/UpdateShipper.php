@@ -11,7 +11,9 @@ namespace App\Actions\Dispatching\Shipper;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\Shipper;
+use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -24,7 +26,11 @@ class UpdateShipper extends OrgAction
 
     public function handle(Shipper $shipper, array $modelData): Shipper
     {
-        return $this->update($shipper, $modelData, ['data']);
+        if (Arr::exists($modelData, 'base_url')) {
+            data_set($modelData, 'settings.base_url', Arr::pull($modelData, 'base_url'));
+        }
+
+        return $this->update($shipper, $modelData, ['data', 'settings']);
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -33,6 +39,9 @@ class UpdateShipper extends OrgAction
             if (!Str::startsWith($this->get('website'), 'http')) {
                 $this->fill(['website' => 'https://'.$this->get('website')]);
             }
+        }
+        if (!$this->has('code') and $this->get('code') == null) {
+            $this->set('code', $this->shipper->code);
         }
     }
 
@@ -67,6 +76,7 @@ class UpdateShipper extends OrgAction
             'phone'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'website'      => ['sometimes', 'nullable', 'url'],
             'tracking_url' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'base_url'     => ['sometimes'],
         ];
 
         if (!$this->strict) {
@@ -75,6 +85,7 @@ class UpdateShipper extends OrgAction
 
         return $rules;
     }
+
 
     public function action(Shipper $shipper, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Shipper
     {
@@ -86,6 +97,15 @@ class UpdateShipper extends OrgAction
         $this->shipper  = $shipper;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($shipper->organisation, $modelData);
+
+        return $this->handle($shipper, $this->validatedData);
+    }
+
+    public function asController(Organisation $organisation, Shipper $shipper, ActionRequest $request): Shipper
+    {
+
+        $this->shipper = $shipper;
+        $this->initialisation($organisation, $request);
 
         return $this->handle($shipper, $this->validatedData);
     }

@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,6 +27,10 @@ class StoreShipper extends OrgAction
     {
         data_set($modelData, 'group_id', $organisation->group_id);
 
+        if(Arr::exists($modelData, 'base_url')) {
+            data_set($modelData, 'settings.base_url', Arr::pull($modelData, 'base_url'));
+        }
+        
         $shipper = DB::transaction(function () use ($organisation, $modelData) {
             /** @var Shipper $shipper */
             $shipper = $organisation->shippers()->create($modelData);
@@ -73,6 +78,7 @@ class StoreShipper extends OrgAction
             'website'      => ['sometimes', 'nullable', 'url'],
             'tracking_url' => ['sometimes', 'nullable', 'string', 'max:255'],
             'source_id'    => ['sometimes', 'nullable', 'string', 'max:64'],
+            'base_url'     => ['sometimes'],
         ];
 
         if (!$this->strict) {
@@ -97,6 +103,13 @@ class StoreShipper extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($organisation, $modelData);
+
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function asController(Organisation $organisation, ActionRequest $request): Shipper
+    {
+        $this->initialisation($organisation, $request);
 
         return $this->handle($organisation, $this->validatedData);
     }

@@ -20,7 +20,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexWarehousePalletsInReturn extends OrgAction
+class IndexWarehousePalletsInReturnAtMaya extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
 

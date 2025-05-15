@@ -68,7 +68,8 @@ class GetApiProductsFromShopify extends OrgAction
                     if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                         if (!$storedItem) {
                             $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
-                                'reference' => $product['handle']
+                                'reference' => $product['handle'],
+                                'total_quantity' => $variant['inventory_quantity']
                             ]);
                         }
 
@@ -94,8 +95,7 @@ class GetApiProductsFromShopify extends OrgAction
                         ]]);
 
                         UpdateStoredItem::run($storedItem, [
-                            'state' => StoredItemStateEnum::SUBMITTED,
-                            'total_quantity' => $variant['inventory_quantity']
+                            'state' => StoredItemStateEnum::ACTIVE
                         ]);
                     }
                 });

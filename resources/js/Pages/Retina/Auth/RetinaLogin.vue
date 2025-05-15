@@ -85,7 +85,7 @@ onMounted(async () => {
 
                 <!-- Submit Button -->
                 <div class="space-y-2">
-                    <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :style="'tertiary'" :class="'bg-[#C1A027] text-white'" />
+                    <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :type="'tertiary'" :class="'!bg-[#C1A027] !text-white'" />
                 </div>
 
                 <!-- Registration Link -->

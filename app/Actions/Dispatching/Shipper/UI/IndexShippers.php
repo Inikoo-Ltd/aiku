@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 14-05-2025-10h-46m
@@ -8,15 +9,10 @@
 
 namespace App\Actions\Dispatching\Shipper\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Http\Resources\Accounting\TopUpsResource;
 use App\Http\Resources\Dispatching\ShippersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Accounting\TopUp;
-use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -31,8 +27,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexShippers extends OrgAction
 {
-    private Organisation $parent;
-
+    use WithShipperSubNavigation;
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -49,6 +44,8 @@ class IndexShippers extends OrgAction
         $query = QueryBuilder::for(Shipper::class);
         $query->where('organisation_id', $parent->id);
 
+        $query->where('status', $this?->status ?? true);
+
         return $query->defaultSort('id')
             ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
@@ -64,6 +61,29 @@ class IndexShippers extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function inCurrent(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->status = true;
+        $this->parent = $organisation;
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function inInactive(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->status = false;
+        $this->parent = $organisation;
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function jsonResponse(LengthAwarePaginator $shippers): LengthAwarePaginator
+    {
+        return ShippersResource::collection($shippers);
+    }
+
     public function htmlResponse(LengthAwarePaginator $shippers, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -75,8 +95,24 @@ class IndexShippers extends OrgAction
                 ),
                 'title'       => __('Shippers'),
                 'pageHead'    => [
+                    'subNavigation' => $this->getShipperNavigation($this->organisation, $this->warehouse),
                     'title' => __('Shippers'),
-                    'icon'  => 'fal fa-shipping-fast'
+                    'icon'  => 'fal fa-shipping-fast',
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Create New Shippers'),
+                            'label'   => __('Create Shipper'),
+                            'route'   => [
+                                'name'       => 'grp.org.warehouses.show.dispatching.shippers.create',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'warehouse'         => $this->warehouse->slug,
+                                ]
+                            ]
+                        ],
+                    ]
                 ],
 
                 'data' => ShippersResource::collection($shippers)
@@ -124,13 +160,24 @@ class IndexShippers extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.dispatching.shippers.index' => array_merge(
+            'grp.org.warehouses.show.dispatching.shippers.current.index' => array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.warehouses.show.dispatching.shippers.index',
+                        'name'       => 'grp.org.warehouses.show.dispatching.shippers.current.index',
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
+                    ]
+                )
+            ),
+            'grp.org.warehouses.show.dispatching.shippers.inactive.index' => array_merge(
+                ShowWarehouse::make()->getBreadcrumbs(
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.warehouses.show.dispatching.shippers.inactive.index',
                         'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                     ]
                 )

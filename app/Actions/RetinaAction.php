@@ -37,7 +37,7 @@ class RetinaAction
     protected Website $website;
     protected Customer $customer;
     protected WebUser $webUser;
-    protected ShopifyUser|TiktokUser|WebUser $platformUser;
+    protected ShopifyUser|TiktokUser|WebUser|null $platformUser;
     protected Platform $platform;
     protected ShopifyUser $shopifyUser;
     protected bool $asPupil = false;

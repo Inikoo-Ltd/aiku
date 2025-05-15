@@ -12,6 +12,8 @@ import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Image from "@/Components/Image.vue"
 import { debounce } from "lodash"
+import { Head, Link } from "@inertiajs/vue3"
+import { ref } from "vue"
 
 defineProps<{
     order: {}
@@ -25,6 +27,7 @@ defineProps<{
         charges_amount: string
     }
     balance: string
+    total_to_pay: string
 }>()
 
 
@@ -32,9 +35,12 @@ const debSubmitForm = debounce((save: Function) => {
     save()
 }, 500)
 
+const isLoading = ref<string | boolean>(false)
 </script>
 
 <template>
+    <Head title="Basket" />
+
     <div v-if="!transactions" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
     </div>
@@ -48,7 +54,7 @@ const debSubmitForm = debounce((save: Function) => {
             :summary
             :balance
         />
-        
+
         <DataTable :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
             <template #empty>
                 <div class="flex items-center justify-center h-full text-center">
@@ -103,7 +109,6 @@ const debSubmitForm = debounce((save: Function) => {
                     </template>
 
                     <template #body="{ data: dataBody }">
-                        <!-- <pre>{{ dataBody.updateRoute }}</pre> -->
                         <div class="px-2 relative text-right">
                             <NumberWithButtonSave
                                 v-model="dataBody.quantity_ordered"
@@ -134,6 +139,33 @@ const debSubmitForm = debounce((save: Function) => {
                     <template #body="{ data: dataBody }">
                         <div class="px-2 relative text-right">
                             {{ new Intl.NumberFormat('en', { style: "currency", currency: dataBody.currency_code, }).format(dataBody.net_amount) }}
+                        </div>
+                    </template>
+                </Column>
+
+                <!-- Column: Actions -->
+                <Column
+                    class="w-36"
+                >
+                    <template #header>
+                        <div class="px-2 text-xs md:text-base w-full gap-x-2 font-semibold text-gray-600">
+                            {{ trans("Actions") }}
+                        </div>
+                    </template>
+
+                    <template #body="{ data: dataBody }">
+                        <div class="flex gap-2 px-2">
+                            <Link
+                                :href="dataBody.deleteRoute?.name ? route(dataBody.deleteRoute.name, dataBody.deleteRoute.parameters) : '#'"
+                                as="button"
+                                :method="dataBody.deleteRoute.method"
+                                @start="() => isLoading = 'unselect' + dataBody.id"
+                                @finish="() => isLoading = false"
+                                v-tooltip="trans('Unselect this product')"
+                                :preserveScroll="true"
+                            >
+                                <Button icon="fal fa-times" type="negative" size="xs" :loading="isLoading === 'unselect' + dataBody.id" />
+                            </Link>
                         </div>
                     </template>
                 </Column>
@@ -180,21 +212,33 @@ const debSubmitForm = debounce((save: Function) => {
             </ColumnGroup>
         </DataTable>
 
-        <div class="flex justify-end gap-x-4 mt-4 px-4">
+        <div class="flex justify-between gap-x-4 mt-4 px-4">
             
-            <Button
-                type="tertiary"
-                :icon="faArrowLeft"
-                label="Continue shopping"
-            />
+            <div>
+                <ButtonWithLink
+                    :icon="faArrowLeft"
+                    label="Continue shopping"
+                    url="/"
+                    type="tertiary"
+                    fullLoading
+                />
+            </div>
 
-            <ButtonWithLink
-                :iconRight="faArrowRight"
-                label="Go to Checkout"
-                :routeTarget="{
-                    name: 'retina.ecom.checkout.show'
-                }"
-            />
+            <div class="flex flex-col items-end gap-y-1.5">
+                <ButtonWithLink
+                    :iconRight="faArrowRight"
+                    label="Go to Checkout"
+                    :routeTarget="{
+                        name: 'retina.ecom.checkout.show'
+                    }"
+                />
+                <div v-if="balance > total_to_pay" class="text-xs text-gray-500 italic tracking-wide">
+                    {{ trans("You can pay totally with your current balance") }}
+                </div>
+                <div v-else-if="balance > 0" class="text-xs text-gray-500 italic tracking-wide">
+                    {{ trans("you can pay partly with your balance now") }}
+                </div>
+            </div>
         </div>
 
     </div>

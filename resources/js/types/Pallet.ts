@@ -119,14 +119,17 @@ export interface PalletReturn {
     number_stored_items: number
     number_services: number
     number_physical_goods: number
+    is_collection?: boolean  // if true then no delivery address
 }
 
 
 export interface FieldOrderSummary {
     label: string
+    label_class?: string
     quantity: number
     price_base?: number
     price_total: number | string
+    price_total_class?: string
     information_icon?: string
     information?: string
     currency: {

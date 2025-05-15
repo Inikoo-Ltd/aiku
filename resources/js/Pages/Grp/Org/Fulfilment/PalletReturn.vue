@@ -52,6 +52,7 @@ import {
 	faArrowAltRight,
 	faArrowAltLeft,
     faTrashAlt,
+	faShippingFast,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -59,6 +60,8 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmationDelete.vue"
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(
 	faIdCardAlt,
@@ -73,7 +76,8 @@ library.add(
 	faUndoAlt,
 	faArrowAltRight,
 	faArrowAltLeft,
-    faTrashAlt
+    faTrashAlt,
+	faShippingFast
 )
 
 const props = defineProps<{
@@ -126,6 +130,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
+const layout = inject('layout', layoutStructure)
 const parsed_stored_items_count = ref(props.stored_items_count || 0)
 
 const currentTab = ref(props.tabs.current)
@@ -252,11 +257,71 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
 }
 
 const isModalUploadFileOpen = ref(false)
+
+// Section: Tracking Number
+const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
+const isModalTrackingNumber = ref(false)
+const optionShippingList = ref([])
+const onOpenModalTrackingNumber = async () => {
+	isLoadingData.value = "addTrackingNumber"
+	try {
+		const xxx = await axios.get(
+			route('grp.json.shippers.index', {
+				organisation: 'aw',
+			})
+		)
+		optionShippingList.value = xxx?.data?.data || []
+	} catch (error) {
+		console.error(error)
+		notify({
+			title: trans("Something went wrong."),
+			text: trans("Failed to retrieve shipper list"),
+			type: "error",
+		})
+	}
+	isLoadingData.value = false
+}
+const onSubmitTrackingNumber = () => {
+	// formAddService.historic_asset_id = optionShippingList.value.filter(
+	// 	(service) => service.id == formAddService.service_id
+	// )[0].historic_asset_id
+	// isLoadingButton.value = "addTrackingNumber"
+
+	formTrackingNumber.post('route(data.route?.name, { ...data.route?.parameters })', {
+		preserveScroll: true,
+		onSuccess: () => {
+			isModalTrackingNumber.value = false
+			formTrackingNumber.reset()
+		},
+		onError: (errors) => {
+			notify({
+				title: trans("Something went wrong."),
+				text: trans("Failed to add tracking number. Please try again or contact administrator."),
+				type: "error",
+			})
+		},
+		onFinish: () => {
+			isLoadingButton.value = false
+		},
+	})
+}
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template v-if="layout.app.environment === 'local'" #otherBefore>
+			<Button 
+				v-if="!data.data?.is_collection"
+				@click="() => (isModalTrackingNumber = true, onOpenModalTrackingNumber())"
+				label="Tracking Number"
+				icon="fal fa-shipping-fast"
+				type="tertiary"
+			>
+
+			</Button>
+		</template>
+
 		<!-- Button: Upload -->
 		<template #button-upload="{ action }">
 			<Button
@@ -631,4 +696,89 @@ const isModalUploadFileOpen = ref(false)
 		progressDescription="Adding Pallet Deliveries"
 		:attachmentRoutes
 		:options="props.option_attach_file" />
+
+	<!-- Modal: Tracking Number -->
+	<Modal
+		v-if="!data.data?.is_collection"
+		:isOpen="isModalTrackingNumber"
+		@onClose="isModalTrackingNumber = false"
+		width="w-full max-w-lg"
+	>
+		<div class="text-center font-bold mb-4">
+			{{ trans('Add tracking number') }}
+		</div>
+
+		<div class="w-full">
+			<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+			<div class="">
+				<PureMultiselectInfiniteScroll
+					v-model="formTrackingNumber.shipping_id"
+					:fetchRoute="{
+						name: 'grp.json.shippers.index', 
+						parameters: {
+							organisation: 'aw',
+						}
+					}"
+					required
+					:placeholder="trans('Select shipping')"
+					valueProp="id">
+					<template #singlelabel="{ value }">
+						<div class="w-full text-left pl-4">
+							{{ value.name }}
+							<span class="text-sm text-gray-400">({{ value.code }})</span>
+						</div>
+					</template>
+
+					<template #option="{ option, isSelected, isPointed }">
+						<div class="">
+							{{ option.name }}
+							<span class="text-sm text-gray-400">({{ option.code }})</span >
+						</div>
+					</template>
+				</PureMultiselectInfiniteScroll>
+
+				<p
+					v-if="get(formTrackingNumber, ['errors', 'shipping_id'])"
+					class="mt-2 text-sm text-red-500">
+					{{ formTrackingNumber.errors.shipping_id }}
+				</p>
+			</div>
+
+			<div class="mt-3">
+				<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+				<PureInput
+					v-model="formTrackingNumber.tracking_number"
+					placeholder="ABC-DE-1234567"
+					@keydown.enter="() => onSubmitAddService(action, closed)" />
+				<p
+					v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
+					class="mt-2 text-sm text-red-600">
+					{{ formTrackingNumber.errors.tracking_number }}
+				</p>
+			</div>
+
+			<div class="flex justify-end mt-3">
+				<Button
+					:style="'save'"
+					:loading="isLoadingButton == 'addTrackingNumber'"
+					:label="'save'"
+					:disabled="
+						!formTrackingNumber.shipping_id || !(formTrackingNumber.tracking_number)
+					"
+					full
+					@click="() => onSubmitTrackingNumber()" />
+			</div>
+
+			<!-- Loading: fetching service list -->
+			<div
+				v-if="isLoadingData === 'addTrackingNumber'"
+				class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+				<FontAwesomeIcon
+					icon="fad fa-spinner-third"
+					class="animate-spin text-5xl"
+					fixed-width
+					aria-hidden="true" />
+			</div>
+		</div>
+	</Modal>
 </template>
