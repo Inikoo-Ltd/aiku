@@ -10,7 +10,7 @@ import { computed, onMounted, ref, inject, toRaw } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
-import { cloneDeep } from "lodash-es"
+import { cloneDeep, set } from "lodash-es"
 import { Link, router, useForm } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -276,6 +276,9 @@ const onSubmitShipment = () => {
 			onSuccess: () => {
 				isModalParcels.value = false
 				// formTrackingNumber.reset()
+				console.log('listError', listError, listError.box_stats_parcel)
+				listError.box_stats_parcel = false
+				set(listError, 'box_stats_parcel', false)
 			},
 			onError: (errors) => {
 				notify({
@@ -289,6 +292,8 @@ const onSubmitShipment = () => {
 			},
 		})
 }
+
+const listError = inject('listError', {})
 </script>
 
 <template>
@@ -530,7 +535,7 @@ const onSubmitShipment = () => {
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
-			<div class="flex gap-x-1">
+			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-sm flex justify-between w-full">

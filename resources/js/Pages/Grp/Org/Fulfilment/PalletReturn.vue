@@ -10,7 +10,8 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import type { Component } from "vue"
-import { computed, inject, ref, watch } from "vue"
+import { set } from "lodash-es"
+import { computed, inject, provide, ref, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
@@ -265,7 +266,7 @@ const isModalUploadFileOpen = ref(false)
 
 // Section: Shipment
 const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
-const isModalTrackingNumber = ref(false)
+const isModalShipment = ref(false)
 const optionShippingList = ref([])
 const onOpenModalTrackingNumber = async () => {
 	isLoadingData.value = "addTrackingNumber"
@@ -303,7 +304,7 @@ const onSubmitShipment = () => {
 				isLoadingButton.value = "addTrackingNumber"
 			},
 			onSuccess: () => {
-				isModalTrackingNumber.value = false
+				isModalShipment.value = false
 				formTrackingNumber.reset()
 			},
 			onError: (errors) => {
@@ -319,16 +320,10 @@ const onSubmitShipment = () => {
 		})
 }
 
-// const xxx = ref([
-// 	{
-// 		weight: 20,
-// 		dimension: [45, 50, 67]
-// 	}
-// ])
-
-const onDeleteParcel = (index: number) => {
-	props.box_stats.parcels.splice(index, 1)
-}
+const listError = ref({
+	box_stats_parcel: false
+})
+provide("listError", listError.value)
 </script>
 
 <template>
@@ -337,7 +332,8 @@ const onDeleteParcel = (index: number) => {
 		<template v-if="layout.app.environment === 'local'" #otherBefore>
 			<Button 
 				v-if="!data.data?.is_collection"
-				@click="() => (isModalTrackingNumber = true, onOpenModalTrackingNumber())"
+				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
+				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 				:label="trans('Shipment')"
 				icon="fal fa-shipping-fast"
 				type="tertiary"
@@ -724,8 +720,8 @@ const onDeleteParcel = (index: number) => {
 	<!-- Modal: Shipment -->
 	<Modal
 		v-if="!data.data?.is_collection"
-		:isOpen="isModalTrackingNumber"
-		@onClose="isModalTrackingNumber = false"
+		:isOpen="isModalShipment"
+		@onClose="isModalShipment = false"
 		width="w-full max-w-lg"
 	>
 		<div class="text-center font-bold mb-4">
