@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -41,7 +42,7 @@ class GetPalletReturnBoxStats
                 'name' => $palletReturn->platform->name
             ] : null,
             'parcels'   => $palletReturn->parcels,
-            'shipments' => $palletReturn->shipments,
+            'shipments' => $palletReturn?->shipments ? ShipmentsResource::collection($palletReturn->shipments()->with('shipper')->get()) : null,
             'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [
