@@ -119,9 +119,7 @@ class GetRetinaFulfilmentNavigation
                     ]
                 ];
 
-                if (config('app.env') !== 'production') {
-                    $groupNavigation = array_merge($groupNavigation, GetRetinaDropshippingNavigation::run($webUser));
-                }
+                $groupNavigation = array_merge($groupNavigation, GetRetinaDropshippingNavigation::run($webUser));
             }
 
             // $groupNavigation['pricing'] = [

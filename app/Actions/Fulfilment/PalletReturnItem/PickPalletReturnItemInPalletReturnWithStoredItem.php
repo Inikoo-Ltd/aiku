@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
+use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPicking;
 use App\Actions\OrgAction;
@@ -47,6 +48,7 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
                 SetPalletStoredItemStateToReturned::run($palletReturnItem->palletStoredItem);
             }
 
+            SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
             AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
 
             return $palletReturnItem;
