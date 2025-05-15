@@ -11,11 +11,11 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
@@ -27,7 +27,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaBaskets extends RetinaAction
 {
-    public function handle(Customer $parent, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
+    public function handle($prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -59,23 +59,28 @@ class IndexRetinaBaskets extends RetinaAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+        $this->platform = $this->organisation->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
 
-        $customer = $request->user()->customer;
 
-        return $this->handle($customer);
+        return $this->handle();
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
+
+        $title = __('Baskets');
+
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Orders'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'model' => $this->platformUser->name ?? __('Manual'),
-                    'title' => __('Orders'),
-                    'icon'  => 'fal fa-money-bill-wave'
+                    'title' => $title,
+                    'icon'  => 'fal fa-shopping-basket',
+                    'afterTitle' => [
+                        'label' => ' @'.$this->platform->name
+                    ],
                 ],
 
                 'tabs' => [
@@ -100,8 +105,7 @@ class IndexRetinaBaskets extends RetinaAction
             }
 
             $emptyStateData = [
-                'icons' => ['fal fa-pallet'],
-                'title' => __("No order exist"),
+                'title' => __("You dont have any baskets open"),
                 'count' => 0
             ];
 

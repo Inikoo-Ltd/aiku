@@ -35,7 +35,7 @@ class GetRetinaDropshippingPlatformNavigation
             ];
         }
 
-        if (!$webUser->customer->is_fulfilment or $platform->type !== PlatformTypeEnum::SHOPIFY) {
+        if (!$webUser->customer->is_fulfilment || $platform->type !== PlatformTypeEnum::SHOPIFY) {
             $tabs = [
                 [
                     'label' => __('All Products'),
@@ -50,7 +50,7 @@ class GetRetinaDropshippingPlatformNavigation
         }
 
         $platformNavigation['portfolios'] = [
-            'label' => __('SKUs'),
+            'label' => __('Portfolio'),
             'icon' => ['fal', 'fa-cube'],
             'root' => 'retina.dropshipping.platforms.portfolios.',
             'route' => [
@@ -95,7 +95,7 @@ class GetRetinaDropshippingPlatformNavigation
 
         if ($webUser->customer->is_dropshipping) {
             $platformNavigation['api_token'] = [
-                'label' => __('Api Token'),
+                'label' => __('Api'),
                 'icon' => ['fal', 'fa-key'],
                 'root' => 'retina.dropshipping.platforms.api.',
                 'route' => [
