@@ -69,7 +69,9 @@ class StoreFulfilmentFromShopify extends OrgAction
                     'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
                     'destination' => Arr::get($modelData, 'destination'),
                     'shopify_user_id' => $shopifyUser->id,
-                ]
+                ],
+                'is_collection' => false,
+                'shopify_user_id' => $shopifyUser->id
             ]);
 
             $storedItems = [];

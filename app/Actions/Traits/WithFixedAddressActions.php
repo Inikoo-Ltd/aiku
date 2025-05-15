@@ -63,6 +63,7 @@ trait WithFixedAddressActions
         );
 
         AddressHydrateFixedUsage::dispatch($address);
+
         $model->updateQuietly([$addressField => $address->id]);
 
         return $address;

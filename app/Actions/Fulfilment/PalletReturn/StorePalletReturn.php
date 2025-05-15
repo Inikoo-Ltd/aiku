@@ -87,6 +87,8 @@ class StorePalletReturn extends OrgAction
                 'delivery',
                 'delivery_address_id'
             );
+
+            $palletReturn->refresh();
         } else {
             $palletReturn = $this->attachAddressToModel(
                 model: $palletReturn,
@@ -152,7 +154,9 @@ class StorePalletReturn extends OrgAction
             'customer_notes' => ['sometimes', 'nullable', 'string'],
             'platform_id'    => ['sometimes', 'nullable', 'integer', 'exists:platforms,id'],
             'delivery_address' => ['sometimes', new ValidAddress()],
-            'data' => ['sometimes', 'array']
+            'data' => ['sometimes', 'array'],
+            'is_collection' => ['sometimes', 'boolean'],
+            'shopify_user_id' => ['sometimes', 'integer']
         ];
     }
 
