@@ -11,6 +11,7 @@ namespace App\Actions\Retina\UI\TopUp;
 
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\RetinaAction;
+use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
@@ -52,6 +53,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($topUpPaymentApiPoint);
 
 
+
         $paymentSessionRequest = $this->setBillingInformation(
             $paymentSessionRequest,
             $this->customer->address
@@ -90,7 +92,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
     {
         $this->initialisation($request);
 
-        if (!$topUpPaymentApiPoint->in_process) {
+        if ($topUpPaymentApiPoint->state !== TopUpPaymentApiPointStateEnum::IN_PROCESS) {
             return [
                 'error' => 'Top Up Payment expired'
             ];

@@ -8,6 +8,7 @@
 
 namespace App\Models\Accounting;
 
+use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +27,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string $amount
- * @property bool $in_process
+ * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property TopUpPaymentApiPointStateEnum $state
  * @property-read Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -42,7 +44,9 @@ class TopUpPaymentApiPoint extends Model
     use InOrganisation;
 
     protected $casts = [
-        'data' => 'array',
+        'data'         => 'array',
+        'processed_at' => 'datetime',
+        'state'        => TopUpPaymentApiPointStateEnum::class,
     ];
 
     protected $attributes = [

@@ -47,7 +47,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_id
  * @property int|null $number_parcels
  * @property array<array-key, mixed>|null $api_response
- * @property string $combined_label_url
+ * @property string|null $combined_label_url
  * @property array<array-key, mixed>|null $trackings
  * @property array<array-key, mixed>|null $tracking_urls
  * @property array<array-key, mixed>|null $label_urls

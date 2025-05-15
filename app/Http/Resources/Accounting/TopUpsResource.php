@@ -12,23 +12,21 @@ namespace App\Http\Resources\Accounting;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property mixed $id
- * @property mixed $date
- * @property mixed $name
+
  * @property mixed $reference
  * @property mixed $slug
- * @property mixed $state
- * @property mixed $number_item_transactions
+ * @property mixed $amount
+ * @property mixed $status
  */
 class TopUpsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'slug'                  => $this->slug,
-            'reference'                => $this->reference,
-            'amount'                => $this->amount,
-            'status'                => $this->status
+            'slug'      => $this->slug,
+            'reference' => $this->reference,
+            'amount'    => $this->amount,
+            'status'    => $this->status
         ];
     }
 }
