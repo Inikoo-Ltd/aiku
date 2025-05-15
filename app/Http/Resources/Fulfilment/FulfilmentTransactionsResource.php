@@ -47,7 +47,7 @@ class FulfilmentTransactionsResource extends JsonResource
             'currency_code'     => $this->currency_code,
             'unit_abbreviation' => $unitAbbreviation,
             'unit_label'        => $unitLabel,
-            'quantity'          => $this->quantity,
+            'quantity'          => (int) $this->quantity,
             'total'             => $this->net_amount,
             'edit_type'         => $this->edit_type ?? null,
             'is_auto_assign'    => $this->is_auto_assign,

@@ -64,7 +64,7 @@ class PickedPalletReturnWithStoredItems extends OrgAction
 
 
             }
-
+            SetStoredItemReturnAutoServices::run($palletReturn, true);
             GroupHydratePalletReturns::dispatch($palletReturn->group);
             OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
             WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
