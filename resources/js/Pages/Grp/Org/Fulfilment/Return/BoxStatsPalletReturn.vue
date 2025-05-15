@@ -412,9 +412,9 @@ const onSubmitShipment = () => {
 				<a v-if="boxStats.is_platform">{{ boxStats.platform_customer?.phone }}</a>
 				<a v-else>{{ boxStats.fulfilment_customer?.customer.phone }}</a>
 			</div>
-
+		
 			<!-- Field: Delivery Address -->
-			<div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
+			<div v-if="!boxStats.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
 				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
 					<span class="sr-only">{{ boxStats?.delivery_state?.tooltip }}</span>
 					<FontAwesomeIcon :icon="['fal', 'calendar-day']" class="text-gray-400" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
@@ -449,7 +449,7 @@ const onSubmitShipment = () => {
 			<!-- Delivery Address / Collection by Section -->
 			<div class="flex flex-col w-full gap-y-2 mb-1">
 				<!-- Top Row: Icon dan Switch -->
-				<div class="flex items-center gap-x-2">
+				<div v-if="!boxStats.is_platform" class="flex items-center gap-x-2">
 					<dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
 						<span class="sr-only">Delivery address</span>
 						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -552,7 +552,7 @@ const onSubmitShipment = () => {
 			</div>
 
 			<!-- Customer reference -->
-			<div class="mb-1" v-if="address_management">
+			<div class="mb-1" v-if="address_management && !boxStats.is_platform">
 				<PalletEditCustomerReference
           :dataPalletDelivery="dataPalletReturn"
           :updateRoute="address_management.updateRoute"
