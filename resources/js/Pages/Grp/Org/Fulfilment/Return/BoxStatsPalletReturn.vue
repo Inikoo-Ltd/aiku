@@ -21,6 +21,7 @@ import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
+import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
@@ -29,7 +30,7 @@ import Textarea from "primevue/textarea"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
-library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faCubes)
 
 const props = defineProps<{
 
@@ -244,6 +245,21 @@ const disableBeforeToday = (date: Date) => {
 	today.setHours(0, 0, 0, 0)
 	return date < today
 }
+
+const xxx = ref([
+	{
+		weight: 20,
+		dimension: [45, 50, 67]
+	},
+	{
+		weight: 5,
+		dimension: [33, 12, 24]
+	},
+	{
+		weight: 67,
+		dimension: [45, 50, 67]
+	},
+])
 </script>
 
 <template>
@@ -485,6 +501,24 @@ const disableBeforeToday = (date: Date) => {
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
+			<div class="flex gap-x-1">
+				<FontAwesomeIcon  v-tooltip="trans('Customer Reference')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group">
+					<div class="leading-4 text-sm">{{ trans("Parcels") }} ({{ xxx.length }})</div>
+					<ul class="list-disc pl-4">
+						<li v-for="ddd in xxx" class="text-xs tabular-nums">
+							<span class="truncate">
+								{{ ddd.weight }} kg
+							</span>
+
+							<span class="text-gray-500 truncate">
+								({{ ddd.dimension[0] }}x{{ ddd.dimension[1] }}x{{ ddd.dimension[2] }} cm)
+							</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+
 			<!-- Customer reference -->
 			<div class="mb-1" v-if="address_management">
 				<PalletEditCustomerReference

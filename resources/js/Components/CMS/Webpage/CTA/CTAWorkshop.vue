@@ -59,7 +59,7 @@ const emits = defineEmits<{
 					:uploadImageRoute="{
                         name: webpageData.images_upload_route.name,
                         parameters: {
-                            ...webpageData.images_upload_route.parameters,
+                            ...webpageData.images_upload_route .parameters,
                             modelHasWebBlocks: blockData?.id,
                         }
                     }"

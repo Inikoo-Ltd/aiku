@@ -10,16 +10,15 @@ import { faPlus, faTrash } from "@fal";
 import { cloneDeep } from "lodash";
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue";
 import CardsProperty from "@/Components/Workshop/Properties/CardsProperty.vue";
+import { routeType } from "@/types/route";
 
 library.add(faPlus, faTrash);
 
 // Define reactive modelValue prop
-const props = defineProps({
-    modelValue: {
-        type: Array,
+const props = defineProps<{  modelValue: {
+        type: [],
         required: true,
-    },
-});
+    }, uploadRoutes: routeType }>();
 
 
 // Emit changes to modelValue
@@ -31,7 +30,6 @@ const onChangeProperty = (index, data) => {
 
     setData[index] = data; */
   /*   emit("update:modelValue", [...props.modelValue]); */
-
      const updatedData = [...props.modelValue]; // Clone the array to maintain reactivity
     updatedData[index] = { ...updatedData[index], ...data }; // Merge existing data with new changes
     emit("update:modelValue", updatedData); // Emit the updated array
@@ -49,7 +47,7 @@ const onChangeProperty = (index, data) => {
                     <span>{{ field?.name }}</span>
                 </DisclosureButton>
                 <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                   <CardsProperty :modelValue="modelValue[index]"  @update:model-value="(data) => onChangeProperty(index, data)"/>
+                   <CardsProperty :modelValue="modelValue[index]" :uploadRoutes="uploadRoutes"  @update:model-value="(data) => onChangeProperty(index, data)"/>
                 </DisclosurePanel>
             </Disclosure>
         </div>
