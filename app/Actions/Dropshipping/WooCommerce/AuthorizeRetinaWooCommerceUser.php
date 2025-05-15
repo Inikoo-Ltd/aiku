@@ -37,8 +37,11 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
             'callback_url' => route('retina.dropshipping.platform.wc.callback')
         ];
 
-        $url = $modelData['url'].$endpoint.'?'.http_build_query($params);
+        return $modelData['url'].$endpoint.'?'.http_build_query($params);
+    }
 
+    public function jsonResponse(string $url): string
+    {
         return $url;
     }
 

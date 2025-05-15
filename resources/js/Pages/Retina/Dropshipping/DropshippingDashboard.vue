@@ -87,29 +87,32 @@ const woocomInput = ref({
     name: null as null | string,
     url: null as null | string,
 })
-const onSubmitWoocommerce = () => {
-    router[props.wooRoute.connectRoute.method || 'post'](
+const onSubmitWoocommerce = async () => {
+    const method = props.wooRoute.connectRoute.method;
+    const xxx = await axios.post(
         route(props.wooRoute.connectRoute.name, props.wooRoute.connectRoute.parameters),
-        woocomInput.value,
-        {
-            onStart: () => isLoading.value = true,
-            onError: (error) => {
-                notify({
-                    title: trans('Something went wrong'),
-                    text: error,
-                    type: 'error',
-                })
-            },
-            onSuccess: () => {
-                isModalWoocom.value = false
-                woocomInput.value.name = null
-                woocomInput.value.url = null
+        woocomInput.value)
+        // {
+        //     onStart: () => isLoading.value = true,
+        //     onError: (error) => {
+        //         notify({
+        //             title: trans('Something went wrong'),
+        //             text: error,
+        //             type: 'error',
+        //         })
+        //     },
+        //     onSuccess: (response) => {
+        //         // isModalWoocom.value = false
+        //         woocomInput.value.name = null
+        //         woocomInput.value.url = null
+        //
+        //         console.log(response)
+        //         // window.open(props.connectRoute?.url);
+        //     },
+        //     onFinish: () => isLoading.value = false
+        // }
 
-                // window.open(props.connectRoute?.url, '_blank');
-            },
-            onFinish: () => isLoading.value = false
-        }
-    )
+        console.log('xxx', xxx);
 }
 </script>
 
@@ -291,7 +294,7 @@ const onSubmitWoocommerce = () => {
             </div>
         </div>
     </div>
-    
+
     <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
         <div class="h-40">
             <div class="mb-4">
