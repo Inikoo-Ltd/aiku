@@ -19,6 +19,7 @@ use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
+use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -27,44 +28,57 @@ class StoreShipment extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
-        data_set($modelData, 'group_id', $deliveryNote->group_id);
-        data_set($modelData, 'organisation_id', $deliveryNote->organisation_id);
-        data_set($modelData, 'shop_id', $deliveryNote->shop_id);
+        data_set($modelData, 'group_id', $parent->group_id);
+        data_set($modelData, 'organisation_id', $parent->organisation_id);
+        data_set($modelData, 'shop_id', $parent->shop_id);
 
 
         $modelData = array_merge(
             $modelData,
             [
-                'group_id' => $deliveryNote->group_id,
-                'organisation_id' => $deliveryNote->organisation_id,
-                'shop_id' => $deliveryNote->shop_id,
-                'customer_id' => $deliveryNote->customer_id,
+                'group_id'        => $parent->group_id,
+                'organisation_id' => $parent->organisation_id,
+                'shop_id'         => $parent->shop_id,
+                'customer_id'     => $parent->customer_id,
             ]
         );
 
-        /** @var Shipment $shipment */
-        $shipment = match ($shipper->api_shipper) {
-            'apc-gb' => ApcGbCallShipperApi::run($deliveryNote, $shipper),
-            'dpd-gb' => DpdGbCallShipperApi::run($deliveryNote, $shipper),
-            'dpd-sk' => DpdSkCallShipperApi::run($deliveryNote, $shipper),
-            'pst-mn' => PostmenCallShipperApi::run($deliveryNote, $shipper),
-            'whl-gb' => WhistlGbCallShipperApi::run($deliveryNote, $shipper),
-            'itd' => CallApiItdShipping::run($deliveryNote, $shipper),
-            default => $shipper->shipments()->create($modelData),
-        };
+        if ($shipper->api_shipper) {
+            $shipmentData = match ($shipper->api_shipper) {
+                'apc-gb' => ApcGbCallShipperApi::run($parent, $shipper),
+                'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
+                'dpd-sk' => DpdSkCallShipperApi::run($parent, $shipper),
+                'pst-mn' => PostmenCallShipperApi::run($parent, $shipper),
+                'whl-gb' => WhistlGbCallShipperApi::run($parent, $shipper),
+                'itd' => CallApiItdShipping::run($parent, $shipper),
+                default => [
+                    'status' => 'error',
+                ]
+            };
 
-        if ($parent instanceof DeliveryNote) {
-            $shipment->deliveryNotes()->attach($parent->id);
-        } else {
+
+            if ($shipmentData['status'] == 'success') {
+                $modelData = array_merge($modelData, $shipmentData['modelData']);
+            } else {
+                // deal with tge error do not create shipment
+            }
+
+
+
+
+
 
         }
+        $shipment = $shipper->shipments()->create($modelData);
+
 
 
         $shipment->refresh();
 
 
+        $parent->shipments()->attach($shipment->id);
 
         ShipmentHydrateUniversalSearch::dispatch($shipment);
 
@@ -74,14 +88,18 @@ class StoreShipment extends OrgAction
     public function rules(): array
     {
         return [
-            'tracking' => ['sometimes', 'max:64', 'string']
+            'reference'      => ['sometimes', 'max:1000', 'string'],
+            'tracking'       => ['sometimes', 'max:1000', 'string'],
+            'number_parcels' => ['required', 'numeric', 'min:1'],
         ];
     }
 
-    public function action(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
+    public function action(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
-        $this->initialisation($deliveryNote->organisation, $modelData);
+        $this->initialisation($parent->organisation, $modelData);
 
-        return $this->handle($deliveryNote, $shipper, $this->validatedData);
+        return $this->handle($parent, $shipper, $this->validatedData);
     }
+
+
 }

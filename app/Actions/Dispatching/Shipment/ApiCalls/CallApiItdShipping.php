@@ -9,10 +9,12 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\Dispatching\ShippingParentResource;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
+use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -23,97 +25,132 @@ class CallApiItdShipping extends OrgAction
 
     public function getAccessToken(Shipper $shipper): string
     {
-        return Arr::get($shipper->settings, 'access_token');
+        if (app()->environment('production')) {
+            return Arr::get($shipper->settings, 'access_token');
+        } else {
+            return config('app.sandbox.shipper_itd_token');
+        }
     }
 
-    public function getBaseUrl(Shipper $shipper): string
+    public function getBaseUrl(): string
     {
-        return Arr::get($shipper->settings, 'base_url');
+        if (app()->environment('production')) {
+            return 'https://api.connexx.co.uk/';
+        } else {
+            return 'https://nest-staging-53oj.onrender.com/';
+        }
     }
 
-    public function handle(DeliveryNote $parent, Shipper $shipper): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        $url = 'api/v1/shipments';
+        $url     = 'api/v1/shipments';
         $headers = [
             [
-                'Authorization' => 'Bearer ' . $this->getAccessToken($shipper),
                 'Content-Type' => 'application/json'
             ]
         ];
 
+
         $packages = [
             [
-                'packageType' => 3,
+                'packageType'   => 3,
                 'packageLength' => 30,
-                'packageWidth' => 30,
+                'packageWidth'  => 30,
                 'packageHeight' => 30,
                 'packageWeight' => 1000
             ]
         ];
 
+
+        if (app()->environment('production')) {
+            $serviceId = 'YODEL_XPECT_MINI_48_M_S_POD_137954';
+            // for premium fast shipping use 'YODEL_XPECT_MINI_48_M_S_POD_137954';
+        } else {
+            $serviceId = 'YODEL_XPECT_48_P_136240';
+        }
+
+
+        $parentResource = ShippingParentResource::make($parent)->getArray();
+
         $params = [
-            'labelSize' => '4x6',
+            'labelSize'       => '4x6',
             'doNotUseWebhook' => true,
-            'shipments' => [
+            'shipments'       => [
                 [
-                    'serviceId' => Arr::get($shipper->data, 'service_id'),
-                    'evriService' => [
-                        'signature' => false,
-                    ],
-                    'warehouseName' => $parent->warehouse->name,
-                    'invoiceDate' => $parent->date,
-                    'invoiceNumber' => $parent->reference,
-                    'orderNumber' => $parent->reference,
-                    'customerReference' => $parent->customer_reference,
-                    'reasonForExport' => 'Gift',
-                    'UKIMSNumber' => 'XIUKIM123456789',
-                    'fromAddressFirstName' => $parent->fulfilment->shop->name,
-                    'fromAddressLastName' => 'Department',
-                    'fromAddressCompany' => $parent->fulfilment->shop->company_name,
-                    'fromAddressPhone' => $parent->fulfilment->shop->phone,
-                    'fromAddressEmail' => $parent->fulfilment->shop->email,
-                    'fromAddressStreet1' => $parent->fulfilment->shop->address->address_line_1,
-                    'fromAddressStreet2' => $parent->fulfilment->shop->address->address_line_2,
-                    'fromAddressStreet3' => null,
-                    'fromAddressCity' => $parent->fulfilment->shop->address->dependent_locality,
-                    'fromAddressCountyState' => $parent->fulfilment->shop->address->administrative_area,
-                    'fromAddressZip' => $parent->fulfilment->shop->address->postal_code,
-                    'fromAddressCountryIso' => $parent->fulfilment->shop->address->country_code,
-                    'fromAddressEoriNumber' => 'EO123',
-                    'fromAddressVatNumber' => Arr::get($parent->fulfilment->shop->data, 'vat_number'),
-                    'toAddressFirstName' => $parent->customer->name,
-                    'toAddressLastName' => '',
-                    'toAddressCompany' => $parent->customer->company_name,
-                    'toAddressPhone' => $parent->customer->phone,
-                    'toAddressEmail' => $parent->customer->email,
-                    'toAddressStreet1' => $parent->customer->address->address_line_1,
-                    'toAddressStreet2' => $parent->customer->address->address_line_2,
-                    'toAddressStreet3' => null,
-                    'toAddressCity' => $parent->customer->address->dependent_locality,
-                    'toAddressCountyState' => $parent->customer->address->administrative_area,
-                    'toAddressZip' => $parent->customer->address->postal_code,
-                    'toAddressCountryIso' => $parent->customer->address->postal_code,
-                    'toAddressEoriNumber' => '',
-                    'toAddressVatNumber' => Arr::get($parent->customer->data, 'vat_number'),
-                    'packages' => $packages
+                    'serviceId' => $serviceId,
+
+                    'orderNumber'            => $parent->reference,
+                    'customerReference'      => Arr::get($parentResource, 'customer_reference'),
+                    'reasonForExport'        => 'Gift',
+                    'fromAddressFirstName'   => Arr::get($parentResource, 'from_first_name'),
+                    'fromAddressLastName'    => Arr::get($parentResource, 'from_last_name'),
+                    'fromAddressCompany'     => Arr::get($parentResource, 'from_company_name'),
+                    'fromAddressPhone'       => Arr::get($parentResource, 'from_phone'),
+                    'fromAddressEmail'       => Arr::get($parentResource, 'from_email'),
+                    'fromAddressStreet1'     => Arr::get($parentResource, 'from_address.address_line_1'),
+                    'fromAddressStreet2'     => Arr::get($parentResource, 'from_address.address_line_2'),
+                    'fromAddressCity'        => Arr::get($parentResource, 'from_address.locality'),
+                    'fromAddressCountyState' => Arr::get($parentResource, 'from_address.administrative_area'),
+                    'fromAddressZip'         => Arr::get($parentResource, 'from_address.postal_code'),
+                    'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country.code'),
+                    'toAddressFirstName'     => Arr::get($parentResource, 'from_first_name'),
+                    'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'),
+                    'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'),
+                    'toAddressPhone'         => Arr::get($parentResource, 'to_phone'),
+                    'toAddressEmail'         => Arr::get($parentResource, 'to_email'),
+                    'toAddressStreet1'       => Arr::get($parentResource, 'to_address.address_line_1'),
+                    'toAddressStreet2'       => Arr::get($parentResource, 'to_address.address_line_2'),
+                    'toAddressCity'          => Arr::get($parentResource, 'to_address.locality'),
+                    'toAddressCountyState'   => Arr::get($parentResource, 'to_address.administrative_area'),
+                    'toAddressZip'           => Arr::get($parentResource, 'to_address.postal_code'),
+                    'toAddressCountryIso'    => Arr::get($parentResource, 'to_address.country.code'),
+                    'packages'               => $packages
                 ]
             ]
         ];
 
-        return ProsesApiCalls::make()->action($this->getBaseUrl($shipper) . $url, $headers, json_encode($params));
-    }
 
-    public function rules(): array
-    {
+        $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl().$url, $params)->json();
+
+        $modelData = [
+            'api_response' => $apiResponse,
+        ];
+
+        $errorData = [];
+        if (Arr::get($apiResponse, 'data.status') == 'COMPLETE') {
+            $status                          = 'success';
+            $modelData['combined_label_url'] = $apiResponse['data']['combinedPdfUrl'];
+
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
+            $modelData['label_urls']    = [];
+
+            foreach (Arr::get($apiResponse, 'data.shipments') as $shipment) {
+                $modelData['reference'] = Arr::get($shipment, 'id');
+
+
+                foreach (Arr::get($shipment, 'packages', []) as $package) {
+                    $modelData['trackings'][]     = Arr::get($package, 'trackingCode');
+                    $modelData['tracking_urls'][] = Arr::get($package, 'trackingUrl');
+                    $modelData['label_urls'][]    = Arr::get($package, 'labelUrl');
+                }
+            }
+
+            $modelData['tracking']                  = implode(' ', $modelData['trackings']);
+            $modelData['number_shipment_trackings'] = count($modelData['trackings']);
+            $modelData['number_parcels']            = count($modelData['label_urls']);
+        } else {
+            $status = 'fail';
+            // todo parse errors to display in UI
+        }
+
+
         return [
-            'reference' => ['required', 'max:64', 'string']
+            'status'    => $status,
+            'modelData' => $modelData,
+            'errorData' => $errorData,
         ];
     }
 
-    public function action(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
-    {
-        $this->initialisation($deliveryNote->organisation, $modelData);
 
-        return $this->handle($deliveryNote, $shipper, $this->validatedData);
-    }
 }

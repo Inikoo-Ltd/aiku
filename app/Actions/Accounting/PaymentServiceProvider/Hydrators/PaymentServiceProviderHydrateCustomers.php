@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 13-05-2025-16h-46m
@@ -10,7 +11,6 @@ namespace App\Actions\Accounting\PaymentServiceProvider\Hydrators;
 
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
-use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +29,7 @@ class PaymentServiceProviderHydrateCustomers implements ShouldBeUnique
     public function handle(PaymentServiceProvider $paymentServiceProvider): void
     {
         $paymentAccountIds = $paymentServiceProvider->accounts()->pluck('id');
-        
+
         $customers = DB::table('payments')
             ->whereIn('payment_account_id', $paymentAccountIds)
             ->where('type', PaymentTypeEnum::PAYMENT->value)

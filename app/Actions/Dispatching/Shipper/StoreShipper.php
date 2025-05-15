@@ -27,10 +27,10 @@ class StoreShipper extends OrgAction
     {
         data_set($modelData, 'group_id', $organisation->group_id);
 
-        if(Arr::exists($modelData, 'base_url')) {
+        if (Arr::exists($modelData, 'base_url')) {
             data_set($modelData, 'settings.base_url', Arr::pull($modelData, 'base_url'));
         }
-        
+
         $shipper = DB::transaction(function () use ($organisation, $modelData) {
             /** @var Shipper $shipper */
             $shipper = $organisation->shippers()->create($modelData);

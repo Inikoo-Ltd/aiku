@@ -28,9 +28,7 @@ class AddressResource extends JsonResource
         /** @var Address $address */
         $address = $this;
 
-        // dd($address->whenPivotLoadedAs('pivot', 'model_has_addresses', function () {
-        //     return $this->pivot->scope;
-        // }));
+
         $addressFormatRepository = new AddressFormatRepository();
         $countryRepository       = new CountryRepository();
         $subdivisionRepository   = new SubdivisionRepository();
