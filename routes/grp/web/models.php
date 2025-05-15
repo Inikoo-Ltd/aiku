@@ -447,8 +447,8 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
 
 
-    Route::get('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
-    Route::get('/shipment-from-warehouse', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_warehouse.store');
+    Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
+    Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_warehouse.store');
 
 
 });
