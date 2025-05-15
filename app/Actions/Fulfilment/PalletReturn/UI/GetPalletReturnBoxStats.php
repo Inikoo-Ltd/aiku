@@ -34,6 +34,12 @@ class GetPalletReturnBoxStats
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
             ),
             'is_platform_address' => !blank($palletReturn->platform_id),
+            'platform' => $palletReturn->platform ? [
+                'id' => $palletReturn->platform->id,
+                'code' => $palletReturn->platform->code,
+                'slug' => $palletReturn->platform->slug,
+                'name' => $palletReturn->platform->name
+            ] : null,
             'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [

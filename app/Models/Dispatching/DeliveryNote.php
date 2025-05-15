@@ -95,6 +95,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $as_employee_id Indicate if delivery note is for an employee
  * @property int $estimated_weight grams
  * @property int $effective_weight Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams
+ * @property array<array-key, mixed>|null $parcels
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -133,6 +134,7 @@ class DeliveryNote extends Model implements Auditable
 
     protected $casts = [
         'data'  => 'array',
+        'parcels'  => 'array',
         'state' => DeliveryNoteStateEnum::class,
         'type'  => DeliveryNoteTypeEnum::class,
 
@@ -151,6 +153,7 @@ class DeliveryNote extends Model implements Auditable
 
     protected $attributes = [
         'data' => '{}',
+        'parcels' => '{}',
     ];
 
     protected $guarded = [];
@@ -198,11 +201,6 @@ class DeliveryNote extends Model implements Auditable
         return $this->hasMany(DeliveryNoteItem::class);
     }
 
-    public function shipments(): BelongsToMany
-    {
-        return $this->belongsToMany(Shipment::class);
-    }
-
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
@@ -238,5 +236,9 @@ class DeliveryNote extends Model implements Auditable
         return $this->morphMany(Feedback::class, 'origin');
     }
 
+    public function shipments(): MorphToMany
+    {
+        return $this->morphToMany(Shipment::class, 'model', 'model_has_shipments');
+    }
 
 }

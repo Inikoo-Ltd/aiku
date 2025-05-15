@@ -16,7 +16,6 @@ use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\Dispatching\Shipper\UI\ShowShipper;
-use App\Actions\Fulfilment\PalletReturn\UI\ShowStoredItemReturn;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use Illuminate\Support\Facades\Route;
 

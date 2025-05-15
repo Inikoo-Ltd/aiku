@@ -21,6 +21,7 @@ import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
+import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
@@ -29,7 +30,7 @@ import Textarea from "primevue/textarea"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
-library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faCubes)
 
 const props = defineProps<{
 
@@ -244,6 +245,21 @@ const disableBeforeToday = (date: Date) => {
 	today.setHours(0, 0, 0, 0)
 	return date < today
 }
+
+const xxx = ref([
+	{
+		weight: 20,
+		dimension: [45, 50, 67]
+	},
+	{
+		weight: 5,
+		dimension: [33, 12, 24]
+	},
+	{
+		weight: 67,
+		dimension: [45, 50, 67]
+	},
+])
 </script>
 
 <template>
@@ -251,6 +267,25 @@ const disableBeforeToday = (date: Date) => {
 		class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
 		<!-- Box: Customer -->
 		<BoxStatPallet class="py-1 sm:py-2 px-3">
+			<!-- Field: Platform -->
+			<div v-if="boxStats.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
+				<div v-tooltip="trans('Platform')" class="flex-none">
+					<FontAwesomeIcon
+						icon="fal fa-parachute-box"
+						size="xs"
+						class="text-gray-400"
+						fixed-width
+						aria-hidden="true" />
+				</div>
+				<div class="flex items-center gap-x-2">
+					{{ boxStats.platform.name }}
+					<img v-if="boxStats.platform.code === 'tiktok'" v-tooltip="boxStats.platform.name" src="https://cdn-icons-png.flaticon.com/512/3046/3046126.png" alt="" class="h-6">
+					<img v-if="boxStats.platform.code === 'shopify'" v-tooltip="boxStats.platform.name" src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-6">
+					<img v-if="boxStats.platform.code === 'woocommerce'" v-tooltip="boxStats.platform.name" src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png" alt="" class="h-12">
+				</div>
+			</div>
+
+
 			<!-- Field: Reference -->
 			<Link
 				as="a"
@@ -338,7 +373,7 @@ const disableBeforeToday = (date: Date) => {
 
 			<!-- Field: Phone -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer.phone"
+				v-if="boxStats.is_platform_address ? boxStats.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
@@ -381,8 +416,8 @@ const disableBeforeToday = (date: Date) => {
 					</template>
 				</Popover>
 				<div v-else>
-					<dd class="">
-						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('Not Set') }}
+					<dd :class="dataPalletReturn?.estimated_delivery_date ? '' : 'text-gray-400'">
+						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('(Not Set)') }}
 					</dd>
 				</div>
 			</div>
@@ -466,6 +501,24 @@ const disableBeforeToday = (date: Date) => {
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
+			<div class="flex gap-x-1">
+				<FontAwesomeIcon  v-tooltip="trans('Customer Reference')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group">
+					<div class="leading-4 text-sm">{{ trans("Parcels") }} ({{ xxx.length }})</div>
+					<ul class="list-disc pl-4">
+						<li v-for="ddd in xxx" class="text-xs tabular-nums">
+							<span class="truncate">
+								{{ ddd.weight }} kg
+							</span>
+
+							<span class="text-gray-500 truncate">
+								({{ ddd.dimension[0] }}x{{ ddd.dimension[1] }}x{{ ddd.dimension[2] }} cm)
+							</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+
 			<!-- Customer reference -->
 			<div class="mb-1" v-if="address_management">
 				<PalletEditCustomerReference

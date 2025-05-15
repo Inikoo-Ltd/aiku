@@ -15,7 +15,6 @@ use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
-use App\Actions\Billables\Service\UpdateService;
 use App\Actions\Catalogue\Collection\AttachCollectionToModels;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
@@ -57,6 +56,7 @@ use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
+use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
@@ -323,7 +323,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::prefix('fulfilment/{fulfilment:id}/services')->name('fulfilment.services.')->group(function () {
         Route::post('/', [StoreService::class, 'inFulfilment'])->name('store');
-        Route::patch('{service:id}', UpdateService::class)->name('update')->withoutScopedBindings();
     });
 
     Route::prefix('fulfilment/{fulfilment:id}/goods')->name('fulfilment.goods.')->group(function () {
@@ -448,6 +447,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
 
 
+    Route::get('/shipment-from_fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
 
 
 });
@@ -736,9 +736,7 @@ Route::name('email.')->prefix('email/')->group(function () {
         Route::patch('/update', UpdateEmailUnpublishedSnapshot::class)->name('update');
     });
 });
-Route::name('services.')->prefix('serivices/')->group(function () {
-    Route::patch('{service:id}/update', UpdateService::class)->name('update');
-});
+
 Route::name('rentals.')->prefix('rentals/')->group(function () {
     Route::patch('{rental:id}/update', UpdateRental::class)->name('update');
 });
@@ -757,6 +755,8 @@ require __DIR__."/models/stock/stock.php";
 require __DIR__."/models/accounting/invoice.php";
 require __DIR__."/models/accounting/refund.php";
 require __DIR__."/models/billables/billables.php";
+require __DIR__."/models/billables/services.php";
+
 require __DIR__."/models/hr/hr.php";
 require __DIR__."/models/website/webpages.php";
 require __DIR__."/models/supply_chain/agent.php";

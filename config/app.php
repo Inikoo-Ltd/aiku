@@ -270,8 +270,12 @@ return [
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
 
     'sandbox' => [
+
+        'shipper_itd_token' => env('ITD_TOKEN'),
+
+
         'local_share_url' => env('SANDBOX_SHARE_URL'),
-        'checkout_com' => [
+        'checkout_com'    => [
             'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),

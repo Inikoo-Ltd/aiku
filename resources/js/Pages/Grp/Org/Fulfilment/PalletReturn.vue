@@ -53,6 +53,7 @@ import {
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
+	faWeight,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -62,6 +63,8 @@ import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmat
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import InputNumber from "primevue/inputnumber"
+import Fieldset from "primevue/fieldset"
 
 library.add(
 	faIdCardAlt,
@@ -77,7 +80,8 @@ library.add(
 	faArrowAltRight,
 	faArrowAltLeft,
     faTrashAlt,
-	faShippingFast
+	faShippingFast,
+	faWeight
 )
 
 const props = defineProps<{
@@ -258,7 +262,7 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
 
 const isModalUploadFileOpen = ref(false)
 
-// Section: Tracking Number
+// Section: Shipment
 const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
 const isModalTrackingNumber = ref(false)
 const optionShippingList = ref([])
@@ -267,7 +271,7 @@ const onOpenModalTrackingNumber = async () => {
 	try {
 		const xxx = await axios.get(
 			route('grp.json.shippers.index', {
-				organisation: 'aw',
+				organisation: route().params.organisation,
 			})
 		)
 		optionShippingList.value = xxx?.data?.data || []
@@ -281,13 +285,19 @@ const onOpenModalTrackingNumber = async () => {
 	}
 	isLoadingData.value = false
 }
-const onSubmitTrackingNumber = () => {
+const onSubmitShipment = () => {
 	// formAddService.historic_asset_id = optionShippingList.value.filter(
 	// 	(service) => service.id == formAddService.service_id
 	// )[0].historic_asset_id
 	// isLoadingButton.value = "addTrackingNumber"
 
-	formTrackingNumber.post('route(data.route?.name, { ...data.route?.parameters })', {
+	formTrackingNumber
+		.transform((data) => ({
+			shipping_id: data.shipping_id?.id,
+			tracking_number: data.tracking_number,
+			parcels: xxx.value,
+		}))
+		.post(route(props.updateRoute.name, { ...props.updateRoute.parameters }), {
 		preserveScroll: true,
 		onSuccess: () => {
 			isModalTrackingNumber.value = false
@@ -296,7 +306,7 @@ const onSubmitTrackingNumber = () => {
 		onError: (errors) => {
 			notify({
 				title: trans("Something went wrong."),
-				text: trans("Failed to add tracking number. Please try again or contact administrator."),
+				text: trans("Failed to add Shipment. Please try again or contact administrator."),
 				type: "error",
 			})
 		},
@@ -304,6 +314,17 @@ const onSubmitTrackingNumber = () => {
 			isLoadingButton.value = false
 		},
 	})
+}
+
+const xxx = ref([
+	{
+		weight: 20,
+		dimension: [45, 50, 67]
+	}
+])
+
+const onDeleteParcel = (index: number) => {
+	xxx.value.splice(index, 1)
 }
 </script>
 
@@ -314,7 +335,7 @@ const onSubmitTrackingNumber = () => {
 			<Button 
 				v-if="!data.data?.is_collection"
 				@click="() => (isModalTrackingNumber = true, onOpenModalTrackingNumber())"
-				label="Tracking Number"
+				:label="trans('Shipment')"
 				icon="fal fa-shipping-fast"
 				type="tertiary"
 			>
@@ -697,7 +718,7 @@ const onSubmitTrackingNumber = () => {
 		:attachmentRoutes
 		:options="props.option_attach_file" />
 
-	<!-- Modal: Tracking Number -->
+	<!-- Modal: Shipment -->
 	<Modal
 		v-if="!data.data?.is_collection"
 		:isOpen="isModalTrackingNumber"
@@ -705,12 +726,64 @@ const onSubmitTrackingNumber = () => {
 		width="w-full max-w-lg"
 	>
 		<div class="text-center font-bold mb-4">
-			{{ trans('Add tracking number') }}
+			{{ trans('Add shipment') }}
 		</div>
 
-		<div class="w-full">
+		<div>
+			<Fieldset :legend="`${trans('Parcels')} (${xxx.length})`">
+				<!-- Header Row -->
+				<div class="grid grid-cols-12 items-center gap-x-6 mb-2">
+					<div class="flex justify-center">
+						<!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
+					</div>
+
+					<div class="col-span-2 flex items-center space-x-1">
+						<FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
+						<span>kg</span>
+					</div>
+					<div class="col-span-9 flex items-center space-x-1">
+						<FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
+						<span>cm</span>
+					</div>
+				</div>
+
+				<!--  -->
+				<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+					<TransitionGroup name="list-to-down">
+						<div v-for="(zzz, zIndex) in xxx" :key="zIndex" class="grid grid-cols-12 items-center gap-x-6">
+							<div @click="() => onDeleteParcel(zIndex)" class="flex justify-center">
+								<FontAwesomeIcon icon="fal fa-trash-alt" class="hover:text-red-500 cursor-pointer" fixed-width aria-hidden="true" />
+							</div>
+							<div class="col-span-2 flex items-center space-x-2">
+								<InputNumber v-model="zzz.weight" class="w-16" size="small" placeholder="0" fluid />
+							</div>
+							<div class="col-span-9 flex items-center gap-x-1 font-light">
+								<InputNumber v-model="zzz.dimension[0]" class="w-16" size="small" placeholder="0" fluid />
+								<div class="text-gray-400">x</div>
+								<InputNumber v-model="zzz.dimension[1]" class="w-16" size="small" placeholder="0" fluid />
+								<div class="text-gray-400">x</div>
+								<InputNumber v-model="zzz.dimension[2]" class="w-16" size="small" placeholder="0" fluid />
+								<button class="text-gray-600">≡</button>
+							</div>
+						</div>
+					</TransitionGroup>
+				</div>
+
+				<!-- Repeat for more rows -->
+				<div class=" grid grid-cols-12 mt-2">
+					<div></div>
+					<div @click="() => xxx.push({ weight: 0, dimension: [0,0,0]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
+						{{ trans("Add another parcel") }}
+					</div>
+				</div>
+			</Fieldset>
+		</div>
+
+		<div class="w-full mt-3">
 			<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
 			<div class="">
+				<!-- {{ formTrackingNumber.shipping_id }} -->
 				<PureMultiselectInfiniteScroll
 					v-model="formTrackingNumber.shipping_id"
 					:fetchRoute="{
@@ -721,7 +794,7 @@ const onSubmitTrackingNumber = () => {
 					}"
 					required
 					:placeholder="trans('Select shipping')"
-					valueProp="id">
+					object>
 					<template #singlelabel="{ value }">
 						<div class="w-full text-left pl-4">
 							{{ value.name }}
@@ -744,12 +817,13 @@ const onSubmitTrackingNumber = () => {
 				</p>
 			</div>
 
-			<div class="mt-3">
+			<!-- Tracking number -->
+			<div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
 				<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
 				<PureInput
 					v-model="formTrackingNumber.tracking_number"
 					placeholder="ABC-DE-1234567"
-					@keydown.enter="() => onSubmitAddService(action, closed)" />
+					xxkeydown.enter="() => onSubmitAddService(action, closed)" />
 				<p
 					v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
 					class="mt-2 text-sm text-red-600">
@@ -763,10 +837,10 @@ const onSubmitTrackingNumber = () => {
 					:loading="isLoadingButton == 'addTrackingNumber'"
 					:label="'save'"
 					:disabled="
-						!formTrackingNumber.shipping_id || !(formTrackingNumber.tracking_number)
+						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
 					"
 					full
-					@click="() => onSubmitTrackingNumber()" />
+					@click="() => onSubmitShipment()" />
 			</div>
 
 			<!-- Loading: fetching service list -->

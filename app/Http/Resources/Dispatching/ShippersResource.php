@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 14-05-2025-10h-56m
@@ -14,6 +15,7 @@ class ShippersResource extends JsonResource
 {
     public function toArray($request): array
     {
+        // dd($this);
         return [
             'id'                  => $this->id,
             'slug'                => $this->slug,
@@ -22,6 +24,7 @@ class ShippersResource extends JsonResource
             'phone'               => $this->phone,
             'website'             => $this->website,
             'tracking_url'        => $this->tracking_url,
+            'api_shipper'         => $this->api_shipper,
         ];
     }
 }

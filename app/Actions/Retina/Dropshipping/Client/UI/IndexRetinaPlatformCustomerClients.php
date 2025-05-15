@@ -109,19 +109,19 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         };
 
         $createButton = [];
-        
-        if($this->shop->type != ShopTypeEnum::FULFILMENT) {
-                    $createButton = [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Create Customer Client'),
-                            'route' => [
-                                'name'       => 'retina.dropshipping.platforms.client.create',
-                                'parameters' => [
-                                    'platform' => $this->platform->slug
-                                ]
-                            ]
-                        ];
+
+        if ($this->shop->type != ShopTypeEnum::FULFILMENT) {
+            $createButton = [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('Create Customer Client'),
+                    'route' => [
+                        'name'       => 'retina.dropshipping.platforms.client.create',
+                        'parameters' => [
+                            'platform' => $this->platform->slug
+                        ]
+                    ]
+                ];
         }
 
         $actions = array_merge(

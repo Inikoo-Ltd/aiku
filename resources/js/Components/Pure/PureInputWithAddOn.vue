@@ -53,7 +53,7 @@ defineOptions({
         </div>
 
         <!-- Add On: Right -->
-        <div v-if="rightAddOn" class="h-full flex items-center gap-x-1.5">
+        <div v-if="rightAddOn?.icon || rightAddOn?.label" class="flex py-3 items-center gap-x-1.5">
             <div class="flex select-none items-center text-gray-400 sm:text-sm whitespace-nowrap">
                 <FontAwesomeIcon v-if="rightAddOn.icon" :icon="rightAddOn.icon" fixed-width aria-hidden="true" />
                 <span v-if="rightAddOn.label" class="leading-none">{{ rightAddOn.label }}</span>
