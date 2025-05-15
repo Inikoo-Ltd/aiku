@@ -255,7 +255,7 @@ const disableBeforeToday = (date: Date) => {
 // const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
 const isLoadingSubmitParcels = ref(false)
 const isModalParcels = ref(false)
-const parcelsCopy = ref([...toRaw(props.boxStats.parcels)])
+const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
 const onDeleteParcel = (index: number) => {
 	parcelsCopy.value.splice(index, 1)
 }
@@ -531,7 +531,7 @@ const onSubmitShipment = () => {
 				<div class="group w-full">
 					<div class="leading-4 text-sm flex justify-between w-full">
 						<div>{{ trans("Parcels") }} ({{ boxStats.parcels?.length }})</div>
-						<div @click="() => (isModalParcels = true, parcelsCopy = [...props.boxStats.parcels])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+						<div @click="() => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
 							{{ trans("Edit") }}
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 						</div>
@@ -681,7 +681,7 @@ const onSubmitShipment = () => {
 
 				<!--  -->
 				<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
-					{{parcelsCopy.length}} xx {{ boxStats.parcels.length }}
+					<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
 					<TransitionGroup v-if="parcelsCopy?.length" name="list-to-down">
 						<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex" class="grid grid-cols-12 items-center gap-x-6">
 							<div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
