@@ -58,8 +58,8 @@ class ShowDispatchHub extends OrgAction
                 ],
 
                 DispatchHubTabsEnum::DASHBOARD->value => $this->tab == DispatchHubTabsEnum::DASHBOARD->value
-                ? fn () => GetDispatchHubShowcase::make($warehouse)
-                : Inertia::lazy(fn () => GetDispatchHubShowcase::make($warehouse)),
+                ? fn () => GetDispatchHubShowcase::make()->handle($warehouse,$request)
+                : Inertia::lazy(fn () => GetDispatchHubShowcase::make()->handle($warehouse,$request)),
 
             ]
         );
