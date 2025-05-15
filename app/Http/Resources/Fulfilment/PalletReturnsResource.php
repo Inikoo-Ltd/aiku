@@ -41,7 +41,7 @@ class PalletReturnsResource extends JsonResource
 
 
             $totalStoredItemPicking = (int) $query->sum('quantity_ordered');
-            $totalStoredItem  += $totalStoredItemPicking;
+            $totalStoredItem  += $totalStoredItemPicking; // stored item if already pick the quantity will decrease so i add to get total
 
             $percentageStoredItem = $totalStoredItem > 0 ? round(($totalStoredItemPicking / $totalStoredItem) * 100, 2) : 0;
             $result = '' . $totalStoredItemPicking . ' / ' . $totalStoredItem . ' (' . $percentageStoredItem . '%)';
