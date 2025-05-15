@@ -77,6 +77,10 @@ class UpdatePalletReturn extends OrgAction
             Arr::forget($modelData, 'address');
         }
 
+        if (Arr::exists($modelData, 'parcels')) {
+            $modelData['parcels'] = json_encode($modelData['parcels']);
+        }
+
         $palletReturn = $this->update($palletReturn, $modelData);
         PalletReturnRecordSearch::dispatch($palletReturn);
 
@@ -105,6 +109,7 @@ class UpdatePalletReturn extends OrgAction
             'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'collection_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'parcels' => ['sometimes', 'array']
         ];
     }
 
