@@ -161,6 +161,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
 
     public function getBreadcrumbs($routeParameters): array
     {
+        return []; //todo: fix
         return
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeParameters),

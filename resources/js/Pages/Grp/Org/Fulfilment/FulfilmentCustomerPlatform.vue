@@ -53,7 +53,7 @@ const isModalAddress = ref(false);
         <dl v-if="true" class="flex-auto pl-3">
           <dt class="text-xs text-gray-400">{{ trans("Account name") }}</dt>
           <dd v-tooltip="trans('Account name')" class="w-fit mt text-xl font-semibold leading-6">
-            {{ showcase.stats.name }}
+            {{ showcase?.stats?.name }}
           </dd>
         </dl>
 
@@ -95,32 +95,32 @@ const isModalAddress = ref(false);
       </div>
 
       <!-- Section: Field -->
-      <div class="flex flex-col gap-y-2 w-full py-4 px-5">
+      <div v-if="showcase?.stats" class="flex flex-col gap-y-2 w-full py-4 px-5">
         <!-- Field: Number orders -->
-        <dl v-if="showcase.stats.number_orders > -1" class="flex items-center w-full flex-none gap-x-4">
+        <dl v-if="showcase?.stats?.number_orders > -1" class="flex items-center w-full flex-none gap-x-4">
           <dt v-tooltip="trans('Orders')" class="flex-none">
             <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-gray-400" fixed-width
                              aria-hidden="true" />
           </dt>
-          <dd class="text-gray-500">{{ showcase.stats.number_orders }}</dd>
+          <dd class="text-gray-500">{{ showcase?.stats?.number_orders }}</dd>
         </dl>
 
         <!-- Field: Number customer clients -->
-        <dl v-if="showcase.stats.number_customer_clients > -1" class="flex items-center w-full flex-none gap-x-4">
+        <dl v-if="showcase?.stats?.number_customer_clients > -1" class="flex items-center w-full flex-none gap-x-4">
           <dt v-tooltip="trans('Customer clients')" class="flex-none">
             <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width
                              aria-hidden="true" />
           </dt>
-          <dd class="text-gray-500">{{ showcase.stats.number_customer_clients }}</dd>
+          <dd class="text-gray-500">{{ showcase?.stats?.number_customer_clients }}</dd>
         </dl>
 
         <!-- Field: Number portfolios -->
-        <dl v-if="showcase.stats.number_portfolios > -1" class="flex items-center w-full flex-none gap-x-4">
+        <dl v-if="showcase?.stats?.number_portfolios > -1" class="flex items-center w-full flex-none gap-x-4">
           <dt v-tooltip="trans('Portfolios')" class="flex-none">
             <FontAwesomeIcon icon="fal fa-cube" class="text-gray-400" fixed-width
                              aria-hidden="true" />
           </dt>
-          <dd class="text-gray-500">{{ showcase.stats.number_portfolios }}</dd>
+          <dd class="text-gray-500">{{ showcase?.stats?.number_portfolios }}</dd>
         </dl>
 
         <!-- Field: Created at -->

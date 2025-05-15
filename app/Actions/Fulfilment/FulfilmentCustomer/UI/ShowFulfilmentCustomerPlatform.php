@@ -51,10 +51,10 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             'Org/Fulfilment/FulfilmentCustomerPlatform',
             [
                 'title'       => __('customer'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerHasPlatform,
+                'breadcrumbxs' => $this->getBreadcrumbs(
+                    $customerHasPlatform->customer,
                     $request->route()->originalParameters()
-                ),
+                ), //TODO: fix this
                 'pageHead'    => [
                     'icon'          => [
                         'title' => __('platform'),
@@ -79,6 +79,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 
     public function getBreadcrumbs(Customer $customer, array $routeParameters): array
     {
+        return [];
         $headCrumb = function (FulfilmentCustomer $fulfilmentCustomer, array $routeParameters, string $suffix = '') {
             return [
                 [
