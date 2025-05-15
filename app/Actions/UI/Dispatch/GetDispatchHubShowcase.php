@@ -41,7 +41,7 @@ class GetDispatchHubShowcase
                                 'Fulfilment' => array_merge($request->route()->originalParameters(), ['returns_elements[state]' => 'confirmed']),
                                 'Warehouse' => $request->route()->originalParameters()
                             }
-    
+
                         ],
                     ],
                     'picking' => [
@@ -176,7 +176,7 @@ class GetDispatchHubShowcase
                             'parameters' => [$organisation->slug, $parent->slug]
                         ],
                     ],
-    
+
                     'dispatched' => [
                         'label' => __('Dispatched'),
                         'key'   => 'dispatched',
@@ -187,7 +187,7 @@ class GetDispatchHubShowcase
                             'parameters' => [$organisation->slug, $parent->slug]
                         ],
                     ],
-    
+
                     'all' => [
                         'label' => __('All'),
                         'key'   => 'all',

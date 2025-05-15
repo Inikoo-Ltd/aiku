@@ -17,6 +17,9 @@ class ProsesApiCalls
     use WithAttributes;
     public function handle($url, $headers, $params, $method = 'POST', $result_encoding = 'json'): array
     {
+
+        //  dd($url, $headers, $params, $method,$result_encoding );
+
         $curl = curl_init();
         curl_setopt_array(
             $curl,

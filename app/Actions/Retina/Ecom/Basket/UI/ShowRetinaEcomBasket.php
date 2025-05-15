@@ -48,7 +48,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
-        if($this->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($this->shop->type == ShopTypeEnum::DROPSHIPPING) {
             return Redirect::route('retina.dropshipping.platforms.basket.index', ['platform' => $this->customer->getMainPlatform()->slug]);
         }
         return Inertia::render(
@@ -79,7 +79,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     ],
 
                     'voucher' => [], //todo: make logic for this if implemented
-                    
+
                     'order'          => $order ? OrderResource::make($order)->resolve() : [],
                     'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 
