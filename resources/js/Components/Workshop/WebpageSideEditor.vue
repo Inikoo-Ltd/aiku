@@ -230,6 +230,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                                 <VisibleCheckmark v-model="element.visibility"
                                                     @update:modelValue="onSaveWorkshop(element)" />
                                             </div>
+                                            
 
                                             <SideEditor v-model="element.web_block.layout.data.fieldValue"
                                                 :panelOpen="openedChildSideEditor"
