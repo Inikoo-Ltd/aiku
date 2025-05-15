@@ -355,7 +355,7 @@ const onSubmitShipment = () => {
 
 			<!-- Field: Company name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.company_name"
+				v-if="boxStats?.fulfilment_customer?.customer?.company_name && !boxStats.is_platform_address"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Company name')" class="flex-none">
 					<span class="sr-only">Company name</span>

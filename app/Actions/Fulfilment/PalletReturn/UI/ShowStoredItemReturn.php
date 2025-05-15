@@ -104,14 +104,14 @@ class ShowStoredItemReturn extends OrgAction
             'Org/Fulfilment/PalletReturn',
             [
                 'title'       => __('pallet return'),
-                // 'breadcrumbsx' => $this->getBreadcrumbs(
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
-                // 'navigationx'  => [
-                //     'previous' => ShowPalletReturn::make()->getPrevious($this->parent, $palletReturn, $request),
-                //     'next'     => ShowPalletReturn::make()->getNext($this->parent, $palletReturn, $request),
-                // ],
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'navigation'  => [
+                    'previous' => ShowPalletReturn::make()->getPrevious($this->parent, $palletReturn, $request),
+                    'next'     => ShowPalletReturn::make()->getNext($this->parent, $palletReturn, $request),
+                ],
                 'pageHead'    => [
                     // 'container' => $container,
                     'subNavigation' => $subNavigation,
@@ -187,7 +187,7 @@ class ShowStoredItemReturn extends OrgAction
                 ],
                 'data'               => PalletReturnResource::make($palletReturn),
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
-                'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent->customer->fulfilmentCustomer),
+                'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
 
                 'notes_data' => GetNotesData::run(model: $palletReturn),
 
@@ -266,7 +266,6 @@ class ShowStoredItemReturn extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
-        return []; //todo: fix
         $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix) {
             return [
                 [
@@ -325,7 +324,7 @@ class ShowStoredItemReturn extends OrgAction
                 )
             ),
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show' => array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent->platform, $routeParameters),
                 $headCrumb(
                     $palletReturn,
                     [
