@@ -20,6 +20,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
@@ -45,7 +46,7 @@ class StoreFulfilmentFromShopify extends OrgAction
             $deliveryAddress = Arr::get($modelData, 'shipping_address');
             $country = Country::where('code', Arr::get($deliveryAddress, 'country_code'))->first();
 
-            $deliveryAddress = [
+            $deliveryAddressData = [
                 'address_line_1' => Arr::get($deliveryAddress, 'address1'),
                 'address_line_2' => Arr::get($deliveryAddress, 'address2'),
                 'sorting_code' => null,
@@ -57,9 +58,18 @@ class StoreFulfilmentFromShopify extends OrgAction
                 'country_id'          => $country?->id
             ];
 
+            $deliveryAddress = new Address($deliveryAddressData);
+
             $palletReturn = StorePalletReturn::make()->actionWithDropshipping($shopifyUser->customer->fulfilmentCustomer, [
                 'type' => PalletReturnTypeEnum::DROPSHIPPING,
-                'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id
+                'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
+                'delivery_address' => $deliveryAddress,
+                'data' => [
+                    'shopify_order_id' => Arr::get($modelData, 'order_id'),
+                    'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
+                    'destination' => Arr::get($modelData, 'destination'),
+                    'shopify_user_id' => $shopifyUser->id,
+                ]
             ]);
 
             $storedItems = [];

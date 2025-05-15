@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Actions\Helpers\Address\Hydrators\AddressHydrateFixedUsage;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -26,7 +27,7 @@ trait WithFixedAddressActions
     }
 
 
-    protected function createFixedAddress(Order|Invoice|DeliveryNote $model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
+    protected function createFixedAddress(Order|Invoice|DeliveryNote|PalletReturn $model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
     {
         $groupId = $model->group_id;
 
