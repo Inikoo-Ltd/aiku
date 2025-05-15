@@ -10,11 +10,8 @@
 
 namespace App\Actions\Dispatching\Shipper\Json;
 
-use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Dispatching\ShippersResource;
 use App\Models\Dispatching\Shipper;
@@ -25,10 +22,13 @@ class GetShippers extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        return Shipper::where('organisation_id', $this->organisation->id)->where('status', true)->orderBy('name')->get();
+        return Shipper::where('organisation_id', $organisation->id)
+            ->where('status', true)
+            ->orderBy('name', 'asc')
+            ->get();
     }
 
-    public function jsonResponse($shipper)
+    public function jsonResponse(Shipper $shipper)
     {
         return ShippersResource::collection($shipper);
     }
