@@ -131,6 +131,7 @@ const props = defineProps<{
 		code: string
 	}[]
 	stored_items_count?: number
+	shipment_route: routeType
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -293,11 +294,10 @@ const onSubmitShipment = () => {
 
 	formTrackingNumber
 		.transform((data) => ({
-			shipping_id: data.shipping_id?.id,
-			tracking_number: data.tracking_number,
-			parcels: props.box_stats.parcels,
+			shipper_id: data.shipping_id?.id,
+			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
 		}))
-		.patch(route(props.updateRoute.name, { ...props.updateRoute.parameters }), {
+		.post(route(props.shipment_route.name, { ...props.shipment_route.parameters }), {
 			preserveScroll: true,
 			onStart: () => {
 				isLoadingButton.value = "addTrackingNumber"
@@ -309,7 +309,7 @@ const onSubmitShipment = () => {
 			onError: (errors) => {
 				notify({
 					title: trans("Something went wrong."),
-					text: trans("Failed to add Shipment. Please try again or contact administrator."),
+					text: trans("Failed to add Shipment. Please try again."),
 					type: "error",
 				})
 			},
@@ -789,7 +789,7 @@ const onDeleteParcel = (index: number) => {
 					:loading="isLoadingButton == 'addTrackingNumber'"
 					:label="'save'"
 					:disabled="
-						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
+						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
 					"
 					full
 					@click="() => onSubmitShipment()" />
