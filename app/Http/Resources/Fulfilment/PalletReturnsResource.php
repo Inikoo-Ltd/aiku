@@ -11,7 +11,6 @@ namespace App\Http\Resources\Fulfilment;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\PalletReturnItem;
-use App\Models\Fulfilment\PalletStoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -37,14 +36,13 @@ class PalletReturnsResource extends JsonResource
 
         if ($this->state == PalletReturnStateEnum::PICKING) {
             $query = PalletReturnItem::where('pallet_return_id', $this->id);
-            $totalStoredItem = (int) PalletStoredItem::whereIn('pallet_id', $query->pluck('pallet_id'))->sum('quantity');
-
 
             $totalStoredItemPicking = (int) $query->sum('quantity_ordered');
-            $totalStoredItem  += $totalStoredItemPicking; // stored item if already pick the quantity will decrease so i add to get total
+            $totalStoredItemPicked = (int) $query->where('state', PalletReturnStateEnum::PICKED)->sum('quantity_ordered');
 
-            $percentageStoredItem = $totalStoredItem > 0 ? round(($totalStoredItemPicking / $totalStoredItem) * 100, 2) : 0;
-            $result = '' . $totalStoredItemPicking . ' / ' . $totalStoredItem . ' (' . $percentageStoredItem . '%)';
+
+            $percentageStoredItem = $totalStoredItemPicking > 0 ? round(($totalStoredItemPicked / $totalStoredItemPicking) * 100, 2) : 0;
+            $result = '' . $totalStoredItemPicked . ' / ' . $totalStoredItemPicking . ' (' . $percentageStoredItem . '%)';
 
             if ($this->type == PalletReturnTypeEnum::PALLET) {
                 $this->number_pallets = $result;

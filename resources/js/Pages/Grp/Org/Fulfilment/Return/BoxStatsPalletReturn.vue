@@ -272,7 +272,8 @@ const disableBeforeToday = (date: Date) => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<dd>{{ boxStats.fulfilment_customer.customer.reference }}</dd>
+				<dd v-if="boxStats.is_platform_address">{{ boxStats.platform_customer?.id }}</dd>
+				<dd v-else>{{ boxStats.fulfilment_customer.customer.reference }}</dd>
 			</Link>
 
 			<!-- Field: Contact name -->
@@ -288,7 +289,8 @@ const disableBeforeToday = (date: Date) => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<dd>{{ boxStats.fulfilment_customer.customer.contact_name }}</dd>
+				<dd v-if="boxStats.is_platform_address">{{ boxStats.platform_customer?.first_name + ' ' + boxStats.platform_customer?.last_name }}</dd>
+				<dd v-else>{{ boxStats.fulfilment_customer.customer.contact_name }}</dd>
 			</div>
 
 			<!-- Field: Company name -->
@@ -321,6 +323,13 @@ const disableBeforeToday = (date: Date) => {
 						aria-hidden="true" />
 				</dt>
 				<a
+                    v-if="boxStats.is_platform_address"
+					:href="`mailto:${boxStats.platform_customer?.email}`"
+					class="hover:underline w-full pr-4 break-words leading-none">
+					{{ boxStats.platform_customer?.email }}
+				</a>
+                <a
+                    v-else
 					:href="`mailto:${boxStats.fulfilment_customer?.customer.email}`"
 					class="hover:underline w-full pr-4 break-words leading-none">
 					{{ boxStats.fulfilment_customer?.customer.email }}
@@ -340,7 +349,8 @@ const disableBeforeToday = (date: Date) => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<a>{{ boxStats.fulfilment_customer?.customer.phone }}</a>
+				<a v-if="boxStats.is_platform_address">{{ boxStats.platform_customer?.phone }}</a>
+				<a v-else>{{ boxStats.fulfilment_customer?.customer.phone }}</a>
 			</div>
 
 			<!-- Field: Delivery Address -->
@@ -399,7 +409,7 @@ const disableBeforeToday = (date: Date) => {
 						</SwitchLabel>
 					</SwitchGroup>
 				</div>
-			
+
 				<div v-if="dataPalletReturn.is_collection" class="w-full">
 					<span class="block mb-1">{{ trans("Collection by:") }}</span>
 					<div class="flex space-x-4">
@@ -424,7 +434,7 @@ const disableBeforeToday = (date: Date) => {
 							<span class="ml-2">{{ trans("Third Party") }}</span>
 						</label>
 					</div>
-					
+
 					<div v-if="collectionBy === 'thirdParty'" class="mt-3">
 						<Textarea
 							v-model="textValue"

@@ -14,6 +14,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPalletReturnBoxStats
@@ -32,6 +33,8 @@ class GetPalletReturnBoxStats
                 FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
             ),
+            'is_platform_address' => !blank($palletReturn->platform_id),
+            'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [
                 [
