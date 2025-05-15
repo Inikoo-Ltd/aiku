@@ -373,13 +373,12 @@ test('update second delivery note item state to in queue', function (DeliveryNot
 
 test('create shipment', function ($deliveryNote, $shipper) {
     $arrayData              = [
-        'reference' => 'AAA'
+        'tracking' => 'AAA'
     ];
-    $shipper['api_shipper'] = '';
 
     $shipment = StoreShipment::make()->action($deliveryNote, $shipper, $arrayData);
     expect($shipment)->toBeInstanceOf(Shipment::class)
-        ->and($shipment->reference)->toBe($arrayData['reference']);
+        ->and($shipment->tracking)->toBe($arrayData['tracking']);
 
     return $shipment;
 })->depends('create delivery note', 'create shipper');
