@@ -14,8 +14,8 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
-use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -43,7 +43,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 
     public function htmlResponse(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
     {
-        $navigation         = FulfilmentCustomerPlatformTabsEnum::navigation();
+        $navigation = FulfilmentCustomerPlatformTabsEnum::navigation();
 
         $actions = [];
 
@@ -51,10 +51,10 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             'Org/Fulfilment/FulfilmentCustomerPlatform',
             [
                 'title'       => __('customer'),
-                'breadcrumbxs' => $this->getBreadcrumbs(
-                    $customerHasPlatform->customer,
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $customerHasPlatform->platform,
                     $request->route()->originalParameters()
-                ), //TODO: fix this
+                ),
                 'pageHead'    => [
                     'icon'          => [
                         'title' => __('platform'),
@@ -77,10 +77,9 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(Customer $customer, array $routeParameters): array
+    public function getBreadcrumbs(Platform $platform, array $routeParameters): array
     {
-        return [];
-        $headCrumb = function (FulfilmentCustomer $fulfilmentCustomer, array $routeParameters, string $suffix = '') {
+        $headCrumb = function (Platform $platform, array $routeParameters, string $suffix = '') {
             return [
                 [
 
@@ -92,7 +91,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $fulfilmentCustomer->customer->reference,
+                            'label' => $platform->name,
                         ],
 
                     ],
@@ -102,14 +101,13 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             ];
         };
 
-        $fulfilmentCustomer = $customer->fulfilmentCustomer;
 
         return array_merge(
             ShowFulfilmentCustomer::make()->getBreadcrumbs(
                 $routeParameters
             ),
             $headCrumb(
-                $fulfilmentCustomer,
+                $platform,
                 [
 
                     'index' => [
@@ -119,10 +117,10 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                     'model' => [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show',
                         'parameters' => [
-                            'organisation'        => $routeParameters['organisation'],
-                            'fulfilment'          => $routeParameters['fulfilment'],
-                            'fulfilmentCustomer'  => $routeParameters['fulfilmentCustomer'],
-                            'platform' => $routeParameters['platform']
+                            'organisation'       => $routeParameters['organisation'],
+                            'fulfilment'         => $routeParameters['fulfilment'],
+                            'fulfilmentCustomer' => $routeParameters['fulfilmentCustomer'],
+                            'platform'           => $routeParameters['platform']
                         ]
                     ]
                 ]
