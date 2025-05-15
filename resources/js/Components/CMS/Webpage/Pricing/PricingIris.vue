@@ -82,19 +82,13 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 							</li>
 						</ul>
 					</div>
-					<a
-						v-if="tier?.link"
-						:href="tier?.link?.href"
-						:aria-describedby="tier?.id"
-						:target="tier?.link?.target"
-						:class="[
-							tier?.mostPopular
-								? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500'
-								: 'text-indigo-600 ring-1 ring-indigo-200 ring-inset hover:ring-indigo-300',
-							'mt-8 block rounded-md px-3 py-2 text-center text-sm/6 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
-						]">
-						Buy plan
-					</a>
+					<div class="flex justify-center">
+						<div	
+							typeof="button"
+							:style="getStyles(tier.button.container.properties)">
+							{{ tier.button.text }}
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
