@@ -77,6 +77,8 @@ class ShowRetinaEcomBasket extends RetinaAction
                             'method'     => 'patch'
                         ]
                     ],
+
+                    'voucher' => [], //todo: make logic for this if implemented
                     
                     'order'          => $order ? OrderResource::make($order)->resolve() : [],
                     'summary'     => $order ? $this->getOrderBoxStats($order) : null,

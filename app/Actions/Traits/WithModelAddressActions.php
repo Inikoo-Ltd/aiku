@@ -187,7 +187,7 @@ trait WithModelAddressActions
             'group_id' => $groupId
         ];
 
-        if ($canShip === null and $scope == 'delivery') {
+        if ($canShip === null && $scope == 'delivery') {
             $canShip = true;
         }
 
