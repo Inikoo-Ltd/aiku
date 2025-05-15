@@ -33,7 +33,7 @@ class GetPalletReturnBoxStats
                 FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
             ),
-            'is_platform_address' => !blank($palletReturn->platform_id),
+            'is_platform' => !blank($palletReturn->platform_id),
             'platform' => $palletReturn->platform ? [
                 'id' => $palletReturn->platform->id,
                 'code' => $palletReturn->platform->code,

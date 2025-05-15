@@ -260,7 +260,7 @@ const onDeleteParcel = (index: number) => {
 	parcelsCopy.value.splice(index, 1)
 }
 const onSubmitShipment = () => {
-	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }), 
+	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }),
 		{
 			parcels: parcelsCopy.value,
 		},
@@ -332,7 +332,7 @@ const onSubmitShipment = () => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<dd v-if="boxStats.is_platform_address">{{ boxStats.platform_customer?.id }}</dd>
+				<dd v-if="boxStats.is_platform">{{ boxStats.platform_customer?.id }}</dd>
 				<dd v-else>{{ boxStats.fulfilment_customer.customer.reference }}</dd>
 			</Link>
 
@@ -349,13 +349,13 @@ const onSubmitShipment = () => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<dd v-if="boxStats.is_platform_address">{{ boxStats.platform_customer?.first_name + ' ' + boxStats.platform_customer?.last_name }}</dd>
+				<dd v-if="boxStats.is_platform">{{ boxStats.platform_customer?.first_name + ' ' + boxStats.platform_customer?.last_name }}</dd>
 				<dd v-else>{{ boxStats.fulfilment_customer.customer.contact_name }}</dd>
 			</div>
 
 			<!-- Field: Company name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.company_name && !boxStats.is_platform_address"
+				v-if="boxStats?.fulfilment_customer?.customer?.company_name && !boxStats.is_platform"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Company name')" class="flex-none">
 					<span class="sr-only">Company name</span>
@@ -383,7 +383,7 @@ const onSubmitShipment = () => {
 						aria-hidden="true" />
 				</dt>
 				<a
-                    v-if="boxStats.is_platform_address"
+                    v-if="boxStats.is_platform"
 					:href="`mailto:${boxStats.platform_customer?.email}`"
 					class="hover:underline w-full pr-4 break-words leading-none">
 					{{ boxStats.platform_customer?.email }}
@@ -398,7 +398,7 @@ const onSubmitShipment = () => {
 
 			<!-- Field: Phone -->
 			<div
-				v-if="boxStats.is_platform_address ? boxStats.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
@@ -409,7 +409,7 @@ const onSubmitShipment = () => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<a v-if="boxStats.is_platform_address">{{ boxStats.platform_customer?.phone }}</a>
+				<a v-if="boxStats.is_platform">{{ boxStats.platform_customer?.phone }}</a>
 				<a v-else>{{ boxStats.fulfilment_customer?.customer.phone }}</a>
 			</div>
 
@@ -535,7 +535,7 @@ const onSubmitShipment = () => {
 							{{ trans("Edit") }}
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 						</div>
-						
+
 					</div>
 					<ul class="list-disc pl-4">
 						<li v-for="(parcel, parcelIdx) in boxStats.parcels" :key="parcelIdx" class="text-xs tabular-nums">
