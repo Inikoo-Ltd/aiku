@@ -28,7 +28,7 @@ class GetShippers extends OrgAction
             ->get();
     }
 
-    public function jsonResponse(Shipper $shipper)
+    public function jsonResponse($shipper)
     {
         return ShippersResource::collection($shipper);
     }
