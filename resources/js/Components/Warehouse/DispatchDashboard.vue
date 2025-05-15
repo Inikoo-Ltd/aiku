@@ -8,6 +8,7 @@ const props = defineProps<{
     data: {
         [key: string]: {
             label: string
+            sublabel: string
             count: number
             cases: {
                 key: string
@@ -39,7 +40,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     <span class="text-3xl font-bold text-org-500">
                         {{ locale.number(dash.count) }}
                     </span>
-                    <span class="ml-2 text-sm text-gray-500">in total</span>
+                    <span class="ml-2 text-sm text-gray-500">{{ dash.sublabel }}</span>
                 </div>
                 <!-- Breakdown of each case -->
                 <div class="flex flex-wrap gap-4">

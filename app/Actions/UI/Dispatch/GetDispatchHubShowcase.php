@@ -25,7 +25,7 @@ class GetDispatchHubShowcase
         $stats = [
             'fulfilment' => [
                 'label' => __('Fulfilment'),
-                'subtitle' => __('In Todo'),
+                'sublabel' => __('In Todo'),
                 'count' => $parent->stats->number_pallet_returns_state_confirmed + $parent->stats->number_pallet_returns_state_picking + $parent->stats->number_pallet_returns_state_picked,
                 'cases' => [
                     'todo' => [
