@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,18 +24,49 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public $commandSignature = 'retina:ds:authorize-woo {customer} {name} {url}';
+
     public function handle(Customer $customer, $modelData): string
     {
         $endpoint = '/wc-auth/v1/authorize';
         $params = [
             'app_name' => config('app.name'),
-            'scope' => 'read',
+            'scope' => 'read_write',
             'user_id' => $modelData['name'],
-            'return_url' => '',
-            'callback_url' => ''
+            'return_url' => route('retina.dropshipping.platform.dashboard'),
+            'callback_url' => route('retina.dropshipping.platform.wc.callback')
         ];
 
-        return $modelData['url'].$endpoint.'?'.http_build_query($params);
+        $url = $modelData['url'].$endpoint.'?'.http_build_query($params);
+
+        return $url;
+    }
+
+    public function handleCallback(ActionRequest $request)
+    {
+        $consumerKey    = $request->input('consumer_key');
+        $consumerSecret = $request->input('consumer_secret');
+        $storeUrl       = $request->input('store_url');
+
+        if (!$consumerKey || !$consumerSecret || !$storeUrl) {
+            return response('Invalid callback data', 400);
+        }
+
+        /** @var Customer $customer */
+        $customer = $request->user()->customer;
+
+        $customer->wooCommerceUser()->create([
+            'group_id' => $customer->group_id,
+            'organisation_id' => $customer->organisation_id,
+            'name' => $this->get('name'),
+            'settings.credentials' => [
+                'consumer_key' => $consumerKey,
+                'consumer_secret' => $consumerSecret,
+                'store_url' => $storeUrl
+            ]
+        ]);
+
+        return redirect()->route('retina.dropshipping.platform.dashboard');
     }
 
     public function authorize(ActionRequest $request): bool
@@ -65,5 +97,17 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         $this->handle($customer, $this->validatedData);
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $modelData = [
+            'name' => $command->argument('name'),
+            'url' => $command->argument('url')
+        ];
+
+        $customer = Customer::find($command->argument('customer'))->first();
+
+        $this->handle($customer, $modelData);
     }
 }

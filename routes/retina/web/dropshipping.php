@@ -43,6 +43,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
+    Route::get('wc-user-callback', [AuthorizeRetinaWooCommerceUser::class, 'handleCallback'])->name('wc.callback');
     Route::post('wc-user', StoreRetinaWooCommerceUser::class)->name('wc.store');
     Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
 });
