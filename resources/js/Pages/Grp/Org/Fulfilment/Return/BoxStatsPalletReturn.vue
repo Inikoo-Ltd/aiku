@@ -6,12 +6,14 @@
 
 <script setup lang="ts">
 import JsBarcode from "jsbarcode"
-import { computed, onMounted, ref, inject } from "vue"
+import { computed, onMounted, ref, inject, toRaw } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
-import { Link, router } from "@inertiajs/vue3"
+import { cloneDeep } from "lodash-es"
+import { Link, router, useForm } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import DatePicker from '@vuepic/vue-datepicker'
 import Modal from "@/Components/Utils/Modal.vue"
@@ -27,6 +29,9 @@ import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressMa
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"
+
+import InputNumber from "primevue/inputnumber"
+import Fieldset from "primevue/fieldset"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
@@ -246,20 +251,40 @@ const disableBeforeToday = (date: Date) => {
 	return date < today
 }
 
-const xxx = ref([
-	{
-		weight: 20,
-		dimension: [45, 50, 67]
-	},
-	{
-		weight: 5,
-		dimension: [33, 12, 24]
-	},
-	{
-		weight: 67,
-		dimension: [45, 50, 67]
-	},
-])
+// Section: Parcels
+// const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
+const isLoadingSubmitParcels = ref(false)
+const isModalParcels = ref(false)
+const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
+const onDeleteParcel = (index: number) => {
+	parcelsCopy.value.splice(index, 1)
+}
+const onSubmitShipment = () => {
+	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }), 
+		{
+			parcels: parcelsCopy.value,
+		},
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingSubmitParcels.value = true
+			},
+			onSuccess: () => {
+				isModalParcels.value = false
+				// formTrackingNumber.reset()
+			},
+			onError: (errors) => {
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to add Shipment. Please try again or contact administrator."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingSubmitParcels.value = false
+			},
+		})
+}
 </script>
 
 <template>
@@ -330,7 +355,7 @@ const xxx = ref([
 
 			<!-- Field: Company name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.company_name"
+				v-if="boxStats?.fulfilment_customer?.customer?.company_name && !boxStats.is_platform_address"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Company name')" class="flex-none">
 					<span class="sr-only">Company name</span>
@@ -502,17 +527,24 @@ const xxx = ref([
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
 			<div class="flex gap-x-1">
-				<FontAwesomeIcon  v-tooltip="trans('Customer Reference')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
-				<div class="group">
-					<div class="leading-4 text-sm">{{ trans("Parcels") }} ({{ xxx.length }})</div>
+				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group w-full">
+					<div class="leading-4 text-sm flex justify-between w-full">
+						<div>{{ trans("Parcels") }} ({{ boxStats.parcels?.length }})</div>
+						<div @click="() => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+							{{ trans("Edit") }}
+							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+						</div>
+						
+					</div>
 					<ul class="list-disc pl-4">
-						<li v-for="ddd in xxx" class="text-xs tabular-nums">
+						<li v-for="(parcel, parcelIdx) in boxStats.parcels" :key="parcelIdx" class="text-xs tabular-nums">
 							<span class="truncate">
-								{{ ddd.weight }} kg
+								{{ parcel.weight }} kg
 							</span>
 
 							<span class="text-gray-500 truncate">
-								({{ ddd.dimension[0] }}x{{ ddd.dimension[1] }}x{{ ddd.dimension[2] }} cm)
+								({{ parcel.dimension[0] }}x{{ parcel.dimension[1] }}x{{ parcel.dimension[2] }} cm)
 							</span>
 						</li>
 					</ul>
@@ -616,6 +648,85 @@ const xxx = ref([
 		:addresses="address_management.addresses"
 		:updateRoute="address_management.address_update_route"
     />
+	</Modal>
+
+	<!-- Modal: Shipment -->
+	<Modal
+		v-if="true"
+		:isOpen="isModalParcels"
+		@onClose="isModalParcels = false"
+		width="w-full max-w-lg"
+	>
+		<div class="text-center font-bold mb-4">
+			{{ trans('Add shipment') }}
+		</div>
+
+		<div>
+			<Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+				<!-- Header Row -->
+				<div class="grid grid-cols-12 items-center gap-x-6 mb-2">
+					<div class="flex justify-center">
+						<!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
+					</div>
+
+					<div class="col-span-2 flex items-center space-x-1">
+						<FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
+						<span>kg</span>
+					</div>
+					<div class="col-span-9 flex items-center space-x-1">
+						<FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
+						<span>cm</span>
+					</div>
+				</div>
+
+				<!--  -->
+				<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+					<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
+					<TransitionGroup v-if="parcelsCopy?.length" name="list-to-down">
+						<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex" class="grid grid-cols-12 items-center gap-x-6">
+							<div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
+								<FontAwesomeIcon icon="fal fa-trash-alt" class="hover:text-red-500 cursor-pointer" fixed-width aria-hidden="true" />
+							</div>
+							<div class="col-span-2 flex items-center space-x-2">
+								<InputNumber v-model="parcel.weight" class="w-16" size="small" placeholder="0" fluid />
+							</div>
+							<div class="col-span-9 flex items-center gap-x-1 font-light">
+								<InputNumber v-model="parcel.dimension[0]" class="w-16" size="small" placeholder="0" fluid />
+								<div class="text-gray-400">x</div>
+								<InputNumber v-model="parcel.dimension[1]" class="w-16" size="small" placeholder="0" fluid />
+								<div class="text-gray-400">x</div>
+								<InputNumber v-model="parcel.dimension[2]" class="w-16" size="small" placeholder="0" fluid />
+								<button class="text-gray-600">≡</button>
+							</div>
+						</div>
+					</TransitionGroup>
+					<div v-else>
+						{{ trans('No parcels') }}
+					</div>
+				</div>
+
+				<!-- Repeat for more rows -->
+				<div class=" grid grid-cols-12 mt-2">
+					<div></div>
+					<div @click="() => parcelsCopy.push({ weight: 0, dimension: [0,0,0]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
+						{{ trans("Add another parcel") }}
+					</div>
+				</div>
+			</Fieldset>
+
+			<div class="flex justify-end mt-3">
+				<Button
+					:style="'save'"
+					:loading="isLoadingSubmitParcels"
+					:label="'save'"
+					xdisabled="
+						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
+					"
+					full
+					@click="() => onSubmitShipment()" />
+			</div>
+		</div>
 	</Modal>
 </template>
 

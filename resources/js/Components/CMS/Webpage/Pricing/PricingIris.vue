@@ -4,6 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fal"
+import Image from "@/Components/Image.vue"
 
 library.add(faCheck)
 
@@ -42,6 +43,15 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 					class="relative flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg"
 					:class="tier.mostPopular ? 'ring-4 ring-indigo-500' : ''"
 					:style="getBackgroundStyle(tier.background)">
+					<div class="flex justify-center items-center mb-4">
+						<!-- real image -->
+						<template v-if="tier?.image?.source">
+							<Image :src="tier?.image?.source" :imageCover="true" :alt="tier?.image?.alt"
+								:imgAttributes="tier?.image?.attributes"
+								:style="getStyles(tier?.image?.properties)" />
+						</template>
+						
+					</div>
 					<div>
 						<div class="flex items-center justify-between gap-x-4">
 							<h3

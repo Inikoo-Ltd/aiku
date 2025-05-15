@@ -9,6 +9,7 @@
 
 namespace App\Actions\Fulfilment\StoredItem;
 
+use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\OrgAction;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
@@ -45,10 +46,8 @@ class AttachStoredItemToReturn extends OrgAction
                     ]
                 );
             }
-
-
-
         }
+        $palletReturn = SetStoredItemReturnAutoServices::run($palletReturn);
     }
 
     public function authorize(ActionRequest $request): bool

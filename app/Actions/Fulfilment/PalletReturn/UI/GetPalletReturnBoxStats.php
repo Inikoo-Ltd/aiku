@@ -40,6 +40,7 @@ class GetPalletReturnBoxStats
                 'slug' => $palletReturn->platform->slug,
                 'name' => $palletReturn->platform->name
             ] : null,
+            'parcels'   => $palletReturn->parcels,
             'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [

@@ -324,7 +324,7 @@ class ShowStoredItemReturn extends OrgAction
                 )
             ),
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show' => array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent->platform, $routeParameters),
                 $headCrumb(
                     $palletReturn,
                     [

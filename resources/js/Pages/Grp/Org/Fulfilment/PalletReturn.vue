@@ -111,7 +111,7 @@ const props = defineProps<{
 		dropshipping: boolean
 	}
 
-	upload_spreadsheet: UploadPallet
+	upload_spreadsheet?: UploadPallet
 	can_edit_transactions: boolean
 	box_stats: BoxStats
 	notes_data: PDRNotes[]
@@ -295,36 +295,39 @@ const onSubmitShipment = () => {
 		.transform((data) => ({
 			shipping_id: data.shipping_id?.id,
 			tracking_number: data.tracking_number,
-			parcels: xxx.value,
+			parcels: props.box_stats.parcels,
 		}))
-		.post(route(props.updateRoute.name, { ...props.updateRoute.parameters }), {
-		preserveScroll: true,
-		onSuccess: () => {
-			isModalTrackingNumber.value = false
-			formTrackingNumber.reset()
-		},
-		onError: (errors) => {
-			notify({
-				title: trans("Something went wrong."),
-				text: trans("Failed to add Shipment. Please try again or contact administrator."),
-				type: "error",
-			})
-		},
-		onFinish: () => {
-			isLoadingButton.value = false
-		},
-	})
+		.patch(route(props.updateRoute.name, { ...props.updateRoute.parameters }), {
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingButton.value = "addTrackingNumber"
+			},
+			onSuccess: () => {
+				isModalTrackingNumber.value = false
+				formTrackingNumber.reset()
+			},
+			onError: (errors) => {
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to add Shipment. Please try again or contact administrator."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingButton.value = false
+			},
+		})
 }
 
-const xxx = ref([
-	{
-		weight: 20,
-		dimension: [45, 50, 67]
-	}
-])
+// const xxx = ref([
+// 	{
+// 		weight: 20,
+// 		dimension: [45, 50, 67]
+// 	}
+// ])
 
 const onDeleteParcel = (index: number) => {
-	xxx.value.splice(index, 1)
+	props.box_stats.parcels.splice(index, 1)
 }
 </script>
 
@@ -727,57 +730,6 @@ const onDeleteParcel = (index: number) => {
 	>
 		<div class="text-center font-bold mb-4">
 			{{ trans('Add shipment') }}
-		</div>
-
-		<div>
-			<Fieldset :legend="`${trans('Parcels')} (${xxx.length})`">
-				<!-- Header Row -->
-				<div class="grid grid-cols-12 items-center gap-x-6 mb-2">
-					<div class="flex justify-center">
-						<!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
-					</div>
-
-					<div class="col-span-2 flex items-center space-x-1">
-						<FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
-						<span>kg</span>
-					</div>
-					<div class="col-span-9 flex items-center space-x-1">
-						<FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
-						<span>cm</span>
-					</div>
-				</div>
-
-				<!--  -->
-				<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
-					<TransitionGroup name="list-to-down">
-						<div v-for="(zzz, zIndex) in xxx" :key="zIndex" class="grid grid-cols-12 items-center gap-x-6">
-							<div @click="() => onDeleteParcel(zIndex)" class="flex justify-center">
-								<FontAwesomeIcon icon="fal fa-trash-alt" class="hover:text-red-500 cursor-pointer" fixed-width aria-hidden="true" />
-							</div>
-							<div class="col-span-2 flex items-center space-x-2">
-								<InputNumber v-model="zzz.weight" class="w-16" size="small" placeholder="0" fluid />
-							</div>
-							<div class="col-span-9 flex items-center gap-x-1 font-light">
-								<InputNumber v-model="zzz.dimension[0]" class="w-16" size="small" placeholder="0" fluid />
-								<div class="text-gray-400">x</div>
-								<InputNumber v-model="zzz.dimension[1]" class="w-16" size="small" placeholder="0" fluid />
-								<div class="text-gray-400">x</div>
-								<InputNumber v-model="zzz.dimension[2]" class="w-16" size="small" placeholder="0" fluid />
-								<button class="text-gray-600">≡</button>
-							</div>
-						</div>
-					</TransitionGroup>
-				</div>
-
-				<!-- Repeat for more rows -->
-				<div class=" grid grid-cols-12 mt-2">
-					<div></div>
-					<div @click="() => xxx.push({ weight: 0, dimension: [0,0,0]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
-						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-						{{ trans("Add another parcel") }}
-					</div>
-				</div>
-			</Fieldset>
 		</div>
 
 		<div class="w-full mt-3">
