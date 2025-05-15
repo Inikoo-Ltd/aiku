@@ -94,12 +94,12 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         $this->set('name', $request->input('name'));
     }
 
-    public function asController(ActionRequest $request): void
+    public function asController(ActionRequest $request): string
     {
         $customer = $request->user()->customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        $this->handle($customer, $this->validatedData);
+        return $this->handle($customer, $this->validatedData);
     }
 
     public function asCommand(Command $command): void
