@@ -10,7 +10,7 @@ import { computed, onMounted, ref, inject, toRaw } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
-import { cloneDeep } from "lodash-es"
+import { cloneDeep, set } from "lodash-es"
 import { Link, router, useForm } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -276,6 +276,8 @@ const onSubmitShipment = () => {
 			onSuccess: () => {
 				isModalParcels.value = false
 				// formTrackingNumber.reset()
+				listError.box_stats_parcel = false
+				set(listError, 'box_stats_parcel', false)
 			},
 			onError: (errors) => {
 				notify({
@@ -289,6 +291,8 @@ const onSubmitShipment = () => {
 			},
 		})
 }
+
+const listError = inject('listError', {})
 </script>
 
 <template>
@@ -297,7 +301,7 @@ const onSubmitShipment = () => {
 		<!-- Box: Customer -->
 		<BoxStatPallet class="py-1 sm:py-2 px-3">
 			<!-- Field: Platform -->
-			<div v-if="boxStats.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
+			<div v-if="boxStats?.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
 				<div v-tooltip="trans('Platform')" class="flex-none">
 					<FontAwesomeIcon
 						icon="fal fa-parachute-box"
@@ -318,7 +322,7 @@ const onSubmitShipment = () => {
 			<!-- Field: Reference -->
 			<Link
 				as="a"
-				v-if="boxStats?.fulfilment_customer?.customer?.reference"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.id : boxStats?.fulfilment_customer?.customer?.reference"
 				:href="
 					route('grp.org.fulfilments.show.crm.customers.show', [
 						route().params.organisation,
@@ -342,7 +346,7 @@ const onSubmitShipment = () => {
 
 			<!-- Field: Contact name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.contact_name"
+				v-if="boxStats.is_platform ? (boxStats.platform_customer?.first_name || boxStats.platform_customer?.last_name) : boxStats?.fulfilment_customer?.customer?.contact_name"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Contact name')" class="flex-none">
 					<span class="sr-only">Contact name</span>
@@ -375,7 +379,7 @@ const onSubmitShipment = () => {
 
 			<!-- Field: Email -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer.email"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.email : boxStats?.fulfilment_customer?.customer.email"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Email')" class="flex-none">
 					<span class="sr-only">Email</span>
@@ -402,7 +406,7 @@ const onSubmitShipment = () => {
 
 			<!-- Field: Phone -->
 			<div
-				v-if="boxStats.is_platform ? boxStats.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
+				v-if="boxStats?.is_platform ? boxStats?.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
@@ -413,12 +417,12 @@ const onSubmitShipment = () => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<a v-if="boxStats.is_platform">{{ boxStats.platform_customer?.phone }}</a>
-				<a v-else>{{ boxStats.fulfilment_customer?.customer.phone }}</a>
+				<a v-if="boxStats?.is_platform">{{ boxStats?.platform_customer?.phone }}</a>
+				<a v-else>{{ boxStats?.fulfilment_customer?.customer.phone }}</a>
 			</div>
 		
 			<!-- Field: Delivery Address -->
-			<div v-if="!boxStats.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
+			<div v-if="!boxStats?.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
 				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
 					<span class="sr-only">{{ boxStats?.delivery_state?.tooltip }}</span>
 					<FontAwesomeIcon :icon="['fal', 'calendar-day']" class="text-gray-400" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
@@ -453,7 +457,7 @@ const onSubmitShipment = () => {
 			<!-- Delivery Address / Collection by Section -->
 			<div class="flex flex-col w-full gap-y-2 mb-1">
 				<!-- Top Row: Icon dan Switch -->
-				<div v-if="!boxStats.is_platform" class="flex items-center gap-x-2">
+				<div v-if="!boxStats?.is_platform" class="flex items-center gap-x-2">
 					<dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
 						<span class="sr-only">Delivery address</span>
 						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -514,7 +518,7 @@ const onSubmitShipment = () => {
 				<div v-else class="w-full text-xs text-gray-500">
 					Send to:
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-						<span v-html="boxStats.fulfilment_customer?.address?.value?.formatted_address" />
+						<span v-html="boxStats?.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
 							@click="() => (isDeliveryAddressManagementModal = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -530,12 +534,13 @@ const onSubmitShipment = () => {
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
-			<div class="flex gap-x-1">
+			<!-- Section: Parcels -->
+			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-sm flex justify-between w-full">
-						<div>{{ trans("Parcels") }} ({{ boxStats.parcels?.length ?? 0 }})</div>
-						<div v-if="boxStats.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+						<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
 							{{ trans("Edit") }}
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 						</div>
@@ -546,8 +551,8 @@ const onSubmitShipment = () => {
 						
 					</div>
 					
-					<ul v-if="boxStats.parcels?.length" class="list-disc pl-4">
-						<li v-for="(parcel, parcelIdx) in boxStats.parcels" :key="parcelIdx" class="text-xs tabular-nums">
+					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
+						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-xs tabular-nums">
 							<span class="truncate">
 								{{ parcel.weight }} kg
 							</span>
@@ -557,6 +562,14 @@ const onSubmitShipment = () => {
 							</span>
 						</li>
 					</ul>
+				</div>
+			</div>
+
+			<!-- Section: Shipments -->
+			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group w-full">
+					{{boxStats.shipments}}
 				</div>
 			</div>
 

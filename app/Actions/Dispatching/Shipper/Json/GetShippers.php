@@ -10,25 +10,26 @@
 
 namespace App\Actions\Dispatching\Shipper\Json;
 
-use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Dispatching\ShippersResource;
+use App\Models\Dispatching\Shipper;
 
 class GetShippers extends OrgAction
 {
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, ActionRequest $request)
     {
         $this->initialisation($organisation, $request);
 
-        return IndexShippers::run($organisation);
+        return Shipper::where('organisation_id', $organisation->id)
+            ->where('status', true)
+            ->orderBy('name', 'asc')
+            ->get();
     }
 
-    public function jsonResponse(LengthAwarePaginator $paymentAccounts): AnonymousResourceCollection
+    public function jsonResponse($shipper)
     {
-        return ShippersResource::collection($paymentAccounts);
+        return ShippersResource::collection($shipper);
     }
 }

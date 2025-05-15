@@ -25,7 +25,7 @@ class GetDispatchHubShowcase
         $stats = [
             'fulfilment' => [
                 'label' => __('Fulfilment'),
-                'subtitle' => __('In Todo'),
+                'sublabel' => __('In Todo'),
                 'count' => $parent->stats->number_pallet_returns_state_confirmed + $parent->stats->number_pallet_returns_state_picking + $parent->stats->number_pallet_returns_state_picked,
                 'cases' => [
                     'todo' => [
@@ -76,7 +76,7 @@ class GetDispatchHubShowcase
 
             'delivery_notes' => [
                 'label' => __('Delivery Notes'),
-                'subtitle' => __('In Todo'),
+                'sublabel' => __('In Todo'),
                 'count' => $organisation->orderingStats->number_delivery_notes_state_unassigned + $organisation->orderingStats->number_delivery_notes_state_queued + $organisation->orderingStats->number_delivery_notes_state_handling + $organisation->orderingStats->number_delivery_notes_state_handling_blocked + $organisation->orderingStats->number_delivery_notes_state_packed + $organisation->orderingStats->number_delivery_notes_state_finalised,
                 'cases' => [
                     'todo' => [
