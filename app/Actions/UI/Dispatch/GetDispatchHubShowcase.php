@@ -25,7 +25,8 @@ class GetDispatchHubShowcase
         $stats = [
             'fulfilment' => [
                 'label' => __('Fulfilment'),
-                'count' => $parent->stats->number_fulfilments,
+                'subtitle' => __('In Todo'),
+                'count' => $parent->stats->number_pallet_returns_state_confirmed + $parent->stats->number_pallet_returns_state_picking + $parent->stats->number_pallet_returns_state_picked,
                 'cases' => [
                     'todo' => [
                         'label' => __('To do'),
@@ -70,51 +71,13 @@ class GetDispatchHubShowcase
                             'parameters' => $request->route()->originalParameters()
                         ],
                     ],
-                    'dispatched' => [
-                        'label' => __('Dispatched'),
-                        'key'   => 'dispatched',
-                        'icon' => 'fal fa-parking',
-                        'value' => $parent->stats->number_pallet_returns_state_dispatched,
-                        'route' => [
-                            'name' => match (class_basename($parent)) {
-                                'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.dispatched.index',
-                                'Warehouse' => 'grp.org.warehouses.show.dispatching.pallet-returns.dispatched.index'
-                            },
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                    ],
-                    'cancelled' => [
-                        'label' => __('Cancelled'),
-                        'key'   => 'cancel',
-                        'icon' => 'fal fa-parking',
-                        'value' => $parent->stats->number_pallet_returns_state_cancel,
-                        'route' => [
-                            'name' => match (class_basename($parent)) {
-                                'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.cancelled.index',
-                                'Warehouse' => 'grp.org.warehouses.show.dispatching.pallet-returns.cancelled.index'
-                            },
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                    ],
-                    'all' => [
-                        'label' => __('All'),
-                        'key'   => 'all',
-                        'icon' => 'fal fa-parking',
-                        'value' => $parent->stats->number_pallets,
-                        'route' => [
-                            'name' => match (class_basename($parent)) {
-                                'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-                                'Warehouse' => 'grp.org.warehouses.show.dispatching.pallet-returns.index'
-                            },
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                    ],
                 ]
             ],
 
             'delivery_notes' => [
                 'label' => __('Delivery Notes'),
-                'count' => $organisation->orderingStats->number_delivery_notes,
+                'subtitle' => __('In Todo'),
+                'count' => $organisation->orderingStats->number_delivery_notes_state_unassigned + $organisation->orderingStats->number_delivery_notes_state_queued + $organisation->orderingStats->number_delivery_notes_state_handling + $organisation->orderingStats->number_delivery_notes_state_handling_blocked + $organisation->orderingStats->number_delivery_notes_state_packed + $organisation->orderingStats->number_delivery_notes_state_finalised,
                 'cases' => [
                     'todo' => [
                         'label' => __('To do'),
@@ -173,28 +136,6 @@ class GetDispatchHubShowcase
                         'value' => $organisation->orderingStats->number_delivery_notes_state_finalised,
                         'route' => [
                             'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
-                        ],
-                    ],
-
-                    'dispatched' => [
-                        'label' => __('Dispatched'),
-                        'key'   => 'dispatched',
-                        'icon'  => 'fal fa-truck',
-                        'value' => $organisation->orderingStats->number_delivery_notes_state_dispatched,
-                        'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.dispatched.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
-                        ],
-                    ],
-
-                    'all' => [
-                        'label' => __('All'),
-                        'key'   => 'all',
-                        'icon'  => 'fal fa-list',
-                        'value' => $organisation->orderingStats->number_delivery_notes,
-                        'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.delivery-notes',
                             'parameters' => [$organisation->slug, $parent->slug]
                         ],
                     ],

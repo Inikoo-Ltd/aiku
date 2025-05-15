@@ -106,8 +106,8 @@ onBeforeUnmount(() => {
                 <div class="min-w-0 flex-auto relative">
                     <div class="text-sm font-semibold leading-6" :class="[notif.read ? 'text-gray-400' : '']">
                         <component
-                            :is="notif.href ? Link : 'div'"
-                            :href="notif.href"
+                            :is="notif.route ? Link : 'div'"
+                            :href="notif.route"
                             @success="() => (notif.read ?? setNotificationToRead(notif.id), props.close())"
                         >
                             <span class="absolute inset-x-0 -top-px bottom-0"></span>
