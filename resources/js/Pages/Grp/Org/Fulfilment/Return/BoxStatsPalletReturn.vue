@@ -502,17 +502,17 @@ const xxx = ref([
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
 			<div class="flex gap-x-1">
-				<FontAwesomeIcon  v-tooltip="trans('Customer Reference')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group">
-					<div class="leading-4 text-sm">{{ trans("Parcels") }} ({{ xxx.length }})</div>
+					<div class="leading-4 text-sm">{{ trans("Parcels") }} ({{ boxStats.parcels?.length }})</div>
 					<ul class="list-disc pl-4">
-						<li v-for="ddd in xxx" class="text-xs tabular-nums">
+						<li v-for="(parcel, parcelIdx) in boxStats.parcels" :key="parcelIdx" class="text-xs tabular-nums">
 							<span class="truncate">
-								{{ ddd.weight }} kg
+								{{ parcel.weight }} kg
 							</span>
 
 							<span class="text-gray-500 truncate">
-								({{ ddd.dimension[0] }}x{{ ddd.dimension[1] }}x{{ ddd.dimension[2] }} cm)
+								({{ parcel.dimension[0] }}x{{ parcel.dimension[1] }}x{{ parcel.dimension[2] }} cm)
 							</span>
 						</li>
 					</ul>
