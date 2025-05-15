@@ -61,7 +61,25 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'icon'  => 'fal fa-shopping-basket'
                     ],
 
+                    'routes'    => [
+                        'update_route' => [
+                            'name'       => 'retina.models.order.update',
+                            'parameters' => [
+                                'order' => $order->id
+                            ],
+                            'method'     => 'patch'
+                        ],
+                        'submit_route' => [
+                            'name'       => 'retina.models.order.submit',
+                            'parameters' => [
+                                'order' => $order->id
+                            ],
+                            'method'     => 'patch'
+                        ]
+                    ],
 
+                    'voucher' => [], //todo: make logic for this if implemented
+                    
                     'order'          => $order ? OrderResource::make($order)->resolve() : [],
                     'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 

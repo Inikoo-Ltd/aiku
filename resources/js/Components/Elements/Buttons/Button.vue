@@ -8,7 +8,7 @@
 import { trans } from "laravel-vue-i18n";
 import { faSpinnerThird, faSave as fadSave } from "@fad";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faClipboard, faPencil, faDownload, faFileExport, faPlus as falPlus, faHistory, faListAlt } from "@fal";
+import { faClipboard, faPencil, faDownload, faFileExport, faPlus as falPlus, faHistory, faListAlt, IconDefinition } from "@fal";
 import { faArrowLeft, faTrashAlt, faPersonDolly, faTimes } from "@far";
 import { faPlus, faSave, faUpload, faTrashUndoAlt, faThLarge, faRocket, faMinus } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -23,8 +23,8 @@ library.add(faPlus, faSave, fadSave, faUpload, faDownload, falPlus, faRocket, fa
 const props = withDefaults(defineProps<{
   style?: string | object
   size?: string
-  icon?: Icon | string | string[]
-  iconRight?: Icon | string | string[]
+  icon?: Icon | string | string[] | IconDefinition
+  iconRight?: Icon | string | string[] | IconDefinition
   action?: string
   label?: string
   full?: boolean

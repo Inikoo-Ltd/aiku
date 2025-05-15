@@ -10,11 +10,13 @@ import { routeType } from '@/types/route'
 import { Link } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
+import type { IconDefinition } from '@fal'
+
 const props = defineProps<{
     style?: string | object
     size?: string
-    icon?: string | string[]
-    iconRight?: string | string[]
+    icon?: string | string[] | IconDefinition
+    iconRight?: string | string[] | IconDefinition
     action?: string
     label?: string
     full?: boolean
