@@ -77,11 +77,7 @@ class UpdatePalletReturn extends OrgAction
             Arr::forget($modelData, 'address');
         }
 
-        if (Arr::exists($modelData, 'parcels')) {
-            $modelData['parcels'] = json_encode($modelData['parcels']);
-        }
-
-        $palletReturn = $this->update($palletReturn, $modelData);
+        $palletReturn = $this->update($palletReturn, $modelData, ['parcels']);
         PalletReturnRecordSearch::dispatch($palletReturn);
 
         return $palletReturn;
