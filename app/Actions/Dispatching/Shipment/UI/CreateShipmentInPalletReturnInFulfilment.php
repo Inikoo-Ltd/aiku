@@ -39,6 +39,7 @@ class CreateShipmentInPalletReturnInFulfilment extends OrgAction
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): Shipment
     {
+        dd('xx');
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         return $this->handle($palletReturn, $this->validatedData);
