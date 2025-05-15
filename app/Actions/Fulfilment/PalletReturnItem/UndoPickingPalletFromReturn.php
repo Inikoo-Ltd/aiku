@@ -10,6 +10,8 @@ namespace App\Actions\Fulfilment\PalletReturnItem;
 
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
+use App\Actions\Fulfilment\PalletReturn\SetPalletReturnAutoServices;
+use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -35,16 +37,20 @@ class UndoPickingPalletFromReturn extends OrgAction
                 'state' => PalletStateEnum::PICKING
             ]);
 
-            $palletReturnItem = $this->update($palletReturnItem, $modelData, ['data']);
+            $palletReturnItem = $this->update($palletReturnItem, [
+                    'quantity_picked' => 0,
+                    'state'           => PalletReturnItemStateEnum::PICKING
+            ]);
+            
         } else {
             $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)->where('stored_item_id', $palletReturnItem->stored_item_id)->get();
             foreach ($storedItems as $storedItem) {
-                UpdatePallet::run($storedItem->pallet, [
-                    'state' => PalletStateEnum::PICKING
+                $palletReturnItem = $this->update($storedItem, [
+                    'quantity_picked' => 0,
+                    'state'           => PalletReturnItemStateEnum::PICKING
                 ]);
-
-                $palletReturnItem = $this->update($storedItem, $modelData, ['data']);
             }
+            SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
         }
 
         AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
