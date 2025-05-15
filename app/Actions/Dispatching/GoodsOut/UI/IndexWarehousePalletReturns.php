@@ -267,8 +267,8 @@ class IndexWarehousePalletReturns extends OrgAction
             //     $table->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
             // } else {
             // }
-            $table->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+            ->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($this->restriction) {
                 switch ($this->restriction) {
