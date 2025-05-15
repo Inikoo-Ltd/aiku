@@ -142,7 +142,7 @@ export interface FieldOrderSummary {
 // Box Stats in Pallet Delivery
 export interface BoxStats {
     delivery_state: Icon
-    is_platform_address: boolean
+    is_platform: boolean
     platform_customer: object
     fulfilment_customer: {
         address: AddressManagement
