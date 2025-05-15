@@ -76,7 +76,7 @@ class GetDispatchHubShowcase
 
             'delivery_notes' => [
                 'label' => __('Delivery Notes'),
-                'subtitle' => __('In Todo'),
+                'sublabel' => __('In Todo'),
                 'count' => $organisation->orderingStats->number_delivery_notes_state_unassigned + $organisation->orderingStats->number_delivery_notes_state_queued + $organisation->orderingStats->number_delivery_notes_state_handling + $organisation->orderingStats->number_delivery_notes_state_handling_blocked + $organisation->orderingStats->number_delivery_notes_state_packed + $organisation->orderingStats->number_delivery_notes_state_finalised,
                 'cases' => [
                     'todo' => [
