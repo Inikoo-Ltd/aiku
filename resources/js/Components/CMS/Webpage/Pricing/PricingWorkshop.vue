@@ -44,7 +44,39 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 					class="relative flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg"
 					:class="tier.mostPopular ? 'ring-4 ring-indigo-500' : ''"
 					:style="getBackgroundStyle(tier.background)">
+					<div class="flex justify-center mb-4">
+						<!-- real image -->
+					
+						<template v-if="tier.image?.original">
+							<img
+								:src="tier.image.original"
+								:alt="tier.image.alt || tier.title"
+								class="h-12 w-auto" />
+						</template>
+
+						<!-- placeholder when no image -->
+						<template v-else>
+							<div class="flex items-center w-full">
+								<hr class="flex-grow border-gray-300" />
+								<span class="px-2 text-gray-400 text-sm uppercase"
+								@click="
+								() =>
+									sendMessageToParent(
+										'activeChildBlock',
+										Blueprint?.blueprint?.[1]?.key?.join('-')
+									)
+							"
+									>Put image here</span
+								>
+								<hr class="flex-grow border-gray-300" />
+							</div>
+						</template>
+					</div>
 					<div>
+						<pre>
+						
+						{{ tier }}
+						</pre>
 						<div class="flex items-center justify-between gap-x-4">
 							<Editor
 								v-model="tier.title"
