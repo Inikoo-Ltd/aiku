@@ -4,6 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fal"
+import Image from "@/Components/Image.vue"
 
 library.add(faCheck)
 
