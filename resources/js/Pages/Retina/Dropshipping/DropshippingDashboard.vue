@@ -12,6 +12,7 @@ import {routeType} from '@/types/route'
 import {trans} from 'laravel-vue-i18n'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureInputWithAddOn from '@/Components/Pure/PureInputWithAddOn.vue'
+import PureInput from '@/Components/Pure/PureInput.vue'
 import {notify} from '@kyvg/vue3-notification'
 
 
@@ -42,6 +43,10 @@ const props = defineProps<{
     aikuConnectRoute: {
         url: string
         isAuthenticated: boolean
+    }
+    wooRoute: {
+        connectRoute: routeType
+        isConnected: boolean
     }
 }>()
 
@@ -76,6 +81,39 @@ const onCreateStore = () => {
     )
 }
 
+// Section: Woocommerce
+const isModalWoocom = ref<boolean>(false)
+const woocomInput = ref({
+    name: null as null | string,
+    url: null as null | string,
+})
+const onSubmitWoocommerce = async () => {
+    const method = props.wooRoute.connectRoute.method;
+    const xxx = await axios.post(
+        route(props.wooRoute.connectRoute.name, props.wooRoute.connectRoute.parameters),
+        woocomInput.value)
+        // {
+        //     onStart: () => isLoading.value = true,
+        //     onError: (error) => {
+        //         notify({
+        //             title: trans('Something went wrong'),
+        //             text: error,
+        //             type: 'error',
+        //         })
+        //     },
+        //     onSuccess: (response) => {
+        //         // isModalWoocom.value = false
+        //         woocomInput.value.name = null
+        //         woocomInput.value.url = null
+        //
+        //         console.log(response)
+        //         // window.open(props.connectRoute?.url);
+        //     },
+        //     onFinish: () => isLoading.value = false
+        // }
+
+        console.log('xxx', xxx);
+}
 </script>
 
 <template>
@@ -200,10 +238,58 @@ const onCreateStore = () => {
                                     <Button :loading="isLoading === 'unlink-tiktok'" label="Unlink" type="negative"
                                             icon="fal fa-unlink" size="xs" full/>
                                 </Link>
-                            <Button :capitalize="false" :label="`Connected`" type="positive" icon="fal fa-check" size="xs" full/>
+                            <Button :label="`Connected`" type="positive" icon="fal fa-check" size="xs" full/>
                             </div>
                         </Transition>
                     </div>
+                </div>
+            </div>
+
+            <!-- Channel: Woocommerce -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+                <Link :href="route('retina.dropshipping.platforms.dashboard', ['tiktok'])" class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <img src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png" alt="" class="h-12">
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Woocommerce</div>
+                        <div class="text-xs">({{ trans("Manage product") }})</div>
+                    </div>
+                </Link>
+
+                <div class="w-full flex justify-end">
+                    <Button
+                        v-if="layout?.app?.environment === 'local'"
+                        :label="wooRoute?.isConnected ? trans('Success') : trans('Connect')"
+                        type="primary"
+                        full
+                        @click="() => isModalWoocom = true"
+                    />
+                    <!-- <a v-if="false" target="_blank" class="w-full" :href="tiktokAuth?.url">
+                        <Button
+                            v-if="layout?.app?.environment === 'local'"
+                            :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
+                            type="primary"
+                            full
+                            @click="() => isModalWoocom = true"
+                        />
+                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+                    </a>
+
+                    <div v-else class="relative w-full">
+                        <Transition name="spin-to-down">
+                            <div class="w-full flex justify-end gap-x-2">
+                                <Link as="button" :href="route(tiktokAuth?.deleteAccountRoute?.name, tiktokAuth?.deleteAccountRoute?.parameters)"
+                                      :method="tiktokAuth?.deleteAccountRoute?.method" @start="isLoading = 'unlink-tiktok'" @error="(error) => notify({
+                                    title: trans('Something went wrong.'),
+                                    text: trans('Please try again'),
+                                    type: 'error',
+                                }) " @finish="isLoading = false">
+                                    <Button :loading="isLoading === 'unlink-tiktok'" label="Unlink" type="negative"
+                                            icon="fal fa-unlink" size="xs" full/>
+                                </Link>
+                                <Button :label="`Connected`" type="positive" icon="fal fa-check" size="xs" full/>
+                            </div>
+                        </Transition>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -228,6 +314,34 @@ const onCreateStore = () => {
                 }" @keydown.enter="() => onCreateStore()"/>
 
             <Button @click="() => onCreateStore()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalWoocom" @onClose="isModalWoocom = false" width="w-full max-w-lg">
+        <div class="">
+            <div class="mb-4">
+                <div class="text-center font-semibold text-xl">
+                    {{ trans('Woomerce store detail') }}
+                </div>
+
+                <div class="text-center text-xs text-gray-500">
+                    {{ trans('Enter your Woocommerce store detail') }}
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-y-2">
+                <PureInput
+                    v-model="woocomInput.name"
+                    :placeholder="trans('Your store name')"
+                ></PureInput>
+                <PureInputWithAddOn v-model="woocomInput.url" :leftAddOn="{
+                        icon: 'fal fa-globe'
+                    }" :rightAddOn="{
+                        label: '.woocommerce.com'
+                    }" @keydown.enter="() => onSubmitWoocommerce()"/>
+            </div>
+
+            <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
 </template>

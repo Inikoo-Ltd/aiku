@@ -5,7 +5,7 @@
 	"name": "Pricing",
 	"icon": ["fal", "text"],
 	"category": "block",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
 	"data": {
 		"fieldValue": {
 			"text": "<p style=\"text-align: center\">Choose an affordable plan that’s packed with the best features for engaging your audience, creating customer loyalty, and driving sales.</p>",
@@ -55,9 +55,13 @@
 			},
 			"tiers": [
 				{
-					"name" : "freelancer",
+					"name": "freelancer",
 					"title": "<h2>Freelancer</h2>",
 					"id": "tier-freelancer",
+					"image": {
+						"source": null,
+						"alt": "Pricing Image"
+					},
 					"button": {
 						"link": {
 							"id": 9,
@@ -167,9 +171,13 @@
 					}
 				},
 				{
-					"name" : "startup",
+					"name": "startup",
 					"title": "<h2>Startup</h2>",
 					"id": "tier-startup",
+					"image": {
+						"source": null,
+						"alt": "Pricing Image"
+					},
 					"button": {
 						"link": {
 							"id": 9,
@@ -262,7 +270,7 @@
 							"original": null
 						}
 					},
-					"priceMonthly":  {
+					"priceMonthly": {
 						"show": true,
 						"text": "$99"
 					},
@@ -280,9 +288,13 @@
 					}
 				},
 				{
-					"name" : "enterprise",
+					"name": "enterprise",
 					"title": "<h2>Enterprise</h2>",
 					"id": "tier-enterprise",
+					"image": {
+						"source": null,
+						"alt": "Pricing Image"
+					},
 					"button": {
 						"link": {
 							"id": 9,
@@ -375,7 +387,7 @@
 							"original": null
 						}
 					},
-					"priceMonthly":{
+					"priceMonthly": {
 						"show": true,
 						"text": "$99"
 					},

@@ -11,6 +11,7 @@ use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
+use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
@@ -38,7 +39,7 @@ Route::get('returns/picked', [IndexWarehousePalletReturns::class, 'inWarehousePi
 Route::get('returns/dispatched', [IndexWarehousePalletReturns::class, 'inWarehouseDispatched'])->name('pallet-returns.dispatched.index');
 Route::get('returns/cancelled', [IndexWarehousePalletReturns::class, 'inWarehouseCancelled'])->name('pallet-returns.cancelled.index');
 Route::get('returns/{palletReturn}', ShowWarehousePalletReturn::class)->name('pallet-returns.show');
-Route::get('return-stored-items/{palletReturn}', [ShowStoredItemReturn::class, 'inWarehouse'])->name('pallet-return-with-stored-items.show');
+Route::get('return-stored-items/{palletReturn}', ShowWarehouseStoredItemReturn::class)->name('pallet-return-with-stored-items.show');
 
 Route::get('shippers/current', [IndexShippers::class, 'inCurrent'])->name('shippers.current.index');
 Route::get('shippers/inactive', [IndexShippers::class, 'inInactive'])->name('shippers.inactive.index');
