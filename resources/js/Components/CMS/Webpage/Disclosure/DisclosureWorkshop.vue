@@ -17,6 +17,7 @@ const props = defineProps<{
     modelValue: any
     webpageData?: any
     blockData?: Object
+	  screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -28,7 +29,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-  <div :style="getStyles(modelValue?.container?.properties)">
+  <div :style="getStyles(modelValue.container.properties,screenType)">
     <dl class="space-y-0  rounded-md overflow-hidden">
       <Disclosure
         v-for="(faq, index) in modelValue.value"

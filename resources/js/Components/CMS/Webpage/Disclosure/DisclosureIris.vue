@@ -15,6 +15,7 @@ library.add(faPlus, faMinus)
 
 const props = defineProps<{
     fieldValue: any
+	  screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 
@@ -22,7 +23,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div :style="getStyles(fieldValue?.container?.properties)">
+  <div :style="getStyles(fieldValue.container.properties,screenType)">
     <dl class="space-y-0  rounded-md overflow-hidden">
       <Disclosure
         v-for="(faq, index) in fieldValue.value"

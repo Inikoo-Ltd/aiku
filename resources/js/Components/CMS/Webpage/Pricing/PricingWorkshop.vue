@@ -14,6 +14,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -32,7 +33,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 </script>
 
 <template>
-	<div class="container flex flex-wrap justify-between" :style="getStyles(modelValue?.container?.properties)">
+	<div class="container flex flex-wrap justify-between" :style="getStyles(modelValue.container.properties,screenType)">
 		<div class="container mx-auto px-6 py-12">
 			<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" />
 			<div class="isolate mx-auto mt-5 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">

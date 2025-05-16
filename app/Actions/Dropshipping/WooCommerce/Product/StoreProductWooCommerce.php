@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -56,6 +57,13 @@ class StoreProductWooCommerce extends RetinaAction
                     throw new \Exception('Product name and regular price are required');
                 }
 
+                $images = [];
+                foreach ($product->images as $image) {
+                    $images[] = [
+                        'src' => GetImgProxyUrl::run($image->getImage())
+                    ];
+                }
+
                 // Create product data array for WooCommerce API
                 $wooCommerceProduct = [
                     'name' => Arr::get($product, 'name'),
@@ -64,7 +72,7 @@ class StoreProductWooCommerce extends RetinaAction
                     'description' => Arr::get($product, 'description', ''),
                     'short_description' => Arr::get($product, 'short_description', ''),
                     'categories' => Arr::get($product, 'categories', []),
-                    'images' => [],
+                    'images' => $images,
                     'stock_quantity' => Arr::get($product, 'quantity_available'),
                     'manage_stock' => !is_null(Arr::get($product, 'quantity_available')),
                     'stock_status' => Arr::get($product, 'stock_status', 'instock'),
