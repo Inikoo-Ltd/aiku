@@ -15,13 +15,15 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\Rule;
 
 class CreateShipmentInPalletReturnInWarehouse extends OrgAction
 {
     use WithFulfilmentWarehouseEditAuthorisation;
 
-    public function handle(PalletReturn $palletReturn, Shipper $shipper, array $modelData): Shipment
+    public function handle(PalletReturn $palletReturn, array $modelData): Shipment
     {
+        $shipper = Shipper::find($modelData['shipper_id']);
         return StoreShipment::run($palletReturn, $shipper, $modelData);
     }
 
@@ -29,16 +31,16 @@ class CreateShipmentInPalletReturnInWarehouse extends OrgAction
     public function rules(): array
     {
         return [
-            'tracking'       => ['required', 'max:1000', 'string'],
-            'number_parcels' => ['required', 'numeric', 'min:1'],
+            'tracking'       => ['sometimes', 'nullable', 'max:1000', 'string'],
+            'shipper_id' => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 
-    public function asController(PalletReturn $palletReturn, Shipper $shipper, ActionRequest $request): Shipment
+    public function asController(PalletReturn $palletReturn, ActionRequest $request)
     {
         $this->initialisationFromWarehouse($palletReturn->warehouse, $request);
 
-        return $this->handle($palletReturn, $shipper, $this->validatedData);
+        $this->handle($palletReturn, $this->validatedData);
     }
 
 
