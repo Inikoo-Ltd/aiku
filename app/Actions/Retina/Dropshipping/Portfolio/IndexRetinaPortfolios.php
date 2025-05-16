@@ -22,6 +22,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\StoredItem;
+use App\Models\WooCommerceUser;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -30,11 +31,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
-    public function handle(ShopifyUser|TiktokUser|Customer|WebUser $scope, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|TiktokUser|Customer|WebUser|WooCommerceUser $scope, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
 
-        if ($scope instanceof ShopifyUser || $scope instanceof TiktokUser) {
+        if ($scope instanceof ShopifyUser || $scope instanceof TiktokUser || $scope instanceof WooCommerceUser) {
             $customer = $scope->customer;
             $query->where('customer_id', $customer->id);
         } elseif ($scope instanceof WebUser) {

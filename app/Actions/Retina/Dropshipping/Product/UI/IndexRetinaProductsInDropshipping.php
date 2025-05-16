@@ -18,13 +18,14 @@ use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\WooCommerceUser;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaProductsInDropshipping extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer|TiktokUser|WebUser $scope): ShopifyUser|Customer|TiktokUser|WebUser
+    public function handle(ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser $scope): ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser
     {
         if ($scope instanceof WebUser) {
             $scope = $scope->customer;
@@ -51,7 +52,7 @@ class IndexRetinaProductsInDropshipping extends RetinaAction
         return $this->handle($customer);
     }
 
-    public function inPlatform(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser|WebUser|Customer
+    public function inPlatform(Platform $platform, ActionRequest $request): ShopifyUser|TiktokUser|WebUser|Customer|WooCommerceUser
     {
         $this->initialisationFromPlatform($platform, $request);
 
@@ -67,7 +68,7 @@ class IndexRetinaProductsInDropshipping extends RetinaAction
         return $this->handle($this->shopifyUser);
     }
 
-    public function htmlResponse(ShopifyUser|Customer|TiktokUser|WebUser $scope): Response
+    public function htmlResponse(ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser $scope): Response
     {
         if ($scope instanceof ShopifyUser) {
             $shop = $scope->customer->shop;
@@ -76,6 +77,16 @@ class IndexRetinaProductsInDropshipping extends RetinaAction
                     'name'       => 'retina.models.dropshipping.shopify_user.product.store',
                     'parameters' => [
                         'shopifyUser' => $scope->id
+                    ]
+                ],
+            ];
+        } elseif ($scope instanceof WooCommerceUser) {
+            $shop = $scope->customer->shop;
+            $routes = [
+                'store_product' => [
+                    'name'       => 'retina.models.dropshipping.woo.product.store',
+                    'parameters' => [
+                        'wooCommerceUser' => $scope->id
                     ]
                 ],
             ];
