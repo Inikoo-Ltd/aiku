@@ -58,14 +58,11 @@ class StoreShipment extends OrgAction
                 ]
             };
 
-
             if ($shipmentData['status'] == 'success') {
                 $modelData = array_merge($modelData, $shipmentData['modelData']);
             } else {
                 // deal with tge error do not create shipment
             }
-
-
 
 
 
