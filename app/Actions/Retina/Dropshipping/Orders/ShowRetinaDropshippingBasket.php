@@ -82,7 +82,6 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         //         ]
         //     ];
         // }
-
         return Inertia::render(
             'Dropshipping/BasketDS',
             [
@@ -92,10 +91,13 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 ),
                 'pageHead'    => [
                     'title'   => $order->reference,
-                    'model'   => __('Order'),
+                    'model'   => __('Basket'),
                     'icon'    => [
-                        'icon'  => 'fal fa-shopping-cart',
+                        'icon'  => 'fal fa-shopping-basket',
                         'title' => __('customer client')
+                    ],
+                    'afterTitle' => [
+                        'label' => ' @'.$this->platform->name
                     ],
                     'actions' => $action,
                 ],
@@ -172,6 +174,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => OrderResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
+                'balance'        => $order->customer?->balance,
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?

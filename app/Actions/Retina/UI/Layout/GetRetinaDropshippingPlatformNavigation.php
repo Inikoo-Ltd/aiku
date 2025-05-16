@@ -85,7 +85,7 @@ class GetRetinaDropshippingPlatformNavigation
 
         $platformNavigation['orders'] = [
             'label' => __('Orders'),
-            'icon' => ['fal', 'fa-money-bill-wave'],
+            'icon' => ['fal', 'fa-shopping-cart'],
             'root' => 'retina.dropshipping.platforms.orders.',
             'route' => [
                 'name' => 'retina.dropshipping.platforms.orders.index',

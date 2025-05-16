@@ -166,7 +166,7 @@ onUnmounted(() => {
                                             v-if="withQuantity"
                                             :modelValue="get(item, 'quantity_selected', 1)"
                                             :bindToTarget="{ min: 1 }"
-                                            @update:modelValue="(e: number) => set(item, 'quantity_selected', e)"
+                                            @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
                                             noUndoButton
                                             noSaveButton
                                             parentClass="w-min"
