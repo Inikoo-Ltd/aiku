@@ -52,7 +52,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerHasPlatform->platform,
+                    $customerHasPlatform,
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
@@ -77,7 +77,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(Platform $platform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, array $routeParameters): array
     {
         $headCrumb = function (Platform $platform, array $routeParameters, string $suffix = '') {
             return [
@@ -107,7 +107,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                 $routeParameters
             ),
             $headCrumb(
-                $platform,
+                $customerHasPlatform->platform,
                 [
 
                     'index' => [
@@ -120,7 +120,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                             'organisation'       => $routeParameters['organisation'],
                             'fulfilment'         => $routeParameters['fulfilment'],
                             'fulfilmentCustomer' => $routeParameters['fulfilmentCustomer'],
-                            'platform'           => $routeParameters['platform']
+                            'customerHasPlatform'           => $customerHasPlatform
                         ]
                     ]
                 ]

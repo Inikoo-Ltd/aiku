@@ -9,6 +9,7 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
+use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -32,8 +33,10 @@ use UnexpectedValueException;
 
 class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
 {
+    use WithFulfilmentCustomerPlatformSubNavigation;
     private ShopifyUser|TiktokUser $parent;
     private CustomerHasPlatform $customerHasPlatform;
+
 
     public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
@@ -154,7 +157,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
 
 
         return Inertia::render(
-            'Dropshipping/Client/CustomerClients',
+            'Org/Shop/CRM/CustomerClients',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -166,6 +169,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
+                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $request),
                     'actions'       => [
                         match (class_basename($this->parent)) {
                             'ShopifyUser' => [
@@ -176,7 +180,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                                 'route'   => [
                                     'name'       => 'pupil.dropshipping.platforms.client.fetch',
                                     'parameters' => [
-                                        'platform' => $this->platform->slug
+                                        'platform' => $this->customerHasPlatform->platform->slug
                                     ]
                                 ]
                             ]
