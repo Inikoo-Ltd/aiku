@@ -261,9 +261,7 @@ const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
 const onDeleteParcel = (index: number) => {
 	parcelsCopy.value.splice(index, 1)
 }
-
-// Section: Shipment
-const onSubmitShipment = () => {
+const onSubmitParcels = () => {
 	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }),
 		{
 			parcels: parcelsCopy.value,
@@ -279,8 +277,6 @@ const onSubmitShipment = () => {
 			},
 			onSuccess: () => {
 				isModalParcels.value = false
-				// formTrackingNumber.reset()
-				listError.box_stats_parcel = false
 				set(listError, 'box_stats_parcel', false)
 			},
 			onError: (errors) => {
@@ -295,6 +291,8 @@ const onSubmitShipment = () => {
 			},
 		})
 }
+
+// Section: Shipment
 const isDeleteShipment = ref<number | null>(null)
 const onDeleteShipment = (idShipment: number) => {
 	router.delete(route(props.shipments.delete_route.name, { 
@@ -456,7 +454,7 @@ const listError = inject('listError', {})
 				<a v-else>{{ boxStats?.fulfilment_customer?.customer.phone }}</a>
 			</div>
 		
-			<!-- Field: Delivery Address -->
+			<!-- Field: Estimated delivery date -->
 			<div v-if="!boxStats?.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
 				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
 					<span class="sr-only">{{ boxStats?.delivery_state?.tooltip }}</span>
@@ -489,6 +487,7 @@ const listError = inject('listError', {})
 					</dd>
 				</div>
 			</div>
+
 			<!-- Delivery Address / Collection by Section -->
 			<div class="flex flex-col w-full gap-y-2 mb-1">
 				<!-- Top Row: Icon dan Switch -->
@@ -550,7 +549,8 @@ const listError = inject('listError', {})
 						/>
 					</div>
 				</div>
-				<div v-else class="w-full text-xs text-gray-500">
+
+				<div v-else class="w-full text-xs text-gray-500" :class="listError.box_stats_delivery_address ? 'errorShake' : ''">
 					Send to:
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
 						<span v-html="boxStats?.fulfilment_customer?.address?.value?.formatted_address" />
@@ -583,7 +583,7 @@ const listError = inject('listError', {})
 								{{ trans("Edit") }}
 								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 							</div>
-							<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitShipment())" class="cursor-pointer text-gray-400 hover:text-gray-600">
+							<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitParcels())" class="cursor-pointer text-gray-400 hover:text-gray-600">
 								{{ trans("Add") }}
 								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 							</div>
@@ -739,6 +739,7 @@ const listError = inject('listError', {})
 			:addresses="address_management.addresses"
 			:updateRoute="address_management.address_update_route"
 			@onDone="() => (isDeliveryAddressManagementModal = false)"
+			@onHasChange="() => listError.box_stats_delivery_address = false"
 		/>
 	</Modal>
 
@@ -834,7 +835,7 @@ const listError = inject('listError', {})
 						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
 					"
 					full
-					@click="() => onSubmitShipment()" />
+					@click="() => onSubmitParcels()" />
 			</div>
 		</div>
 	</Modal>

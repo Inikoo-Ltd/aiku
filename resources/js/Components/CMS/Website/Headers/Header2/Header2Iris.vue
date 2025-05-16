@@ -36,7 +36,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 
 <template>
 	<div class="relative shadow-sm" :style="getStyles(fieldValue.container.properties)">
-		<div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
+		<div class="flex flex-col justify-between items-start py-4 px-6 hidden lg:block">
 			<div class="w-full grid grid-cols-3 items-start gap-6">
 				<!-- Logo -->
 				<component
@@ -45,7 +45,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 					:href="fieldValue?.logo?.link?.href || '#'"
 					:target="fieldValue?.logo?.link?.target || '_self'"
 					rel="noopener noreferrer"
-					class="block w-fit h-full">
+					class="block w-fit h-auto">
 					<Image
 						:style="getStyles(fieldValue.logo.properties, screenType)"
 						:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt"
@@ -54,7 +54,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 					</Image>
 				</component>
 
-				<div class="col-span-2 relative w-full h-full">
+				<div class="col-span-2 relative w-full h-auto">
 					<div v-html="fieldValue?.text?.text" />
 				</div>
 			</div>

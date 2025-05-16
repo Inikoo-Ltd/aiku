@@ -311,6 +311,8 @@ const onSubmitShipment = () => {
 				formTrackingNumber.reset()
 			},
 			onError: (errors) => {
+				// TODO: Make condition if the error related to delivery address then set to true
+				// set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
 				notify({
 					title: trans("Something went wrong."),
 					text: trans("Failed to add Shipment. Please try again."),
@@ -774,6 +776,13 @@ provide("listError", listError.value)
 					{{ formTrackingNumber.errors.tracking_number }}
 				</p>
 			</div>
+
+			<!-- TODO: show the list of the error from delivery address -->
+			<p
+				v-if="get(formTrackingNumber, ['errors'])"
+				class="mt-2 text-sm text-red-600">
+				<pre>{{ formTrackingNumber.errors }}</pre>
+			</p>
 
 			<div class="flex justify-end mt-3">
 				<Button

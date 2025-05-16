@@ -111,6 +111,96 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unpaid_invoices_amount_org_currency
  * @property string $unpaid_invoices_amount_grp_currency
  * @property int $number_deleted_invoices
+ * @property string|null $last_b2b_shop_delivery_note_created_at
+ * @property string|null $last_b2b_shop_delivery_note_dispatched_at
+ * @property string|null $last_b2b_shop_delivery_note_type_order_created_at
+ * @property string|null $last_b2b_shop_delivery_note_type_order_dispatched_at
+ * @property string|null $last_b2b_shop_delivery_note_type_replacement_created_at
+ * @property string|null $last_b2b_shop_delivery_note_type_replacement_dispatched_at
+ * @property int $number_b2b_shop_delivery_notes
+ * @property int $number_b2b_shop_delivery_notes_type_order
+ * @property int $number_b2b_shop_delivery_notes_type_replacement
+ * @property int $number_b2b_shop_delivery_notes_state_unassigned
+ * @property int $number_b2b_shop_delivery_notes_state_queued
+ * @property int $number_b2b_shop_delivery_notes_state_handling
+ * @property int $number_b2b_shop_delivery_notes_state_handling_blocked
+ * @property int $number_b2b_shop_delivery_notes_state_packed
+ * @property int $number_b2b_shop_delivery_notes_state_finalised
+ * @property int $number_b2b_shop_delivery_notes_state_dispatched
+ * @property int $number_b2b_shop_delivery_notes_state_cancelled
+ * @property int $number_b2b_shop_delivery_notes_state_with_out_of_stock
+ * @property string|null $last_b2c_shop_delivery_note_created_at
+ * @property string|null $last_b2c_shop_delivery_note_dispatched_at
+ * @property string|null $last_b2c_shop_delivery_note_type_order_created_at
+ * @property string|null $last_b2c_shop_delivery_note_type_order_dispatched_at
+ * @property string|null $last_b2c_shop_delivery_note_type_replacement_created_at
+ * @property string|null $last_b2c_shop_delivery_note_type_replacement_dispatched_at
+ * @property int $number_b2c_shop_delivery_notes
+ * @property int $number_b2c_shop_delivery_notes_type_order
+ * @property int $number_b2c_shop_delivery_notes_type_replacement
+ * @property int $number_b2c_shop_delivery_notes_state_unassigned
+ * @property int $number_b2c_shop_delivery_notes_state_queued
+ * @property int $number_b2c_shop_delivery_notes_state_handling
+ * @property int $number_b2c_shop_delivery_notes_state_handling_blocked
+ * @property int $number_b2c_shop_delivery_notes_state_packed
+ * @property int $number_b2c_shop_delivery_notes_state_finalised
+ * @property int $number_b2c_shop_delivery_notes_state_dispatched
+ * @property int $number_b2c_shop_delivery_notes_state_cancelled
+ * @property int $number_b2c_shop_delivery_notes_state_with_out_of_stock
+ * @property string|null $last_dropshipping_shop_delivery_note_created_at
+ * @property string|null $last_dropshipping_shop_delivery_note_dispatched_at
+ * @property string|null $last_dropshipping_shop_delivery_note_type_order_created_at
+ * @property string|null $last_dropshipping_shop_delivery_note_type_order_dispatched_at
+ * @property string|null $last_dropshipping_shop_delivery_note_type_replacement_created_a
+ * @property string|null $last_dropshipping_shop_delivery_note_type_replacement_dispatche
+ * @property int $number_dropshipping_shop_delivery_notes
+ * @property int $number_dropshipping_shop_delivery_notes_type_order
+ * @property int $number_dropshipping_shop_delivery_notes_type_replacement
+ * @property int $number_dropshipping_shop_delivery_notes_state_unassigned
+ * @property int $number_dropshipping_shop_delivery_notes_state_queued
+ * @property int $number_dropshipping_shop_delivery_notes_state_handling
+ * @property int $number_dropshipping_shop_delivery_notes_state_handling_blocked
+ * @property int $number_dropshipping_shop_delivery_notes_state_packed
+ * @property int $number_dropshipping_shop_delivery_notes_state_finalised
+ * @property int $number_dropshipping_shop_delivery_notes_state_dispatched
+ * @property int $number_dropshipping_shop_delivery_notes_state_cancelled
+ * @property int $number_dropshipping_shop_delivery_notes_state_with_out_of_stock
+ * @property int $number_b2b_shop_delivery_note_items transactions including cancelled
+ * @property int $number_b2b_shop_uphold_delivery_note_items transactions excluding cancelled
+ * @property int $number_b2b_shop_delivery_note_items_state_unassigned
+ * @property int $number_b2b_shop_delivery_note_items_state_queued
+ * @property int $number_b2b_shop_delivery_note_items_state_handling
+ * @property int $number_b2b_shop_delivery_note_items_state_handling_blocked
+ * @property int $number_b2b_shop_delivery_note_items_state_packed
+ * @property int $number_b2b_shop_delivery_note_items_state_finalised
+ * @property int $number_b2b_shop_delivery_note_items_state_dispatched
+ * @property int $number_b2b_shop_delivery_note_items_state_cancelled
+ * @property int $number_b2b_shop_delivery_note_items_state_out_of_stock
+ * @property int $number_b2b_shop_delivery_note_items_state_no_dispatched
+ * @property int $number_b2c_shop_delivery_note_items transactions including cancelled
+ * @property int $number_b2c_shop_uphold_delivery_note_items transactions excluding cancelled
+ * @property int $number_b2c_shop_delivery_note_items_state_unassigned
+ * @property int $number_b2c_shop_delivery_note_items_state_queued
+ * @property int $number_b2c_shop_delivery_note_items_state_handling
+ * @property int $number_b2c_shop_delivery_note_items_state_handling_blocked
+ * @property int $number_b2c_shop_delivery_note_items_state_packed
+ * @property int $number_b2c_shop_delivery_note_items_state_finalised
+ * @property int $number_b2c_shop_delivery_note_items_state_dispatched
+ * @property int $number_b2c_shop_delivery_note_items_state_cancelled
+ * @property int $number_b2c_shop_delivery_note_items_state_out_of_stock
+ * @property int $number_b2c_shop_delivery_note_items_state_no_dispatched
+ * @property int $number_dropshipping_shop_delivery_note_items transactions including cancelled
+ * @property int $number_dropshipping_shop_uphold_delivery_note_items transactions excluding cancelled
+ * @property int $number_dropshipping_shop_delivery_note_items_state_unassigned
+ * @property int $number_dropshipping_shop_delivery_note_items_state_queued
+ * @property int $number_dropshipping_shop_delivery_note_items_state_handling
+ * @property int $number_dropshipping_shop_delivery_note_items_state_handling_blo
+ * @property int $number_dropshipping_shop_delivery_note_items_state_packed
+ * @property int $number_dropshipping_shop_delivery_note_items_state_finalised
+ * @property int $number_dropshipping_shop_delivery_note_items_state_dispatched
+ * @property int $number_dropshipping_shop_delivery_note_items_state_cancelled
+ * @property int $number_dropshipping_shop_delivery_note_items_state_out_of_stock
+ * @property int $number_dropshipping_shop_delivery_note_items_state_no_dispatche
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newQuery()

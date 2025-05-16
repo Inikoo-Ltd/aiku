@@ -30,7 +30,7 @@ class GetWebBlockDepartments
 
 
 
-        data_set($webBlock,'web_block.layout.data.fieldValue.departments', WebBlockDepartmentsResource::collection($departments)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.departments', WebBlockDepartmentsResource::collection($departments)->toArray(request()));
 
         return $webBlock;
     }

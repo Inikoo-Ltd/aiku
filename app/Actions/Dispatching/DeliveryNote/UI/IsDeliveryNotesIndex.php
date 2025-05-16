@@ -30,7 +30,7 @@ trait IsDeliveryNotesIndex
     private Group|Warehouse|Shop|Order|Customer|CustomerClient $parent;
     private string $bucket;
 
-    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
+    public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -43,6 +43,14 @@ trait IsDeliveryNotesIndex
         }
 
         $query = QueryBuilder::for(DeliveryNote::class);
+
+        $query->leftjoin('customers', 'delivery_notes.customer_id', '=', 'customers.id');
+        $query->leftjoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
+        $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
+
+        if($shopType != 'all') {
+            $query->where('shops.type', $shopType);
+        }
 
         if ($bucket == 'unassigned') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::UNASSIGNED);
@@ -83,9 +91,6 @@ trait IsDeliveryNotesIndex
             abort(419);
         }
 
-        $query->leftjoin('customers', 'delivery_notes.customer_id', '=', 'customers.id');
-        $query->leftjoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
-        $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
         return $query->defaultSort('-delivery_notes.date')
             ->select([
