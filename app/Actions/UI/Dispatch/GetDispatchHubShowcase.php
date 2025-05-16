@@ -31,7 +31,7 @@ class GetDispatchHubShowcase
 
         $stats = [];
 
-        $fulfilmentShops->exists() ? 
+        $fulfilmentShops->exists() ?
             $stats['fulfilment'] = [
                 'label' => __('Fulfilment'),
                 'sublabel' => __('In Todo'),
@@ -96,8 +96,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-tasks',
                         'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_unassigned,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2B->value]
                         ],
                     ],
                     'queued' => [
@@ -106,8 +106,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-clock',
                         'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_queued,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.queued.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.queued.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2B->value]
                         ],
                     ],
                     'handling' => [
@@ -116,8 +116,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-hands-helping',
                         'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.handling.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.handling.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2B->value]
                         ],
                     ],
                     'handling_blocked' => [
@@ -126,8 +126,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-ban',
                         'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling_blocked,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2B->value]
                         ],
                     ],
                     'packed' => [
@@ -136,8 +136,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-box',
                         'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_packed,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.packed.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2B->value]
                         ],
                     ],
                     'finalised' => [
@@ -146,14 +146,14 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-check-circle',
                         'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_finalised,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2B->value]
                         ],
                     ],
                 ]
             ] : [];
 
-        $b2cShops->exists() ? 
+        $b2cShops->exists() ?
             $stats['b2c'] = [
                 'label' => __('B2C Delivery Notes'),
                 'sublabel' => __('In Todo'),
@@ -165,8 +165,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-tasks',
                         'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_unassigned,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2C->value]
                         ],
                     ],
                     'queued' => [
@@ -175,8 +175,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-clock',
                         'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_queued,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.queued.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.queued.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2C->value]
                         ],
                     ],
                     'handling' => [
@@ -185,8 +185,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-hands-helping',
                         'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_handling,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.handling.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.handling.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2C->value]
                         ],
                     ],
                     'handling_blocked' => [
@@ -195,8 +195,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-ban',
                         'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_handling_blocked,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2C->value]
                         ],
                     ],
                     'packed' => [
@@ -205,8 +205,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-box',
                         'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_packed,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.packed.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2C->value]
                         ],
                     ],
                     'finalised' => [
@@ -215,14 +215,14 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-check-circle',
                         'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_finalised,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::B2C->value]
                         ],
                     ],
                 ]
             ] : [];
 
-        $dropshippingShops->exists() ? 
+        $dropshippingShops->exists() ?
             $stats['dropshipping'] = [
                 'label' => __('Dropshipping Delivery Notes'),
                 'sublabel' => __('In Todo'),
@@ -234,8 +234,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-tasks',
                         'value' => $organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_unassigned,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::DROPSHIPPING->value]
                         ],
                     ],
                     'queued' => [
@@ -244,8 +244,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-clock',
                         'value' => $organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_queued,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.queued.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.queued.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::DROPSHIPPING->value]
                         ],
                     ],
                     'handling' => [
@@ -254,8 +254,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-hands-helping',
                         'value' => $organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.handling.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.handling.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::DROPSHIPPING->value]
                         ],
                     ],
                     'handling_blocked' => [
@@ -264,8 +264,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-ban',
                         'value' => $organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling_blocked,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::DROPSHIPPING->value]
                         ],
                     ],
                     'packed' => [
@@ -274,8 +274,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-box',
                         'value' => $organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_packed,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.packed.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::DROPSHIPPING->value]
                         ],
                     ],
                     'finalised' => [
@@ -284,8 +284,8 @@ class GetDispatchHubShowcase
                         'icon'  => 'fal fa-check-circle',
                         'value' => $organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_finalised,
                         'route' => [
-                            'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
-                            'parameters' => [$organisation->slug, $parent->slug]
+                            'name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop',
+                            'parameters' => [$organisation->slug, $parent->slug, ShopTypeEnum::DROPSHIPPING->value]
                         ],
                     ],
                 ]

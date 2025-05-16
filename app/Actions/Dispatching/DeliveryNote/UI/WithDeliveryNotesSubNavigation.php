@@ -11,89 +11,119 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 trait WithDeliveryNotesSubNavigation
 {
-    protected function getDeliveryNotesSubNavigation(): array
+    protected function getDeliveryNotesSubNavigation(string $shopType): array
     {
         $organisation = $this->organisation;
 
+        $isAll = $shopType == 'all';
+
         return [
-            [
-                'align' => 'right',
-                'label' => __('Dispatched'),
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.dispatched.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'align' => 'right',
+                    'label' => __('Dispatched'),
+                    'route' => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.dispatched.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.dispatched.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_dispatched 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_dispatched'},
                 ],
-                'number' => $organisation->orderingStats->number_delivery_notes_state_dispatched
-            ],
-
-            [
-                'align' => 'right',
-                'label' => __('All'),
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'align' => 'right',
+                    'label' => __('All'),
+                    'route' => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes'},
                 ],
-                'number' => $organisation->orderingStats->number_delivery_notes
-            ],
-
-
-            [
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'label'  => __('To do'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_unassigned 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_unassigned'},
                 ],
-                'label'  => __('To do'),
-                'number' => $organisation->orderingStats->number_delivery_notes_state_unassigned
-            ],
-            [
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.queued.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'label'  => __('Queued'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.queued.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.queued.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_queued 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_queued'},
                 ],
-                'label'  => __('Queued'),
-                'number' => $organisation->orderingStats->number_delivery_notes_state_queued
-            ],
-            [
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.handling.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'label'  => __('Handling'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.handling.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.handling.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_handling 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_handling'},
                 ],
-                'label'  => __('Handling'),
-                'number' => $organisation->orderingStats->number_delivery_notes_state_handling
-            ],
-            [
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'label'  => __('Handling Blocked'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_handling_blocked 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_handling_blocked'},
                 ],
-                'label'  => __('Handling Blocked'),
-                'number' => $organisation->orderingStats->number_delivery_notes_state_handling_blocked
-            ],
-            [
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'label'  => __('Packed'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_packed 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_packed'},
                 ],
-                'label'  => __('Packed'),
-                'number' => $organisation->orderingStats->number_delivery_notes_state_packed
-            ],
-            [
-
-                'route'  => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
-                    'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                [
+                    'label'  => __('Finalised'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll 
+                        ? $organisation->orderingStats->number_delivery_notes_state_finalised 
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_finalised'},
                 ],
-                'label'  => __('Finalised'),
-                'number' => $organisation->orderingStats->number_delivery_notes_state_finalised
-            ],
-
-
-        ];
+            ];
     }
 }
