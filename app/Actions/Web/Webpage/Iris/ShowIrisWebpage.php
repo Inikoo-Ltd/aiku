@@ -28,6 +28,7 @@ class ShowIrisWebpage
     {
         $webPageLayout               = $webpage->published_layout;
 
+
         $webBlocks = $this->getIrisWebBlocks(
             webpage: $webpage,
             webBlocks:Arr::get($webPageLayout, 'web_blocks'),

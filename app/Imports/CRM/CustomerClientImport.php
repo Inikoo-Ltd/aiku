@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 16-05-2025-08h-26m
@@ -8,17 +9,12 @@
 
 namespace App\Imports\CRM;
 
-use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Imports\WithImport;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Country;
-use App\Rules\Phone;
 use App\Models\Helpers\Upload;
-use App\Rules\ValidAddress;
 use Exception;
 use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
@@ -32,7 +28,7 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
 
     protected Customer $customer;
     protected Platform $platform;
-    
+
     public function __construct(Customer $customer, Platform $platform, Upload $upload)
     {
         $this->customer  = $customer;
@@ -43,10 +39,10 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
     public function storeModel($row, $uploadRecord): void
     {
         $fields = array_merge(
-                array_keys(
-                    $this->rules()
-                )
-            );
+            array_keys(
+                $this->rules()
+            )
+        );
 
         $modelData = $row->only($fields)->all();
         $country = Country::where('code', Arr::pull($modelData, 'country_code'))->first();
@@ -60,7 +56,7 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
         ];
 
         $phone = (string) Arr::pull($modelData, 'phone');
-        
+
         data_set($modelData, 'address', $addressData);
         data_set($modelData, 'phone', $phone);
 
