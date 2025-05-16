@@ -105,6 +105,18 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                     ]
                 ]
             ],
+            'WooCommerceUser' => [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('Fetch Client'),
+                'label'   => __('Fetch Client'),
+                'route'   => [
+                    'name'       => 'retina.dropshipping.platforms.client.wc-fetch',
+                    'parameters' => [
+                        'platform' => $this->platform->slug
+                    ]
+                ]
+            ],
             default => []
         };
 
