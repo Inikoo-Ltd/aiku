@@ -15,6 +15,7 @@ use App\Imports\WithImport;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
+use App\Models\Helpers\Country;
 use App\Rules\Phone;
 use App\Models\Helpers\Upload;
 use App\Rules\ValidAddress;
@@ -48,6 +49,20 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
             );
 
         $modelData = $row->only($fields)->all();
+        $country = Country::where('code', Arr::pull($modelData, 'country_code'))->first();
+        $addressData = [
+            'address_line_1'        => $modelData['address_line_1'],
+            'address_line_2'        => $modelData['address_line_2'] ?? null,
+            'postal_code'           => $modelData['postal_code'],
+            'locality'              => $modelData['locality'],
+            'country_code'          => $country->code,
+            'country_id'            => $country->id
+        ];
+
+        $phone = (string) Arr::pull($modelData, 'phone');
+        
+        data_set($modelData, 'address', $addressData);
+        data_set($modelData, 'phone', $phone);
 
         data_set($modelData, 'data.bulk_import', [
             'id'   => $this->upload->id,
@@ -74,11 +89,15 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
     public function rules(): array
     {
         return [
-            'contact_name'   => ['required', 'string', 'max:255'],
-            'company_name'   => ['required', 'string', 'max:255'],
-            'email'          => ['required', 'email'],
-            'phone'          => ['required', 'string', 'min:6'],
-            'address'        => ['required', new ValidAddress()],
+            'contact_name'          => ['required', 'string', 'max:255'],
+            'company_name'          => ['required', 'string', 'max:255'],
+            'email'                 => ['required', 'email'],
+            'phone'                 => ['required'],
+            'address_line_1'        => ['required'],
+            'address_line_2'        => ['nullable'],
+            'postal_code'           => ['required'],
+            'locality'              => ['required'],
+            'country_code'          => ['required'],
         ];
     }
 }

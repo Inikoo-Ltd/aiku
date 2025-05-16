@@ -17,7 +17,7 @@ const props = defineProps<{
 	data: {}
 	title: string
 	pageHead: {}
-    upload_route : object
+    upload_spreadsheet : object
 }>()
 
 const isModalUploadOpen = ref(false)
@@ -43,5 +43,5 @@ const isModalUploadOpen = ref(false)
 			information: 'The list of column file: customer_reference, notes, stored_items',
 		}"
         progressDescription="Adding Products to Supplier"        
-        :upload_spreadsheet="upload_route" />
+        :upload_spreadsheet="upload_spreadsheet" />
 </template>
