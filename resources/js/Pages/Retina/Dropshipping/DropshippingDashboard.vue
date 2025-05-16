@@ -332,9 +332,7 @@ const onSubmitWoocommerce = async () => {
                 ></PureInput>
                 <PureInputWithAddOn v-model="woocomInput.url" :leftAddOn="{
                         icon: 'fal fa-globe'
-                    }" :rightAddOn="{
-                        label: '.woocommerce.com'
-                    }" @keydown.enter="() => onSubmitWoocommerce()"/>
+                    }" :placeholder="trans('e.g https://storeurlexample.com')" @keydown.enter="() => onSubmitWoocommerce()"/>
             </div>
 
             <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
