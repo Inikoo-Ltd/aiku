@@ -22,6 +22,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
+use App\Models\WooCommerceUser;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,7 +38,7 @@ class RetinaAction
     protected Website $website;
     protected Customer $customer;
     protected WebUser $webUser;
-    protected ShopifyUser|TiktokUser|WebUser|null $platformUser;
+    protected ShopifyUser|TiktokUser|WebUser|WooCommerceUser|null $platformUser;
     protected Platform $platform;
     protected ShopifyUser $shopifyUser;
     protected bool $asPupil = false;
@@ -169,6 +170,7 @@ class RetinaAction
         $this->platformUser = match ($platform->type) {
             PlatformTypeEnum::SHOPIFY => $this->customer->shopifyUser,
             PlatformTypeEnum::TIKTOK  => $this->customer->tiktokUser,
+            PlatformTypeEnum::WOOCOMMERCE  => $this->customer->wooCommerceUser,
             default                   => $this->webUser
         };
 

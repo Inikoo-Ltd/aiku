@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
@@ -43,6 +44,7 @@ class WooCommerceUser extends Model
 {
     use InCustomer;
     use HasSlug;
+    use WithWooCommerceApiRequest;
 
     protected $guarded = [];
 
@@ -71,13 +73,13 @@ class WooCommerceUser extends Model
 
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class, 'shopify_user_has_products')
+        return $this->belongsToMany(Product::class, 'wc_user_has_products')
             ->withTimestamps();
     }
 
     public function orders(): BelongsToMany
     {
-        return $this->belongsToMany(Order::class, 'shopify_user_has_fulfilments')
+        return $this->belongsToMany(Order::class, 'wc_user_has_orders')
             ->withTimestamps();
     }
 }
