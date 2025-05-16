@@ -1,6 +1,11 @@
 <?php
 
-use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 16 May 2025 15:01:21 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -14,7 +19,7 @@ return new class () extends Migration {
     {
         Schema::table('organisation_ordering_stats', function (Blueprint $table) {
             $table = $this->deliveryNotesStatsFields($table);
-            $table = $this->deliveryNoteItemsStatsFields($table);
+            $this->deliveryNoteItemsStatsFields($table);
         });
     }
 
@@ -62,7 +67,7 @@ return new class () extends Migration {
     {
         foreach (ShopTypeEnum::cases() as $shop) {
             if ($shop->value != 'fulfilment') {
-                $table->dateTimeTz('last_'.$shop->snake().'_shop_delivery_note_created_at')->nullable();    
+                $table->dateTimeTz('last_'.$shop->snake().'_shop_delivery_note_created_at')->nullable();
                 $table->dateTimeTz('last_'.$shop->snake().'_shop_delivery_note_dispatched_at')->nullable();
 
                 $table->dateTimeTz('last_'.$shop->snake().'_shop_delivery_note_type_order_created_at')->nullable();
@@ -75,11 +80,11 @@ return new class () extends Migration {
                 foreach (DeliveryNoteTypeEnum::cases() as $case) {
                     $table->unsignedInteger('number_'.$shop->snake().'_shop_delivery_notes_type_'.$case->snake())->default(0);
                 }
-        
+
                 foreach (DeliveryNoteStateEnum::cases() as $case) {
                     $table->unsignedInteger('number_'.$shop->snake().'_shop_delivery_notes_state_'.$case->snake())->default(0);
                 }
-        
+
                 $table->unsignedInteger('number_'.$shop->snake().'_shop_delivery_notes_state_with_out_of_stock')->default(0);
             }
         }

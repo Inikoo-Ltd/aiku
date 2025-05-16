@@ -46,7 +46,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $parent_id
  * @property int $website_id
  * @property string|null $model_type
- * @property string|null $model_id
+ * @property int|null $model_id
  * @property string $slug
  * @property string $code
  * @property string $url

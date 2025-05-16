@@ -23,6 +23,7 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
+use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
@@ -158,6 +159,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
+    Route::patch('pay', PayRetinaOrderWithBalance::class)->name('pay');
 
     Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
         Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
