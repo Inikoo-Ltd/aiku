@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -43,6 +44,7 @@ trait IsOrder
                     ]
                 ]
             ),
+            'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
             'products' => [
                 'payment'          => [
                     'routes'       => [

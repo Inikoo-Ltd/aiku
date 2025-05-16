@@ -9,6 +9,7 @@
 namespace App\Http\Resources\CRM;
 
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\AddressResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -40,7 +41,8 @@ class CustomerClientResource extends JsonResource
             'email'                  => $this->email,
             'phone'                  => $this->phone,
             'created_at'             => $this->created_at,
-            'updated_at'             => $this->updated_at
+            'updated_at'             => $this->updated_at,
+            'address'                => AddressResource::make($this->address),
         ];
     }
 }
