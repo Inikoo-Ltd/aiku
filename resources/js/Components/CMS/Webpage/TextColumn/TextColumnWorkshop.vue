@@ -12,6 +12,7 @@ const props = defineProps<{
     modelValue: any;
     webpageData?: any;
     blockData?: Record<string, any>;
+	screenType: "mobile" | "tablet" | "desktop"
 }>();
 
 const emits = defineEmits<{
@@ -64,7 +65,7 @@ const getImageSlots = (layoutType: string): number => {
 </script>
 
 <template>
-    <div :style="getStyles(modelValue?.container?.properties)" class="flex flex-wrap">
+    <div :style="getStyles(modelValue.container.properties,screenType)" class="flex flex-wrap">
         <div v-for="index in getImageSlots(modelValue?.value?.layout_type)"
             :key="`${index}-${modelValue?.value?.images?.[index - 1]}`"
             class=" relative p-2 hover:bg-white/40"
