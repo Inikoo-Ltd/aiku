@@ -147,7 +147,7 @@ export const initialiseApp = () => {
         }
         if (usePage().props.layout?.digital_agency) {
             layout.digital_agency = usePage().props.layout.digital_agency
-            console.log('%c digital_agency', 'background: red; color: white', usePage().props.layout.digital_agency)
+            // console.log('%c digital_agency', 'background: red; color: white', usePage().props.layout.digital_agency)
         }
 
 

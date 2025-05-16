@@ -22,7 +22,7 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
+import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
@@ -35,7 +35,7 @@ import Fieldset from "primevue/fieldset"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
-library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faCubes)
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes)
 
 const props = defineProps<{
 
@@ -540,15 +540,18 @@ const listError = inject('listError', {})
 				<div class="group w-full">
 					<div class="leading-4 text-sm flex justify-between w-full">
 						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
-						<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
-							{{ trans("Edit") }}
-							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
-						</div>
-						<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitShipment())" class="cursor-pointer text-gray-400 hover:text-gray-600">
-							{{ trans("Add") }}
-							<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
-						</div>
-						
+
+						<!-- Can't edit Parcels if Shipment has set -->
+						<template v-if="!boxStats.shipments?.length">
+							<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+								{{ trans("Edit") }}
+								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+							</div>
+							<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitShipment())" class="cursor-pointer text-gray-400 hover:text-gray-600">
+								{{ trans("Add") }}
+								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+							</div>
+						</template>
 					</div>
 					
 					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
@@ -566,10 +569,31 @@ const listError = inject('listError', {})
 			</div>
 
 			<!-- Section: Shipments -->
-			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+			<div v-if="!dataPalletReturn.is_collection" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
-					{{boxStats.shipments}}
+					<div class="leading-4 text-sm flex justify-between w-full">
+						<div>{{ trans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
+
+					</div>
+					
+					<ul v-if="boxStats.shipments" class="list-disc pl-4">
+						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="text-xs tabular-nums">
+							<a v-if="sments.combined_label_url" target="_blank" :href="sments.combined_label_url" class="">
+								{{ sments.name }}
+								<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+							</a>
+							
+							<div v-else>
+								<span class="truncate">
+									{{ sments.name }}
+								</span>
+								<!-- <span class="text-gray-500 truncate">
+									({{ sments.tracking }})
+								</span> -->
+							</div>
+						</li>
+					</ul>
 				</div>
 			</div>
 
@@ -664,12 +688,13 @@ const listError = inject('listError', {})
       :updateRoute="address_management.updateRoute"
     />
 	</Modal>
-	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)">
+	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)" width="w-full max-w-4xl">
 		<DeliveryAddressManagementModal
-    	:address_modal_title="address_management.address_modal_title"
-		:addresses="address_management.addresses"
-		:updateRoute="address_management.address_update_route"
-    />
+			:address_modal_title="address_management.address_modal_title"
+			:addresses="address_management.addresses"
+			:updateRoute="address_management.address_update_route"
+			@onDone="() => (isDeliveryAddressManagementModal = false)"
+		/>
 	</Modal>
 
 	<!-- Modal: Shipment -->

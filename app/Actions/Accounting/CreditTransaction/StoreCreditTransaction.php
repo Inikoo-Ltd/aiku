@@ -80,11 +80,11 @@ class StoreCreditTransaction extends OrgAction
 
     public function action(Customer $customer, $modelData, int $hydratorsDelay = 0, bool $strict = true): CreditTransaction
     {
+
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($customer->shop, $modelData);
-
         return $this->handle($customer, $modelData);
     }
 }

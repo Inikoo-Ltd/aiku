@@ -34,7 +34,6 @@ class StoreShipment extends OrgAction
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
 
-
         $modelData = array_merge(
             $modelData,
             [
@@ -58,14 +57,12 @@ class StoreShipment extends OrgAction
                 ]
             };
 
+
             if ($shipmentData['status'] == 'success') {
                 $modelData = array_merge($modelData, $shipmentData['modelData']);
             } else {
                 // deal with tge error do not create shipment
             }
-
-
-
 
         }
         $shipment = $shipper->shipments()->create($modelData);
@@ -87,7 +84,6 @@ class StoreShipment extends OrgAction
         return [
             'reference'      => ['sometimes', 'max:1000', 'string'],
             'tracking'       => ['sometimes', 'max:1000', 'string'],
-            'number_parcels' => ['required', 'numeric', 'min:1'],
         ];
     }
 

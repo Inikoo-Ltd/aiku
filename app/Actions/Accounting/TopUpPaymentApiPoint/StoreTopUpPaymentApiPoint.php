@@ -33,7 +33,7 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
 
 
         $paymentMethodsData  = [];
-        $paymentAccountShops = $this->shop->paymentAccountShops()
+        $paymentAccountShops = $customer->shop->paymentAccountShops()
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('show_in_checkout', true)

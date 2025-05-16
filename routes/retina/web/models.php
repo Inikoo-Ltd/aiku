@@ -20,6 +20,7 @@ use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
+use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
@@ -177,6 +178,7 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
     Route::post('platform/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform.store');
+    Route::post('platform/{platform:id}/upload', ImportRetinaClients::class)->name('platform.upload');
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
 });
 
