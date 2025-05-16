@@ -31,7 +31,7 @@ class GetDispatchHubShowcase
 
         $stats = [];
 
-        $fulfilmentShops->exists() ? 
+        $fulfilmentShops->exists() ?
             $stats['fulfilment'] = [
                 'label' => __('Fulfilment'),
                 'sublabel' => __('In Todo'),
@@ -153,7 +153,7 @@ class GetDispatchHubShowcase
                 ]
             ] : [];
 
-        $b2cShops->exists() ? 
+        $b2cShops->exists() ?
             $stats['b2c'] = [
                 'label' => __('B2C Delivery Notes'),
                 'sublabel' => __('In Todo'),
@@ -222,7 +222,7 @@ class GetDispatchHubShowcase
                 ]
             ] : [];
 
-        $dropshippingShops->exists() ? 
+        $dropshippingShops->exists() ?
             $stats['dropshipping'] = [
                 'label' => __('Dropshipping Delivery Notes'),
                 'sublabel' => __('In Todo'),

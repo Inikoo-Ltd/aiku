@@ -13,38 +13,34 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class AuthorizeRetinaWooCommerceUser extends OrgAction
+class CallbackRetinaWooCommerceUser extends OrgAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
-    public $commandSignature = 'retina:ds:authorize-woo {customer} {name} {url}';
+    public $commandSignature = 'retina:ds:callback-woo {customer} {store_url} {consumer_key} {consumer_secret}';
 
     public function handle(Customer $customer, $modelData): string
     {
-        $endpoint = '/wc-auth/v1/authorize';
-        $params = [
-            'app_name' => config('app.name'),
-            'scope' => 'read_write',
-            'user_id' => $modelData['name'],
-            'return_url' => route('retina.dropshipping.platform.dashboard'),
-            'callback_url' => route('retina.dropshipping.platform.wc.callback', [
-                'customer' => $customer->id
-            ])
-        ];
+        $name = Arr::get($modelData, 'name');
+        $consumerKey = Arr::get($modelData, 'consumer_key');
+        $consumerSecret = Arr::get($modelData, 'consumer_secret');
+        $storeUrl = Arr::get($modelData, 'store_url');
 
-        return $modelData['url'].$endpoint.'?'.http_build_query($params);
-    }
+        StoreRetinaWooCommerceUser::run($customer, [
+            'name' => $name,
+            'store_url' => $storeUrl,
+            'consumer_key' => $consumerKey,
+            'consumer_secret' => $consumerSecret
+        ]);
 
-    public function jsonResponse(string $url): string
-    {
-        return $url;
+        return redirect()->route('retina.dropshipping.platform.dashboard');
     }
 
     public function authorize(ActionRequest $request): bool
@@ -59,14 +55,10 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('woo_commerce_users', 'name')],
-            'url' => ['required', 'string']
+            'store_url' => ['required', 'string'],
+            'consumer_key' => ['required', 'string'],
+            'consumer_secret' => ['required', 'string']
         ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $this->set('name', $request->input('name'));
     }
 
     public function asController(ActionRequest $request): string
@@ -80,11 +72,14 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     public function asCommand(Command $command): void
     {
         $modelData = [
-            'name' => $command->argument('name'),
-            'url' => $command->argument('url'),
+            'store_url' => $command->argument('store_url'),
+            'consumer_key' => $command->argument('consumer_key'),
+            'consumer_secret' => $command->argument('consumer_secret')
         ];
 
         $customer = Customer::find($command->argument('customer'))->first();
+
+        data_set($modelData, 'name', $customer->name);
 
         $this->handle($customer, $modelData);
     }

@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\GetBanner;
 use App\Actions\Web\WebBlock\GetWebBlockDepartments;
+use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
@@ -40,13 +41,15 @@ trait WithIrisGetWebpageWebBlocks
 
             if ($webBlockType === 'banner') {
                 $parsedWebBlocks[$key] = GetBanner::run($webBlock);
-            } elseif (in_array($webBlockType, ['department', 'department-1'])) {
+            } elseif (in_array($webBlockType, ['departments'])) {
                 $parsedWebBlocks[$key] = GetWebBlockDepartments::run($webpage, $webBlock);
+            } elseif (in_array($webBlockType, ['department','department-1'])) {
+                $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
             } else {
                 $parsedWebBlocks[$key] = $webBlock;
             }
         }
-
+        dd($parsedWebBlocks);
         return $parsedWebBlocks;
     }
 }
