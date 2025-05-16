@@ -11,61 +11,39 @@
 namespace App\Actions\Dispatching\Shipment;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\Dispatching\Shipment;
 use App\Models\Fulfilment\PalletReturn;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 
 class DetachShipmentFromPalletReturn extends OrgAction
 {
     use WithActionUpdate;
-    use WithFulfilmentShopEditAuthorisation;
+    use WithFulfilmentWarehouseEditAuthorisation;
 
 
 
     private PalletReturn $palletReturn;
 
-    public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
+    public function handle(PalletReturn $palletReturn, Shipment $shipment): PalletReturn
     {
 
-
-        $shipmentsId = $modelData['shipments_id'] ?? null;
-
-        $palletReturn->shipments()->detach($shipmentsId);
+        $palletReturn->shipments()->detach($shipment->id);
 
 
         $palletReturn->refresh();
         return $palletReturn;
     }
 
-    public function rules(): array
+    public function asController(PalletReturn $palletReturn, Shipment $shipment, ActionRequest $request): PalletReturn
     {
-        return [
-            'shipments_id' => ['required', 'array'],
-            'shipments_id.*' => ['required', 'integer', Rule::exists(Shipment::class, 'id')->where('organisation_id', $this->organisation->id)],
-        ];
-    }
-
-    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
-    {
-        $this->organisation = $palletReturn->organisation;
         $this->initialisationFromWarehouse($palletReturn->warehouse, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        return $this->handle($palletReturn, $shipment);
     }
 
-    public function action(PalletReturn $palletReturn, array $modelData, int $hydratorsDelay = 0): PalletReturn
-    {
-        $this->organisation = $palletReturn->organisation;
-        $this->asAction       = true;
-        $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromFulfilment($palletReturn->fulfilment, $modelData);
-
-        return $this->handle($palletReturn, $this->validatedData);
-    }
 
     public function jsonResponse(PalletReturn $palletReturn): PalletReturnResource
     {

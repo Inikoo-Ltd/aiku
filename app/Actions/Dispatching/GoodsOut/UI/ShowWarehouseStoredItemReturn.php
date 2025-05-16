@@ -213,6 +213,28 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     ]
                 ],
                 'stored_items_count'    => $palletReturn->storedItems()->count(),
+                'shipments' => [
+                    'submit_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+
+                    'fetch_route' => [
+                        'name'       => 'grp.json.shippers.index',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ]
+                    ],
+
+                    'delete_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+                ],
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
                     fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))

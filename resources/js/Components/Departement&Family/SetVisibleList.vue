@@ -100,8 +100,8 @@ const SaveShowAndHide = (item) => {
                         </div>
                     </div>
 
-                    <div class="text-gray-500 hover:text-primary cursor-pointer transition" title="Toggle visibility"
-                        v-tooltip="'halooo'" @click="(e) => disabled ? null : confirmHideAndShow(e, item)">
+                    <div v-if="!disabled" class="text-gray-500 hover:text-primary cursor-pointer transition" title="Toggle visibility"
+                        v-tooltip="'visibility'" @click="(e) => disabled ? null : confirmHideAndShow(e, item)">
                         <FontAwesomeIcon :icon="item.show_in_website ? faEye : faEyeSlash" />
                     </div>
                 </li>

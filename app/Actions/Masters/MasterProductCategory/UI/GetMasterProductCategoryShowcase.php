@@ -10,7 +10,8 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Http\Resources\Catalogue\FamilyResource;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,8 +21,22 @@ class GetMasterProductCategoryShowcase
 
     public function handle(MasterProductCategory $productCategory): array
     {
-        return [
-            'family' => FamilyResource::make($productCategory),
-        ];
+
+        $data = [];
+        switch ($productCategory->type) {
+            case MasterProductCategoryTypeEnum::DEPARTMENT :
+                $data = [
+                    'department' => MasterProductCategoryResource::make($productCategory),
+                    'families'   => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
+                ];
+                break;
+
+            default:
+                $data = [
+                    'family' => MasterProductCategoryResource::make($productCategory),
+                ];
+        }
+
+        return $data;
     }
 }

@@ -71,7 +71,7 @@ const components: Record<string, Component> = {
     'product-1' : ProductIris1,
     'timeline': Timeline,
     'step-1' : Step2Iris,
-    'department-1' : Department1Iris
+    'departments' : Department1Iris
 }
 
 

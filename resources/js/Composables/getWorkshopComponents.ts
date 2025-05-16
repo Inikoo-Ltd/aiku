@@ -74,7 +74,7 @@ export const getComponent = (componentName: string) => {
         'disclosure': DisclosureWorkshop,
         'timeline' : Timeline,
         'step-1' : Step2Workshop,
-        'department-1' : Department1Iris
+        'departments' : Department1Iris
     }
     return components[componentName] ?? NotFoundComponents
 }

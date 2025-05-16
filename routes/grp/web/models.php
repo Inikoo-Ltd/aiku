@@ -452,7 +452,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
 
-    Route::delete('/detach-shipment', DetachShipmentFromPalletReturn::class)->name('shipment.detach');
+    Route::delete('/detach-shipment/{shipment}', DetachShipmentFromPalletReturn::class)->name('shipment.detach');
 
 
 });

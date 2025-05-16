@@ -133,6 +133,11 @@ const props = defineProps<{
 	}[]
 	stored_items_count?: number
 	shipment_route: routeType
+	shipments: {
+		fetch_route: routeType
+		submit_route: routeType
+		delete_route: routeType
+	}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -272,9 +277,7 @@ const onOpenModalTrackingNumber = async () => {
 	isLoadingData.value = "addTrackingNumber"
 	try {
 		const xxx = await axios.get(
-			route('grp.json.shippers.index', {
-				organisation: route().params.organisation,
-			})
+			route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
 		)
 		optionShippingList.value = xxx?.data?.data || []
 	} catch (error) {
@@ -298,7 +301,7 @@ const onSubmitShipment = () => {
 			shipper_id: data.shipping_id?.id,
 			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
 		}))
-		.post(route(props.shipment_route.name, { ...props.shipment_route.parameters }), {
+		.post(route(props.shipments.submit_route.name, { ...props.shipments.submit_route.parameters }), {
 			preserveScroll: true,
 			onStart: () => {
 				isLoadingButton.value = "addTrackingNumber"
@@ -666,7 +669,7 @@ provide("listError", listError.value)
 	</div>
 
 	<!-- Section: Box Stats -->
-	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management />
+	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
@@ -732,12 +735,7 @@ provide("listError", listError.value)
 				<!-- {{ formTrackingNumber.shipping_id }} -->
 				<PureMultiselectInfiniteScroll
 					v-model="formTrackingNumber.shipping_id"
-					:fetchRoute="{
-						name: 'grp.json.shippers.index', 
-						parameters: {
-							organisation: 'aw',
-						}
-					}"
+					:fetchRoute="shipments.fetch_route"
 					required
 					:placeholder="trans('Select shipping')"
 					object>
