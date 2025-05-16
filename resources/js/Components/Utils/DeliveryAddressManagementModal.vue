@@ -26,6 +26,7 @@ const props = defineProps<{
 
 const emits = defineEmits<{
     (e: "onDone"): void
+    (e: "onHasChange"): void
 }>()
 
 const homeAddress = computed(() => {
@@ -55,6 +56,7 @@ const onSubmitNewAddress = async (address: Address) => {
           isCreateNewAddress.value = false;
       },
       onSuccess: () => {
+        emits("onHasChange")
         notify({
           title: trans("Success"),
           text: trans("Successfully create new address."),
@@ -109,8 +111,10 @@ const onSubmitEditAddress = (address: Address) => {
         isCreateNewAddress.value = false;
         // isModalAddress.value = false
         isEditAddress.value = false;
+        
       },
       onSuccess: () => {
+        emits("onHasChange")
         notify({
           title: trans("Success"),
           text: trans("Successfully update the address."),
@@ -137,6 +141,9 @@ const onSelectAddress = (selectedAddress: Address) => {
     },
     {
       onStart: () => isSelectAddressLoading.value = selectedAddress.id,
+      onSuccess: () => {
+        emits("onHasChange")
+      },
       onFinish: () => isSelectAddressLoading.value = false
     }
   );
@@ -153,6 +160,9 @@ const onPinnedAddress = (addressID: number) => {
     {
       preserveScroll: true,
       onStart: () => isLoading.value = "onPinned" + addressID,
+      onSuccess: () => {
+        emits("onHasChange")
+      },
       onFinish: () => {
         isLoading.value = false;
       },
@@ -174,6 +184,9 @@ const onDeleteAddress = (addressID: number) => {
     {
       preserveScroll: true,
       onStart: () => isLoading.value = "onDelete" + addressID,
+      onSuccess: () => {
+        emits("onHasChange")
+      },
       onFinish: () => {
         isLoading.value = false;
       },

@@ -15,6 +15,7 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -51,13 +52,14 @@ class CallApiItdShipping extends OrgAction
         ];
 
 
+        $parcels = $parent->parcels;
         $packages = [
             [
                 'packageType'   => 3,
-                'packageLength' => 30,
-                'packageWidth'  => 30,
-                'packageHeight' => 30,
-                'packageWeight' => 1000
+                'packageLength' => $parcels[0]['dimensions'][0] ?? 0,
+                'packageWidth'  => $parcels[0]['dimensions'][1] ?? 0,
+                'packageHeight' => $parcels[0]['dimensions'][2] ?? 0,
+                'packageWeight' => isset($parcels[0]['weight']) ? $parcels[0]['weight'] * 1000 : 0,
             ]
         ];
 
@@ -109,7 +111,6 @@ class CallApiItdShipping extends OrgAction
             ]
         ];
 
-
         $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl().$url, $params)->json();
 
         $modelData = [
@@ -141,9 +142,32 @@ class CallApiItdShipping extends OrgAction
             $modelData['number_parcels']            = count($modelData['label_urls']);
         } else {
             $status = 'fail';
-            // todo parse errors to display in UI
-        }
 
+
+            $errors = Arr::get($apiResponse, 'errors.data.0');
+            $consignmentErrors = Arr::get($errors, 'errors.consignment', []);
+            foreach ($consignmentErrors as $key => $errorArr) {
+                $code = Arr::get($errorArr, '0.code');
+                if ($code) {
+                    $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ')->lower();
+                    if (Str::contains($key, 'Address')) {
+                        $errorData['address'][] = $msg;
+                    } elseif (Str::contains($key, 'customer')) {
+                        $errorData['customer'][] = $msg;
+                    } else {
+                        $errorData['others'][] = $msg;
+                    }
+                }
+            }
+
+            $packageErrors = Arr::get($errors, 'errors.packages.0.errors', []);
+            foreach ($packageErrors as $errorArr) {
+                $code = Arr::get($errorArr, '0.code');
+                if ($code) {
+                    $errorData['others'][] = Str::of($code)->replace('_', ' ')->lower();
+                }
+            }
+        }
 
         return [
             'status'    => $status,
@@ -153,4 +177,37 @@ class CallApiItdShipping extends OrgAction
     }
 
 
+    public function getNiceKey($key): string
+    {
+        $map = [
+            'serviceId'              => 'service id',
+            'orderNumber'            => 'order number',
+            'customerReference'      => 'customer reference',
+            'reasonForExport'        => 'reason for export',
+            'fromAddressFirstName'   => 'address first name',
+            'fromAddressLastName'    => 'address last name',
+            'fromAddressCompany'     => 'address company',
+            'fromAddressPhone'       => 'address phone',
+            'fromAddressEmail'       => 'address email',
+            'fromAddressStreet1'     => 'address street 1',
+            'fromAddressStreet2'     => 'address street 2',
+            'fromAddressCity'        => 'address city',
+            'fromAddressCountyState' => 'address county state',
+            'fromAddressZip'         => 'address zip',
+            'fromAddressCountryIso'  => 'address country iso',
+            'toAddressFirstName'     => 'address first name',
+            'toAddressLastName'      => 'address last name',
+            'toAddressCompany'       => 'address company',
+            'toAddressPhone'         => 'address phone',
+            'toAddressEmail'         => 'address email',
+            'toAddressStreet1'       => 'address street 1',
+            'toAddressStreet2'       => 'address street 2',
+            'toAddressCity'          => 'address city',
+            'toAddressCountyState'   => 'address county state',
+            'toAddressZip'           => 'address zip',
+            'toAddressCountryIso'    => 'address country iso',
+            'packages'               => 'packages'
+        ];
+        return $map[$key] ?? $key;
+    }
 }
