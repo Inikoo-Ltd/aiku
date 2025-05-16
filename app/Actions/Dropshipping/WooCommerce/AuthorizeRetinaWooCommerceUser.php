@@ -34,7 +34,9 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
             'scope' => 'read_write',
             'user_id' => $modelData['name'],
             'return_url' => route('retina.dropshipping.platform.dashboard'),
-            'callback_url' => route('retina.dropshipping.platform.wc.callback')
+            'callback_url' => route('retina.dropshipping.platform.wc.callback', [
+                'customer' => $customer->id
+            ])
         ];
 
         return $modelData['url'].$endpoint.'?'.http_build_query($params);
@@ -45,7 +47,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         return $url;
     }
 
-    public function handleCallback(ActionRequest $request)
+    public function handleCallback(Customer $customer, ActionRequest|array $request)
     {
         $consumerKey    = $request->input('consumer_key');
         $consumerSecret = $request->input('consumer_secret');
@@ -55,18 +57,11 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
             return response('Invalid callback data', 400);
         }
 
-        /** @var Customer $customer */
-        $customer = $request->user()->customer;
-
-        $customer->wooCommerceUser()->create([
-            'group_id' => $customer->group_id,
-            'organisation_id' => $customer->organisation_id,
+        StoreRetinaWooCommerceUser::run($customer, [
             'name' => $this->get('name'),
-            'settings.credentials' => [
-                'consumer_key' => $consumerKey,
-                'consumer_secret' => $consumerSecret,
-                'store_url' => $storeUrl
-            ]
+            'store_url' => $storeUrl,
+            'consumer_key' => $consumerKey,
+            'consumer_secret' => $consumerSecret
         ]);
 
         return redirect()->route('retina.dropshipping.platform.dashboard');
@@ -106,11 +101,12 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     {
         $modelData = [
             'name' => $command->argument('name'),
-            'url' => $command->argument('url')
+            'url' => $command->argument('url'),
+            'url' => $command->argument('url'),
         ];
 
         $customer = Customer::find($command->argument('customer'))->first();
 
-        $this->handle($customer, $modelData);
+        $this->handleCallback($modelData);
     }
 }

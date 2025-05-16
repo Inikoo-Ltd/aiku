@@ -18,10 +18,12 @@ use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisa
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
+use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Http\Resources\Fulfilment\PalletDeliveryResource;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -52,6 +54,50 @@ class ShowWarehousePalletDelivery extends OrgAction
     public function htmlResponse(PalletDelivery $palletDelivery, ActionRequest $request): Response
     {
         $subNavigation = [];
+        $showGrossAndDiscount = $palletDelivery->gross_amount !== $palletDelivery->net_amount;
+
+        $recurringBillData = null;
+        $invoiceData = null;
+        if ($palletDelivery->recurringBill) {
+            $recurringBill      = $palletDelivery->recurringBill;
+            $recurringBillRoute = null;
+            $invoiceRoute      = null;
+            $recurringBillRoute = [
+                'name'       => 'grp.org.fulfilments.show.operations.recurring_bills.current.show',
+                'parameters' => [
+                    'organisation'  => $recurringBill->organisation->slug,
+                    'fulfilment'    => $recurringBill->fulfilment->slug,
+                    'recurringBill' => $recurringBill->slug
+                ]
+            ];
+            if ($recurringBill->invoices) {
+                $invoice = $recurringBill->invoices;
+                $invoiceRoute = [
+                    'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+                    'parameters' => [
+                        'organisation'  => $recurringBill->organisation->slug,
+                        'fulfilment'    => $recurringBill->fulfilment->slug,
+                        'invoice' => $recurringBill->invoices->slug
+                    ]
+                ];
+            }
+            if ($recurringBillRoute) {
+                $recurringBillData = [
+                    'reference'    => $recurringBill->reference,
+                    'status'       => $recurringBill->status,
+                    'total_amount' => $recurringBill->total_amount,
+                    'route'        => $recurringBillRoute
+                ];
+            }
+            if ($invoiceRoute) {
+                $invoiceData = [
+                    'reference'    => $invoice->reference,
+                    'status'       => $invoice->pay_status,
+                    'total_amount' => $invoice->total_amount,
+                    'route'        => $invoiceRoute
+                ];
+            }
+        }
 
         $actions = $this->getActions($palletDelivery);
 
@@ -155,6 +201,61 @@ class ShowWarehousePalletDelivery extends OrgAction
 
 
                 'data' => PalletDeliveryResource::make($palletDelivery),
+                'box_stats'  => [
+                    'fulfilment_customer' => FulfilmentCustomerResource::make($palletDelivery->fulfilmentCustomer)->getArray(),
+                    'delivery_state'      => PalletDeliveryStateEnum::stateIcon()[$palletDelivery->state->value],
+                    'recurring_bill'      => $recurringBillData,
+                    'invoice' => $invoiceData,
+                    'order_summary'       => [
+                        [
+                            [
+                                'label'       => __('Services'),
+                                'quantity'    => $palletDelivery->stats->number_services ?? 0,
+                                'price_base'  => __('Multiple'),
+                                'price_total' => $palletDelivery->services_amount
+                            ],
+                            [
+                                'label'       => __('Physical Goods'),
+                                'quantity'    => $palletDelivery->stats->number_physical_goods ?? 0,
+                                'price_base'  => __('Multiple'),
+                                'price_total' => $palletDelivery->goods_amount
+                            ],
+                        ],
+
+                        $showGrossAndDiscount ? [
+                            [
+                                'label'       => __('Gross'),
+                                'information' => '',
+                                'price_total' => $palletDelivery->gross_amount
+                            ],
+                            [
+                                'label'       => __('Discounts'),
+                                'information' => '',
+                                'price_total' => $palletDelivery->discount_amount
+                            ],
+                        ] : [],
+                        [
+                            [
+                                'label'       => __('Net'),
+                                'information' => '',
+                                'price_total' => $palletDelivery->net_amount
+                            ],
+                            [
+                                'label'       => __('Tax').' '.$palletDelivery->taxCategory->rate * 100 .'%',
+                                'information' => '',
+                                'price_total' => $palletDelivery->tax_amount
+                            ],
+                        ],
+                        [
+                            [
+                                'label'       => __('Total'),
+                                'price_total' => $palletDelivery->total_amount
+                            ],
+                        ],
+
+                        'currency' => CurrencyResource::make($palletDelivery->currency),
+                    ]
+                ],
 
 
                 PalletDeliveryTabsEnum::PALLETS->value => $this->tab == PalletDeliveryTabsEnum::PALLETS->value ?
