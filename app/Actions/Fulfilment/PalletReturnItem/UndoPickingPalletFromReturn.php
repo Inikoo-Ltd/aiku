@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\PalletReturnItem;
 
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
+use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -23,28 +24,26 @@ class UndoPickingPalletFromReturn extends OrgAction
 {
     use WithActionUpdate;
 
-
-    private PalletReturnItem $palletReturnItem;
-
     public function handle(PalletReturnItem $palletReturnItem): PalletReturnItem
     {
-        $modelData['state']       = PalletReturnItemStateEnum::PICKING;
-
         if ($palletReturnItem->type == 'Pallet') {
             UpdatePallet::run($palletReturnItem->pallet, [
                 'state' => PalletStateEnum::PICKING
             ]);
 
-            $palletReturnItem = $this->update($palletReturnItem, $modelData, ['data']);
+            $palletReturnItem = $this->update($palletReturnItem, [
+                'quantity_picked' => 0,
+                'state'           => PalletReturnItemStateEnum::PICKING
+            ]);
         } else {
             $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)->where('stored_item_id', $palletReturnItem->stored_item_id)->get();
             foreach ($storedItems as $storedItem) {
-                UpdatePallet::run($storedItem->pallet, [
-                    'state' => PalletStateEnum::PICKING
+                $palletReturnItem = $this->update($storedItem, [
+                    'quantity_picked' => 0,
+                    'state'           => PalletReturnItemStateEnum::PICKING
                 ]);
-
-                $palletReturnItem = $this->update($storedItem, $modelData, ['data']);
             }
+            SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
         }
 
         AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
@@ -57,6 +56,7 @@ class UndoPickingPalletFromReturn extends OrgAction
         if ($this->asAction) {
             return true;
         }
+
         return $request->user()->authTo("fulfilment.{$this->warehouse->id}.edit");
     }
 
@@ -67,20 +67,13 @@ class UndoPickingPalletFromReturn extends OrgAction
         return $this->handle($palletReturnItem);
     }
 
-    public function action(PalletReturnItem $palletReturnItem, $state, int $hydratorsDelay = 0): PalletReturnItem
-    {
-        $this->asAction       = true;
-        $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromWarehouse($palletReturnItem->palletReturn->warehouse, []);
-
-        return $this->handle($palletReturnItem);
-    }
 
     public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource|MayaPalletReturnItemUIResource
     {
         if ($request->hasHeader('Maya-Version')) {
             return MayaPalletReturnItemUIResource::make($palletReturnItem);
         }
+
         return new PalletReturnItemUIResource($palletReturnItem);
     }
 }

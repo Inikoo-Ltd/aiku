@@ -1898,7 +1898,7 @@ test('UI edit service', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.services.update')
+                    ->where('name', 'grp.models.fulfilment.services.update')
                     ->where('parameters', [
                         'service' => $this->service->id
                     ])

@@ -32,17 +32,17 @@ class CreateShipmentInPalletReturnInFulfilment extends OrgAction
     public function rules(): array
     {
         return [
-            'tracking' => ['required', 'max:1000', 'string'],
-            'number_parcels' => ['required', 'numeric', 'min:1'],
+            'tracking' => ['sometimes','nullable', 'max:1000', 'string'],
             'shipper_id' => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request): Shipment
+    public function asController(PalletReturn $palletReturn, ActionRequest $request)
     {
+
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $this->handle($palletReturn, $this->validatedData);
 
     }
 

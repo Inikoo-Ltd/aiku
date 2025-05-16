@@ -429,6 +429,7 @@ const disableBeforeToday = (date: Date) => {
       :address_modal_title="address_management.address_modal_title"
       :addresses="address_management.addresses"
       :updateRoute="address_management.address_update_route"
+      @onDone="() => (isDeliveryAddressManagementModal = false)"
     />
   </Modal>
 </template>

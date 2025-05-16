@@ -101,6 +101,13 @@ class ShowWarehousePalletReturn extends OrgAction
                     'actions' => $actions
                 ],
 
+                'shipment_route' => [
+                    'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->id
+                    ]
+                ],
+
                 'interest'  => [
                     'pallets_storage' => $palletReturn->fulfilmentCustomer->pallets_storage,
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,

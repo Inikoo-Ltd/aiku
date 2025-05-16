@@ -9,6 +9,7 @@
 
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
+use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
@@ -35,6 +36,7 @@ class UndoStoredItemPick extends OrgAction
         $movement = StoredItemMovement::where('pallet_return_item_id', $palletReturnItem->id)->first();
         $movement->delete();
 
+        SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
         RunPalletStoredItemQuantity::run($palletReturnItem->palletStoredItem);
 
         return $palletReturnItem;

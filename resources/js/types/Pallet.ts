@@ -142,7 +142,8 @@ export interface FieldOrderSummary {
 // Box Stats in Pallet Delivery
 export interface BoxStats {
     delivery_state: Icon
-    is_platform_address: boolean
+    is_platform: boolean
+    is_collection: boolean
     platform_customer: object
     fulfilment_customer: {
         address: AddressManagement
@@ -178,6 +179,14 @@ export interface BoxStats {
         route: routeType
     }
     order_summary: FieldOrderSummary[][]
+    platform?: {
+        name: string
+        code: string
+    }
+    parcels: {
+        weight: number
+        dimensions: number[]
+    }[]
 }
 
 
