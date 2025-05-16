@@ -49,7 +49,6 @@ trait WithIrisGetWebpageWebBlocks
                 $parsedWebBlocks[$key] = $webBlock;
             }
         }
-        dd($parsedWebBlocks);
         return $parsedWebBlocks;
     }
 }
