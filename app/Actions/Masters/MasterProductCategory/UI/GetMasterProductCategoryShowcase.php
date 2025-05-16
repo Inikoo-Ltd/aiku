@@ -22,6 +22,7 @@ class GetMasterProductCategoryShowcase
     {
         return [
             'family' => FamilyResource::make($productCategory),
+            'departement' => FamilyResource::make($productCategory),
         ];
     }
 }
