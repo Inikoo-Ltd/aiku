@@ -108,7 +108,8 @@ onBeforeUnmount(() => {
             </div>
         </Modal>
 
-        <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']"
+        <div xclass="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']"
+        
             :style="{ fontFamily: theme.fontFamily }">
             <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation" :screen-type="screenType"/>
 
@@ -121,7 +122,7 @@ onBeforeUnmount(() => {
                 :layout="layout"
             />
 
-            <main>
+            <main  class="container max-w-7xl mx-auto">
                 <slot />
             </main>
             

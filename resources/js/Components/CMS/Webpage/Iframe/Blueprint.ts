@@ -16,6 +16,7 @@ export default {
 					key: ["dimension"],
 					label:"Dimension",
 					type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["padding"],

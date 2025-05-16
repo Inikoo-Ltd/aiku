@@ -31,7 +31,7 @@ export const setIframeView = (view: String) => {
     if (view == 'mobile') {
         return 'w-sm h-full mx-auto';
     } else if (view == 'tablet') {
-        return 'w-4xl h-full mx-auto';
+        return 'max-w-4xl w-full h-full mx-auto';
     } else {
         return 'w-full h-full';
     }
