@@ -68,6 +68,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
+        $queryBuilder->where('platform_id', $customerHasPlatform->platform_id);
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
 
