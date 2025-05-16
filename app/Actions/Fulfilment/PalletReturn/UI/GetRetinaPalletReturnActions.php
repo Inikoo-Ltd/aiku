@@ -116,7 +116,17 @@ class GetRetinaPalletReturnActions
                         ]
                     ]
                 ];
-
+        } else {
+            $actions[] =
+                [
+                    'type'     => 'button',
+                    'style'    => 'save',
+                    'tooltip'  => __('Add pallet to pick before submit'),
+                    'label'    => __('submit'),
+                    'icon'     => 'fad fa-save',
+                    'key'      => 'action',
+                    'disabled' => true,
+                ];
         }
 
         return $actions;
