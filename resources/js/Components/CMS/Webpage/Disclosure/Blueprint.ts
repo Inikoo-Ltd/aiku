@@ -11,24 +11,28 @@ export default {
 			replaceForm: [
 				{
 					key: ["background"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label :"Background",
 					type: "background",
 					
 				},
 				{
 					key: ["padding"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Padding",
 					type: "padding",
 					
 				},
 				{
 					key: ["margin"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Margin",
 					type: "margin",
 					
 				},
 				{
 					key: ["border"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label : "Border",
 					type: "border",
 					

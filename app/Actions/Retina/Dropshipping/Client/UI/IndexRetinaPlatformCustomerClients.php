@@ -192,7 +192,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.client.index',
+                                'name'       => 'retina.dropshipping.platforms.client.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),

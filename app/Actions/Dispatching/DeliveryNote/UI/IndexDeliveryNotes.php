@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\DeliveryNotes\DeliveryNotesTabsEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Models\Inventory\Warehouse;
@@ -326,7 +325,7 @@ class IndexDeliveryNotes extends OrgAction
                             $routeParameters
                         )
                     ],
-                    ' - ' . $routeParameters['shopType'] . ' (' . str_replace('_',' ',$this->bucket) . ')'
+                    ' - ' . $routeParameters['shopType'] . ' (' . str_replace('_', ' ', $this->bucket) . ')'
                 )
             ),
             'grp.org.shops.show.ordering.delivery-notes.index' =>

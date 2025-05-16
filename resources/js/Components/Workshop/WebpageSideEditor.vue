@@ -16,7 +16,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import VisibleCheckmark from '@/Components/CMS/Fields/VisibleCheckmark.vue';
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
-import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
+import { getBlueprint, getBluprintPermissions} from '@/Composables/getBlueprintWorkshop'
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -184,7 +184,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                     <div class="group flex justify-between items-center gap-x-2 relative w-full cursor-pointer"
                                         :class="openedBlockSideEditor === index ? 'bg-indigo-500 text-white' : 'hover:bg-gray-100'">
                                         <div class="h-10 flex items-center gap-x-2 py-2 px-3 w-full"
-                                            @click="() => openedBlockSideEditor === index ? openedBlockSideEditor = null : openedBlockSideEditor = index">
+                                            @click="() => !getBluprintPermissions(element.type) ? null : openedBlockSideEditor === index ? openedBlockSideEditor = null : openedBlockSideEditor = index">
                                             <div class="flex items-center justify-center">
                                                 <FontAwesomeIcon icon="fal fa-bars"
                                                     class="handle text-sm cursor-grab pr-3 mr-2" />
@@ -195,8 +195,8 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                             <LoadingIcon v-if="isLoadingblock === element.id" class="" />
                                         </div>
 
-                                        <div class="h-full text-base cursor-pointer">
-                                            <div class="flex h-full items-center">
+                                        <div  class="h-full text-base cursor-pointer">
+                                            <div v-if="getBluprintPermissions(element.type)" class="flex h-full items-center">
                                                 <div @click="(e) => setShowBlock(e, element)" class="py-1 px-2"
                                                     :class="openedBlockSideEditor === index ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'">
                                                     <FontAwesomeIcon v-if="!element.show"

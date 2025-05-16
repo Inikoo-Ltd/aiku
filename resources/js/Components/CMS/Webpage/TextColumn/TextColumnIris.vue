@@ -23,6 +23,7 @@ const props = defineProps<{
 	id?: Number
 	type?: String
 	isEditable?: Boolean
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -74,7 +75,7 @@ const getImageSlots = (layoutType: string) => {
 </script>
 
 <template>
-    <div class="flex flex-wrap" :style="getStyles(fieldValue?.container?.properties)">
+    <div class="flex flex-wrap" :style="getStyles(fieldValue?.container?.properties,screenType)">
         <div v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
             :key="`${index}-${fieldValue?.value?.images?.[index - 1]}`"
             class="group relative p-2 hover:bg-white/40"

@@ -23,6 +23,7 @@ use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
+use App\Actions\Retina\Dropshipping\Client\UI\EditRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
@@ -54,6 +55,7 @@ Route::prefix('client')->as('client.')->group(function () {
     Route::get('create', CreateRetinaCustomerClient::class)->name('create');
     Route::get('fetch', FetchRetinaCustomerClientFromShopify::class)->name('fetch');
     Route::get('{customerClient}/show', ShowRetinaCustomerClient::class)->name('show');
+    Route::get('{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
 });
 
 Route::prefix('portfolios')->as('portfolios.')->group(function () {

@@ -173,8 +173,8 @@ const editorInstance = useEditor({
                                         CustomLinkConfirm.value = true
                                         attrsCustomLink.value = attrs
                                     } else {
-                                      /*   window.open(attrs.href, "_blank") */
-                                      console.log(attrs.href)
+                                        /*   window.open(attrs.href, "_blank") */
+                                        console.log(attrs.href)
                                     }
                                     return true
                                 }
@@ -231,10 +231,10 @@ const editorInstance = useEditor({
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
                         renderHTML: attributes => {
-                        return {
-                            'data-background-color': attributes.backgroundColor,
-                            style: `background-color: ${attributes.backgroundColor}`,
-                        }
+                            return {
+                                'data-background-color': attributes.backgroundColor,
+                                style: `background-color: ${attributes.backgroundColor}`,
+                            }
                         },
                     },
                     borderColor: {
@@ -272,10 +272,10 @@ const editorInstance = useEditor({
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
                         renderHTML: attributes => {
-                        return {
-                            'data-background-color': attributes.backgroundColor,
-                            style: `background-color: ${attributes.backgroundColor}`,
-                        }
+                            return {
+                                'data-background-color': attributes.backgroundColor,
+                                style: `background-color: ${attributes.backgroundColor}`,
+                            }
                         },
                     },
                     borderColor: {
@@ -312,10 +312,10 @@ const editorInstance = useEditor({
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
                         renderHTML: attributes => {
-                        return {
-                            'data-background-color': attributes.backgroundColor,
-                            style: `background-color: ${attributes.backgroundColor}`,
-                        }
+                            return {
+                                'data-background-color': attributes.backgroundColor,
+                                style: `background-color: ${attributes.backgroundColor}`,
+                            }
                         },
                     },
                     borderColor: {
@@ -412,7 +412,7 @@ function updateLink(value?: string) {
 
 function insertImage(url: string) {
     //function alt by ai
-    editorInstance.value?.chain().focus().setImage({ src: url, alt :"image" }).run()
+    editorInstance.value?.chain().focus().setImage({ src: url, alt: "image" }).run()
 }
 
 function insertYoutubeVideo(url: string) {
@@ -483,6 +483,12 @@ const tableBorderWidthOptions = [
     }
 ]
 
+const convertRemToPx = (remString) => {
+    if (!remString || typeof remString !== 'string') return ''
+    const remValue = parseFloat(remString)
+    return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
+}
+
 </script>
 
 <template>
@@ -536,26 +542,49 @@ const tableBorderWidthOptions = [
                             'text-gray-600 hover:bg-blue-50',
                         ]" type="button" v-tooltip="'font size'" :aria-label="'font size'">
                             <div class="group relative">
+                                <!-- Trigger Button -->
                                 <div
                                     class="text-sm py-1 px-2 cursor-pointer hover:border-gray-400 flex items-center justify-between transition h-8">
+                                    <!-- Default Icon if no font size set -->
                                     <FontAwesomeIcon v-if="!editorInstance?.getAttributes('textStyle').fontSize"
                                         :icon="faTextSize" class="h-5 w-5" />
+                                    <!-- Display font size in px even if stored as rem -->
                                     <div v-else id="tiptapfontsize" class="text-gray-600 text-sm font-semibold h-5">
-                                        {{ editorInstance?.getAttributes('textStyle').fontSize }}
+                                        {{
+                                            convertRemToPx(
+                                                editorInstance?.getAttributes('textStyle').fontSize
+                                        ) + 'px'
+                                        }}
                                     </div>
+                                    <!-- Clear Font Size Button -->
                                     <FontAwesomeIcon v-if="editorInstance?.getAttributes('textStyle').fontSize"
                                         @click="editorInstance?.chain().focus().unsetFontSize().run()"
                                         icon="fal fa-times" class="text-red-500 ml-2 cursor-pointer"
                                         aria-hidden="true" />
                                 </div>
+
+                                <!-- Dropdown -->
                                 <div
                                     class="w-min h-32 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
                                     <div v-for="fontsize in ['8', '9', '12', '14', '16', '18', '20', '24', '28', '36', '44', '52', '64']"
                                         :key="fontsize"
-                                        class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100"
-                                        :class="{ 'bg-indigo-600 text-white': parseInt(editorInstance?.getAttributes('textStyle').fontSize, 10) === parseInt(fontsize) }"
-                                        @click="editorInstance?.chain().focus().setFontSize(fontsize + 'px').run()">
-                                        {{ fontsize }}
+                                        class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center"
+                                        :class="{
+                                            'bg-indigo-600 text-white':
+                                                editorInstance?.getAttributes('textStyle').fontSize ===
+                                                (parseInt(fontsize) / 16).toFixed(4) + 'rem',
+                                        }" @click="
+            editorInstance
+                ?.chain()
+                .focus()
+                .setFontSize((parseInt(fontsize) / 16).toFixed(4) + 'rem')
+                .run()
+            ">
+                                        <span>{{ fontsize }}px</span>
+                                        <span v-if="
+                                            editorInstance?.getAttributes('textStyle').fontSize ===
+                                            (parseInt(fontsize) / 16).toFixed(4) + 'rem'
+                                        ">✓</span>
                                     </div>
                                 </div>
                             </div>
@@ -743,20 +772,18 @@ const tableBorderWidthOptions = [
                             <!-- {{ editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor }} -->
                             <div class="relative w-7 h-7">
                                 <!-- {{ editorInstance.getAttributes('table') }} -->
-                                <UtilsColorPicker
-                                    key="picker_table_background_color"
+                                <UtilsColorPicker key="picker_table_background_color"
                                     :color="editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor"
-                                    class=""
-                                    @changeColor="(newColor)=> {
+                                    class="" @changeColor="(newColor) => {
                                         editorInstance?.chain().focus().setCellAttribute('backgroundColor', newColor.hex).run()
-                                    }"
-                                    closeButton
-                                >
+                                    }" closeButton>
                                     <template #button>
-                                        <div class="group relative h-7 w-7 overflow-hidden rounded flex justify-center items-center" :style="{
-                                            backgroundColor: editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor
-                                        }">
-                                            <FontAwesomeIcon :icon='faPalette' class='text-gray-500' fixed-width aria-hidden='true' />
+                                        <div class="group relative h-7 w-7 overflow-hidden rounded flex justify-center items-center"
+                                            :style="{
+                                                backgroundColor: editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor
+                                            }">
+                                            <FontAwesomeIcon :icon='faPalette' class='text-gray-500' fixed-width
+                                                aria-hidden='true' />
                                         </div>
                                     </template>
                                 </UtilsColorPicker>
@@ -766,45 +793,37 @@ const tableBorderWidthOptions = [
                         <!-- Table: border color -->
                         <TiptapToolbarButton v-if="toogle.includes('color')" :label="trans('Color border')">
                             <div class="relative w-7 h-7">
-                                <UtilsColorPicker
-                                    key="picker_table_border_color"
-                                    :color="editorInstance.getAttributes('tableCell')?.borderColor"
-                                    class=""
-                                    @changeColor="(newColor)=> {
+                                <UtilsColorPicker key="picker_table_border_color"
+                                    :color="editorInstance.getAttributes('tableCell')?.borderColor" class=""
+                                    @changeColor="(newColor) => {
                                         editorInstance?.chain().focus().setCellAttribute('borderColor', newColor.hex).run()
-                                    }"
-                                    closeButton
-                                    :isEditable="editorInstance.getAttributes('tableCell')?.borderWidth && editorInstance.getAttributes('tableCell')?.borderWidth != '0px'"
-                                >
+                                    }" closeButton
+                                    :isEditable="editorInstance.getAttributes('tableCell')?.borderWidth && editorInstance.getAttributes('tableCell')?.borderWidth != '0px'">
                                     <template #before-main-picker>
                                         <div class="mb-2">
-                                            <Select
-                                                size="small"
+                                            <Select size="small"
                                                 :modelValue="editorInstance.getAttributes('tableCell')?.borderWidth"
                                                 @update:modelValue="(e) => (console.log('qqq'), editorInstance?.chain().focus().setCellAttribute('borderWidth', e).run())"
-                                                :options="tableBorderWidthOptions"
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                :placeholder="trans('Select border width')"
-                                                fluid
-                                            />
+                                                :options="tableBorderWidthOptions" optionLabel="label"
+                                                optionValue="value" :placeholder="trans('Select border width')" fluid />
                                         </div>
                                     </template>
 
                                     <template #button>
-                                        <div class="group relative h-7 w-7 overflow-hidden rounded flex justify-center items-center" :style="{
-                                            color: editorInstance.getAttributes('tableCell')?.borderColor,
-                                            background: editorInstance.getAttributes('tableCell')?.borderWidth && editorInstance.getAttributes('tableCell')?.borderWidth != '0px' ? '#d1d5db' : 'none'
-                                        }">
+                                        <div class="group relative h-7 w-7 overflow-hidden rounded flex justify-center items-center"
+                                            :style="{
+                                                color: editorInstance.getAttributes('tableCell')?.borderColor,
+                                                background: editorInstance.getAttributes('tableCell')?.borderWidth && editorInstance.getAttributes('tableCell')?.borderWidth != '0px' ? '#d1d5db' : 'none'
+                                            }">
                                             <FontAwesomeIcon :icon='fasTable' class='' fixed-width aria-hidden='true' />
                                         </div>
                                     </template>
                                 </UtilsColorPicker>
 
-                                
+
                             </div>
                         </TiptapToolbarButton>
-                        
+
                         <TiptapToolbarButton @click="editorInstance?.commands.deleteTable()" label="Remove table">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5"
                                 fill="currentColor">
@@ -866,9 +885,9 @@ const tableBorderWidthOptions = [
                         </TiptapToolbarButton>
                     </TiptapToolbarGroup>
 
-                    <TiptapToolbarButton
-                            @click="editorInstance?.chain().focus().unsetAllMarks().run()" label="Unset Style">
-                            <FontAwesomeIcon :icon="faEraser" class="h-5 w-5" />
+                    <TiptapToolbarButton @click="editorInstance?.chain().focus().unsetAllMarks().run()"
+                        label="Unset Style">
+                        <FontAwesomeIcon :icon="faEraser" class="h-5 w-5" />
                     </TiptapToolbarButton>
 
                 </section>
@@ -877,7 +896,7 @@ const tableBorderWidthOptions = [
 
         <div class="flex flex-col">
             <slot name="editor-content" :editor="editorInstance">
-                <EditorContent  @click.stop="onEditorClick" :editor="editorInstance" />
+                <EditorContent @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
         </div>
 

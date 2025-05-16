@@ -48,7 +48,7 @@ trait IsDeliveryNotesIndex
         $query->leftjoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
-        if($shopType != 'all') {
+        if ($shopType != 'all') {
             $query->where('shops.type', $shopType);
         }
 
