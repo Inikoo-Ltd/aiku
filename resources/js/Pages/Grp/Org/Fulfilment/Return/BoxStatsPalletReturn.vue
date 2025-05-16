@@ -688,12 +688,13 @@ const listError = inject('listError', {})
       :updateRoute="address_management.updateRoute"
     />
 	</Modal>
-	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)">
+	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)" width="w-full max-w-4xl">
 		<DeliveryAddressManagementModal
-    	:address_modal_title="address_management.address_modal_title"
-		:addresses="address_management.addresses"
-		:updateRoute="address_management.address_update_route"
-    />
+			:address_modal_title="address_management.address_modal_title"
+			:addresses="address_management.addresses"
+			:updateRoute="address_management.address_update_route"
+			@onDone="() => (isDeliveryAddressManagementModal = false)"
+		/>
 	</Modal>
 
 	<!-- Modal: Shipment -->

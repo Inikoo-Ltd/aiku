@@ -611,6 +611,7 @@ const isModalUploadExcel = ref(false)
 		    :addresses="address_management.addresses"
             :updateRoute="address_management.address_update_route"
             keyPayloadEdit="address"
+            @onDone="() => (isModalAddress = false)"
         />
     </Modal>
 
