@@ -1,94 +1,116 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Sun, 18 Feb 2024 06:25:44 Central Standard Time, Mexico City, Mexico
-  - Copyright (c) 2024, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
-import { usePage } from "@inertiajs/vue3"
-import RetinaFooter from "@/Layouts/Retina/RetinaFooter.vue"
-import PupilLeftSideBar from "@/Layouts/Pupil/PupilLeftSideBar.vue"
-import RetinaRightSideBar from "@/Layouts/Retina/RetinaRightSideBar.vue"
-import PupilTopbar from "@/Layouts/Pupil/PupilTopbar.vue"
-import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { initialisePupilApp } from "@/Composables/initialisePupilApp"
 import { useLayoutStore } from "@/Stores/pupilLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-
-import { faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify } from '@fal'
-import { faNarwhal } from '@fal'
-import { faSearch, faBell } from '@far'
-import { ref, provide } from 'vue'
+import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
+import { provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
+// import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
+// import RetinaLayoutDs from "./RetinaLayoutDs.vue"
+// import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
+import { initialisePupilApp } from "@/Composables/initialisePupilApp"
+import { notify } from "@kyvg/vue3-notification"
+import { usePage } from "@inertiajs/vue3"
+// import IrisHeader from "@/Layouts/Iris/Header.vue"
+// import IrisFooter from "@/Layouts/Iris/Footer.vue"
+import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
+
+import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faMoneyBillWave, faListUl } from '@fal'
+import { faSearch, faBell } from '@far'
+import { faCheckCircle } from '@fas'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faMoneyBillWave, faSearch, faBell )
 
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
-
-library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faSearch, faBell )
-
 initialisePupilApp()
 
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)
-// console.log('environment:', layout.app.environment)
 
-const isStaging = layout.app.environment === 'staging'
+watch(() => usePage().props?.flash?.notification, (notif) => {
+    console.log('notif ret', notif)
+    if (!notif) return
 
+    notify({
+        title: notif.title,
+        text: notif.description,
+        type: notif.status,
+    })
+})
 </script>
 
 <template>
-    <div class="fixed inset-0 bg-slate-100" />
+    <div class="-z-[1] absolute inset-0 bg-slate-100" />
 
-    <div class="isolate relative min-h-full transition-all"
-        :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+	<div
+		class="isolate relative transition-all"
+		:class="{
+			// 'mr-44': Object.values(layout.rightSidebar || {}).some((v) => v.show),
+			// 'mr-0': !Object.values(layout.rightSidebar || {}).some((v) => v.show),
+		}">
+        
+		<!-- <IrisHeader
+			class="relative z-50 md:z-0"
+			v-if="layout.iris?.header?.header"
+			:data="layout.iris.header"
+			:colorThemed="irisTheme"
+			:menu="layout.iris.menu" /> -->
 
-        <PupilTopbar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen" logoRoute="pupil.home" />
+		<!-- wrapper for mobile overlay + content -->
+		<div class="relative">
+			<!-- Floating menu button (mobile only) -->
+			<button
+				@click="sidebarOpen = !sidebarOpen"
+				class="fixed bottom-4 right-4 z-50 md:hidden bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg focus:outline-none"
+				aria-label="Toggle menu">
+				<FontAwesomeIcon
+					:icon="faListUl"
+					class="text-white"
+					fixed-width
+					aria-hidden="true" />
+			</button>
 
+			<div
+				v-if="sidebarOpen"
+				@click="sidebarOpen = false"
+				class="fixed inset-0 bg-gray-800/50 z-40 md:hidden" />
 
-        <!-- Sidebar: Left -->
-        <div class="">
-            <div @click="sidebarOpen = !sidebarOpen" class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen" />
-            <PupilLeftSideBar class="-left-2/3 transition-all z-20 block md:left-[0]"
-                :class="{ 'left-[0]': sidebarOpen }" @click="sidebarOpen = !sidebarOpen" />
-        </div>
+			<!-- sidebar + main content -->
+			<main
+				class="flex flex-col md:flex-row gap-x-4 max-w-7xl w-full mx-auto my-10 px-8 xl:px-0 transition-all">
+				<RetinaDsLeftSidebar
+					v-if="layout.user"
+					:class="[
+						'fixed inset-y-0 left-0 w-auto md:h-fit bg-white shadow-lg transform transition-transform z-50 md:z-0',
+						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+						'md:relative md:translate-x-0 md:flex md:flex-col',
+					]" />
 
-        <!-- Main Content -->
-        <main class="h-screen pb-10 transition-all pl-2 md:pl-0 pr-2 "
-            :class="[
-                layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
-                isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
-            ]"
-        >
-            <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
-                <!-- Section: Breadcrumbs -->
-                <div class="mt-1">
-                    <!-- <Breadcrumbs v-if="usePage().props.breadcrumbs?.length > 0"
-                        :breadcrumbs="usePage().props.breadcrumbs ?? []"
-                        :navigation="usePage().props.navigation ?? []"
-                    /> -->
+				<!-- your actual page content -->
+				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+					<Breadcrumbs
+						class="absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1"
+						:breadcrumbs="usePage().props.breadcrumbs ?? []"
+						:navigation="usePage().props.navigation ?? []"
+						:layout="layout"
+						style="max-width: calc(1280px - 200px)" />
+					<div
+						style="max-width: calc(1280px - 200px)"
+						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
+						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
+						<slot name="default" />
+					</div>
+				</div>
+			</main>
+		</div>
 
-                    <!-- <Breadcrumbs
-                        class="bg-white w-full transition-all duration-200 ease-in-out"
-                        :class="[
-                            layout.leftSidebar.show ? 'left-0 md:left-48' : 'left-0 md:left-12',
-                        ]"
-                        :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
-                        :layout="layout"
-                    /> -->
-                </div>
-                <slot />
-            </div>
-        </main>
-
-        <!-- Sidebar: Right -->
-        <!-- <RetinaRightSideBar class="fixed top-[52px] w-[170px] transition-all"
-            :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-2' : '-right-[170px]']" /> -->
-
-    </div>
-
-    <!-- <RetinaFooter /> -->
+		<!-- <IrisFooter
+			v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
+			:data="layout.iris.footer"
+			:colorThemed="irisTheme" /> -->
+	</div>
 
     <!-- Global declaration: Notification -->
     <notifications
@@ -129,14 +151,6 @@ const isStaging = layout.app.environment === 'staging'
 }
 .navigationSecond {
     @apply hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out
-}
-
-.bottomNavigationActive {
-    @apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all;
-    background-color: v-bind('layout.app.theme[4]');
-}
-.bottomNavigation {
-    @apply bg-gray-300 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all
 }
 
 .primaryLink {
