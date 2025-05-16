@@ -38,8 +38,8 @@ class IndexDeliveryNotes extends OrgAction
         }
 
         $subNavigation = null;
-        if ($this->parent instanceof Warehouse && $this->shopType == 'all') {
-            $subNavigation = $this->getDeliveryNotesSubNavigation();
+        if ($this->parent instanceof Warehouse) {
+            $subNavigation = $this->getDeliveryNotesSubNavigation($this->shopType);
         }
 
         $title      = __('Delivery notes');
