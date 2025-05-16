@@ -19,9 +19,9 @@ use App\Models\CRM\PollOption;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 
 class RegisterRetinaDropshippingCustomer extends RetinaAction
@@ -41,7 +41,7 @@ class RegisterRetinaDropshippingCustomer extends RetinaAction
 
     public function htmlResponse(): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
-        return Redirect::route('retina.login.show');
+        return Inertia::location(route('retina.login.show'));
     }
 
     public function rules(): array
