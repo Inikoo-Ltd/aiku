@@ -329,7 +329,7 @@ provide("listError", listError.value)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template v-if="layout.app.environment === 'local'" #otherBefore>
+		<template v-if="timeline.state === 'picked' && (box_stats?.shipments?.length < 1) && layout.app.environment === 'local'" #otherBefore>
 			<Button 
 				v-if="!data.data?.is_collection"
 				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
@@ -337,9 +337,7 @@ provide("listError", listError.value)
 				:label="trans('Shipment')"
 				icon="fal fa-shipping-fast"
 				type="tertiary"
-			>
-
-			</Button>
+			/>
 		</template>
 
 		<!-- Button: Upload -->
