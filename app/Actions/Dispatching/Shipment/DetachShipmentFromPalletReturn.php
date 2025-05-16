@@ -11,17 +11,17 @@
 namespace App\Actions\Dispatching\Shipment;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\Dispatching\Shipment;
 use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 
 class DetachShipmentFromPalletReturn extends OrgAction
 {
     use WithActionUpdate;
-    use WithFulfilmentShopEditAuthorisation;
+    use WithFulfilmentWarehouseEditAuthorisation;
 
 
 

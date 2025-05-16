@@ -669,7 +669,7 @@ provide("listError", listError.value)
 	</div>
 
 	<!-- Section: Box Stats -->
-	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management />
+	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
