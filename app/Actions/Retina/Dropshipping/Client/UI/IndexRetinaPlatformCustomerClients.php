@@ -128,6 +128,20 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
             [$shopifyActions],
             [$createButton]
         );
+
+        $spreadsheetRoute = [
+                'event'           => 'action-progress',
+                'channel'         => 'grp.personal.'.$this->platform->group->id,
+                'required_fields' => ["contact_name", "company_name", "email", "phone", "address_line_1", "address_line_2", "postal_code", "locality", "country_code"],
+                'route'           => [
+                    'upload'   => [
+                        'name' => 'retina.models.customer-client.platform.upload',
+                        'parameters' => [
+                            'platform' => $this->platform->id,
+                        ],
+                    ],
+                ],
+            ];
         // dd($actions);
         return Inertia::render(
             'Dropshipping/Client/CustomerClients',
@@ -150,13 +164,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),
-                'upload_route' => [
-                    'name' => 'retina.models.customer-client.platform.upload',
-                    'parameters' => [
-                        'platform' => $this->platform->id,
-                    ],
-                    'method' => 'post'
-                ]
+                'upload_spreadsheet' => $spreadsheetRoute
 
             ]
         )->table($this->tableStructure($this->platformUser));

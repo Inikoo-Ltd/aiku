@@ -187,7 +187,7 @@ class ShowStoredItemReturn extends OrgAction
                 ],
                 'data'               => PalletReturnResource::make($palletReturn),
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
-                'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
+                'box_stats' => $this->parent instanceof CustomerHasPlatform ? GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer) : GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
 
                 'notes_data' => GetNotesData::run(model: $palletReturn),
 
@@ -330,7 +330,7 @@ class ShowStoredItemReturn extends OrgAction
                 )
             ),
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show' => array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent->platform, $routeParameters),
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
                     $palletReturn,
                     [
