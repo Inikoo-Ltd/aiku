@@ -24,6 +24,9 @@ class GetProductCategoryShowcase
         switch ($productCategory->type) {
             case ProductCategoryTypeEnum::DEPARTMENT :
                 $data = [
+                    'url_master' => route('grp.masters.departments.show', [
+                        'masterDepartment' => $productCategory->masterProductCategory->slug,
+                    ]),
                     'department' => DepartmentResource::make($productCategory),
                     'families'   => FamilyResource::collection($productCategory->getFamilies()),
                 ];

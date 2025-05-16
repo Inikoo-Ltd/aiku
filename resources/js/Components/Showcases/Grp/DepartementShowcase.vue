@@ -12,7 +12,7 @@ import { Link } from "@inertiajs/vue3"
 const props = defineProps<{
   data: {
     families: Array<any>
-    departement: {
+    department: {
       data: {
         name: string,
         description: string
@@ -37,7 +37,7 @@ console.log(props)
 
 <template>
   <div class="px-4 pb-8 m-5">
-    <Message v-if="data.departement.data?.follow_master" severity="warn" closable>
+    <Message v-if="data.department.data?.follow_master" severity="warn" closable>
       <template #icon>
         <FontAwesomeIcon :icon="faExclamation" />
       </template>
@@ -53,7 +53,7 @@ console.log(props)
       <div>
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
           <div class="flex justify-between items-center border-b pb-4 mb-4">
-            <h3 class="text-xl font-semibold">Departement</h3>
+            <h3 class="text-xl font-semibold">department</h3>
           </div>
           <div class="flex items-center justify-between mb-6">
             <!--  <button @click="goToPrev" aria-label="Previous">
@@ -61,7 +61,7 @@ console.log(props)
           </button> -->
             <div class="flex-1 mx-4">
               <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
-                <Image v-if="data.departement.data.image" :src="data.departement.data.image" :imageCover="true"
+                <Image v-if="data.department.data.image" :src="data.department.data.image" :imageCover="true"
                   class="w-full h-40 object-cover rounded-t-lg" />
                 <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
                   <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
@@ -76,17 +76,17 @@ console.log(props)
 
           <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
             <div class="text-sm font-medium">
-              <span>{{ data.departement.data.name || 'No label' }}</span>
+              <span>{{ data.department.data.name || 'No label' }}</span>
             </div>
             <div class="text-md">
-              <span class="text-gray-400">{{ data.departement.data.description || 'No description' }}</span>
+              <span class="text-gray-400">{{ data.department.data.description || 'No description' }}</span>
             </div>
           </div>
         </div>
 
       </div>
 
-      <SetVisibleList :title="'Family List'" :list_data="data.families"  :disabled="true"/>
+      <SetVisibleList :title="'Family List'" :list_data="data.families?.data"  :disabled="true"/>
     </div>
   </div>
 
