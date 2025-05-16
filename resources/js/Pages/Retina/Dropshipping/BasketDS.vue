@@ -134,6 +134,7 @@ const props = defineProps<{
 
     is_in_basket: boolean  // true if Order state is 'created'
     upload_spreadsheet: UploadPallet
+    balance: string 
 }>()
 
 
@@ -395,7 +396,7 @@ const isModalConfirmationOrder = ref(false)
 
     <DSCheckoutSummary
         :summary="box_stats"
-        :balance="24"
+        :balance="balance"
     />
 
 
