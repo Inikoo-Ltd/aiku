@@ -74,3 +74,11 @@ export const getBlueprint = (componentName: string) => {
     }
     return components[componentName] ?? []
 }
+
+export const getBluprintPermissions = (componentName: string) => {
+    const components: Component = {
+         "departments": false,
+         'family-1' : false,
+    }
+    return components[componentName] ?? []
+}
