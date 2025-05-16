@@ -86,7 +86,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
                 'pallet_returns.dispatched_at',
                 'pallet_returns.type',
                 'pallet_returns.total_amount',
-                'currencies.code as currency_code'
+                'currencies.code as currency_code',
             ])
             ->allowedSorts(['reference', 'total_amount'])
             ->allowedFilters([$globalSearch])
@@ -161,7 +161,6 @@ class IndexPalletReturnsInPlatform extends OrgAction
 
     public function getBreadcrumbs($routeParameters): array
     {
-        return []; //todo: fix
         return
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeParameters),
