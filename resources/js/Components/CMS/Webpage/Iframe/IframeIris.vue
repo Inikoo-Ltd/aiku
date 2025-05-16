@@ -11,64 +11,38 @@ const props = defineProps<{
   fieldValue: any;
   webpageData?: any;
   blockData?: Object;
+  screenType: "mobile" | "tablet" | "desktop"
 }>();
 
-const screenWidth = ref(0);
+const screenWidth = ref(window.innerWidth);
 
-// Fungsi untuk memperbarui ukuran layar saat berubah
 const updateScreenWidth = () => {
-  if (window) {
-    screenWidth.value = window.innerWidth;
-  }
+	screenWidth.value = window.innerWidth;
 };
 
 onMounted(() => {
-  if (window) {
-    window.addEventListener("resize", updateScreenWidth);
-  }
+	window.addEventListener("resize", updateScreenWidth);
 });
 
 onUnmounted(() => {
-  if (window) {
-    window.removeEventListener("resize", updateScreenWidth);
-  }
+	window.removeEventListener("resize", updateScreenWidth);
 });
 
-// Menentukan ukuran berdasarkan kondisi Mobile/Desktop
+
 const iframeStyles = computed(() => {
-  const baseStyles = getStyles(props.fieldValue?.container?.properties) || {};
-
-  if (props.fieldValue?.link?.includes("wowsbar")) {
-    if (screenWidth.value <= 768) {
-      // Mobile (≤768px)
-      return {
-        ...baseStyles,
-        width: "100%",
-        height: "26vh", // Bisa diatur sesuai kebutuhan
-      };
-    } 
-  }
-
-  return baseStyles;
+	const baseStyles = getStyles(props.fieldValue?.container?.properties,props.screenType) || {};
+	return baseStyles;
 });
-
-const isMounted = ref(false)
-onMounted(() => {
-  isMounted.value = true
-})
 </script>
 
 <template>
-  <iframe 
-    v-if="isMounted"
-    :title="fieldValue?.title || `iframe-${uuidv4()}`"
-    :src="fieldValue?.link" 
-    :style="iframeStyles"
-    loading="lazy" 
-    referrerpolicy="no-referrer-when-downgrade"
-  />
+ <section>
+		<div v-if="!props.fieldValue?.link?.includes('wowsbar')" class="relative">
+			<iframe :title="fieldValue?.title || `iframe-${uuidv4()}`" :src="fieldValue?.link" :style="iframeStyles" allowfullscreen loading="lazy" />
+		</div>
 
-  <!-- Loading (skeleton) -->
-  <div v-else :style="iframeStyles" class="skeleton">
-  </div>
+		<div v-else :style="iframeStyles">
+			<iframe :title="fieldValue?.title || `iframe-${uuidv4()}`" :src="fieldValue?.link" loading="lazy" class="w-full h-full overflow-hidden" allowfullscreen/>
+		</div>
+	</section>
 </template>
