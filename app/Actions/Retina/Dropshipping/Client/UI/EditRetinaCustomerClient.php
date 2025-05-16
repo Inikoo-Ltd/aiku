@@ -1,15 +1,16 @@
 <?php
-
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:32:25 Malaysia Time, Pantai Lembeng, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 16-05-2025-16h-28m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Retina\Dropshipping\Client\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -20,22 +21,20 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
+use Cassandra\Type\Custom;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditCustomerClient extends OrgAction
+class EditRetinaCustomerClient extends RetinaAction
 {
-    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
-
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
         return Inertia::render(
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
+                    $customerClient
                 ),
                 'title'       => __('edit client'),
                 'pageHead'    => [
@@ -51,7 +50,6 @@ class EditCustomerClient extends OrgAction
                             'label' => __('cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
-                                    'shops.show.customers.create' => 'shops.show.customers.index',
                                     default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -90,12 +88,7 @@ class EditCustomerClient extends OrgAction
                                         'type'    => 'address',
                                         'label'   => __('Address'),
                                         'value'   => AddressFormFieldsResource::make(
-                                            new Address(
-                                                [
-                                                    'country_id' => $customerClient->shop->country_id,
-
-                                                ]
-                                            )
+                                            $customerClient->address
                                         )->getArray(),
                                         'options' => [
                                             'countriesAddressData' => GetAddressData::run()
@@ -107,10 +100,11 @@ class EditCustomerClient extends OrgAction
                         ],
                     'args' => [
                         'updateRoute'     => [
-                            'name'      => 'grp.models.customer-client.update',
+                            'name'      => 'retina.models.customer-client.update',
                             'parameters' => [
                                 'customerClient' => $customerClient->id
-                            ]
+                            ],
+                            'method' => 'patch'
                         ]
                     ]
                 ]
@@ -118,38 +112,20 @@ class EditCustomerClient extends OrgAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $shop = $request->route()->parameter('shop');
-        return $request->user()->authTo("crm.$shop->id.edit");
-    }
+    public function asController(
+        CustomerClient $customerClient,
+        ActionRequest $request
+    ): Response {
+        $this->initialisation($request);
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
-    {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->parent = $customerHasPlatform;
-        $this->initialisationFromShop($shop, $request);
         return $this->handle($customerClient, $request);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
-    {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
-
-        $this->parent = $customerHasPlatform;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-        return $this->handle($customerClient, $request);
-    }
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(CustomerClient $customerClient): array
     {
         return array_merge(
-            ShowCustomerClient::make()->getBreadcrumbs(
-                parent: $this->parent,
-                routeName: preg_replace('/edit$/', 'show', $routeName), // Adjust to match edit/index
-                routeParameters: $routeParameters,
+            ShowRetinaCustomerClient::make()->getBreadcrumbs(
+                customerClient: $customerClient
             ),
             [
                 [

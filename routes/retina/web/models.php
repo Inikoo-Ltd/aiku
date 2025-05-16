@@ -22,6 +22,7 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
+use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
@@ -179,6 +180,7 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
 
 Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::patch('{customerClient:id}/update', UpdateRetinaCustomerClient::class)->name('update')->withoutScopedBindings();
     Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
     Route::post('platform/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform.store');
     Route::post('platform/{platform:id}/upload', ImportRetinaClients::class)->name('platform.upload');

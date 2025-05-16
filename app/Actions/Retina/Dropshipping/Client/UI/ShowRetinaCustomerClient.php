@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -20,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaCustomerClient extends RetinaAction
 {
+    use WithActionButtons;
+
     public function handle(CustomerClient $customerClient): CustomerClient
     {
         return $customerClient;
@@ -58,6 +61,7 @@ class ShowRetinaCustomerClient extends RetinaAction
                         'title' => __('customer client')
                     ],
                     'actions'    => [
+                        $this->getEditActionIcon($request, 'Profile'),
                         [
                             'type'  => 'button',
                             'style' => 'create',
