@@ -1,0 +1,54 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 16 May 2025 14:54:33 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Http\Resources\Web;
+
+use App\Actions\Helpers\Images\GetPictureSources;
+use App\Http\Resources\HasSelfCall;
+use App\Models\Helpers\Media;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @property string $slug
+ * @property string $code
+ * @property string $name
+ * @property int $image_id
+ * @property string $title
+ * @property string $url
+ */
+class WebBlockFamiliesResource extends JsonResource
+{
+    use HasSelfCall;
+
+    public function toArray($request): array
+    {
+
+
+        $imageSources = null;
+        $media        = Media::find($this->image_id);
+        if ($media) {
+            $width  = 0;
+            $height = 0;
+
+
+            $image        = $media->getImage()->resize($width, $height);
+            $imageSources = GetPictureSources::run($image);
+        }
+
+
+        return [
+            'code'  => $this->code,
+            'name'  => $this->name,
+            'title' => $this->title,
+            'url'   => $this->url,
+            'image' => $imageSources
+
+
+        ];
+    }
+}
