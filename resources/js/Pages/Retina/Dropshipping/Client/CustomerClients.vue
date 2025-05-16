@@ -39,8 +39,8 @@ const isModalUploadOpen = ref(false)
 		v-model="isModalUploadOpen"
 		scope="Supplier Product"
 		:title="{
-			label: 'Upload your new products',
-			information: 'The list of column file: customer_reference, notes, stored_items',
+			label: 'Import your clients',
+			information: 'The list of column file: contact_name, company_name, email, phone, address_line_1, address_line_2, postal_code, locality, country_code',
 		}"
         progressDescription="Adding Products to Supplier"        
         :upload_spreadsheet="upload_spreadsheet" />
