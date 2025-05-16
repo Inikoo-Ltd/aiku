@@ -173,6 +173,14 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'data'           => OrderResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
 
+                'pay_route'      => [
+                    'name'       => 'retina.models.order.pay',
+                    'parameters' => [
+                        'order' => $order->id
+                    ],
+                    'method'     => 'patch'
+                ],
+
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
