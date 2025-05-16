@@ -53,35 +53,6 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
         $action = [];
 
-        $action[] = $this->platform && $this->platform->type == PlatformTypeEnum::MANUAL && OrderStateEnum::CREATING == $order->state ? [
-            'type' => 'buttonGroup',
-            'key' => 'upload-add',
-            'button' => [
-                [
-                    'type' => 'button',
-                    // 'style' => 'secondary',
-                    // 'icon' => ['fal', 'fa-upload'],
-                    // 'label' => '',
-                    // 'key' => 'upload',
-                    // 'tooltip' => __('Upload pallets via spreadsheet'),
-                ],
-            ],
-        ] : [];
-
-        // if($order->state == OrderStateEnum::CREATING) {
-        //     $action[] = [
-        //         'type'  => 'button',
-        //         'style' => 'create',
-        //         'label' => __('Submit'),
-        //         'route' => [
-        //             'name'       => 'retina.models.order.submit',
-        //             'parameters' => [
-        //                 'order' => $order->id
-        //             ],
-        //             'method'     => 'patch'
-        //         ]
-        //     ];
-        // }
         return Inertia::render(
             'Dropshipping/BasketDS',
             [
