@@ -101,7 +101,7 @@ class ShowWarehousePalletReturn extends OrgAction
                     'actions' => $actions
                 ],
 
-                'shipment_route'=> [
+                'shipment_route' => [
                     'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
                     'parameters' => [
                         'palletReturn' => $palletReturn->id

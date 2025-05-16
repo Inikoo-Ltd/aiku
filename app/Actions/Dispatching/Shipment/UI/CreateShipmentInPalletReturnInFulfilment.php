@@ -42,7 +42,7 @@ class CreateShipmentInPalletReturnInFulfilment extends OrgAction
 
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
-         $this->handle($palletReturn, $this->validatedData);
+        $this->handle($palletReturn, $this->validatedData);
 
     }
 
