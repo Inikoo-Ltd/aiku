@@ -68,6 +68,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
+        $queryBuilder->where('platform_id', $customerHasPlatform->platform_id);
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
 
@@ -86,7 +87,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
                 'pallet_returns.dispatched_at',
                 'pallet_returns.type',
                 'pallet_returns.total_amount',
-                'currencies.code as currency_code'
+                'currencies.code as currency_code',
             ])
             ->allowedSorts(['reference', 'total_amount'])
             ->allowedFilters([$globalSearch])
@@ -161,7 +162,6 @@ class IndexPalletReturnsInPlatform extends OrgAction
 
     public function getBreadcrumbs($routeParameters): array
     {
-        return []; //todo: fix
         return
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeParameters),

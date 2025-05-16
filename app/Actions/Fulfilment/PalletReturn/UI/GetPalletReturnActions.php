@@ -238,7 +238,7 @@ class GetPalletReturnActions
 
     public function addServicesActions(PalletReturn $palletReturn, array $actions): array
     {
-        if ($palletReturn->recurringBill && $palletReturn->recurringBill->status == RecurringBillStatusEnum::CURRENT) {
+        if ($palletReturn->recurringBill && $palletReturn->recurringBill->status == RecurringBillStatusEnum::CURRENT && !$palletReturn->platform_id) {
             $actions[] =
                 [
                     'type'   => 'buttonGroup',

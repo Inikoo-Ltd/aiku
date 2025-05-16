@@ -48,7 +48,9 @@ class DispatchFulfilmentOrderShopify extends OrgAction
         }
 
         if ($response['body'] == 'Not Found') {
-            throw ValidationException::withMessages(['messages' => __('You dont have any products')]);
+            throw ValidationException::withMessages(['messages' => __('You have error while request')]);
         }
+
+        UpdateTrackingFulfilmentOrderShopify::dispatch($palletReturn);
     }
 }
