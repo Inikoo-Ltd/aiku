@@ -24,6 +24,7 @@ use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemsUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -414,12 +415,14 @@ class ShowPalletReturn extends OrgAction
         };
     }
 
-    public function getPrevious(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getPrevious(Warehouse|FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
     {
         if ($parent instanceof FulfilmentCustomer) {
             $previous = PalletReturn::where('fulfilment_customer_id', $parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
         } elseif ($parent instanceof Fulfilment) {
             $previous = PalletReturn::where('fulfilment_id', $parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
+        } elseif ($parent instanceof CustomerHasPlatform) {
+            $previous = PalletReturn::where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)->where('platform_id', $parent->platform_id)->where('id', '<', $palletReturn->id)->orderBy('id', 'desc')->first();
         } else {
             $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
         }
@@ -427,12 +430,14 @@ class ShowPalletReturn extends OrgAction
         return $this->getNavigation($parent, $previous, $request->route()->getName());
     }
 
-    public function getNext(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getNext(Warehouse|FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
     {
         if ($parent instanceof FulfilmentCustomer) {
             $next = PalletReturn::where('fulfilment_customer_id', $parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
         } elseif ($parent instanceof Fulfilment) {
             $next = PalletReturn::where('fulfilment_id', $parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
+        } elseif ($parent instanceof CustomerHasPlatform) {
+            $next = PalletReturn::where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)->where('platform_id', $parent->platform_id)->where('id', '>', $palletReturn->id)->orderBy('id')->first();
         } else {
             $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
         }
@@ -440,7 +445,7 @@ class ShowPalletReturn extends OrgAction
         return $this->getNavigation($parent, $next, $request->route()->getName());
     }
 
-    private function getNavigation(Warehouse|FulfilmentCustomer|Fulfilment $parent, ?PalletReturn $palletReturn, string $routeName): ?array
+    private function getNavigation(Warehouse|FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent, ?PalletReturn $palletReturn, string $routeName): ?array
     {
         if (!$palletReturn) {
             return null;
@@ -468,6 +473,20 @@ class ShowPalletReturn extends OrgAction
                         'organisation'       => $palletReturn->organisation->slug,
                         'fulfilment'         => $palletReturn->fulfilment->slug,
                         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                        'palletReturn'       => $palletReturn->reference
+                    ]
+
+                ]
+            ],
+            'CustomerHasPlatform' => [
+                'label' => $palletReturn->reference,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation'       => $palletReturn->organisation->slug,
+                        'fulfilment'         => $palletReturn->fulfilment->slug,
+                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                        'customerHasPlatform' => $parent,
                         'palletReturn'       => $palletReturn->reference
                     ]
 

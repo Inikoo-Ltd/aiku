@@ -29,7 +29,8 @@
         {{Vite::useHotFile('pupil.hot')->useBuildDirectory('pupil')->withEntryPoints(['resources/js/app-pupil.js'])}}
         @inertiaHead
     </head>
-    <body class="font-sans antialiased h-full text-slate-700">
+    <!-- <body class="font-sans antialiased h-full text-slate-700"> -->
+    <body class="font-sans antialiased text-slate-700">
         @if(\Osiset\ShopifyApp\Util::useNativeAppBridge())
             @include('shopify-app::partials.token_handler')
         @endif

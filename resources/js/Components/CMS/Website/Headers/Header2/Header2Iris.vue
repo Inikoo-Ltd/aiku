@@ -3,6 +3,7 @@ import { getStyles } from "@/Composables/styles"
 import { checkVisible } from "@/Composables/Workshop"
 import { inject } from "vue"
 import Image from "@/Components/Image.vue"
+import MobileHeader from "../MobileHeader.vue";
 
 const props = defineProps<{
 	fieldValue: {
@@ -34,9 +35,9 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 </script>
 
 <template>
-	<div class="relative" :style="getStyles(fieldValue.container.properties)">
-		<div class="flex flex-col justify-between items-center py-4 px-6">
-			<div class="w-full grid grid-cols-3 items-center gap-6">
+	<div class="relative shadow-sm" :style="getStyles(fieldValue.container.properties)">
+		<div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
+			<div class="w-full grid grid-cols-3 items-start gap-6">
 				<!-- Logo -->
 				<component
 					v-if="fieldValue?.logo?.image?.source"
@@ -53,14 +54,12 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 					</Image>
 				</component>
 
-				<div class="relative justify-self-center w-full max-w-md"></div>
-				<div
-					class="relative"
-					:style="getStyles(fieldValue.container.properties, screenType)">
+				<div class="col-span-2 relative w-full h-full">
 					<div v-html="fieldValue?.text?.text" />
 				</div>
 			</div>
 		</div>
+		<MobileHeader :header-data="fieldValue" :menu-data="{}" :screenType="screenType" />
 	</div>
 </template>
 
