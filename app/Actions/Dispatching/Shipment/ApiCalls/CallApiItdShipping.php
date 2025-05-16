@@ -167,7 +167,6 @@ class CallApiItdShipping extends OrgAction
                     $errorData['others'][] = Str::of($code)->replace('_', ' ')->lower();
                 }
             }
-            dd($errorData);
         }
 
         return [
