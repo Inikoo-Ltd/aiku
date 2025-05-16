@@ -25,6 +25,7 @@ class ShipmentsResource extends JsonResource
             'id'                  => $this->id,
             'name'               => $this->shipper->name,
             'reference'          => $this->reference,
+            'tracking'          => $this->tracking,
             'trackings'          => $this->trackings,
             'tracking_urls'     => $this->tracking_urls,
             'tracking_url'        => $this->shipper->tracking_url,

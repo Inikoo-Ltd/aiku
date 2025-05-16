@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -19,11 +20,23 @@ class GetProductCategoryShowcase
 
     public function handle(ProductCategory $productCategory): array
     {
-        return [
-            'departement' => FamilyResource::make($productCategory),
-            'families'    => FamilyResource::collection(
-                $productCategory->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get()
-            ),
-        ];
+        $data = [];
+        switch ($productCategory->type) {
+            case ProductCategoryTypeEnum::DEPARTMENT :
+                $data = [
+                    'url_master' => route('grp.masters.departments.show', [
+                        'masterDepartment' => $productCategory->masterProductCategory->slug,
+                    ]),
+                    'department' => DepartmentResource::make($productCategory),
+                    'families'   => FamilyResource::collection($productCategory->getFamilies()),
+                ];
+                break;
+
+            default:
+                $data = [
+                    'family' => FamilyResource::make($productCategory),
+                ];
+        }
+        return $data;
     }
 }

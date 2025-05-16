@@ -51,7 +51,7 @@ export const getBlueprint = (componentName: string) => {
         'cta2': CTA2Blueprint.blueprint,
         'cta3': CTA3Blueprint.blueprint,
         'text-column' : TextColumn.blueprint,
-        "department-1": DepartementBlueprint.blueprint,
+        "departments": DepartementBlueprint.blueprint,
         "iframe": IframeBlueprint.blueprint,
         'images': ImageBlueprint.blueprint,
         "overview_aurora": OverviewBlueprint.blueprint,

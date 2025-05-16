@@ -9,6 +9,8 @@
 namespace App\Actions\Dispatching\GoodsOut\UI;
 
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
@@ -151,7 +153,8 @@ class ShowWarehousePalletReturn extends OrgAction
                     'navigation' => $navigation
                 ],
                 'data'             => PalletReturnResource::make($palletReturn),
-
+                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
+                 'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer),
 
 
                 'pallets_route' => [

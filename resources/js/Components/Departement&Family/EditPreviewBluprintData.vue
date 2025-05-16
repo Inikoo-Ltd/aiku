@@ -54,7 +54,7 @@ const goToNext = () => {
 }
 
 const componentsDepartment: Record<string, Component> = {
-    'department-1': DepartmentRender,
+    'departments': DepartmentRender,
     'family-1': Family1Render,
 }
 

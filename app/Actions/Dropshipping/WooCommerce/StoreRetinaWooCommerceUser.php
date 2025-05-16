@@ -8,14 +8,13 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
-use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -25,46 +24,17 @@ class StoreRetinaWooCommerceUser extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer, $modelData): void
+    public function handle(Customer $customer, array $modelData): void
     {
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
+        data_set($modelData, 'name', Arr::get($modelData, 'name'));
+        data_set($modelData, 'settings.credentials.consumer_key', Arr::pull($modelData, 'consumer_key'));
+        data_set($modelData, 'settings.credentials.consumer_secret', Arr::pull($modelData, 'consumer_secret'));
+        data_set($modelData, 'settings.credentials.store_url', Arr::pull($modelData, 'store_url'));
 
         $customer->wooCommerceUser()->create($modelData);
 
-        $customer->platforms()->attach(Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first(), [
-            'group_id'        => $customer->group_id,
-            'organisation_id' => $customer->organisation_id,
-            'shop_id'         => $customer->shop_id
-        ]);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
-    }
-
-    public function rules(): array
-    {
-        return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('woo_commerce_users', 'name')]
-        ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $this->set('name', $request->input('name'));
-    }
-
-    public function asController(ActionRequest $request): void
-    {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
-
-        $this->handle($customer, $this->validatedData);
+        AttachCustomerToPlatform::make()->action($customer, Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first(), []);
     }
 }

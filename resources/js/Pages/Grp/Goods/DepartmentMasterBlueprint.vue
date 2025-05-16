@@ -24,6 +24,6 @@ const props = defineProps<{
         <EditPreviewBluprintData title="Department" :data="department.data" :update_route="update_route"
             :web_block_types="web_block_types" :upload_image_route="upload_image_route">
         </EditPreviewBluprintData>
-        <SetVisibleList title="Departments List" :list_data="families.data" :updateRoute="update_route" />
+        <SetVisibleList title="Families List" :list_data="families.data" :updateRoute="update_route" />
     </div>
 </template>

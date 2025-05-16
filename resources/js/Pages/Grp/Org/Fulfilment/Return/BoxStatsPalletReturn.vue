@@ -41,12 +41,15 @@ const props = defineProps<{
 
 	dataPalletReturn: PalletReturn
 	boxStats: BoxStats
-  address_management:{
-    updateRoute: routeType
-    addresses: AddressManagement
-    address_update_route: routeType
-    address_modal_title: string
-  },
+	address_management:{
+		updateRoute: routeType
+		addresses: AddressManagement
+		address_update_route: routeType
+		address_modal_title: string
+	},
+	shipments: {
+		delete_route: routeType
+	}
 
 }>()
 
@@ -252,13 +255,14 @@ const disableBeforeToday = (date: Date) => {
 }
 
 // Section: Parcels
-// const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
 const isLoadingSubmitParcels = ref(false)
 const isModalParcels = ref(false)
 const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
 const onDeleteParcel = (index: number) => {
 	parcelsCopy.value.splice(index, 1)
 }
+
+// Section: Shipment
 const onSubmitShipment = () => {
 	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }),
 		{
@@ -290,6 +294,37 @@ const onSubmitShipment = () => {
 				isLoadingSubmitParcels.value = false
 			},
 		})
+}
+const isDeleteShipment = ref<number | null>(null)
+const onDeleteShipment = (idShipment: number) => {
+	router.delete(route(props.shipments.delete_route.name, { 
+		...props.shipments.delete_route.parameters,
+		shipment: idShipment,
+	}),
+	{
+		preserveScroll: true,
+		onStart: () => {
+			isDeleteShipment.value = idShipment
+		},
+		onSuccess: () => {
+			notify({
+				title: trans("Success!"),
+				text: trans("Shipment has deleted."),
+				type: "success",
+			})
+		},
+		onError: (errors) => {
+			notify({
+				title: trans("Something went wrong."),
+				text: trans("Failed to delete shipment. Please try again or contact administrator."),
+				type: "error",
+			})
+		},
+		onFinish: () => {
+			isDeleteShipment.value = null
+			isLoadingSubmitParcels.value = false
+		},
+	})
 }
 
 const listError = inject('listError', {})
@@ -534,15 +569,16 @@ const listError = inject('listError', {})
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
+
 			<!-- Section: Parcels -->
-			<div class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+			<div v-if="dataPalletReturn?.state === 'picked' || dataPalletReturn?.state === 'dispatched'" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
-					<div class="leading-4 text-sm flex justify-between w-full">
+					<div class="leading-4 text-base flex justify-between w-full py-1">
 						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
-						<!-- Can't edit Parcels if Shipment has set -->
-						<template v-if="!boxStats.shipments?.length">
+						<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
+						<template v-if="(boxStats?.shipments?.length < 1) && dataPalletReturn?.state === 'picked'">
 							<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
 								{{ trans("Edit") }}
 								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -555,7 +591,7 @@ const listError = inject('listError', {})
 					</div>
 					
 					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
-						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-xs tabular-nums">
+						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-sm tabular-nums">
 							<span class="truncate">
 								{{ parcel.weight }} kg
 							</span>
@@ -569,28 +605,37 @@ const listError = inject('listError', {})
 			</div>
 
 			<!-- Section: Shipments -->
-			<div v-if="!dataPalletReturn.is_collection" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+			<div v-if="!dataPalletReturn.is_collection && boxStats.shipments.length" class="flex gap-x-1 py-0.5" xxclass="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
-					<div class="leading-4 text-sm flex justify-between w-full">
+					<div class="leading-4 text-base flex justify-between w-full py-1">
 						<div>{{ trans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
 
 					</div>
 					
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
-						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="text-xs tabular-nums">
-							<a v-if="sments.combined_label_url" target="_blank" :href="sments.combined_label_url" class="">
-								{{ sments.name }}
-								<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
-							</a>
-							
-							<div v-else>
-								<span class="truncate">
+						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums">
+							<div class="flex justify-between">
+								<a v-if="sments.combined_label_url" target="_blank" :href="sments.combined_label_url" class="">
 									{{ sments.name }}
-								</span>
-								<!-- <span class="text-gray-500 truncate">
-									({{ sments.tracking }})
-								</span> -->
+									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+								</a>
+								
+								<div v-else>
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ sments.tracking }})
+									</span>
+								</div>
+
+								<div v-if="isDeleteShipment === sments.id" class="px-1">
+									<LoadingIcon />
+								</div>
+								<div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
+									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
+								</div>
 							</div>
 						</li>
 					</ul>
@@ -773,7 +818,7 @@ const listError = inject('listError', {})
 				<!-- Repeat for more rows -->
 				<div class=" grid grid-cols-12 mt-2">
 					<div></div>
-					<div @click="() => parcelsCopy.push({ weight: 0, dimensions: [0,0,0]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+					<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [40, 40, 40]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
 						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
 						{{ trans("Add another parcel") }}
 					</div>
