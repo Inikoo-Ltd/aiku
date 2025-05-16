@@ -150,6 +150,13 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),
+                'upload_route' => [
+                    'name' => 'retina.models.customer-client.platform.upload',
+                    'parameters' => [
+                        'platform' => $this->platform->id,
+                    ],
+                    'method' => 'post'
+                ]
 
             ]
         )->table($this->tableStructure($this->platformUser));
