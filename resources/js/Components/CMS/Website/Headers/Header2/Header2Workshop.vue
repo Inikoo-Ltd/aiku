@@ -170,7 +170,7 @@ const editable = ref(true)
 					:is="modelValue?.logo?.image?.source ? 'a' : 'div'"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="block w-fit h-full"
+					class="block w-fit h-auto"
 					@click="() => emits('setPanelActive', 'logo')">
 					<Image
 						:style="getStyles(modelValue.logo.properties, screenType)"
