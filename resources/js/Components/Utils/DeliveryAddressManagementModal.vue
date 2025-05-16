@@ -24,6 +24,9 @@ const props = defineProps<{
   address_modal_title?: string
 }>();
 
+const emits = defineEmits<{
+    (e: "onDone"): void
+}>()
 
 const homeAddress = computed(() => {
   return props.addresses.address_list?.data.find(
@@ -413,7 +416,13 @@ const onDeleteAddress = (addressID: number) => {
       </div>
 
     </div>
-
+    
+  </div>
+  
+  <div class="border-t border-gray-300 pt-3">
+    <Button @click="emits('onDone')" type="tertiary" label="done" full>
+    
+    </Button>
   </div>
 </template>
 
