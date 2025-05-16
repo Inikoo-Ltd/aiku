@@ -77,7 +77,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
             'consumer_secret' => $command->argument('consumer_secret')
         ];
 
-        $customer = Customer::find($command->argument('customer'))->first();
+        $customer = Customer::find($command->argument('customer'));
 
         data_set($modelData, 'name', $customer->name);
 

@@ -17,6 +17,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\WooCommerceUser;
 
 enum ProductStateEnum: string
 {
@@ -93,9 +94,9 @@ enum ProductStateEnum: string
         ];
     }
 
-    public static function count(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser $parent, $bucket = null): array
+    public static function count(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, $bucket = null): array
     {
-        if ($parent instanceof ShopifyUser || $parent instanceof Customer || $parent instanceof TiktokUser) {
+        if ($parent instanceof ShopifyUser || $parent instanceof Customer || $parent instanceof TiktokUser || $parent instanceof WooCommerceUser) {
             return [];
         }
 
