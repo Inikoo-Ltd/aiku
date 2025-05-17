@@ -30,7 +30,7 @@ defineOptions({
             :enableTimePicker="false"
             :format="format ?? undefined"
             auto-apply
-            :clearable="!$attrs.required ?? false"
+            :clearable="!$attrs.required || false"
             @update:modelValue="(newVal: Date) => emits('update:modelValue', newVal)"
         >
             <!-- Button: 'Today' -->
