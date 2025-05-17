@@ -2,17 +2,17 @@
 import { useLayoutStore } from "@/Stores/retinaLayout";
 import { Navigation } from "@/types/Navigation";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faRoute } from "@fal";
+import { faAsterisk } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link } from "@inertiajs/vue3";
 import { capitalize } from "@/Composables/capitalize";
 import { isNavigationActive } from "@/Composables/useUrl";
 import { onMounted, ref, onUnmounted } from "vue";
 import RetinaTopBarSubsections from "@/Layouts/Retina/RetinaTopBarSubsections.vue";
-import { faTachometerAlt, faFileInvoiceDollar, faHandHoldingBox, faPallet } from "@fal";
+import { faRoute, faTachometerAlt, faFileInvoiceDollar, faHandHoldingBox, faPallet } from "@fal";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faTachometerAlt, faFileInvoiceDollar, faRoute, faPallet, faHandHoldingBox);
+library.add(faAsterisk, faTachometerAlt, faFileInvoiceDollar, faRoute, faPallet, faHandHoldingBox);
 
 const props = defineProps<{
     navKey: string | number  // shops_navigation | warehouses_navigation
@@ -38,11 +38,12 @@ onUnmounted(() => {
 //     return (layout.currentRoute).includes(props.nav.root || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')  // 'aaaa' so it will return false
 // }
 
-
+const activeClass = `bg-[${layout.app?.theme[3]}] text-[${layout.app?.theme[0]}]`
+const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]}`
 </script>
 
 <template>
-    <!-- {{ layout.currentRoute }} -->
+    <!-- {{ layout.app?.theme }} -->
     <!-- <div class="text-xxs">{{ layout.currentRoute }} <br> {{ nav.route.name }}</div> -->
     <Link :href="nav?.route?.name ? route(nav.route?.name, nav?.route?.parameters) : '#'"
         class="group flex items-center px-2 text-sm gap-x-2" :class="[
@@ -62,15 +63,28 @@ onUnmounted(() => {
     >
         <LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
         <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
-        <Transition name="slide-to-left">
-            <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block"
-                :class="[layout.leftSidebar.show ? '' : 'block md:hidden']">
-                {{ nav.label }}
-            </span>
-            <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
-                {{ nav.label }}
-            </span>
-        </Transition>
+        <div class="flex items-center justify-between w-full leading-none">
+            <Transition name="slide-to-left">
+                <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block"
+                    :class="[layout.leftSidebar.show ? '' : 'block md:hidden']">
+                    {{ nav.label }}
+                </span>
+                <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
+                    {{ nav.label }}
+                </span>
+            </Transition>
+
+            <div v-if="nav.right_label" class="h-4 w-4 rounded-full flex justify-center items-center text-xs"
+                :class="[
+                    isNavigationActive(layout.currentRoute, props.nav.root) ? activeClass : inactiveClass,
+                ]"
+                v-tooltip="nav.right_label.tooltip"
+            >
+                {{ nav.right_label.label }}
+                <FontAwesomeIcon v-if="nav.right_label.is_important" icon="fas fa-asterisk" class="text-red-500 text-[5px]" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="nav.right_label.icon" :icon="nav.right_label.icon" fixed-width aria-hidden="true" />
+            </div>
+        </div>
     </Link>
 
     <!-- If this Navigation is active, then teleport the SubSections to #RetinaTopBarSubsections in <AppTopBar> -->

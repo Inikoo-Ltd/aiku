@@ -25,6 +25,14 @@ export interface Navigation {
     scope?: string
     icon?: string[] | string
     route?: routeType
+    right_label?: {
+        label: string
+        icon?: string[]
+        is_important?: boolean
+        class?: string
+        tooltip?: string
+        icon: string | string[]
+    }
     topMenu?: {
         subSections?: SubSection[]
         dropdown?: {
