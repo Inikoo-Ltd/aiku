@@ -31,6 +31,7 @@ use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
@@ -89,6 +90,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
         Route::get('my-portfolio', [IndexRetinaPortfolios::class, 'inPlatform'])->name('index');
+        Route::get('my-portfolio/download', DownloadPortfolios::class)->name('download');
         Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
     });
 
