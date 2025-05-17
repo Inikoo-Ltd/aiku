@@ -138,7 +138,7 @@ console.log('DS Orders', props)
     <PageHeading :data="pageHead">
     </PageHeading>
     
-    <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
+    <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
     </div>
 

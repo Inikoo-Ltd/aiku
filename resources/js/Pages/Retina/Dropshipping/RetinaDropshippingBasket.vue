@@ -139,6 +139,7 @@ const props = defineProps<{
     balance: string 
     total_to_pay: number
     address_management: AddressManagement
+    total_products: number
 }>()
 
 
@@ -415,7 +416,7 @@ console.log('basket ds', props)
 			@update:tab="handleTabUpdate"/>
     </div>
 
-    <div class="flex justify-end px-6">
+    <div v-if="total_products > 0" class="flex justify-end px-6">
         <div class="w-72">
             <PureTextarea
                 v-model="noteToSubmit"
@@ -430,23 +431,8 @@ console.log('basket ds', props)
                 class="mb-2"
             />
             
-            <!-- Checkout -->
-            <ButtonWithLink
-                v-if="total_to_pay > 0"
-                iconRight="fas fa-arrow-right"
-                :label="trans('Continue to Checkout')"
-                :routeTarget="{
-                    name: 'retina.dropshipping.checkout.show',
-                    parameters: {
-                        order: props?.data?.data?.slug
-                    }
-                }"
-                class="w-full"
-                full
-            />
-
             <!-- Place Order -->
-            <template v-else>
+            <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
                     :label="trans('Place order')"
@@ -462,6 +448,22 @@ console.log('basket ds', props)
                     </div>
                 </div>
             </template>
+
+            <!-- Checkout -->
+            <ButtonWithLink
+                v-else
+                iconRight="fas fa-arrow-right"
+                :label="trans('Continue to Checkout')"
+                :routeTarget="{
+                    name: 'retina.dropshipping.checkout.show',
+                    parameters: {
+                        order: props?.data?.data?.slug
+                    }
+                }"
+                class="w-full"
+                full
+            />
+
 
         </div>
     </div>

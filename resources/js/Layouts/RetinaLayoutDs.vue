@@ -96,7 +96,7 @@ console.log("Layout Ds")
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 max-w-7xl w-full mx-auto my-10 px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 max-w-4xl lg:max-w-7xl w-full mx-auto my-10 px-8 xl:px-0 transition-all">
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[

@@ -33,49 +33,49 @@ const isModalShippingAddress = ref(false)
     <div class="py-4 grid grid-cols-7 px-4 gap-x-6">
         <div class="col-span-2">
             <!-- Field: Reference Number -->
-            <Link as="a" v-if="summary?.customer.reference" v-tooltip="trans('Reference')"
-                :href="'route(summary?.customer.route.name, summary?.customer.route.parameters)'"
+            <Link as="a" v-if="summary?.customer_client.reference" v-tooltip="trans('Reference')"
+                :href="route('retina.dropshipping.client.show', summary?.customer_client.reference)"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <dd class="text-sm text-gray-500">#{{ summary?.customer.reference }}</dd>
+                <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
-            <div v-if="summary?.customer.contact_name" v-tooltip="trans('Contact name')"
+            <div v-if="summary?.customer_client.contact_name" v-tooltip="trans('Contact name')"
                 class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <dd class="text-sm text-gray-500">{{ summary?.customer.contact_name }}</dd>
+                <dd class="text-sm text-gray-500">{{ summary?.customer_client.contact_name }}</dd>
             </div>
 
             <!-- Field: Company name -->
-            <div v-if="summary?.customer.company_name" v-tooltip="trans('Company name')"
+            <div v-if="summary?.customer_client.company_name" v-tooltip="trans('Company name')"
                 class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <dd class="text-sm text-gray-500">{{ summary?.customer.company_name }}</dd>
+                <dd class="text-sm text-gray-500">{{ summary?.customer_client.company_name }}</dd>
             </div>
 
             <!-- Field: Email -->
-            <div v-if="summary?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <div v-if="summary?.customer_client.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Email')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <a :href="`mailto:${summary?.customer.email}`" v-tooltip="'Click to send email'"
-                    class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ summary?.customer.email }}</a>
+                <a :href="`mailto:${summary?.customer_client.email}`" v-tooltip="'Click to send email'"
+                    class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ summary?.customer_client.email }}</a>
             </div>
 
             <!-- Field: Phone -->
-            <div v-if="summary?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <div v-if="summary?.customer_client.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Phone')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <a :href="`tel:${summary?.customer.phone}`" v-tooltip="'Click to make a phone call'"
-                    class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer.phone }}</a>
+                <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
+                    class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer_client.phone }}</a>
             </div>
 
             <!-- Field: Shipping Address -->

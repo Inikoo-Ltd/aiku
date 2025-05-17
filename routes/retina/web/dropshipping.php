@@ -54,7 +54,7 @@ Route::prefix('client')->as('client.')->group(function () {
     Route::get('/', IndexRetinaCustomerClients::class)->name('index');
     Route::get('create', CreateRetinaCustomerClient::class)->name('create');
     Route::get('fetch', FetchRetinaCustomerClientFromShopify::class)->name('fetch');
-    Route::get('{customerClient}/show', ShowRetinaCustomerClient::class)->name('show');
+    Route::get('{customerClient:reference}/show', ShowRetinaCustomerClient::class)->name('show');
     Route::get('{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
 });
 

@@ -279,7 +279,7 @@ const onDeleteAddress = (addressID: number) => {
 
       <!-- Section: Address list -->
       <div v-else class="relative py-4 h-fit">
-        <template v-if="addresses.address_list?.data?.length">
+        <template v-if="addresses?.address_list?.data?.length">
           <div class="grid gap-x-3 gap-y-4 h-fit transition-all"
                :class="[isEditAddress ? '' : 'col-span-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4']">
 
@@ -295,7 +295,7 @@ const onDeleteAddress = (addressID: number) => {
                   <div class="relative">
                     <Transition name="spin-to-right">
                       <div class="font-semibold text-sm whitespace-nowrap">
-                        <FontAwesomeIcon v-if="addresses.current_selected_address_id == homeAddress?.id" icon="fal fa-truck" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="addresses?.current_selected_address_id == homeAddress?.id" icon="fal fa-truck" fixed-width aria-hidden="true" />
                        <!--  <Button
                         v-else
                         @click="() => onSelectAddress(homeAddress)"
