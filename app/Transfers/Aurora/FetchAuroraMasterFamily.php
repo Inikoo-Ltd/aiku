@@ -44,7 +44,6 @@ class FetchAuroraMasterFamily extends FetchAurora
         $masterDepartment = $this->organisation->group->masterProductCategories()->where('source_department_id', $this->organisation->id.':'.$this->auroraModelData->{'Product Category Department Category Key'})->first();
 
 
-
         if (in_array($code, [
             'Promo_UK',
             'Bonus100',
@@ -65,7 +64,6 @@ class FetchAuroraMasterFamily extends FetchAurora
         }
 
 
-
         $this->parsedData['parent'] = $masterDepartment ?? $masterShop;
 
         $this->parsedData['master_family'] = [
@@ -82,8 +80,6 @@ class FetchAuroraMasterFamily extends FetchAurora
         if ($createdAt) {
             $this->parsedData['master_family']['created_at'] = $createdAt;
         }
-
-
     }
 
     private function parseImages(): array

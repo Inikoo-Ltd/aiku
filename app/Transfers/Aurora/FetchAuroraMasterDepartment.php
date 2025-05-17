@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 class FetchAuroraMasterDepartment extends FetchAurora
 {
     use WithMasterFetch;
+    use WithAuroraImages;
     protected function parseModel(): void
     {
         $masterShop = $this->getMasterShop();
@@ -47,12 +48,25 @@ class FetchAuroraMasterDepartment extends FetchAurora
             'source_department_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
             'fetched_at'           => now(),
             'last_fetched_at'      => now(),
+            'images'           => $this->parseImages(),
         ];
 
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Product Category Valid From'});
         if ($createdAt) {
             $this->parsedData['master_department']['created_at'] = $createdAt;
         }
+    }
+
+    private function parseImages(): array
+    {
+        $images = $this->getModelImagesCollection(
+            'Category',
+            $this->auroraModelData->{'Category Key'}
+        )->map(function ($auroraImage) {
+            return $this->fetchImage($auroraImage);
+        });
+
+        return $images->toArray();
     }
 
     protected function fetchData($id): object|null
