@@ -166,7 +166,7 @@ class CalculateOrderShipping
         $helperAddress   = new Address();
         $helperAddress   = $helperAddress
             ->withCountryCode($deliveryAddress->country_code)
-            ->withPostalCode($deliveryAddress->postal_code);
+            ->withPostalCode($deliveryAddress->postal_code ?? '');
 
 
         return $helperZone->match($helperAddress);
