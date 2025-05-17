@@ -11,10 +11,9 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Fulfilment\RetinaDropshippingFulfilmentOrdersResources;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersResources;
 use App\Http\Resources\Helpers\CurrencyResource;
-use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -25,14 +24,13 @@ use App\Models\Ordering\Order;
 use App\Models\ShopifyUserHasFulfilment;
 use App\Models\TiktokUserHasOrder;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaPlatformDropshippingOrders extends RetinaAction
+class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
     public function handle(ShopifyUser|Customer|TiktokUser|WebUser $parent, $prefix = null): LengthAwarePaginator
     {
@@ -75,35 +73,22 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        return $request->user()->is_root;
-    }
-
-    public function asController(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($request);
-
-        $shopifyUser = $request->user()->customer->shopifyUser;
-
-        return $this->handle($shopifyUser);
-    }
-
-    public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromPlatform($platform, $request);
-
-        return $this->handle($this->platformUser);
+        if ($platform->type == PlatformTypeEnum::MANUAL) {
+            return IndexRetinaDropshippingOrders::run($this->customer, $platform);
+        } else {
+            return $this->handle($this->platformUser);
+        }
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $this->platformUser = $request->user();
-        $this->asAction = true;
+        $this->asAction     = true;
         $this->initialisationFromPupil($request);
         $shopifyUser = $this->shopifyUser;
 
@@ -112,69 +97,26 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
-        if (!($this->platformUser instanceof WebUser)) {
-            $resource = RetinaDropshippingFulfilmentOrdersResources::collection($orders);
-        } else {
-            $resource = OrdersResource::collection($orders);
-        }
+
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
                 'pageHead'    => [
-                    'model' => $this->platformUser->name ?? __('Manual'),
-                    'title' => __('Orders'),
-                    'icon'  => 'fal fa-money-bill-wave'
-                ],
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
+                    'title'      => __('Orders'),
+                    'icon'       => 'fal fa-shopping-cart',
+                    'afterTitle' => [
+                        'label' => ' @'.$this->platform->name,
+                    ]
                 ],
 
-                'currency' => CurrencyResource::make($request->user()->customer->shop->currency)->toArray(request()),
-
-                'orders' => $resource
+                'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
+                'orders'   => RetinaDropshippingOrdersResources::collection($orders)
             ]
-        )->table($this->tableStructure('orders'));
+        )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->platform));
     }
 
-    public function tableStructure($prefix = null, $modelOperations = []): Closure
-    {
-        return function (InertiaTable $table) use ($prefix, $modelOperations) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-
-            $emptyStateData = [
-                'icons' => ['fal fa-pallet'],
-                'title' => __("No order exist"),
-                'count' => 0
-            ];
-
-            $table->withGlobalSearch()
-                ->withEmptyState($emptyStateData)
-                ->withModelOperations($modelOperations);
-
-            $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
-
-            if ($this->platformUser instanceof ShopifyUser) {
-                $table->column(key: 'shopify_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
-            }
-
-            if ($this->platformUser instanceof TiktokUser) {
-                $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
-            }
-
-            if ($this->platformUser instanceof WebUser) {
-                $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
-            }
-
-        };
-    }
 
     public function getBreadcrumbs(): array
     {
@@ -188,7 +130,7 @@ class IndexRetinaPlatformDropshippingOrders extends RetinaAction
                             'route' => [
                                 'name' => 'retina.dropshipping.orders.index'
                             ],
-                            'label'  => __('Orders'),
+                            'label' => __('Orders'),
                         ]
                     ]
                 ]

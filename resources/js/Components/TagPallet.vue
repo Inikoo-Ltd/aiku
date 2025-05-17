@@ -14,15 +14,6 @@ defineProps<{
 }>()
 
 
-// const getClass = (colorName: string | undefined) => {
-//     if (!colorName) return
-
-//     if (colorName.includes('#')) {
-//         return `bg-[${colorName}] border border-[${colorName}] text-[${colorName}]`
-//     }
-    
-//     return `bg-${colorName}-100 border border-${colorName}-200 text-${colorName}-500`
-// }
 
 </script>
 
@@ -33,7 +24,7 @@ defineProps<{
         color: stateIcon.color ? `color-mix(in srgb, ${stateIcon.color} 90%, black)` : ''
     }">
         <template #label>
-            <div>
+            <div class="whitespace-nowrap space-x-1.5">
                 <FontAwesomeIcon :icon='stateIcon.icon' class='' fixed-width aria-hidden='true' />
                 <span class="whitespace-nowrap capitalize">{{ stateIcon?.tooltip }}</span>
             </div>
