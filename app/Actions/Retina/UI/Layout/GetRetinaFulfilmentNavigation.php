@@ -53,7 +53,78 @@ class GetRetinaFulfilmentNavigation
                 ];
             }
 
-
+            $groupNavigation['ffffff'] = [
+                'label' => 'FFFFF',
+                'icon' => 'fal fa-store-alt',
+                'navigation' => [
+                    [
+                        'type' => 'manual',
+                        'label' => 'XXXXXXX',
+                        'slug' => 'manual',
+                        'root' => 'retina.dropshipping.platforms.',
+                        'subNavigation' => [
+                            'baskets' => [
+                                'label' => 'AAAAAAAA',
+                                'icon' => ['fal', 'fa-shopping-basket'],
+                                'root' => 'retina.dropshipping.platforms.basket.',
+                                'right_label' => [
+                                    'label' => '29',
+                                    'class' => 'bg-yellow-500 text-green-500',
+                                ],
+                                'route' => [
+                                    'name' => 'retina.dropshipping.platforms.basket.index',
+                                    'parameters' => ['manual'],
+                                ],
+                            ],
+                            'portfolios' => [
+                                'label' => 'BBBBBBBB',
+                                'icon' => ['fal', 'fa-cube'],
+                                'root' => 'retina.dropshipping.platforms.portfolios.',
+                                'route' => [
+                                    'name' => 'retina.dropshipping.platforms.portfolios.index',
+                                    'parameters' => ['manual'],
+                                ],
+                                'right_label' => [
+                                    'label' => '14',
+                                    'class' => 'bg-red-500 text-white',
+                                    'is_important' => true,
+                                ],
+                                'topMenu' => [
+                                    'subSections' => [
+                                        [
+                                            'label' => 'BBB 1',
+                                            'icon' => ['fal', 'fa-cube'],
+                                            'root' => 'retina.dropshipping.platforms.portfolios.index',
+                                            'route' => [
+                                                'name' => 'retina.dropshipping.platforms.portfolios.index',
+                                                'parameters' => ['manual'],
+                                            ],
+                                        ],
+                                        [
+                                            'label' => 'BBBB 2',
+                                            'icon' => ['fal', 'fa-cube'],
+                                            'root' => 'retina.dropshipping.platforms.portfolios.products.index',
+                                            'route' => [
+                                                'name' => 'retina.dropshipping.platforms.portfolios.products.index',
+                                                'parameters' => ['manual'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'client' => [
+                                'label' => 'CCCCCCCC',
+                                'icon' => ['fal', 'fa-user-friends'],
+                                'root' => 'retina.dropshipping.platforms.client.',
+                                'route' => [
+                                    'name' => 'retina.dropshipping.platforms.client.index',
+                                    'parameters' => ['manual'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ];
 
             $groupNavigation['storage'] = [
                 'label'   => __('Storage'),

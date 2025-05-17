@@ -138,7 +138,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                     <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5">
                         <Transition name="spin-to-down">
                             <span :key="currentNavigation()?.slug" class="text-base leading-[12px] uppercase">
-                                {{ currentNavigation()?.slug }}
+                                {{ currentNavigation()?.label }}
                             </span>
                         </Transition>
                     </div>
@@ -181,7 +181,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
         </div>
 
         <!-- If Shops/Warehouses length is 1 (Show the subnav straighly) -->
-        <div v-if="Object.keys(nav || []).length === 1" class="flex flex-col gap-y-1 mb-1">
+        <div class="flex flex-col gap-y-1 mb-1">
             <!-- group only 1 -->
             <template v-for="nav, navIndex, index in currentNavigation()?.subNavigation" :key="navIndex + index">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
