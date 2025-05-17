@@ -37,8 +37,9 @@ class GetRetinaDropshippingNavigation
         }
 
         $groupNavigation['platform'] = [
-            'label' => __('Channels'),
-            'icon'  => ['fal', 'fa-parachute-box'],
+            'label'         => __('Channels'),
+            'icon'          => 'fal fa-code-branch',
+            'icon_rotation'   => 90,
             'root'  => 'retina.dropshipping.platform.',
             'route' => [
                 'name' => 'retina.dropshipping.platform.dashboard'
@@ -73,13 +74,13 @@ class GetRetinaDropshippingNavigation
 
         if ($webUser->customer->is_dropshipping) {
             $groupNavigation['top_up'] = [
-                'label'   => __('Top Up'),
-                'icon'    => ['fal', 'fa-money-bill-wave'],
-                'root'    => 'retina.top_up.',
-                'route'   => [
-                    'name' => 'retina.top_up.dashboard'
+                'label'         => __('Top Up'),
+                'icon'          => ['fal', 'fa-money-bill-wave'],
+                'root'          => 'retina.top_up.',
+                'route'         => [
+                    'name'      => 'retina.top_up.dashboard'
                 ],
-                'topMenu' => [
+                'topMenu'   => [
                     'subSections' => [
                         [
                             'label' => __('Top ups'),

@@ -62,7 +62,7 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
         v-tooltip="layout.leftSidebar.show ? false : capitalize(nav.label)"
     >
         <LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
-        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
+        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
         <div class="flex items-center justify-between w-full leading-none">
             <Transition name="slide-to-left">
                 <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block"

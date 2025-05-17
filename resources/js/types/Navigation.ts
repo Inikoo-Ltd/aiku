@@ -28,10 +28,10 @@ export interface Navigation {
     right_label?: {
         label: string
         icon?: string[]
+        icon_rotation?: number
         is_important?: boolean
         class?: string
         tooltip?: string
-        icon: string | string[]
     }
     topMenu?: {
         subSections?: SubSection[]
