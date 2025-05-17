@@ -104,7 +104,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         // }
 
         return Inertia::render(
-            'Dropshipping/BasketDS',
+            'Dropshipping/RetinaDropshippingOrder',
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -141,50 +141,50 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ]
                 ],
 
-                'upload_spreadsheet' => [
-                    'title' => [
-                        'label' => __('Upload product'),
-                        'information' => __('The list of column file') . ": code, quantity"
-                    ],
-                    'progressDescription'   => __('Adding Products'),
-                    'preview_template'    => [
-                        'header' => ['code', 'quantity'],
-                        'rows' => [
-                            [
-                                'code' => 'product-001',
-                                'quantity' => '1'
-                            ]
-                        ]
-                    ],
-                    'upload_spreadsheet'    => [
-                        'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['code', 'quantity'],
-                        'template'        => [
-                            'label' => 'Download template (.xlsx)'
-                        ],
-                        'route'           => [
-                            'upload'   => [
-                                'name'       => 'retina.models.order.transaction.upload',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
-                            ],
-                            'history'  => [
-                                'name'       => 'retina.dropshipping.orders.recent_uploads',
-                                'parameters' => [
-                                    'order' => $order->slug
-                                ]
-                            ],
-                            'download' => [
-                                'name'       => 'retina.dropshipping.orders.upload_templates',
-                                'parameters' => [
-                                    'order'        => $order->slug
-                                ]
-                            ],
-                        ],
-                    ]
-                ],
+                // 'upload_spreadsheet' => [
+                //     'title' => [
+                //         'label' => __('Upload product'),
+                //         'information' => __('The list of column file') . ": code, quantity"
+                //     ],
+                //     'progressDescription'   => __('Adding Products'),
+                //     'preview_template'    => [
+                //         'header' => ['code', 'quantity'],
+                //         'rows' => [
+                //             [
+                //                 'code' => 'product-001',
+                //                 'quantity' => '1'
+                //             ]
+                //         ]
+                //     ],
+                //     'upload_spreadsheet'    => [
+                //         'event'           => 'action-progress',
+                //         'channel'         => 'grp.personal.'.$this->organisation->id,
+                //         'required_fields' => ['code', 'quantity'],
+                //         'template'        => [
+                //             'label' => 'Download template (.xlsx)'
+                //         ],
+                //         'route'           => [
+                //             'upload'   => [
+                //                 'name'       => 'retina.models.order.transaction.upload',
+                //                 'parameters' => [
+                //                     'order' => $order->id
+                //                 ]
+                //             ],
+                //             'history'  => [
+                //                 'name'       => 'retina.dropshipping.orders.recent_uploads',
+                //                 'parameters' => [
+                //                     'order' => $order->slug
+                //                 ]
+                //             ],
+                //             'download' => [
+                //                 'name'       => 'retina.dropshipping.orders.upload_templates',
+                //                 'parameters' => [
+                //                     'order'        => $order->slug
+                //                 ]
+                //             ],
+                //         ],
+                //     ]
+                // ],
 
                 'timelines'   => $finalTimeline,
 
@@ -194,7 +194,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'box_stats'      => ShowOrder::make()->getOrderBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => OrderResource::make($order),
-                'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?

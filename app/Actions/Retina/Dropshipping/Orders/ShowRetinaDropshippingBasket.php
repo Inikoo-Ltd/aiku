@@ -54,7 +54,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $action = [];
 
         return Inertia::render(
-            'Dropshipping/BasketDS',
+            'Dropshipping/RetinaDropshippingBasket',
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(

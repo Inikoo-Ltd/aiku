@@ -20,7 +20,7 @@ const props = defineProps<{
         charges_amount: string
     }
     balance?: string
-    address_management: AddressManagement
+    address_management?: AddressManagement
 }>()
 
 const locale = inject('locale', {})
@@ -87,7 +87,7 @@ const isModalShippingAddress = ref(false)
                 <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
                     >
                     <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
-                    <div @click="isModalShippingAddress = true" class="underline cursor-pointer hover:text-gray-700">
+                    <div v-if="address_management" @click="isModalShippingAddress = true" class="underline cursor-pointer hover:text-gray-700">
                         {{ trans("Edit") }}
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                     </div>
@@ -164,7 +164,7 @@ const isModalShippingAddress = ref(false)
         </div> -->
 
         <!-- Section: Delivery address -->
-        <Modal :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)">
+        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)">
             <!-- <pre>{{ address_management }}</pre> -->
             <DeliveryAddressManagementModal
                 :addresses="address_management.addresses"
