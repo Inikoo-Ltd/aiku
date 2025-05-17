@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraDepartment extends FetchAurora
 {
+    use WithAuroraImages;
+
     protected function parseModel(): void
     {
         $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
@@ -28,7 +30,6 @@ class FetchAuroraDepartment extends FetchAurora
             $code = Abbreviate::run($code, 32);
         }
 
-
         $this->parsedData['department'] = [
             'type'                 => ProductCategoryTypeEnum::DEPARTMENT,
             'code'                 => $code,
@@ -36,12 +37,25 @@ class FetchAuroraDepartment extends FetchAurora
             'source_department_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
             'fetched_at'           => now(),
             'last_fetched_at'      => now(),
+            'images'               => $this->parseImages(),
         ];
 
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Product Category Valid From'});
         if ($createdAt) {
             $this->parsedData['department']['created_at'] = $createdAt;
         }
+    }
+
+    private function parseImages(): array
+    {
+        $images = $this->getModelImagesCollection(
+            'Category',
+            $this->auroraModelData->{'Category Key'}
+        )->map(function ($auroraImage) {
+            return $this->fetchImage($auroraImage);
+        });
+
+        return $images->toArray();
     }
 
     protected function fetchData($id): object|null
