@@ -4,8 +4,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faPencil } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
+import { AddressManagement } from "@/types/PureComponent/Address"
+import Modal from "@/Components/Utils/Modal.vue"
+import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 
 const props = defineProps<{
     summary: {
@@ -17,9 +20,12 @@ const props = defineProps<{
         charges_amount: string
     }
     balance?: string
+    address_management: AddressManagement
 }>()
 
 const locale = inject('locale', {})
+
+const isModalShippingAddress = ref(false)
 
 </script>
 
@@ -72,19 +78,6 @@ const locale = inject('locale', {})
                     class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer.phone }}</a>
             </div>
 
-            <!-- Field: Invoice Address -->
-            <div v-if="summary?.customer?.addresses?.billing?.formatted_address"
-                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Billing address')">
-                <div class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-dollar-sign' class='text-gray-400' fixed-width aria-hidden='true' />
-                </div>
-                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-                    v-html="summary?.customer?.addresses?.billing?.formatted_address">
-                </dd>
-            </div>
-        </div>
-        
-        <div class="col-span-2">
             <!-- Field: Shipping Address -->
             <div v-if="summary?.customer?.addresses?.delivery?.formatted_address"
                 class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address')">
@@ -92,9 +85,28 @@ const locale = inject('locale', {})
                     <FontAwesomeIcon icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
                 <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-                    v-html="summary?.customer?.addresses?.delivery?.formatted_address">
+                    >
+                    <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
+                    <div @click="isModalShippingAddress = true" class="underline cursor-pointer hover:text-gray-700">
+                        {{ trans("Edit") }}
+                        <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                    </div>
                 </dd>
             </div>
+
+            <!-- Field: Invoice Address -->
+            <!-- <div v-if="summary?.customer?.addresses?.billing?.formatted_address"
+                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Billing address')">
+                <div class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-dollar-sign' class='text-gray-400' fixed-width aria-hidden='true' />
+                </div>
+                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
+                    v-html="summary?.customer?.addresses?.billing?.formatted_address">
+                </dd>
+            </div> -->
+        </div>
+        
+        <div class="col-span-2">
         </div>
 
         <div class="col-span-3">
@@ -150,5 +162,17 @@ const locale = inject('locale', {})
                 <div>79.28</div>
             </div>
         </div> -->
+
+        <!-- Section: Delivery address -->
+        <Modal :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)">
+            <!-- <pre>{{ address_management }}</pre> -->
+            <DeliveryAddressManagementModal
+                :addresses="address_management.addresses"
+                :updateRoute="address_management.address_update_route"
+                keyPayloadEdit="delivery_address"
+                :address_modal_title="address_management.address_modal_title"
+                @onDone="() => (isModalShippingAddress = false)"
+            />
+        </Modal>
     </div>
 </template>

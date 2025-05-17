@@ -13,20 +13,20 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import TablePalletDeliveryPallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveryPallets.vue'
-import Timeline from '@/Components/Utils/Timeline.vue'
-import Popover from '@/Components/Popover.vue'
+// import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+// import TablePalletDeliveryPallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveryPallets.vue'
+// import Timeline from '@/Components/Utils/Timeline.vue'
+// import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import PureInput from '@/Components/Pure/PureInput.vue'
-import BoxNote from "@/Components/Pallet/BoxNote.vue"
+// import PureInput from '@/Components/Pure/PureInput.vue'
+// import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { get, debounce } from 'lodash'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
-import { Table as TableTS } from '@/types/Table'
+// import { Table as TableTS } from '@/types/Table'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
 
@@ -34,48 +34,48 @@ import '@/Composables/Icon/PalletDeliveryStateEnum'
 
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+// import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import { Timeline as TSTimeline } from "@/types/Timeline"
+// import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import axios from 'axios'
-import { Action } from '@/types/Action'
-import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue"
+// import { Action } from '@/types/Action'
+// import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from '@kyvg/vue3-notification'
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
-import { Button as TSButton } from '@/types/Button'
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import NeedToPay from '@/Components/Utils/NeedToPay.vue'
-import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
+// import { Button as TSButton } from '@/types/Button'
+// import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+// import NeedToPay from '@/Components/Utils/NeedToPay.vue'
+// import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 
-import OrderSummary from '@/Components/Summary/OrderSummary.vue'
+// import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
+// import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-import AlertMessage from '@/Components/Utils/AlertMessage.vue'
+// import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
+// import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
-import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
+// import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
 
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { faExclamationTriangle, faExclamation } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, } from '@fal'
+import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
-import ModalProductList from '@/Components/Utils/ModalProductList.vue'
+// import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
 import ProductsSelectorAutoSubmit from '@/Components/Dropshipping/ProductsSelectorAutoSubmit.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
-import CheckoutSummary from '@/Components/Retina/Ecom/CheckoutSummary.vue'
+// import CheckoutSummary from '@/Components/Retina/Ecom/CheckoutSummary.vue'
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faSpinnerThird)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -138,6 +138,7 @@ const props = defineProps<{
     upload_spreadsheet: UploadPallet
     balance: string 
     total_to_pay: number
+    address_management: AddressManagement
 }>()
 
 
@@ -398,6 +399,7 @@ console.log('basket ds', props)
     <DSCheckoutSummary
         :summary="box_stats"
         :balance="balance"
+        :address_management
     />
 
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
@@ -481,13 +483,13 @@ console.log('basket ds', props)
     </Modal>
 
     <!-- Section: Address -->
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
+    <!-- <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal
             :addresses="addresses"
             :updateRoute="address_update_route"
             keyPayloadEdit="delivery_address"
         />
-    </Modal>
+    </Modal> -->
 
     
 
