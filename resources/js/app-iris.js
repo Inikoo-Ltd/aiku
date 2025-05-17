@@ -24,6 +24,7 @@ import IrisLayout from '@/Layouts/Iris.vue'
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import { definePreset } from '@primevue/themes';
+import Layout from "@/Layouts/Retina.vue";
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS_AGENT_ID) {
   const options = {
@@ -72,13 +73,14 @@ const MyPreset = definePreset(Aura, {
 createInertiaApp(
     {
 
-        resolve: name => {
-            const irisPages = import.meta.glob('./Pages/Iris/**/*.vue', { eager: true })
-            let page = irisPages[`./Pages/Iris/${name}.vue`] // need improvement in the future
-            if(!page) console.error(`File './Pages/Iris/${name}.vue' is not exist`)
-            page.default.layout = page.default.layout || IrisLayout
-            return page
-        },
+      resolve: async name => {
+        const pages = import.meta.glob("./Pages/Iris/**/*.vue");
+        if (!pages) console.error(
+          `File './Pages/Iris/${name}.vue' is not exist`);
+        let page = await pages[`./Pages/Iris/${name}.vue`]();
+        page.default.layout = page.default?.layout || IrisLayout;
+        return page;
+      },
       setup({el, App, props, plugin}) {
         const app = createApp({render: () => h(App, props)});
         if (import.meta.env.VITE_SENTRY_DSN) {
