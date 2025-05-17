@@ -23,14 +23,10 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     const currentParams = ref<{[key: string]: string}>({})
     const currentPlatform = ref({})
 
-    // group: null as Group | null,
     const leftSidebar = ref({
         show: true,
     })
-    const navigation = ref({
-        // grp: {} as grpNavigation,
-        // org: {} as { [key: string]: orgNavigation } | { [key: string]: Navigation } | Navigation
-    })
+    const navigation = ref({})
     const rightSidebar = ref({
         activeUsers: {
             users: [],

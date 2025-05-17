@@ -310,7 +310,7 @@ return [
     |
     */
 
-    'myshopify_domain' => env('SHOPIFY_MYSHOPIFY_DOMAIN', 'myshopify.com'),
+    'my_shopify_domain' => env('SHOPIFY_MYSHOPIFY_DOMAIN', 'myshopify.com'),
 
     /*
     |--------------------------------------------------------------------------

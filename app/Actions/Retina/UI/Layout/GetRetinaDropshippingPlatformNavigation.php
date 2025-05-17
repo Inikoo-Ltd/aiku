@@ -28,7 +28,7 @@ class GetRetinaDropshippingPlatformNavigation
                 'label' => __('Baskets'),
                 'icon' => ['fal', 'fa-shopping-basket'],
                 'root' => 'retina.dropshipping.platforms.basket.',
-                'right_label'   => [  // TODO
+                'right_label'   => [
                     'label' => __('29'),
                     'class' => 'bg-yellow-500 text-green-500'
                 ],
@@ -61,7 +61,7 @@ class GetRetinaDropshippingPlatformNavigation
                 'name' => 'retina.dropshipping.platforms.portfolios.index',
                 'parameters' => [$platform->slug]
             ],
-            'right_label'   => [  // TODO
+            'right_label'   => [
                 'label' => __('14'),
                 'class' => 'bg-red-500 text-white',
                 'is_important' => true
