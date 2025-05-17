@@ -76,6 +76,15 @@ const layout = inject("layout", {});
 
     <div class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
 
+        <!-- Section: My account -->
+        <ButtonWithLink
+          v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping'"
+          v-tooltip="trans('My account')"
+          url="/app/dashboard"
+          :label="trans('My account')"
+        >
+        </ButtonWithLink>
+      
       <!-- Section: Profile -->
       <ButtonWithLink
         v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
@@ -103,7 +112,7 @@ const layout = inject("layout", {});
 
       <!-- Section: Basket -->
       <ButtonWithLink
-        v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
+        v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
         url="/app/basket"
         icon="fal fa-shopping-cart"
       >
