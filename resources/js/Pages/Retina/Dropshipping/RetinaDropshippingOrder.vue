@@ -144,7 +144,6 @@ console.log('DS Orders', props)
 
     <DSCheckoutSummary
         :summary="box_stats"
-        :balance="balance"
     />
 
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
@@ -158,16 +157,5 @@ console.log('DS Orders', props)
 			@update:tab="handleTabUpdate"/>
     </div>
 
-    <div class="flex justify-end px-6">
-        <div class="w-72">
-            <PureTextarea
-                :modelValue="noteToSubmit"
-                :placeholder="trans('No special instructions')"
-                :rows="4"
-                disabled
-                class="mb-2"
-            />
-        </div>
-    </div>
 
 </template>

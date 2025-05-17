@@ -110,7 +110,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <div class="col-span-3">
-            <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 text-amber-600">
+            <div v-if="balance !== undefined" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 text-amber-600">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div class="">
                     {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
