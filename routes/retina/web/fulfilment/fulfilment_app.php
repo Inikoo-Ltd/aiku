@@ -7,7 +7,6 @@
  */
 
 use App\Actions\Retina\Fulfilment\Notification\IndexRetinaFulfilmentCustomerNotification;
-use App\Actions\Retina\Fulfilment\UI\IndexRetinaPricing;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'storage/dashboard');
@@ -15,6 +14,10 @@ Route::redirect('/', 'storage/dashboard');
 Route::prefix("storage")
     ->name("storage.")
     ->group(__DIR__."/storage.php");
+
+Route::prefix("dropshipping")
+    ->name("dropshipping.")
+    ->group(__DIR__."/fulfilment_dropshipping.php");
 
 Route::prefix("itemised-storage")
     ->name("itemised_storage.")
@@ -29,7 +32,6 @@ Route::prefix("spaces")
     ->group(__DIR__."/spaces.php");
 
 
-// \Route::get('pricing', IndexRetinaPricing::class)->name('pricing');
 Route::get('/notifications', IndexRetinaFulfilmentCustomerNotification::class)->name('notifications');
 
 Route::prefix("pricing")

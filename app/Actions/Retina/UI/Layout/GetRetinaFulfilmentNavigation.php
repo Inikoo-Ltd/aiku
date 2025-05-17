@@ -38,7 +38,7 @@ class GetRetinaFulfilmentNavigation
             if ($webUser?->customer?->fulfilmentCustomer?->number_pallets_status_storing) {
                 $additionalSubsections = [
                     [
-                        'label' => __('goods Out'),
+                        'label' => __('goods out'),
                         'icon'  => ['fal', 'fa-truck-ramp'],
                         'root'  => 'retina.fulfilment.storage.pallet_returns.',
                         'route' => [

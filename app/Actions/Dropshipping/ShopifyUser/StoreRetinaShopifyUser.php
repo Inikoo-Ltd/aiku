@@ -61,13 +61,13 @@ class StoreRetinaShopifyUser extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'ends_with:.' . config('shopify-app.myshopify_domain'), Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')]
+            'name' => ['required', 'string', 'max:255', 'ends_with:.' . config('shopify-app.my_shopify_domain'), Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')]
         ];
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $shopifyFullName = $request->input('name').'.'.config('shopify-app.myshopify_domain');
+        $shopifyFullName = $request->input('name').'.'.config('shopify-app.my_shopify_domain');
 
         $this->set('name', $shopifyFullName);
     }
