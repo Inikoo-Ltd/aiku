@@ -16,7 +16,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -33,9 +33,9 @@ use UnexpectedValueException;
 class IndexPalletReturnsInPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerHasPlatform;
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -43,7 +43,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
         return $this->handle($customerHasPlatform);
     }
 
-    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

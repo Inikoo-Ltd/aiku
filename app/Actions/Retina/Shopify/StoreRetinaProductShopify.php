@@ -16,7 +16,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -49,7 +49,7 @@ class StoreRetinaProductShopify extends RetinaAction
             return;
         }
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $shopifyUser->customer_id)
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $shopifyUser->customer_id)
         ->where('platform_id', $platform->id)
         ->first();
 

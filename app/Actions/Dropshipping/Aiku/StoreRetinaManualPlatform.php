@@ -14,7 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,7 +32,7 @@ class StoreRetinaManualPlatform extends OrgAction
         $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         $customer = AttachCustomerToPlatform::make()->action($customer, $platform, []);
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->customer_id)
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->customer_id)
         ->where('platform_id', $platform->id)
         ->first();
 

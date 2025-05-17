@@ -13,7 +13,7 @@ namespace App\Actions\Dropshipping\CustomerHasPlatforms;
 use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateCustomerClients;
 use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 
 class HydrateCustomerHasPlatforms
 {
@@ -23,10 +23,10 @@ class HydrateCustomerHasPlatforms
 
     public function __construct()
     {
-        $this->model = CustomerHasPlatform::class;
+        $this->model = CustomerSalesChannel::class;
     }
 
-    public function handle(CustomerHasPlatform $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerHasPlatform): void
     {
         CustomerHasPlatformsHydrateCustomerClients::run($customerHasPlatform);
         CustomerHasPlatformsHydrateOrders::run($customerHasPlatform);

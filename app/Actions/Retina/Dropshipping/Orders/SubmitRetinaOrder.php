@@ -13,7 +13,7 @@ use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatforms
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,7 +34,7 @@ class SubmitRetinaOrder extends RetinaAction
             return $order;
         }
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $order->customer_id)
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $order->customer_id)
         ->where('platform_id', $order->platform_id)
         ->first();
 

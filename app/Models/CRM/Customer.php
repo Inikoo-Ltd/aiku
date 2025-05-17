@@ -130,7 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions
- * @property-read Collection<int, \App\Models\CRM\CustomerHasPlatform> $customerHasPlatforms
+ * @property-read Collection<int, \App\Models\CRM\CustomerSalesChannel> $customerHasPlatforms
  * @property-read Collection<int, \App\Models\CRM\CustomerNote> $customerNotes
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
@@ -381,7 +381,7 @@ class Customer extends Model implements HasMedia, Auditable
 
     public function customerHasPlatforms(): HasMany
     {
-        return $this->hasMany(CustomerHasPlatform::class);
+        return $this->hasMany(CustomerSalesChannel::class);
     }
 
     public function getMainPlatform(): Platform|null

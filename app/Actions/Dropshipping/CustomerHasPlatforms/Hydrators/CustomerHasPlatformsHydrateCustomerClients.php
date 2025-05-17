@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,12 +19,12 @@ class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(CustomerHasPlatform $customerHasPlatform): string
+    public function getJobUniqueId(CustomerSalesChannel $customerHasPlatform): string
     {
         return $customerHasPlatform->id;
     }
 
-    public function handle(CustomerHasPlatform $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerHasPlatform): void
     {
         $stats = [];
 

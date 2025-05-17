@@ -34,7 +34,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
@@ -213,7 +213,7 @@ class StoreOrder extends OrgAction
         }
 
         if ($order->platform_id) {
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $order->customer_id)
+            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $order->customer_id)
                 ->where('platform_id', $order->platform_id)->first();
             if ($customerHasPlatform) {
                 CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);

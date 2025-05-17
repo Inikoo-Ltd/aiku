@@ -50,12 +50,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read Platform $platform
  * @property-read \App\Models\Catalogue\Shop $shop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerHasPlatform newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerHasPlatform newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerHasPlatform query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()
  * @mixin \Eloquent
  */
-class CustomerHasPlatform extends Model
+class CustomerSalesChannel extends Model
 {
     use InShop;
 

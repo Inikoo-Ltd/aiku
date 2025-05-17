@@ -16,7 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
@@ -63,7 +63,7 @@ class StoreMultipleManualPortfolios extends OrgAction
             }
         });
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)
         ->where('platform_id', $platform->id)
         ->first();
 

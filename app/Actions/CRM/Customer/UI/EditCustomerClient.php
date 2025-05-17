@@ -13,7 +13,7 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
@@ -26,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditCustomerClient extends OrgAction
 {
-    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
+    private Customer|FulfilmentCustomer|CustomerSalesChannel $parent;
 
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
@@ -127,7 +127,7 @@ class EditCustomerClient extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
         return $this->handle($customerClient, $request);
@@ -136,7 +136,7 @@ class EditCustomerClient extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
 
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);

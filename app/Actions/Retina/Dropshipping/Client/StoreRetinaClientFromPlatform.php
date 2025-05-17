@@ -13,7 +13,7 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateCustomerClients;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
@@ -54,7 +54,7 @@ class StoreRetinaClientFromPlatform extends RetinaAction
         }
 
         if ($customerClient->customer_id && $customerClient->platform_id) {
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->customer_id)
+            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)
             ->where('platform_id', $customerClient->platform_id)
             ->first();
 

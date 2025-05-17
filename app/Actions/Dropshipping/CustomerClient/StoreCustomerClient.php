@@ -15,7 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -69,7 +69,7 @@ class StoreCustomerClient extends OrgAction
 
         $platformId = Arr::get($modelData, 'platform_id');
         if ($platformId) {
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platformId)->first();
+            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platformId)->first();
             CustomerHasPlatformsHydrateCustomerClients::dispatch($customerHasPlatform);
         }
 

@@ -10,12 +10,12 @@
 namespace App\Actions\Dropshipping\CustomerHasPlatforms\UI;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomerHasPlatformSubNavigation
 {
-    public function getCustomerPlatformSubNavigation(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): array
+    public function getCustomerPlatformSubNavigation(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): array
     {
         $subNavigation = [];
 

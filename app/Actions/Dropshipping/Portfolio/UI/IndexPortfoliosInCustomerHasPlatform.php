@@ -17,7 +17,7 @@ use App\Http\Resources\CRM\PortfoliosResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\SysAdmin\Organisation;
@@ -34,9 +34,9 @@ class IndexPortfoliosInCustomerHasPlatform extends OrgAction
     use WithCustomerHasPlatformSubNavigation;
     use WithCRMAuthorisation;
 
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerHasPlatform;
 
-    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -120,7 +120,7 @@ class IndexPortfoliosInCustomerHasPlatform extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 

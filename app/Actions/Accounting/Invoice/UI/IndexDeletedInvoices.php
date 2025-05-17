@@ -24,7 +24,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -207,7 +207,7 @@ class IndexDeletedInvoices extends OrgAction
         $subNavigation = [];
 
         if ($this->parent instanceof CustomerClient) {
-            /** @var CustomerHasPlatform $customerHasPlatform */
+            /** @var CustomerSalesChannel $customerHasPlatform */
             $customerHasPlatform = $request->route()->parameter('customerHasPlatform');
             $subNavigation       = $this->getCustomerClientSubNavigation($this->parent, $customerHasPlatform);
         } elseif ($this->parent instanceof Customer) {

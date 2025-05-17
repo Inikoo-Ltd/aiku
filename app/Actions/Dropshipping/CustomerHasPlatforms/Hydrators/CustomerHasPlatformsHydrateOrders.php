@@ -14,7 +14,7 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,12 +24,12 @@ class CustomerHasPlatformsHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(CustomerHasPlatform $customerHasPlatform): string
+    public function getJobUniqueId(CustomerSalesChannel $customerHasPlatform): string
     {
         return $customerHasPlatform->id;
     }
 
-    public function handle(CustomerHasPlatform $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerHasPlatform): void
     {
 
         $stats = [];

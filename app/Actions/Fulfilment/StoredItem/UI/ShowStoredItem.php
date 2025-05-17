@@ -22,7 +22,7 @@ use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
@@ -39,11 +39,11 @@ class ShowStoredItem extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
-    private Warehouse|Organisation|FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent;
+    private Warehouse|Organisation|FulfilmentCustomer|Fulfilment|CustomerSalesChannel $parent;
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof CustomerHasPlatform) {
+        if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof CustomerSalesChannel) {
             $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
 
             return $request->user()->tokenCan('root') || $request->user()->authTo("human-resources.{$this->organisation->id}.view");
@@ -73,7 +73,7 @@ class ShowStoredItem extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, StoredItem $storedItem, ActionRequest $request): StoredItem
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, StoredItem $storedItem, ActionRequest $request): StoredItem
     {
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(StoredItemTabsEnum::values());
@@ -91,7 +91,7 @@ class ShowStoredItem extends OrgAction
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof CustomerHasPlatform) {
+        } elseif ($this->parent instanceof CustomerSalesChannel) {
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         }
         return Inertia::render(
@@ -194,13 +194,13 @@ class ShowStoredItem extends OrgAction
         return new StoredItemResource($storedItem);
     }
 
-    public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer|CustomerHasPlatform $parent, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Organisation|Warehouse|Fulfilment|FulfilmentCustomer|CustomerSalesChannel $parent, array $routeParameters, string $suffix = ''): array
     {
         $storedItem = StoredItem::where('slug', $routeParameters['storedItem'])->first();
 
         return match (class_basename($parent)) {
             'Warehouse'    => $this->getBreadcrumbsFromWarehouse($storedItem, $suffix),
-            'CustomerHasPlatform' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
+            'CustomerSalesChannel' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
             default        => $this->getBreadcrumbsFromFulfilmentCustomer($storedItem, $suffix),
         };
     }

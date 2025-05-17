@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaPlatformDashboard extends RetinaAction
 {
-    public function asController(Platform $platform, ActionRequest $request): CustomerHasPlatform
+    public function asController(Platform $platform, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromPlatform($platform, $request);
 
@@ -28,7 +28,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
             ->first();
     }
 
-    public function htmlResponse(CustomerHasPlatform $customerHasPlatform): Response
+    public function htmlResponse(CustomerSalesChannel $customerHasPlatform): Response
     {
 
         $title = __('Channel Dashboard');
@@ -51,7 +51,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
         ]);
     }
 
-    public function getPlatformData(CustomerHasPlatform $customerHasPlatform): array
+    public function getPlatformData(CustomerSalesChannel $customerHasPlatform): array
     {
         $stats = [];
 

@@ -33,7 +33,7 @@ use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -52,8 +52,8 @@ class ShowOrder extends OrgAction
     use IsOrder;
     use WithOrderingEditAuthorisation;
 
-    private Shop|Customer|CustomerClient|Purge|CustomerHasPlatform $parent;
-    private CustomerHasPlatform $customerHasPlatform;
+    private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
+    private CustomerSalesChannel $customerHasPlatform;
 
     public function handle(Order $order): Order
     {
@@ -87,7 +87,7 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, Order $order, ActionRequest $request): Order
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent        = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
@@ -97,7 +97,7 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
-        $customerHasPlatform       = CustomerHasPlatform::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
         $this->parent              = $customerClient;
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
@@ -106,7 +106,7 @@ class ShowOrder extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerSalesChannel $customerHasPlatform, Order $order, ActionRequest $request): Order
     {
         $this->parent              = $customerClient;
         $this->customerHasPlatform = $customerHasPlatform;

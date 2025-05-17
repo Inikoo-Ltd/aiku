@@ -24,7 +24,7 @@ use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
@@ -45,7 +45,7 @@ class ShowCustomerClient extends OrgAction
     use WithFulfilmentCustomerPlatformSubNavigation;
     use WithCustomerHasPlatformSubNavigation;
 
-    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
+    private Customer|FulfilmentCustomer|CustomerSalesChannel $parent;
 
     public function handle(CustomerClient $customerClient): CustomerClient
     {
@@ -54,7 +54,7 @@ class ShowCustomerClient extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent        = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
@@ -71,7 +71,7 @@ class ShowCustomerClient extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
@@ -97,7 +97,7 @@ class ShowCustomerClient extends OrgAction
         $subNavigation = null;
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof CustomerHasPlatform) {
+        } elseif ($this->parent instanceof CustomerSalesChannel) {
             if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
                 $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
             } else {
@@ -169,7 +169,7 @@ class ShowCustomerClient extends OrgAction
         return new CustomerClientResource($customerClient);
     }
 
-    public function getBreadcrumbs(Customer|FulfilmentCustomer|CustomerHasPlatform $parent, string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Customer|FulfilmentCustomer|CustomerSalesChannel $parent, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (CustomerClient $customerClient, array $routeParameters, string $suffix = null) {
             return [
