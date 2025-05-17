@@ -71,11 +71,12 @@ const MyPreset = definePreset(Aura, {
 createInertiaApp(
   {
     title  : (title) => `${title} - ${appName}`,
-    resolve: name => {
-      const pages = import.meta.glob("./Pages/Grp/**/*.vue", { eager: true });
-      let page = pages[`./Pages/Grp/${name}.vue`];
-      if (!page) console.error(`File './Pages/Grp/${name}.vue' is not exist`);
-      page.default.layout = page.default.layout || Layout;
+    resolve: async name => {
+      const pages = import.meta.glob("./Pages/Grp/**/*.vue");
+      if (!pages) console.error(
+        `File './Pages/Grp/${name}.vue' is not exist`);
+      let page = await pages[`./Pages/Grp/${name}.vue`]();
+      page.default.layout = page.default?.layout || Layout;
       return page;
     },
     setup({ el, App, props, plugin }) {
