@@ -65,16 +65,17 @@ import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
 
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { faExclamationTriangle, faExclamation } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, } from '@fal'
+import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
+import ProductsSelectorAutoSubmit from '@/Components/Dropshipping/ProductsSelectorAutoSubmit.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import CheckoutSummary from '@/Components/Retina/Ecom/CheckoutSummary.vue'
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -121,6 +122,7 @@ const props = defineProps<{
     routes?: {
         update_route: routeType
         submit_route: routeType
+        pay_with_balance: routeType
     }
     
     transactions: {}
@@ -446,12 +448,7 @@ console.log('basket ds', props)
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
                     :label="trans('Place order')"
-                    :routeTarget="{
-                        name: 'retina.dropshipping.checkout.show',
-                        parameters: {
-                            order: props?.data?.data?.slug
-                        }
-                    }"
+                    :routeTarget="routes.pay_with_balance"
                     class="w-full"
                     full
                 >

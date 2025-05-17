@@ -91,7 +91,14 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                             'order' => $order->id
                         ],
                         'method'     => 'patch'
-                    ]
+                    ],
+                    'pay_with_balance'      => [
+                        'name'       => 'retina.models.order.pay_with_balance',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ],
                 ],
 
                 'upload_spreadsheet' => [
@@ -148,14 +155,6 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'balance'        => $order->customer?->balance,
                 'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
 
-
-                'pay_route'      => [
-                    'name'       => 'retina.models.order.pay',
-                    'parameters' => [
-                        'order' => $order->id
-                    ],
-                    'method'     => 'patch'
-                ],
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?

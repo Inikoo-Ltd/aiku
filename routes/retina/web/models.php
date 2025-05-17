@@ -160,7 +160,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
-    Route::patch('pay', PayRetinaOrderWithBalance::class)->name('pay');
+    Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
 
     Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
         Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
