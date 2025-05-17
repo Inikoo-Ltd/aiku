@@ -146,6 +146,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'data'           => OrderResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
                 'balance'        => $order->customer?->balance,
+                'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
+
 
                 'pay_route'      => [
                     'name'       => 'retina.models.order.pay',

@@ -135,6 +135,7 @@ const props = defineProps<{
     is_in_basket: boolean  // true if Order state is 'created'
     upload_spreadsheet: UploadPallet
     balance: string 
+    total_to_pay: number
 }>()
 
 
@@ -362,8 +363,6 @@ const onNoStructureUpload = () => {
 
 console.log('basket ds', props)
 
-// Section: Modal confirmation order
-const isModalConfirmationOrder = ref(false)
 </script>
 
 <template>
@@ -399,7 +398,6 @@ const isModalConfirmationOrder = ref(false)
         :balance="balance"
     />
 
-
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200">
@@ -428,7 +426,9 @@ const isModalConfirmationOrder = ref(false)
                 class="mb-2"
             />
             
+            <!-- Checkout -->
             <ButtonWithLink
+                v-if="total_to_pay > 0"
                 iconRight="fas fa-arrow-right"
                 :label="trans('Continue to Checkout')"
                 :routeTarget="{
@@ -441,22 +441,33 @@ const isModalConfirmationOrder = ref(false)
                 full
             />
 
-            <!-- <Button
-                v-if="is_in_basket && 'products more than 0'"
-                @click="() => isModalConfirmationOrder = true"
-                iconRight="fas fa-arrow-right"
-                :label="trans('Continue to Checkout')"
-                class="w-full"
-                full
-            /> -->
+            <!-- Place Order -->
+            <template v-else>
+                <ButtonWithLink
+                    iconRight="fas fa-arrow-right"
+                    :label="trans('Place order')"
+                    :routeTarget="{
+                        name: 'retina.dropshipping.checkout.show',
+                        parameters: {
+                            order: props?.data?.data?.slug
+                        }
+                    }"
+                    class="w-full"
+                    full
+                >
+                </ButtonWithLink>
+                <div class="text-sm text-gray-500 mt-2 italic flex items-start gap-x-1">
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[1px]" fixed-width aria-hidden="true" />
+                    <div class="leading-5">
+                        {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                    </div>
+                </div>
+            </template>
+
         </div>
     </div>
 
 
-    <!-- Modal: Confirmation order -->
-    <Modal :isOpen="isModalConfirmationOrder" @onClose="isModalConfirmationOrder = false" width="w-full max-w-4xl">
-        xxxxxxxxxxxxxxxxxx
-    </Modal>
 
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
