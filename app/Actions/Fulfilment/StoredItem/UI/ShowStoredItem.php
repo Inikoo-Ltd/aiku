@@ -22,7 +22,7 @@ use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
@@ -200,7 +200,7 @@ class ShowStoredItem extends OrgAction
 
         return match (class_basename($parent)) {
             'Warehouse'    => $this->getBreadcrumbsFromWarehouse($storedItem, $suffix),
-            'CustomerSalesChannel' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
+            'StoreCustomerSalesChannel' => $this->getBreadcrumbsFromPlatform($storedItem, $suffix),
             default        => $this->getBreadcrumbsFromFulfilmentCustomer($storedItem, $suffix),
         };
     }

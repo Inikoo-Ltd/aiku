@@ -13,7 +13,7 @@ use App\Actions\Dropshipping\Shopify\Product\DeleteShopifyUserHasProduct;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\ShopifyUserHasProduct;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 

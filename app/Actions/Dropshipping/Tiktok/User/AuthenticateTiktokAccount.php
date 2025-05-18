@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\User;
 
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -60,7 +60,7 @@ class AuthenticateTiktokAccount extends RetinaAction
                         if ($tiktokUser->deleted_at) {
                             $tiktokUser->restore();
                             $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
-                            AttachCustomerToPlatform::make()->action($customer, $platform, []);
+                            StoreCustomerSalesChannel::make()->action($customer, $platform, []);
                         }
                     } else {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);

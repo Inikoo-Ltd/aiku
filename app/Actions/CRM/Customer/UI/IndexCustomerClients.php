@@ -8,8 +8,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
@@ -21,8 +21,8 @@ use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -43,7 +43,7 @@ class IndexCustomerClients extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerPlatformSubNavigation;
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
 
     private Customer|FulfilmentCustomer|CustomerSalesChannel $parent;
 
@@ -329,7 +329,7 @@ class IndexCustomerClients extends OrgAction
             'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
             'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show' =>
             array_merge(
-                ShowCustomerHasPlatform::make()->getBreadcrumbs(
+                ShowCustomerSalesChannel::make()->getBreadcrumbs(
                     $platform,
                     $routeName,
                     $routeParameters

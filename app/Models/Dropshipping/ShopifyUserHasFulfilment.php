@@ -1,12 +1,15 @@
 <?php
 
-namespace App\Models;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 18 May 2025 16:28:40 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-use App\Enums\Dropshipping\ShopifyFulfilmentReasonEnum;
+namespace App\Models\Dropshipping;
+
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Ordering\Order;
+use App\Enums\Dropshipping\ShopifyFulfilmentReasonEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -26,9 +29,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property int|null $customer_client_id
  * @property ShopifyFulfilmentReasonEnum|null $no_fulfilment_reason
  * @property string|null $no_fulfilment_reason_notes
- * @property-read CustomerClient|null $customerClient
+ * @property-read \App\Models\Dropshipping\CustomerClient|null $customerClient
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $model
- * @property-read ShopifyUser $shopifyUser
+ * @property-read \App\Models\Dropshipping\ShopifyUser $shopifyUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment query()

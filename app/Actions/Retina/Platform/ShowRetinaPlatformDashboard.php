@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,7 +23,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
     {
         $this->initialisationFromPlatform($platform, $request);
 
-        return $this->customer->customerHasPlatforms()
+        return $this->customer->customerSalesChannels()
             ->where('platform_id', $platform->id)
             ->first();
     }

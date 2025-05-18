@@ -11,28 +11,26 @@ namespace App\Imports\CRM;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Imports\WithImport;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Upload;
-use Exception;
 use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Throwable;
 
 class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation
 {
     use WithImport;
 
-    protected Customer $customer;
-    protected Platform $platform;
 
-    public function __construct(Customer $customer, Platform $platform, Upload $upload)
+    protected CustomerSalesChannel $customerSalesChannel;
+
+    public function __construct(CustomerSalesChannel $customerSalesChannel, Upload $upload)
     {
-        $this->customer  = $customer;
-        $this->platform  = $platform;
+        $this->customerSalesChannel  = $customerSalesChannel;
         $this->upload = $upload;
     }
 
@@ -65,18 +63,15 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
             'type' => 'Upload',
         ]);
 
-        data_set($modelData, 'platform_id', $this->platform->id);
 
         try {
             StoreCustomerClient::make()->action(
-                $this->customer,
+                $this->customerSalesChannel,
                 $modelData
             );
 
             $this->setRecordAsCompleted($uploadRecord);
-        } catch (Exception $e) {
-            $this->setRecordAsFailed($uploadRecord, [$e->getMessage()]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->setRecordAsFailed($uploadRecord, [$e->getMessage()]);
         }
     }

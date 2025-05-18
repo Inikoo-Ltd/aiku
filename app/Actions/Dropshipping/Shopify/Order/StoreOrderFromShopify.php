@@ -16,12 +16,10 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
-use App\Models\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -48,15 +46,15 @@ class StoreOrderFromShopify extends OrgAction
         $deliveryAddress = Arr::get($attributes, 'address');
 
         $order = StoreOrder::make()->action($shopifyUser->customer, [
-            'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
-            'date'             => $modelData['created_at'],
-            'delivery_address' => new Address($deliveryAddress),
-            'billing_address'  => new Address($deliveryAddress)
+            'platform_id'               => $shopifyUser->platform_id,
+            'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
+            'date'                      => $modelData['created_at'],
+            'delivery_address'          => new Address($deliveryAddress),
+            'billing_address'           => new Address($deliveryAddress)
         ]);
 
         if (!$customerClient) {
-            data_set($attributes, 'platform_id', Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id);
-            $customerClient = StoreCustomerClient::make()->action($shopifyUser->customer, $attributes);
+            $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
         }
 
         foreach ($shopifyProducts as $shopifyProduct) {

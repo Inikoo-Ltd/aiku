@@ -10,7 +10,7 @@
 namespace App\Actions\Fulfilment;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithFulfilmentCustomerPlatformSubNavigation

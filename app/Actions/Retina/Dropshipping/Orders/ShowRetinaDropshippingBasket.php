@@ -153,7 +153,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
                 'balance'        => $order->customer?->balance,
                 'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
-                'total_products'    => 1,  // TODO: get the actual total products  
+                'total_products'    => 1,  // TODO: get the actual total products
 
 
 

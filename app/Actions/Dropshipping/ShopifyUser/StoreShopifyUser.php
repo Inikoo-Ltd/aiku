@@ -8,12 +8,11 @@
 
 namespace App\Actions\Dropshipping\ShopifyUser;
 
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
-use App\Actions\OrgAction;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -23,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreRetinaShopifyUser extends OrgAction
+class StoreShopifyUser extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -31,37 +30,45 @@ class StoreRetinaShopifyUser extends OrgAction
 
     public function handle(Customer $customer, $modelData): void
     {
+        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
+
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'username', Str::random(4));
         data_set($modelData, 'password', Str::random(8));
+        data_set($modelData, 'platform_id', $platform->id);
 
-        $shopifyUserNeedParent = ShopifyUser::whereNull('customer_id')
-            ->where('name', Arr::get($modelData, 'name'))->first();
 
-        if ($shopifyUserNeedParent) {
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = ShopifyUser::whereNull('customer_id')->where('name', Arr::get($modelData, 'name'))->first();
+
+        if ($shopifyUser) {
             data_set($modelData, 'customer_id', $customer->id);
-            $this->update($shopifyUserNeedParent, $modelData);
+            data_set($modelData, 'organisation_id', $customer->organisation_id);
+            data_set($modelData, 'group_id', $customer->group_id);
+
+            $shopifyUser = $this->update($shopifyUser, $modelData);
         } else {
-            $customer->shopifyUser()->create($modelData);
+            /** @var ShopifyUser $shopifyUser */
+            $shopifyUser = $customer->shopifyUser()->create($modelData);
         }
 
-        AttachCustomerToPlatform::make()->action($customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first(), []);
-    }
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
+            'platform_user_type' => class_basename($shopifyUser),
+            'platform_user_id' => $shopifyUser->id,
+        ]);
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
+        $shopifyUser->update([
+            'customer_sales_channel_id' => $customerSalesChannel->id,
+        ]);
 
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+
     }
 
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'ends_with:.' . config('shopify-app.myshopify_domain'), Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')]
+            'name' => ['required', 'string', 'max:255', 'ends_with:.'.config('shopify-app.myshopify_domain'), Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')]
         ];
     }
 
@@ -74,9 +81,8 @@ class StoreRetinaShopifyUser extends OrgAction
 
     public function asController(ActionRequest $request): void
     {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->initialisation($request);
 
-        $this->handle($customer, $this->validatedData);
+        $this->handle($this->customer, $this->validatedData);
     }
 }

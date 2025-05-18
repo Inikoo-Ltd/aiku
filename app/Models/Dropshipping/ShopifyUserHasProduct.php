@@ -6,10 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Models;
+namespace App\Models\Dropshipping;
 
-use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -25,9 +23,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $portfolio_id
  * @property string $product_type
- * @property-read Portfolio $portfolio
+ * @property-read \App\Models\Dropshipping\Portfolio $portfolio
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $product
- * @property-read ShopifyUser $shopifyUser
+ * @property-read \App\Models\Dropshipping\ShopifyUser $shopifyUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasProduct query()

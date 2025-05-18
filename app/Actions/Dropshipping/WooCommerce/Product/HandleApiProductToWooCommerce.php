@@ -11,7 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToWooCommerceProgressEvent;
-use App\Models\WooCommerceUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;

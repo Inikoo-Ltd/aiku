@@ -10,7 +10,10 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;
@@ -45,8 +48,25 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
                 }
             } else {
                 try {
+
+                    $customer = $customerClientData['customer_sales_channel'];
+                    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+                    $customerSalesChannel = $customer->customerSalesChannels()
+                        ->where('platform_id', $platform->id)
+                        ->first();
+                    if (!$customerSalesChannel) {
+                        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+                            customer: $customer,
+                            platform: $platform,
+                            modelData: [
+                                'reference' => (string) $customer->id,
+                            ],
+                            hydratorsDelay: $this->hydratorsDelay
+                        );
+                    }
+
                     $customerClient = StoreCustomerClient::make()->action(
-                        customer: $customerClientData['customer'],
+                        customerSalesChannel: $customerSalesChannel,
                         modelData: $customerClientData['customer_client'],
                         hydratorsDelay: $this->hydratorsDelay,
                         strict: false,

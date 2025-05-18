@@ -60,6 +60,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $platform_id
  * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
+ * @property int|null $customer_sales_channel_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

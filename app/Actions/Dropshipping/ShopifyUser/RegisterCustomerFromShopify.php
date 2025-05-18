@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\CRM\Customer\ApproveCustomer;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Actions\Fulfilment\RentalAgreement\StoreRentalAgreement;
 use App\Actions\OrgAction;
@@ -58,7 +58,7 @@ class RegisterCustomerFromShopify extends OrgAction
             ]);
         }
 
-        AttachCustomerToPlatform::make()->action($fulfilmentCustomer->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first(), []);
+        StoreCustomerSalesChannel::make()->action($fulfilmentCustomer->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first(), []);
 
         $this->update($shopifyUser, [
             'customer_id' => $fulfilmentCustomer->customer_id,

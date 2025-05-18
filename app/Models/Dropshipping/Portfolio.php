@@ -9,9 +9,7 @@
 namespace App\Models\Dropshipping;
 
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\ShopifyUserHasProduct;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
@@ -44,6 +42,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $platform_id
  * @property string|null $item_code no normal field used for improve performance on UI search
  * @property string|null $item_name no normal field used for improve performance on UI search
+ * @property int|null $customer_sales_channel_id
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
@@ -52,7 +51,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read ShopifyUserHasProduct|null $shopifyPortfolio
+ * @property-read \App\Models\Dropshipping\ShopifyUserHasProduct|null $shopifyPortfolio
  * @property-read \App\Models\Dropshipping\PortfolioStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Portfolio newModelQuery()

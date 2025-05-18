@@ -107,6 +107,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool|null $tax_number_valid
  * @property string|null $identity_document_type
  * @property string|null $identity_document_number
+ * @property int|null $platform_id
+ * @property int|null $customer_sales_channel_id
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

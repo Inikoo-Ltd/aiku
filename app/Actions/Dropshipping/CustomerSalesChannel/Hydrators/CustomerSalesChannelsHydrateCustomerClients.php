@@ -6,15 +6,15 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators;
+namespace App\Actions\Dropshipping\CustomerSalesChannel\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHasPlatformsHydrateCustomerClients implements ShouldBeUnique
+class CustomerSalesChannelsHydrateCustomerClients implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;

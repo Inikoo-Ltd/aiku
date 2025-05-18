@@ -25,7 +25,7 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;

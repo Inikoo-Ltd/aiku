@@ -6,12 +6,14 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Models\CRM;
+namespace App\Models\Dropshipping;
 
-use App\Models\Dropshipping\Platform;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Models\CRM\Customer;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  *
@@ -45,10 +47,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders_status_settled
  * @property int $number_orders_handing_type_collection
  * @property int $number_orders_handing_type_shipping
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property CustomerSalesChannelStatusEnum $status
+ * @property string|null $platform_user_type
+ * @property int|null $platform_user_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
+ * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
- * @property-read Platform $platform
+ * @property-read \App\Models\Dropshipping\Platform $platform
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
@@ -59,12 +65,13 @@ class CustomerSalesChannel extends Model
 {
     use InShop;
 
-    protected $table = 'customer_has_platforms';
+    protected $table = 'customer_sales_channels';
 
     protected $guarded = [];
 
     protected $casts = [
-        'data' => 'array'
+        'data'   => 'array',
+        'status' => CustomerSalesChannelStatusEnum::class
     ];
 
     public function customer(): BelongsTo
@@ -75,5 +82,10 @@ class CustomerSalesChannel extends Model
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function clients(): HasMany
+    {
+        return $this->hasMany(CustomerClient::class);
     }
 }

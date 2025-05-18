@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\ShopifyUserHasProduct;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 

@@ -9,8 +9,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -19,7 +19,7 @@ use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
@@ -34,7 +34,7 @@ use UnexpectedValueException;
 
 class IndexOrdersInCustomerHasPlatform extends OrgAction
 {
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
     use WithCRMAuthorisation;
 
     private CustomerSalesChannel $customerHasPlatform;
@@ -184,7 +184,7 @@ class IndexOrdersInCustomerHasPlatform extends OrgAction
     {
         return
             array_merge(
-                ShowCustomerHasPlatform::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
+                ShowCustomerSalesChannel::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

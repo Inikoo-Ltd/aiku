@@ -6,38 +6,41 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\CRM\Customer;
+namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachCustomerToPlatform extends OrgAction
+class StoreCustomerSalesChannel extends OrgAction
 {
-    public function handle(Customer $customer, Platform $platform, array $pivotData): Customer
+    public function handle(Customer $customer, Platform $platform, array $modelData): CustomerSalesChannel
     {
-        $pivotData['group_id']        = $this->organisation->group_id;
-        $pivotData['organisation_id'] = $this->organisation->id;
-        $pivotData['shop_id']         = $customer->shop_id;
-        $customer->platforms()->attach($platform->id, $pivotData);
+        $modelData['group_id']        = $customer->group_id;
+        $modelData['organisation_id'] = $customer->organisation_id;
+        $modelData['shop_id']         = $customer->shop_id;
+        $modelData['platform_id']         = $platform->id;
+        $customerSalesChannel = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
 
-
-        return $customer;
+        return $customerSalesChannel;
     }
 
     public function rules(): array
     {
         return [
             'reference' => 'nullable|string|max:255',
+            'platform_user_type' => 'required|string|max:255',
+            'platform_user_id'   => 'required|integer',
         ];
     }
 
 
-    public function action(Customer $customer, Platform $platform, array $modelData, int $hydratorsDelay = 0): Customer
+    public function action(Customer $customer, Platform $platform, array $modelData, int $hydratorsDelay = 0): CustomerSalesChannel
     {
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($customer->organisation, $modelData);

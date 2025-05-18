@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
-use App\Models\WooCommerceUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;

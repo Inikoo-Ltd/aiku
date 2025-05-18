@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Clients;
 
-use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatform;
+use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Platform;
@@ -38,7 +38,7 @@ class FetchRetinaCustomerClientFromWooCommerce extends RetinaAction
                 data_set($attributes, 'address', $wooCommerceUser->customer?->deliveryAddress?->toArray());
             }
 
-            StoreRetinaClientFromPlatform::run($wooCommerceUser, $attributes, $customer, $existsClient);
+            StoreRetinaClientFromPlatformUser::run($wooCommerceUser, $attributes, $customer, $existsClient);
         }
     }
 

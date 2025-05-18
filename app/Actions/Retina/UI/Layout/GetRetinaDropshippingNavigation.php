@@ -10,7 +10,6 @@ namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaDropshippingNavigation
@@ -48,15 +47,15 @@ class GetRetinaDropshippingNavigation
 
         $platforms_navigation = [];
 
-        /** @var Platform $platform */
+
         foreach (
-            $customer->platforms()->get() as $platform
+            $customer->customerSalesChannels as $salesChannel
         ) {
             $platforms_navigation[] = [
-                'type'          => $platform->type,
-                'slug'          => $platform->slug,
+                'type'          => $salesChannel->type,
+                'slug'          => $salesChannel->slug,
                 'root'          => 'retina.dropshipping.platforms.',
-                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $platform)
+                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel)
             ];
         }
 

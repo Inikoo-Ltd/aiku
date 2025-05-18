@@ -12,8 +12,8 @@ use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\PlatformHasClient;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasEmail;
@@ -23,6 +23,7 @@ use App\Models\Traits\IsUserable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -67,12 +68,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string|null $source_id
+ * @property int|null $platform_id
+ * @property int|null $customer_sales_channel_id
  * @property WebUserTypeEnum $state
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \Osiset\ShopifyApp\Storage\Models\Charge> $charges
- * @property-read Collection<int, PlatformHasClient> $clients
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
+ * @property-read Customer|null $customer
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -161,5 +164,10 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     public function clients(): MorphMany
     {
         return $this->morphMany(PlatformHasClient::class, 'userable');
+    }
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 }

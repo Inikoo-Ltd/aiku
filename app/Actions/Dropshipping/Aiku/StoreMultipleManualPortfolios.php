@@ -9,14 +9,14 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortfolios;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
@@ -37,7 +37,7 @@ class StoreMultipleManualPortfolios extends OrgAction
     public function handle(Customer $customer, array $modelData): void
     {
         /** @var Platform $platform */
-        $platform = $customer->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+        $platform = $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL)->first();
 
         DB::transaction(function () use ($customer, $platform, $modelData) {
             foreach (Arr::get($modelData, 'items') as $itemID) {
@@ -67,7 +67,7 @@ class StoreMultipleManualPortfolios extends OrgAction
         ->where('platform_id', $platform->id)
         ->first();
 
-        CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);
+        CustomerSalesChannelsHydratePortfolios::dispatch($customerHasPlatform);
     }
 
     public function rules(): array

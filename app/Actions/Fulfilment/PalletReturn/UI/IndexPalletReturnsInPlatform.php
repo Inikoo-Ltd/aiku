@@ -16,7 +16,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;

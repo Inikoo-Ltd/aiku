@@ -12,17 +12,16 @@ use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
-use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatform;
+use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\TiktokUserHasProduct;
+use App\Models\Dropshipping\TiktokUserHasProduct;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -50,7 +49,7 @@ class StoreTiktokOrder extends RetinaAction
         $customerClient = $tiktokUser->customer->clients()->where('email', Arr::get($attributes, 'buyer_email'))->first();
         $address        = $this->getAddressAttributes($address);
 
-        $customerClient = StoreRetinaClientFromPlatform::run($tiktokUser, $address, [
+        $customerClient = StoreRetinaClientFromPlatformUser::run($tiktokUser, $address, [
             'id' => Arr::get($tiktokOrders, 'user_id')
         ], $customerClient);
 
@@ -76,8 +75,9 @@ class StoreTiktokOrder extends RetinaAction
     protected function processFulfilment(TiktokUser $tiktokUser, CustomerClient $customerClient, array $attributes)
     {
         $palletReturn = StorePalletReturn::make()->actionWithDropshipping($tiktokUser->customer->fulfilmentCustomer, [
-            'type'        => PalletReturnTypeEnum::DROPSHIPPING,
-            'platform_id' => $tiktokUser->customer->platforms()->where('type', PlatformTypeEnum::TIKTOK->value)->first()->id
+            'type'                      => PalletReturnTypeEnum::DROPSHIPPING,
+            'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
+            'platform_id'               => $tiktokUser->platform_id,
         ]);
 
         $storedItems  = [];

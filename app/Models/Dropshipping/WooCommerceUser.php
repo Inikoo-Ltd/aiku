@@ -1,6 +1,12 @@
 <?php
 
-namespace App\Models;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 18 May 2025 16:27:46 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Models\Dropshipping;
 
 use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
@@ -27,6 +33,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $settings
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $platform_id
+ * @property int|null $customer_sales_channel_id
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read \App\Models\CRM\Customer $customer

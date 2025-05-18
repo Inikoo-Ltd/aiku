@@ -96,6 +96,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $estimated_weight grams
  * @property int $effective_weight Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams
  * @property array<array-key, mixed>|null $parcels
+ * @property int|null $platform_id
+ * @property int|null $customer_sales_channel_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

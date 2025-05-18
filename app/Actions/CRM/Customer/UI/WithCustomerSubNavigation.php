@@ -10,8 +10,8 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerSalesChannel;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 

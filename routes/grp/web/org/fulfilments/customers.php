@@ -22,7 +22,7 @@ use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
-use App\Actions\Dropshipping\Platform\UI\IndexPlatformsInFulfilmentCustomer;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannelsInFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
@@ -172,7 +172,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     });
 
     Route::prefix('platforms')->as('.platforms')->group(function () {
-        Route::get('', IndexPlatformsInFulfilmentCustomer::class)->name('.index');
+        Route::get('', IndexCustomerSalesChannelsInFulfilment::class)->name('.index');
         Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
             Route::get('', ShowFulfilmentCustomerPlatform::class);
 

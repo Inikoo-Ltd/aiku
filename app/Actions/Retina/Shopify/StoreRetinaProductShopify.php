@@ -9,14 +9,14 @@
 
 namespace App\Actions\Retina\Shopify;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortfolios;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -53,7 +53,7 @@ class StoreRetinaProductShopify extends RetinaAction
         ->where('platform_id', $platform->id)
         ->first();
 
-        CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);
+        CustomerSalesChannelsHydratePortfolios::dispatch($customerHasPlatform);
 
     }
 

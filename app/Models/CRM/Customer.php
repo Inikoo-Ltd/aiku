@@ -24,10 +24,12 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
@@ -47,7 +49,6 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
-use App\Models\WooCommerceUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -130,8 +131,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions
- * @property-read Collection<int, \App\Models\CRM\CustomerSalesChannel> $customerHasPlatforms
  * @property-read Collection<int, \App\Models\CRM\CustomerNote> $customerNotes
+ * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
+ * @property-read Collection<int, Platform> $customerSalesChannelsXXX
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
@@ -147,7 +149,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
- * @property-read Collection<int, Platform> $platforms
  * @property-read Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read Collection<int, Portfolio> $portfolios
  * @property-read Collection<int, Asset> $products
@@ -373,21 +374,18 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Portfolio::class);
     }
 
-    public function platforms(): BelongsToMany
+    public function customerSalesChannelsXXX(): BelongsToMany
     {
-        return $this->belongsToMany(Platform::class, 'customer_has_platforms')
+        return $this->belongsToMany(Platform::class, 'customer_sales_channels')
             ->withPivot('id', 'platform_id', 'group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
     }
 
-    public function customerHasPlatforms(): HasMany
+    public function customerSalesChannels(): HasMany
     {
         return $this->hasMany(CustomerSalesChannel::class);
     }
 
-    public function getMainPlatform(): Platform|null
-    {
-        return $this->platforms()->first();
-    }
+
 
     public function transactions(): HasMany
     {

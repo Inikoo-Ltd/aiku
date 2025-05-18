@@ -23,11 +23,11 @@ enum ShopifyFulfilmentReasonEnum: string
     public static function notes(): array
     {
         return [
-            'awaiting_payment' => __('The fulfillment can\'t be process because payment is pending.'),
-            'high_risk_of_fraud' => __('The fulfillment can\'t be process because of a high risk of fraud.'),
-            'incorrect_address' => __('The fulfillment can\'t be process because of an incorrect address.'),
+            'awaiting_payment'       => __('The fulfillment can\'t be process because payment is pending.'),
+            'high_risk_of_fraud'     => __('The fulfillment can\'t be process because of a high risk of fraud.'),
+            'incorrect_address'      => __('The fulfillment can\'t be process because of an incorrect address.'),
             'inventory_out_of_stock' => __('The fulfillment can\'t be process because inventory is out of stock.'),
-            'other' => __('The fulfillment can\'t be process for any other reason.')
+            'other'                  => __('The fulfillment can\'t be process for any other reason.')
         ];
     }
 }

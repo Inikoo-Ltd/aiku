@@ -11,14 +11,13 @@ namespace App\Models\Fulfilment;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemNoSetReasonStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Models\CRM\Customer;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Inventory\Warehouse;
-use App\Models\ShopifyUserHasFulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -97,6 +96,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $estimated_delivery_date
  * @property int|null $deleted_by
  * @property array<array-key, mixed>|null $parcels
+ * @property int|null $customer_sales_channel_id
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses

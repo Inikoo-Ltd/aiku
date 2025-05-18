@@ -10,15 +10,14 @@ namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Actions\Dropshipping\CustomerClient\Search\CustomerClientRecordSearch;
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateCustomerClients;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateCustomerClients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerSalesChannel;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Http\RedirectResponse;
@@ -38,20 +37,22 @@ class StoreCustomerClient extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Customer $customer, array $modelData): CustomerClient
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerClient
     {
         $address = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
 
         data_set($modelData, 'ulid', Str::ulid());
-        data_set($modelData, 'group_id', $customer->group_id);
-        data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'shop_id', $customer->shop_id);
+        data_set($modelData, 'group_id', $customerSalesChannel->group_id);
+        data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
+        data_set($modelData, 'shop_id', $customerSalesChannel->shop_id);
+        data_set($modelData, 'platform_id', $customerSalesChannel->platform_id);
+        data_set($modelData, 'customer_id', $customerSalesChannel->customer_id);
 
 
-        $customerClient = DB::transaction(function () use ($customer, $modelData, $address) {
+        $customerClient = DB::transaction(function () use ($customerSalesChannel, $modelData, $address) {
             /** @var CustomerClient $customerClient */
-            $customerClient = $customer->clients()->create($modelData);
+            $customerClient = $customerSalesChannel->clients()->create($modelData);
             $customerClient->stats()->create();
 
             return $this->addAddressToModelFromArray(
@@ -64,15 +65,9 @@ class StoreCustomerClient extends OrgAction
 
 
         CustomerClientRecordSearch::dispatch($customerClient)->delay($this->hydratorsDelay);
-        CustomerHydrateClients::dispatch($customer)->delay($this->hydratorsDelay);
+        CustomerHydrateClients::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
 
-
-        $platformId = Arr::get($modelData, 'platform_id');
-        if ($platformId) {
-            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platformId)->first();
-            CustomerHasPlatformsHydrateCustomerClients::dispatch($customerHasPlatform);
-        }
-
+        CustomerSalesChannelsHydrateCustomerClients::dispatch($customerSalesChannel);
 
         return $customerClient;
     }
@@ -114,7 +109,6 @@ class StoreCustomerClient extends OrgAction
             'address'        => ['required', new ValidAddress()],
             'deactivated_at' => ['sometimes', 'nullable', 'date'],
             'status'         => ['sometimes', 'boolean'],
-            'platform_id'    => ['required', 'exists:platforms,id'],
 
         ];
     }
@@ -144,31 +138,30 @@ class StoreCustomerClient extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): CustomerClient
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): CustomerClient
     {
         if (!$audit) {
             CustomerClient::disableAuditing();
         }
-        $this->customer       = $customer;
+        $this->customer       = $customerSalesChannel->customer;
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromShop($customer->shop, $modelData);
+        $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
 
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle($customerSalesChannel, $this->validatedData);
     }
 
 
     /**
      * @throws \Throwable
      */
-    public function asController(Customer $customer, Platform $platform, ActionRequest $request): CustomerClient
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerClient
     {
-        $this->customer = $customer;
-        $this->set('platform_id', $platform->id);
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->customer       = $customerSalesChannel->customer;
+        $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle($customerSalesChannel, $this->validatedData);
     }
 
 }

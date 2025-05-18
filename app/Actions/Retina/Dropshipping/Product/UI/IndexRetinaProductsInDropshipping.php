@@ -18,7 +18,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\WooCommerceUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;

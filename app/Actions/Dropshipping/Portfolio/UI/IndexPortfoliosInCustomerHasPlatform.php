@@ -9,15 +9,15 @@
 
 namespace App\Actions\Dropshipping\Portfolio\UI;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\SysAdmin\Organisation;
@@ -31,7 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPortfoliosInCustomerHasPlatform extends OrgAction
 {
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
     use WithCRMAuthorisation;
 
     private CustomerSalesChannel $customerHasPlatform;
@@ -130,7 +130,7 @@ class IndexPortfoliosInCustomerHasPlatform extends OrgAction
     public function getBreadcrumbs(Platform $platform, string $routeName, array $routeParameters): array
     {
         return array_merge(
-            ShowCustomerHasPlatform::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
+            ShowCustomerSalesChannel::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
             [
                 [
                     'type'   => 'simple',
