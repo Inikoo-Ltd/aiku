@@ -51,9 +51,19 @@ class GetRetinaDropshippingNavigation
         foreach (
             $customer->customerSalesChannels as $salesChannel
         ) {
+            $reference = $customerSalesChannel->reference ?? 'n/a';
             $platforms_navigation[] = [
+                'id'            => $salesChannel->id,
                 'type'          => $salesChannel->platform->type,
-                'slug'          => $salesChannel->platform->slug,
+                'slug'          => $salesChannel->slug,
+                'key'           => $salesChannel->reference. '_platform',
+                'label'         => $salesChannel->platform->name. '-' . $reference ,
+                'route'         => [
+                    'name' => 'retina.dropshipping.platforms.dashboard',
+                    'parameters' => [
+                        'platform' => $salesChannel->platform->slug
+                    ]
+                ],
                 'root'          => 'retina.dropshipping.platforms.',
                 'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
             ];
@@ -75,33 +85,7 @@ class GetRetinaDropshippingNavigation
                     ]
                 ]
             ],
-            'horizontal_navigations'    => [  // TODO: below is dummy data, change to correct one
-                [
-                    'label'         => __('Channels 11111'),
-                    'icon'        => 'fal fa-tachometer-alt',
-                    'key'           => 'asdzxc_platform',
-                    'root'          => 'retina.dropshipping.platforms.',
-                    'route'         => [
-                        'name' => 'retina.dropshipping.platforms.dashboard',
-                        'parameters' => [
-                            'platform' => 'manual'
-                        ]
-                    ],
-                    'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
-                ], [
-                    'label'         => __('Channels 22222'),
-                    'icon'          => 'fal fa-shopping-basket',
-                    'key'           => 'rtyfgh_platform',
-                    'root'          => 'retina.dropshipping.platforms.',
-                    'route'         => [
-                        'name' => 'retina.dropshipping.platforms.dashboard',
-                        'parameters' => [
-                            'platform' => 'manual'
-                        ]
-                    ],
-                    'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
-                ]
-            ],
+            'horizontal_navigations'    => $platforms_navigation
         ];
         // }
 

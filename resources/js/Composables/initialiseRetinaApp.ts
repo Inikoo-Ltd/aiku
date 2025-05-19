@@ -24,7 +24,7 @@ export const initialiseRetinaApp = () => {
 
 
 
-    const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
+    const storageLayout = JSON.parse(localStorage.getItem(`layout_${usePage().props.retina?.type}`) || '{}')  // Get layout from localStorage
     layout.currentPlatform = storageLayout.currentPlatform
 
     if (usePage().props?.auth?.user) {
@@ -39,14 +39,14 @@ export const initialiseRetinaApp = () => {
         layout.currentParams = route().v().params  // current params
         layout.currentRoute = route().current()  // current route
 
-        // if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
-        //     layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
+        if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
+            layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
 
-        //     localStorage.setItem('layout', JSON.stringify({
-        //         ...storageLayout,
-        //         currentPlatform: layout.currentPlatform
-        //     }))
-        // }
+            localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
+                ...storageLayout,
+                currentPlatform: layout.currentPlatform
+            }))
+        }
     })
 
     // Echo: Website wide websocket
@@ -56,7 +56,6 @@ export const initialiseRetinaApp = () => {
         loadLanguageAsync(usePage().props.localeData.language.code)
     }
 
-    console.log('wewewe', usePage().props.retina.type)
 
     watchEffect(() => {
         // Set data of Navigation
