@@ -48,8 +48,8 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
         $query->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id);
 
         return $query
-            ->defaultSort('customer_has_platforms.id')
-            ->select(['customer_has_platforms.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
+            ->defaultSort('customer_sales_channels.id')
+            ->select(['customer_sales_channels.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
