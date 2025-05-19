@@ -1,7 +1,7 @@
 export default {
 	blueprint: [
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{

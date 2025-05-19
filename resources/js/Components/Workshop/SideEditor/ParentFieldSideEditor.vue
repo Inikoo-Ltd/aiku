@@ -25,7 +25,6 @@ const props = defineProps<{
         icon?: any
     }
     uploadImageRoute?: routeType
-    index: number | string | string[]
 }>()
 
 const modelValue = defineModel()

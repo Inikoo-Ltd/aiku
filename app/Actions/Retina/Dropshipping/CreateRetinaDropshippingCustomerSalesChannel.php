@@ -14,11 +14,12 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowRetinaDropshipping extends RetinaAction
+class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
 {
     public function asController(ActionRequest $request): ActionRequest
     {
@@ -31,7 +32,7 @@ class ShowRetinaDropshipping extends RetinaAction
     {
         $customer = $this->customer;
 
-        $title = __('Sale Channels');
+        $title = __('Create Channels');
 
         return Inertia::render(
             'Dropshipping/DropshippingDashboard',
@@ -65,6 +66,12 @@ class ShowRetinaDropshipping extends RetinaAction
                         'shop' => $customer->shopifyUser?->name
                     ])
                 ] : null,
+                'total_channels' => [
+                    'manual' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),
+                    'shopify'   => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
+                    'tiktok'    => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::TIKTOK->value)->count(),
+                    'woocommerce' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->count(),
+                ],
                 'tiktokAuth' => [
                     'url' => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
                     'isAuthenticated' => AuthenticateTiktokAccount::make()->checkIsAuthenticated($customer),

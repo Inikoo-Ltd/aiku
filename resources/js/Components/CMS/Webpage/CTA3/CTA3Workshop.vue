@@ -18,12 +18,11 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 
-const openGallery = ref(false)
 
 </script>
 
 <template>
-	<div class="relative grid rounded-lg" :style="getStyles(modelValue.container.properties, screenType)">
+	<div class="relative grid rounded-lg" :style="getStyles(modelValue.container.properties,screenType)">
 		<!-- Background Image Layer -->
 		<div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" :style="{
 			backgroundImage: modelValue?.image?.source
@@ -33,10 +32,10 @@ const openGallery = ref(false)
 		}" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"></div>
 
 
-		<div :style="getStyles(modelValue.container.properties?.block, screenType)" class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter
-           sm:flex sm:items-center sm:justify-between
-           lg:w-96 lg:flex-col lg:items-start 
-           lg:rounded-bl-lg lg:rounded-br-none lg:rounded-tl-lg">
+		<div :style="getStyles(modelValue.container.properties?.block,screenType)" class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter
+         sm:flex sm:flex-col sm:items-start
+         lg:w-96">
+
 			<div class="text-center lg:text-left text-gray-600 pr-3 mb-4 w-full">
 				<Editor v-if="modelValue?.text" v-model="modelValue.text" @update:modelValue="() => emits('autoSave')"
 					:uploadImageRoute="{

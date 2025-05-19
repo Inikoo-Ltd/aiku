@@ -6,7 +6,9 @@ import { getFormValue } from '@/Composables/SideEditorHelper'
 
 import { routeType } from '@/types/route'
 const props = defineProps<{
-    blueprint: Array<{ key: string; label?: string; type?: string, replaceForm: Array<any> }>
+    blueprint: {
+        replaceForm : Array<any>
+    }
     uploadImageRoute?: routeType
 }>()
 

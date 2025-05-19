@@ -39,7 +39,7 @@ defineProps<{
                 <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`"
                     class="flex gap-x-2 items-center">
 <!--                  This icon cause an error-->
-<!--                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />-->
+                   <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
                     WA: <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
             </div>

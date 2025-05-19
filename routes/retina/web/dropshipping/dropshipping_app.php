@@ -33,13 +33,13 @@ use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
-use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
+use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
 use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platform')->as('platform.')->group(function () {
-    Route::get('/', ShowRetinaDropshipping::class)->name('dashboard');
+    Route::get('/', CreateRetinaDropshippingCustomerSalesChannel::class)->name('dashboard');
 
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');

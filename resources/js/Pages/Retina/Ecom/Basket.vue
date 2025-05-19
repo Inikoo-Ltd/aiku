@@ -61,7 +61,7 @@ const isLoading = ref<string | boolean>(false)
 
 
 // Section: add notes (on popup pageheading)
-const noteToSubmit = ref(props.order.public_notes)
+const noteToSubmit = ref(props.order?.public_notes)
 const recentlySuccessNote = ref(false)
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref(false)

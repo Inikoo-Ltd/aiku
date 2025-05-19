@@ -24,7 +24,7 @@ export default {
         ],
       },
       {
-        name: "Properties",
+        name: "Layout",
         key: ["container", "properties"],
         replaceForm: [
           {

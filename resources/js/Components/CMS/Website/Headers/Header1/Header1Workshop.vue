@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import MobileMenu from '@/Components/MobileMenu.vue'
 import { getStyles } from "@/Composables/styles";
 import MobileHeader from '@/Components/CMS/Website/Headers/MobileHeader.vue';
 

@@ -95,7 +95,7 @@
   max-width: 300px;
 }
 
-@media screen and (max-width: 768px) {
+/* @media screen and (max-width: 768px) {
     .editor-class img {
       width: 100% !important;
       height: auto !important;
@@ -112,3 +112,4 @@
       margin: 0 auto !important;
     }
   }
+ */
