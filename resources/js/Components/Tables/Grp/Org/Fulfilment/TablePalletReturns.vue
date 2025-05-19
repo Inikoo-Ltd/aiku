@@ -117,7 +117,7 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                 [
                     palletReturn.slug
                 ]);
-        default:
+        case 'retina.fulfilment.storage.pallet_returns.index':
             return route(
                 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
                 [
@@ -126,6 +126,8 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                     route().params['fulfilmentCustomer'],
                     palletReturn.slug
                 ]);
+        default:
+            return ''
     }
 }
 

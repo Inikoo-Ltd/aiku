@@ -28,6 +28,7 @@ use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
+use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
@@ -59,7 +60,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         Route::get('/dashboard', ShowRetinaPlatformDashboard::class)->name('dashboard');
 
         Route::prefix('basket')->as('basket.')->group(function () {
-            Route::get('/', IndexRetinaBaskets::class)->name('index');
+            Route::get('/', IndexRetinaFulfilmentBaskets::class)->name('index');
             Route::get('{order}', ShowRetinaDropshippingBasket::class)->name('show');
         });
 
