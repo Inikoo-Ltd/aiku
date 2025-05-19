@@ -194,7 +194,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
-   
+
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::post('wc-user/{wooCommerceUser:id}/products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();

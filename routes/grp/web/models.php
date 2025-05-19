@@ -637,10 +637,10 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomer'])->name('platform-order.store')->withoutScopedBindings();
     Route::post('/customer-sales-channel/{platform:id}', StoreCustomerSalesChannel::class)->name('customer_sales_channel.store')->withoutScopedBindings();
-    Route::post('portfolio-multiple-manual', StoreMultipleManualPortfolios::class)->name('portfolio.store_multiple_manual');
 });
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+    Route::post('portfolio-multiple-manual', StoreMultipleManualPortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
 });
 

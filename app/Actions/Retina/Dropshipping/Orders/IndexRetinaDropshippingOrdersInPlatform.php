@@ -22,6 +22,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Dropshipping\TiktokUserHasOrder;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -32,7 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer|TiktokUser|WebUser $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -54,6 +55,13 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
         if ($this->platformUser instanceof ShopifyUser) {
             $query->where('shopify_user_has_fulfilments.shopify_user_id', $parent->id);
+
+            $query->leftJoin('orders', 'orders.id', '=', 'shopify_user_has_fulfilments.model_id');
+            if ($this->customer->is_dropshipping) {
+                $query->where('shopify_user_has_fulfilments.model_type', '=', class_basename(Order::class));
+            }
+            $query->addSelect('shopify_user_has_fulfilments.id as platform_order_id');
+
         } elseif ($this->platformUser instanceof TiktokUser) {
             $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
         } else {
@@ -61,13 +69,27 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             $query->where('orders.state', '!=', OrderStateEnum::CREATING);
         }
 
+        $query->leftJoin('customer_clients', 'customer_clients.id', '=', 'orders.customer_client_id');
+        $query->leftJoin('order_stats', 'orders.id', '=', 'order_stats.order_id');
+
         if (!($this->platformUser instanceof WebUser)) {
             $query->with('model');
         }
-        $query->defaultSort('id');
+        $query->defaultSort('orders.id');
 
-        return $query->defaultSort('id')
-            ->allowedSorts(['id'])
+        $query->select([
+            'orders.id',
+            'orders.date',
+            'orders.reference',
+            'orders.slug',
+            'customer_clients.name as client_name',
+            'orders.state as order_state',
+            'orders.total_amount',
+            'order_stats.number_item_transactions as number_item_transactions'
+        ]);
+
+        return $query->defaultSort('orders.id')
+            ->allowedSorts(['orders.id'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

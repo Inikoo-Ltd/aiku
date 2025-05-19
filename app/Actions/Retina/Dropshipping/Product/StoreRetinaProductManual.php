@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Dropshipping\Product;
 use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
