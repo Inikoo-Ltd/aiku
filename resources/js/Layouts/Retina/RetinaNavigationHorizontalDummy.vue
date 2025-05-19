@@ -70,12 +70,11 @@ const nextHorizontal = computed(() => {
 })
 
 
-
-const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
 const isLoadingNavigation = ref<string | boolean>(false)
+const storageLayout = JSON.parse(localStorage.getItem(`layout_${layout.retina.type}`) || '{}')  // Get layout from localStorage
 const onClickArrow = (horizontalKey: string) => {
     layout.currentPlatform = horizontalKey
-    localStorage.setItem('layout', JSON.stringify({
+    localStorage.setItem(`layout_${layout.retina.type}`, JSON.stringify({
         ...storageLayout,
         currentPlatform: horizontalKey
     }))

@@ -8,10 +8,14 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,11 +37,24 @@ class CallbackRetinaWooCommerceUser extends OrgAction
         $consumerSecret = Arr::get($modelData, 'consumer_secret');
         $storeUrl = Arr::get($modelData, 'store_url');
 
-        StoreWooCommerceUser::run($customer, [
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = StoreWooCommerceUser::run($customer, [
             'name' => $name,
             'store_url' => $storeUrl,
             'consumer_key' => $consumerKey,
             'consumer_secret' => $consumerSecret
+        ]);
+
+        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
+            'platform_user_type' => $wooCommerceUser->getMorphClass(),
+            'platform_user_id' => $wooCommerceUser->id,
+        ]);
+
+        $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+        $this->update($wooCommerceUser, [
+            'customer_sales_channel_id' => $customerSalesChannel->id,
+            'settings.webhooks' => $webhooks
         ]);
 
         return redirect()->route('retina.dropshipping.platform.dashboard');

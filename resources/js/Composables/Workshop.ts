@@ -74,6 +74,7 @@ export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
     .replace(/\{\{\s*favourites_count\s*\}\}/g, piniaVariables?.favourites_count || '0')
     .replace(/\{\{\s*cart_count\s*\}\}/g, piniaVariables?.cart_count || '0')
     .replace(/\{\{\s*cart_amount\s*\}\}/g, piniaVariables?.cart_amount || '-')
+    .replace(/\{\{\s*reference\s*\}\}/g, piniaVariables?.reference || '')
 }
 
 

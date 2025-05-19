@@ -50,6 +50,9 @@ class HandleIrisInertiaRequests extends Middleware
                 'ziggy' => [
                     'location' => $request->url(),
                 ],
+                "retina" => [
+                    "type" => $website->shop->type->value,
+                ],
                 "layout" =>   [
                     'app_theme' => Arr::get($website->published_layout, 'theme'),
                 ],
