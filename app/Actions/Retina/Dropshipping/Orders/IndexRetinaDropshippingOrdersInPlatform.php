@@ -83,7 +83,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'orders.reference',
             'orders.slug',
             'customer_clients.name as client_name',
-            'orders.state as order_state',
+            'orders.state',
             'orders.total_amount',
             'order_stats.number_item_transactions as number_item_transactions'
         ]);
@@ -120,7 +120,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
-
+        // dd(RetinaDropshippingOrdersResources::collection($orders)->resolve());
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
