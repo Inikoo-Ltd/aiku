@@ -32,7 +32,7 @@ class GetRetinaFulfilmentPlatformNavigation
             ],
             'route'       => [
                 'name'       => 'retina.dropshipping.platforms.basket.index',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->platform->slug]
             ],
         ];
 
@@ -45,7 +45,7 @@ class GetRetinaFulfilmentPlatformNavigation
                     'root'  => 'retina.dropshipping.platforms.portfolios.products.index',
                     'route' => [
                         'name'       => 'retina.dropshipping.platforms.portfolios.products.index',
-                        'parameters' => [$platform->slug]
+                        'parameters' => [$platform->platform->slug]
                     ],
                 ]
             ];
@@ -57,7 +57,7 @@ class GetRetinaFulfilmentPlatformNavigation
             'root'        => 'retina.dropshipping.platforms.portfolios.',
             'route'       => [
                 'name'       => 'retina.dropshipping.platforms.portfolios.index',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->platform->slug]
             ],
             'right_label' => [
                 'label'        => __('14'),
@@ -72,7 +72,7 @@ class GetRetinaFulfilmentPlatformNavigation
                         'root'  => 'retina.dropshipping.platforms.portfolios.index',
                         'route' => [
                             'name'       => 'retina.dropshipping.platforms.portfolios.index',
-                            'parameters' => [$platform->slug]
+                            'parameters' => [$platform->platform->slug]
                         ],
                     ],
                     ...$tabs
@@ -86,7 +86,7 @@ class GetRetinaFulfilmentPlatformNavigation
             'root'  => 'retina.dropshipping.platforms.client.',
             'route' => [
                 'name'       => 'retina.dropshipping.platforms.client.index',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->platform->slug]
             ],
         ];
 
@@ -96,7 +96,7 @@ class GetRetinaFulfilmentPlatformNavigation
             'root'  => 'retina.dropshipping.platforms.orders.',
             'route' => [
                 'name'       => 'retina.dropshipping.platforms.orders.index',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->platform->slug]
             ],
         ];
 
@@ -106,7 +106,7 @@ class GetRetinaFulfilmentPlatformNavigation
             'root'  => 'retina.dropshipping.platforms.api.',
             'route' => [
                 'name'       => 'retina.dropshipping.platforms.api.dashboard',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->platform->slug]
             ],
         ];
 
