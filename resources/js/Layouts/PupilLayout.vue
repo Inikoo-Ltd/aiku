@@ -90,12 +90,12 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 
 				<!-- your actual page content -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<Breadcrumbs
+					<!-- <Breadcrumbs
 						class="absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1"
 						:breadcrumbs="usePage().props.breadcrumbs ?? []"
 						:navigation="usePage().props.navigation ?? []"
 						:layout="layout"
-						style="max-width: calc(1280px - 200px)" />
+						style="max-width: calc(1280px - 200px)" /> -->
 					<div
 						style="max-width: calc(1280px - 200px)"
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
