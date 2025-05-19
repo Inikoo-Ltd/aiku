@@ -132,9 +132,9 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             if (!$platform) {
                 $table->column(key: 'platform_name', label: __('Channel'), sortable: true);
             } elseif ($platform->type == PlatformTypeEnum::SHOPIFY) {
-                $table->column(key: 'shopify_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
+                $table->column(key: 'platform_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
             } elseif ($platform->type == PlatformTypeEnum::TIKTOK) {
-                $table->column(key: 'tiktok_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
+                $table->column(key: 'platform_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
             }
 
 
