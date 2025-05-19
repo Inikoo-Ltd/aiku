@@ -184,6 +184,9 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
 });
 
+Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();
+
+
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('upload', ImportRetinaClients::class)->name('platform.upload');
@@ -200,7 +203,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 
-    Route::post('aiku', StoreRetinaManualPlatform::class)->name('aiku.store')->withoutScopedBindings();
+
 });
 
 Route::name('web-users.')->prefix('web-users')->group(function () {
