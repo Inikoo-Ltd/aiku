@@ -31,6 +31,7 @@ class ShowProfilePageHeadTabs extends OrgAction
                 'actions'      => [
                     [
                         'type'  => 'button',
+                        'key'   => 'edit-profile',
                         'style' => 'edit',
                         'label' => __('edit profile'),
                         'route' => [
