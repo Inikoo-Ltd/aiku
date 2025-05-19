@@ -24,6 +24,7 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\PalletReturn;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -54,6 +55,20 @@ class ShowRetinaStoredItemReturn extends RetinaAction
         return $this->handle($palletReturn);
     }
 
+    public function inBasket(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    {
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(PalletReturnTabsEnum::values());
+
+        return $this->handle($palletReturn);
+    }
+
+    public function inOrder(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    {
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(PalletReturnTabsEnum::values());
+
+        return $this->handle($palletReturn);
+    }
+
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
     {
         $navigation = PalletReturnTabsEnum::navigation($palletReturn);
@@ -75,10 +90,10 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
-                    'previous' => ShowRetinaPalletReturn::make()->getPrevious($palletReturn, $request, true),
-                    'next'     => ShowRetinaPalletReturn::make()->getNext($palletReturn, $request, true),
-                ],
+                // 'navigation'  => [
+                //     'previous' => ShowRetinaPalletReturn::make()->getPrevious($palletReturn, $request, true),
+                //     'next'     => ShowRetinaPalletReturn::make()->getNext($palletReturn, $request, true),
+                // ],
                 'pageHead'    => [
                     'title'      => $palletReturn->reference,
                     'icon'       => [

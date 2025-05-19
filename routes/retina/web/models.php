@@ -63,6 +63,7 @@ use App\Actions\Retina\Fulfilment\PalletReturn\SubmitRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\SwitchRetinaPalletReturnDeliveryAddress;
 use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturnDeliveryAddress;
+use App\Actions\Retina\Fulfilment\Portfolio\SyncAllRetinaStoredItemsToPortfolios;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\Retina\Fulfilment\StoredItem\StoreRetinaStoredItem;
 use App\Actions\Retina\Fulfilment\StoredItem\SyncRetinaStoredItemToPallet;
@@ -189,6 +190,7 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::post('sync-all-stored-items', SyncAllRetinaStoredItemsToPortfolios::class)->name('sync_all_stored_items');
     Route::post('upload', ImportRetinaClients::class)->name('platform.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
 });
