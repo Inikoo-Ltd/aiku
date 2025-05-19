@@ -83,36 +83,7 @@ class GetRetinaFulfilmentNavigation
             ];
 
             if ($webUser->customer->fulfilmentCustomer->items_storage) {
-                $groupNavigation['stored_items'] = [
-                    'label'   => __('Inventory'),
-                    'icon'    => ['fal', 'fa-inventory'],
-                    'root'    => 'retina.fulfilment.itemised_storage.',
-                    'route'   => [
-                        'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
-                    ],
-                    'topMenu' => [
-                        'subSections' => [
-
-                            [
-                                'label' => __('SKUs'),
-                                'icon'  => ['fal', 'fa-barcode'],
-                                'root'  => 'retina.fulfilment.itemised_storage.stored_items.',
-                                'route' => [
-                                    'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
-                                ]
-                            ],
-                            [
-                                'label' => __('Audits'),
-                                'icon'  => ['fal', 'fa-ballot-check'],
-                                'root'  => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
-                                'route' => [
-                                    'name' => 'retina.fulfilment.itemised_storage.stored_items_audits.index'
-                                ]
-                            ]
-
-                        ]
-                    ]
-                ];
+                // $groupNavigation['stored_items'] = 
 
 
 
@@ -141,8 +112,39 @@ class GetRetinaFulfilmentNavigation
                 }
                 $groupNavigation['platforms_navigation'] = [
                 'type'  => 'horizontal',
+                'field_name'        => __('Dropshipping'),
                 'before_horizontal' => [
                     'subNavigation' => [
+                        [
+                            'label'   => __('Inventory'),
+                            'icon'    => ['fal', 'fa-inventory'],
+                            'root'    => 'retina.fulfilment.itemised_storage.',
+                            'route'   => [
+                                'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
+                            ],
+                            'topMenu' => [
+                                'subSections' => [
+
+                                    [
+                                        'label' => __('SKUs'),
+                                        'icon'  => ['fal', 'fa-barcode'],
+                                        'root'  => 'retina.fulfilment.itemised_storage.stored_items.',
+                                        'route' => [
+                                            'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
+                                        ]
+                                    ],
+                                    [
+                                        'label' => __('Audits'),
+                                        'icon'  => ['fal', 'fa-ballot-check'],
+                                        'root'  => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
+                                        'route' => [
+                                            'name' => 'retina.fulfilment.itemised_storage.stored_items_audits.index'
+                                        ]
+                                    ]
+
+                                ]
+                            ]
+                        ],
                         [
                             'label'         => __('Channels'),
                             'icon'          => 'fal fa-code-branch',
