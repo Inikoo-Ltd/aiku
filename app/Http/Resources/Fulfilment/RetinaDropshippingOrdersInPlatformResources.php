@@ -31,6 +31,18 @@ class RetinaDropshippingOrdersInPlatformResources extends JsonResource
 
     public function toArray($request): array
     {
+        if ($this->order_state) {
+            $stateIcons = [
+                'state_label'              => OrderStateEnum::labels()[$this->state->value],
+                'state_icon'               => OrderStateEnum::stateIcon()[$this->state->value]
+            ];
+        } else {
+            $stateIcons = [
+                'state_label'              => OrderStateEnum::labels()[$this->order_state],
+                'state_icon'               => OrderStateEnum::stateIcon()[$this->order_state]
+            ];
+        }
+
         return [
             'id'                       => $this->id,
             'date'                     => $this->date,
@@ -41,8 +53,7 @@ class RetinaDropshippingOrdersInPlatformResources extends JsonResource
             'state'                    => $this->state,
             'total_amount'             => $this->total_amount,
             'number_item_transactions' => $this->number_item_transactions,
-            'state_label'              => OrderStateEnum::labels()[$this->order_state],
-            'state_icon'               => OrderStateEnum::stateIcon()[$this->order_state]
+            ...$stateIcons
         ];
     }
 }
