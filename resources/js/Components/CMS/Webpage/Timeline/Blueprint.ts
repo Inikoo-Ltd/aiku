@@ -1,7 +1,7 @@
 export default {
 	blueprint: [
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{
@@ -13,23 +13,27 @@ export default {
 					key: ["dimension"],
 					label : "Dimension", 
 					type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
 					key: ["padding"],
 					label : "Padding", 
 					type: "padding",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
 					key: ["margin"],
 					label : "Margin", 
 					type: "margin",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
 					key: ["border"],
 					label : "Border", 
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "border",
 					props_data: {},
 				},

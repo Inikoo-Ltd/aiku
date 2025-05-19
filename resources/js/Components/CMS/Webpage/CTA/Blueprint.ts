@@ -46,6 +46,7 @@ export default {
 				{
 					key: ["properties", "object_position"],
 					label: "Object Position",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "select",
 					props_data: {
 						placeholder: "Object",
@@ -130,32 +131,37 @@ export default {
 				{
 					key: ["container",'properties',"text"],
 					type: "textProperty",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container",'properties',"background"],
 					label : "Background",
 					type: "background",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container",'properties',"margin"],
 					label : "Margin",
 					type: "margin",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container",'properties',"padding"],
 					label : "Padding",
 					type: "padding",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container",'properties',"border"],
 					label : "Border",
 					type: "border",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 			],
 		
 		},
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{
@@ -163,7 +169,7 @@ export default {
 					useIn : ["desktop", "tablet", "mobile"],
 					label :"Background",
 					type: "background",
-					
+	
 				},
 				{
 					key: ["padding"],
@@ -190,11 +196,13 @@ export default {
                     key: ["shadow"],
                     label : "Shadow",
                     type: "shadow",
+					useIn : ["desktop", "tablet", "mobile"],
                 },
                 {
                     key: ["shadowColor"],
                     label : "Shadow Color",
                     type: "color",
+					useIn : ["desktop", "tablet", "mobile"],
                 },
 			],
 		},

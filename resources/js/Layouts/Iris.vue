@@ -111,6 +111,7 @@ onBeforeUnmount(() => {
         <div xclass="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']"
         
             :style="{ fontFamily: theme.fontFamily }">
+           
             <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation" :screen-type="screenType"/>
 
             <Breadcrumbs

@@ -6,6 +6,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
+import { getStyles } from "@/Composables/styles";
 
 defineProps<{
   data: {
@@ -62,5 +63,8 @@ provide("onLogout", onLogoutAuth);
   <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :navigations="menu.data.fieldValue.navigation"
              :colorThemed="colorThemed" class="hidden md:block" />
 
-  <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue?.navigation" :screenType="screenType" />
+  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue?.navigation" :screenType="screenType" />
+  </div>
+
 </template>
