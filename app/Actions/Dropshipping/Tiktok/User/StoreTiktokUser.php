@@ -35,6 +35,7 @@ class StoreTiktokUser extends RetinaAction
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => class_basename($tikTokUser),
             'platform_user_id' => $tikTokUser->id,
+            'reference' => $tikTokUser->name
         ]);
 
         $tikTokUser->update([
