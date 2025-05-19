@@ -11,12 +11,12 @@ namespace App\Actions\Dropshipping\WooCommerce;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\WebUser;
-use App\Models\WooCommerceUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeleteRetinaWooCommerceUser extends OrgAction
+class DeleteWooCommerceUser extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -26,7 +26,7 @@ class DeleteRetinaWooCommerceUser extends OrgAction
     {
         $wooCommerceUser->products()->detach();
         $wooCommerceUser->orders()->detach();
-        $wooCommerceUser->customer->platforms()->detach();
+        $wooCommerceUser->customer->customerSalesChannelsXXX()->detach();
 
         $wooCommerceUser->forceDelete();
     }

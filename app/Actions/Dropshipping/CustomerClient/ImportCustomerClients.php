@@ -14,27 +14,25 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithImportModel;
 use App\Http\Resources\Helpers\UploadsResource;
 use App\Imports\CRM\CustomerClientImport;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Upload;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
-use Lorisleiva\Actions\ActionRequest;
 
 class ImportCustomerClients extends OrgAction
 {
     use WithImportModel;
 
-    public function handle(Customer $customer, Platform $platform, $file): Upload
+    public function handle(CustomerSalesChannel $customerSalesChannel, $file): Upload
     {
         $upload = StoreUpload::make()->fromFile(
-            $customer->shop,
+            $customerSalesChannel->shop,
             $file,
             [
                 'model' => 'CustomerClient',
-                'customer_id' => $customer->id,
-                'parent_type' => $customer->getMorphClass(),
-                'parent_id' => $customer->id,
+                'customer_id' => $customerSalesChannel->customer_id,
+                'parent_type' => $customerSalesChannel->getMorphClass(),
+                'parent_id' => $customerSalesChannel->id,
             ]
         );
 
@@ -42,13 +40,13 @@ class ImportCustomerClients extends OrgAction
         if ($this->isSync) {
             ImportUpload::run(
                 $file,
-                new CustomerClientImport($customer, $platform, $upload)
+                new CustomerClientImport($customerSalesChannel, $upload)
             );
             $upload->refresh();
         } else {
             ImportUpload::dispatch(
                 $this->tmpPath.$upload->filename,
-                new CustomerClientImport($customer, $platform, $upload)
+                new CustomerClientImport($customerSalesChannel, $upload)
             );
         }
 
@@ -59,25 +57,18 @@ class ImportCustomerClients extends OrgAction
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
     }
 
-    public function asController(Customer $customer, Platform $platform, ActionRequest $request): Upload
-    {
-        $this->initialisationFromShop($customer->shop, $request);
-        $file = $request->file('file');
-        Storage::disk('local')->put($this->tmpPath, $file);
-        return $this->handle($customer, $platform, $file);
-    }
 
-    public function action(Customer $customer, Platform $platform, array $modelData): Upload
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): Upload
     {
-        $this->initialisationFromShop($customer->shop, $modelData);
+        $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
         $file = Arr::get($modelData, 'file');
         Storage::disk('local')->put($this->tmpPath, $file);
 
-        return $this->handle($customer, $platform, $file);
+        return $this->handle($customerSalesChannel, $file);
     }
 
     public function jsonResponse(Upload $upload): array

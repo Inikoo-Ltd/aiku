@@ -10,29 +10,23 @@
 
 namespace App\Actions\Retina\Api\Client;
 
+use App\Actions\RetinaWebhookAction;
 use App\Http\Resources\Api\CustomerClientsResource;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetClients
+class GetClients extends RetinaWebhookAction
 {
-    use AsAction;
-    use WithAttributes;
-
-    public function handle(Customer $customer, array $modelData): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(CustomerClient::class);
 
-        $platform = $customer->platforms()
-            ->where('type', 'manual')
-            ->first();
+
 
         $query->where('customer_clients.customer_id', $customer->id);
         $query->where('customer_clients.platform_id', $platform->id);
@@ -62,11 +56,10 @@ class GetClients
         ->withQueryString();
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $customer = $request->user();
-        $this->fillFromRequest($request);
-        return $this->handle($customer, $this->validateAttributes());
+        $this->initialisation($request);
+        return $this->handle($customerSalesChannel, $this->validateAttributes());
     }
 
 

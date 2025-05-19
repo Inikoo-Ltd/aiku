@@ -8,8 +8,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
@@ -24,8 +24,8 @@ use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -43,9 +43,9 @@ class ShowCustomerClient extends OrgAction
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
 
-    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
+    private Customer|FulfilmentCustomer|CustomerSalesChannel $parent;
 
     public function handle(CustomerClient $customerClient): CustomerClient
     {
@@ -54,7 +54,7 @@ class ShowCustomerClient extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent        = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
@@ -71,7 +71,7 @@ class ShowCustomerClient extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
@@ -97,7 +97,7 @@ class ShowCustomerClient extends OrgAction
         $subNavigation = null;
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof CustomerHasPlatform) {
+        } elseif ($this->parent instanceof CustomerSalesChannel) {
             if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
                 $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
             } else {
@@ -169,7 +169,7 @@ class ShowCustomerClient extends OrgAction
         return new CustomerClientResource($customerClient);
     }
 
-    public function getBreadcrumbs(Customer|FulfilmentCustomer|CustomerHasPlatform $parent, string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(Customer|FulfilmentCustomer|CustomerSalesChannel $parent, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (CustomerClient $customerClient, array $routeParameters, string $suffix = null) {
             return [
@@ -278,7 +278,7 @@ class ShowCustomerClient extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show'
             => array_merge(
-                (new ShowCustomerHasPlatform())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', $routeParameters),
+                (new ShowCustomerSalesChannel())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [

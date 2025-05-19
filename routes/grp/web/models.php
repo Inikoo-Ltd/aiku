@@ -44,7 +44,6 @@ use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\ApproveCustomer;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\DeletePortfolio;
 use App\Actions\CRM\Customer\RejectCustomer;
@@ -62,6 +61,7 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
@@ -634,12 +634,14 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
-    Route::post('client', StoreCustomerClient::class)->name('client.store');
-    Route::post('client/{platform:id}', StoreCustomerClient::class)->name('platform-client.store')->withoutScopedBindings();
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomer'])->name('platform-order.store')->withoutScopedBindings();
-    Route::post('/platform/{platform:id}/attach', AttachCustomerToPlatform::class)->name('platform.attach')->withoutScopedBindings();
+    Route::post('/customer-sales-channel/{platform:id}', StoreCustomerSalesChannel::class)->name('customer_sales_channel.store')->withoutScopedBindings();
     Route::post('portfolio-multiple-manual', StoreMultipleManualPortfolios::class)->name('portfolio.store_multiple_manual');
+});
+
+Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+    Route::post('client', StoreCustomerClient::class)->name('client.store');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');

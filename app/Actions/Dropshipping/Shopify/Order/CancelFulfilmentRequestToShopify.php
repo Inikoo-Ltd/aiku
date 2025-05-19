@@ -10,8 +10,8 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\ShopifyUserHasFulfilment;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 

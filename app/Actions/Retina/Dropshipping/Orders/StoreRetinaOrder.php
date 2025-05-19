@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -37,11 +37,11 @@ class StoreRetinaOrder extends RetinaAction
             'platform_id' => $platform->id
         ]);
 
-        $customerHasPlatform = $this->customer->customerHasPlatforms()
+        $customerHasPlatform = $this->customer->customerSalesChannels()
             ->where('platform_id', $platform->id)
             ->first();
 
-        CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
+        CustomerSalesChannelsHydrateOrders::dispatch($customerHasPlatform);
 
         if ($parent instanceof CustomerClient) {
             CustomerClientHydrateOrders::dispatch($parent);

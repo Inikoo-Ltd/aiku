@@ -9,11 +9,11 @@
 */
 
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
-use App\Actions\Dropshipping\ShopifyUser\StoreRetinaShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\FetchRetinaCustomerClientFromWooCommerce;
-use App\Actions\Dropshipping\WooCommerce\StoreRetinaWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
@@ -41,12 +41,12 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::get('/', ShowRetinaDropshipping::class)->name('dashboard');
 
-    Route::post('shopify-user', StoreRetinaShopifyUser::class)->name('shopify_user.store');
+    Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
     Route::get('wc-user-callback', [AuthorizeRetinaWooCommerceUser::class, 'handleCallback'])->name('wc.callback');
-    Route::post('wc-user', StoreRetinaWooCommerceUser::class)->name('wc.store');
+    Route::post('wc-user', StoreWooCommerceUser::class)->name('wc.store');
     Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
 });
 

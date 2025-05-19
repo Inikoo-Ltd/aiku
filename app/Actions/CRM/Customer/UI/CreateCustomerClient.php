@@ -13,8 +13,8 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateCustomerClient extends OrgAction
 {
-    private Platform|Customer|CustomerHasPlatform $scope;
+    private Platform|Customer|CustomerSalesChannel $scope;
 
     public function handle(Customer $customer, ActionRequest $request): Response
     {
@@ -97,7 +97,7 @@ class CreateCustomerClient extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => $this->scope instanceof CustomerHasPlatform
+                    'route'     => $this->scope instanceof CustomerSalesChannel
                         ? [
                             'name'       => 'grp.models.customer.platform-client.store',
                             'parameters' => [
@@ -125,7 +125,7 @@ class CreateCustomerClient extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->scope = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 

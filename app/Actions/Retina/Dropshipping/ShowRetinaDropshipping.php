@@ -79,7 +79,7 @@ class ShowRetinaDropshipping extends RetinaAction
                     ]
                 ],
                 'aikuConnectRoute' => [
-                    'isAuthenticated' => $customer->platforms()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
+                    'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
                     'url'       => route('retina.models.dropshipping.aiku.store')
                 ],
                 'wooRoute' => [
@@ -88,7 +88,7 @@ class ShowRetinaDropshipping extends RetinaAction
                         'parameters' => [],
                         'method' => 'post'
                     ],
-                    'isConnected' => $customer->platforms()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
+                    'isConnected' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
                 ]
             ]
         );

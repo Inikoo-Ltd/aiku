@@ -10,9 +10,9 @@ namespace App\Actions\Dropshipping\Platform\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\CRM\Customer\CustomerStateEnum;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PlatformHydrateCustomers implements ShouldBeUnique
@@ -27,21 +27,17 @@ class PlatformHydrateCustomers implements ShouldBeUnique
 
     public function handle(Platform $platform): void
     {
+
+        $query = DB::table('customer_sales_channels')->where('platform_id', $platform->id)
+            ->distinct('customer_id');
         $stats = [
-            'number_customers' => $platform->customers()->count(),
+            'number_customers' => $query->count('customer_id')
 
         ];
 
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'customers',
-                field: 'state',
-                enum: CustomerStateEnum::class,
-                models: Customer::class
-            )
-        );
+        foreach (CustomerStateEnum::cases() as $state) {
+            $stats['number_customers_' . $state->value] = $query->where('state', $state->value)->count('customer_id');
+        }
 
 
         $platform->stats()->update($stats);

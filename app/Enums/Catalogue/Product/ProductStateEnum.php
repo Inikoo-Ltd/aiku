@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 08 Apr 2024 09:52:43 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Mon, 08 Apr 2024 09:52:43 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -15,9 +15,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\WooCommerceUser;
 
 enum ProductStateEnum: string
 {
@@ -31,7 +31,7 @@ enum ProductStateEnum: string
 
     public static function labels($bucket = null): array
     {
-        if (!$bucket or $bucket == 'all') {
+        if (!$bucket || $bucket == 'all') {
             return [
                 'in_process'    => __('In Process'),
                 'active'        => __('Active'),
@@ -102,7 +102,7 @@ enum ProductStateEnum: string
 
         $stats = $parent->stats;
 
-        if (!$bucket or $bucket == 'all') {
+        if (!$bucket || $bucket == 'all') {
             return [
                 'in_process'    => $stats->number_products_state_in_process,
                 'active'        => $stats->number_products_state_active,

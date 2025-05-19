@@ -9,12 +9,10 @@
 namespace App\Models\Dropshipping;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Sluggable\HasSlug;
@@ -32,7 +30,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $image_id
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -73,12 +70,6 @@ class Platform extends Model
     public function stats(): HasOne
     {
         return $this->hasOne(PlatformStats::class);
-    }
-
-    public function customers(): BelongsToMany
-    {
-        return $this->belongsToMany(Customer::class, 'customer_has_platforms')
-            ->withTimestamps();
     }
 
     public function portfolios(): HasMany

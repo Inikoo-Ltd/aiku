@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dropshipping\CustomerHasPlatforms\UI;
+namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\OrgAction;
@@ -16,7 +16,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -24,27 +24,27 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowCustomerHasPlatform extends OrgAction
+class ShowCustomerSalesChannel extends OrgAction
 {
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
     use WithCRMAuthorisation;
 
-    public function handle(CustomerHasPlatform $customerHasPlatform): CustomerHasPlatform
+    public function handle(CustomerSalesChannel $customerHasPlatform): CustomerSalesChannel
     {
         return $customerHasPlatform;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): CustomerHasPlatform
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
 
 
         return $this->handle($customerHasPlatform);
     }
 
-    public function htmlResponse(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
+    public function htmlResponse(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): Response
     {
         $navigation = CustomerPlatformTabsEnum::navigation();
 

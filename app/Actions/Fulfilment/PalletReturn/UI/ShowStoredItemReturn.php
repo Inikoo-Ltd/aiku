@@ -25,7 +25,7 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -41,7 +41,7 @@ class ShowStoredItemReturn extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private FulfilmentCustomer|Fulfilment|CustomerHasPlatform $parent;
+    private FulfilmentCustomer|Fulfilment|CustomerSalesChannel $parent;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
@@ -68,7 +68,7 @@ class ShowStoredItemReturn extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PalletReturnTabsEnum::values());
@@ -81,7 +81,7 @@ class ShowStoredItemReturn extends OrgAction
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof CustomerHasPlatform) {
+        } elseif ($this->parent instanceof CustomerSalesChannel) {
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         }
 
@@ -187,7 +187,7 @@ class ShowStoredItemReturn extends OrgAction
                 ],
                 'data'               => PalletReturnResource::make($palletReturn),
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
-                'box_stats' => $this->parent instanceof CustomerHasPlatform ? GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer) : GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
+                'box_stats' => $this->parent instanceof CustomerSalesChannel ? GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer) : GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
 
                 'notes_data' => GetNotesData::run(model: $palletReturn),
 
@@ -230,8 +230,8 @@ class ShowStoredItemReturn extends OrgAction
                 ],
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
-                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value)) //todo idk if this is right
-                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))), //todo idk if this is right
+                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))),
 
                 PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn))

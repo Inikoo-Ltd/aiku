@@ -64,7 +64,7 @@ class StorePalletReturn extends OrgAction
 
         data_set($modelData, 'currency_id', $fulfilmentCustomer->fulfilment->shop->currency_id, overwrite: false);
 
-        $modelData = $this->processData($modelData, $fulfilmentCustomer, SerialReferenceModelEnum::PALLET_RETURN);
+        $modelData           = $this->processData($modelData, $fulfilmentCustomer, SerialReferenceModelEnum::PALLET_RETURN);
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
         /** @var PalletReturn $palletReturn */
@@ -144,19 +144,20 @@ class StorePalletReturn extends OrgAction
     public function rules(): array
     {
         return [
-            'type'           => ['sometimes', 'required', Rule::enum(PalletReturnTypeEnum::class)],
-            'warehouse_id'   => [
+            'type'                      => ['sometimes', 'required', Rule::enum(PalletReturnTypeEnum::class)],
+            'warehouse_id'              => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')
                     ->where('organisation_id', $this->organisation->id),
             ],
-            'customer_notes' => ['sometimes', 'nullable', 'string'],
-            'platform_id'    => ['sometimes', 'nullable', 'integer', 'exists:platforms,id'],
-            'delivery_address' => ['sometimes', new ValidAddress()],
-            'data' => ['sometimes', 'array'],
-            'is_collection' => ['sometimes', 'boolean'],
-            'shopify_user_id' => ['sometimes', 'integer']
+            'customer_notes'            => ['sometimes', 'nullable', 'string'],
+            'platform_id'               => ['sometimes', 'nullable', 'integer'],
+            'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
+            'delivery_address'          => ['sometimes', new ValidAddress()],
+            'data'                      => ['sometimes', 'array'],
+            'is_collection'             => ['sometimes', 'boolean'],
+            'shopify_user_id'           => ['sometimes', 'integer']
         ];
     }
 

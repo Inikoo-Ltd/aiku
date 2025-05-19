@@ -18,19 +18,19 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Ordering\Order\HydrateOrders;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
 use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
 use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
@@ -442,7 +442,7 @@ test('create customer client', function () {
     $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
     $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-    AttachCustomerToPlatform::make()->action($customer, $platform, []);
+    StoreCustomerSalesChannel::make()->action($customer, $platform, []);
     $customerClient = StoreCustomerClient::make()->action(
         $customer,
         array_merge(

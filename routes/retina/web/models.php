@@ -179,12 +179,14 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
 });
 
 Route::name('customer-client.')->prefix('customer-client')->group(function () {
-    Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::patch('{customerClient:id}/update', UpdateRetinaCustomerClient::class)->name('update')->withoutScopedBindings();
     Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
-    Route::post('platform/{platform:id}', [StoreRetinaCustomerClient::class, 'inPlatform'])->name('platform.store');
-    Route::post('platform/{platform:id}/upload', ImportRetinaClients::class)->name('platform.upload');
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
+});
+
+Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+    Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::post('upload', ImportRetinaClients::class)->name('platform.upload');
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {

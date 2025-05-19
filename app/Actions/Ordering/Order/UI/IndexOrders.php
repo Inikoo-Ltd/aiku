@@ -25,8 +25,8 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -49,7 +49,7 @@ class IndexOrders extends OrgAction
     use WithOrdersSubNavigation;
 
     private Organisation|Shop|Customer|CustomerClient|Asset|ShopifyUser $parent;
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerHasPlatform;
 
     private string $bucket;
 
@@ -437,7 +437,7 @@ class IndexOrders extends OrgAction
 
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket              = 'all';
         $this->parent              = $customerClient;
@@ -447,7 +447,7 @@ class IndexOrders extends OrgAction
         return $this->handle(parent: $customerClient, prefix: OrdersTabsEnum::ORDERS->value);
     }
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket              = 'all';
         $this->parent              = $customerClient;

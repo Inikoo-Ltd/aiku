@@ -1,20 +1,17 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 02-04-2025-14h-10m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 18 May 2025 17:44:52 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Dropshipping\Platform\UI;
+namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerPlatformsResource;
-use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
@@ -28,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPlatformsInFulfilmentCustomer extends OrgAction
+class IndexCustomerSalesChannelsInFulfilment extends OrgAction
 {
     use WithFulfilmentCustomerSubNavigation;
 
@@ -47,12 +44,12 @@ class IndexPlatformsInFulfilmentCustomer extends OrgAction
         }
 
         $query = QueryBuilder::for(Platform::class);
-        $query->join('customer_has_platforms', 'customer_has_platforms.platform_id', 'platforms.id');
-        $query->where('customer_has_platforms.customer_id', $fulfilmentCustomer->customer_id);
+        $query->join('customer_sales_channels', 'customer_sales_channels.platform_id', 'platforms.id');
+        $query->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id);
 
         return $query
-            ->defaultSort('customer_has_platforms.id')
-            ->select(['customer_has_platforms.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
+            ->defaultSort('customer_sales_channels.id')
+            ->select(['customer_sales_channels.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -73,10 +70,9 @@ class IndexPlatformsInFulfilmentCustomer extends OrgAction
             'label' => __('Channels')
         ];
 
-        $enableAiku = !$this->parent->customer->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
 
         return Inertia::render(
-            'Org/Fulfilment/FulfilmentCustomerPlatforms',
+            'Org/Fulfilment/CustomerSalesChannelsInFulfilment',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
@@ -100,14 +96,6 @@ class IndexPlatformsInFulfilmentCustomer extends OrgAction
 
                 ],
                 'data'        => FulfilmentCustomerPlatformsResource::collection($platforms),
-                'platforms'   => PlatformsResource::collection($this->parent->group->platforms),
-                'enableAiku'  => $enableAiku,
-                'attachRoute' => [
-                    'name'       => 'grp.models.customer.platform.attach',
-                    'parameters' => [
-                        'customer' => $this->parent->customer_id,
-                    ]
-                ]
             ]
         )->table($this->tableStructure());
     }

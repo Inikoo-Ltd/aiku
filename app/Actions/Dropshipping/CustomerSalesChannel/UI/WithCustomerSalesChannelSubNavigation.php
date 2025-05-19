@@ -7,15 +7,15 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dropshipping\CustomerHasPlatforms\UI;
+namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
-trait WithCustomerHasPlatformSubNavigation
+trait WithCustomerSalesChannelSubNavigation
 {
-    public function getCustomerPlatformSubNavigation(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): array
+    public function getCustomerPlatformSubNavigation(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): array
     {
         $subNavigation = [];
 

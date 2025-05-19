@@ -1,6 +1,12 @@
 <?php
 
-namespace App\Models;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 18 May 2025 16:28:54 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Models\Dropshipping;
 
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use Illuminate\Database\Eloquent\Model;

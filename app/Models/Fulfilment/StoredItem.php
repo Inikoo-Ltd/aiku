@@ -10,9 +10,9 @@ namespace App\Models\Fulfilment;
 
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
+use App\Models\Dropshipping\TiktokUserHasProduct;
 use App\Models\Inventory\Warehouse;
-use App\Models\ShopifyUserHasProduct;
-use App\Models\TiktokUserHasProduct;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasRetinaSearch;
 use App\Models\Traits\HasUniversalSearch;

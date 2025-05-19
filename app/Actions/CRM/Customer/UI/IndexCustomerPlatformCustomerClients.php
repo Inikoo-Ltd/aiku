@@ -9,16 +9,16 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -32,14 +32,14 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomerPlatformCustomerClients extends OrgAction
 {
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
 
     private Platform $platform;
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerHasPlatform;
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
 
         $this->customerHasPlatform = $customerHasPlatform;
         $this->platform = $platform;
@@ -155,7 +155,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowCustomerHasPlatform::make()->getBreadcrumbs($this->platform, $routeName, $routeParameters),
+                ShowCustomerSalesChannel::make()->getBreadcrumbs($this->platform, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

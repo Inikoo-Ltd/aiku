@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\ShopifyUserHasFulfilment;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;

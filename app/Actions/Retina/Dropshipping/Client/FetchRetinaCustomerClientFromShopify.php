@@ -39,7 +39,7 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
                     data_set($attributes, 'address', $shopifyUser->customer?->deliveryAddress?->toArray());
                 }
 
-                StoreRetinaClientFromPlatform::run($shopifyUser, $attributes, $customer, $existsClient);
+                StoreRetinaClientFromPlatformUser::run($shopifyUser, $attributes, $customer, $existsClient);
             }
         }
     }

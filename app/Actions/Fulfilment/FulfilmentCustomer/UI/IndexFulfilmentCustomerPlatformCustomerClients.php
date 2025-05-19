@@ -14,12 +14,12 @@ use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\PlatformHasClient;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\PlatformHasClient;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -35,10 +35,10 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
     private ShopifyUser|TiktokUser $parent;
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerHasPlatform;
 
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);

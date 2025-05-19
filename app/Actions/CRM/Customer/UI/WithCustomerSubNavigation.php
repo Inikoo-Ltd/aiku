@@ -10,8 +10,8 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -178,7 +178,7 @@ trait WithCustomerSubNavigation
         ]);
     }
 
-    protected function getCustomerClientSubNavigation(CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform): array
+    protected function getCustomerClientSubNavigation(CustomerClient $customerClient, CustomerSalesChannel $customerHasPlatform): array
     {
         return [
             [

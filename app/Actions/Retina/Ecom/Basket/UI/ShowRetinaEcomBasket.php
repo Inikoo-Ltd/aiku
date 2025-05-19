@@ -12,13 +12,11 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,20 +46,18 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
-        if ($this->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            return Redirect::route('retina.dropshipping.platforms.basket.index', ['platform' => $this->customer->getMainPlatform()->slug]);
-        }
+
         return Inertia::render(
             'Ecom/Basket',
             [
-                    'breadcrumbs' => $this->getBreadcrumbs(),
-                    'title'       => __('Baskets'),
-                    'pageHead'    => [
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'title'       => __('Baskets'),
+                'pageHead'    => [
                         'title' => __('Baskets'),
                         'icon'  => 'fal fa-shopping-basket'
                     ],
 
-                    'routes'    => [
+                'routes'    => [
                         'update_route' => [
                             'name'       => 'retina.models.order.update',
                             'parameters' => [
@@ -78,14 +74,14 @@ class ShowRetinaEcomBasket extends RetinaAction
                         ]
                     ],
 
-                    'voucher' => [], //todo: make logic for this if implemented
+                'voucher' => [],
 
-                    'order'          => $order ? OrderResource::make($order)->resolve() : [],
-                    'summary'     => $order ? $this->getOrderBoxStats($order) : null,
+                'order'          => $order ? OrderResource::make($order)->resolve() : [],
+                'summary'     => $order ? $this->getOrderBoxStats($order) : null,
 
-                    'balance'       => $this->customer?->balance,
-                    'total_to_pay'  => $order ? $order->total_amount : null,
-                    'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
+                'balance'       => $this->customer->balance,
+                'total_to_pay'  => $order?->total_amount,
+                'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
                 ]
         );
     }

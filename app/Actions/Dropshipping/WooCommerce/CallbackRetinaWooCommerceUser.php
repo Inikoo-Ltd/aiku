@@ -33,7 +33,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
         $consumerSecret = Arr::get($modelData, 'consumer_secret');
         $storeUrl = Arr::get($modelData, 'store_url');
 
-        StoreRetinaWooCommerceUser::run($customer, [
+        StoreWooCommerceUser::run($customer, [
             'name' => $name,
             'store_url' => $storeUrl,
             'consumer_key' => $consumerKey,

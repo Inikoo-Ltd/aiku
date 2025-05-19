@@ -7,14 +7,13 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dropshipping\Platform\UI;
+namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\PlatformsInCustomerResource;
-use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -28,11 +27,11 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPlatformsInCustomer extends OrgAction
+class IndexCustomerSalesChannels extends OrgAction
 {
     use WithCustomerSubNavigation;
 
-    private Customer $parent;
+    private Customer $customer;
 
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
@@ -47,16 +46,16 @@ class IndexPlatformsInCustomer extends OrgAction
         }
 
         $query = QueryBuilder::for(Platform::class);
-        $query->join('customer_has_platforms', 'customer_has_platforms.platform_id', 'platforms.id');
-        $query->where('customer_has_platforms.customer_id', $customer->id);
+        $query->join('customer_sales_channels', 'customer_sales_channels.platform_id', 'platforms.id');
+        $query->where('customer_sales_channels.customer_id', $customer->id);
 
         return $query
-            ->defaultSort('customer_has_platforms.id')
+            ->defaultSort('customer_sales_channels.id')
             ->select([
-                'customer_has_platforms.id as customer_has_platform_id',
-                'customer_has_platforms.number_customer_clients as number_customer_clients',
-                'customer_has_platforms.number_portfolios as number_portfolios',
-                'customer_has_platforms.number_orders as number_orders',
+                'customer_sales_channels.id as customer_sales_channel_id',
+                'customer_sales_channels.number_customer_clients as number_customer_clients',
+                'customer_sales_channels.number_portfolios as number_portfolios',
+                'customer_sales_channels.number_orders as number_orders',
                 'platforms.id',
                 'platforms.slug',
                 'platforms.code',
@@ -71,24 +70,28 @@ class IndexPlatformsInCustomer extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
+
+        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->customer, $request);
         $icon          = ['fal', 'fa-user'];
-        $title         = $this->parent->name;
+        $title         = $this->customer->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
-            'title' => __('channels')
+            'title' => $title
         ];
         $afterTitle    = [
 
-            'label' => __('Channels')
+            'label' => __('Sales Channels')
         ];
 
-        $enableAiku  = !$this->parent->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
-        $aikuChannel = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+        $manualPlatform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+
+        $manualCustomerSalesChannel = $this->customer->customerSalesChannels()
+            ->where('platform_id', $manualPlatform->id)
+            ->first();
 
         $actions = [];
 
-        if (!$this->parent->platforms()->where('type', PlatformTypeEnum::MANUAL)->first() && $aikuChannel) {
+        if (!$manualCustomerSalesChannel && $manualPlatform) {
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
@@ -96,23 +99,23 @@ class IndexPlatformsInCustomer extends OrgAction
                 'fullLoading' => true,
                 'route'       => [
                     'method'     => 'post',
-                    'name'       => 'grp.models.customer.platform.attach',
+                    'name'       => 'grp.models.customer.customer_sales_channel.store',
                     'parameters' => [
-                        'customer' => $this->parent->id,
-                        'platform' => $aikuChannel->id
+                        'customer' => $this->customer->id,
+                        'platform' => $manualPlatform->id
                     ]
                 ]
             ];
         }
 
         return Inertia::render(
-            'Org/Shop/CRM/PlatformsInCustomer',
+            'Org/Dropshipping/CustomerSalesChannels',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Channels'),
+                'title'       => __('Sales Channels'),
                 'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,
@@ -123,14 +126,6 @@ class IndexPlatformsInCustomer extends OrgAction
 
                 ],
                 'data'        => PlatformsInCustomerResource::collection($platforms),
-                'platforms'   => PlatformsResource::collection($this->parent->group->platforms),
-                'enableAiku'  => $enableAiku,
-                'attachRoute' => [
-                    'name'       => 'grp.models.customer.platform.attach',
-                    'parameters' => [
-                        'customer' => $this->parent->id,
-                    ]
-                ]
             ]
         )->table($this->tableStructure());
     }
@@ -157,7 +152,7 @@ class IndexPlatformsInCustomer extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $customer;
+        $this->customer = $customer;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);

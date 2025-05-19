@@ -12,7 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedInterv
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -34,8 +34,8 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
@@ -106,7 +106,7 @@ class StoreOrder extends OrgAction
             $modelData['shop_id']            = $parent->shop_id;
 
             if (!$modelData['platform_id']) {
-                $modelData['platform_id']        = $parent->platform_id;
+                $modelData['platform_id'] = $parent->platform_id;
             }
         } else {
             $modelData['currency_id'] = $parent->currency_id;
@@ -213,10 +213,10 @@ class StoreOrder extends OrgAction
         }
 
         if ($order->platform_id) {
-            $customerHasPlatform = CustomerHasPlatform::where('customer_id', $order->customer_id)
+            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $order->customer_id)
                 ->where('platform_id', $order->platform_id)->first();
             if ($customerHasPlatform) {
-                CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
+                CustomerSalesChannelsHydrateOrders::dispatch($customerHasPlatform);
             }
         }
 
@@ -226,7 +226,6 @@ class StoreOrder extends OrgAction
 
 
         if ($order->state == OrderStateEnum::CREATING) {
-
             if ($order->customer_client_id) {
                 $order->customerClient()->update([
                     'amount_in_basket'           => $order->total_amount,
@@ -262,13 +261,14 @@ class StoreOrder extends OrgAction
             ],
 
 
-            'customer_reference' => ['sometimes', 'string', 'max:255'],
-            'state'              => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'status'             => ['sometimes', Rule::enum(OrderStatusEnum::class)],
-            'handing_type'       => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
-            'tax_category_id'    => ['sometimes', 'required', 'exists:tax_categories,id'],
-            'platform_id'        => ['sometimes', 'exists:platforms,id'],
-            'sales_channel_id'   => [
+            'customer_reference'        => ['sometimes', 'string', 'max:255'],
+            'state'                     => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'status'                    => ['sometimes', Rule::enum(OrderStatusEnum::class)],
+            'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
+            'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
+            'platform_id'               => ['sometimes', 'nullable', 'integer'],
+            'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
+            'sales_channel_id'          => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {

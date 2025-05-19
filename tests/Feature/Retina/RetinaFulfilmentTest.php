@@ -12,7 +12,7 @@
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
@@ -459,9 +459,9 @@ test('Import Pallet (xlsx) for Pallet Delivery Duplicate', function (PalletDeliv
     Storage::fake('local')->put($tmpPath, $file);
 
     expect($palletDelivery->stats->number_pallets)->toBe(12)
-    ->and($palletDelivery->stats->number_pallets_type_pallet)->toBe(10)
-    ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1)
-    ->and($palletDelivery->stats->number_pallets_type_oversize)->toBe(1);
+        ->and($palletDelivery->stats->number_pallets_type_pallet)->toBe(10)
+        ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1)
+        ->and($palletDelivery->stats->number_pallets_type_oversize)->toBe(1);
 
     $upload = ImportRetinaPallet::run($palletDelivery, $file, [
         'with_stored_item' => false
@@ -490,9 +490,9 @@ test('Import Pallet (xlsx) for Pallet Delivery Invalid Types', function (PalletD
     Storage::fake('local')->put($tmpPath, $file);
 
     expect($palletDelivery->stats->number_pallets)->toBe(12)
-    ->and($palletDelivery->stats->number_pallets_type_pallet)->toBe(10)
-    ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1)
-    ->and($palletDelivery->stats->number_pallets_type_oversize)->toBe(1);
+        ->and($palletDelivery->stats->number_pallets_type_pallet)->toBe(10)
+        ->and($palletDelivery->stats->number_pallets_type_box)->toBe(1)
+        ->and($palletDelivery->stats->number_pallets_type_oversize)->toBe(1);
 
     $upload = ImportRetinaPallet::run($palletDelivery, $file, [
         'with_stored_item' => false
@@ -549,22 +549,17 @@ test('Process Pallet Delivery (from aiku)', function (PalletDelivery $palletDeli
         ->and($palletDelivery->state)->toBe(PalletDeliveryStateEnum::BOOKING_IN);
 
 
-
     foreach ($palletDelivery->pallets as $pallet) {
         BookInPallet::make()->action($pallet, ['location_id' => $this->location->id]);
     }
 
 
-
-
     $palletDelivery = SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
-    $pallet = $palletDelivery->pallets->first();
+    $pallet         = $palletDelivery->pallets->first();
 
     expect($pallet->location)->toBeInstanceOf(Location::class)
         ->and($pallet->location->id)->toBe($this->location->id)
         ->and($pallet->state)->toBe(PalletStateEnum::STORING);
-
-
 
 
     return $palletDelivery;
@@ -705,8 +700,8 @@ test('import pallets in return (xlsx) invalid reference', function (PalletReturn
 })->depends('Create Retina Pallet Return');
 
 test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
-    $pallet1 = Pallet::Find(3);
-    $pallet2 = Pallet::Find(4);
+    $pallet1      = Pallet::Find(3);
+    $pallet2      = Pallet::Find(4);
     $palletReturn = AttachRetinaPalletToReturn::make()->action(
         $palletReturn,
         $pallet1
@@ -901,14 +896,13 @@ test('Delete retina customer delivery address', function () {
 
 test('Store retina customer client', function () {
     $customer = $this->fulfilmentCustomer->customer;
-    $platform = $customer->getMainPlatform();
-    if (!$platform) {
-        $platform       = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-        AttachCustomerToPlatform::make()->action($customer, $platform, []);
-    }
 
-    $customerClient = StoreRetinaCustomerClient::make()->action(
-        $this->fulfilmentCustomer->customer,
+    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, []);
+
+
+    $customerClient = StoreRetinaCustomerClient::run(
+        $customerSalesChannel,
         [
             'reference'    => 'ref1',
             'contact_name' => 'Acme',
@@ -917,7 +911,7 @@ test('Store retina customer client', function () {
             'phone'        => '123456789',
             'address'      => Address::factory()->definition(),
             'status'       => true,
-            'platform_id' => $platform->id,
+            'platform_id'  => $platform->id,
         ]
     );
 

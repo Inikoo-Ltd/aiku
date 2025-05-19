@@ -8,8 +8,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\WithCustomerHasPlatformSubNavigation;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
@@ -21,8 +21,8 @@ use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -43,13 +43,13 @@ class IndexCustomerClients extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
     use WithDropshippingAuthorisation;
     use WithFulfilmentCustomerPlatformSubNavigation;
-    use WithCustomerHasPlatformSubNavigation;
+    use WithCustomerSalesChannelSubNavigation;
 
-    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
+    private Customer|FulfilmentCustomer|CustomerSalesChannel $parent;
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent        = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
@@ -66,7 +66,7 @@ class IndexCustomerClients extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -75,7 +75,7 @@ class IndexCustomerClients extends OrgAction
     }
 
 
-    public function handle(Customer|FulfilmentCustomer|CustomerHasPlatform $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Customer|FulfilmentCustomer|CustomerSalesChannel $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -93,7 +93,7 @@ class IndexCustomerClients extends OrgAction
 
         if ($parent instanceof FulfilmentCustomer) {
             $queryBuilder = $queryBuilder->where('customer_id', $parent->customer_id);
-        } elseif ($parent instanceof CustomerHasPlatform) {
+        } elseif ($parent instanceof CustomerSalesChannel) {
             $queryBuilder = $queryBuilder->where('customer_id', $parent->customer_id)->where('platform_id', $parent->platform_id);
         } else { // Customer
             $queryBuilder->where('customer_clients.customer_id', $parent->id);
@@ -119,7 +119,7 @@ class IndexCustomerClients extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Customer|FulfilmentCustomer|CustomerHasPlatform $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Customer|FulfilmentCustomer|CustomerSalesChannel $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
@@ -188,10 +188,10 @@ class IndexCustomerClients extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($scope->fulfilmentCustomer, $request);
             $title      = $scope->name;
 
-        } elseif ($this->parent instanceof CustomerHasPlatform && $this->shop->type == ShopTypeEnum::FULFILMENT) {
+        } elseif ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::FULFILMENT) {
             $scope         = $this->parent->customer;
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof CustomerHasPlatform && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        } elseif ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
 
             $scope         = $this->parent->customer;
             $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $request);
@@ -227,7 +227,7 @@ class IndexCustomerClients extends OrgAction
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                     'actions'       => [
-                        $this->parent instanceof CustomerHasPlatform
+                        $this->parent instanceof CustomerSalesChannel
                             ? [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -329,7 +329,7 @@ class IndexCustomerClients extends OrgAction
             'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
             'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show' =>
             array_merge(
-                ShowCustomerHasPlatform::make()->getBreadcrumbs(
+                ShowCustomerSalesChannel::make()->getBreadcrumbs(
                     $platform,
                     $routeName,
                     $routeParameters

@@ -15,7 +15,7 @@ use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\StoredItemsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
@@ -32,9 +32,9 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerHasPlatform;
 
-    public function handle(CustomerHasPlatform $customerHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerHasPlatform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -134,7 +134,7 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerHasPlatform = $customerHasPlatform;
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -142,7 +142,7 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
         return $this->handle($customerHasPlatform);
     }
 
-    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerHasPlatform, array $routeParameters): array
     {
         return array_merge(
             ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($customerHasPlatform, $routeParameters),

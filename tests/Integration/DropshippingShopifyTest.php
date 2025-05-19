@@ -8,9 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
@@ -67,9 +67,8 @@ test('associate customer shopify to customer', function () {
     $platform = $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first();
 
 
-    expect($this->customer->platforms->count())->toBe(0)
-        ->and($this->customer->getMainPlatform())->toBeNull();
-    $customer = AttachCustomerToPlatform::make()->action(
+    expect($this->customer->platforms->count())->toBe(0);
+    $customer = StoreCustomerSalesChannel::make()->action(
         $this->customer,
         $platform,
         [
@@ -81,9 +80,7 @@ test('associate customer shopify to customer', function () {
     $customer->refresh();
 
 
-    expect($customer->platforms->first())->toBeInstanceOf(Platform::class)
-        ->and($customer->getMainPlatform())->toBeInstanceOf(Platform::class)
-        ->and($customer->getMainPlatform()->type)->toBe(PlatformTypeEnum::SHOPIFY);
+    expect($customer->platforms->first())->toBeInstanceOf(Platform::class);
 
 
 

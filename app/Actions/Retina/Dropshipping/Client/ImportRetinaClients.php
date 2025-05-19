@@ -12,8 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Client;
 use App\Actions\Dropshipping\CustomerClient\ImportCustomerClients;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithImportModel;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Upload;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,23 +20,23 @@ class ImportRetinaClients extends RetinaAction
 {
     use WithImportModel;
 
-    public function handle(Customer $customer, Platform $platform, $file): Upload
+    public function handle(CustomerSalesChannel $customerSalesChannel, $file): Upload
     {
-        return ImportCustomerClients::make()->action($customer, $platform, $file);
+        return ImportCustomerClients::make()->action($customerSalesChannel, $file);
     }
 
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
     }
 
-    public function asController(Platform $platform, ActionRequest $request)
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $this->initialisationFromPlatform($platform, $request);
+        $this->initialisation($request);
 
-        $this->handle($this->customer, $platform, $this->validatedData);
+        $this->handle($customerSalesChannel, $this->validatedData);
     }
 
 }

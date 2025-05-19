@@ -14,7 +14,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -28,20 +28,20 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    public function handle(CustomerHasPlatform $customerHasPlatform): CustomerHasPlatform
+    public function handle(CustomerSalesChannel $customerHasPlatform): CustomerSalesChannel
     {
         return $customerHasPlatform;
     }
 
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, ActionRequest $request): CustomerHasPlatform
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentCustomerTabsEnum::values());
 
         return $this->handle($customerHasPlatform);
     }
 
-    public function htmlResponse(CustomerHasPlatform $customerHasPlatform, ActionRequest $request): Response
+    public function htmlResponse(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): Response
     {
         $navigation = FulfilmentCustomerPlatformTabsEnum::navigation();
 
@@ -77,7 +77,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(CustomerHasPlatform $customerHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerHasPlatform, array $routeParameters): array
     {
         $headCrumb = function (Platform $platform, array $routeParameters, string $suffix = '') {
             return [
