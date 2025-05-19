@@ -24,5 +24,5 @@ const props = defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <RetinaTablePalletOrders :data="props.orders" :currency />
+    <RetinaTablePalletOrders :data="props.orders" :currency tab="orders" />
 </template>
