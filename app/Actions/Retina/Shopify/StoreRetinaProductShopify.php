@@ -14,10 +14,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -31,14 +28,15 @@ class StoreRetinaProductShopify extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(ShopifyUser $shopifyUser, array $modelData)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
-        DB::transaction(function () use ($shopifyUser, $modelData, $platform) {
+        DB::transaction(function () use ($shopifyUser, $modelData) {
             foreach (Arr::get($modelData, 'items') as $productId) {
                 $product = Product::find($productId);
-                $portfolio = StorePortfolio::make()->action($shopifyUser->customer, $product, [
-                    'platform_id' => $platform->id,
+                $portfolio = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $product, [
                 ]);
 
                 HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
@@ -49,11 +47,9 @@ class StoreRetinaProductShopify extends RetinaAction
             return;
         }
 
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $shopifyUser->customer_id)
-        ->where('platform_id', $platform->id)
-        ->first();
 
-        CustomerSalesChannelsHydratePortfolios::dispatch($customerHasPlatform);
+
+        CustomerSalesChannelsHydratePortfolios::dispatch($shopifyUser->customerSalesChannel);
 
     }
 
@@ -69,6 +65,9 @@ class StoreRetinaProductShopify extends RetinaAction
         return true;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
         $this->initialisation($request);

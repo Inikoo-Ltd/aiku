@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformStats;
 use App\Models\Dropshipping\Portfolio;
@@ -80,7 +81,7 @@ test('associate customer shopify to customer', function () {
     $customer->refresh();
 
 
-    expect($customer->platforms->first())->toBeInstanceOf(Platform::class);
+    expect($customer->customerSalesChannels()->first())->toBeInstanceOf(CustomerSalesChannel::class);
 
 
 

@@ -12,9 +12,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
@@ -41,7 +39,6 @@ class StoreProductWooCommerce extends RetinaAction
 
         $successCount = 0;
         $failedProducts = [];
-        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE->value)->first();
 
         foreach (Arr::get($products, 'items') as $productId) {
             try {
@@ -82,9 +79,7 @@ class StoreProductWooCommerce extends RetinaAction
 
                 $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
-                $portfolio = StorePortfolio::make()->action($wooCommerceUser->customer, $product, [
-                    'platform_id' => $platform->id,
-                ]);
+                $portfolio = StorePortfolio::make()->action($wooCommerceUser->customerSalesChannel, $product, []);
 
                 $wooCommerceUser->products()->attach($product->id, [
                     'woo_commerce_user_id' => $wooCommerceUser->id,

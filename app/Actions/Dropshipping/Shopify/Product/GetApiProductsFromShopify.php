@@ -15,8 +15,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
@@ -75,14 +73,11 @@ class GetApiProductsFromShopify extends OrgAction
 
                         $portfolio = $storedItem->portfolio;
                         if (!$portfolio) {
-                            $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
                             $portfolio = StorePortfolio::make()->action(
-                                $shopifyUser->customer,
+                                $shopifyUser->customerSalesChannel,
                                 $storedItem,
-                                [
-                                'platform_id' => $platform->id
-                            ]
+                                []
                             );
                         }
 

@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -89,5 +90,10 @@ class WooCommerceUser extends Model
     {
         return $this->belongsToMany(Order::class, 'wc_user_has_orders')
             ->withTimestamps();
+    }
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 }
