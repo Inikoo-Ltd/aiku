@@ -33,10 +33,9 @@ class StoreMultipleManualPortfolios extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-
-
         DB::transaction(function () use ($customerSalesChannel, $modelData) {
             foreach (Arr::get($modelData, 'items') as $itemID) {
+                $itemID = (int) $itemID;
                 if ($customerSalesChannel->customer->is_fulfilment) {
                     /** @var StoredItem $item */
                     $item = StoredItem::find($itemID);
@@ -44,7 +43,6 @@ class StoreMultipleManualPortfolios extends OrgAction
                     /** @var Product $item */
                     $item = Product::find($itemID);
                 }
-
                 if ($item->portfolio()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                     continue;
                 }
