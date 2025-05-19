@@ -85,19 +85,31 @@ class GetRetinaFulfilmentNavigation
                 // $groupNavigation['stored_items'] = 
 
 
-
                 $customerSalesChannelsNavigation = [];
 
                 /** @var CustomerSalesChannel $customerSalesChannel */
                 foreach (
                     $webUser->customer->customerSalesChannels as $customerSalesChannel
                 ) {
+                    
+                    $logo_img = null;
+                    if ($customerSalesChannel->platform->code === 'shopify') {
+                        $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
+                    } elseif ($customerSalesChannel->platform->code === 'tiktok') {
+                        $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+                    } elseif ($customerSalesChannel->platform->code === 'woocommerce') {
+                        $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+                    } elseif ($customerSalesChannel->platform->code === 'manual') {
+                        $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
+                    }
+
                     $reference = $customerSalesChannel->reference ?? 'n/a';
                     $customerSalesChannelsNavigation[] = [
                         'id'            => $customerSalesChannel->id,
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
-                        'key'           => $customerSalesChannel->reference. '_platform',
+                        'key'           => $customerSalesChannel->slug. '_platform',
+                        'img'           => $logo_img,
                         'label'         => $customerSalesChannel->platform->name. '-' . $reference ,
                         'route'         => [
                             'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.dashboard',
