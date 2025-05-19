@@ -39,14 +39,14 @@ export const initialiseRetinaApp = () => {
         layout.currentParams = route().v().params  // current params
         layout.currentRoute = route().current()  // current route
 
-        if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
-            layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
+        // if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
+        //     layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
 
-            localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
-                ...storageLayout,
-                currentPlatform: layout.currentPlatform
-            }))
-        }
+        //     localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
+        //         ...storageLayout,
+        //         currentPlatform: layout.currentPlatform
+        //     }))
+        // }
     })
 
     // Echo: Website wide websocket
