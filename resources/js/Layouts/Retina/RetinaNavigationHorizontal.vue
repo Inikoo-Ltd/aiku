@@ -98,8 +98,8 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 <Transition name="slide-to-left">
                     <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5">
                         <Transition name="spin-to-down">
-                            <span :key="currentNavigation()?.slug" class="text-base leading-[12px]">
-                               {{ currentNavigation()?.label }}
+                            <span :key="currentNavigation()?.label" class="text-base leading-[12px]">
+                                {{ currentNavigation()?.label }}
                             </span>
                         </Transition>
                     </div>
