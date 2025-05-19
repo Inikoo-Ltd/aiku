@@ -27,9 +27,9 @@ function platformRoute(platform: {}) {
 </script>
 <template>
      <Table :resource="data" >
-        <template #cell(code)="{ item: platform }">
+        <template #cell(reference)="{ item: platform }">
             <Link :href="platformRoute(platform)" class="primaryLink">
-                {{ platform["code"] }}
+                {{ platform["reference"] }}
             </Link>
         </template>
     </Table>

@@ -127,14 +127,14 @@ class GetRetinaFulfilmentNavigation
 
                 /** @var Platform $platform */
                 foreach (
-                    $webUser->customer->platforms()->get() as $platform
+                    $webUser->customer->customerSalesChannels as $salesChannel
                 ) {
                     $platforms_navigation[] = [
-                        'type'          => $platform->type,
-                        'slug'          => $platform->slug,
-                        'label'         => $platform->name,
+                        'type'          => $salesChannel->platform->type,
+                        'slug'          => $salesChannel->platform->slug,
+                        'label'         => $salesChannel->platform->name,
                         'root'          => 'retina.dropshipping.platforms.',
-                        'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($webUser, $platform)
+                        'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($webUser, $salesChannel->platform)
                     ];
                 }
 
