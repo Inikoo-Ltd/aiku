@@ -20,7 +20,7 @@ function platformRoute(platform: {}) {
          case "grp.org.fulfilments.show.crm.customers.show.platforms.index":
             return route(
                "grp.org.fulfilments.show.crm.customers.show.platforms.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.customer_has_platform_id])
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.customer_has_platform_slug])
     }
 }
 

@@ -132,7 +132,7 @@ class GetRetinaFulfilmentNavigation
                     $reference = $customerSalesChannel->reference ?? 'n/a';
                     $platforms_navigation[] = [
                         'id'            => $customerSalesChannel->id,
-                        'type'          => $customerSalesChannel->type,
+                        'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
                         'key'           => $customerSalesChannel->reference. '_platform',
                         'label'         => $customerSalesChannel->platform->name. '-' . $reference ,

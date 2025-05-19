@@ -58,11 +58,11 @@ class IndexFulfilmentCustomersApproved extends OrgAction
         return $queryBuilder
             ->defaultSort('-customers.created_at')
             ->select([
-                'pallets_storage',
-                'items_storage',
-                'dropshipping',
-                'space_rental',
-                'reference',
+                'fulfilment_customers.pallets_storage',
+                'fulfilment_customers.items_storage',
+                'fulfilment_customers.dropshipping',
+                'fulfilment_customers.space_rental',
+                'customers.reference',
                 'fulfilment_customers.status',
                 'fulfilment_customers.number_spaces_state_renting',
                 'fulfilment_customers.number_stored_items_state_active',
@@ -70,15 +70,20 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                 'customers.name',
                 'customers.registered_at',
                 'fulfilment_customers.slug',
-                'number_pallets',
+                'fulfilment_customers.number_pallets',
                 'number_pallets_status_storing',
                 'customer_stats.sales_all',
                 'customer_stats.sales_org_currency_all',
                 'customer_stats.sales_grp_currency_all',
                 'customers.location',
                 'currencies.code as currency_code',
+                'platforms.name as platform_name',
             ])
             ->leftJoin('customers', 'customers.id', 'fulfilment_customers.customer_id')
+            ->leftJoin('customer_sales_channels', function ($join) {
+                $join->on('customers.id', '=', 'customer_sales_channels.customer_id');
+            })
+            ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id')
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
@@ -130,6 +135,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                 ->column(key: 'number_stored_items_state_active', label: ['type' => 'text', 'data' => __('SKUs'), 'tooltip' => __('Number of SKUs in warehouse')], canBeHidden: false, sortable: true)
                 ->column(key: 'number_spaces_state_renting', label: ['type' => 'text', 'data' => __('Spaces'), 'tooltip' => __('Number of renting spaces')], canBeHidden: false, sortable: true)
                 ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+                ->column(key: 'platform_name', label: __('channels'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'interest', label: __('interest'), canBeHidden: false);
         };
     }
