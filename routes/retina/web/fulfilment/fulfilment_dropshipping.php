@@ -25,10 +25,13 @@ use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
+use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
+use App\Actions\Retina\Fulfilment\Order\UI\IndexRetinaFulfilmentOrders;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
@@ -59,7 +62,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         Route::get('/dashboard', ShowRetinaPlatformDashboard::class)->name('dashboard');
 
         Route::prefix('basket')->as('basket.')->group(function () {
-            Route::get('/', IndexRetinaBaskets::class)->name('index');
+            Route::get('/', IndexRetinaFulfilmentBaskets::class)->name('index');
             Route::get('{order}', ShowRetinaDropshippingBasket::class)->name('show');
         });
 
@@ -71,12 +74,12 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         });
 
         Route::prefix('portfolios')->as('portfolios.')->group(function () {
-            Route::get('my-portfolio', [IndexRetinaPortfolios::class, 'inPlatform'])->name('index');
+            Route::get('my-portfolio', IndexRetinaFulfilmentPortfolios::class)->name('index');
             Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
         });
 
         Route::prefix('orders')->as('orders.')->group(function () {
-            Route::get('/', IndexRetinaDropshippingOrdersInPlatform::class)->name('index');
+            Route::get('/', IndexRetinaFulfilmentOrders::class)->name('index');
             Route::get('/{order}', [ShowRetinaDropshippingOrder::class, 'inPlatform'])->name('show');
         });
 

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,7 +19,6 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
     {
         $platformNavigation = [];
 
-        $tabs = [];
 
         $platformNavigation['baskets'] = [
             'label'       => __('Baskets'),
@@ -37,19 +35,7 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
         ];
 
 
-        if ($customerSalesChannel->platform->type !== PlatformTypeEnum::SHOPIFY) {
-            $tabs = [
-                [
-                    'label' => __('All Products'),
-                    'icon'  => ['fal', 'fa-cube'],
-                    'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.products.index',
-                    'route' => [
-                        'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.products.index',
-                        'parameters' => [$customerSalesChannel->slug]
-                    ],
-                ]
-            ];
-        }
+
 
         $platformNavigation['portfolios'] = [
             'label'       => __('Portfolio'),
@@ -64,20 +50,7 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
                 'class'        => 'bg-red-500 text-white',
                 'is_important' => true
             ],
-            'topMenu'     => [
-                'subSections' => [
-                    [
-                        'label' => __('My Portfolio'),
-                        'icon'  => ['fal', 'fa-cube'],
-                        'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
-                        'route' => [
-                            'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
-                            'parameters' => [$customerSalesChannel->slug]
-                        ],
-                    ],
-                    ...$tabs
-                ]
-            ]
+
         ];
 
         $platformNavigation['client'] = [
