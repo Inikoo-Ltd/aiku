@@ -14,6 +14,7 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  *
@@ -77,6 +78,11 @@ class CustomerSalesChannel extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function user(): MorphTo
+    {
+        return $this->morphTo('platform_user');
     }
 
     public function platform(): BelongsTo
