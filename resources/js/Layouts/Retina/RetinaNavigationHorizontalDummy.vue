@@ -119,7 +119,7 @@ const onClickArrow = (horizontalKey: string) => {
                 <Transition name="slide-to-left">
                     <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-32">
                         <Transition name="spin-to-down">
-                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[10px]">
+                            <span :key="currentActiveHorizontal?.label" class="whitespace-nowrap text-base leading-[10px]">
                                 {{ useTruncate(currentActiveHorizontal?.label, 14) }}
                             </span>
                         </Transition>
