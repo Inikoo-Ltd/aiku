@@ -2,14 +2,6 @@ import { trans } from "laravel-vue-i18n"
 
 export default {
 	blueprint: [
-		/* 	{
-			name: "Texts",
-			key: ["text"],
-			type: "textHeader",
-			props_data: {
-				type: "text",
-			},
-		}, */
 		{
 			name: "Logo",
 			key: ["logo"],
@@ -71,6 +63,48 @@ export default {
 							},
 						],
 					},
+				},
+			],
+		},
+			{
+			name: "Mobile",
+			key: ["mobile"],
+			icon: {
+				icon: "fal fa-mobile",
+				tooltip: "Action",
+			},
+			replaceForm: [
+				{
+					key: ["profile"],
+					name: "Profile Icon",
+					replaceForm: [
+						{
+							key: ["icon"],
+							label: "Icon",
+							type: "icon-picker",
+						},
+						{
+							key: ["container", "properties", "text"],
+							label: "Icon Setting",
+							type: "textProperty",
+						},
+					],
+				},
+				{
+					key: ["menu"],
+					name: "Menu Icon",
+					replaceForm: [
+						{
+							key: ["icon"],
+							label: "Icon",
+							type: "icon-picker",
+						},
+						{
+							key: ["container", "properties", "text"],
+							label: "Icon Setting",
+							type: "textProperty",
+						},
+					],
 				},
 			],
 		},

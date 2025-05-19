@@ -28,11 +28,11 @@ export default {
 				tooltip: "Text",
 			},
 			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
+				// {
+				// 	key: ["visible"],
+				// 	label :'Visibility',
+				// 	type: "VisibleLoggedIn",
+				// },
 				{
 					key: ["text"],
 					label :'Text',
@@ -40,146 +40,146 @@ export default {
 				},
 			],
 		},
-		{
-			name: "Login",
-            key:['login'],
-			icon: {
-				icon: "fal fa-sign-in-alt",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
-				{
-					key: ["link"],
-					label :'Link',
-					type: "link",
-					props_data : {
-						defaultValue : {
-							type : "external",
-							href: "/app",
-							target : '_self'
-						},
-						// props_radio_type : {
-						// 	disabled : true
-						// },
-						// props_radio_target : {
-						// 	disabled : true
-						// },
-						// props_input: {
-						// 	disabled : true
-						// },
-						// props_selectquery:{
-						// 	disabled : true
-						// }
-					}
-				},
-				{
-					key: ["container",'properties','background'],
-					label :'Background',
-					type: "background",
-				},
-				{
-					key: ["container",'properties','text'],
-					label :'Text',
-					type: "textProperty",
-				},
-				{
-					key: ['text'],
-					label :'Button Text',
-					type: "text",
-				},
-				{
-					key: ["container",'properties','border'],
-					label :'Border',
-					type: "border",
-				},
-				{
-					key: ["container",'properties','margin'],
-					label :'Margin',
-					type: "margin",
-				},
-				{
-					key: ["container",'properties','padding'],
-					label :'Padding',
-					type: "padding",
-				},
-			],
-		},
-		{
-			name: "Register",
-            key:["register"],
-			icon: {
-				icon: "fal fa-dot-circle",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
-				{
-					key: ["link"],
-					label :'Link',
-					type: "link",
-					props_data : {
-						defaultValue : {
-							href: "/aw-fulfilment.co.uk/register-fulfilment",
-							id: 15594,
-							target: "_self",
-							type: "internal",
-							workshop: "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/register-fulfilment-awf/workshop"
-						},
-						// props_radio_type : {
-						// 	disabled : true
-						// },
-						// props_radio_target : {
-						// 	disabled : true
-						// },
-						// props_input: {
-						// 	disabled : true
-						// },
-						// props_selectquery:{
-						// 	disabled : true
-						// }
-					}
-				},
-				{
-					key: ["container",'properties','background'],
-					label :'Background',
-					type: "background",
-				},
-				{
-					key: ["container",'properties','text'],
-					label :'Text',
-					type: "textProperty",
-				},
-				{
-					key: ['text'],
-					label :'Button Text',
-					type: "text",
-				},
-				{
-					key: ["container",'properties','border'],
-					label :'Border',
-					type: "border",
-				},
-				{
-					key: ["container",'properties','margin'],
-					label :'Margin',
-					type: "margin",
-				},
-				{
-					key: ["container",'properties','padding'],
-					label :'Padding',
-					type: "padding",
-				},
-			],
-		},
+		// {
+		// 	name: "Login",
+        //     key:['login'],
+		// 	icon: {
+		// 		icon: "fal fa-sign-in-alt",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["visible"],
+		// 			label :'Visibility',
+		// 			type: "VisibleLoggedIn",
+		// 		},
+		// 		{
+		// 			key: ["link"],
+		// 			label :'Link',
+		// 			type: "link",
+		// 			props_data : {
+		// 				defaultValue : {
+		// 					type : "external",
+		// 					href: "/app",
+		// 					target : '_self'
+		// 				},
+		// 				// props_radio_type : {
+		// 				// 	disabled : true
+		// 				// },
+		// 				// props_radio_target : {
+		// 				// 	disabled : true
+		// 				// },
+		// 				// props_input: {
+		// 				// 	disabled : true
+		// 				// },
+		// 				// props_selectquery:{
+		// 				// 	disabled : true
+		// 				// }
+		// 			}
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','background'],
+		// 			label :'Background',
+		// 			type: "background",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','text'],
+		// 			label :'Text',
+		// 			type: "textProperty",
+		// 		},
+		// 		{
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','border'],
+		// 			label :'Border',
+		// 			type: "border",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','margin'],
+		// 			label :'Margin',
+		// 			type: "margin",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','padding'],
+		// 			label :'Padding',
+		// 			type: "padding",
+		// 		},
+		// 	],
+		// },
+		// {
+		// 	name: "Register",
+        //     key:["register"],
+		// 	icon: {
+		// 		icon: "fal fa-dot-circle",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["visible"],
+		// 			label :'Visibility',
+		// 			type: "VisibleLoggedIn",
+		// 		},
+		// 		{
+		// 			key: ["link"],
+		// 			label :'Link',
+		// 			type: "link",
+		// 			props_data : {
+		// 				defaultValue : {
+		// 					href: "/aw-fulfilment.co.uk/register-fulfilment",
+		// 					id: 15594,
+		// 					target: "_self",
+		// 					type: "internal",
+		// 					workshop: "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/register-fulfilment-awf/workshop"
+		// 				},
+		// 				// props_radio_type : {
+		// 				// 	disabled : true
+		// 				// },
+		// 				// props_radio_target : {
+		// 				// 	disabled : true
+		// 				// },
+		// 				// props_input: {
+		// 				// 	disabled : true
+		// 				// },
+		// 				// props_selectquery:{
+		// 				// 	disabled : true
+		// 				// }
+		// 			}
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','background'],
+		// 			label :'Background',
+		// 			type: "background",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','text'],
+		// 			label :'Text',
+		// 			type: "textProperty",
+		// 		},
+		// 		{
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','border'],
+		// 			label :'Border',
+		// 			type: "border",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','margin'],
+		// 			label :'Margin',
+		// 			type: "margin",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','padding'],
+		// 			label :'Padding',
+		// 			type: "padding",
+		// 		},
+		// 	],
+		// },
 		{
 			name: "Cart",
             key: ["cart"],
@@ -380,15 +380,15 @@ export default {
 						required: true,
 						options: [
 							{
-								label: "Aqordeon",
+								label: "Name (Aqordeon)",
 								value: "{{ name }}",
 							},
 							{
-								label: "Aqordeon #000001",
+								label: "Name & reference (Aqordeon #000001)",
 								value: "{{ name }} #{{ reference }}",
 							},
 							{
-								label: "#000001",
+								label: "Reference (#000001)",
 								value: "#{{ reference }}",
 							},
 						],
@@ -397,40 +397,40 @@ export default {
 				},
 			],
 		},
-		{
-			name: "Logout",
-            key:['logout'],
-			icon: {
-				icon: "fal fa-sign-out-alt",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["container",'properties','text'],
-					label :'Text',
-					type: "textProperty",
-				},
-				{
-					key: ['text'],
-					label :'Button Text',
-					type: "text",
-				},
-				{
-					key: ["container",'properties','border'],
-					label :'Border',
-					type: "border",
-				},
-				{
-					key: ["container",'properties','margin'],
-					label :'Margin',
-					type: "margin",
-				},
-				{
-					key: ["container",'properties','padding'],
-					label :'Padding',
-					type: "padding",
-				},
-			],
-		},
+		// {
+		// 	name: "Logout",
+        //     key:['logout'],
+		// 	icon: {
+		// 		icon: "fal fa-sign-out-alt",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["container",'properties','text'],
+		// 			label :'Text',
+		// 			type: "textProperty",
+		// 		},
+		// 		{
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','border'],
+		// 			label :'Border',
+		// 			type: "border",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','margin'],
+		// 			label :'Margin',
+		// 			type: "margin",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','padding'],
+		// 			label :'Padding',
+		// 			type: "padding",
+		// 		},
+		// 	],
+		// },
 	],
 }

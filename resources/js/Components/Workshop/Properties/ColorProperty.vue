@@ -3,22 +3,12 @@ import { inject, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 
-// Injected props
-/* const onSaveWorkshopFromId: Function = inject(
-  'onSaveWorkshopFromId',
-  (e?: number) => console.warn('onSaveWorkshopFromId not provided')
-)
-
-const side_editor_block_id = inject('side_editor_block_id', () => {
-  console.warn('side_editor_block_id not provided')
-})
- */
 
  const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
 }>()
 // Model is a string, e.g., 'rgba(255,255,255,1)'
-const model = defineModel<string>({ required: true })
+const model = defineModel<string>({ required: false })
 
 // For local UI binding
 const localColor = ref(model.value || 'rgba(0,0,0,1)')

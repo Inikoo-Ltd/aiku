@@ -9,12 +9,14 @@ import { faExclamation } from "@fas"
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import { useFontFamilyList } from '@/Composables/useFont'
 import { set, get } from 'lodash'
+import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 
 library.add(faExclamation, faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink)
 
 interface TextProperty {
     color: string,
     fontFamily: String
+    fontSize : Number | string
 }
 
 const emits = defineEmits<{
@@ -24,13 +26,13 @@ const emits = defineEmits<{
 /* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
 const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
-const model = defineModel<TextProperty>({
+const model = defineModel<TextProperty|any>({
     required: true
 })
 
 
 const localModel = computed<TextProperty>({
-    get: () => model.value ?? { color: '#000000', fontFamily: 'Arial' },
+    get: () => model.value ?? { color: '#000000', fontFamily: 'Arial', fontSize : 20 },
     set: (newVal) => {
         if (model.value && JSON.stringify(model.value) !== JSON.stringify(newVal)) {
             model.value = newVal
@@ -62,7 +64,7 @@ const fontFamilies = [...useFontFamilyList];
                 </ColorPicker>
             </div>
 
-            <div class="px-3 items-center">
+            <div class="px-3 items-center mb-2">
                 <div class="text-xs mb-2">{{ trans('Font') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect v-model="localModel.fontFamily"  @update:modelValue="(e) => (set(localModel, 'fontFamily', e), emits('update:modelValue', model))" required :options="fontFamilies">
@@ -81,6 +83,14 @@ const fontFamilies = [...useFontFamilyList];
                             </div>
                         </template>
                     </PureMultiselect>
+                </div>
+            </div>
+
+
+            <div class="px-3 items-center">
+                <div class="text-xs mb-2">{{ trans('Fontsize') }}</div>
+                <div class="col-span-4">
+                   <PureInputNumber v-model="localModel.fonSize"  @update:modelValue="(e) => (set(localModel, 'fontSize', e), emits('update:modelValue', model))" suffix="px" />
                 </div>
             </div>
 

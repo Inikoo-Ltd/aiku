@@ -25,7 +25,8 @@ import { debounce } from 'lodash';
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop"
+/* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
+import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
 
 
@@ -418,6 +419,7 @@ const setHideBlock = (block: Daum) => {
         message: 'You Dont have title/ h1 in code, are you sure to publish ?',
         header: 'Confirmation',
         icon: 'pi pi-exclamation-triangle',
+		group:"alert-publish",
         rejectProps: {
             label: 'Cancel',
             severity: 'secondary',
@@ -489,7 +491,7 @@ watch(openedBlockSideEditor, (newValue) => {
 			</div>
 		</template>
 	</PageHeading>
-	<ConfirmDialog></ConfirmDialog>
+	<ConfirmDialog group="alert-publish"></ConfirmDialog>
 	<div class="flex gap-x-2">
 		<!-- Section: Side editor -->
 		<div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">

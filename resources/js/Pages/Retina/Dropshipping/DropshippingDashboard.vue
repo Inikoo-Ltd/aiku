@@ -48,6 +48,11 @@ const props = defineProps<{
         connectRoute: routeType
         isConnected: boolean
     }
+    total_channels: {
+        shopify: number
+        woocommerce: number
+        tiktok: number
+    }
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -116,7 +121,7 @@ const onSubmitWoocommerce = async () => {
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">{{ trans("Manual") }}</div>
-                        <div class="text-xs opacity-70">({{ trans("Manage product") }})</div>
+                        <!-- <div class="text-xs opacity-70">({{ trans("Manage product") }})</div> -->
                     </div>
                 </Link>
                 <div class="w-full flex justify-end">
@@ -141,7 +146,7 @@ const onSubmitWoocommerce = async () => {
                     <img src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
-                        <div class="text-xs">({{ trans("Manage product") }})</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans('Channels') }}</div>
                     </div>
                 </Link>
 
@@ -205,7 +210,7 @@ const onSubmitWoocommerce = async () => {
                     <img src="https://cdn-icons-png.flaticon.com/512/3046/3046126.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
-                        <div class="text-xs">({{ trans("Manage product") }})</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans('Channels') }}</div>
                     </div>
                 </Link>
 
@@ -247,7 +252,7 @@ const onSubmitWoocommerce = async () => {
                         alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Woocommerce</div>
-                        <div class="text-xs">({{ trans("Manage product") }})</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{ trans('Channels') }}</div>
                     </div>
                 </Link>
 
