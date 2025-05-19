@@ -25,7 +25,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $total_amount
  * @property mixed $platform_name
  */
-class RetinaDropshippingOrdersResources extends JsonResource
+class RetinaDropshippingOrdersInPlatformResources extends JsonResource
 {
     use HasSelfCall;
 
@@ -41,8 +41,8 @@ class RetinaDropshippingOrdersResources extends JsonResource
             'state'                    => $this->state,
             'total_amount'             => $this->total_amount,
             'number_item_transactions' => $this->number_item_transactions,
-            'state_label'              => OrderStateEnum::labels()[$this->state->value],
-            'state_icon'               => OrderStateEnum::stateIcon()[$this->state->value]
+            'state_label'              => OrderStateEnum::labels()[$this->order_state],
+            'state_icon'               => OrderStateEnum::stateIcon()[$this->order_state]
         ];
     }
 }

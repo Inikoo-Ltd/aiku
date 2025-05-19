@@ -326,47 +326,73 @@ export default {
 				tooltip: "Profile",
 			},
 			replaceForm: [
-				{
-					key: ["visible"],
-					type: "VisibleLoggedIn",
-					label :'Visibility',
-					props_data: {
-						defaultValue: 'login',
-					},
-				},
-				{
-					key: ['container', 'properties'],
-					type: "button",
-					label :'Button',
-					props_data: {
-						defaultValue: {
-							text: {
-								color: "rgba(255, 255, 255, 1)"
-							},
-							padding: {
-								top: {
-									value: 5
-								},
-								left: {
-									value: 10
-								},
-								unit: "px",
-								right: {
-									value: 10
-								},
-								bottom: {
-									value: 5
-								}
-							}
-						},
-					},
-				},
+				// {
+				// 	key: ["visible"],
+				// 	type: "VisibleLoggedIn",
+				// 	label :'Visibility',
+				// 	props_data: {
+				// 		defaultValue: 'login',
+				// 	},
+				// },
+				// {
+				// 	key: ['container', 'properties'],
+				// 	type: "button",
+				// 	label :'Button',
+				// 	props_data: {
+				// 		defaultValue: {
+				// 			text: {
+				// 				color: "rgba(255, 255, 255, 1)"
+				// 			},
+				// 			padding: {
+				// 				top: {
+				// 					value: 5
+				// 				},
+				// 				left: {
+				// 					value: 10
+				// 				},
+				// 				unit: "px",
+				// 				right: {
+				// 					value: 10
+				// 				},
+				// 				bottom: {
+				// 					value: 5
+				// 				}
+				// 			}
+				// 		},
+				// 	},
+				// },
+				// {
+				// 	key: ['text'],
+				// 	type: "editorhtml",
+				// 	label :'Text',
+				// 	props_data: {
+				// 		defaultValue: '<p><span class="mention" data-type="mention" data-id="name" contenteditable="false">{{  name }}</span> <span style="font-family: &quot;Laila&quot;, sans-serif"><strong>#<span class="mention" data-type="mention" data-id="reference" contenteditable="false">{{  reference }}</span></strong></span><br class="ProseMirror-trailingBreak"></p>',
+				// 	},
+				// },
 				{
 					key: ['text'],
-					type: "editorhtml",
-					label :'Text',
+					label: "Profile label",
+					// useIn : ["desktop", "tablet", "mobile"],
+					type: "select",
 					props_data: {
-						defaultValue: '{{ name }}',
+						placeholder: "Select profile label",
+						by: "value",
+						required: true,
+						options: [
+							{
+								label: "Aqordeon",
+								value: "{{ name }}",
+							},
+							{
+								label: "Aqordeon #000001",
+								value: "{{ name }} #{{ reference }}",
+							},
+							{
+								label: "#000001",
+								value: "#{{ reference }}",
+							},
+						],
+						defaultValue: '{{ name }} #{{ reference }}',
 					},
 				},
 			],

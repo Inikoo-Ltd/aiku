@@ -12,6 +12,7 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
@@ -35,6 +36,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
     public function handle(ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser $parent, $prefix = null): LengthAwarePaginator
     {
+        $selects = [];
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('pallets.reference', $value)
@@ -60,7 +62,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             if ($this->customer->is_dropshipping) {
                 $query->where('shopify_user_has_fulfilments.model_type', '=', class_basename(Order::class));
             }
-            $query->addSelect('shopify_user_has_fulfilments.id as platform_order_id');
+            $selects = ['shopify_user_has_fulfilments.shopify_order_id as platform_order_id'];
 
         } elseif ($this->platformUser instanceof TiktokUser) {
             $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
@@ -85,7 +87,8 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'customer_clients.name as client_name',
             'orders.state as order_state',
             'orders.total_amount',
-            'order_stats.number_item_transactions as number_item_transactions'
+            'order_stats.number_item_transactions as number_item_transactions',
+            ...$selects
         ]);
 
         return $query->defaultSort('orders.id')
@@ -120,7 +123,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
-
+        // dd(RetinaDropshippingOrdersResources::collection($orders)->resolve());
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
@@ -135,7 +138,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
-                'orders'   => RetinaDropshippingOrdersResources::collection($orders)
+                'orders'   => RetinaDropshippingOrdersInPlatformResources::collection($orders)
             ]
         )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->platform));
     }
@@ -146,17 +149,17 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
-                            ],
-                            'label' => __('Orders'),
-                        ]
-                    ]
-                ]
+                // [
+                //     [
+                //         'type'   => 'simple',
+                //         'simple' => [
+                //             'route' => [
+                //                 'name' => 'retina.dropshipping.orders.index'
+                //             ],
+                //             'label' => __('Orders'),
+                //         ]
+                //     ]
+                // ]
             );
     }
 }

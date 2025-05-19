@@ -285,6 +285,10 @@ class IndexCustomerClients extends OrgAction
         if (isset($routeParameters['platform'])) {
             $platform = Platform::where('slug', ($routeParameters['platform']))->first();
         }
+        $customerHasPlatform = null;
+        if (isset($routeParameters['customerHasPlatform'])) {
+            $customerHasPlatform = CustomerSalesChannel::where('slug', ($routeParameters['customerHasPlatform']))->first();
+        }
 
         return match ($routeName) {
             'grp.org.shops.show.crm.customers.show.customer-clients.index' =>
@@ -316,7 +320,7 @@ class IndexCustomerClients extends OrgAction
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show' =>
             array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs(
-                    $platform,
+                    $customerHasPlatform,
                     $routeParameters
                 ),
                 $headCrumb(

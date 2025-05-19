@@ -57,6 +57,7 @@ class FulfilmentCustomersResource extends JsonResource
             'sales_grp_currency_all'        => $this->sales_grp_currency_all,
             'currency_code'                 => $this->currency_code,
             'location'                      => $this->location,
+            'platform_name'                   => $this->platform_name ?? 'none',
             'interest'                      => [
                 'pallets_storage' => $this->pallets_storage,
                 'items_storage'   => $this->items_storage,

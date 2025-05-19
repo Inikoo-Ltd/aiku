@@ -17,6 +17,7 @@ class FulfilmentCustomerPlatformsResource extends JsonResource
     {
         return [
             'customer_has_platform_id' => $this->customer_has_platform_id,
+            'customer_has_platform_slug' => $this->customer_has_platform_slug,
             'id'                        => $this->id,
             'reference'                 => $this->reference ?? __('N/A'),
             'number_orders'             => $this->number_orders,

@@ -46,7 +46,9 @@ export const retinaLayoutStructure = {
             show: false
         }
     },
-
+    retina: {
+        type: '' as string  // 'dropshipping' | 'fulfilment' | 'ecom'
+    },
     root_active: null as string | null,
     stackedComponents: [] as StackedComponent[],
     user: {} as {
