@@ -66,17 +66,17 @@ class ShowRetinaDashboard extends RetinaAction
     public function getBreadcrumbs($label = null): array
     {
         return [
-            [
+            // [
 
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-home',
-                    'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
-                ]
+            //     'type'   => 'simple',
+            //     'simple' => [
+            //         'icon'  => 'fal fa-home',
+            //         'route' => [
+            //             'name' => 'retina.dashboard.show'
+            //         ]
+            //     ]
 
-            ],
+            // ],
 
         ];
     }

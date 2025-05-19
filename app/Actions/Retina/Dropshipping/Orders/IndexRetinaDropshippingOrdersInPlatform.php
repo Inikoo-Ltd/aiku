@@ -146,17 +146,17 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
-                            ],
-                            'label' => __('Orders'),
-                        ]
-                    ]
-                ]
+                // [
+                //     [
+                //         'type'   => 'simple',
+                //         'simple' => [
+                //             'route' => [
+                //                 'name' => 'retina.dropshipping.orders.index'
+                //             ],
+                //             'label' => __('Orders'),
+                //         ]
+                //     ]
+                // ]
             );
     }
 }
