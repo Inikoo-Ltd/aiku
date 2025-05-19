@@ -18,6 +18,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import { routeType } from "@/types/route"
 import { useTruncate } from "@/Composables/useTruncate"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
 
@@ -87,15 +88,13 @@ const onClickArrow = (horizontalKey: string) => {
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
         <!-- Section: Before horizontal -->
-        <div v-if="nav.before_horizontal?.subNavigation" class="py-1">
+        <div v-if="nav.before_horizontal?.subNavigation" class="py-1 border-b border-gray-600">
             <template v-for="nav, navIndex in nav.before_horizontal?.subNavigation" :key="navIndex + index">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>
         </div>
 
-        <div v-if="nav.before_horizontal?.subNavigation && !!currentActiveHorizontal" class="border-b border-gray-600"></div>
-
-        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
+        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-center pt-2 pl-2 pr-0.5 pb-2"
             :style="{ color: layout.app.theme[1] + '99' }">
 
             <!-- Section: Horizontal label -->
@@ -104,11 +103,15 @@ const onClickArrow = (horizontalKey: string) => {
                     <FontAwesomeIcon v-if="currentActiveHorizontal?.icon" :key="currentActiveHorizontal?.icon" :icon="currentActiveHorizontal?.icon" class='text-xs' fixed-width aria-hidden='true' v-tooltip="currentActiveHorizontal?.label" />
                 </Transition>
 
+                <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
+                    <img :key="currentActiveHorizontal?.img" :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-5" />
+                </Transition>
+
                 <Transition name="slide-to-left">
-                    <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-20">
+                    <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-32">
                         <Transition name="spin-to-down">
-                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[12px]">
-                                {{ useTruncate(currentActiveHorizontal?.label, 8) }}
+                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[8px]">
+                                {{ useTruncate(currentActiveHorizontal?.label, 14) }}
                             </span>
                         </Transition>
                     </div>
@@ -117,7 +120,7 @@ const onClickArrow = (horizontalKey: string) => {
 
             <!-- Section: Horizontal arrow left-right -->
             <Transition name="slide-to-left">
-                <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3 flex text-white text-xxs" >
+                <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3.5 flex text-white text-xxs" >
                     <component
                         :is="previousHorizontal?.route?.name ? Link : 'div'"
                         v-tooltip=""
@@ -147,7 +150,7 @@ const onClickArrow = (horizontalKey: string) => {
         </div>
         
         <!-- Section: Sub Navigaiton -->
-        <div v-if="currentActiveHorizontal?.subNavigation" class="flex flex-col gap-y-1 mb-1">
+        <div class="flex flex-col gap-y-1 mb-1">
             <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="navIndex + index">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>
