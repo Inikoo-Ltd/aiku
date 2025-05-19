@@ -21,23 +21,23 @@ class CustomerSalesChannelsHydratePortfolios implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(CustomerSalesChannel $customerHasPlatform): string
+    public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
     {
-        return $customerHasPlatform->id;
+        return $customerSalesChannel->id;
     }
 
-    public function handle(CustomerSalesChannel $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
 
         $stats = [];
 
-        if ($customerHasPlatform->customer_id && $customerHasPlatform->platform_id) {
-            $stats['number_portfolios'] = Portfolio::where('customer_id', $customerHasPlatform->customer_id)
-                ->where('platform_id', $customerHasPlatform->platform_id)
+        if ($customerSalesChannel->customer_id && $customerSalesChannel->platform_id) {
+            $stats['number_portfolios'] = Portfolio::where('customer_id', $customerSalesChannel->customer_id)
+                ->where('platform_id', $customerSalesChannel->platform_id)
                 ->count();
         }
 
-        $customerHasPlatform->update($stats);
+        $customerSalesChannel->update($stats);
     }
 
 

@@ -15,7 +15,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithFulfilmentCustomerPlatformSubNavigation
 {
-    public function getFulfilmentCustomerPlatformSubNavigation(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): array
+    public function getFulfilmentCustomerPlatformSubNavigation(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
     {
         $subNavigation = [];
 
@@ -47,7 +47,7 @@ trait WithFulfilmentCustomerPlatformSubNavigation
             ],
         ];
 
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $subNavigation[] = [
                 'label'     => __('Clients'),
                 'route' => [

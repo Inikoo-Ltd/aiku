@@ -37,11 +37,11 @@ class StoreRetinaOrder extends RetinaAction
             'platform_id' => $platform->id
         ]);
 
-        $customerHasPlatform = $this->customer->customerSalesChannels()
+        $customerSalesChannel = $this->customer->customerSalesChannels()
             ->where('platform_id', $platform->id)
             ->first();
 
-        CustomerSalesChannelsHydrateOrders::dispatch($customerHasPlatform);
+        CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
 
         if ($parent instanceof CustomerClient) {
             CustomerClientHydrateOrders::dispatch($parent);

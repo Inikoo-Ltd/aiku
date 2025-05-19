@@ -127,8 +127,8 @@ class EditCustomerClient extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->parent = $customerHasPlatform;
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request);
         return $this->handle($customerClient, $request);
     }
@@ -136,9 +136,9 @@ class EditCustomerClient extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
 
-        $this->parent = $customerHasPlatform;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request);
         return $this->handle($customerClient, $request);
     }

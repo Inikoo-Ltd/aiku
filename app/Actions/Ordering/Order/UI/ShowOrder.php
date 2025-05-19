@@ -53,7 +53,7 @@ class ShowOrder extends OrgAction
     use WithOrderingEditAuthorisation;
 
     private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
-    private CustomerSalesChannel $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(Order $order): Order
     {
@@ -87,8 +87,8 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, Order $order, ActionRequest $request): Order
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->parent        = $customerHasPlatform;
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->parent        = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -97,19 +97,19 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
-        $customerHasPlatform       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
+        $customerSalesChannel       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
         $this->parent              = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerSalesChannel $customerHasPlatform, Order $order, ActionRequest $request): Order
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
         $this->parent              = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -507,18 +507,18 @@ class ShowOrder extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.orders.show'
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show'
             => array_merge(
-                (new ShowCustomerSalesChannel())->getBreadcrumbs($this->parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
+                (new ShowCustomerSalesChannel())->getBreadcrumbs($this->parent->platform, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index', $routeParameters),
                 $headCrumb(
                     $order,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index',
                             'parameters' => Arr::except($routeParameters, ['order'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -527,7 +527,7 @@ class ShowOrder extends OrgAction
             ),
             'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.show'
             => array_merge(
-                (new ShowCustomerClient())->getBreadcrumbs($this->customerHasPlatform, 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
+                (new ShowCustomerClient())->getBreadcrumbs($this->customerSalesChannel, 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
                 $headCrumb(
                     $order,
                     [
@@ -602,7 +602,7 @@ class ShowOrder extends OrgAction
 
                 ]
             ],
-            'grp.org.shops.show.crm.customers.show.platforms.show.orders.show' => [
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show' => [
                 'label' => $order->reference,
                 'route' => [
                     'name'       => $routeName,

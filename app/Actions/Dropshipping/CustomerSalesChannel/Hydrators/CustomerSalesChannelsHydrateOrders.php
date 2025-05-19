@@ -24,20 +24,20 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(CustomerSalesChannel $customerHasPlatform): string
+    public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
     {
-        return $customerHasPlatform->id;
+        return $customerSalesChannel->id;
     }
 
-    public function handle(CustomerSalesChannel $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
 
         $stats = [];
 
-        if ($customerHasPlatform->customer_id && $customerHasPlatform->platform_id) {
+        if ($customerSalesChannel->customer_id && $customerSalesChannel->platform_id) {
             $stats = [
-                'number_orders' => Order::where('customer_id', $customerHasPlatform->customer_id)
-                    ->where('platform_id', $customerHasPlatform->platform_id)
+                'number_orders' => Order::where('customer_id', $customerSalesChannel->customer_id)
+                    ->where('platform_id', $customerSalesChannel->platform_id)
                     ->count()
             ];
             $stats = array_merge(
@@ -47,9 +47,9 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
                     field: 'state',
                     enum: OrderStateEnum::class,
                     models: Order::class,
-                    where: function ($q) use ($customerHasPlatform) {
-                        $q->where('customer_id', $customerHasPlatform->customer_id)
-                        ->where('platform_id', $customerHasPlatform->platform_id);
+                    where: function ($q) use ($customerSalesChannel) {
+                        $q->where('customer_id', $customerSalesChannel->customer_id)
+                        ->where('platform_id', $customerSalesChannel->platform_id);
                     }
                 )
             );
@@ -60,9 +60,9 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
                     field: 'status',
                     enum: OrderStatusEnum::class,
                     models: Order::class,
-                    where: function ($q) use ($customerHasPlatform) {
-                        $q->where('customer_id', $customerHasPlatform->customer_id)
-                        ->where('platform_id', $customerHasPlatform->platform_id);
+                    where: function ($q) use ($customerSalesChannel) {
+                        $q->where('customer_id', $customerSalesChannel->customer_id)
+                        ->where('platform_id', $customerSalesChannel->platform_id);
                     }
                 )
             );
@@ -73,32 +73,32 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
                     field: 'handing_type',
                     enum: OrderHandingTypeEnum::class,
                     models: Order::class,
-                    where: function ($q) use ($customerHasPlatform) {
-                        $q->where('customer_id', $customerHasPlatform->customer_id)
-                        ->where('platform_id', $customerHasPlatform->platform_id);
+                    where: function ($q) use ($customerSalesChannel) {
+                        $q->where('customer_id', $customerSalesChannel->customer_id)
+                        ->where('platform_id', $customerSalesChannel->platform_id);
                     }
                 )
             );
 
-            $stats['last_order_created_at'] = Order::where('customer_id', $customerHasPlatform->customer_id)
-                ->where('platform_id', $customerHasPlatform->platform_id)
+            $stats['last_order_created_at'] = Order::where('customer_id', $customerSalesChannel->customer_id)
+                ->where('platform_id', $customerSalesChannel->platform_id)
                 ->latest('created_at')
                 ->first()
                 ?->created_at;
-            $stats['last_order_submitted_at'] = Order::where('customer_id', $customerHasPlatform->customer_id)
-                ->where('platform_id', $customerHasPlatform->platform_id)
+            $stats['last_order_submitted_at'] = Order::where('customer_id', $customerSalesChannel->customer_id)
+                ->where('platform_id', $customerSalesChannel->platform_id)
                 ->latest('submitted_at')
                 ->first()
                 ?->submitted_at;
-            $stats['last_order_dispatched_at'] = Order::where('customer_id', $customerHasPlatform->customer_id)
-                ->where('platform_id', $customerHasPlatform->platform_id)
+            $stats['last_order_dispatched_at'] = Order::where('customer_id', $customerSalesChannel->customer_id)
+                ->where('platform_id', $customerSalesChannel->platform_id)
                 ->latest('dispatched_at')
                 ->first()
                 ?->dispatched_at;
 
         }
 
-        $customerHasPlatform->update($stats);
+        $customerSalesChannel->update($stats);
     }
 
 }

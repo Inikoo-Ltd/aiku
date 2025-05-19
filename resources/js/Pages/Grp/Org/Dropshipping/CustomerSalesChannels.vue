@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TablePlatformsInCustomer from "@/Components/Tables/Grp/Org/CRM/TablePlatformsInCustomer.vue"
+import TableCustomerSalesChannels from "@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue"
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
@@ -24,5 +24,5 @@ defineProps<{
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 	</PageHeading>
-	<TablePlatformsInCustomer :data="data" />
+	<TableCustomerSalesChannels :data="data" />
 </template>
