@@ -31,7 +31,7 @@ class ShowRetinaDropshipping extends RetinaAction
     {
         $customer = $this->customer;
 
-        $title = __('Sale Channels');
+        $title = __('Create Channels');
 
         return Inertia::render(
             'Dropshipping/DropshippingDashboard',
@@ -65,6 +65,11 @@ class ShowRetinaDropshipping extends RetinaAction
                         'shop' => $customer->shopifyUser?->name
                     ])
                 ] : null,
+                'total_channels' => [  // TODO: change to real number
+                    'shopify'   => 2,
+                    'tiktok'    => 1,
+                    'woocommerce' => 1,
+                ],
                 'tiktokAuth' => [
                     'url' => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
                     'isAuthenticated' => AuthenticateTiktokAccount::make()->checkIsAuthenticated($customer),

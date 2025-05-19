@@ -52,7 +52,7 @@ const layout = inject('layout', {})
 
 <template>
     <div
-        id="top_bar"
+        id="top_bar_1_workshop"
         class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4"
         :style="getStyles(model?.container.properties)"
     >
@@ -80,7 +80,7 @@ const layout = inject('layout', {})
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
                 class="space-x-1.5 whitespace-nowrap hover-dashed"
-                :style="getStyles(model?.profile.container?.properties)"
+                xstyle="getStyles(model?.profile.container?.properties)"
                  @click="()=> emits('setPanelActive', 'profile')"
             >
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
@@ -91,7 +91,7 @@ const layout = inject('layout', {})
             <a v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                 id="favorites_button"
                 class="space-x-1.5 whitespace-nowrap hover-dashed"
-                :style="getStyles(model?.favourite.container?.properties)"
+                xstyle="getStyles(model?.favourite.container?.properties)"
                 @click="()=> emits('setPanelActive', 'favourite')"
             >
                 <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />

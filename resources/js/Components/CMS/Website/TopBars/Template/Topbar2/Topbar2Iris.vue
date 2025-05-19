@@ -10,6 +10,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 import Image from '@/Components/Image.vue'
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -75,33 +76,44 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <div id="top_bar_2_iris" class="py-2 px-4 grid md:grid-cols-5"
+    <div id="top_bar_2_iris" class="py-2 px-4 md:grid md:grid-cols-5"
         :style="getStyles(model?.container?.properties)"
     >
 
         <!-- Section: Greeting -->
         <!-- <div v-if="checkVisible(model?.greeting.visible || null, isLoggedIn)" v-html="textReplaceVariables(model?.greeting?.text, layout.iris_variables)" class="flex items-center" /> -->
 
-        <!-- Section: Main title -->
-        <!-- <div v-if="checkVisible(model?.main_title.visible || null, isLoggedIn)" class="text-center flex items-center" v-html="textReplaceVariables(model.main_title.text, layout.iris_variables)" /> -->
-
-        <div class="md:col-span-2 action_buttons flex justify-center md:justify-start ">
+        
+        <div class="col-span-2 action_buttons flex justify-center md:justify-start gap-x-2">
+            <!-- Section: Main title -->
+            <div v-if="!isLoggedIn" class="text-center flex items-center" v-html="textReplaceVariables(model.main_title.text, layout.iris_variables)" />
+            
             <!-- Section: Profile -->
-            <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
+            <!-- <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
-                 :href="model?.profile?.link.href"
+                :href="model?.profile?.link.href"
                 :target="model?.profile?.link.target"
                 class="hidden space-x-1.5 md:flex flex-nowrap items-center "
                 :style="getStyles(model?.profile.container?.properties)"
-
             >
-                <!-- <i class="far fa-user fa-flip-horizontal  " title="Profile" aria-hidden="true"></i> -->
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-            </a>
+            </a> -->
+
+            <ButtonWithLink
+                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
+                v-tooltip="trans('Profile')"
+                url="/app/profile"
+                icon="fal fa-user"
+                type="transparent"
+            >
+                <template #label>
+                    <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
 
             <!-- Section: Favourites -->
-            <a v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
+            <!-- <a v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                 id="favorites_button"
                 :href="model?.favourite?.link.href"
                 :target="model?.favourite?.link.target"
@@ -111,10 +123,23 @@ const emits = defineEmits<{
             >
                 <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
-            </a>
+            </a> -->
+
+            <!-- Section: Favourite -->
+            <ButtonWithLink
+                v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
+                v-tooltip="trans('Favourites')"
+                url="/app/favourites"
+                icon="fal fa-heart"
+                type="transparent"
+            >
+                <template #label>
+                <span v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
 
             <!-- Section: Cart -->
-            <a v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
+            <!-- <a v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
                 id="header_order_totals"
                  :href="model?.cart?.link.href"
                 :target="model?.cart?.link.target"
@@ -125,7 +150,18 @@ const emits = defineEmits<{
                 <FontAwesomeIcon icon='fal fa-shopping-cart' class='text-base px-[5px]' v-tooltip="trans('Basket')"
                     fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
-            </a>
+            </a> -->
+
+            <ButtonWithLink
+                v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
+                url="/app/basket"
+                icon="fal fa-shopping-cart"
+                type="transparent"
+            >
+                <template #label>
+                <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
 
 
             <!-- Section: Logged out (Login, Register) -->
@@ -145,28 +181,38 @@ const emits = defineEmits<{
 
         <div class="row-start-1 md:row-start-auto grid grid-cols-5 justify-between md:flex md:justify-center items-center">
             <!-- Section: Profile -->
-            <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
+            <!-- <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
                 :href="model?.profile?.link.href"
                 :target="model?.profile?.link.target"
-                class="col-span-2 md:hidden space-x-1.5 flex flex-nowrap items-center "
+                
                 :style="getStyles(model?.profile.container?.properties)"
 
             >
-                <!-- <i class="far fa-user fa-flip-horizontal  " title="Profile" aria-hidden="true"></i> -->
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-            </a>
+            </a> -->
+
+            <ButtonWithLink
+                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
+                v-tooltip="trans('Profile')"
+                url="/app/profile"
+                icon="fal fa-user"
+                class="col-span-2 md:hidden space-x-1.5 flex flex-nowrap items-center "
+            >
+                <template #label>
+                    <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
 
             <Image
                 class="h-9 max-w-32 "
                 :src="model?.logo?.source"
                 imageCover
-                @click="()=> emits('setPanelActive', 'logo')"
             />
 
             <!-- Section: LogoutRetina -->
-            <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
+            <!-- <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
                 @click="()=>onLogout(model?.logout?.link)"
                 class="col-span-2 text-right block md:hidden space-x-1.5 "
                 :style="getStyles(model?.logout.container?.properties)"
@@ -174,12 +220,25 @@ const emits = defineEmits<{
             >
                 <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
                 <span class="" v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-            </a>
+            </a> -->
+
+            <ButtonWithLink
+                v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
+                url="/app/logout"
+                method="post"
+                :data="{}"
+                icon="fal fa-sign-out"
+                class="col-span-2 text-right block md:hidden space-x-1.5 "
+            >
+                <template #label>
+                <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
         </div>
 
-        <div class="md:col-span-2 flex md:justify-end gap-x-4 ">
+        <div class="col-span-2 flex md:justify-end gap-x-4 ">
             <!-- Section: LogoutRetina -->
-            <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
+            <!-- <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
                 :href="model?.logout?.link"
                 class="hidden md:block space-x-1.5 "
                 :style="getStyles(model?.logout.container?.properties)"
@@ -187,11 +246,24 @@ const emits = defineEmits<{
             >
                 <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
                 <span class="hidden md:inline" v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-            </a>
+            </a> -->
+            <ButtonWithLink
+                v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
+                url="/app/logout"
+                method="post"
+                :data="{}"
+                icon="fal fa-sign-out"
+                class="hidden md:block space-x-1.5 "
+                type="negative"
+            >
+                <template #label>
+                <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
 
             <!-- Register -->
-             <span class="">
-                <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
+             <span v-if="checkVisible(model?.register?.visible || null, isLoggedIn)" class="">
+                <!-- <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
                     :href="model?.register?.link.href"
                     :target="model?.register?.link.target"
                     class="space-x-1.5 cursor-pointer"
@@ -202,13 +274,27 @@ const emits = defineEmits<{
                 >
                     <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" />
-                </a>
+                </a> -->
+
+                <ButtonWithLink
+                    url="/app/register"
+                    icon="fal fa-user-plus"
+                    type="transparent"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-user-plus" class="" fixed-width aria-hidden="true" />
+                    </template>
+
+                    <template #label>
+                        <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" class="" />
+                    </template>
+                </ButtonWithLink>
              </span>
 
 
             <!-- Login -->
-            <span class="">
-                <a
+            <span v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" class="">
+                <!-- <a
                     v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
                     :href="model?.login?.link.href"
                     :target="model?.login?.link.target"
@@ -219,7 +305,16 @@ const emits = defineEmits<{
                 >
                     <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
                     <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
-                </a>
+                </a> -->
+
+                <ButtonWithLink
+                    url="/app/login"
+                    icon="fal fa-sign-in"
+                >
+                    <template #label>
+                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
+                    </template>
+                </ButtonWithLink>
             </span>
 
 
