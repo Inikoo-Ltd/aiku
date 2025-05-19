@@ -8,6 +8,7 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InShop;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  *
@@ -51,6 +54,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CustomerSalesChannelStatusEnum $status
  * @property string|null $platform_user_type
  * @property int|null $platform_user_id
+ * @property string|null $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
@@ -67,6 +71,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class CustomerSalesChannel extends Model
 {
     use InShop;
+    use HasSlug;
 
     protected $table = 'customer_sales_channels';
 
@@ -76,6 +81,23 @@ class CustomerSalesChannel extends Model
         'data'   => 'array',
         'status' => CustomerSalesChannelStatusEnum::class
     ];
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom(function () {
+                return  Abbreviate::run($this->platform->type->value).'-'.$this->reference;
+            })
+            ->saveSlugsTo('slug')
+            ->slugsShouldBeNoLongerThan(128)
+            ->doNotGenerateSlugsOnUpdate();
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
 
     public function customer(): BelongsTo
     {

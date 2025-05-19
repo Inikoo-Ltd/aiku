@@ -60,49 +60,49 @@ class GetRetinaDropshippingNavigation
         }
 
         // if (!blank($platforms_navigation)) {
-            $groupNavigation['platforms_navigation'] = [
-                'type'  => 'horizontal',
-                'before_horizontal' => [
-                    'subNavigation' => [
-                        [
-                            'label'         => __('Channels'),
-                            'icon'          => 'fal fa-code-branch',
-                            'icon_rotation'   => 90,
-                            'root'  => 'retina.dropshipping.platform.',
-                            'route' => [
-                                'name' => 'retina.dropshipping.platform.dashboard'
-                            ]
+        $groupNavigation['platforms_navigation'] = [
+            'type'  => 'horizontal',
+            'before_horizontal' => [
+                'subNavigation' => [
+                    [
+                        'label'         => __('Channels'),
+                        'icon'          => 'fal fa-code-branch',
+                        'icon_rotation'   => 90,
+                        'root'  => 'retina.dropshipping.platform.',
+                        'route' => [
+                            'name' => 'retina.dropshipping.platform.dashboard'
                         ]
                     ]
-                ],
-                'horizontal_navigations'    => [  // TODO: below is dummy data, change to correct one
-                    [
-                        'label'         => __('Channels 11111'),
-                        'icon'        => 'fal fa-tachometer-alt',
-                        'key'           => 'asdzxc_platform',
-                        'root'          => 'retina.dropshipping.platforms.',
-                        'route'         => [
-                            'name' => 'retina.dropshipping.platforms.dashboard',
-                            'parameters' => [
-                                'platform' => 'manual'
-                            ]
-                        ],
-                        'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
-                    ], [
-                        'label'         => __('Channels 22222'),
-                        'icon'          => 'fal fa-shopping-basket',
-                        'key'           => 'rtyfgh_platform',
-                        'root'          => 'retina.dropshipping.platforms.',
-                        'route'         => [
-                            'name' => 'retina.dropshipping.platforms.dashboard',
-                            'parameters' => [
-                                'platform' => 'manual'
-                            ]
-                        ],
-                        'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
-                    ]
-                ],
-            ];
+                ]
+            ],
+            'horizontal_navigations'    => [  // TODO: below is dummy data, change to correct one
+                [
+                    'label'         => __('Channels 11111'),
+                    'icon'        => 'fal fa-tachometer-alt',
+                    'key'           => 'asdzxc_platform',
+                    'root'          => 'retina.dropshipping.platforms.',
+                    'route'         => [
+                        'name' => 'retina.dropshipping.platforms.dashboard',
+                        'parameters' => [
+                            'platform' => 'manual'
+                        ]
+                    ],
+                    'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
+                ], [
+                    'label'         => __('Channels 22222'),
+                    'icon'          => 'fal fa-shopping-basket',
+                    'key'           => 'rtyfgh_platform',
+                    'root'          => 'retina.dropshipping.platforms.',
+                    'route'         => [
+                        'name' => 'retina.dropshipping.platforms.dashboard',
+                        'parameters' => [
+                            'platform' => 'manual'
+                        ]
+                    ],
+                    'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
+                ]
+            ],
+        ];
         // }
 
 
