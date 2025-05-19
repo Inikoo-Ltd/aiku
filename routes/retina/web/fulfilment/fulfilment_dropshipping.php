@@ -25,6 +25,7 @@ use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
@@ -74,7 +75,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         });
 
         Route::prefix('portfolios')->as('portfolios.')->group(function () {
-            Route::get('my-portfolio', [IndexRetinaPortfolios::class, 'inPlatform'])->name('index');
+            Route::get('my-portfolio', IndexRetinaFulfilmentPortfolios::class)->name('index');
             Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
         });
 
