@@ -21,19 +21,19 @@ const props = defineProps<{
     orders: {}
 }>()
 
-const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+// const currentTab = ref(props.tabs.current)
+// const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const component = computed(() => {
+// const component = computed(() => {
 
-    const components: Component = {
-        // showcase: FileShowcase
-        // products: TableProducts
-    }
+//     const components: Component = {
+//         // showcase: FileShowcase
+//         // products: TableProducts
+//     }
 
-    return components[currentTab.value]
+//     return components[currentTab.value]
 
-})
+// })
 
 </script>
 

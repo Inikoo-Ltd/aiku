@@ -190,10 +190,11 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('upload', ImportRetinaClients::class)->name('platform.upload');
+    Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
-    Route::post('customer/{customer:id}/products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
+   
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::post('wc-user/{wooCommerceUser:id}/products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();

@@ -9,15 +9,14 @@
 namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaFulfilmentPlatformNavigation
 {
     use AsAction;
 
-    public function handle(WebUser $webUser, Platform $platform): array
+    public function handle(CustomerSalesChannel $platform): array
     {
         $platformNavigation = [];
 
