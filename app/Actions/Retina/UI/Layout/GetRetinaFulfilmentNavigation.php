@@ -10,6 +10,7 @@ namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaFulfilmentNavigation
@@ -18,9 +19,7 @@ class GetRetinaFulfilmentNavigation
 
     public function handle(WebUser $webUser): array
     {
-        $canSee = true;
         $groupNavigation = [];
-
 
         $groupNavigation['home'] = [
             'label'   => __('Home'),
@@ -29,21 +28,17 @@ class GetRetinaFulfilmentNavigation
             'route'   => [
                 'name' => 'retina.dashboard.show'
             ],
-            'topMenu' => [
-
-
-            ]
+            'topMenu' => []
 
         ];
 
         if ($webUser->customer->status === CustomerStatusEnum::APPROVED && $webUser->customer->fulfilmentCustomer->rentalAgreement) {
-
             $additionalSubsections = [];
 
             if ($webUser?->customer?->fulfilmentCustomer?->number_pallets_status_storing) {
                 $additionalSubsections = [
                     [
-                        'label' => __('goods Out'),
+                        'label' => __('goods out'),
                         'icon'  => ['fal', 'fa-truck-ramp'],
                         'root'  => 'retina.fulfilment.storage.pallet_returns.',
                         'route' => [
@@ -52,7 +47,6 @@ class GetRetinaFulfilmentNavigation
                     ]
                 ];
             }
-
 
 
             $groupNavigation['storage'] = [
@@ -119,30 +113,42 @@ class GetRetinaFulfilmentNavigation
                     ]
                 ];
 
-                $groupNavigation = array_merge($groupNavigation, GetRetinaDropshippingNavigation::run($webUser));
+                $groupNavigation['platform'] = [
+                    'label'         => __('Channels'),
+                    'icon'          => 'fal fa-code-branch',
+                    'icon_rotation' => 90,
+                    'root'          => 'retina.dropshipping.platform.',
+                    'route'         => [
+                        'name' => 'retina.dropshipping.platform.dashboard'
+                    ]
+                ];
+
+                $platforms_navigation = [];
+
+                /** @var Platform $platform */
+                foreach (
+                    $webUser->customer->platforms()->get() as $platform
+                ) {
+                    $platforms_navigation[] = [
+                        'type'          => $platform->type,
+                        'slug'          => $platform->slug,
+                        'label'         => $platform->name,
+                        'root'          => 'retina.dropshipping.platforms.',
+                        'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($webUser, $platform)
+                    ];
+                }
+
+                if (!blank($platforms_navigation)) {
+                    $groupNavigation['platforms_navigation'] = [
+                        'platforms_navigation' => [
+                            'label'      => __('platforms'),
+                            'icon'       => "fal fa-store-alt",
+                            'navigation' => array_reverse($platforms_navigation)
+                        ],
+                    ];
+                }
             }
 
-            // $groupNavigation['pricing'] = [
-            //     'label'   => __('Pricing'),
-            //     'icon'    => ['fal', 'fa-usd-circle'],
-            //     'root'    => 'retina.fulfilment.pricing.',
-            //     'route'   => [
-            //         'name' => 'retina.fulfilment.pricing.index'
-            //     ],
-            //     'topMenu' => [
-
-
-            //         [
-            //             'label' => __('Pricing'),
-            //             'icon'  => ['fal', 'fa-usd-circle'],
-            //             'root'  => 'retina.fulfilment.pricing.',
-            //             'route' => [
-            //                 'name' => 'retina.fulfilment.storage.pricing'
-            //             ]
-            //         ],
-            //     ]
-
-            // ];
 
             $groupNavigation['spaces'] = [
                 'label'   => __('Spaces'),
@@ -154,36 +160,6 @@ class GetRetinaFulfilmentNavigation
                 'topMenu' => []
             ];
 
-            /*$groupNavigation['dropshipping'] = [
-                'label'   => __('Dropshipping'),
-                'icon'    => ['fal', 'fa-hand-holding-box'],
-                'route'   => [
-                    'name' => 'retina.sysadmin.dashboard'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label' => __('users'),
-                            'icon'  => ['fal', 'fa-terminal'],
-                            'root'  => 'retina.sysadmin.users.',
-                            'route' => [
-                                'name' => 'retina.sysadmin.web-users.index',
-
-                            ]
-                        ],
-
-                        [
-                            'label' => __('system settings'),
-                            'icon'  => ['fal', 'fa-cog'],
-                            'root'  => 'retina.sysadmin.settings.',
-                            'route' => [
-                                'name' => 'retina.sysadmin.settings.edit',
-
-                            ]
-                        ],
-                    ]
-                ]
-            ];*/
 
             $currentRecurringBill = $webUser->customer?->fulfilmentCustomer?->currentRecurringBill;
 
@@ -251,29 +227,7 @@ class GetRetinaFulfilmentNavigation
                         ]
                     ]
                 ];
-                /*            $groupNavigation['dropshipping'] = [
-                                'label'   => __('Dropshipping'),
-                                'icon'    => ['fal', 'fa-parachute-box'],
-                                'root'    => 'retina.dropshipping.',
-                                'route'   => [
-                                    'name' => 'retina.dropshipping.dashboard'
-                                ],
-                                'topMenu' => [
-                                    'subSections' => [
-                                        [
-                                            'label' => __('Products'),
-                                            'icon'  => ['fal', 'fa-cube'],
-                                            'root'  => 'retina.dropshipping.products.',
-                                            'route' => [
-                                                'name' => 'retina.dropshipping.products.index',
-
-                                            ]
-                                        ],
-                                    ]
-                                ]
-                            ];*/
             }
-
         }
 
         return $groupNavigation;
