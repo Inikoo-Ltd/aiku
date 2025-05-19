@@ -60,7 +60,8 @@ class StoreOrderFromShopify extends OrgAction
 
         foreach ($shopifyProducts as $shopifyProduct) {
             /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
-            $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_product_id', $shopifyProduct['product_id'])->first();
+            $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
+                ->where('shopify_product_id', $shopifyProduct['product_id'])->first();
 
             if ($shopifyUserHasProduct) {
                 /** @var \App\Models\Catalogue\Product $product */
