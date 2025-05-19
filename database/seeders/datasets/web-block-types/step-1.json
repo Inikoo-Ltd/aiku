@@ -5,7 +5,7 @@
 	"name": "Step",
 	"icon": ["fal", "text"],
 	"category": "block",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
 	"data": {
 		"fieldValue": {
 			"timeline": {
@@ -35,19 +35,19 @@
 				"timeline_data": [
 					{
 						"icon": ["fal", "user"],
-						"text": "<h2 style=\"text-align: right\">What is Lorem Ipsum?</h2><p style=\"text-align: right\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys </p>"
+						"text": "<h2 style=\"text-align: right\">What is Lorem Ipsum?</h2><p style=\"text-align: right\"><span style=\"font-size: 1.1250rem\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry</span></p>"
 					},
 					{
 						"icon": ["fal", "info-circle"],
-						"text": "<h2 style=\"text-align: left\">What is Lorem Ipsum?</h2><p style=\"text-align: justify\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</p>"
+						"text": "<h2 style=\"text-align: left\">What is Lorem Ipsum?</h2><p style=\"text-align: justify\"><span style=\"font-size: 1.1250rem\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</span></p>"
 					},
 					{
 						"icon": ["fal", "info-circle"],
-						"text": "<h2 style=\"text-align: right\">What is Lorem Ipsum?</h2><p style=\"text-align: right\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's </p>"
+						"text": "<h2 style=\"text-align: right\">What is Lorem Ipsum?</h2><p style=\"text-align: right\"><span style=\"font-size: 1.1250rem\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</span></p>"
 					},
 					{
 						"icon": ["fal", "info-circle"],
-						"text": "<h2 style=\"text-align: left\">What is Lorem Ipsum?</h2><p style=\"text-align: justify\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</p>"
+						"text": "<h2 style=\"text-align: left\">What is Lorem Ipsum?</h2><p style=\"text-align: justify\"><span style=\"font-size: 1.1250rem\"><strong>Lorem Ipsum</strong> is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's</span></p>"
 					}
 				]
 			},

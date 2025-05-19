@@ -65,8 +65,9 @@ const onPublish = (routeData) => {
 
 <template>
     <PageHeading :data="pageHead">
-        <template #button-publish="{ action }">
-            <Button v-bind="action" @click="()=>onPublish(action.route)" :loading="loadingPublish" />
+        <template  #button-publish="{ action }">
+            <Button v-if="currentTab != 'website_layout'" v-bind="action" @click="()=>onPublish(action.route)" :loading="loadingPublish" />
+            <div v-else ></div>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
