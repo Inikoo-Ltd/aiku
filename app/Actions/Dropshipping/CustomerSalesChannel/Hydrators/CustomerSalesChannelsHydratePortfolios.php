@@ -28,17 +28,10 @@ class CustomerSalesChannelsHydratePortfolios implements ShouldBeUnique
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-
-        $stats = [];
-
         if ($customerSalesChannel->customer_id && $customerSalesChannel->platform_id) {
-            $stats['number_portfolios'] = Portfolio::where('customer_id', $customerSalesChannel->customer_id)
-                ->where('platform_id', $customerSalesChannel->platform_id)
-                ->count();
+            $stats['number_portfolios'] = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)->count();
+            $customerSalesChannel->update($stats);
         }
-
-        $customerSalesChannel->update($stats);
     }
-
 
 }

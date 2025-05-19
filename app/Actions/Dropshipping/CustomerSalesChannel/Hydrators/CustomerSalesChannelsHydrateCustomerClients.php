@@ -29,12 +29,11 @@ class CustomerSalesChannelsHydrateCustomerClients implements ShouldBeUnique
         $stats = [];
 
         if ($customerSalesChannel->customer_id && $customerSalesChannel->platform_id) {
-            $stats['number_customer_clients'] = CustomerClient::where('customer_id', $customerSalesChannel->customer_id)
-                ->where('platform_id', $customerSalesChannel->platform_id)
-                ->count();
+            $stats['number_customer_clients'] = CustomerClient::where('customer_sales_channel_id', $customerSalesChannel->id)->count();
+            $customerSalesChannel->update($stats);
         }
 
-        $customerSalesChannel->update($stats);
+
     }
 
 }
