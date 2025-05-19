@@ -77,7 +77,7 @@ trait WithFulfilmentCustomerSubNavigation
             ];
         }
 
-        if ($fulfilmentCustomer->dropshipping) {
+        if ($fulfilmentCustomer->items_storage) {
             $subNavigation[] = [
                 'route' => [
                     'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.index',
@@ -90,7 +90,7 @@ trait WithFulfilmentCustomerSubNavigation
                     'icon'    => 'fal fa-parachute-box',
                     'tooltip' => __('Channels'),
                 ],
-                'number' => $fulfilmentCustomer->customer->platforms->count()
+                'number' => $fulfilmentCustomer->customer->customerSalesChannels->count()
 
             ];
         }
@@ -128,22 +128,6 @@ trait WithFulfilmentCustomerSubNavigation
                     'number' => $fulfilmentCustomer->number_stored_items_state_active
 
                 ];
-
-                if (!app()->isProduction()) {
-                    $subNavigation[] = [
-                        'route' => [
-                            'name'      => 'grp.org.fulfilments.show.crm.customers.show.customer-clients.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-
-                        'label'     => __("Clients"),
-                        'leftIcon'  => [
-                            'icon'    => 'fal fa-users',
-                            'tooltip' => __("Customer's Clients"),
-                        ],
-                        'number' => $fulfilmentCustomer->number_stored_items_state_active
-                    ];
-                }
             }
 
             $subNavigation[] = [

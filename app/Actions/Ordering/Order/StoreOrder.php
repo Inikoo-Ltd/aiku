@@ -267,6 +267,7 @@ class StoreOrder extends OrgAction
             'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
+            'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
             'sales_channel_id'          => [
                 'sometimes',

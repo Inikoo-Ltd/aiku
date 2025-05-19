@@ -182,10 +182,10 @@ class IndexCustomers extends OrgAction
                 'platforms.name as platform_name',
                 'currencies.code as currency_code',
             ])
-            ->leftJoin('customer_has_platforms', function ($join) {
-                $join->on('customers.id', '=', 'customer_has_platforms.customer_id');
+            ->leftJoin('customer_sales_channels', function ($join) {
+                $join->on('customers.id', '=', 'customer_sales_channels.customer_id');
             })
-            ->leftJoin('platforms', 'customer_has_platforms.platform_id', '=', 'platforms.id')
+            ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id')
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')

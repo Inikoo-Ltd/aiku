@@ -74,7 +74,7 @@ class StoreShopifyUser extends RetinaAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $shopifyFullName = $request->input('name').'.'.config('shopify-app.myshopify_domain');
+        $shopifyFullName = $request->input('name').'.'.config('shopify-app.my_shopify_domain');
 
         $this->set('name', $shopifyFullName);
     }

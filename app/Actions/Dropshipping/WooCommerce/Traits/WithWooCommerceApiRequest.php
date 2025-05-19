@@ -448,4 +448,79 @@ trait WithWooCommerceApiRequest
     {
         return $this->makeWooCommerceRequest('GET', "reports/{$reportType}", $params, $useCache);
     }
+
+    /**
+     * Register WooCommerce webhooks for order creation and product deletion
+     *
+     * @return array The created webhook IDs
+     */
+
+    public function registerWooCommerceWebhooks(): array
+    {
+        $createdWebhooks = [];
+
+        // Create webhook for new orders
+        $orderWebhook = $this->createWooCommerceWebhook([
+            'name' => 'Order created',
+            'topic' => 'order.created',
+            'delivery_url' => route('webhooks.woo.orders.create', [
+                'wooCommerceUser' => $this->id
+            ]),
+        ]);
+
+        if (!empty($orderWebhook) && isset($orderWebhook['id'])) {
+            $createdWebhooks['order_created'] = $orderWebhook['id'];
+        }
+
+        // Create webhook for product deletion
+        $productDeleteWebhook = $this->createWooCommerceWebhook([
+            'name' => 'Product deleted',
+            'topic' => 'product.deleted',
+            'delivery_url' => route('webhooks.woo.products.delete', [
+                'wooCommerceUser' => $this->id
+            ]),
+        ]);
+
+        if (!empty($productDeleteWebhook) && isset($productDeleteWebhook['id'])) {
+            $createdWebhooks['product_deleted'] = $productDeleteWebhook['id'];
+        }
+
+        return $createdWebhooks;
+    }
+
+    /**
+     * Create a single WooCommerce webhook
+     *
+     * @param array $webhookData The webhook configuration
+     *
+     * @return array|null The created webhook data or null on failure
+     */
+    protected function createWooCommerceWebhook(array $webhookData): ?array
+    {
+        return $this->makeWooCommerceRequest('POST', 'webhooks', $webhookData);
+    }
+
+    /**
+     * Delete a WooCommerce webhook by ID
+     *
+     * @param int $webhookId The webhook ID to delete
+     *
+     * @return array Success status
+     */
+    public function deleteWooCommerceWebhook(int $webhookId): array
+    {
+        return $this->makeWooCommerceRequest('DELETE', "webhooks/{$webhookId}", [
+            'force' => true
+        ]);
+    }
+
+    /**
+     * List all registered WooCommerce webhooks
+     *
+     * @return array List of webhooks
+     */
+    public function listWooCommerceWebhooks(): array
+    {
+        return $this->makeWooCommerceRequest('GET', 'webhooks');
+    }
 }

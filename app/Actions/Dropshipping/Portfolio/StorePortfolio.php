@@ -16,13 +16,13 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePortfolio extends OrgAction
@@ -34,13 +34,15 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Customer $customer, Product|StoredItem $item, array $modelData): Portfolio
+    public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
         data_set($modelData, 'last_added_at', now(), overwrite: false);
 
-        data_set($modelData, 'group_id', $customer->group_id);
-        data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'shop_id', $customer->shop_id);
+        data_set($modelData, 'group_id', $customerSalesChannel->group_id);
+        data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
+        data_set($modelData, 'shop_id', $customerSalesChannel->shop_id);
+        data_set($modelData, 'customer_id', $customerSalesChannel->customer_id);
+        data_set($modelData, 'platform_id', $customerSalesChannel->platform_id);
 
 
         data_set($modelData, 'item_id', $item->id);
@@ -49,19 +51,19 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'item_name', $item->name);
 
 
-        $portfolio = DB::transaction(function () use ($customer, $modelData) {
+        $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */
-            $portfolio = $customer->portfolios()->create($modelData);
+            $portfolio = $customerSalesChannel->portfolios()->create($modelData);
             $portfolio->stats()->create();
 
             return $portfolio;
         });
 
 
-        GroupHydratePortfolios::dispatch($customer->group)->delay($this->hydratorsDelay);
-        OrganisationHydratePortfolios::dispatch($customer->organisation)->delay($this->hydratorsDelay);
-        ShopHydratePortfolios::dispatch($customer->shop)->delay($this->hydratorsDelay);
-        CustomerHydratePortfolios::dispatch($customer)->delay($this->hydratorsDelay);
+        GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
+        OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
+        ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
+        CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
 
         return $portfolio;
     }
@@ -78,7 +80,6 @@ class StorePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'platform_id'   => ['required', Rule::exists('platforms', 'id')],
             'reference'     => [
                 'sometimes',
                 'nullable',
@@ -108,7 +109,7 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Customer $customer, Product|StoredItem $item, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Portfolio
+    public function action(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Portfolio
     {
         if (!$audit) {
             Portfolio::disableAuditing();
@@ -116,22 +117,22 @@ class StorePortfolio extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->customer       = $customer;
-        $this->initialisationFromShop($customer->shop, $modelData);
+        $this->customer       = $customerSalesChannel->customer;
+        $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
 
-        return $this->handle($customer, $item, $this->validatedData);
+        return $this->handle($customerSalesChannel, $item, $this->validatedData);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(Customer $customer, Product $product, ActionRequest $request): Portfolio
+    public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): Portfolio
     {
-        $this->customer = $customer;
+        $this->customer = $customerSalesChannel->customer;
 
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
-        return $this->handle($customer, $product, $this->validatedData);
+        return $this->handle($customerSalesChannel, $product, $this->validatedData);
     }
 
     public function htmlResponse(): RedirectResponse

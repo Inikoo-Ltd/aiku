@@ -184,13 +184,17 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
 });
 
+Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();
+
+
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('upload', ImportRetinaClients::class)->name('platform.upload');
+    Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
-    Route::post('customer/{customer:id}/products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
+
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::post('wc-user/{wooCommerceUser:id}/products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
@@ -200,7 +204,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 
-    Route::post('aiku', StoreRetinaManualPlatform::class)->name('aiku.store')->withoutScopedBindings();
+
 });
 
 Route::name('web-users.')->prefix('web-users')->group(function () {

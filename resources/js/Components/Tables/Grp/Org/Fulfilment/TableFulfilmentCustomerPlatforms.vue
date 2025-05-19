@@ -20,16 +20,16 @@ function platformRoute(platform: {}) {
          case "grp.org.fulfilments.show.crm.customers.show.platforms.index":
             return route(
                "grp.org.fulfilments.show.crm.customers.show.platforms.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.customer_has_platform_id])
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.customer_has_platform_slug])
     }
 }
 
 </script>
 <template>
      <Table :resource="data" >
-        <template #cell(code)="{ item: platform }">
+        <template #cell(reference)="{ item: platform }">
             <Link :href="platformRoute(platform)" class="primaryLink">
-                {{ platform["code"] }}
+                {{ platform["reference"] }}
             </Link>
         </template>
     </Table>

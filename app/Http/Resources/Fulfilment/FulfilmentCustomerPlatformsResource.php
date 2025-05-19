@@ -17,10 +17,16 @@ class FulfilmentCustomerPlatformsResource extends JsonResource
     {
         return [
             'customer_has_platform_id' => $this->customer_has_platform_id,
-            'id'                    => $this->id,
-            'code'                  => $this->code,
-            'name'                  => $this->name,
-            'type'                  => $this->type
+            'customer_has_platform_slug' => $this->customer_has_platform_slug,
+            'id'                        => $this->id,
+            'reference'                 => $this->reference ?? __('N/A'),
+            'number_orders'             => $this->number_orders,
+            'number_customer_clients'   => $this->number_customer_clients,
+            'number_portfolios'         => $this->number_portfolios,
+            'code'                      => $this->code,
+            'name'                      => $this->name,
+            'type'                      => $this->type,
+            'amount'                    => $this->amount ?? 0,
         ];
     }
 }

@@ -35,15 +35,15 @@ class GetRetinaDropshippingNavigation
             ];
         }
 
-        $groupNavigation['platform'] = [
-            'label'         => __('Channels'),
-            'icon'          => 'fal fa-code-branch',
-            'icon_rotation'   => 90,
-            'root'  => 'retina.dropshipping.platform.',
-            'route' => [
-                'name' => 'retina.dropshipping.platform.dashboard'
-            ]
-        ];
+        // $groupNavigation['platform'] = [
+        //     'label'         => __('Channels'),
+        //     'icon'          => 'fal fa-code-branch',
+        //     'icon_rotation'   => 90,
+        //     'root'  => 'retina.dropshipping.platform.',
+        //     'route' => [
+        //         'name' => 'retina.dropshipping.platform.dashboard'
+        //     ]
+        // ];
 
         $platforms_navigation = [];
 
@@ -51,23 +51,43 @@ class GetRetinaDropshippingNavigation
         foreach (
             $customer->customerSalesChannels as $salesChannel
         ) {
+            $reference = $customerSalesChannel->reference ?? 'n/a';
             $platforms_navigation[] = [
-                'type'          => $salesChannel->type,
+                'id'            => $salesChannel->id,
+                'type'          => $salesChannel->platform->type,
                 'slug'          => $salesChannel->slug,
+                'key'           => $salesChannel->reference. '_platform',
+                'label'         => $salesChannel->platform->name. '-' . $reference ,
+                'route'         => [
+                    'name' => 'retina.dropshipping.platforms.dashboard',
+                    'parameters' => [
+                        'platform' => $salesChannel->platform->slug
+                    ]
+                ],
                 'root'          => 'retina.dropshipping.platforms.',
-                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel)
+                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
             ];
         }
 
-        if (!blank($platforms_navigation)) {
-            $groupNavigation['platforms_navigation'] = [
-                'platforms_navigation' => [
-                    'label'      => __('platforms'),
-                    'icon'       => "fal fa-store-alt",
-                    'navigation' => array_reverse($platforms_navigation)
-                ],
-            ];
-        }
+        // if (!blank($platforms_navigation)) {
+        $groupNavigation['platforms_navigation'] = [
+            'type'  => 'horizontal',
+            'before_horizontal' => [
+                'subNavigation' => [
+                    [
+                        'label'         => __('Channels'),
+                        'icon'          => 'fal fa-code-branch',
+                        'icon_rotation'   => 90,
+                        'root'  => 'retina.dropshipping.platform.',
+                        'route' => [
+                            'name' => 'retina.dropshipping.platform.dashboard'
+                        ]
+                    ]
+                ]
+            ],
+            'horizontal_navigations'    => $platforms_navigation
+        ];
+        // }
 
 
 

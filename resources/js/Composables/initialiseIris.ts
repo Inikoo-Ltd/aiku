@@ -42,6 +42,10 @@ export const initialiseIrisApp = () => {
         if (usePage().props.iris) {
             layout.iris = usePage().props.iris
         }
+        
+        if (usePage().props.retina) {
+            layout.retina = usePage().props.retina
+        }
 
         if (usePage().props?.user_auth) {
             layout.user_auth = usePage().props?.user_auth

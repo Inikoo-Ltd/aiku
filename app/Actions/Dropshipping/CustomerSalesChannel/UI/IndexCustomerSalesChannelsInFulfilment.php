@@ -48,8 +48,8 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
         $query->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id);
 
         return $query
-            ->defaultSort('customer_has_platforms.id')
-            ->select(['customer_has_platforms.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type'])
+            ->defaultSort('customer_sales_channels.id')
+            ->select(['customer_sales_channels.id as customer_has_platform_id', 'customer_sales_channels.slug as customer_has_platform_slug', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type', 'customer_sales_channels.reference', 'customer_sales_channels.number_customer_clients', 'customer_sales_channels.number_portfolios', 'customer_sales_channels.number_orders'])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -84,15 +84,15 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New Channel'),
-                            'label'   => __('New Channel'),
-                            'key'     => 'new-channel',
-                        ],
-                    ],
+                    // 'actions'       => [
+                    //     [
+                    //         'type'    => 'button',
+                    //         'style'   => 'create',
+                    //         'tooltip' => __('New Channel'),
+                    //         'label'   => __('New Channel'),
+                    //         'key'     => 'new-channel',
+                    //     ],
+                    // ],
 
                 ],
                 'data'        => FulfilmentCustomerPlatformsResource::collection($platforms),
@@ -112,8 +112,12 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('code');
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customer_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->defaultSort('reference');
         };
     }
 

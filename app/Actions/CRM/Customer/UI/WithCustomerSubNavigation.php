@@ -118,7 +118,7 @@ trait WithCustomerSubNavigation
                     'icon'    => 'fal fa-parachute-box',
                     'tooltip' => __('Channels'),
                 ],
-                'number'   => $customer->platforms->count()
+                'number'   => $customer->customerSalesChannels->count()
             ],
         ];
 

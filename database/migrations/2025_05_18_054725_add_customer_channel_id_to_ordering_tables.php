@@ -39,7 +39,7 @@ return new class () extends Migration {
 
         Schema::table('customer_clients', function (Blueprint $table) {
             $table->unsignedBigInteger('customer_sales_channel_id')->nullable()->index();
-           $table->foreign('customer_sales_channel_id')->references('id')->on('customer_sales_channels')->nullOnDelete();
+            $table->foreign('customer_sales_channel_id')->references('id')->on('customer_sales_channels')->nullOnDelete();
         });
 
         Schema::table('portfolios', function (Blueprint $table) {

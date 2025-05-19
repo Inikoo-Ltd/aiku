@@ -8,12 +8,16 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  *
@@ -50,12 +54,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CustomerSalesChannelStatusEnum $status
  * @property string|null $platform_user_type
  * @property int|null $platform_user_id
+ * @property string|null $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Dropshipping\Platform $platform
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Portfolio> $portfolios
  * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read Model|\Eloquent|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()
@@ -64,6 +71,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CustomerSalesChannel extends Model
 {
     use InShop;
+    use HasSlug;
 
     protected $table = 'customer_sales_channels';
 
@@ -74,9 +82,31 @@ class CustomerSalesChannel extends Model
         'status' => CustomerSalesChannelStatusEnum::class
     ];
 
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom(function () {
+                return  Abbreviate::run($this->platform->type->value).'-'.$this->reference;
+            })
+            ->saveSlugsTo('slug')
+            ->slugsShouldBeNoLongerThan(128)
+            ->doNotGenerateSlugsOnUpdate();
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function user(): MorphTo
+    {
+        return $this->morphTo('platform_user');
     }
 
     public function platform(): BelongsTo
@@ -88,4 +118,10 @@ class CustomerSalesChannel extends Model
     {
         return $this->hasMany(CustomerClient::class);
     }
+
+    public function portfolios(): HasMany
+    {
+        return $this->hasMany(Portfolio::class);
+    }
+
 }

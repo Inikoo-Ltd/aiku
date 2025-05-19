@@ -15,6 +15,7 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
@@ -70,6 +71,7 @@ class IndexRetinaProductsInDropshipping extends RetinaAction
 
     public function htmlResponse(ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser $scope): Response
     {
+        $customerSalesChannel = null;
         if ($scope instanceof ShopifyUser) {
             $shop = $scope->customer->shop;
             $routes = [
@@ -102,11 +104,12 @@ class IndexRetinaProductsInDropshipping extends RetinaAction
             ];
         } else {
             $shop = $scope->shop;
+            $customerSalesChannel = CustomerSalesChannel::where('customer_id', $scope->id)->where('platform_id', $this->platform->id)->first();
             $routes = [
                 'store_product' => [
-                    'name'       => 'retina.models.dropshipping.customer.product.store',
+                    'name'       => 'retina.models.customer_sales_channel.customer.product.store',
                     'parameters' => [
-                        'customer' => $scope->id
+                        'customerSalesChannel' => $customerSalesChannel->id
                     ]
                 ],
             ];
