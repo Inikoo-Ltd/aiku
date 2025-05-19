@@ -76,6 +76,7 @@ const layout = inject('layout', layoutStructure)
                             v-tooltip="data.icon.tooltip || ''"
                             aria-hidden="true"
                             :icon="data.icon.icon || data.icon"
+                            :rotation="data?.icon_rotation"
                             size="sm"
                             fixed-width
                         />
@@ -93,7 +94,9 @@ const layout = inject('layout', layoutStructure)
                         <div v-if="data.iconRight || data.afterTitle" class="flex gap-x-2 items-center">
                             <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
                                 :icon="data.iconRight?.icon || data.iconRight" class="h-4" :class="data.iconRight.class"
-                                aria-hidden="true" />
+                                aria-hidden="true"
+                                :rotation="data?.iconRight?.icon_rotation"
+                            />
                             <div v-if="data.afterTitle" class="text-gray-400 font-normal text-lg leading-none">
                                 {{ data.afterTitle.label }}
                             </div>
