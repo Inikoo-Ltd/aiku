@@ -80,7 +80,7 @@ class ShowRetinaDropshipping extends RetinaAction
                 ],
                 'aikuConnectRoute' => [
                     'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
-                    'url'       => route('retina.models.dropshipping.aiku.store')
+                    // 'url'       => route('retina.models.dropshipping.aiku.store')  // TODO: check this
                 ],
                 'wooRoute' => [
                     'connectRoute' => [

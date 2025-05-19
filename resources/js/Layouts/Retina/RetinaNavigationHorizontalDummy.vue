@@ -5,173 +5,138 @@
   -->
 
 <script setup lang='ts'>
-import { Navigation } from '@/types/Navigation'
-import { Link } from '@inertiajs/vue3'
-import { isNavigationActive } from '@/Composables/useUrl'
-// import { generateCurrentString } from '@/Composables/useConvertString'
-import { inject, ref } from 'vue'
-import RetinaNavigationSimple from '@/Layouts/Retina/RetinaNavigationSimple.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronLeft, faChevronRight } from '@fas'
-import { faParachuteBox, faMoneyBillWave } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { Navigation } from "@/types/Navigation";
+import { Link } from "@inertiajs/vue3";
+import { isNavigationActive } from "@/Composables/useUrl";
+import { computed, inject, ref } from "vue";
+import RetinaNavigationSimple from "@/Layouts/Retina/RetinaNavigationSimple.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faChevronLeft, faChevronRight } from "@fas";
+import { faMoneyBillWave, faParachuteBox } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
+import { routeType } from "@/types/route"
+import { useTruncate } from "@/Composables/useTruncate"
+
 library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
 
 const props = defineProps<{
     nav: {
-        platforms_navigation: {
+        before_horizontal: {
+            subNavigation: Navigation[]
+        }
+        horizontal_navigations: {
             label: string
             icon: string
-            navigation: MergeNavigation[]
-        }
+            key: string
+            root: string
+            route: routeType
+            subNavigation: Navigation[]
+        }[]
     }
-    // icon: string
 
 }>()
 
-interface MergeNavigation {
-    slug: string  // 'tiktok' | 'shopify'
-    type?: string
-    subNavigation: Navigation[]
-}
-
 const layout = inject('layout', retinaLayoutStructure)
-// console.log('www', props.nav.platforms_navigation.navigation)
-// const platformsNav: () => MergeNavigation[] = () => {
-//     const filterPlatformsOpen = Object.entries(props.nav.platforms_navigation.navigation);
 
-//     console.log('filterPlatformsOpen', filterPlatformsOpen)
-//     return filterPlatformsOpen.map(([key, subNavObject]) => {
-//         return {
-//             key: key,
-//             value: {
-//                 slug: subNavObject.slug,
-//                 type: subNavObject.type,
-//                 subNavigation: subNavObject.subNavigation
-//             },
-//             type: 'shopify',
-//             root: 'retina.dropshipping.platform.'
-//         }
-//     })
-// }
 
-// const mergeNavigations = platformsNav();
-console.log('ewewew', props.nav.navigation)
-const mergeNavigations = props.nav.navigation ?? props.nav.platforms_navigation?.navigation;
-
-const currentNavigation = () => {
-    const curre = mergeNavigations.find(mergeNav => {
-
-        if(layout.currentPlatform) {
-            return mergeNav.slug == layout.currentPlatform;
-        } else {
-            return mergeNav.slug;
-        }
+const currentActiveHorizontal = computed(() => {
+    const xxx =  props.nav.horizontal_navigations?.find(horizontal => {
+        return horizontal.key == layout.currentPlatform
     })
 
-    return curre
-}
-const currentIndexNavigation = () => {
-    return mergeNavigations.findIndex(mergeNav => mergeNav.slug == layout.currentPlatform)
-}
+    if (!xxx) {
+        return props.nav.horizontal_navigations[0]
+    }
+
+    return xxx
+})
+const currentIndexHorizontal = computed(() => {
+    return props.nav.horizontal_navigations.findIndex(mergeNav => mergeNav.key == layout.currentPlatform)
+})
 
 const isSomeSubnavActive = () => {
-    return Object.values(currentNavigation() || {}).some(nav => (isNavigationActive(layout.currentRoute, currentNavigation()?.root)))
-}
-
-// Method: detect the active Nav is 'fulfilment' or 'shop'
-// const activeNav = () => {
-//     return 'shopify';
-// }
-
-// Method: to get current slug depend on the type ('AWF')
-// const currentTypeSlug = () => {
-//     const currentType = 'shopify';  // 'shop' || 'fulfilment'
-//     return layout.navigation;
-// }
-
-// Route for arrow chevron
-const previousNavigation = () => {
-    // const keySlug = currentTypeSlug()
-    // const indexNavigation = mergeNavigations.findIndex(navigation => navigation.key === keySlug)  // -1, 0, 2, 3
-
-    return mergeNavigations[currentIndexNavigation()-1] || undefined
-}
-const nextNavigation = () => {
-    // const keySlug = currentTypeSlug()
-    // const indexNavigation = mergeNavigations.findIndex(navigation => navigation.key === keySlug)  // -1, 0, 2, 3
-
-    return mergeNavigations[currentIndexNavigation()+1] || undefined
-}
-const routeArrow = (nav?: MergeNavigation) => {
-    // console.log('routeArrow', nav)
-    if(!nav) return '#'
-
-    return route('retina.dropshipping.platforms.portfolios.index', { platform: nav.slug })
+    return Object.values(currentActiveHorizontal.value || {}).some(nav => (isNavigationActive(layout.currentRoute, currentActiveHorizontal.value?.root)))
 }
 
 
-// Route for label 'UK (Shop)'
-const routeLabelHorizontal = () => {
-    return '#'
-}
+// Section: Route for arrow chevron
+const previousHorizontal = computed(() => {
+    return props.nav.horizontal_navigations?.[currentIndexHorizontal.value - 1] || undefined
+})
+const nextHorizontal = computed(() => {
+    return props.nav.horizontal_navigations?.[currentIndexHorizontal.value + 1] || undefined
+})
 
+
+
+const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
 const isLoadingNavigation = ref<string | boolean>(false)
+const onClickArrow = (horizontalKey: string) => {
+    layout.currentPlatform = horizontalKey
+    localStorage.setItem('layout', JSON.stringify({
+        ...storageLayout,
+        currentPlatform: horizontalKey
+    }))
+    isLoadingNavigation.value = false
+}
 </script>
 
 <template>
     <div class="relative isolate ring-1 ring-white/20 rounded transition-all"
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
+        <!-- Section: Before horizontal -->
+        <div v-if="nav.before_horizontal?.subNavigation" class="py-1 border-b border-gray-600">
+            <template v-for="nav, navIndex in nav.before_horizontal?.subNavigation" :key="navIndex + index">
+                <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
+            </template>
+        </div>
 
-        <!-- Label: Icon shops/warehouses and slug -->
-        <div v-if="!!currentNavigation()" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
+        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
             :style="{ color: layout.app.theme[1] + '99' }">
 
-            <!-- Label: 'Tiktok' -->
-            <div :href="routeLabelHorizontal()" class="relative flex gap-x-1.5 items-center pt-1 select-none cursor-default">
+            <!-- Section: Horizontal label -->
+            <div class="relative flex gap-x-1.5 items-center pt-1 select-none cursor-default">
+                <Transition name="spin-to-right">
+                    <FontAwesomeIcon v-if="currentActiveHorizontal?.icon" :key="currentActiveHorizontal?.icon" :icon="currentActiveHorizontal?.icon" class='text-xs' fixed-width aria-hidden='true' v-tooltip="currentActiveHorizontal?.label" />
+                </Transition>
 
                 <Transition name="slide-to-left">
-                    <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5">
+                    <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-20">
                         <Transition name="spin-to-down">
-                            <span :key="currentNavigation()?.slug" class="text-base leading-[12px] uppercase">
-                                {{ currentNavigation()?.label }}
+                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[12px]">
+                                {{ useTruncate(currentActiveHorizontal?.label, 8) }}
                             </span>
                         </Transition>
                     </div>
                 </Transition>
-
-                <Transition name="spin-to-down">
-                    <FontAwesomeIcon icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Shopify')" />
-                </Transition>
             </div>
 
-
-            <!-- Section: Arrow left-right -->
+            <!-- Section: Horizontal arrow left-right -->
             <Transition name="slide-to-left">
                 <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3 flex text-white text-xxs" >
                     <component
-                        :is="previousNavigation() ? Link : 'div'"
-                        :href="routeArrow(previousNavigation())"
-                        :class="previousNavigation() ? 'hover:bg-black/10' : 'text-white/40'"
+                        :is="previousHorizontal?.route?.name ? Link : 'div'"
+                        v-tooltip=""
+                        :href="previousHorizontal?.route?.name ? route(previousHorizontal.route.name, previousHorizontal.route.parameters) : '#'"
                         class="py-0.5 px-[1px] flex justify-center items-center rounded"
+                        :class="previousHorizontal ? 'hover:bg-black/10' : 'text-white/40'"
                         @start="() => isLoadingNavigation = 'prevNav'"
-                        @finish="() => isLoadingNavigation = false"
+                        @finish="() => onClickArrow(previousHorizontal?.key)"
                     >
                         <LoadingIcon v-if="isLoadingNavigation == 'prevNav'" />
                         <FontAwesomeIcon v-else icon='fas fa-chevron-left' class='' fixed-width aria-hidden='true' />
                     </component>
 
                     <component
-                        :is="nextNavigation() ? Link : 'div'"
-                        :href="routeArrow(nextNavigation())"
+                        :is="nextHorizontal?.route?.name ? Link : 'div'"
+                        :href="nextHorizontal?.route?.name ? route(nextHorizontal.route.name, nextHorizontal.route.parameters) : '#'"
                         class="py-0.5 px-[1px] flex justify-center items-center rounded"
-                        :class="nextNavigation() ? 'hover:bg-black/10' : 'text-white/40'"
+                        :class="nextHorizontal ? 'hover:bg-black/10' : 'text-white/40'"
                         @start="() => isLoadingNavigation = 'nextNav'"
-                        @finish="() => isLoadingNavigation = false"
+                        @finish="() => onClickArrow(nextHorizontal?.key)"
                     >
                         <LoadingIcon v-if="isLoadingNavigation == 'nextNav'" />
                         <FontAwesomeIcon v-else icon='fas fa-chevron-right' class='' fixed-width aria-hidden='true' />
@@ -179,11 +144,10 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 </div>
             </Transition>
         </div>
-
-        <!-- If Shops/Warehouses length is 1 (Show the subnav straighly) -->
+        
+        <!-- Section: Sub Navigaiton -->
         <div class="flex flex-col gap-y-1 mb-1">
-            <!-- group only 1 -->
-            <template v-for="nav, navIndex, index in currentNavigation()?.subNavigation" :key="navIndex + index">
+            <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="navIndex + index">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>
         </div>

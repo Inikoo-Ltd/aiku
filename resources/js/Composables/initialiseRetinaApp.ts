@@ -36,18 +36,17 @@ export const initialiseRetinaApp = () => {
     }
     
     router.on('navigate', (event) => {
-        // console.log('layout env', layout.app.environment)
         layout.currentParams = route().v().params  // current params
         layout.currentRoute = route().current()  // current route
 
-        if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
-            layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
+        // if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
+        //     layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
 
-            localStorage.setItem('layout', JSON.stringify({
-                ...storageLayout,
-                currentPlatform: layout.currentPlatform
-            }))
-        }
+        //     localStorage.setItem('layout', JSON.stringify({
+        //         ...storageLayout,
+        //         currentPlatform: layout.currentPlatform
+        //     }))
+        // }
     })
 
     // Echo: Website wide websocket
@@ -56,6 +55,8 @@ export const initialiseRetinaApp = () => {
     if (usePage().props.localeData) {
         loadLanguageAsync(usePage().props.localeData.language.code)
     }
+
+    console.log('wewewe', usePage().props.retina.type)
 
     watchEffect(() => {
         // Set data of Navigation
