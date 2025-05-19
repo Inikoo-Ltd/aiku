@@ -45,7 +45,12 @@ class StoreOrderFromShopify extends OrgAction
         $attributes      = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
         $deliveryAddress = Arr::get($attributes, 'address');
 
+        if (!$customerClient) {
+            $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
+        }
+
         $order = StoreOrder::make()->action($shopifyUser->customer, [
+            'customer_client_id'        => $customerClient->id,
             'platform_id'               => $shopifyUser->platform_id,
             'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
             'date'                      => $modelData['created_at'],
@@ -53,13 +58,10 @@ class StoreOrderFromShopify extends OrgAction
             'billing_address'           => new Address($deliveryAddress)
         ]);
 
-        if (!$customerClient) {
-            $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
-        }
-
         foreach ($shopifyProducts as $shopifyProduct) {
             /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
-            $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_product_id', $shopifyProduct['product_id'])->first();
+            $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
+                ->where('shopify_product_id', $shopifyProduct['product_id'])->first();
 
             if ($shopifyUserHasProduct) {
                 /** @var \App\Models\Catalogue\Product $product */
