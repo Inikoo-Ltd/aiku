@@ -55,7 +55,7 @@ class GetRetinaDropshippingNavigation
                 'type'          => $salesChannel->type,
                 'slug'          => $salesChannel->slug,
                 'root'          => 'retina.dropshipping.platforms.',
-                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel)
+                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
             ];
         }
 
