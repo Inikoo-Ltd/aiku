@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -52,6 +53,13 @@ class StoreRetinaProductManual extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisation($request);
+
+        $this->handle($customerSalesChannel, $this->validatedData);
+    }
+
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
+    {
+        $this->initialisationActions($customerSalesChannel->customer, $modelData);
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }
