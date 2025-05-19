@@ -32,11 +32,10 @@ const locale = inject('locale', null)
 const isOpenModalPortfolios = ref(false)
 
 
-
 // Method: Submit the selected item
 const isLoadingSubmit = ref(false)
-const onSubmitAddItem = async (idProduct: number[]) => {
-    router.post(route('grp.models.customer.portfolio.store_multiple_manual', { customer: props.customer?.id} ), {
+const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: number) => {
+    router.post(route('grp.models.customer_sales_channel.portfolio.store_multiple_manual', { customerSalesChannel: customerSalesChannelId} ), {
         items: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
@@ -76,7 +75,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             />
         </template>
     </PageHeading>
-
+    
     <TablePortfolios :data="data" />
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
@@ -91,7 +90,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 }
             }"
             :isLoadingSubmit
-            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), props.data.data[0].customer_sales_channel_id)"
         >
         </ProductsSelector>
     </Modal>
