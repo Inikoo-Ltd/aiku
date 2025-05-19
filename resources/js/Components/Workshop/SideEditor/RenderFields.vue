@@ -23,7 +23,6 @@ const props = defineProps<{
     props_data?: any
   },
   uploadImageRoute?: routeType,
-  index: Number | string | string[]
 }>()
 
 const modelValue = defineModel()

@@ -6,7 +6,7 @@ export default {
 			type: "layout_type",
 		},
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{
@@ -18,6 +18,7 @@ export default {
 				{
 					key: ["gap"],
 					label: "Gap",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "numberCss",
 				},
 				{
@@ -41,11 +42,13 @@ export default {
 				{
 					key: ["shadow"],
 					label: "Shadow",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "shadow",
 				},
 				{
 					key: ["shadowColor"],
 					label: "Shadow Color",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "color",
 				},
 			],

@@ -11,7 +11,6 @@ namespace App\Actions\Retina\UI\Layout;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaFulfilmentNavigation
@@ -149,7 +148,7 @@ class GetRetinaFulfilmentNavigation
                             'icon_rotation'   => 90,
                             'root'  => 'retina.fulfilment.dropshipping.',
                             'route' => [
-                                'name' => 'retina.fulfilment.dropshipping.dashboard'
+                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index'
                             ]
                         ]
                     ]

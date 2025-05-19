@@ -51,13 +51,25 @@ class GetRetinaDropshippingNavigation
         foreach (
             $customer->customerSalesChannels as $salesChannel
         ) {
+            $logo_img = null;
+            if ($salesChannel->platform->code === 'shopify') {
+                $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
+            } elseif ($salesChannel->platform->code === 'tiktok') {
+                $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+            } elseif ($salesChannel->platform->code === 'woocommerce') {
+                $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+            } elseif ($salesChannel->platform->code === 'manual') {
+                $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
+            }
+
             $reference = $customerSalesChannel->reference ?? 'n/a';
             $platforms_navigation[] = [
                 'id'            => $salesChannel->id,
                 'type'          => $salesChannel->platform->type,
                 'slug'          => $salesChannel->slug,
                 'key'           => $salesChannel->reference. '_platform',
-                'label'         => $salesChannel->platform->name. '-' . $reference ,
+                'label'         => $salesChannel->platform->name. ' (' . $reference . ')' ,
+                'img'           => $logo_img,
                 'route'         => [
                     'name' => 'retina.dropshipping.platforms.dashboard',
                     'parameters' => [

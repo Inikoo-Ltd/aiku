@@ -10,6 +10,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -22,12 +23,12 @@ const emits = defineEmits<{
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-4"
 		:style="getStyles(modelValue?.container?.properties)"
 	>
-		<!-- <pre>{{ modelValue.container.properties.background }}</pre> -->
 		<ColumnWebppage
 			v-model="modelValue.column_1"
 			@update:modelValue="() => emits('autoSave')"
 			:webpageData="webpageData"
 			:blockData="blockData"
+			:screenType="screenType"
 		/>
 	
 		<ColumnWebppage
@@ -35,6 +36,7 @@ const emits = defineEmits<{
 			@update:modelValue="() => emits('autoSave')"
 			:webpageData="webpageData"
 			:blockData="blockData"
+			:screenType="screenType"
 		/>
 	</div>
 </template>

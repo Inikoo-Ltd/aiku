@@ -80,12 +80,9 @@ onMounted(() => {
 	</div>
 		
 	<Modal :isOpen="modelModalBlocklist" @onClose="modelModalBlocklist = false">
-		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="webpage" />
+		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="element" />
 	</Modal>
 </template>
 
 <style scoped>
-.aspect-w-4 {
-	aspect-ratio: 4 / 3;
-}
 </style>

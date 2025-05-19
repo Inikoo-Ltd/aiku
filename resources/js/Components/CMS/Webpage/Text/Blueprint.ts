@@ -1,7 +1,7 @@
 export default {
 	blueprint: [
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{
@@ -31,11 +31,13 @@ export default {
 				{
                     key: ["shadow"],
                     label : "Shadow",
+					useIn : ["desktop", "tablet", "mobile"],
                     type: "shadow",
                 },
                 {
                     key: ["shadowColor"],
                     label : "Shadow Color",
+					useIn : ["desktop", "tablet", "mobile"],
                     type: "color",
                 },
 			],

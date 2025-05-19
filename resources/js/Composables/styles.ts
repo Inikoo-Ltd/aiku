@@ -102,6 +102,7 @@ export const resolveResponsiveValue = (
     properties: any,
     screen: 'mobile' | 'tablet' | 'desktop' = 'desktop'
 ) => {
+    
     if (!properties || typeof properties !== 'object') return null;
 
     const getVal = (base: any, path?: string[]) =>
@@ -118,6 +119,7 @@ export const resolveResponsiveValue = (
 
         color: properties?.text?.color || null,
         fontFamily: properties?.text?.fontFamily || null,
+        fontSize: properties?.text?.fontSize ? properties?.text?.fontSize + 'px' : null,
         objectFit: getVal(properties?.object_fit),
         objectPosition: getVal(properties?.object_position),
 
@@ -171,36 +173,36 @@ export const resolveResponsiveValue = (
             }
         })(),
 
-        borderTop: getVal(properties?.border, ['top', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['top', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderTop: getVal(properties?.border, ['top', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['top', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderBottom: getVal(properties?.border, ['bottom', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['bottom', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderBottom: getVal(properties?.border, ['bottom', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['bottom', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderLeft: getVal(properties?.border, ['left', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['left', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderLeft: getVal(properties?.border, ['left', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['left', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderRight: getVal(properties?.border, ['right', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['right', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderRight: getVal(properties?.border, ['right', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['right', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderTopLeftRadius: getVal(properties?.border, ['rounded', 'topleft', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'topleft', 'value'])}${properties.border.rounded.unit}`
+        borderTopLeftRadius: getVal(properties?.border, ['rounded','topleft','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded', 'topleft', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
-        borderTopRightRadius: getVal(properties?.border, ['rounded', 'topright', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'topright', 'value'])}${properties.border.rounded.unit}`
+        borderTopRightRadius: getVal(properties?.border, ['rounded','topright','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded', 'topright', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
-        borderBottomLeftRadius: getVal(properties?.border, ['rounded', 'bottomleft', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'bottomleft', 'value'])}${properties.border.rounded.unit}`
+        borderBottomLeftRadius: getVal(properties?.border, ['rounded','bottomleft','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded', 'bottomleft', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
-        borderBottomRightRadius: getVal(properties?.border, ['rounded', 'bottomright', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'bottomright', 'value'])}${properties.border.rounded.unit}`
+        borderBottomRightRadius: getVal(properties?.border, ['rounded','bottomright','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded','bottomright', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
         borderColor: getVal(properties?.border, ['color']) && properties?.border?.color
@@ -214,6 +216,7 @@ export const resolveResponsiveValue = (
         justifyContent: getVal(properties?.justifyContent),
         boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor)
     };
+
 
     return Object.fromEntries(Object.entries(styles).filter(([_, val]) => val !== null));
 };

@@ -41,7 +41,7 @@ const props = withDefaults(
 	defineProps<{
 		onPickBlock: Function
 		webBlockTypes: Root
-		scope?: string /* all|website|webpage */
+		scope?: string /* all|block|element */
 	}>(),
 	{
 		scope: "all",
@@ -58,12 +58,12 @@ onMounted(() => {
 	const filteredData =
 		props.scope === "all"
 			? props.webBlockTypes.data
-			: props.webBlockTypes.data.filter((item) => item.scope === props.scope)
+			: props.webBlockTypes.data.filter((item) => item.category === props.scope )
 
 	data.value = filteredData.sort((a, b) => a.name.localeCompare(b.name))
 	active.value = data.value[0] || null;
 })
-console.log(props)
+
 </script>
 
 <template>
