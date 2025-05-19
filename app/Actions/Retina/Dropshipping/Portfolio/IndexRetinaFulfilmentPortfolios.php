@@ -77,7 +77,16 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
 
         $title = __('Portfolio');
+        $syncAllRoute = [];
 
+        if ($this->customer->is_fulfilment) {
+            $syncAllRoute = [
+                'name' => 'retina.models.customer_sales_channel.sync_all_stored_items',
+                'parameters' => [
+                    'customerSalesChannel' => $this->customerSalesChannel
+                ]
+            ];
+        }
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -89,6 +98,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
+                'syncAllRoute' => $syncAllRoute,
 
 
 
