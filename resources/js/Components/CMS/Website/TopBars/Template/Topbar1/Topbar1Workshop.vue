@@ -52,7 +52,7 @@ const layout = inject('layout', {})
 
 <template>
     <div
-        id="top_bar"
+        id="top_bar_1_workshop"
         class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4"
         :style="getStyles(model?.container.properties)"
     >
