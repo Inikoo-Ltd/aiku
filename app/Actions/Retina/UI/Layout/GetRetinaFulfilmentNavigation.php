@@ -35,7 +35,7 @@ class GetRetinaFulfilmentNavigation
         if ($webUser->customer->status === CustomerStatusEnum::APPROVED && $webUser->customer->fulfilmentCustomer->rentalAgreement) {
             $additionalSubsections = [];
 
-            if ($webUser?->customer?->fulfilmentCustomer?->number_pallets_status_storing) {
+            if ($webUser->customer?->fulfilmentCustomer?->number_pallets_status_storing) {
                 $additionalSubsections = [
                     [
                         'label' => __('goods out'),
@@ -127,14 +127,15 @@ class GetRetinaFulfilmentNavigation
 
                 /** @var Platform $platform */
                 foreach (
-                    $webUser->customer->customerSalesChannels as $salesChannel
+                    $webUser->customer->customerSalesChannels as $customerSalesChannel
                 ) {
                     $platforms_navigation[] = [
-                        'type'          => $salesChannel->platform->type,
-                        'slug'          => $salesChannel->platform->slug,
-                        'label'         => $salesChannel->platform->name,
+                        'id'            => $customerSalesChannel->id,
+                        'type'          => $customerSalesChannel->type,
+                        'slug'          => $customerSalesChannel->slug,
+                        'label'         => $customerSalesChannel->reference,
                         'root'          => 'retina.dropshipping.platforms.',
-                        'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($webUser, $salesChannel->platform)
+                        'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($customerSalesChannel)
                     ];
                 }
 
