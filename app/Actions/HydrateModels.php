@@ -106,7 +106,7 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Dropshipping ✊🏼');
         $command->call('hydrate:platforms');
-        $command->call('hydrate:customer_has_platforms');
+        $command->call('hydrate:customer_sales_channels');
         $command->call('hydrate:customer_clients');
         $command->call('hydrate:portfolios');
 

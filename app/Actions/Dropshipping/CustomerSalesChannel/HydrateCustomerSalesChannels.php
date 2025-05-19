@@ -19,7 +19,7 @@ class HydrateCustomerSalesChannels
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'hydrate:customer_has_platforms';
+    public string $commandSignature = 'hydrate:customer_sales_channels';
 
     public function __construct()
     {
