@@ -28,6 +28,7 @@ use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
+use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,7 @@ Route::get('/inventory', IndexRetinaStoredItems::class)->name('inventory');
 
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
+    Route::get('', IndexFulfilmentCustomerSalesChannels::class)->name('index');
     Route::get('/dashboard', ShowRetinaDropshipping::class)->name('dashboard');
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');

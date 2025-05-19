@@ -8,6 +8,7 @@
  *
 */
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -27,6 +28,7 @@ use App\Actions\Retina\Dropshipping\Client\UI\EditRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
@@ -35,11 +37,13 @@ use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
+use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
 use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platform')->as('platform.')->group(function () {
-    Route::get('/', ShowRetinaDropshipping::class)->name('dashboard');
+    Route::get('/', IndexDropshippingCustomerSalesChannels::class)->name('index');
+    Route::get('/dashboard', ShowRetinaDropshipping::class)->name('dashboard');
 
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
