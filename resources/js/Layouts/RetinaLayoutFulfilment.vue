@@ -57,9 +57,9 @@ const isStaging = layout.app.environment === 'staging'
         </div>
 
         <!-- Main Content -->
-        <main class="h-[calc(100vh-40px)] transition-all pl-2 md:pl-0 pr-2 "
+        <main class="h-[calc(100vh-40px)] transition-all pl-2 pr-2 "
             :class="[
-                layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-16',
+                layout.leftSidebar.show ? 'ml-0 md:ml-64' : 'ml-0 md:ml-16',
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >

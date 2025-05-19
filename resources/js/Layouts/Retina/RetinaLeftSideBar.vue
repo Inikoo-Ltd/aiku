@@ -54,7 +54,7 @@ const onLogoutAuth = () => {
 <template>
     <div class="md:inset-y-0 h-full pb-20 px-2 fixed md:flex md:flex-col  transition-all"
         :class="[
-            layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-16',
+            layout.leftSidebar.show ? 'w-8/12 md:w-64' : 'w-8/12 md:w-16',
             isStaging ? 'mt-9 lg:mt-12 pt-7' : 'mt-9 lg:mt-10 pt-3'
         ]"
         :style="{

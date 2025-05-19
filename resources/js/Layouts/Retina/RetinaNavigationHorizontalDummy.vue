@@ -19,11 +19,13 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import { routeType } from "@/types/route"
 import { useTruncate } from "@/Composables/useTruncate"
 import { trans } from "laravel-vue-i18n"
+import Fieldset from "primevue/fieldset"
 
 library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
 
 const props = defineProps<{
     nav: {
+        field_name?: string
         before_horizontal: {
             subNavigation: Navigation[]
         }
@@ -84,12 +86,19 @@ const onClickArrow = (horizontalKey: string) => {
 </script>
 
 <template>
-    <div class="relative isolate ring-1 ring-white/20 rounded transition-all"
+    <Fieldset class="relative isolate ring-1 ring-white/20 rounded transition-all "
+        unstyled
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
+        <template v-if="nav.field_name" #legend>
+            <div class="ml-2 px-2 rounded mb-0.5 text-sm" :style="{ 'background-color': `${layout.app.theme[0]}` }">
+                {{ nav.field_name }}
+            </div>
+        </template>
+
         <!-- Section: Before horizontal -->
-        <div v-if="nav.before_horizontal?.subNavigation" class="py-1 border-b border-gray-600">
-            <template v-for="nav, navIndex in nav.before_horizontal?.subNavigation" :key="navIndex + index">
+        <div v-if="nav.before_horizontal?.subNavigation" class="py-1 border-b border-gray-600 space-y-1.5">
+            <template v-for="nav, navIndex in nav.before_horizontal?.subNavigation" :key="`${navIndex}before_horizontal`">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>
         </div>
@@ -110,7 +119,7 @@ const onClickArrow = (horizontalKey: string) => {
                 <Transition name="slide-to-left">
                     <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-32">
                         <Transition name="spin-to-down">
-                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[8px]">
+                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[10px]">
                                 {{ useTruncate(currentActiveHorizontal?.label, 14) }}
                             </span>
                         </Transition>
@@ -119,9 +128,10 @@ const onClickArrow = (horizontalKey: string) => {
             </div>
 
             <!-- Section: Horizontal arrow left-right -->
-            <Transition name="slide-to-left">
+            <Transition v-if="previousHorizontal || nextHorizontal" name="slide-to-left">
                 <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3.5 flex text-white text-xxs" >
                     <component
+                        :key="previousHorizontal?.key"
                         :is="previousHorizontal?.route?.name ? Link : 'div'"
                         v-tooltip=""
                         :href="previousHorizontal?.route?.name ? route(previousHorizontal.route.name, previousHorizontal.route.parameters) : '#'"
@@ -135,6 +145,7 @@ const onClickArrow = (horizontalKey: string) => {
                     </component>
 
                     <component
+                        :key="nextHorizontal?.key"
                         :is="nextHorizontal?.route?.name ? Link : 'div'"
                         :href="nextHorizontal?.route?.name ? route(nextHorizontal.route.name, nextHorizontal.route.parameters) : '#'"
                         class="py-0.5 px-[1px] flex justify-center items-center rounded"
@@ -151,11 +162,16 @@ const onClickArrow = (horizontalKey: string) => {
         
         <!-- Section: Sub Navigaiton -->
         <div class="flex flex-col gap-y-1 mb-1">
-            <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="navIndex + index">
+            <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="`${navIndex}`">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>
         </div>
+        <!-- curplat: {{ layout.currentPlatform }} <br>
+        index: {{ currentActiveHorizontal.key }} <br>
+        prev: {{ previousHorizontal?.key }}<br>
+        next: {{ nextHorizontal?.key }} <br>
 
+        <pre>{{ props.nav.horizontal_navigations.map(x => x.key).findIndex(x => x == currentActiveHorizontal.key) }}</pre> -->
         <div v-if="isSomeSubnavActive()" class="absolute inset-0 bg-slate-50/10 rounded -z-10" />
-    </div>
+    </Fieldset>
 </template>
