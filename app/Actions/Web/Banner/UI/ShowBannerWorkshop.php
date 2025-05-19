@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Banner\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowBannerWorkshop extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
     private Website $parent;
 

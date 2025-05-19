@@ -10,7 +10,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\WithUploadProductImage;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UploadImagesToProduct extends OrgAction
 {
     use WithUploadProductImage;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     public function asController(Organisation $organisation, Product $product, ActionRequest $request): void

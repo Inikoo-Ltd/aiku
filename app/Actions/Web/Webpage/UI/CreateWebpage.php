@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -24,7 +24,7 @@ use Spatie\LaravelOptions\Options;
 
 class CreateWebpage extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     protected Fulfilment|Website|Webpage $parent;
 

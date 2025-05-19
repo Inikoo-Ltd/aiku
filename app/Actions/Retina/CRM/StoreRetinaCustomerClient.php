@@ -48,9 +48,11 @@ class StoreRetinaCustomerClient extends RetinaAction
         return StoreCustomerClient::make()->getBaseRules($this->customer);
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(CustomerClient $customerClient): RedirectResponse
     {
-        return Redirect::route('retina.dropshipping.client.index');
+        return Redirect::route('retina.dropshipping.platforms.client.index', [
+            'platform' => $customerClient->platform->slug
+        ]);
     }
 
     /**

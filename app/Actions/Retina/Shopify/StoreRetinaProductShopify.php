@@ -36,8 +36,7 @@ class StoreRetinaProductShopify extends RetinaAction
         DB::transaction(function () use ($shopifyUser, $modelData) {
             foreach (Arr::get($modelData, 'items') as $productId) {
                 $product = Product::find($productId);
-                $portfolio = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $product, [
-                ]);
+                $portfolio = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $product, []);
 
                 HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
             }

@@ -140,7 +140,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
                 'orders'   => RetinaDropshippingOrdersInPlatformResources::collection($orders)
             ]
-        )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->platform));
+        )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->platform, 'orders'));
     }
 
 

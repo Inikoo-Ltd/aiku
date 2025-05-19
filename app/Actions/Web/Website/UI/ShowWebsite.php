@@ -14,7 +14,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
@@ -39,7 +39,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWebsite extends OrgAction
 {
     use HasWorkshopAction;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Fulfilment|Shop|Organisation $parent;
 

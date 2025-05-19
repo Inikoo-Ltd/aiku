@@ -11,7 +11,7 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowWebsiteWorkshop extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Fulfilment|Shop $parent;
 

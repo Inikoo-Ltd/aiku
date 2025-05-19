@@ -10,7 +10,7 @@
 namespace App\Actions\Web\ExternalLink\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Web\ExternalLink;
@@ -25,7 +25,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexExternalLinks extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Website|Webpage|WebBlock $parent;
 

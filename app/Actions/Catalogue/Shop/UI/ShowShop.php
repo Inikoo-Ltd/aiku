@@ -53,6 +53,7 @@ class ShowShop extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
+
         $this->initialisationFromShop($shop, $request)->withTab(ShopTabsEnum::values());
 
         return $this->handle($shop);

@@ -9,7 +9,7 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteModelHasWebBlocks extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
 
     public function handle(ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
@@ -32,11 +32,12 @@ class DeleteModelHasWebBlocks extends OrgAction
 
         $webpage->refresh();
 
-        $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
+        $modelHasWebBlocksInWebpage = $webpage->modelHasWebBlocks()->orderBy('position')->get();
 
-        if (!$webBlocks->isEmpty()) {
+        if (!$modelHasWebBlocksInWebpage->isEmpty()) {
             $positions = [];
-            foreach ($webBlocks as $index => $block) {
+            /** @var ModelHasWebBlocks $block */
+            foreach ($modelHasWebBlocksInWebpage as $index => $block) {
                 $positions[$block->webBlock->id] = ['position' => $index];
             }
 

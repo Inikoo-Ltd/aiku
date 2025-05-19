@@ -11,13 +11,13 @@
 namespace App\Actions\Web\ExternalLink;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\SysAdmin\Group;
 use App\Models\Web\ExternalLink;
 
 class StoreExternalLink extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     protected Group $group;

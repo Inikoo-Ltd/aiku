@@ -9,7 +9,7 @@
 namespace App\Actions\CRM\PollOption;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePollOption extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithNoStrictRules;
 
 

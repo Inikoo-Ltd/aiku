@@ -13,6 +13,6 @@ use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWebsitePreview;
 
 Route::get('{website}/webpages/{webpage}/workshop/preview', [ShowWebpageWorkshopPreview::class, 'inWebsite'])->name('webpage.preview');
-Route::get('{website}/webpages/{webpage}/website/preview', [ShowWebsitePreview::class, 'inWebsite'])->name('preview');
+Route::get('{website}/webpages/{webpage}/website/preview', ShowWebsitePreview::class)->name('preview');
 Route::get('{website}/footer/preview', ShowFooterPreview::class)->name('footer.preview');
 Route::get('{website}/header/preview', ShowHeaderPreview::class)->name('header.preview');

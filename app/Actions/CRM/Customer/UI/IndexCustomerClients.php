@@ -326,7 +326,7 @@ class IndexCustomerClients extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'customerHasPlatform'])
                     ]
                 )
             ),

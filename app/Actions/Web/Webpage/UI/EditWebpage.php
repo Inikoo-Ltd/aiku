@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -25,7 +25,7 @@ use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 
 class EditWebpage extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     public function handle(Webpage $webpage): Webpage

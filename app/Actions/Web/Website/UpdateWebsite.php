@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateWebsite extends OrgAction
 {
     use WithActionUpdate;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithLogo;
     use WithFavicon;
 

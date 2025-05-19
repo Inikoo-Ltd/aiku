@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Banner;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Enums\Web\Banner\BannerStateEnum;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShutdownBanner extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(Banner $banner, array $modelData): Banner
