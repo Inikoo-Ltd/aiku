@@ -117,13 +117,18 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                 [
                     palletReturn.slug
                 ]);
-        case 'retina.fulfilment.storage.pallet_returns.index':
+        case 'retina.fulfilment.dropshipping.customer_sales_channels.basket.index':
             return route(
-                'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
+                'retina.fulfilment.dropshipping.customer_sales_channels.basket.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['fulfilmentCustomer'],
+                    route().params['customerSalesChannel'],
+                    palletReturn.slug
+                ]);
+        case 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index':
+            return route(
+                'retina.fulfilment.dropshipping.customer_sales_channels.orders.show',
+                [
+                    route().params['customerSalesChannel'],
                     palletReturn.slug
                 ]);
         default:
