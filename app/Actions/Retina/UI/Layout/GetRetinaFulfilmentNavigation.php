@@ -10,6 +10,7 @@ namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -83,8 +84,8 @@ class GetRetinaFulfilmentNavigation
 
             if ($webUser->customer->fulfilmentCustomer->items_storage) {
                 $groupNavigation['stored_items'] = [
-                    'label'   => __('Skus'),
-                    'icon'    => ['fal', 'fa-barcode'],
+                    'label'   => __('Inventory'),
+                    'icon'    => ['fal', 'fa-inventory'],
                     'root'    => 'retina.fulfilment.itemised_storage.',
                     'route'   => [
                         'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
@@ -113,37 +114,29 @@ class GetRetinaFulfilmentNavigation
                     ]
                 ];
 
-                // $groupNavigation['platform'] = [
-                //     'label'         => __('Channels'),
-                //     'icon'          => 'fal fa-code-branch',
-                //     'icon_rotation' => 90,
-                //     'root'          => 'retina.dropshipping.platform.',
-                //     'route'         => [
-                //         'name' => 'retina.dropshipping.platform.dashboard'
-                //     ]
-                // ];
 
-                $platforms_navigation = [];
 
-                /** @var Platform $platform */
+                $customerSalesChannelsNavigation = [];
+
+                /** @var CustomerSalesChannel $customerSalesChannel */
                 foreach (
                     $webUser->customer->customerSalesChannels as $customerSalesChannel
                 ) {
                     $reference = $customerSalesChannel->reference ?? 'n/a';
-                    $platforms_navigation[] = [
+                    $customerSalesChannelsNavigation[] = [
                         'id'            => $customerSalesChannel->id,
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
                         'key'           => $customerSalesChannel->reference. '_platform',
                         'label'         => $customerSalesChannel->platform->name. '-' . $reference ,
                         'route'         => [
-                            'name' => 'retina.dropshipping.platforms.dashboard',
+                            'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.dashboard',
                             'parameters' => [
-                                'platform' => $customerSalesChannel->platform->slug
+                                'customerSalesChannel' => $customerSalesChannel->platform->slug
                             ]
                         ],
-                        'root'          => 'retina.dropshipping.platforms.',
-                        'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($customerSalesChannel)
+                        'root'          => 'retina.fulfilment.dropshipping.customer_sales_channels.',
+                        'subNavigation' => GetRetinaFulfilmentCustomerSalesChannelNavigation::run($customerSalesChannel)
                     ];
                 }
                 $groupNavigation['platforms_navigation'] = [
@@ -154,14 +147,14 @@ class GetRetinaFulfilmentNavigation
                             'label'         => __('Channels'),
                             'icon'          => 'fal fa-code-branch',
                             'icon_rotation'   => 90,
-                            'root'  => 'retina.dropshipping.platform.',
+                            'root'  => 'retina.fulfilment.dropshipping.',
                             'route' => [
-                                'name' => 'retina.dropshipping.platform.dashboard'
+                                'name' => 'retina.fulfilment.dropshipping.dashboard'
                             ]
                         ]
                     ]
                 ],
-                'horizontal_navigations'    => $platforms_navigation
+                'horizontal_navigations'    => $customerSalesChannelsNavigation
             ];
             }
 

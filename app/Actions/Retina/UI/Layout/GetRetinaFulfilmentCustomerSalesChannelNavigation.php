@@ -12,11 +12,11 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetRetinaFulfilmentPlatformNavigation
+class GetRetinaFulfilmentCustomerSalesChannelNavigation
 {
     use AsAction;
 
-    public function handle(CustomerSalesChannel $platform): array
+    public function handle(CustomerSalesChannel $customerSalesChannel): array
     {
         $platformNavigation = [];
 
@@ -25,27 +25,27 @@ class GetRetinaFulfilmentPlatformNavigation
         $platformNavigation['baskets'] = [
             'label'       => __('Baskets'),
             'icon'        => ['fal', 'fa-shopping-basket'],
-            'root'        => 'retina.dropshipping.platforms.basket.',
+            'root'        => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.',
             'right_label' => [
                 'label' => __('29'),
                 'class' => 'bg-yellow-500 text-green-500'
             ],
             'route'       => [
-                'name'       => 'retina.dropshipping.platforms.basket.index',
-                'parameters' => [$platform->platform->slug]
+                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.index',
+                'parameters' => [$customerSalesChannel->slug]
             ],
         ];
 
 
-        if ($platform->type !== PlatformTypeEnum::SHOPIFY) {
+        if ($customerSalesChannel->platform->type !== PlatformTypeEnum::SHOPIFY) {
             $tabs = [
                 [
                     'label' => __('All Products'),
                     'icon'  => ['fal', 'fa-cube'],
-                    'root'  => 'retina.dropshipping.platforms.portfolios.products.index',
+                    'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.products.index',
                     'route' => [
-                        'name'       => 'retina.dropshipping.platforms.portfolios.products.index',
-                        'parameters' => [$platform->platform->slug]
+                        'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.products.index',
+                        'parameters' => [$customerSalesChannel->slug]
                     ],
                 ]
             ];
@@ -54,10 +54,10 @@ class GetRetinaFulfilmentPlatformNavigation
         $platformNavigation['portfolios'] = [
             'label'       => __('Portfolio'),
             'icon'        => ['fal', 'fa-cube'],
-            'root'        => 'retina.dropshipping.platforms.portfolios.',
+            'root'        => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.',
             'route'       => [
-                'name'       => 'retina.dropshipping.platforms.portfolios.index',
-                'parameters' => [$platform->platform->slug]
+                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
+                'parameters' => [$customerSalesChannel->slug]
             ],
             'right_label' => [
                 'label'        => __('14'),
@@ -69,10 +69,10 @@ class GetRetinaFulfilmentPlatformNavigation
                     [
                         'label' => __('My Portfolio'),
                         'icon'  => ['fal', 'fa-cube'],
-                        'root'  => 'retina.dropshipping.platforms.portfolios.index',
+                        'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
                         'route' => [
-                            'name'       => 'retina.dropshipping.platforms.portfolios.index',
-                            'parameters' => [$platform->platform->slug]
+                            'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
+                            'parameters' => [$customerSalesChannel->slug]
                         ],
                     ],
                     ...$tabs
@@ -83,30 +83,30 @@ class GetRetinaFulfilmentPlatformNavigation
         $platformNavigation['client'] = [
             'label' => __('Clients'),
             'icon'  => ['fal', 'fa-user-friends'],
-            'root'  => 'retina.dropshipping.platforms.client.',
+            'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.client.',
             'route' => [
-                'name'       => 'retina.dropshipping.platforms.client.index',
-                'parameters' => [$platform->platform->slug]
+                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
+                'parameters' => [$customerSalesChannel->slug]
             ],
         ];
 
         $platformNavigation['orders'] = [
             'label' => __('Orders'),
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'root'  => 'retina.dropshipping.platforms.orders.',
+            'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.orders.',
             'route' => [
-                'name'       => 'retina.dropshipping.platforms.orders.index',
-                'parameters' => [$platform->platform->slug]
+                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index',
+                'parameters' => [$customerSalesChannel->slug]
             ],
         ];
 
         $platformNavigation['api_token'] = [
             'label' => __('Api'),
             'icon'  => ['fal', 'fa-key'],
-            'root'  => 'retina.dropshipping.platforms.api.',
+            'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.api.',
             'route' => [
-                'name'       => 'retina.dropshipping.platforms.api.dashboard',
-                'parameters' => [$platform->platform->slug]
+                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.api.dashboard',
+                'parameters' => [$customerSalesChannel->slug]
             ],
         ];
 
