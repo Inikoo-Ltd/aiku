@@ -31,11 +31,11 @@ use App\Actions\Retina\Dropshipping\ShowRetinaDropshipping;
 use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', ShowRetinaDropshipping::class)->name('dashboard');
+Route::get('/', ShowRetinaDropshipping::class)->name('dashboard_index');
 
 
 Route::prefix('sale-channels')->as('platforms.')->group(function () {
-    Route::get('/', ShowRetinaDropshipping::class)->name('dashboard');
+    Route::get('/x', ShowRetinaDropshipping::class)->name('dashboard');
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
 
@@ -47,7 +47,7 @@ Route::prefix('sale-channels')->as('platforms.')->group(function () {
 
     Route::prefix('{platform}')->group(function () {
 
-        Route::get('/dashboard', ShowRetinaPlatformDashboard::class)->name('dashboard');
+        Route::get('/dashboard_b', ShowRetinaPlatformDashboard::class)->name('dashboard_b');
 
         Route::prefix('basket')->as('basket.')->group(function () {
             Route::get('/', IndexRetinaBaskets::class)->name('index');
