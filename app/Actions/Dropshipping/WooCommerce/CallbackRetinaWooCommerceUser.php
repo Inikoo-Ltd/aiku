@@ -49,6 +49,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => $wooCommerceUser->getMorphClass(),
             'platform_user_id' => $wooCommerceUser->id,
+            'reference' => $name
         ]);
 
         $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
