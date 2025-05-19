@@ -99,10 +99,10 @@ class CreateCustomerClient extends OrgAction
                         ],
                     'route'     => $this->scope instanceof CustomerSalesChannel
                         ? [
-                            'name'       => 'grp.models.customer.platform-client.store',
+                            'name'       => 'retina.models.customer_sales_channel.customer-client.store',
                             'parameters' => [
                                 'customer' => $customer->id,
-                                'platform' => $this->scope->platform->id
+                                'customerSalesChannel' => $this->scope->id
                             ]
                         ]
                         : [
