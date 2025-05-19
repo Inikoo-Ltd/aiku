@@ -28,11 +28,11 @@ export default {
 				tooltip: "Text",
 			},
 			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
+				// {
+				// 	key: ["visible"],
+				// 	label :'Visibility',
+				// 	type: "VisibleLoggedIn",
+				// },
 				{
 					key: ["text"],
 					label :'Text',
@@ -40,146 +40,146 @@ export default {
 				},
 			],
 		},
-		{
-			name: "Login",
-            key:['login'],
-			icon: {
-				icon: "fal fa-sign-in-alt",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
-				{
-					key: ["link"],
-					label :'Link',
-					type: "link",
-					props_data : {
-						defaultValue : {
-							type : "external",
-							href: "/app",
-							target : '_self'
-						},
-						props_radio_type : {
-							disabled : true
-						},
-						props_radio_target : {
-							disabled : true
-						},
-						props_input: {
-							disabled : true
-						},
-						props_selectquery:{
-							disabled : true
-						}
-					}
-				},
-				{
-					key: ["container",'properties','background'],
-					label :'Background',
-					type: "background",
-				},
-				{
-					key: ["container",'properties','text'],
-					label :'Text',
-					type: "textProperty",
-				},
-				{
-					key: ['text'],
-					label :'Button Text',
-					type: "text",
-				},
-				{
-					key: ["container",'properties','border'],
-					label :'Border',
-					type: "border",
-				},
-				{
-					key: ["container",'properties','margin'],
-					label :'Margin',
-					type: "margin",
-				},
-				{
-					key: ["container",'properties','padding'],
-					label :'Padding',
-					type: "padding",
-				},
-			],
-		},
-		{
-			name: "Register",
-            key:["register"],
-			icon: {
-				icon: "fal fa-dot-circle",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
-				{
-					key: ["link"],
-					label :'Link',
-					type: "link",
-					props_data : {
-						defaultValue : {
-							href: "/aw-fulfilment.co.uk/register-fulfilment",
-							id: 15594,
-							target: "_self",
-							type: "internal",
-							workshop: "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/register-fulfilment-awf/workshop"
-						},
-						props_radio_type : {
-							disabled : true
-						},
-						props_radio_target : {
-							disabled : true
-						},
-						props_input: {
-							disabled : true
-						},
-						props_selectquery:{
-							disabled : true
-						}
-					}
-				},
-				{
-					key: ["container",'properties','background'],
-					label :'Background',
-					type: "background",
-				},
-				{
-					key: ["container",'properties','text'],
-					label :'Text',
-					type: "textProperty",
-				},
-				{
-					key: ['text'],
-					label :'Button Text',
-					type: "text",
-				},
-				{
-					key: ["container",'properties','border'],
-					label :'Border',
-					type: "border",
-				},
-				{
-					key: ["container",'properties','margin'],
-					label :'Margin',
-					type: "margin",
-				},
-				{
-					key: ["container",'properties','padding'],
-					label :'Padding',
-					type: "padding",
-				},
-			],
-		},
+		// {
+		// 	name: "Login",
+        //     key:['login'],
+		// 	icon: {
+		// 		icon: "fal fa-sign-in-alt",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["visible"],
+		// 			label :'Visibility',
+		// 			type: "VisibleLoggedIn",
+		// 		},
+		// 		{
+		// 			key: ["link"],
+		// 			label :'Link',
+		// 			type: "link",
+		// 			props_data : {
+		// 				defaultValue : {
+		// 					type : "external",
+		// 					href: "/app",
+		// 					target : '_self'
+		// 				},
+		// 				props_radio_type : {
+		// 					disabled : true
+		// 				},
+		// 				props_radio_target : {
+		// 					disabled : true
+		// 				},
+		// 				props_input: {
+		// 					disabled : true
+		// 				},
+		// 				props_selectquery:{
+		// 					disabled : true
+		// 				}
+		// 			}
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','background'],
+		// 			label :'Background',
+		// 			type: "background",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','text'],
+		// 			label :'Text',
+		// 			type: "textProperty",
+		// 		},
+		// 		{
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','border'],
+		// 			label :'Border',
+		// 			type: "border",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','margin'],
+		// 			label :'Margin',
+		// 			type: "margin",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','padding'],
+		// 			label :'Padding',
+		// 			type: "padding",
+		// 		},
+		// 	],
+		// },
+		// {
+		// 	name: "Register",
+        //     key:["register"],
+		// 	icon: {
+		// 		icon: "fal fa-dot-circle",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["visible"],
+		// 			label :'Visibility',
+		// 			type: "VisibleLoggedIn",
+		// 		},
+		// 		{
+		// 			key: ["link"],
+		// 			label :'Link',
+		// 			type: "link",
+		// 			props_data : {
+		// 				defaultValue : {
+		// 					href: "/aw-fulfilment.co.uk/register-fulfilment",
+		// 					id: 15594,
+		// 					target: "_self",
+		// 					type: "internal",
+		// 					workshop: "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/register-fulfilment-awf/workshop"
+		// 				},
+		// 				props_radio_type : {
+		// 					disabled : true
+		// 				},
+		// 				props_radio_target : {
+		// 					disabled : true
+		// 				},
+		// 				props_input: {
+		// 					disabled : true
+		// 				},
+		// 				props_selectquery:{
+		// 					disabled : true
+		// 				}
+		// 			}
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','background'],
+		// 			label :'Background',
+		// 			type: "background",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','text'],
+		// 			label :'Text',
+		// 			type: "textProperty",
+		// 		},
+		// 		{
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','border'],
+		// 			label :'Border',
+		// 			type: "border",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','margin'],
+		// 			label :'Margin',
+		// 			type: "margin",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','padding'],
+		// 			label :'Padding',
+		// 			type: "padding",
+		// 		},
+		// 	],
+		// },
 		{
 			name: "Cart",
             key: ["cart"],
@@ -233,12 +233,16 @@ export default {
 						required: true,
 						options: [
 							{
-								label: "Cart amount (£455.98)",
+								label: "£999.99",
 								value: "{{ cart_amount }}",
 							},
 							{
-								label: "Items count (95 items)",
+								label: "95 items",
 								value: "{{ cart_count }} items",
+							},
+							{
+								label: "£999.99 (95 items)",
+								value: "{{ cart_amount }} ({{ cart_count }} items)",
 							},
 						],
 						defaultValue: '{{ cart_amount }}',
@@ -320,85 +324,111 @@ export default {
 				tooltip: "Profile",
 			},
 			replaceForm: [
+				// {
+				// 	key: ["visible"],
+				// 	type: "VisibleLoggedIn",
+				// 	label :'Visibility',
+				// 	props_data: {
+				// 		defaultValue: 'login',
+				// 	},
+				// },
+				// {
+				// 	key: ['container', 'properties'],
+				// 	type: "button",
+				// 	label :'Button',
+				// 	props_data: {
+				// 		defaultValue: {
+				// 			text: {
+				// 				color: "rgba(255, 255, 255, 1)"
+				// 			},
+				// 			padding: {
+				// 				top: {
+				// 					value: 5
+				// 				},
+				// 				left: {
+				// 					value: 10
+				// 				},
+				// 				unit: "px",
+				// 				right: {
+				// 					value: 10
+				// 				},
+				// 				bottom: {
+				// 					value: 5
+				// 				}
+				// 			}
+				// 		},
+				// 	},
+				// },
+				// {
+				// 	key: ['text'],
+				// 	type: "editorhtml",
+				// 	label :'Text',
+				// 	props_data: {
+				// 		defaultValue: '{{ name }}',
+				// 	},
+				// },
 				{
-					key: ["visible"],
-					type: "VisibleLoggedIn",
-					label :'Visibility',
+					key: ['text'],
+					label: "Profile label",
+					// useIn : ["desktop", "tablet", "mobile"],
+					type: "select",
 					props_data: {
-						defaultValue: 'login',
-					},
-				},
-				{
-					key: ['container', 'properties'],
-					type: "button",
-					label :'Button',
-					props_data: {
-						defaultValue: {
-							text: {
-								color: "rgba(255, 255, 255, 1)"
+						placeholder: "Select profile label",
+						by: "value",
+						required: true,
+						options: [
+							{
+								label: "Name (Aqordeon)",
+								value: "{{ name }}",
 							},
-							padding: {
-								top: {
-									value: 5
-								},
-								left: {
-									value: 10
-								},
-								unit: "px",
-								right: {
-									value: 10
-								},
-								bottom: {
-									value: 5
-								}
-							}
-						},
-					},
-				},
-				{
-					key: ['text'],
-					type: "editorhtml",
-					label :'Text',
-					props_data: {
-						defaultValue: '{{ name }}',
+							{
+								label: "Name & reference (Aqordeon #000001)",
+								value: "{{ name }} #{{ reference }}",
+							},
+							{
+								label: "Reference (#000001)",
+								value: "#{{ reference }}",
+							},
+						],
+						defaultValue: '{{ name }} #{{ reference }}',
 					},
 				},
 			],
 		},
-		{
-			name: "Logout",
-            key:['logout'],
-			icon: {
-				icon: "fal fa-sign-out-alt",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["container",'properties','text'],
-					label :'Text',
-					type: "textProperty",
-				},
-				{
-					key: ['text'],
-					label :'Button Text',
-					type: "text",
-				},
-				{
-					key: ["container",'properties','border'],
-					label :'Border',
-					type: "border",
-				},
-				{
-					key: ["container",'properties','margin'],
-					label :'Margin',
-					type: "margin",
-				},
-				{
-					key: ["container",'properties','padding'],
-					label :'Padding',
-					type: "padding",
-				},
-			],
-		},
+		// {
+		// 	name: "Logout",
+        //     key:['logout'],
+		// 	icon: {
+		// 		icon: "fal fa-sign-out-alt",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["container",'properties','text'],
+		// 			label :'Text',
+		// 			type: "textProperty",
+		// 		},
+		// 		{
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','border'],
+		// 			label :'Border',
+		// 			type: "border",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','margin'],
+		// 			label :'Margin',
+		// 			type: "margin",
+		// 		},
+		// 		{
+		// 			key: ["container",'properties','padding'],
+		// 			label :'Padding',
+		// 			type: "padding",
+		// 		},
+		// 	],
+		// },
 	],
 }

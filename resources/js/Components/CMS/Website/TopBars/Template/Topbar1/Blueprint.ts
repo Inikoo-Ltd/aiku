@@ -28,11 +28,11 @@ export default {
 				tooltip: "Text",
 			},
 			replaceForm: [
-				{
-					key: ["visible"],
-					label :'Visibility',
-					type: "VisibleLoggedIn",
-				},
+				// {
+				// 	key: ["visible"],
+				// 	label :'Visibility',
+				// 	type: "VisibleLoggedIn",
+				// },
 				{
 					key: ["text"],
 					label :'Text',

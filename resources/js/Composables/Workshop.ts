@@ -70,7 +70,7 @@ export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
         return text
     }
 
-    return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || '-')
+    return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || piniaVariables?.username || '-')
     .replace(/\{\{\s*username\s*\}\}/g, piniaVariables?.username || '-')
     .replace(/\{\{\s*email\s*\}\}/g, piniaVariables?.email || '-')
     .replace(/\{\{\s*favourites_count\s*\}\}/g, piniaVariables?.favourites_count || '0')
