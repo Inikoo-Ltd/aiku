@@ -31,7 +31,7 @@ class RetinaDropshippingOrdersInPlatformResources extends JsonResource
 
     public function toArray($request): array
     {
-        if ($this->order_state) {
+        if (!$this->order_state) {
             $stateIcons = [
                 'state_label'              => OrderStateEnum::labels()[$this->state->value],
                 'state_icon'               => OrderStateEnum::stateIcon()[$this->state->value]

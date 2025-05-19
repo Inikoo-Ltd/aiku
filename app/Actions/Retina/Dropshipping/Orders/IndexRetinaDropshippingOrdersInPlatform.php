@@ -85,7 +85,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'orders.reference',
             'orders.slug',
             'customer_clients.name as client_name',
-            'orders.state',
+            'orders.state as order_state',
             'orders.total_amount',
             'order_stats.number_item_transactions as number_item_transactions',
             ...$selects
