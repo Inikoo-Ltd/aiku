@@ -29,8 +29,9 @@ class ShowRetinaDropshipping extends RetinaAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        /** @var \App\Models\CRM\Customer $customer */
-        $customer = $request->user()->customer;
+        $customer = $this->customer;
+
+        $title= __('Sale Channels');
 
         return Inertia::render(
             'Dropshipping/DropshippingDashboard',
@@ -38,12 +39,13 @@ class ShowRetinaDropshipping extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Channels'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title' => __('Channels'),
-                    'icon'  => 'fal fa-parachute-box'
+                    'title' => $title,
+                    'icon'          => 'fal fa-code-branch',
+                    'icon_rotation' => 90,
                 ],
-                'shopify_url' => '.' . config('shopify-app.myshopify_domain'),
+                'shopify_url' => '.' . config('shopify-app.my_shopify_domain'),
                 'createRoute' => [
                     'name'       => 'retina.dropshipping.platform.shopify_user.store',
                     'parameters' => [],
