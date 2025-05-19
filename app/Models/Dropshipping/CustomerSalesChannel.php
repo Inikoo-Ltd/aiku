@@ -56,7 +56,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Dropshipping\Platform $platform
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Portfolio> $portfolios
  * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read Model|\Eloquent|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()

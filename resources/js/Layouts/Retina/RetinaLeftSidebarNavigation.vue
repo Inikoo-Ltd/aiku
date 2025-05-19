@@ -169,11 +169,10 @@ const iconList: { [key: string]: string } = {
 
         <!-- LeftSidebar: Grp -->
         <template v-else v-for="(grpNav, itemKey) in layout.navigation">
-            <template v-if="itemKey == 'ffffff'">
+            <template v-if="grpNav.type === 'horizontal'">
                 <RetinaNavigationHorizontalDummy
                     :key="itemKey + 'platform'"
                     :nav="grpNav"
-                    :itemKey="generateNavigationName(itemKey)"
                 />
             </template>
 
