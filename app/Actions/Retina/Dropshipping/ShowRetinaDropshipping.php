@@ -31,7 +31,7 @@ class ShowRetinaDropshipping extends RetinaAction
     {
         $customer = $this->customer;
 
-        $title= __('Sale Channels');
+        $title = __('Sale Channels');
 
         return Inertia::render(
             'Dropshipping/DropshippingDashboard',
@@ -80,7 +80,7 @@ class ShowRetinaDropshipping extends RetinaAction
                 ],
                 'aikuConnectRoute' => [
                     'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
-                    // 'url'       => route('retina.models.dropshipping.aiku.store')  // TODO: check this
+                    'url'       => route('retina.models.customer_sales_channel.manual.store')
                 ],
                 'wooRoute' => [
                     'connectRoute' => [

@@ -8,8 +8,11 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -44,8 +47,25 @@ class FetchAuroraPortfolios extends FetchAuroraAction
                 }
             } else {
                 try {
+                    $customer             = $portfolioData['customer'];
+                    $platform             = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+                    $customerSalesChannel = $customer->customerSalesChannels()
+                        ->where('platform_id', $platform->id)
+                        ->first();
+                    if (!$customerSalesChannel) {
+                        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+                            customer: $customer,
+                            platform: $platform,
+                            modelData: [
+                                'reference' => (string)$customer->id,
+                            ],
+                            hydratorsDelay: $this->hydratorsDelay
+                        );
+                    }
+
+
                     $portfolio = StorePortfolio::make()->action(
-                        customer: $portfolioData['customer'],
+                        customerSalesChannel: $customerSalesChannel,
                         item: $portfolioData['product'],
                         modelData: $portfolioData['portfolio'],
                         hydratorsDelay: $this->hydratorsDelay,
