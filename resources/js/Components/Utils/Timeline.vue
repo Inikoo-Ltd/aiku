@@ -61,7 +61,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
     let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enUS'
     let tempDateIso = new Date(dateIso)
 
-    return format(tempDateIso, 'PPP', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
+    return format(tempDateIso, 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
 }
 
 </script>
@@ -101,7 +101,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                     </div>
 
                     <!-- Step: Description -->
-                    <div v-tooltip="useFormatTimeComposables(step.timestamp, { formatTime: 'hms' })"
+                    <div v-tooltip="useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' })"
                         class="text-xxs md:text-xs text-[#555] text-center select-none">
                         {{ useFormatTime(step.timestamp) }}
                     </div>

@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachImagesToProduct extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithAttachMediaToModel;
 
     public function handle(Product $product, $scope, array $modelData)

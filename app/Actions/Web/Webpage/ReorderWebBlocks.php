@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReorderWebBlocks extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
     protected Shop $shop;
 

@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Banner\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -24,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditBanner extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
     public function handle(Banner $banner): Banner
     {
@@ -42,7 +42,7 @@ class EditBanner extends OrgAction
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Banner $banner, ActionRequest $request): Banner
     {
 
-        $this->initialisationFromShop($banner->shop, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request);
         return $this->handle($banner);
     }
 

@@ -11,7 +11,7 @@
 namespace App\Actions\Web\ExternalLink;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\ExternalLink\Hydrators\ExternalLinkHydrateWebBlocks;
 use App\Actions\Web\ExternalLink\Hydrators\ExternalLinkHydrateWebpages;
 use App\Actions\Web\ExternalLink\Hydrators\ExternalLinkHydrateWebsites;
@@ -22,7 +22,7 @@ use Illuminate\Support\Arr;
 
 class AttachExternalLinkToWebBlock extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     public function handle(Webpage $webpage, WebBlock $webBlock, ExternalLink $externalLink, array $modelData): void
     {

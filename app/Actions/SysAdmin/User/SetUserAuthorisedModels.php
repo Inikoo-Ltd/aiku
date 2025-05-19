@@ -36,7 +36,12 @@ class SetUserAuthorisedModels
         if ($user->authTo(['group-webmaster.view', 'group-webmaster.edit', 'group-webmaster.view'])) {
             foreach ($user->group->websites as $website) {
                 $authorisedOrganisations[$website->organisation_id] = ['org_id' => $website->organisation_id];
-                $authorisedShops[$website->shop->id]                = ['org_id' => $website->organisation_id];
+                $shop                                               = $website->shop;
+                if ($shop->type === ShopTypeEnum::FULFILMENT) {
+                    $authorisedFulfilments[$shop->fulfilment->id] = ['org_id' => $shop->organisation_id];
+                } else {
+                    $authorisedShops[$shop->id] = ['org_id' => $shop->organisation_id];
+                }
             }
         }
 

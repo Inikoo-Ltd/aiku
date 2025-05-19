@@ -9,7 +9,7 @@
 namespace App\Actions\CRM\Poll;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Poll;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 

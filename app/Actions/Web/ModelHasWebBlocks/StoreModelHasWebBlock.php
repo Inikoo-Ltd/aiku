@@ -9,7 +9,7 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreModelHasWebBlock extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     private Webpage $webpage;

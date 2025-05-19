@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -24,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditWebsite extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Fulfilment|Shop $parent;
 

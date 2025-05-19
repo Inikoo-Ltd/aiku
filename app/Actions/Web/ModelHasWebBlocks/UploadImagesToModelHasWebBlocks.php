@@ -9,7 +9,7 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\WithUploadWebImage;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UploadImagesToModelHasWebBlocks extends OrgAction
 {
     use WithUploadWebImage;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     public function asController(ModelHasWebBlocks $modelHasWebBlocks, ActionRequest $request): Collection
@@ -37,7 +37,6 @@ class UploadImagesToModelHasWebBlocks extends OrgAction
 
         }
 
-        /*  return $this->handle($modelHasWebBlocks->webBlock, 'image', $this->validatedData); */
         return $this->handle($modelHasWebBlocks->webBlock, 'image', $this->validatedData);
     }
 

@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Banner;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Banner;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteBanner extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

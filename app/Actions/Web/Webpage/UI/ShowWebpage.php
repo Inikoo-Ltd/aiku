@@ -11,7 +11,7 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
@@ -47,7 +47,7 @@ class ShowWebpage extends OrgAction
     use AsAction;
     use WithInertia;
     use HasWorkshopAction;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithWebpageSubNavigation;
 
 

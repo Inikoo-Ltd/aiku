@@ -9,7 +9,7 @@
 namespace App\Actions\Helpers\Snapshot;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Slide\StoreSlide;
 use App\Enums\Helpers\Snapshot\SnapshotBuilderEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
@@ -22,7 +22,7 @@ use Illuminate\Validation\Rule;
 
 class StoreBannerSnapshot extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
     /**
      * @throws \Throwable
