@@ -9,51 +9,45 @@
 namespace App\Actions\Dropshipping\Aiku;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
-use App\Actions\OrgAction;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreRetinaManualPlatform extends OrgAction
+class StoreRetinaManualPlatform extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer): void
+    public function handle(Customer $customer): CustomerSalesChannel
     {
         $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
-        $customer = CustomerSalesChannel::make()->action($customer, $platform, []);
-
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->customer_id)
-        ->where('platform_id', $platform->id)
-        ->first();
-
-        CustomerSalesChannelsHydratePortfolios::dispatch($customerHasPlatform);
 
 
-    }
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+            $this->customer,
+            $platform,
+            [
+                'reference' => (string)$customer->id,
+            ]
+        );
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
 
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
+
+        return $customerSalesChannel;
     }
 
     public function asController(ActionRequest $request): void
     {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
-
-        $this->handle($customer);
+        $this->initialisation($request);
+        $this->handle($this->customer);
     }
 }

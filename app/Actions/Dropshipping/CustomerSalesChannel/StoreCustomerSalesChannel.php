@@ -34,8 +34,8 @@ class StoreCustomerSalesChannel extends OrgAction
     {
         return [
             'reference' => 'nullable|string|max:255',
-            'platform_user_type' => 'required|string|max:255',
-            'platform_user_id'   => 'required|integer',
+            'platform_user_type' => ['sometimes','nullable','string','max:255'],
+            'platform_user_id'   => ['sometimes','nullable','integer'],
         ];
     }
 

@@ -90,7 +90,7 @@ trait WithFulfilmentCustomerSubNavigation
                     'icon'    => 'fal fa-parachute-box',
                     'tooltip' => __('Channels'),
                 ],
-                'number' => $fulfilmentCustomer->customer->platforms->count()
+                'number' => $fulfilmentCustomer->customer->customerSalesChannels->count()
 
             ];
         }
