@@ -6,7 +6,7 @@ import MentionList from './MentionList.vue'
 export default {
   items: ({ query }) => {
     return [
-      'name', 'username', 'email', 'favourites_count', 'favourites_count', 'cart_count',"cart_amount" ,
+      'name', 'username', 'email', 'reference', 'favourites_count', 'cart_count',"cart_amount" ,
     ].filter(item => item.toLowerCase().startsWith(query.toLowerCase())).slice(0, 5)
   },
 
