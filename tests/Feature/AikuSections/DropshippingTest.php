@@ -25,6 +25,7 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformStats;
 use App\Models\Dropshipping\Portfolio;
@@ -70,7 +71,7 @@ test('add platform to customer', function () {
     $customer = $customerSalesChannel->customer;
 
 
-    expect($customer->platforms->first())->toBeInstanceOf(Platform::class);
+    expect($customer->customerSalesChannels()->first())->toBeInstanceOf(CustomerSalesChannel::class);
 
 
     return $customer;
