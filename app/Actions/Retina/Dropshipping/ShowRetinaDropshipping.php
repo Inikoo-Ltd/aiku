@@ -31,7 +31,7 @@ class ShowRetinaDropshipping extends RetinaAction
     {
         $customer = $this->customer;
 
-        $title= __('Sale Channels');
+        $title = __('Sale Channels');
 
         return Inertia::render(
             'Dropshipping/DropshippingDashboard',

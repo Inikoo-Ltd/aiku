@@ -94,4 +94,10 @@ class CustomerSalesChannel extends Model
     {
         return $this->hasMany(CustomerClient::class);
     }
+
+    public function portfolios(): HasMany
+    {
+        return $this->hasMany(Portfolio::class);
+    }
+
 }

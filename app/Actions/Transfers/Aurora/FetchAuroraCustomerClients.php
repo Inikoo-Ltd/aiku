@@ -49,7 +49,7 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
             } else {
                 try {
 
-                    $customer = $customerClientData['customer_sales_channel'];
+                    $customer = $customerClientData['customer'];
                     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
                     $customerSalesChannel = $customer->customerSalesChannels()
                         ->where('platform_id', $platform->id)
