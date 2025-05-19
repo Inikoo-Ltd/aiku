@@ -380,29 +380,26 @@ test('UI index customer client order', function () {
     $this->withoutExceptionHandling();
     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
-    $customer = StoreCustomerSalesChannel::make()->action(
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
         $this->customer,
         $platform,
         []
     );
 
     $customerClient = StoreCustomerClient::make()->action(
-        $this->customer,
-        array_merge(CustomerClient::factory()->definition(), [
-            'platform_id' => $platform->id,
-        ])
+        $customerSalesChannel,
+        CustomerClient::factory()->definition()
     );
 
-    $customerHasPlatform = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
     $response            = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.orders.index', [
-        $customer->organisation->slug,
-        $customer->shop->slug,
-        $customer->slug,
-        $customerHasPlatform->platform->slug,
+        $customerSalesChannel->organisation->slug,
+        $customerSalesChannel->shop->slug,
+        $customerSalesChannel->customer->slug,
+        $customerSalesChannel->slug,
 
     ]));
 
-    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Dropshipping/OrdersInCustomerHasPlatform')
             ->has('title')
