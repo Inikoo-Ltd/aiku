@@ -38,24 +38,29 @@ class ShippingParentResource extends JsonResource
 
 
         $address = $parent->deliveryAddress;
-        $toCompanyName = '';
+        $toCompanyName = 'Unknown';
+        $toContactName = '';
         if ($parent instanceof DeliveryNote) {
             $contactName = $parent->deliveryAddress->contact_name;//todo if if Dropshippin or not
             $toFirstName = explode(' ', $contactName)[0];
             $toLastName  = (strpos($contactName, ' ') !== false)
                 ? substr($contactName, strpos($contactName, ' ') + 1)
                 : 'Unknown';
+            $toContactName = $contactName;
             $toPhone = '';// todo
             $toEmail = '';// todo
 
         } else {
-
             $toFirstName = Arr::get($parent->data, 'destination.first_name', 'Unknown');
             $toLastName = Arr::get($parent->data, 'destination.last_name', 'Unknown');
+            if ($toFirstName != 'Unknown' && $toLastName != 'Unknown') {
+                $toContactName = $toFirstName.' '.$toLastName;
+            } else {
+                $toContactName = Arr::get($parent->data, 'destination.contact_name', 'Unknown');
+            }
             $toEmail = Arr::get($parent->data, 'destination.email') ?? $shop->email;
             $toPhone = Arr::get($parent->data, 'destination.phone') ?? $shop->phone;
         }
-
 
         return [
             'id'                 => $parent->id,
@@ -67,6 +72,7 @@ class ShippingParentResource extends JsonResource
             'from_email'         => $shop->email,
             'from_address'       => AddressResource::make($shop->address)->getArray(),
             'to_address'         => AddressResource::make($address)->getArray(),
+            'to_contact_name'    => $toContactName,
             'to_first_name'    => $toFirstName,
             'to_last_name'     => $toLastName,
             'to_company_name'  => $toCompanyName,
