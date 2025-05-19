@@ -10,7 +10,7 @@
 namespace App\Actions\Web\Redirect\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRedirect extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     public function handle(Redirect $redirect): Redirect
     {

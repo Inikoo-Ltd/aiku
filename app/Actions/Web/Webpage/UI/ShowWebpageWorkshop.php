@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Shop;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowWebpageWorkshop extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebEditAuthorisation;
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {

@@ -12,7 +12,7 @@ use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -26,7 +26,7 @@ use OwenIt\Auditing\Resolvers\UserResolver;
 class PublishWebpage extends OrgAction
 {
     use WithActionUpdate;
-    use HasWebAuthorisation;
+    use WithWebEditAuthorisation;
     use WebpageContentManagement;
 
     public function handle(Webpage $webpage, array $modelData): Webpage

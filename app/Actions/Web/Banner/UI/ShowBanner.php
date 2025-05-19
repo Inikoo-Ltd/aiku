@@ -11,7 +11,7 @@ namespace App\Actions\Web\Banner\UI;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
-use App\Actions\Traits\Authorisations\WithWebsiteAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Banner\BannerTabsEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\Web\BannerResource;
@@ -28,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowBanner extends OrgAction
 {
     use WithActionButtons;
-    use WithWebsiteAuthorisation;
+    use WithWebAuthorisation;
 
     private Website $parent;
 
@@ -50,7 +50,7 @@ class ShowBanner extends OrgAction
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Banner $banner, ActionRequest $request): Banner
     {
         $this->parent = $website;
-        $this->initialisationFromShop($fulfilment->shop, $request)->withTab(BannerTabsEnum::values());
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(BannerTabsEnum::values());
 
         return $this->handle($banner);
     }

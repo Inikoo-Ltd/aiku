@@ -10,7 +10,7 @@
 namespace App\Actions\Web\Redirect\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Http\Resources\Web\RedirectsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Web\Redirect;
@@ -24,7 +24,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRedirects extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     public function handle(Website|Webpage $parent, $prefix = null): LengthAwarePaginator
     {

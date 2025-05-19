@@ -9,7 +9,7 @@
 namespace App\Actions\Web\WebBlock;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -19,7 +19,7 @@ use Illuminate\Support\Arr;
 
 class StoreWebBlock extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     public function handle(WebBlockType $webBlockType, array $modelData): WebBlock

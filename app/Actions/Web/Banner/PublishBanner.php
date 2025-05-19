@@ -12,7 +12,7 @@ use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreBannerSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Actions\Web\Banner\UI\ParseBannerLayout;
@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class PublishBanner extends OrgAction
 {
     use WithActionUpdate;
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
     public bool $isAction = false;
 

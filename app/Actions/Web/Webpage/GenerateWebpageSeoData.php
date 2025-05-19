@@ -11,7 +11,7 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
@@ -23,7 +23,7 @@ class GenerateWebpageSeoData extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Webpage $webpage;
 

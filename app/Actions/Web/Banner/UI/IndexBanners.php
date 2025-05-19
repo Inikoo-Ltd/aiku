@@ -10,7 +10,7 @@ namespace App\Actions\Web\Banner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithWebsiteAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Http\Resources\Web\BannersResource;
@@ -32,7 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexBanners extends OrgAction
 {
-    use WithWebsiteAuthorisation;
+    use WithWebAuthorisation;
 
     protected array $elementGroups = [];
     private Group|Fulfilment|Shop $parent;
@@ -170,7 +170,7 @@ class IndexBanners extends OrgAction
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
-        $this->initialisationFromShop($fulfilment->shop, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($this->parent);
     }

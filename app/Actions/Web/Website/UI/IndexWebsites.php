@@ -12,7 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebsitesResource;
@@ -34,7 +34,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebsites extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     private Group|Organisation|Fulfilment|Shop $parent;
 
 

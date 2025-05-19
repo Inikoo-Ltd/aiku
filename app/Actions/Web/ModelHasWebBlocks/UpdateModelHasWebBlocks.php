@@ -9,7 +9,7 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Events\BroadcastPreviewHeaderFooter;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateModelHasWebBlocks extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithActionUpdate;
 
 

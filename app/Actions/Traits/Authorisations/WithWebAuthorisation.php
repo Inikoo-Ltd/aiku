@@ -8,23 +8,19 @@
 
 namespace App\Actions\Traits\Authorisations;
 
-use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
-trait HasWebAuthorisation
+trait WithWebAuthorisation
 {
-    private Group|Organisation|Fulfilment|Shop $scope;
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
         }
 
-        if ($this->scope instanceof Organisation) {
+        $routeName = $request->route()->getName();
+
+        if (str_starts_with($routeName, 'grp.org.websites.')) {
             $this->canEdit      = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
             $this->isSupervisor = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
 
@@ -32,28 +28,27 @@ trait HasWebAuthorisation
                 "websites-view.{$this->organisation->id}",
                 "group-webmaster.view"
             ]);
-        } elseif ($this->scope instanceof Group) {
+        } elseif (str_starts_with($routeName, 'grp.overview.')) {
             return $request->user()->authTo("group-overview");
-        } elseif ($this->scope instanceof Shop) {
+        } elseif (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
             $this->canEdit      = $request->user()->authTo([
-                "
-            web.{$this->shop->id}.edit",
-                "group-webmaster.view"
+                "web.{$this->shop->id}.edit",
+                "group-webmaster.edit"
             ]);
             $this->isSupervisor = $request->user()->authTo([
                 "supervisor-web.{$this->shop->id}",
-                "group-webmaster.view"
+                "group-webmaster.edit"
             ]);
 
             return $request->user()->authTo(["web.{$this->shop->id}.view", "group-webmaster.view"]);
-        } elseif ($this->scope instanceof Fulfilment) {
+        } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
             $this->canEdit      = $request->user()->authTo([
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
-                "group-webmaster.view"
+                "group-webmaster.edit"
             ]);
             $this->isSupervisor = $request->user()->authTo([
                 "supervisor-fulfilment-shop.{$this->fulfilment->id}",
-                "group-webmaster.view"
+                "group-webmaster.edit"
             ]);
 
             return $request->user()->authTo([

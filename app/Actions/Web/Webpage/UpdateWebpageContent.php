@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Web\WebBlockResource;
 use App\Models\Web\Webpage;
@@ -17,7 +17,7 @@ use App\Models\Web\Webpage;
 class UpdateWebpageContent extends OrgAction
 {
     use WithActionUpdate;
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
     use WebpageContentManagement;
 
     public function handle(Webpage $webpage): Webpage

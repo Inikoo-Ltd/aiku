@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue;
 
 use App\Actions\Helpers\Media\StoreMediaFromFile;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 
 trait WithUploadProductImage
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithAttachMediaToModel;
 
     public function handle(Product $model, string $scope, array $modelData): Collection
