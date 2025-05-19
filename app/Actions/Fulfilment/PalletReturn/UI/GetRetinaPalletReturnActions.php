@@ -32,7 +32,6 @@ class GetRetinaPalletReturnActions
     {
         if (in_array($palletReturn->state, [
             PalletReturnStateEnum::IN_PROCESS,
-            PalletReturnStateEnum::SUBMITTED
         ])) {
             $actions = array_merge(
                 $actions,

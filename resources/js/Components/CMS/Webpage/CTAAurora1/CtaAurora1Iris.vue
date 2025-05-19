@@ -18,7 +18,7 @@ const props = defineProps<{
 	webpageData?: any
 	blockData?: Object
 }>()
-console.log(props)
+
 </script>
 
 <template>

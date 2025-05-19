@@ -8,8 +8,11 @@
 	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
 	"data": {
 		"fieldValue": {
+			"image": {
+				"alt": "CTA Image",
+				"source": null
+			},
 			"text": "<p style=\"text-align: center\"></p><p style=\"text-align: center\"><span style=\"font-size: 1.2500rem; color: rgb(209, 209, 209)\">Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim</span></p><p style=\"text-align: center\"><span style=\"font-size: 1.2500rem; color: rgb(209, 209, 209)\">id veniam aliqua proident excepteur commodo do ea.</span></p>",
-			"title": "<h2><strong><span style='color: #FFFFFF'>Boost your productivity today</span></strong></h2>",
 			"button": {
 				"link": {
 					"id": 9,

@@ -190,7 +190,7 @@ emits('update:modelValue',newValue)
 
       <!-- Link  Single -->
       <div
-        v-if="modelValue && modelValue.type == 'single'"
+        v-if="modelValue"
         class="bg-white rounded-lg shadow-md p-6 transition-transform duration-300 hover:scale-105"
       >
         <h3 class="font-bold text-gray-800 text-md mb-3">Link</h3>

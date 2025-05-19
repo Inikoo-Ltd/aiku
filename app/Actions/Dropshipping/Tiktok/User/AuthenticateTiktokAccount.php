@@ -60,7 +60,11 @@ class AuthenticateTiktokAccount extends RetinaAction
                         if ($tiktokUser->deleted_at) {
                             $tiktokUser->restore();
                             $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
-                            StoreCustomerSalesChannel::make()->action($customer, $platform, []);
+                            StoreCustomerSalesChannel::make()->action($customer, $platform, [
+                                'platform_user_type' => $tiktokUser->getMorphClass(),
+                                'platform_user_id' => $tiktokUser->id,
+                                'reference' => $tiktokUser->name
+                            ]);
                         }
                     } else {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
