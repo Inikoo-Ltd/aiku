@@ -96,16 +96,16 @@ console.log("Layout Ds")
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 max-w-4xl lg:max-w-7xl w-full mx-auto my-10 px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 max-w-5xl lg:max-w-7xl w-full mx-auto my-10 px-8 xl:px-0 transition-all">
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
-						'fixed inset-y-0 left-0 w-auto md:h-fit bg-white shadow-lg transform transition-transform z-50 md:z-0',
+						'min-w-56 w-56 fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform transition-transform z-50 md:z-0',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
 						'md:relative md:translate-x-0 md:flex md:flex-col',
 					]" />
 
-				<!-- your actual page content -->
+				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
 					<Breadcrumbs
 						class="absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1"

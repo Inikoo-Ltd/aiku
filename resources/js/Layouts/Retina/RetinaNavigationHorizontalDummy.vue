@@ -18,6 +18,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import { routeType } from "@/types/route"
 import { useTruncate } from "@/Composables/useTruncate"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
 
@@ -93,7 +94,7 @@ const onClickArrow = (horizontalKey: string) => {
             </template>
         </div>
 
-        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
+        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-center pt-2 pl-2 pr-0.5 pb-2"
             :style="{ color: layout.app.theme[1] + '99' }">
 
             <!-- Section: Horizontal label -->
@@ -102,11 +103,15 @@ const onClickArrow = (horizontalKey: string) => {
                     <FontAwesomeIcon v-if="currentActiveHorizontal?.icon" :key="currentActiveHorizontal?.icon" :icon="currentActiveHorizontal?.icon" class='text-xs' fixed-width aria-hidden='true' v-tooltip="currentActiveHorizontal?.label" />
                 </Transition>
 
+                <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
+                    <img :key="currentActiveHorizontal?.img" :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-5" />
+                </Transition>
+
                 <Transition name="slide-to-left">
-                    <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-20">
+                    <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-32">
                         <Transition name="spin-to-down">
-                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[12px]">
-                                {{ useTruncate(currentActiveHorizontal?.label, 8) }}
+                            <span :key="currentActiveHorizontal?.label" class="text-base leading-[8px]">
+                                {{ useTruncate(currentActiveHorizontal?.label, 14) }}
                             </span>
                         </Transition>
                     </div>
@@ -115,7 +120,7 @@ const onClickArrow = (horizontalKey: string) => {
 
             <!-- Section: Horizontal arrow left-right -->
             <Transition name="slide-to-left">
-                <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3 flex text-white text-xxs" >
+                <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3.5 flex text-white text-xxs" >
                     <component
                         :is="previousHorizontal?.route?.name ? Link : 'div'"
                         v-tooltip=""
