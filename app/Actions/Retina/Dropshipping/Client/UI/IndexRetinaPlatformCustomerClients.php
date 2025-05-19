@@ -14,6 +14,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
@@ -35,11 +36,11 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
         return $request->user()->is_root;
     }
 
-    public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromPlatform($platform, $request);
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
 
-        return IndexCustomerPlatformCustomerClients::run($this->customer, $platform);
+        return IndexCustomerPlatformCustomerClients::run($this->customer, $customerSalesChannel->platform);
     }
 
     public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator

@@ -50,7 +50,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
 
 
-    Route::prefix('{platform}')->group(function () {
+    Route::prefix('{customerSalesChannel}')->group(function () {
 
         Route::get('/dashboard_b', ShowRetinaPlatformDashboard::class)->name('dashboard_b');
 
