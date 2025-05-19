@@ -56,7 +56,7 @@ const props = defineProps<{
 	title: string
 	uploadImageRoute: routeType
 	data: {}
-  	status:boolean
+	status: boolean
 	autosaveRoute: routeType
 	webBlockTypes: Object
 	domain: string
@@ -102,7 +102,7 @@ const onPublish = async (action: routeType, popover: Funcition) => {
 		// Make sure route and axios are defined and used correctly
 		const response = await axios[action.method](route(action.name, action.parameters), {
 			comment: comment.value,
-			layout: { ...Navigation.value, status : status.value },
+			layout: { ...Navigation.value, status: status.value },
 		})
 		popover.close()
 	} catch (error) {
@@ -197,13 +197,11 @@ const onChangeNavigation = (setData) => {
 </script>
 
 <template>
+
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #button-publish="{ action }">
-			<Publish
-				:isLoading="isLoading"
-				:is_dirty="true"
-				v-model="comment"
+			<Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)">
 			</Publish>
 		</template>
@@ -220,47 +218,31 @@ const onChangeNavigation = (setData) => {
 				<div class="font-bold text-sm">Navigations:</div>
 
 				<div class="flex items-center space-x-2">
-					<Button
-						v-if="Navigation?.data?.fieldValue?.navigation?.length < 8"
-						type="create"
-						label="Add Navigation"
-						size="xs"
-						@click="addNavigation" />
+					<Button v-if="Navigation?.data?.fieldValue?.navigation?.length < 8" type="create"
+						label="Add Navigation" size="xs" @click="addNavigation" />
 
-					<button
-						type="button"
-						aria-label="Open Template"
-						title="Template"
+					<button type="button" aria-label="Open Template" title="Template"
 						class="px-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
 						@click="isModalOpen = true">
 						<FontAwesomeIcon icon="fas fa-th-large" aria-hidden="true" />
 					</button>
 				</div>
 			</div>
-			<draggable
-				:list="Navigation?.data.fieldValue.navigation"
-				ghost-class="ghost"
-				group="column"
-				itemKey="id"
-				class="mt-2 space-y-1"
-				:animation="200">
+			<draggable :list="Navigation?.data.fieldValue.navigation" ghost-class="ghost" group="column" itemKey="id"
+				class="mt-2 space-y-1" :animation="200">
 				<template #item="{ element, index }">
-					<div
-						@click="selectedNav = index"
-						:class="[
-							selectedNav == index ? 'ring-indigo-500' : 'ring-gray-200',
-							'flex-auto rounded-md p-3 ring-1 ring-inset  bg-white cursor-grab',
-						]">
+					<div @click="selectedNav = index" :class="[
+						selectedNav == index ? 'ring-indigo-500' : 'ring-gray-200',
+						'flex-auto rounded-md p-3 ring-1 ring-inset  bg-white cursor-grab',
+					]">
 						<div class="flex justify-between gap-x-4">
-							<div
-								:class="[
-									'py-0.5 text-xs leading-5',
-									selectedNav != index ? 'text-gray-500' : 'text-indigo-500',
-								]">
+							<div :class="[
+								'py-0.5 text-xs leading-5',
+								selectedNav != index ? 'text-gray-500' : 'text-indigo-500',
+							]">
 								<span class="font-medium">{{ element.label }}</span>
 							</div>
-							<div
-								@click="(event) => confirmDelete(event, index)"
+							<div @click="(event) => confirmDelete(event, index)"
 								class="flex-none py-0 text-xs leading-5 text-gray-500 cursor-pointer">
 								<font-awesome-icon :icon="['fal', 'times']" />
 							</div>
@@ -275,64 +257,47 @@ const onChangeNavigation = (setData) => {
 				<div class="flex justify-between bg-slate-200 border border-b-gray-300">
 					<div class="flex">
 						<ScreenView @screenView="(e) => (iframeClass = setIframeView(e))" />
-						<div
-							class="py-1 px-2 cursor-pointer"
-							title="Desktop view"
-							v-tooltip="'Preview'"
+						<div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
 							@click="openFullScreenPreview">
 							<FontAwesomeIcon :icon="faLowVision" aria-hidden="true" />
 						</div>
 					</div>
 					<div class="flex items-center justify-center">
-						<div
-							class="text-xs leading-none font-medium cursor-pointer select-none mr-2"
+						<div class="text-xs leading-none font-medium cursor-pointer select-none mr-2"
 							:class="[previewMode ? 'text-slate-600' : 'text-slate-300']">
 							Preview Mode
 						</div>
-						<Switch
-							@click="previewMode = !previewMode"
+						<Switch @click="previewMode = !previewMode"
 							:class="[previewMode ? 'bg-slate-600' : 'bg-slate-300']"
 							class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-							<span
-								aria-hidden="true"
-								:class="previewMode ? 'translate-x-3' : 'translate-x-0'"
+							<span aria-hidden="true" :class="previewMode ? 'translate-x-3' : 'translate-x-0'"
 								class="pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out" />
 						</Switch>
 					</div>
 				</div>
 
-				<EditMode
-					v-if="!previewMode"
-					v-model="Navigation.data.fieldValue.navigation[selectedNav]"
+				<EditMode v-if="!previewMode" v-model="Navigation.data.fieldValue.navigation[selectedNav]"
 					@update:model-value="(data) => onChangeNavigation(data)" />
 				<div v-else class="h-full w-full bg-slate-100">
 					<div v-if="isIframeLoading" class="loading-overlay">
 						<ProgressSpinner />
 					</div>
-					<iframe
-						:src="iframeSrc"
-						:title="props.title"
-						:class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-						@error="handleIframeError"
-						@load="isIframeLoading = false"
-						ref="_iframe" />
+					<iframe :src="iframeSrc" :title="props.title"
+						:class="[iframeClass, isIframeLoading ? 'hidden' : '']" @error="handleIframeError"
+						@load="isIframeLoading = false" ref="_iframe" />
 				</div>
 			</div>
 		</div>
 	</div>
 
 	<div v-else class="h-[85vh]">
-		<EmptyState
-			:data="{
-				description: 'You need pick a template from list',
-				title: 'Pick Menu Templates',
-			}">
+		<EmptyState :data="{
+			description: 'You need pick a template from list',
+			title: 'Pick Menu Templates',
+		}">
 			<template #button-empty-state>
 				<div class="mt-4 block">
-					<Button
-						type="secondary"
-						label="Templates"
-						icon="fas fa-th-large"
+					<Button type="secondary" label="Templates" icon="fas fa-th-large"
 						@click="isModalOpen = true"></Button>
 				</div>
 			</template>
@@ -340,9 +305,7 @@ const onChangeNavigation = (setData) => {
 	</div>
 
 	<Modal :isOpen="isModalOpen" @onClose="isModalOpen = false">
-		<HeaderListModal
-			:onSelectBlock
-			:webBlockTypes="webBlockTypes.data.filter((item) => item.component == 'menu')"
+		<HeaderListModal :onSelectBlock :webBlockTypes="webBlockTypes.data.filter((item) => item.component == 'menu')"
 			:currentTopbar="usedTemplates">
 			<template #image="{ block }">
 				<div
