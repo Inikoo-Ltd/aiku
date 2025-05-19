@@ -49,7 +49,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
 
         return $query
             ->defaultSort('customer_sales_channels.id')
-            ->select(['customer_sales_channels.id as customer_has_platform_id', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type', 'customer_sales_channels.reference', 'customer_sales_channels.number_customer_clients', 'customer_sales_channels.number_portfolios', 'customer_sales_channels.number_orders'])
+            ->select(['customer_sales_channels.id as customer_has_platform_id', 'customer_sales_channels.slug as customer_has_platform_slug', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type', 'customer_sales_channels.reference', 'customer_sales_channels.number_customer_clients', 'customer_sales_channels.number_portfolios', 'customer_sales_channels.number_orders'])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -84,15 +84,15 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New Channel'),
-                            'label'   => __('New Channel'),
-                            'key'     => 'new-channel',
-                        ],
-                    ],
+                    // 'actions'       => [
+                    //     [
+                    //         'type'    => 'button',
+                    //         'style'   => 'create',
+                    //         'tooltip' => __('New Channel'),
+                    //         'label'   => __('New Channel'),
+                    //         'key'     => 'new-channel',
+                    //     ],
+                    // ],
 
                 ],
                 'data'        => FulfilmentCustomerPlatformsResource::collection($platforms),
