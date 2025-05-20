@@ -23,15 +23,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
 {
-    use WithImportModel;
-
     public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
         $existingPortfolios = $customerSalesChannel->portfolios()->where('item_type', 'StoredItem')->pluck('item_id')->toArray();
         $storedItemIds = $this->fulfilmentCustomer->storedItems()->where('state', StoredItemStateEnum::ACTIVE)->pluck('id')->toArray();
-
+        
         $itemsToSync = array_diff($storedItemIds, $existingPortfolios);
-
         if (!empty($itemsToSync)) {
             StoreRetinaProductManual::make()->action($customerSalesChannel, [
                 'items' => $storedItemIds
@@ -42,10 +39,10 @@ class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
     }
 
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel);
+        $this->handle($customerSalesChannel);
     }
 }
