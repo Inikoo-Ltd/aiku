@@ -21,7 +21,7 @@ const emits = defineEmits<{
 
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-4"
-		:style="getStyles(modelValue?.container?.properties)"
+		:style="getStyles(modelValue?.container?.properties,screenType)"
 	>
 		<ColumnWebppage
 			v-model="modelValue.column_1"

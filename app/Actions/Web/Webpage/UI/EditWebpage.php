@@ -22,6 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 
 class EditWebpage extends OrgAction
 {
@@ -99,6 +100,14 @@ class EditWebpage extends OrgAction
                                     'value'     => $webpage->title,
                                     'required'  => true,
                                 ],
+                                'state'  => [
+                                    'type'          => 'select',
+                                    'label'         => __('State'),
+                                    'placeholder'   => __('Select webpage state'),
+                                    'value'         => $webpage->state,
+                                    'options'       => Options::forEnum(WebpageStateEnum::class),
+                                    'searchable'    => true
+                                ],
                                 /* 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
@@ -164,6 +173,28 @@ class EditWebpage extends OrgAction
                                 ],
                             ]
                         ],
+                        [
+                            'label'  => __('Delete'),
+                            'icon'   => 'fal fa-trash-alt',
+                            'fields' => [
+                                'name' => [
+                                    'type'   => 'action',
+                                    'action' => [
+                                        'type'  => 'button',
+                                        'style' => 'delete',
+                                        'label' => __('delete webpage'),
+                                        'route' => [
+                                            'method' => 'delete',
+                                            'name'       => 'grp.models.shop.webpage.delete',
+                                            'parameters' => [
+                                                'shop' => $webpage->shop->id,
+                                                'webpage' => $webpage->id,
+                                            ]
+                                        ],
+                                    ],
+                                ]
+                            ]
+                        ]
                     ],
                     'args'      => [
                         'updateRoute' => [

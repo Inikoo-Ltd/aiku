@@ -1,14 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, toRaw } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import OverviewProperty from "@/Components/Workshop/Properties/OverviewProperty.vue";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrash } from "@fal";
-import { cloneDeep } from "lodash";
-import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue";
 import CardsProperty from "@/Components/Workshop/Properties/CardsProperty.vue";
 import { routeType } from "@/types/route";
 

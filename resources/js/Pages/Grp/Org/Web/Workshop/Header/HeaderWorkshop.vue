@@ -315,7 +315,8 @@ onMounted(() => {
                         <SideEditor v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue" :key="keySidebar"
                             v-model="usedTemplates[selectedTab.key].data.fieldValue"
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
-                            :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" />
+                            :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" 
+                            @update:model-value="e => usedTemplates[selectedTab.key].data.fieldValue = e"/>
                     </div>
                 </div>
             </div>

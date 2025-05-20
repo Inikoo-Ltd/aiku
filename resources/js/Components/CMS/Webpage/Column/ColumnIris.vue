@@ -8,13 +8,14 @@ library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
     fieldValue: any
+    screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 </script>
 
 <template>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center"
-        :style="getStyles(fieldValue?.container?.properties)"
+        :style="getStyles(fieldValue?.container?.properties,screenType)"
     >
         <!-- <pre>{{ fieldValue }}</pre> -->
         <ColumnWebppage :fieldValue="fieldValue.column_1" />

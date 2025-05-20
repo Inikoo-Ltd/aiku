@@ -4,121 +4,197 @@ import { faPencil } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Autoplay, Pagination, Navigation } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/autoplay'
+
 
 library.add(faCube, faStar, faImage, faPencil)
 
+interface LinkData {
+  url?: string
+  workshop_url?: string
+}
+
+interface ImageData {
+  source: string
+  properties?: Record<string, any>
+  attributes?: Record<string, any>
+  link_data?: LinkData
+}
+
+interface LayoutData {
+  layout_type: string
+  properties?: Record<string, any>
+  images?: ImageData[]
+}
+
+interface fieldValue {
+  value: LayoutData
+  mobile?: { type?: string }
+  container?: { properties?: Record<string, any> }
+}
+
 const props = defineProps<{
-	fieldValue: {
-		value: {
-			images: {
-				source: string
-				link_data: {
-					url: string
-				}
-				attributes?: {
-					fetchpriority?: string
-				}
-			}[]
-			layout_type: string
-		}
-		container: {}
-	}
-	webpageData?: any
-	web_block?: Object
-	id?: number
-	type?: string
-	isEditable?: boolean
+  fieldValue: fieldValue
+  webpageData?: any
+  blockData?: Record<string, any>
+  screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const getComponentDivOrA = (index: number) => {
-	const image = props.fieldValue?.value?.images?.[index]
-
-	if (image?.link_data?.url) {
-		return image.link_data.url
-	}
-
-	return null
+const getHref = (index: number) => {
+  const image = props.fieldValue?.value?.images?.[index]
+  return image?.link_data?.url || image?.link_data?.workshop_url || ''
 }
 
 const getColumnWidthClass = (layoutType: string, index: number) => {
-	switch (layoutType) {
-		case "12":
-			return index === 0 ? " sm:w-1/2 md:w-1/3" : " sm:w-1/2 md:w-2/3"
-		case "21":
-			return index === 0 ? " sm:w-1/2 md:w-2/3" : " sm:w-1/2 md:w-1/3"
-		case "13":
-			return index === 0 ? " md:w-1/4" : " md:w-3/4"
-		case "31":
-			return index === 0 ? " sm:w-1/2 md:w-3/4" : " sm:w-1/2 md:w-1/4"
-		case "211":
-			return index === 0 ? " md:w-1/2" : " md:w-1/4"
-		case "2":
-			return index === 0 ? " md:w-1/2" : " md:w-1/2"
-		case "3":
-			return index === 0 ? " md:w-1/3" : " md:w-1/3"
-		case "4":
-			return index === 0 ? " md:w-1/4" : " md:w-1/4"
-		default:
-			return "w-full"
-	}
+  switch (layoutType) {
+    case "12": return index === 0 ? "sm:w-1/2 md:w-1/3" : "sm:w-1/2 md:w-2/3"
+    case "21": return index === 0 ? "sm:w-1/2 md:w-2/3" : "sm:w-1/2 md:w-1/3"
+    case "13": return index === 0 ? "md:w-1/4" : "md:w-3/4"
+    case "31": return index === 0 ? "sm:w-1/2 md:w-3/4" : "sm:w-1/2 md:w-1/4"
+    case "211": return index === 0 ? "md:w-1/2" : "md:w-1/4"
+    case "2": return "md:w-1/2"
+    case "3": return "md:w-1/3"
+    case "4": return "md:w-1/4"
+    default: return "w-full"
+  }
 }
 
 const getImageSlots = (layoutType: string) => {
-	switch (layoutType) {
-		case "4":
-			return 4
-		case "3":
-		case "211":
-			return 3
-		case "2":
-		case "12":
-		case "21":
-		case "13":
-		case "31":
-			return 2
-		default:
-			return 1
-	}
-}
-
-const getImageData = (index: number) => {
-	return props.fieldValue?.value?.images?.[index]
-}
-
-// Method: get href depends on 'internal' or 'external' link
-const getHref = (index: number) => {
-	const image = getImageData(index)
-
-	if (image.type === 'internal') {
-		return image?.link_data?.data?.href || null
-	} else {
-		return image?.link_data?.href || null
-	}
+  switch (layoutType) {
+    case "4": return 4
+    case "3":
+    case "211": return 3
+    case "2":
+    case "12":
+    case "21":
+    case "13":
+    case "31": return 2
+    default: return 1
+  }
 }
 </script>
 
 <template>
-	<div :style="getStyles(fieldValue?.container?.properties)" class="flex flex-wrap overflow-hidden">
-		<div v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
-			:key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source?.avif}`"
-			class="group relative p-2 hover:bg-white/40 overflow-hidden"
-			:class="getColumnWidthClass(fieldValue?.value?.layout_type, index - 1)">
-			<component
-				v-if="fieldValue?.value?.images?.[index - 1]?.source"
-				:is="getComponentDivOrA(index - 1) ? 'a' : 'div'"
-				:href="getHref(index - 1)"
-				:target="getImageData(index-1)?.link_data?.target || '_blank'"
-				rel="noopener noreferrer"
-				class="block w-full h-full"
-			>
-				<Image :style="{ ...getStyles(fieldValue?.value.layout?.properties), ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties) ,}"
-				:src="fieldValue?.value?.images?.[index - 1]?.source" :imageCover="true"
-				class="w-full h-full aspect-square object-cover rounded-lg"
-				:imgAttributes="fieldValue?.value?.images?.[index - 1]?.attributes"
-				:alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || 'image alt'" />
-			</component>
-		</div>
-	</div>
+  <section
+    :style="getStyles(fieldValue?.container?.properties, screenType)"
+    aria-label="Image Gallery Section"
+  >
+    <!-- Mobile Carousel -->
+    <Swiper
+      v-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'"
+      :slides-per-view="1"
+      :loop="true"
+      :autoplay="false"
+      :pagination="{ clickable: true }"
+      :modules="[Autoplay, Pagination]"
+      class="w-full"
+      :style="getStyles(fieldValue?.value?.layout?.properties, screenType)"
+    >
+      <SwiperSlide
+        v-for="(image, index) in fieldValue?.value?.images"
+        :key="index"
+        class="w-full"
+      >
+        <a
+          v-if="getHref(index)"
+          :href="getHref(index)"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block w-full h-full"
+        >
+          <Image
+            :src="image?.source"
+            :alt="image?.properties?.alt || `image ${index + 1}`"
+            :imageCover="true"
+          
+            :style="{
+              ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+              ...getStyles(image?.properties, screenType)
+            }"
+            :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
+          />
+        </a>
+        <div v-else class="block w-full h-full">
+          <Image
+            :src="image?.source"
+            :alt="image?.properties?.alt || `image ${index + 1}`"
+            :imageCover="true"
+        
+            :style="{
+              ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+              ...getStyles(image?.properties, screenType)
+            }"
+            :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
+          />
+        </div>
+      </SwiperSlide>
+    </Swiper>
 
+    <!-- Desktop/Tablet Grid -->
+    <div
+      v-else
+      class="flex flex-wrap overflow-hidden"
+    >
+      <div
+        v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
+        :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
+        class="group relative p-2 hover:bg-white/40 overflow-hidden"
+        :class="getColumnWidthClass(fieldValue?.value?.layout_type, index - 1)"
+      >
+        <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
+          <a
+            v-if="getHref(index - 1)"
+            :href="getHref(index - 1)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block w-full h-full"
+          >
+            <Image
+              :src="fieldValue?.value?.images?.[index - 1]?.source"
+              :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`"
+              :imageCover="true"
+              class="w-full h-full aspect-square object-cover rounded-lg"
+              :style="{
+                ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType)
+              }"
+              :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
+            />
+          </a>
+          <div v-else class="block w-full h-full">
+            <Image
+              :src="fieldValue?.value?.images?.[index - 1]?.source"
+              :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`"
+              :imageCover="true"
+              class="w-full h-full aspect-square object-cover rounded-lg"
+              :style="{
+                ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType)
+              }"
+              :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
+            />
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
 </template>
+
+<style scoped lang="scss">
+:deep(.swiper-pagination-bullet){
+  background-color: #d1d5db !important; // Tailwind's gray-300
+  opacity: 1;
+  transition: background-color 0.3s ease;
+}
+
+
+:deep(.swiper-pagination-bullet-active) {
+    background: #4b5563 !important;
+}
+
+</style>
 

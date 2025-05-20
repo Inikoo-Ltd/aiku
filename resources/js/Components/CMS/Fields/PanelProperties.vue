@@ -1,11 +1,9 @@
-resources/js/Components/Workshop/SideEditor/SideEditorInputHTML.vue resources/js/Components/Workshop/SideEditor/SideEditorText.vue<script setup lang="ts">
-import { computed, watch } from 'vue'
+<script setup lang="ts">
 import PaddingMarginProperty from '@/Components/Workshop/Properties/PaddingMarginProperty.vue'
 import BackgroundProperty from '@/Components/Workshop/Properties/BackgroundProperty.vue'
 import BorderProperty from '@/Components/Workshop/Properties/BorderProperty.vue'
 import TextProperty from '@/Components/Workshop/Properties/TextProperty.vue'
 import DimensionProperty from '@/Components/Workshop/Properties/DimensionProperty.vue'
-import ButtonsProperty from '@/Components/CMS/Fields/ButtonProperties.vue'
 import { trans } from 'laravel-vue-i18n'
 
 const model = defineModel()

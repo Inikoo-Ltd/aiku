@@ -9,7 +9,7 @@ library.add(faCube, faLink)
 
 const props = defineProps<{
 	fieldValue: FieldValue
-
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 
@@ -19,7 +19,7 @@ const props = defineProps<{
 
 
 <template>
-	<div :style="getStyles(fieldValue?.container?.properties)">
+	<div :style="getStyles(fieldValue?.container?.properties,screenType)">
 		<div class="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
 			<div v-html="fieldValue?.title" />
 			<div class="mt-10 grid gap-4 sm:mt-16 lg:grid-cols-3 lg:grid-rows-2">
@@ -41,7 +41,7 @@ const props = defineProps<{
 								<Image v-else :src="fieldValue?.column1.image.source" :imageCover="true"
 									:alt="fieldValue?.column1?.image.alt"
 									:imgAttributes="fieldValue?.column1?.image?.attributes"
-									:style="getStyles(fieldValue?.column1?.image?.properties)" />
+									:style="getStyles(fieldValue?.column1?.image?.properties,screenType)" />
 							</div>
 						</div>
 
@@ -72,7 +72,7 @@ const props = defineProps<{
 								<Image v-else :src="fieldValue?.column2?.image?.source" :imageCover="true"
 									:alt="fieldValue?.column2?.image?.alt"
 									:imgAttributes="fieldValue?.column2?.image?.attributes"
-									:style="getStyles(fieldValue?.column2?.image?.properties)" />
+									:style="getStyles(fieldValue?.column2?.image?.properties,screenType)" />
 							</div>
 						</div>
 					</div>
@@ -101,7 +101,7 @@ const props = defineProps<{
 								<Image v-else :src="fieldValue?.column3?.image?.source" :imageCover="true"
 									:alt="fieldValue?.column3?.image.alt"?
 									:imgAttributes="fieldValue?.column3?.image?.attributes"
-									:style="getStyles(fieldValue?.column3?.image?.properties)" />
+									:style="getStyles(fieldValue?.column3?.image?.properties,screenType)" />
 							</div>
 						</div>
 					</div>
@@ -129,7 +129,7 @@ const props = defineProps<{
 								<Image v-else :src="fieldValue?.column4?.image?.source" :imageCover="true"
 									:alt="fieldValue?.column4?.image?.alt"
 									:imgAttributes="fieldValue?.column4?.image.attributes"
-									:style="getStyles(fieldValue?.column4?.image?.properties)" />
+									:style="getStyles(fieldValue?.column4?.image?.properties,screenType)" />
 							</div>
 						</div>
 					</div>

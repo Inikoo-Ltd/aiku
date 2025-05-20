@@ -9,13 +9,14 @@ const props = defineProps<{
     modelValue: any
     webpageData?: any
     blockData?: Object
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 </script>
 
 <template>
-    <div class="flex" :style="getStyles(modelValue?.container?.properties)">
-        <div typeof="button" :style="getStyles(modelValue?.button?.container?.properties)" class="flex items-center justify-center">
+    <div class="flex" :style="getStyles(modelValue?.container?.properties,screenType)">
+        <div typeof="button" :style="getStyles(modelValue?.button?.container?.properties,screenType)" class="flex items-center justify-center">
             {{ modelValue?.button?.text }}
         </div>
     </div>

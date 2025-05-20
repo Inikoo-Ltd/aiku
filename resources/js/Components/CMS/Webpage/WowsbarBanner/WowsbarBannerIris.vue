@@ -16,12 +16,13 @@ const props = defineProps<{
             properties : any
         }
     }
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>();
 
 </script>
 
 <template>
-    <div :style="getStyles(fieldValue?.container?.properties)">
+    <div :style="getStyles(fieldValue?.container?.properties,screenType)">
         <SliderLandscape v-if="fieldValue?.compiled_layout?.type === 'landscape'" :data="fieldValue.compiled_layout"
             :production="true" />
         <SliderSquare v-else-if="fieldValue?.compiled_layout?.type === 'square'" :data="fieldValue.compiled_layout" :production="true" />
