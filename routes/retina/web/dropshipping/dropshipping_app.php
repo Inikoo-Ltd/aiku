@@ -70,7 +70,7 @@ Route::prefix('orders')->as('orders.')->group(function () {
     Route::get('/{order}/upload-templates', ShowRetinaDropshippingOrder::class)->name('upload_templates');
 });
 
-Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
+Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
 
     Route::get('/dashboard', ShowRetinaCustomerSalesChannelDashboard::class)->name('dashboard');
 

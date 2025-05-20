@@ -73,7 +73,7 @@ const nextNavigation = () => {
 const routeArrow = (nav?: MergeNavigation) => {
 
     if(!nav) return '#'
-    return route('retina.dropshipping.platforms.portfolios.index', { platform: nav.slug })
+    return route('retina.dropshipping.customer_sales_channels.portfolios.index', { platform: nav.slug })
 }
 
 
