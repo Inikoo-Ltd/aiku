@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Fulfilment\Portfolio;
+namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\RetinaAction;
