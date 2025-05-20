@@ -2,8 +2,10 @@
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles"
 import { library, icon } from "@fortawesome/fontawesome-svg-core";
+import Blueprint from "./Blueprint";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { sendMessageToParent } from "@/Composables/Workshop"
 import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faInfoCircle } from "@fal";
 import {
 	faBackpack,
@@ -53,6 +55,13 @@ const emits = defineEmits<{
 
 <template>
 	<div 
+	 @click="
+        () =>
+            sendMessageToParent(
+                'activeChildBlock',
+                Blueprint?.blueprint?.[0]?.key?.join('-')
+            )
+    " 
 		:style="getStyles(modelValue?.container?.properties, screenType)">
 		<div class="relative py-8">
 			<!-- Vertical line -->
