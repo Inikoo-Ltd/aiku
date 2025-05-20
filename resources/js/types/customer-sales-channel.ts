@@ -10,5 +10,6 @@ export interface CustomerSalesChannel {
   code: string
   name: string
   type: string
-  customer_has_platform_id: number
+  customer_sales_channel_id: number
+  customer_sales_channel_slug: string
 }

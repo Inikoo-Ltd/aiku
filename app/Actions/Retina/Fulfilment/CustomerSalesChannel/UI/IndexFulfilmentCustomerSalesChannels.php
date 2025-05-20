@@ -18,6 +18,7 @@ use App\Http\Resources\CRM\PlatformsInCustomerResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -34,7 +35,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('platforms.code', $value);
+                $query->whereStartWith('customer_sales_channels.reference', $value);
             });
         });
 
@@ -42,8 +43,8 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Platform::class);
-        $query->join('customer_sales_channels', 'customer_sales_channels.platform_id', 'platforms.id');
+        $query = QueryBuilder::for(CustomerSalesChannel::class);
+        $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
 
         return $query
@@ -78,7 +79,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
 
             'label' => __('Sales Channels')
         ];
-
+        
         return Inertia::render(
             'Dropshipping/RetinaFulfilmentCustomerSalesChannels',
             [

@@ -39,8 +39,8 @@ class PlatformsInCustomerResource extends JsonResource
             'number_clients'           => $this->number_customer_clients,
             'number_orders'            => $this->number_orders,
             'type'                     => $this->type,
-            'customer_has_platform_id' => $this->customer_has_platform_id,
-            'customer_has_platform_slug' => $this->customer_has_platform_slug ?? null,
+            'customer_sales_channel_id' => $this->customer_sales_channel_id,
+            'customer_sales_channel_slug' => $this->customer_sales_channel_slug ?? null,
             'image'                    => $platform->imageSources(48, 48) ?? null,
         ];
     }
