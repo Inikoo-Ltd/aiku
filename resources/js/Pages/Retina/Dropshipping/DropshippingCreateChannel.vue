@@ -124,14 +124,14 @@ const onSubmitWoocommerce = async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <!-- Section: Manual -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <Link :href="route('retina.dropshipping.platforms.dashboard', ['manual'])"
+                <div
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">{{ trans("Manual") }}</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.manual }} {{ trans('Channels') }}</div>
                     </div>
-                </Link>
+                </div>
 
                 <div class="w-full flex justify-end">
                     <!-- <Link v-if="!type_manual?.isAuthenticated" as="button" class="w-full"
@@ -148,14 +148,14 @@ const onSubmitWoocommerce = async () => {
 
             <!-- Section: Shopify -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <Link :href="route('retina.dropshipping.platforms.dashboard', ['shopify'])"
+                <div
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans('Channels') }}</div>
                     </div>
-                </Link>
+                </div>
 
                 <!-- Button: Connect -->
                 <div class="relative w-full">
@@ -203,14 +203,14 @@ const onSubmitWoocommerce = async () => {
 
             <!-- Section: Tiktok -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <Link :href="route('retina.dropshipping.platforms.dashboard', ['tiktok'])"
+                <div
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans('Channels') }}</div>
                     </div>
-                </Link>
+                </div>
 
                 <div class="w-full flex justify-end">
                     <a target="_blank" class="w-full" :href="tiktokAuth?.url">
@@ -245,7 +245,7 @@ const onSubmitWoocommerce = async () => {
 
             <!-- Section: Woocommerce -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <Link :href="route('retina.dropshipping.platforms.dashboard', ['woocommerce'])"
+                <div
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png"
                         alt="" class="h-12">
@@ -254,7 +254,7 @@ const onSubmitWoocommerce = async () => {
                         <div class="font-semibold">Woocommerce</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{ trans('Channels') }}</div>
                     </div>
-                </Link>
+                </div>
 
                 <div class="w-full flex justify-end">
                     <Button
