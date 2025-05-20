@@ -120,7 +120,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                 'route'   => [
                     'name'       => 'retina.dropshipping.platforms.client.fetch',
                     'parameters' => [
-                        'platform' => $this->platform->slug
+                        'platform' => $this->customerSalesChannel->platform->slug
                     ]
                 ]
             ];
@@ -135,7 +135,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                 'route'   => [
                     'name'       => 'retina.dropshipping.platforms.client.wc-fetch',
                     'parameters' => [
-                        'platform' => $this->platform->slug
+                        'platform' => $this->customerSalesChannel->platform->slug
                     ]
                 ]
             ];
