@@ -26,11 +26,11 @@ class HydrateCustomerSalesChannels
         $this->model = CustomerSalesChannel::class;
     }
 
-    public function handle(CustomerSalesChannel $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        CustomerSalesChannelsHydrateCustomerClients::run($customerHasPlatform);
-        CustomerSalesChannelsHydrateOrders::run($customerHasPlatform);
-        CustomerSalesChannelsHydrateOrders::run($customerHasPlatform);
+        CustomerSalesChannelsHydrateCustomerClients::run($customerSalesChannel);
+        CustomerSalesChannelsHydrateOrders::run($customerSalesChannel);
+        CustomerSalesChannelsHydrateOrders::run($customerSalesChannel);
     }
 
 

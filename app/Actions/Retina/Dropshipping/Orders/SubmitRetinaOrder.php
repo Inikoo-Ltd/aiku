@@ -34,11 +34,11 @@ class SubmitRetinaOrder extends RetinaAction
             return $order;
         }
 
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $order->customer_id)
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $order->customer_id)
         ->where('platform_id', $order->platform_id)
         ->first();
 
-        CustomerSalesChannelsHydrateOrders::dispatch($customerHasPlatform);
+        CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
 
         return $order;
     }

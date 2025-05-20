@@ -62,6 +62,7 @@ class CallApiApcShipping extends OrgAction
 
         $parcels = $parent->parcels;
 
+        // postalcode
         $postalCode = '';
 
 
@@ -81,6 +82,7 @@ class CallApiApcShipping extends OrgAction
             $postalCode = 'INT';
             $address2   = trim($address2.' '.trim(Arr::get($parentResource, 'to_address.sorting_code').' '.Arr::get($parentResource, 'to_address.postal_code')));
         }
+        // end postalcode
 
         $items = [];
         foreach ($parcels as $parcel) {
@@ -88,10 +90,10 @@ class CallApiApcShipping extends OrgAction
                 $items,
                 [
                     'Type'   => 'ALL',
-                    'Weight' => $parcel['weight'],
-                    'Length' => $parcels[0]['dimensions'][0] ?? 0,
-                    'Width'  => $parcels[0]['dimensions'][1] ?? 0,
-                    'Height' => $parcels[0]['dimensions'][2] ?? 0
+                    'Weight' => $parcel['weight'], // apc weight in kg
+                    'Length' => $parcels[0]['dimensions'][0] ?? 0, // cm
+                    'Width'  => $parcels[0]['dimensions'][1] ?? 0, // cm
+                    'Height' => $parcels[0]['dimensions'][2] ?? 0 // cm
                 ]
             );
 
@@ -206,6 +208,32 @@ class CallApiApcShipping extends OrgAction
             $modelData['tracking']                  = Arr::get($apiResponse, 'Orders.Order.WayBill');
         } else {
             $status = 'fail';
+
+            $errFields = Arr::get($apiResponse, 'Orders.Order.Messages.ErrorFields.ErrorField');
+
+            if ($errFields) {
+                if (!isset($errFields[0])) {
+                    $errFields = [$errFields];
+                }
+                foreach ($errFields as $error) {
+                    if ($error['FieldName'] == 'Delivery PostalCode') {
+                        $errorData['others'][] = 'Invalid postcode';
+                    } else {
+                        $fieldParts = explode(' ', $error['FieldName']);
+
+                        if (count($fieldParts) > 1) {
+                            if (Str::contains($fieldParts[0], 'Delivery')) {
+                                $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'];
+                                continue;
+                            }
+                            $errorData[strtolower($fieldParts[0])][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'];
+                            continue;
+                        }
+
+                        $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'];
+                    }
+                }
+            }
         }
 
         return [
@@ -228,7 +256,7 @@ class CallApiApcShipping extends OrgAction
 
     public function asCommand($command)
     {
-        $f = PalletReturn::find(928);
+        $f = PalletReturn::find(1016);
         $s = Shipper::find(19);
         $this->handle($f, $s);
     }

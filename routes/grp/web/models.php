@@ -214,6 +214,7 @@ use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\UpdateRedirect;
+use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -512,6 +513,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
 
     Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
         Route::patch('', [UpdateWebpage::class, 'inShop'])->name('update')->withoutScopedBindings();
+        Route::delete('', [DeleteWebpage::class, 'inShop'])->name('delete')->withoutScopedBindings();
     });
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {

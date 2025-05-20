@@ -11,7 +11,7 @@ library.add(faCheck)
 const props = defineProps<{
 	fieldValue: {}
 	theme?: any
-	screenType: 'mobile' | 'tablet' | 'desktop'
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -43,34 +43,27 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 					class="relative flex flex-col justify-between rounded-3xl bg-white p-8 shadow-lg"
 					:class="tier.mostPopular ? 'ring-4 ring-indigo-500' : ''"
 					:style="getBackgroundStyle(tier.background)">
+					<p
+						v-if="tier.badge.show"
+						class="absolute top-2 right-2 z-10 rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
+						{{ tier.badge.text }}
+					</p>
+
 					<div class="flex justify-center items-center mb-4">
 						<!-- real image -->
 						<template v-if="tier?.image?.source">
-							<Image :src="tier?.image?.source" :imageCover="true" :alt="tier?.image?.alt"
+							<Image
+								:src="tier?.image?.source"
+								:imageCover="true"
+								:alt="tier?.image?.alt"
 								:imgAttributes="tier?.image?.attributes"
 								:style="getStyles(tier?.image?.properties)" />
 						</template>
-						
 					</div>
 					<div>
-						<div class="flex items-center justify-between gap-x-4">
-							<h3
-								:id="tier.id"
-								:class="[
-									tier?.mostPopular ? 'text-indigo-600' : 'text-gray-900',
-									'text-lg/8 font-semibold',
-								]">
-								{{ tier?.name }}
-							</h3>
-							
-							<p
-								v-if="tier?.badge?.show"
-								class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs/5 font-semibold text-indigo-600">
-								{{tier?.badge?.text}}
-							</p>
-						</div>
+						<div v-html="tier?.title" />
 						<div v-html="tier?.description" />
-						
+
 						<p v-if="tier?.priceMonthly?.show" class="mt-6 flex items-baseline gap-x-1">
 							<span class="text-4xl font-semibold tracking-tight text-gray-900">{{
 								tier?.priceMonthly?.text
@@ -87,15 +80,13 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 									class="h-6 w-5 flex-none text-[#C1A027]"
 									fixed-width
 									aria-hidden="true" />
-								
+
 								{{ feature }}
 							</li>
 						</ul>
 					</div>
 					<div class="flex justify-center">
-						<div	
-							typeof="button"
-							:style="getStyles(tier.button.container.properties)">
+						<div typeof="button" :style="getStyles(tier.button.container.properties)">
 							{{ tier.button.text }}
 						</div>
 					</div>
