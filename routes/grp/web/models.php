@@ -295,7 +295,6 @@ Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->g
 });
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();
-Route::post('customer/{customer:id}/product/{product:id}/portfolio', StorePortfolio::class)->name('portfolio.store')->withoutScopedBindings();
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
