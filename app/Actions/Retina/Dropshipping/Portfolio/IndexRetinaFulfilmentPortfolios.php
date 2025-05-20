@@ -106,7 +106,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'actions' => [
                         $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
-                            'style' => 'tertiary',
+                            'xxstyle' => 'tertiary',
                             'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [

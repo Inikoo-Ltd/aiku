@@ -92,7 +92,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #other>
+		<template v-if="props.products?.data?.length" #other>
 			<Button
 				@click="isOpenModalPortfolios = true"
 				:label="trans('Add portfolio')"
@@ -115,7 +115,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 				isWithError
 				:label="content.portfolio_empty.sync_button"
 				icon="fas fa-sync-alt"
-				type="tertiary"
+				xtype="tertiary"
 				size="xl"
 			/>
 			<div class="text-gray-500">{{content.portfolio_empty.separation}}</div>
