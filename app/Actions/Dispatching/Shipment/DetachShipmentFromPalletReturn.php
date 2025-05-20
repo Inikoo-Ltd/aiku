@@ -30,8 +30,8 @@ class DetachShipmentFromPalletReturn extends OrgAction
     public function handle(PalletReturn $palletReturn, Shipment $shipment): PalletReturn
     {
 
-        $palletReturn->shipments()->detach($shipment->id);
-
+        $palletReturn->shipments()->detach($shipment);
+        $shipment->forceDelete();
 
         $palletReturn->refresh();
         return $palletReturn;
