@@ -74,6 +74,7 @@ const dataStats = {
 }
 
 function palletRoute(pallet: any) {
+    console.log(pallet.title);
     
     if (pallet.title == "pallets") {
         console.log(pallet.title);
