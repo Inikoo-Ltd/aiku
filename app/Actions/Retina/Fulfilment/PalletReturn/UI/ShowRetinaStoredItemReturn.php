@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
@@ -57,6 +58,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
 
     public function inBasket(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
@@ -64,6 +66,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
 
     public function inOrder(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
@@ -293,6 +296,23 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     ],
                     $suffix
                 )
+            ),
+            'retina.fulfilment.dropshipping.customer_sales_channels.basket.show' => array_merge(
+                IndexRetinaFulfilmentBaskets::make()->getBreadcrumbs($this->customerSalesChannel),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.index',
+                                'parameters' => [
+                                    'customerSalesChannel' => $routeParameters['customerSalesChannel']
+                                ]
+                            ],
+                            'label' => $palletReturn->reference,
+                        ]
+                    ]
+                ]
             ),
 
             default => []

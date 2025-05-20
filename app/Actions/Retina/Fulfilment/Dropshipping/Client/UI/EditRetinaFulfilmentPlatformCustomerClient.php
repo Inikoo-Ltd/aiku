@@ -1,55 +1,51 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:32:25 Malaysia Time, Pantai Lembeng, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 20-05-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
+*/
 
-namespace App\Actions\CRM\Customer\UI;
+namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Helpers\Address;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateCustomerClient extends OrgAction
+class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
+    public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customer = $customerSalesChannel->customer;
-
         return Inertia::render(
-            'CreateModel',
+            'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerSalesChannel,
+                    $customerClient,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new client'),
+                'title'       => __('edit client'),
                 'pageHead'    => [
-                    'title'   => __('new client'),
-                    'icon'    => [
+                    'title'        => __('edit client'),
+                    'icon'         => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('client')
                     ],
-                    'actions' => [
+                    'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
-                                    'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create' => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                    default => preg_replace('/create$/', 'index', $request->route()->getName())
+                                    default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
@@ -60,34 +56,34 @@ class CreateCustomerClient extends OrgAction
                     'blueprint' =>
                         [
                             [
+                                "label"  => __("Profile"),
                                 'title'  => __('contact'),
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company')
+                                        'label' => __('company'),
+                                        'value' => $customerClient->company_name
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name')
+                                        'label' => __('contact name'),
+                                        'value' => $customerClient->contact_name
                                     ],
-                                    'email'        => [
+                                    'email' => [
                                         'type'  => 'input',
-                                        'label' => __('email')
+                                        'label' => __('email'),
+                                        'value' => $customerClient->email
                                     ],
-                                    'phone'        => [
+                                    'phone' => [
                                         'type'  => 'input',
-                                        'label' => __('phone')
+                                        'label' => __('phone'),
+                                        'value' => $customerClient->phone
                                     ],
                                     'address'      => [
                                         'type'    => 'address',
                                         'label'   => __('Address'),
                                         'value'   => AddressFormFieldsResource::make(
-                                            new Address(
-                                                [
-                                                    'country_id' => $customer->shop->country_id,
-
-                                                ]
-                                            )
+                                            $customerClient->address
                                         )->getArray(),
                                         'options' => [
                                             'countriesAddressData' => GetAddressData::run()
@@ -97,44 +93,43 @@ class CreateCustomerClient extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => [
-                        'name'       => 'grp.models.customer_sales_channel.client.store',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->id
+                    'args' => [
+                        'updateRoute'     => [
+                            'name'      => 'retina.models.customer-client.update',
+                            'parameters' => [
+                                'customerClient' => $customerClient->id
+                            ],
+                            'method' => 'patch'
                         ]
                     ]
-
                 ]
             ]
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+    public function asController(
+        CustomerSalesChannel $customerSalesChannel,
+        CustomerClient $customerClient,
+        ActionRequest $request
+    ): Response {
+        $this->initialisation($request);
+
+        return $this->handle($customerClient, $request);
     }
 
-
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
-    {
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($customerSalesChannel, $request);
-    }
-
-    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(CustomerClient $customerClient, $routeName, $routeParameters): array
     {
         return array_merge(
-            IndexCustomerClients::make()->getBreadcrumbs(
-                parent: $customerSalesChannel,
-                routeName: preg_replace('/create$/', 'index', $routeName),
-                routeParameters: $routeParameters,
+            ShowRetinaFulfilmentCustomerClient::make()->getBreadcrumbs(
+                $customerClient,
+                $routeName,
+                $routeParameters
             ),
             [
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating Client'),
+                        'label' => __('Editing Client'),
                     ]
                 ]
             ]

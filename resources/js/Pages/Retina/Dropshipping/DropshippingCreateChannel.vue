@@ -39,7 +39,7 @@ const props = defineProps<{
         deleteAccountRoute: routeType
     }
     type_manual: {
-        url: routeType
+        createRoute: routeType
         isAuthenticated: boolean
     }
     type_shopify: {
@@ -142,7 +142,7 @@ const onSubmitWoocommerce = async () => {
                         <Button :capitalize="false" :label="`Connected`" disabled type="positive" icon="fal fa-check"
                             size="xs" full />
                     </div> -->
-                    <ButtonWithLink :routeTarget="type_manual?.url" :label="trans('Create')" full />
+                    <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full />
                 </div>
             </div>
 

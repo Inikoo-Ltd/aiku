@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 19 May 2025 16:09:20 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -14,14 +15,8 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
-use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -132,8 +127,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     ]
                 ],
 
-                'content'=>[
-                    'portfolio_empty'=> [
+                'content' => [
+                    'portfolio_empty' => [
                         'title' => __("You don't any items in your portfolio"),
                         'description' => __("To get started, add products to your portfolios. You can sync from your inventory or create a new one."),
                         'separation' => __("or"),
