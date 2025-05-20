@@ -12,6 +12,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnItemNoSetReasonStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Dispatching\Shipment;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
@@ -282,6 +283,12 @@ class PalletReturn extends Model implements HasMedia
     public function fixedAddresses(): MorphToMany
     {
         return $this->morphToMany(Address::class, 'model', 'model_has_fixed_addresses')->withTimestamps();
+    }
+
+
+    public function customerSaleChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
     }
 
 }
