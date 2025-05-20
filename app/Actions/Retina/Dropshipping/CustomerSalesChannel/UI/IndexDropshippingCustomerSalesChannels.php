@@ -15,7 +15,6 @@ use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,7 +27,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
 {
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
-      $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('customer_sales_channels.reference', $value);
             });

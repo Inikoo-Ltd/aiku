@@ -71,7 +71,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
 
             'label' => __('Sales Channels')
         ];
-        
+
         return Inertia::render(
             'Dropshipping/RetinaFulfilmentCustomerSalesChannels',
             [
