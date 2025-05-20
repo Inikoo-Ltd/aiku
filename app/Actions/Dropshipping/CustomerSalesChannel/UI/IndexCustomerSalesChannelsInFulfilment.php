@@ -11,9 +11,9 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
-use App\Http\Resources\Fulfilment\FulfilmentCustomerPlatformsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -43,13 +43,20 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Platform::class);
-        $query->join('customer_sales_channels', 'customer_sales_channels.platform_id', 'platforms.id');
+        $query = QueryBuilder::for(CustomerSalesChannel::class);
         $query->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id);
 
         return $query
             ->defaultSort('customer_sales_channels.id')
-            ->select(['customer_sales_channels.id as customer_has_platform_id', 'customer_sales_channels.slug as customer_has_platform_slug', 'platforms.id', 'platforms.code', 'platforms.name', 'platforms.type', 'customer_sales_channels.reference', 'customer_sales_channels.number_customer_clients', 'customer_sales_channels.number_portfolios', 'customer_sales_channels.number_orders'])
+            ->select([
+                'customer_sales_channels.id',
+                'customer_sales_channels.slug',
+                'customer_sales_channels.reference',
+                'customer_sales_channels.number_customer_clients',
+                'customer_sales_channels.number_portfolios',
+                'customer_sales_channels.number_orders',
+                'customer_sales_channels.platform_id'
+            ])
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -84,18 +91,9 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
-                    // 'actions'       => [
-                    //     [
-                    //         'type'    => 'button',
-                    //         'style'   => 'create',
-                    //         'tooltip' => __('New Channel'),
-                    //         'label'   => __('New Channel'),
-                    //         'key'     => 'new-channel',
-                    //     ],
-                    // ],
 
                 ],
-                'data'        => FulfilmentCustomerPlatformsResource::collection($platforms),
+                'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -113,7 +111,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customer_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
