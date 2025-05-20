@@ -35,6 +35,7 @@ import DisclosureBlueprint from '@/Components/CMS/Webpage/Disclosure/Blueprint'
 import FamilyBluprint from "@/Components/CMS/Webpage/Family1/Blueprint"
 import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from '@/Components/CMS/Webpage/Step1/Blueprint'
+import Carousel1Blueprint from '@/Components/CMS/Webpage/Carousel-1/Blueprint'
 
 export const getBlueprint = (componentName: string) => {
     const components: Component = {
@@ -70,7 +71,8 @@ export const getBlueprint = (componentName: string) => {
         'disclosure': DisclosureBlueprint.blueprint,
         'family-1' : FamilyBluprint.blueprint,
         'timeline' : TimelineBlueprint.blueprint,
-        'step-1' : Timeline2Bluprint.blueprint
+        'step-1' : Timeline2Bluprint.blueprint,
+        'carousel-1' : Carousel1Blueprint.blueprint
     }
     return components[componentName] ?? []
 }

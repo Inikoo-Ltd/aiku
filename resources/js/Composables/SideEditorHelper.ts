@@ -30,6 +30,7 @@ import Shadow from '@/Components/CMS/Fields/Shadow.vue'
 import ColumnComponentPicker from '@/Components/CMS/Fields/ColumnComponentPicker.vue'
 import Disclosure from '@/Components/CMS/Fields/Disclosure.vue'
 import ArrayEdit from '@/Components/CMS/Fields/ArrayEdit/LabelAndOrderArray.vue'
+import InputNumber from 'primevue/inputnumber';
 
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
@@ -39,6 +40,7 @@ import ColorProperty from '@/Components/Workshop/Properties/ColorProperty.vue'
 import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
 import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
 import IconPickerBox from '@/Components/CMS/Fields/IconPickerBox.vue'
+import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -77,7 +79,8 @@ export const getComponent = (componentName: string) => {
         "inputSwitch" : TextInputSwitch,
         "timeline" : TimelineArray,
         "array-data" : ArrayEdit,
-        "icon-picker" : IconPickerBox
+        "icon-picker" : IconPickerBox,
+        'number' : PureInputNumber
     }
     
     return components[componentName] ?? NotFoundComponents

@@ -77,7 +77,7 @@ export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
     return color ? `${shadowString} ${color}` : shadowString;
 };
 
-export const resolveResponsiveValue = (
+/* export const resolveResponsiveValue = (
     base: any,
     screen: 'mobile' | 'tablet' | 'desktop',
     path?: string[]
@@ -94,7 +94,34 @@ export const resolveResponsiveValue = (
   
     // Fallback ke base biasa
     return path ? path.reduce((acc, key) => acc?.[key], base) : base;
+  }; */
+
+  export const resolveResponsiveValue = (
+  base: any,
+  screen: 'mobile' | 'tablet' | 'desktop',
+  path?: string[]
+) => {
+  if (!base || typeof base !== 'object') return base;
+
+  const getValue = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return undefined;
+    return path ? path.reduce((acc, key) => acc?.[key], obj) : obj;
   };
+
+  // 1. Coba ambil dari screen saat ini
+  const currentValue = getValue(base[screen]);
+  if (currentValue !== undefined) return currentValue;
+
+  // 2. Fallback ke desktop jika screen bukan desktop
+  if (screen !== 'desktop') {
+    const desktopValue = getValue(base.desktop);
+    if (desktopValue !== undefined) return desktopValue;
+  }
+
+  // 3. Terakhir, fallback ke base global (tanpa screen)
+  return getValue(base);
+};
+
   
   
 
