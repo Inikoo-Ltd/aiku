@@ -62,6 +62,7 @@ const setError = () => {
         :method="props.method || props.routeTarget?.method || undefined"
         :data="props.body ?? props.routeTarget?.body"
         v-bind="bindToLink"
+        :class="full ? 'w-full' : ''"
     >
         <!-- Don't use v-bind make 'style' return empty object -->
         <Button
