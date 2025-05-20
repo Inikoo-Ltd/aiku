@@ -71,8 +71,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         });
 
         Route::prefix('portfolios')->as('portfolios.')->group(function () {
-            Route::get('my-portfolio', IndexRetinaFulfilmentPortfolios::class)->name('index');
-            Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
+            Route::get('/', IndexRetinaFulfilmentPortfolios::class)->name('index');
         });
 
         Route::prefix('orders')->as('orders.')->group(function () {

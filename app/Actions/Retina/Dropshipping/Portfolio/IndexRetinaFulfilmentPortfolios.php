@@ -1,5 +1,4 @@
 <?php
-
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 19 May 2025 16:09:20 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -15,8 +14,14 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -86,6 +91,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'method' => 'post'
             ];
         }
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -98,24 +104,19 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
                 'actions' => [
-                        !empty($portfolios) ? [
+                        $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
-                            'style' => 'create',
+                            'style' => 'tertiary',
+                            'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
                                 'name'       => $routeName,
                                 'parameters' => [
                                     'customerSalesChannel' => $this->customerSalesChannel->id
                                 ],
-                                'method' => 'post'
+                                'method'     => 'post'
                             ]
-                        ] : [],
-                        !empty($portfolios) ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => 'Add Portfolio',
-                            'route' => []
-                        ] : []
+                        ] : null,
                     ]
                 ],
                 'routes'    => [
@@ -160,8 +161,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, align: 'right', searchable: true);
+            $table->column(key: 'actions', label: __('actions'), canBeHidden: false);
         };
     }
 

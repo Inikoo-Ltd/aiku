@@ -82,7 +82,6 @@ class GetRetinaFulfilmentNavigation
             ];
 
             if ($webUser->customer->fulfilmentCustomer->items_storage) {
-                // $groupNavigation['stored_items'] =
 
 
                 $customerSalesChannelsNavigation = [];
@@ -91,7 +90,6 @@ class GetRetinaFulfilmentNavigation
                 foreach (
                     $webUser->customer->customerSalesChannels as $customerSalesChannel
                 ) {
-
                     $logo_img = null;
                     if ($customerSalesChannel->platform->code === 'shopify') {
                         $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
@@ -103,16 +101,16 @@ class GetRetinaFulfilmentNavigation
                         $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
                     }
 
-                    $reference = $customerSalesChannel->reference ?? 'n/a';
+                    $reference                         = $customerSalesChannel->reference ?? 'n/a';
                     $customerSalesChannelsNavigation[] = [
                         'id'            => $customerSalesChannel->id,
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
-                        'key'           => $customerSalesChannel->slug. '_platform',
+                        'key'           => $customerSalesChannel->slug.'_platform',
                         'img'           => $logo_img,
-                        'label'         => $customerSalesChannel->platform->name. ' (' . $reference . ')',
+                        'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
                         'route'         => [
-                            'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.dashboard',
+                            'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.dashboard',
                             'parameters' => [
                                 'customerSalesChannel' => $customerSalesChannel->slug
                             ]
@@ -121,54 +119,71 @@ class GetRetinaFulfilmentNavigation
                         'subNavigation' => GetRetinaFulfilmentCustomerSalesChannelNavigation::run($customerSalesChannel)
                     ];
                 }
+
+
+                $numberChannels = $webUser->customer->customerSalesChannels->count();
+
                 $groupNavigation['platforms_navigation'] = [
-                'type'  => 'horizontal',
-                'field_name'        => __('Dropshipping'),
-                'before_horizontal' => [
-                    'subNavigation' => [
-                        [
-                            'label'   => __('Inventory'),
-                            'icon'    => ['fal', 'fa-inventory'],
-                            'root'    => 'retina.fulfilment.itemised_storage.',
-                            'route'   => [
-                                'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
-                            ],
-                            'topMenu' => [
-                                'subSections' => [
+                    'type'                   => 'horizontal',
+                    'field_name'             => __('Dropshipping'),
+                    'before_horizontal'      => [
+                        'subNavigation' => [
+                            [
+                                'label' => __('Inventory'),
 
-                                    [
-                                        'label' => __('SKUs'),
-                                        'icon'  => ['fal', 'fa-barcode'],
-                                        'root'  => 'retina.fulfilment.itemised_storage.stored_items.',
-                                        'route' => [
-                                            'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
+                                'right_label' => [
+                                    'label' => $webUser->customer->fulfilmentCustomer->number_stored_items_state_active,
+                                    'class' => 'text-white',
+                                ],
+
+                                'icon'    => ['fal', 'fa-inventory'],
+                                'root'    => 'retina.fulfilment.itemised_storage.',
+                                'route'   => [
+                                    'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
+                                ],
+                                'topMenu' => [
+                                    'subSections' => [
+                                        [
+                                            'label' => __('SKUs'),
+                                            'icon'  => ['fal', 'fa-barcode'],
+                                            'root'  => 'retina.fulfilment.itemised_storage.stored_items.',
+                                            'route' => [
+                                                'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
+                                            ]
+                                        ],
+                                        [
+                                            'label' => __('Audits'),
+                                            'icon'  => ['fal', 'fa-ballot-check'],
+                                            'root'  => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
+                                            'route' => [
+                                                'name' => 'retina.fulfilment.itemised_storage.stored_items_audits.index'
+                                            ]
                                         ]
-                                    ],
-                                    [
-                                        'label' => __('Audits'),
-                                        'icon'  => ['fal', 'fa-ballot-check'],
-                                        'root'  => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
-                                        'route' => [
-                                            'name' => 'retina.fulfilment.itemised_storage.stored_items_audits.index'
-                                        ]
+
                                     ]
-
                                 ]
-                            ]
-                        ],
-                        [
-                            'label'         => __('Channels'),
-                            'icon'          => 'fal fa-code-branch',
-                            'icon_rotation'   => 90,
-                            'root'  => 'retina.fulfilment.dropshipping.',
-                            'route' => [
-                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index'
+                            ],
+                            [
+                                'label'         => __('Channels'),
+                                'icon'          => 'fal fa-code-branch',
+                                'right_label'   => [
+                                    'label' => $numberChannels,
+                                    'class' => 'text-white',
+                                ],
+                                'icon_rotation' => 90,
+                                'root'          => 'retina.fulfilment.dropshipping.',
+                                'route'         => $numberChannels == 0
+                                    ? [
+                                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.create'
+                                    ]
+                                    : [
+                                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index'
+                                    ]
                             ]
                         ]
-                    ]
-                ],
-                'horizontal_navigations'    => $customerSalesChannelsNavigation
-            ];
+                    ],
+                    'horizontal_navigations' => $customerSalesChannelsNavigation
+                ];
             }
 
 

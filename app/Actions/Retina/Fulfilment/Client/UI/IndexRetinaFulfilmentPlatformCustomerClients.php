@@ -153,9 +153,9 @@ class IndexRetinaFulfilmentPlatformCustomerClients extends RetinaAction
                 'required_fields' => ["contact_name", "company_name", "email", "phone", "address_line_1", "address_line_2", "postal_code", "locality", "country_code"],
                 'route'           => [
                     'upload'   => [
-                        'name' => 'retina.models.customer-client.platform.upload',
+                        'name' => 'retina.models.customer_sales_channel.clients.upload',
                         'parameters' => [
-                            'platform' => $this->platform->id,
+                            'customerSalesChannel' => $this->scope->id,
                         ],
                     ],
                 ],
