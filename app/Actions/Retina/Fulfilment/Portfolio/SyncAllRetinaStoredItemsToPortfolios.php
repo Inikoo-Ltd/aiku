@@ -12,6 +12,7 @@ use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithImportModel;
+use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -22,24 +23,26 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
 {
-    use WithImportModel;
-
-    public function handle(CustomerSalesChannel $customerSalesChannel): FulfilmentCustomer
+    public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
-        $fulfilmentCustomer = $this->fulfilmentCustomer;
-        $storedItemIds = $fulfilmentCustomer->storedItems()->where('state', StoredItemStateEnum::ACTIVE)->pluck('id')->toArray();
-        StoreRetinaProductManual::make()->action($customerSalesChannel, [
-            'items' => $storedItemIds
-        ]);
+        $existingPortfolios = $customerSalesChannel->portfolios()->where('item_type', 'StoredItem')->pluck('item_id')->toArray();
+        $storedItemIds = $this->fulfilmentCustomer->storedItems()->where('state', StoredItemStateEnum::ACTIVE)->pluck('id')->toArray();
+        
+        $itemsToSync = array_diff($storedItemIds, $existingPortfolios);
+        if (!empty($itemsToSync)) {
+            StoreRetinaProductManual::make()->action($customerSalesChannel, [
+                'items' => $storedItemIds
+            ]);
+        }
 
-        return $fulfilmentCustomer;
+        return $customerSalesChannel;
     }
 
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): FulfilmentCustomer
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel);
+        $this->handle($customerSalesChannel);
     }
 }

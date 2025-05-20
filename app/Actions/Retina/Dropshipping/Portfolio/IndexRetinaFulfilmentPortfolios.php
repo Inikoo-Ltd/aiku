@@ -83,8 +83,9 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
             $syncAllRoute = [
                 'name' => 'retina.models.customer_sales_channel.sync_all_stored_items',
                 'parameters' => [
-                    'customerSalesChannel' => $this->customerSalesChannel
-                ]
+                    'customerSalesChannel' => $this->customerSalesChannel->id
+                ],
+                'method' => 'post'
             ];
         }
         return Inertia::render(
@@ -98,7 +99,6 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
-                'syncAllRoute' => $syncAllRoute,
 
 
 
@@ -126,6 +126,15 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 //                            ]
 //                        ] : [],
 //                    ]
+                ],
+                'routes'    => [
+                    'syncAllRoute' => $syncAllRoute,
+                    'addPortfolioRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ]
                 ],
 
                 'tabs'        => [
