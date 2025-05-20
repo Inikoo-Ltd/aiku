@@ -16,7 +16,6 @@ use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboa
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;

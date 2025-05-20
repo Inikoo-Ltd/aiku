@@ -48,7 +48,7 @@ class IndexCustomerClients extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent        = $customerSalesChannel;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customerSalesChannel);
@@ -169,7 +169,6 @@ class IndexCustomerClients extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
-
         $icon       = ['fal', 'fa-user'];
         $iconRight  = [
             'icon'  => ['fal', 'fa-user-friends'],
@@ -184,13 +183,11 @@ class IndexCustomerClients extends OrgAction
         if ($this->parent instanceof FulfilmentCustomer) {
             $scope         = $this->parent->customer;
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($scope->fulfilmentCustomer, $request);
-            $title      = $scope->name;
-
+            $title         = $scope->name;
         } elseif ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::FULFILMENT) {
             $scope         = $this->parent->customer;
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
-
             $scope         = $this->parent->customer;
             $subNavigation = $this->getCustomerPlatformSubNavigation($this->parent, $request);
             $title         = $this->parent->customer->name.' ('.$this->parent->customer->reference.')';
@@ -200,13 +197,31 @@ class IndexCustomerClients extends OrgAction
         } else {
             $scope         = $this->parent;
             $subNavigation = $this->getCustomerDropshippingSubNavigation($scope, $request);
-            $title      = $scope->name;
-
+            $title         = $scope->name;
         }
 
 
-
         $newClientLabel = __('New Client');
+
+        $actions = [];
+        if ($this->parent instanceof CustomerSalesChannel) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => $newClientLabel,
+                'label'   => $newClientLabel,
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
+                    'parameters' => [
+                        'organisation'         => $scope->organisation->slug,
+                        'shop'                 => $scope->shop->slug,
+                        'customer'             => $scope->slug,
+                        'customerSalesChannel' => $this->parent->slug
+                    ]
+                ]
+            ];
+        }
+
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
@@ -225,38 +240,7 @@ class IndexCustomerClients extends OrgAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        $this->parent instanceof CustomerSalesChannel
-                            ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => $newClientLabel,
-                            'label'   => $newClientLabel,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
-                                'parameters' => [
-                                    'organisation' => $scope->organisation->slug,
-                                    'shop'         => $scope->shop->slug,
-                                    'customer'     => $scope->slug,
-                                    'platform'     => $this->parent->platform->slug
-                                ]
-                            ]
-                        ]
-                            : [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => $newClientLabel,
-                            'label'   => $newClientLabel,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.customer_clients.create',
-                                'parameters' => [
-                                    'organisation' => $scope->organisation->slug,
-                                    'shop'         => $scope->shop->slug,
-                                    'customer'     => $scope->slug
-                                ]
-                            ]
-                        ],
-                    ],
+                    'actions'       => $actions
 
                 ],
                 'data'     => CustomerClientResource::collection($customerClients),
@@ -279,7 +263,6 @@ class IndexCustomerClients extends OrgAction
                 ],
             ];
         };
-
 
 
         return match ($routeName) {
