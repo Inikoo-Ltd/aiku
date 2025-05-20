@@ -39,12 +39,23 @@ const isDeleteLoading = ref<boolean | string>(false);
 const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: string) => {
   isDeleteLoading.value = portfolioReference;
   try {
-    router[routeDelete.method || "get"](route(routeDelete.name, routeDelete.parameters));
-    notify({
+    router[routeDelete.method || "delete"](route(routeDelete.name, routeDelete.parameters),
+  {
+    onStart: () => {
+      isDeleteLoading.value = portfolioReference;
+    },
+    onFinish: () => {
+      isDeleteLoading.value = false;
+    },
+    onSuccess: () => {
+      notify({
       title: "Success",
       text: `Portfolio ${portfolioReference} has been deleted`,
       type: "success"
-    });
+    })
+    },
+  });
+    ;
   } catch {
     notify({
       title: "Something went wrong.",
@@ -56,6 +67,7 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 </script>
 
 <template>
+  <!-- {{ routeDelete.method }} -->
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(item_code)="{ item: portfolio }">
       <Link :href="itemRoute(portfolio)" class="primaryLink">

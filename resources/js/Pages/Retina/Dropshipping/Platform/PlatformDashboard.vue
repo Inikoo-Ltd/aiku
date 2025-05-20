@@ -1,62 +1,92 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import CountUp from "vue-countup-v3"
+import { faArrowRight } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Link } from "@inertiajs/vue3"
+import { inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { trans } from "laravel-vue-i18n"
+library.add(faArrowRight)
+
 
 const props = defineProps<{
-    
+    platformData: {
+        orders: {
+            label: string
+        }
+    }
+    platform: {
+        name: string
+        code: string
+        icon: string
+    }
 }>()
 
+const locale = inject('locale', aikuLocaleStructure)
 
-const links = [
-    { name: 'Open roles', href: '#' },
-    { name: 'Internship program', href: '#' },
-    { name: 'Our values', href: '#' },
-    { name: 'Meet our leadership', href: '#' },
-]
-const stats = [
-    { name: 'Offices worldwide', value: '12' },
-    { name: 'Full-time colleagues', value: '300+' },
-    { name: 'Hours per week', value: '40' },
-    { name: 'Paid time off', value: 'Unlimited' },
-]
+const platformImage = {
+    manual: 'https://aw.aurora.systems/art/aurora_log_v2_orange.png',
+    tiktok: 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png',
+    shopify: 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
+    woocommerce: 'https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png',
+}
 </script>
 
 <template>
-    <div class="relative isolate overflow-hidden py-24 sm:py-32">
+    <div class="relative isolate py-12 px-8">
+        <!-- <pre>{{ platform }}</pre> -->
+        <!-- <pre>{{ platformData }}</pre> -->
         <!-- <div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl"
             aria-hidden="true">
             <div class="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#ff4694] to-[#776fff] opacity-20"
                 style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" />
         </div>
-        <div class="absolute -top-52 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:top-[-28rem] sm:ml-16 sm:translate-x-0 sm:transform-gpu"
+        <div class="absolute -top-52 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:top-[-28rem] sm:sm:translate-x-0 sm:transform-gpu"
             aria-hidden="true">
             <div class="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#ff4694] to-[#776fff] opacity-20"
                 style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" />
         </div> -->
 
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="mx-auto max-w-2xl lg:mx-0">
-                <h2 class="text-5xl font-semibold tracking-tight sm:text-7xl">
-                    Work with us
-                </h2>
-                <p class="mt-8 text-pretty text-lg font-medium sm:text-xl/8">
-                    Anim aute id magna aliqua ad
-                    ad non deserunt sunt. Qui irure qui lorem cupidatat commodo. Elit sunt amet fugiat veniam occaecat
-                    fugiat.
-                </p>
-            </div>
-
-            <div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
-                <div
-                    class="grid grid-cols-1 gap-x-8 gap-y-6 text-base/7 font-semibold sm:grid-cols-2 md:flex lg:gap-x-10">
-                    <a v-for="link in links" :key="link.name" :href="link.href">{{ link.name }} <span
-                            aria-hidden="true">&rarr;</span></a>
-                </div>
-                <dl class="mt-16 grid grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 lg:grid-cols-4">
-                    <div v-for="stat in stats" :key="stat.name" class="flex flex-col-reverse gap-1">
-                        <dt class="text-base/7">{{ stat.name }}</dt>
-                        <dd class="text-4xl font-semibold tracking-tight">{{ stat.value }}</dd>
-                    </div>
-                </dl>
-            </div>
+        <div class="flex justify-between">
+            <h3 class="text-2xl font-semibold">Your stats <span class="text-gray-500 font-normal">({{ platform.name }})</span></h3>
+            <img
+                v-tooltip="platform.name"
+                :src="platformImage[platform.code]"
+                class="h-8 w-8 mt-2"
+                :alt="platform.name"
+            />
         </div>
+        <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
+            <div v-for="platform in platformData" :key="platform.id" class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
+                <dt>
+                    <div class="absolute rounded-md bg-slate-800 p-3 flex justify-center items-center">
+                        <FontAwesomeIcon :icon="platform.icon" class="size-6 text-white" fixed-width aria-hidden="true" />
+                    </div>
+                    <p class="ml-16 truncate text-sm font-bold">{{ platform.label }}</p>
+                </dt>
+                <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+                    <p class="text-2xl font-semibold ">
+                        <CountUp
+                            :endVal="platform.count"
+                            :duration="1.5"
+                            :scrollSpyOnce="true"
+                            :options="{
+                                formattingFn: (value: number) => locale.number(value)
+                            }"
+                        />
+                    </p>
+                    <p class="ml-2 flex items-baseline text-sm text-gray-500">
+                        {{ platform.description }}
+                    </p>
+                    <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6 text-sm">
+                        <Link :href="route(platform.route.name, platform.route.parameters)" class="font-medium text-slate-600 hover:text-slate-500" >
+                            View all<span class="sr-only"> {{ platform.name }} stats</span>
+                            <FontAwesomeIcon icon="fal fa-arrow-right" class="ml-1 text-gray-500 text-xs" fixed-width aria-hidden="true" />
+                        </Link >
+                    </div>
+                </dd>
+            </div>
+            </dl>
     </div>
 </template>

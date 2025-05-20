@@ -11,6 +11,8 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -51,10 +53,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
             ],
 
-
-
-            'amount_shortcuts' => [],
-
+            'platform'       =>  $customerSalesChannel->platform,
             'platformData'  => $this->getPlatformData($customerSalesChannel),
         ]);
     }
@@ -65,28 +64,40 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
         $stats['orders'] = [
             'label'         => __('Orders'),
+            'icon'          => 'fal fa-shopping-cart',
             'count'         => $customerSalesChannel->number_orders,
             'description'   => __('total orders'),
             'route'         => [
-                'name' => 'retina.dropshipping.platforms.orders.index'
+                'name' => 'retina.dropshipping.platforms.orders.index',
+                'parameters' => [
+                    'platform' => $customerSalesChannel->platform->slug,
+                ]
             ]
         ];
 
         $stats['clients'] = [
             'label'         => __('Clients'),
+            'icon'          => 'fal fa-user-friends',
             'count'         => $customerSalesChannel->number_customer_clients,
             'description'   => __('total clients'),
             'route'         => [
-                'name' => 'retina.dropshipping.platforms.client.index'
+                'name' => 'retina.dropshipping.platforms.client.index',
+                'parameters' => [
+                    'platform' => $customerSalesChannel->platform->slug,
+                ]
             ]
         ];
 
         $stats['portfolios'] = [
             'label'         => __('Portfolios'),
+            'icon'          => 'fal fa-cube',
             'count'         => $customerSalesChannel->number_portfolios,
             'description'   => __('total portfolios'),
             'route'         => [
-                'name' => 'retina.dropshipping.platforms.portfolios.index'
+                'name' => 'retina.dropshipping.platforms.portfolios.index',
+                'parameters' => [
+                    'platform' => $customerSalesChannel->platform->slug,
+                ]
             ]
         ];
 

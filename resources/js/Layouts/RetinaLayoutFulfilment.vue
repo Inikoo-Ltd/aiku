@@ -57,7 +57,7 @@ const isStaging = layout.app.environment === 'staging'
         </div>
 
         <!-- Main Content -->
-        <main class="h-[calc(100vh-40px)] transition-all pl-2 pr-2 "
+        <main class="h-[calc(100vh-40px)] transition-all pl-2 pr-2"
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-64' : 'ml-0 md:ml-16',
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
@@ -76,7 +76,7 @@ const isStaging = layout.app.environment === 'staging'
                         :layout="layout"    
                     />
                 </div>
-                        <slot />
+                <slot />
                 <!-- <transition name="slide-to-right" mode="out-in" appear>
                     <div :key="$page.url">
                     </div>
