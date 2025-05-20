@@ -119,6 +119,9 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     ]
                 ],
                 'routes'    => [
+                    'itemRoute' => [
+                        'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
+                    ],
                     'syncAllRoute' => $syncAllRoute,
                     'addPortfolioRoute' => [
                         'name' => 'retina.models.customer_sales_channel.customer.product.store',
