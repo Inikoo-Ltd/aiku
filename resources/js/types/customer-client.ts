@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-export interface CustomerSalesChannel {
+export interface CustomerClient {
   id: number,
   ulid: string
   name: string
