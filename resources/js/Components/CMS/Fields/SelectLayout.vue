@@ -20,7 +20,7 @@ type Layout = {
   flex?: string[];
 };
 
-const model = defineModel<string>();
+const model = defineModel<string|number>();
 const isModalOpen = ref(false);
 const layouts = ref<Layout[]>([
   { name: "Layout Single Wide Image", layout_type: "1", grid: "grid-cols-1", images: 1 },

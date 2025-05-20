@@ -25,6 +25,7 @@ library.add(faPresentation, faLink, faExternalLink, faSpinnerThird)
 
 const props = defineProps<{
 	modelValue: any
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const layout = inject("layout", layoutStructure)
@@ -215,7 +216,7 @@ onMounted(() => {
 		class="relative">
 		<div
 			v-if="data.state != 'switch_off'"
-			:style="getStyles(modelValue?.container?.properties)">
+			:style="getStyles(modelValue?.container?.properties,screenType)">
 			<SliderLandscape
 				v-if="data.type == 'landscape'"
 				:data="data.compiled_layout"

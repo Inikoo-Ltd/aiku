@@ -65,6 +65,7 @@ const sendNewBlock = async (block: Daum) => {
 }
 
 const sendBlockUpdate = async (block: Daum) => {
+    console.log('test',block)
     emits('update', block)
 }
 
@@ -81,7 +82,7 @@ const sendDeleteBlock = async (block: Daum) => {
 // const onUpdatedBlock = (block) => {
 //      debouncedSendUpdate(block)
 // }
-const onSaveWorkshop = inject('onSaveWorkshop', () => { console.log('onSaveWorkshop not provided') })
+/* const onSaveWorkshop = inject('onSaveWorkshop', () => { console.log('onSaveWorkshop not provided') }) */
 
 const onChangeOrderBlock = (e, d) => {
     let payload = {}
@@ -228,14 +229,14 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                         <div class="p-2">
                                             <div class="px-2">
                                                 <VisibleCheckmark v-model="element.visibility"
-                                                    @update:modelValue="onSaveWorkshop(element)" />
+                                                    @update:modelValue="sendBlockUpdate(element)" />
                                             </div>
                                             
 
                                             <SideEditor v-model="element.web_block.layout.data.fieldValue"
                                                 :panelOpen="openedChildSideEditor"
                                                 :blueprint="getBlueprint(element.type)" :block="element"
-                                                @update:modelValue="(e) => (onSaveWorkshop(element))"
+                                                @update:modelValue="(e) => (sendBlockUpdate(element))"
                                                 :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: element.id } }" />
                                         </div>
                                     </Collapse>

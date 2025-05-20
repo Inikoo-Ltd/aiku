@@ -12,7 +12,6 @@
   import Modal from '@/Components/Utils/Modal.vue'
   import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
   import { getIrisComponent } from "@/Composables/getIrisComponents"
-  import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
   import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
@@ -44,16 +43,16 @@
       }
   }
   
-  const onSaveWorkshopFromId = (blockId: number, from?: string) => {
+/*   const onSaveWorkshopFromId = (blockId: number, from?: string) => {
       console.log("onSaveWorkshopFromId", blockId, from)
-  }
+  } */
   
   const onSaveWorkshop = (block) => {
       console.log(block)
   }
   
-  provide('onSaveWorkshopFromId', onSaveWorkshopFromId)
-  provide('onSaveWorkshop', onSaveWorkshop)
+/*   provide('onSaveWorkshopFromId', onSaveWorkshopFromId)
+  provide('onSaveWorkshop', onSaveWorkshop) */
   </script>
   
   <template>
@@ -77,7 +76,7 @@
                       v-if="usedTemplates.code"
                       v-model="modelValue.department" 
                       :blueprint="getBlueprint(usedTemplates.code)" 
-                      @update:model-value="(a)=>console.log('sdsdsd',a)"
+                       @update:modelValue="(e) =>{onSaveWorkshop(e)}"
                       :uploadImageRoute="null" 
                   />
            

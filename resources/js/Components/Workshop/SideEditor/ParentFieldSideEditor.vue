@@ -27,20 +27,26 @@ const props = defineProps<{
     uploadImageRoute?: routeType
 }>()
 
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: number): void
+}>()
+
 const modelValue = defineModel()
+
 
 // Check if this blueprint should use a custom form editor
 const hasCustomForm = computed(() =>
     Array.isArray(props.blueprint.replaceForm) && props.blueprint.replaceForm.length > 0
 )
 
-const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })
+/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
+const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
-    console.log('onPropertyUpdate', fieldKeys, newVal)
-    setFormValue(modelValue.value, fieldKeys, newVal)
-    onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor')
+    const setValue = setFormValue(modelValue.value || {}, fieldKeys, newVal)
+    console.log('value from set ', setValue)
+    emits('update:modelValue', setValue);
+    /* onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor') */
 }
 
 const accordionKey = computed(() => {
@@ -56,7 +62,6 @@ const accordionKey = computed(() => {
 <template>
     <!-- Accordion mode -->
     <AccordionPanel v-if="blueprint.name" :key="accordionKey" :value="blueprint.accordion_key ?? accordionKey">
-        <!-- wewew {{ blueprint.accordion_key }} {{ accordionKey }} -->
         <AccordionHeader>
             <div class="flex items-center gap-2">
                 <Icon v-if="blueprint.icon" :data="blueprint.icon" />
@@ -66,7 +71,7 @@ const accordionKey = computed(() => {
 
         <AccordionContent class="p-4">
             <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)"
-                :blueprint="blueprint" :uploadImageRoute="uploadImageRoute" />
+                :blueprint="blueprint" :uploadImageRoute="uploadImageRoute" @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
             <RenderFields v-else :modelValue="modelValue" :blueprint="blueprint"
                 :uploadImageRoute="uploadImageRoute"
@@ -77,7 +82,7 @@ const accordionKey = computed(() => {
     <!-- Non-accordion mode -->
     <div v-else class="bg-white mt-0 mb-2 pb-3">
         <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)"
-            :blueprint="blueprint" :uploadImageRoute="uploadImageRoute" />
+            :blueprint="blueprint" :uploadImageRoute="uploadImageRoute"  @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
 
         <RenderFields v-else :modelValue="modelValue" :blueprint="blueprint"

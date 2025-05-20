@@ -9,6 +9,7 @@ library.add(faCheck)
 const props = defineProps<{
 	fieldValue: {}
 	theme?: any
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -21,7 +22,7 @@ const emits = defineEmits<{
 <template>
 	<div
 		class="container mx-auto max-w-7xl px-6 lg:px-8"
-		:style="getStyles(fieldValue?.container?.properties)">
+		:style="getStyles(fieldValue?.container?.properties,screenType)">
 		<div class="relative py-8">
 			<!-- ➊ thicker, rounded, full‑height line, behind everything -->
 			<div

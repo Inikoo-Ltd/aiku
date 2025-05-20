@@ -48,6 +48,7 @@ watch((value),(newValue)=>{
         <SideEditor 
             :blueprint="blueprint" 
             v-model="value"
+            @update:model-value="e => value = e"
          />
     </div>
 </template>

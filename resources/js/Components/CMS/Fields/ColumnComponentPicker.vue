@@ -3,9 +3,7 @@ import { ref, onMounted, provide } from 'vue'
 import { trans } from "laravel-vue-i18n"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import Modal from "@/Components/Utils/Modal.vue"
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { router } from '@inertiajs/vue3'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import Image from '@/Components/Image.vue'
 import axios from 'axios'
@@ -38,11 +36,11 @@ const getWebBlockTypes = async () => {
 }
 
 
-const onSaveWorkshopFromId = (blockId: number, from?: string) => {
+/* const onSaveWorkshopFromId = (blockId: number, from?: string) => {
   emit("update:modelValue", model.value);
 };
 
-provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
+provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 
 
 onMounted(() => {

@@ -9,13 +9,14 @@ library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
 	fieldValue: any
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 </script>
 
 <template>
 	<section class="w-full min-h-[100px] flex items-center justify-center"
-		:style="getStyles(fieldValue?.data?.fieldValue?.container?.properties)"
+		:style="getStyles(fieldValue?.data?.fieldValue?.container?.properties,screenType)"
 	>
 		<!-- If no component selected -->
 		<div

@@ -27,7 +27,7 @@ const updateData = (newVal: any) => {
 
 <template>
 	<section class="w-full min-h-[100px] flex items-center justify-center"
-		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties)"
+		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties,screenType)"
 	>
 		<div
 			v-if="!modelValue"

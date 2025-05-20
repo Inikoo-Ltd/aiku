@@ -232,6 +232,7 @@ onMounted(() => {
                         :blueprint="getBlueprint(usedTemplates.code)" 
                         :panel-open="panelOpen" 
                         :uploadImageRoute="uploadImageRoute"
+                        @update:model-value="e => usedTemplates.data.fieldValue = e"
                     />
                     </div>
                 </div>

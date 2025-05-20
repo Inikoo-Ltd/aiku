@@ -98,6 +98,7 @@ onMounted(() => {
                 :uploadImageRoute="uploadImageRoute" 
                  v-model="modelValue"
                 :key="field.key"
+                @update:modelValue="e =>  emits('update:modelValue', e)"
             />
         </Accordion>
     </div>
