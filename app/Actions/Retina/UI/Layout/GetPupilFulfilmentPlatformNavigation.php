@@ -13,7 +13,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetPupilDropshippingPlatformNavigation
+class GetPupilFulfilmentPlatformNavigation
 {
     use AsAction;
 
@@ -39,7 +39,7 @@ class GetPupilDropshippingPlatformNavigation
             }
 
             $platformNavigation['portfolios'] = [
-                'label' => __('Portfolios'),
+                'label' => __('SKUs'),
                 'icon' => ['fal', 'fa-cube'],
                 'root' => 'pupil.dropshipping.platforms.portfolios.',
                 'route' => [

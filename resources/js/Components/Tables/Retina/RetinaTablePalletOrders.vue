@@ -57,7 +57,6 @@ function orderRoute(order) {
   }
 }
 
-
 </script>
 
 <template>
@@ -98,7 +97,7 @@ function orderRoute(order) {
 
 
       <template #cell(total_amount)="{ item }">
-        {{ locale?.currencyFormat(currency.code || "usd", item.total_amount || 0) }}
+        {{ locale?.currencyFormat(currency?.code || "usd", item.total_amount || 0) }}
       </template>
 
       <template #cell(date)="{ item: order }">
