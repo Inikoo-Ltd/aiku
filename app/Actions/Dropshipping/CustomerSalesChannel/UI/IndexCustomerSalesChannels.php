@@ -13,13 +13,11 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -47,7 +45,7 @@ class IndexCustomerSalesChannels extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(CustomerSalesChannel::class)
+        return QueryBuilder::for(CustomerSalesChannel::class)
                 ->where('customer_sales_channels.customer_id', $customer->id)
                 ->select([
                 'customer_sales_channels.id',
@@ -59,18 +57,16 @@ class IndexCustomerSalesChannels extends OrgAction
                 'customer_sales_channels.platform_id',
                 ])
                 ->selectSub(function ($subquery) {
-                $subquery->from('orders')
-                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
-                    ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
-                    ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
+                    $subquery->from('orders')
+                        ->selectRaw('COALESCE(SUM(total_amount), 0)')
+                        ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
+                        ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
                 }, 'total_amount')
                 ->defaultSort('customer_sales_channels.reference')
                 ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
                 ->allowedFilters([$globalSearch])
                 ->withPaginator($prefix, tableName: request()->route()->getName())
                 ->withQueryString();
-
-        return $query;
     }
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
@@ -88,11 +84,8 @@ class IndexCustomerSalesChannels extends OrgAction
             'label' => __('Sales Channels')
         ];
 
-        $manualPlatform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
-        $manualCustomerSalesChannel = $this->customer->customerSalesChannels()
-            ->where('platform_id', $manualPlatform->id)
-            ->first();
+
 
         $actions = [];
 

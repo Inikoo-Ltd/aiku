@@ -10,7 +10,6 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
-use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
@@ -56,7 +55,8 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
             'Dropshipping/Client/CustomerClient',
             [
                 'title'       => __('customer client'),
-                'breadcrumbs' => $this->getBreadcrumbs($customerClient, 
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $customerClient,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -109,8 +109,8 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
     public function getBreadcrumbs(CustomerClient $customerClient, $routeName, $routeParameters): array
     {
         return array_merge(
-                IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
-                [
+            IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
+            [
                     [
                         'type'   => 'simple',
                         'simple' => [
@@ -125,7 +125,7 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
                         ]
                     ]
                 ]
-            );
+        );
     }
 
 
