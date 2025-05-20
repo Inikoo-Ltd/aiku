@@ -61,7 +61,7 @@ const layout: any = inject("layout", {});
     <meta name="description" :content="meta.meta_description">
   </Head>
 
-
+{{ props.meta }}
   <div class="bg-white">
 
 
