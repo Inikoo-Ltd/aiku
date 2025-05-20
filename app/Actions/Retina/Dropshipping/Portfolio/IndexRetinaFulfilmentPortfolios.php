@@ -98,7 +98,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
                 'actions' => [
-                        !empty($portfolios) ? [
+                        $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Sync All Items',
@@ -110,7 +110,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                                 'method' => 'post'
                             ]
                         ] : [],
-                        !empty($portfolios) ? [
+                        $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Add Portfolio',
