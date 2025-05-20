@@ -110,7 +110,28 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                         'label' => ' @'.$this->platform->name
                     ],
                 ],
-
+                'routes' => [
+                    'storeClientWithOrderRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.fulfilment.customer-client-with-order.store',
+                        'parameters' => [
+                            $this->customerSalesChannel->id
+                        ],
+                        'method' => 'post'
+                    ],
+                    'fetchClientsRoute' => [
+                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    'storeBasketRoute' => [
+                        'name' => 'retina.models.customer-client.fulfilment_order.store',
+                        'parameters' => [
+                            // FE put client id here
+                        ],
+                        'method' => 'post'
+                    ]
+                ],
                 'data' => PalletReturnsResource::collection($palletReturns),
             ]
         )->table($this->tableStructure(prefix: 'pallet_returns'));
