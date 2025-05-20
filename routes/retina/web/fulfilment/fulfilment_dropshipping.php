@@ -14,7 +14,6 @@ use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
-use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
@@ -22,7 +21,9 @@ use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustome
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\FetchRetinaFulfilmentCustomerClientFromShopify;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\FetchRetinaFulfilmentCustomerClientFromWooCommerce;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\CreateRetinaFulfilmentPlatformCustomerClient;
+use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\EditRetinaFulfilmentPlatformCustomerClient;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel;
+use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\ShowRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Fulfilment\Order\UI\IndexRetinaFulfilmentOrders;
 use App\Actions\Retina\Fulfilment\PalletReturn\UI\ShowRetinaStoredItemReturn;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
@@ -63,6 +64,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         Route::prefix('client')->as('client.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::class)->name('index');
             Route::get('{customerClient}', ShowRetinaFulfilmentCustomerClient::class)->name('show');
+            Route::get('/{customerClient}/edit', EditRetinaFulfilmentPlatformCustomerClient::class)->name('edit');
             Route::get('create', [CreateRetinaFulfilmentPlatformCustomerClient::class, 'inPlatform'])->name('create');
             Route::get('fetch', FetchRetinaFulfilmentCustomerClientFromShopify::class)->name('fetch');
             Route::get('wc-fetch', FetchRetinaFulfilmentCustomerClientFromWooCommerce::class)->name('wc-fetch');

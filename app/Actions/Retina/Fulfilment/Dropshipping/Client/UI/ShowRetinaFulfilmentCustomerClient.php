@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Dropshipping\Client\UI;
+namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel;
@@ -56,7 +56,10 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
             'Dropshipping/Client/CustomerClient',
             [
                 'title'       => __('customer client'),
-                'breadcrumbs' => $this->getBreadcrumbs($customerClient, $request->route()->getName(), $request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($customerClient, 
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead' => [
                     'title'     => $customerClient->name,
                     'model'     => __($customerClient->customer->name),
@@ -65,7 +68,7 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
                         'title' => __('customer client')
                     ],
                     'actions'    => [
-                        $this->getEditActionIcon($request, 'Profile'),
+                        $this->getEditActionIcon($request, ''),
                         [
                             'type'  => 'button',
                             'style' => 'create',
@@ -103,10 +106,9 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
         return new CustomerClientResource($customerClient);
     }
 
-    public function getBreadcrumbs(CustomerClient $customerClient, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(CustomerClient $customerClient, $routeName, $routeParameters): array
     {
-        return
-            array_merge(
+        return array_merge(
                 IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
