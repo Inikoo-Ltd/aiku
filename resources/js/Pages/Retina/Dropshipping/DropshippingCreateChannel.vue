@@ -28,7 +28,6 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    createRoute: routeType
     shopify_url: string
     unlinkRoute: routeType
     fetchCustomerRoute: routeType
@@ -44,6 +43,7 @@ const props = defineProps<{
         isAuthenticated: boolean
     }
     type_shopify: {
+        createRoute: routeType
         connectRoute?: {
             url: string
         }
@@ -66,9 +66,9 @@ const layout = inject('layout', layoutStructure)
 const isModalOpen = ref<string | boolean>(false)
 const websiteInput = ref<string | null>(null)
 const isLoading = ref<string | boolean>(false)
-const onCreateStore = () => {
-    router[props.createRoute.method || 'post'](
-        route(props.createRoute.name, props.createRoute.parameters),
+const onCreateStoreShopify = () => {
+    router[props.type_shopify.createRoute.method || 'post'](
+        route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
         {
             name: websiteInput.value
         },
@@ -298,6 +298,7 @@ const onSubmitWoocommerce = async () => {
         </div>
     </div>
 
+    <!-- Modal: Shopify -->
     <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
         <div class="h-40">
             <div class="mb-4">
@@ -314,9 +315,9 @@ const onSubmitWoocommerce = async () => {
                 icon: 'fal fa-globe'
             }" :rightAddOn="{
                     label: shopify_url
-                }" @keydown.enter="() => onCreateStore()" />
+                }" @keydown.enter="() => onCreateStoreShopify()" />
 
-            <Button @click="() => onCreateStore()" full label="Create" :loading="!!isLoading" class="mt-6" />
+            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 
