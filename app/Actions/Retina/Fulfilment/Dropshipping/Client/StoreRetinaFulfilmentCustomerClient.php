@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Fulfilment\Client;
+namespace App\Actions\Retina\Fulfilment\Dropshipping\Client;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaAction;

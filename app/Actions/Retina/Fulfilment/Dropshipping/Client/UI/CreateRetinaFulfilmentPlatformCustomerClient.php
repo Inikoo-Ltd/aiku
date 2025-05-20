@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Fulfilment\Client\UI;
+namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;

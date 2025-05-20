@@ -28,7 +28,6 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    createRoute: routeType
     shopify_url: string
     unlinkRoute: routeType
     fetchCustomerRoute: routeType
@@ -44,10 +43,12 @@ const props = defineProps<{
         isAuthenticated: boolean
     }
     type_shopify: {
+        createRoute: routeType
         connectRoute?: {
             url: string
         }
         isAuthenticated: boolean
+        shopify_url: string
     }
     type_woocommerce: {
         connectRoute: routeType
@@ -66,9 +67,9 @@ const layout = inject('layout', layoutStructure)
 const isModalOpen = ref<string | boolean>(false)
 const websiteInput = ref<string | null>(null)
 const isLoading = ref<string | boolean>(false)
-const onCreateStore = () => {
-    router[props.createRoute.method || 'post'](
-        route(props.createRoute.name, props.createRoute.parameters),
+const onCreateStoreShopify = () => {
+    router[props.type_shopify.createRoute.method || 'post'](
+        route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
         {
             name: websiteInput.value
         },
@@ -82,10 +83,10 @@ const onCreateStore = () => {
                 })
             },
             onSuccess: () => {
+                window.open(props.type_shopify.connectRoute?.url + '?shop=' + websiteInput.value + props.type_shopify.shopify_url, '_blank')
+
                 isModalOpen.value = false
                 websiteInput.value = null
-
-                window.open(props.type_shopify.connectRoute?.url, '_blank')
             },
             onFinish: () => isLoading.value = false
         }
@@ -171,7 +172,7 @@ const onSubmitWoocommerce = async () => {
                                 <Button :loading="isLoading === 'unlink'" label="Unlink" type="negative"
                                     icon="fal fa-unlink" size="xs" />
                             </Link>
-                            
+
                             <a target="_blank" :href="type_shopify?.connectRoute?.url" class="w-full">
                                 <Button label="Open" key="secondary" full iconRight="fal fa-external-link-alt"
                                     size="xs" />
@@ -244,7 +245,7 @@ const onSubmitWoocommerce = async () => {
 
             <!-- Section: Woocommerce -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <Link :href="route('retina.dropshipping.platforms.dashboard', ['tiktok'])"
+                <Link :href="route('retina.dropshipping.platforms.dashboard', ['woocommerce'])"
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png"
                         alt="" class="h-12">
@@ -298,6 +299,7 @@ const onSubmitWoocommerce = async () => {
         </div>
     </div>
 
+    <!-- Modal: Shopify -->
     <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
         <div class="h-40">
             <div class="mb-4">
@@ -314,9 +316,9 @@ const onSubmitWoocommerce = async () => {
                 icon: 'fal fa-globe'
             }" :rightAddOn="{
                     label: shopify_url
-                }" @keydown.enter="() => onCreateStore()" />
+                }" @keydown.enter="() => onCreateStoreShopify()" />
 
-            <Button @click="() => onCreateStore()" full label="Create" :loading="!!isLoading" class="mt-6" />
+            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 
