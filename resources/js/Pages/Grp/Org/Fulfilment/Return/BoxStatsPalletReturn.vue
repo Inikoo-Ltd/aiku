@@ -35,6 +35,7 @@ import Fieldset from "primevue/fieldset"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
+import { useTruncate } from "@/Composables/useTruncate"
 library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes)
 
 const props = defineProps<{
@@ -326,6 +327,27 @@ const onDeleteShipment = (idShipment: number) => {
 }
 
 const listError = inject('listError', {})
+
+const base64ToPdf = (base: string) => {
+	// Convert base64 to byte array
+	const byteCharacters = atob(base);
+	const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0));
+	const byteArray = new Uint8Array(byteNumbers);
+
+	// Create a Blob and generate object URL
+	const blob = new Blob([byteArray], { type: 'application/pdf' });
+	const blobUrl = URL.createObjectURL(blob);
+
+	// Create a temporary link to trigger download
+	const link = document.createElement('a');
+	link.href = blobUrl;
+	link.download = 'file.pdf';
+	link.click();
+
+	// Clean up the object URL
+	URL.revokeObjectURL(blobUrl);
+}
+
 </script>
 
 <template>
@@ -616,17 +638,27 @@ const listError = inject('listError', {})
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
 						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums">
 							<div class="flex justify-between">
-								<a v-if="sments.combined_label_url" target="_blank" :href="sments.combined_label_url" class="">
+								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
 									{{ sments.name }}
 									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 								</a>
+								
+								<div v-else-if="sments.pdf_label" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.pdf_label)" class="group cursor-pointer">
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 group-hover:text-gray-700" fixed-width aria-hidden="true" />
+								</div>
 								
 								<div v-else>
 									<span class="truncate">
 										{{ sments.name }}
 									</span>
 									<span v-if="sments.tracking" class="text-gray-400">
-										({{ sments.tracking }})
+										({{ useTruncate(sments.tracking, 14) }})
 									</span>
 								</div>
 

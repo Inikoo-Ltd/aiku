@@ -95,7 +95,7 @@ class CallApiItdShipping extends OrgAction
                     'fromAddressCountyState' => Arr::get($parentResource, 'from_address.administrative_area'),
                     'fromAddressZip'         => Arr::get($parentResource, 'from_address.postal_code'),
                     'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country.code'),
-                    'toAddressFirstName'     => Arr::get($parentResource, 'from_first_name'),
+                    'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'),
                     'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'),
                     'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'),
                     'toAddressPhone'         => Arr::get($parentResource, 'to_phone'),
