@@ -72,6 +72,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
             'pallet_return_stats.number_physical_goods as number_physical_goods',
             'pallet_returns.date',
             'pallet_returns.total_amount',
+            'pallet_returns.created_at',
             'currencies.code as currency_code',
         );
         return $query->defaultSort('id')
