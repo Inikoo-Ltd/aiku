@@ -9,6 +9,7 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -114,7 +115,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                                 'tooltip' => __('new client'),
                                 'label'   => __('client'),
                                 'route'   => [
-                                    'name'       => 'retina.dropshipping.client.create',
+                                    'name'       => 'retina.dropshipping.customer_clients.create',
                                 ]
                             ]
                         ],
@@ -198,13 +199,13 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
+                ShowCustomerSalesChannelInFulfilment::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),

@@ -23,6 +23,7 @@ use App\Actions\CRM\WebUser\EditWebUser;
 use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannelsInFulfilment;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
@@ -31,7 +32,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatform
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\Pallet\DownloadPalletsTemplate;
 use App\Actions\Fulfilment\Pallet\DownloadPalletStoredItemTemplate;
 use App\Actions\Fulfilment\Pallet\PdfPallet;
@@ -166,22 +166,22 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
         });
     });
 
-    Route::prefix('customer-clients')->as('.customer-clients')->group(function () {
+    Route::prefix('customer-clients')->as('.customer_clients')->group(function () {
         Route::get('', [IndexCustomerClients::class, 'inFulfilmentCustomer'])->name('.index');
         Route::get('{customerClient}', [ShowCustomerClient::class, 'inFulfilmentCustomer'])->name('.show');
     });
 
-    Route::prefix('platforms')->as('.platforms')->group(function () {
+    Route::prefix('channels')->as('.customer_sales_channels')->group(function () {
         Route::get('', IndexCustomerSalesChannelsInFulfilment::class)->name('.index');
-        Route::prefix('/{customerHasPlatform}')->as('.show')->group(function () {
-            Route::get('', ShowFulfilmentCustomerPlatform::class);
+        Route::prefix('/{customerSalesChannel}')->as('.show')->group(function () {
+            Route::get('', ShowCustomerSalesChannelInFulfilment::class);
 
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
                 Route::get('', IndexStoredItemsInFulfilmentCustomerPlatform::class)->name('.index');
                 Route::get('/{storedItem}', [ShowStoredItem::class, 'inPlatformInFulfilmentCustomer'])->name('.show')->withoutScopedBindings();
             });
-            Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
-                Route::get('', [IndexCustomerClients::class, 'inCustomerSalesChannelInFulfilmentCustomer'])->name('.manual.index');
+            Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
+                Route::get('', [IndexCustomerClients::class, 'inCustomerSalesChannelInFulfilmentCustomer'])->name('.index');
                 Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
                 Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
                 Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inFulfilmentPlatform'])->name('.edit');

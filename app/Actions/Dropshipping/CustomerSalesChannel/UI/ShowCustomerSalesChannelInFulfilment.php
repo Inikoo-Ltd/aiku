@@ -1,21 +1,20 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 02-04-2025-15h-30m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 20 May 2025 12:58:36 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
+namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -24,7 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowFulfilmentCustomerPlatform extends OrgAction
+class ShowCustomerSalesChannelInFulfilment extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
@@ -37,7 +36,6 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
     public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentCustomerTabsEnum::values());
-
         return $this->handle($customerSalesChannel);
     }
 
@@ -47,8 +45,9 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 
         $actions = [];
 
+
         return Inertia::render(
-            'Org/Fulfilment/FulfilmentCustomerPlatform',
+            'Org/Fulfilment/CustomerSalesChannelInFulfilment',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -62,7 +61,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                     ],
                     'model'         => __('Platform'),
                     'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($customerSalesChannel, $request),
-                    'title'         => $customerSalesChannel->platform->name,
+                    'title'         => $customerSalesChannel->reference,
                     'afterTitle'    => [
                         'label' => '('.$customerSalesChannel->customer->name.')',
                     ],
@@ -73,13 +72,27 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+
+                'showcase' => [
+                    'stats' => [
+                        'name' => match ($customerSalesChannel->platform->type) {
+                            PlatformTypeEnum::SHOPIFY => $customerSalesChannel->customer->shopifyUser->name,
+                            PlatformTypeEnum::WOOCOMMERCE => $customerSalesChannel->customer->wooCommerceUser->name,
+                            PlatformTypeEnum::TIKTOK => $customerSalesChannel->customer->tiktokUser->name,
+                            default => $customerSalesChannel->customer->name,
+                        },
+                        'number_orders' => $customerSalesChannel->number_orders,
+                        'number_customer_clients' => $customerSalesChannel->number_customer_clients,
+                        'number_portfolios' => $customerSalesChannel->number_portfolios
+                    ]
+                ]
             ]
         );
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, array $routeParameters): array
     {
-        $headCrumb = function (Platform $platform, array $routeParameters, string $suffix = '') {
+        $headCrumb = function (CustomerSalesChannel $customerSalesChannel, array $routeParameters, string $suffix = '') {
             return [
                 [
 
@@ -91,7 +104,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $platform->name,
+                            'label' => $customerSalesChannel->reference,
                         ],
 
                     ],
@@ -107,20 +120,20 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                 $routeParameters
             ),
             $headCrumb(
-                $customerSalesChannel->platform,
+                $customerSalesChannel,
                 [
 
                     'index' => [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.index',
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.index',
                         'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
                     ],
                     'model' => [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show',
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show',
                         'parameters' => [
                             'organisation'       => $routeParameters['organisation'],
                             'fulfilment'         => $routeParameters['fulfilment'],
                             'fulfilmentCustomer' => $routeParameters['fulfilmentCustomer'],
-                            'customerHasPlatform'           => $customerSalesChannel
+                            'customerSalesChannel'           => $customerSalesChannel
                         ]
                     ]
                 ]

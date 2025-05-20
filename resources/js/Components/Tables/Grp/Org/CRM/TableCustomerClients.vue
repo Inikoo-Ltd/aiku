@@ -5,52 +5,73 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
-import Table from "@/Components/Table/Table.vue"
-import { FulfilmentCustomer } from "@/types/Customer"
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
-import { inject } from "vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { Link } from "@inertiajs/vue3";
+import Table from "@/Components/Table/Table.vue";
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue";
+import { useFormatTime } from "@/Composables/useFormatTime";
+import { inject } from "vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { RouteParams } from "@/types/route-params";
+import { CustomerSalesChannel } from "@/types/customer-client";
 
 const props = defineProps<{
     data: {}
     tab?: string
-}>()
+}>();
 
-const locale = inject('locale', aikuLocaleStructure)
+const locale = inject("locale", aikuLocaleStructure);
 
 
-function customerRoute(customer: FulfilmentCustomer) {
+function customerRoute(customer: CustomerSalesChannel) {
     switch (route().current()) {
-        case "grp.org.shops.show.crm.customers.show.customer-clients.index":
+        case "grp.org.shops.show.crm.customers.show.customer_clients.index":
             return route(
-                "grp.org.shops.show.crm.customers.show.customer-clients.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], customer.ulid])
-        case "grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index":
+                "grp.org.shops.show.crm.customers.show.customer_clients.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).customer,
+                    customer.ulid
+                ]);
+        case "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.index":
             return route(
-                "grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["customerHasPlatform"], customer.ulid])
-        case "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index":
+                "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).fulfilment,
+                    (route().params as RouteParams).fulfilmentCustomer,
+                    (route().params as RouteParams).customerSalesChannel,
+                    customer.ulid]);
+        case "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index":
             return route(
                 "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["platform"], customer.ulid])
-        case "grp.org.fulfilments.show.crm.customers.show.customer-clients.index":
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).customer,
+                    (route().params as RouteParams).customerSalesChannel,
+                    customer.ulid]);
+        case "grp.org.fulfilments.show.crm.customers.show.customer_clients.index":
             return route(
-                "grp.org.fulfilments.show.crm.customers.show.customer-clients.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], customer.ulid])
-        case "grp.fulfilment.customers.index":
-            return route(
-                "grp.fulfilment.customers.show",
-                [customer.slug])
-        case "retina.dropshipping.client.index":
+                "grp.org.fulfilments.show.crm.customers.show.customer_clients.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).fulfilment,
+                    (route().params as RouteParams).fulfilmentCustomer,
+                    customer.ulid]);
+        case "retina.dropshipping.customer_clients.index":
         case "retina.dropshipping.platforms.client.index":
             return route(
-                "retina.dropshipping.client.show",
+                "retina.dropshipping.customer_clients.show",
                 [customer.ulid]
+            );
+        case "retina.fulfilment.dropshipping.customer_sales_channels.client.index":
+            return route(
+                "retina.fulfilment.dropshipping.customer_sales_channels.client.show",
+                [route().params["customerSalesChannel"], customer.ulid]
             )
         default:
-            return ''
+            return "";
     }
 }
 </script>

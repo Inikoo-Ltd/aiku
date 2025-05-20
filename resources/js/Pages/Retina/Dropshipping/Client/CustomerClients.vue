@@ -26,16 +26,18 @@ const isModalUploadOpen = ref(false)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #other="{ action }">
+		<template v-if="upload_spreadsheet" #other>
 			<Button
 				@click="() => (isModalUploadOpen = true)"
 				:label="'Upload File'"
-				:style="'upload'" />
+				:style="'upload'"
+			/>
 		</template>
 	</PageHeading>
 	<TableCustomerClients :data="data" />
 
 	<UploadExcel
+		v-if="upload_spreadsheet"
 		v-model="isModalUploadOpen"
 		scope="Supplier Product"
 		:title="{

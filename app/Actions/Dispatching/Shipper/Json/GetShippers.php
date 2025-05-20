@@ -24,7 +24,7 @@ class GetShippers extends OrgAction
 
         return Shipper::where('organisation_id', $organisation->id)
             ->where('status', true)
-            ->orderBy('name', 'asc')
+            ->orderBy('api_shipper', 'asc')
             ->get();
     }
 

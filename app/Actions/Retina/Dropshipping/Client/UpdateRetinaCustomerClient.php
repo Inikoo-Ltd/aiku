@@ -14,7 +14,6 @@ use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerClient;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerClient extends RetinaAction
@@ -31,15 +30,13 @@ class UpdateRetinaCustomerClient extends RetinaAction
 
     public function rules(): array
     {
-        $rules = [
+        return [
         'contact_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
         'company_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
         'email'          => ['sometimes', 'nullable', 'email'],
         'phone'          => ['sometimes', 'nullable', new Phone()],
         'address'        => ['sometimes', new ValidAddress()],
         ];
-
-        return $rules;
     }
 
     public function asController(CustomerClient $customerClient, ActionRequest $request)
@@ -49,8 +46,5 @@ class UpdateRetinaCustomerClient extends RetinaAction
         $this->handle($customerClient, $this->validatedData);
     }
 
-    // public function htmlResponse(CustomerClient $customerClient)
-    // {
-    //     return Redirect::route('retina.dropshipping.client.show', [$customerClient->ulid]);
-    // }
+
 }

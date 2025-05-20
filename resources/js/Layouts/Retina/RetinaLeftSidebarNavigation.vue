@@ -17,7 +17,7 @@ import { generateNavigationName, generateCurrentString } from '@/Composables/use
 
 import { get } from "lodash"
 import RetinaNavigationGroup from "@/Layouts/Retina/RetinaNavigationGroup.vue"
-import RetinaNavigationHorizontalDummy from "./RetinaNavigationHorizontalDummy.vue"
+import RetinaNavigationHorizontalNew from "./RetinaNavigationHorizontalNew.vue"
 library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey)
 
 const layout = inject('layout', {})
@@ -170,7 +170,7 @@ const iconList: { [key: string]: string } = {
         <!-- LeftSidebar: Grp -->
         <template v-else v-for="(grpNav, itemKey) in layout.navigation">
             <template v-if="grpNav.type === 'horizontal'">
-                <RetinaNavigationHorizontalDummy
+                <RetinaNavigationHorizontalNew
                     :key="itemKey + 'platform'"
                     :nav="grpNav"
                 />

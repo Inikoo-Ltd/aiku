@@ -55,4 +55,11 @@ class StoreRetinaProductManual extends RetinaAction
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }
+
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
+    {
+        $this->initialisationActions($customerSalesChannel->customer, $modelData);
+
+        $this->handle($customerSalesChannel, $this->validatedData);
+    }
 }

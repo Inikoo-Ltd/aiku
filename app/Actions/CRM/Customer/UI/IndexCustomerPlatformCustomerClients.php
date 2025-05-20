@@ -30,6 +30,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
+// TODO DELETE THIS!!!
 class IndexCustomerPlatformCustomerClients extends OrgAction
 {
     use WithCustomerSalesChannelSubNavigation;
@@ -161,7 +162,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.other_platform.index',
+                                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),

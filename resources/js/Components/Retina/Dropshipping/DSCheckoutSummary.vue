@@ -1,7 +1,6 @@
 <script setup lang="ts">
     
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faClipboard, faDollarSign, faPencil } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
@@ -10,7 +9,7 @@ import { AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 
-const props = defineProps<{
+defineProps<{
     summary: {
         net_amount: string
         gross_amount: string
@@ -34,7 +33,7 @@ const isModalShippingAddress = ref(false)
         <div class="col-span-2">
             <!-- Field: Reference Number -->
             <Link as="a" v-if="summary?.customer_client.reference" v-tooltip="trans('Reference')"
-                :href="route('retina.dropshipping.client.show', summary?.customer_client.reference)"
+                :href="route('retina.dropshipping.customer_clients.show', summary?.customer_client.reference)"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -94,16 +93,7 @@ const isModalShippingAddress = ref(false)
                 </dd>
             </div>
 
-            <!-- Field: Invoice Address -->
-            <!-- <div v-if="summary?.customer?.addresses?.billing?.formatted_address"
-                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Billing address')">
-                <div class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-dollar-sign' class='text-gray-400' fixed-width aria-hidden='true' />
-                </div>
-                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-                    v-html="summary?.customer?.addresses?.billing?.formatted_address">
-                </dd>
-            </div> -->
+
         </div>
         
         <div class="col-span-2">
@@ -125,43 +115,7 @@ const isModalShippingAddress = ref(false)
             </div>
         </div>
 
-        <!-- <div class="text-right">
-            <div class="py-1 border-t border-gray-400 grid grid-cols-2 ">
-                <div>Item gross</div>
-                <div>{{ summary.gross_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>Discounts</div>
-                <div>-31.83</div>
-            </div>
-            <div class="py-1 border-t border-gray-400 grid grid-cols-2 ">
-                <div>Item Net</div>
-                <div>{{ summary.net_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>Charges</div>
-                <div>{{ summary.charges_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>Shipping</div>
-                <div>{{ summary.services_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-400 grid grid-cols-2 ">
-                <div>Net</div>
-                <div>79.28</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>
-                    <div>Tax</div>
-                    <div class="text-xs text-gray-400">GB-SR VAT 20%</div>
-                </div>
-                <div>15.86</div>
-            </div>
-            <div class="font-semibold py-1 border-t border-b border-gray-400 grid grid-cols-2 ">
-                <div class="">Total</div>
-                <div>79.28</div>
-            </div>
-        </div> -->
+
 
         <!-- Section: Delivery address -->
         <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)">

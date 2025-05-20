@@ -71,7 +71,8 @@ class StoreFulfilmentFromShopify extends OrgAction
                     'shopify_user_id' => $shopifyUser->id,
                 ],
                 'is_collection' => false,
-                'shopify_user_id' => $shopifyUser->id
+                'shopify_user_id' => $shopifyUser->id,
+                'customer_sales_channel_id' => $shopifyUser->customerSalesChannel->id
             ]);
 
             $storedItems = [];

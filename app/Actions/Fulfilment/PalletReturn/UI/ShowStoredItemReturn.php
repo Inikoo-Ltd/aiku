@@ -9,9 +9,9 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
@@ -329,17 +329,17 @@ class ShowStoredItemReturn extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show' => array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, $routeParameters),
+            'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.show' => array_merge(
+                ShowCustomerSalesChannelInFulfilment::make()->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
                     $palletReturn,
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',
                             'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],

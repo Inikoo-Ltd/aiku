@@ -502,7 +502,7 @@ class ShowPalletReturn extends OrgAction
                         'organisation'       => $palletReturn->organisation->slug,
                         'fulfilment'         => $palletReturn->fulfilment->slug,
                         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                        'customerHasPlatform' => $parent,
+                        'customerSalesChannel' => $parent,
                         'palletReturn'       => $palletReturn->reference
                     ]
 

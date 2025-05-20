@@ -51,9 +51,9 @@ function orderRoute(order: Order) {
       return route(
         "grp.org.shops.show.crm.customers.show.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug]);
-    case "grp.org.shops.show.crm.customers.show.customer-clients.orders.index":
+    case "grp.org.shops.show.crm.customers.show.customer_clients.orders.index":
       return route(
-        "grp.org.shops.show.crm.customers.show.customer-clients.orders.show",
+        "grp.org.shops.show.crm.customers.show.customer_clients.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerClient, order.slug]);
     default:
       return null;

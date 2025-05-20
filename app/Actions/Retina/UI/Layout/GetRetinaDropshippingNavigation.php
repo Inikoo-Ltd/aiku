@@ -49,23 +49,36 @@ class GetRetinaDropshippingNavigation
 
 
         foreach (
-            $customer->customerSalesChannels as $salesChannel
+            $customer->customerSalesChannels as $customerSalesChannels
         ) {
-            $reference = $customerSalesChannel->reference ?? 'n/a';
+            $logo_img = null;
+            if ($customerSalesChannels->platform->code === 'shopify') {
+                $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
+            } elseif ($customerSalesChannels->platform->code === 'tiktok') {
+                $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+            } elseif ($customerSalesChannels->platform->code === 'woocommerce') {
+                $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+            } elseif ($customerSalesChannels->platform->code === 'manual') {
+                $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
+            }
+
+            $reference = $customerSalesChannels->reference ?? 'n/a';
+
             $platforms_navigation[] = [
-                'id'            => $salesChannel->id,
-                'type'          => $salesChannel->platform->type,
-                'slug'          => $salesChannel->slug,
-                'key'           => $salesChannel->reference. '_platform',
-                'label'         => $salesChannel->platform->name. '-' . $reference ,
+                'id'            => $customerSalesChannels->id,
+                'type'          => $customerSalesChannels->platform->type,
+                'slug'          => $customerSalesChannels->slug,
+                'key'           => $customerSalesChannels->slug. '_channel',
+                'label'         => $customerSalesChannels->platform->name. ' (' . $reference . ')' ,
+                'img'           => $logo_img,
                 'route'         => [
                     'name' => 'retina.dropshipping.platforms.dashboard',
                     'parameters' => [
-                        'platform' => $salesChannel->platform->slug
+                        'platform' => $customerSalesChannels->platform->slug
                     ]
                 ],
                 'root'          => 'retina.dropshipping.platforms.',
-                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $salesChannel->platform)
+                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $customerSalesChannels->platform)
             ];
         }
 

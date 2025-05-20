@@ -47,7 +47,7 @@ class CustomerClientRecordSearch
                 ),
                 'result' => [
                     'route'         => [
-                        'name'          => 'grp.org.shops.show.crm.customers.show.customer-clients.show',
+                        'name'          => 'grp.org.shops.show.crm.customers.show.customer_clients.show',
                         'parameters'    => [
                             $customerClient->organisation->slug,
                             $customerClient->shop->slug,

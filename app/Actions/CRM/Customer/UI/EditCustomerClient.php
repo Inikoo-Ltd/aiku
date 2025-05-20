@@ -107,7 +107,7 @@ class EditCustomerClient extends OrgAction
                         ],
                     'args' => [
                         'updateRoute'     => [
-                            'name'      => 'grp.models.customer-client.update',
+                            'name'      => 'grp.models.customer_client.update',
                             'parameters' => [
                                 'customerClient' => $customerClient->id
                             ]

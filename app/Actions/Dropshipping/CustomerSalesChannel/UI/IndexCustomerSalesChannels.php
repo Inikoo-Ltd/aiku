@@ -90,22 +90,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
         $actions = [];
 
-        if (!$manualCustomerSalesChannel && $manualPlatform) {
-            $actions[] = [
-                'type'        => 'button',
-                'style'       => 'create',
-                'label'       => __('add manual channel'),
-                'fullLoading' => true,
-                'route'       => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.customer.customer_sales_channel.store',
-                    'parameters' => [
-                        'customer' => $this->customer->id,
-                        'platform' => $manualPlatform->id
-                    ]
-                ]
-            ];
-        }
+
 
         return Inertia::render(
             'Org/Dropshipping/CustomerSalesChannels',
@@ -145,6 +130,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('reference');
         };
     }

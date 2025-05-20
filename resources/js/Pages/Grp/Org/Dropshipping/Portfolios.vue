@@ -24,6 +24,8 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     customer: {}
+    is_show_add_products_modal: boolean
+    customerSalesChannelId: number
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -62,10 +64,9 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template v-if="(route().params as RouteParams).platform === 'manual'" #other>
+        <template v-if="is_show_add_products_modal" #other>
             <Button
                 @click="() => isOpenModalPortfolios = true"
                 :type="'secondary'"
@@ -78,7 +79,7 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
     
     <TablePortfolios :data="data" />
 
-    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+    <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
             :headLabel="trans('Add products to portfolios')"
             :route-fetch="{
@@ -90,7 +91,7 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
                 }
             }"
             :isLoadingSubmit
-            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), props.data.data[0].customer_sales_channel_id)"
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)"
         >
         </ProductsSelector>
     </Modal>
