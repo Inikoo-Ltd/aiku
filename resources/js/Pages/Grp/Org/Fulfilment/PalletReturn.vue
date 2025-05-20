@@ -54,7 +54,7 @@ import {
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight,
+	faWeight, faPrint,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -82,7 +82,7 @@ library.add(
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight
+	faWeight, faPrint
 )
 
 const props = defineProps<{
@@ -329,6 +329,8 @@ const listError = ref({
 	box_stats_parcel: false
 })
 provide("listError", listError.value)
+
+// const optionShippingList = ref([])
 </script>
 
 <template>
@@ -725,7 +727,7 @@ provide("listError", listError.value)
 		v-if="!data.data?.is_collection"
 		:isOpen="isModalShipment"
 		@onClose="isModalShipment = false"
-		width="w-full max-w-lg"
+		width="w-full max-w-2xl"
 	>
 		<div class="text-center font-bold mb-4">
 			{{ trans('Add shipment') }}
@@ -733,14 +735,48 @@ provide("listError", listError.value)
 
 		<div class="w-full mt-3">
 			<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+
+			<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
+				<div v-if="isLoadingData === 'addTrackingNumber'"
+					v-for="sip in 3"
+					class="skeleton w-full max-w-52 h-20 rounded"
+				>
+					
+				</div>
+
+				<div v-else
+					v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
+					@click="() => formTrackingNumber.shipping_id = shipment"
+					class="relative w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
+					:class="[
+						formTrackingNumber.shipping_id?.id == shipment.id
+							? 'bg-indigo-200 border-indigo-300'
+							: 'hover:bg-gray-100 border-gray-300',
+					]"
+
+				>
+					<div class="font-bold tesm">{{ shipment.name }}</div>
+					<div class="text-xs text-gray-500 italic">
+						{{ shipment.phone }}
+					</div>
+					<div class="text-xs text-gray-500 italic">
+						{{ shipment.tracking_url }}
+					</div>
+					
+					<FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+				</div>
+
+			</div>
+
 			<div class="">
-				<!-- {{ formTrackingNumber.shipping_id }} -->
 				<PureMultiselectInfiniteScroll
 					v-model="formTrackingNumber.shipping_id"
 					:fetchRoute="shipments.fetch_route"
 					required
 					:placeholder="trans('Select shipping')"
-					object>
+					object
+					@optionsList="(e) => optionShippingList = e"
+				>
 					<template #singlelabel="{ value }">
 						<div class="w-full text-left pl-4">
 							{{ value.name }}
@@ -779,7 +815,7 @@ provide("listError", listError.value)
 
 			<!-- TODO: show the list of the error from delivery address -->
 			<p
-				v-if="get(formTrackingNumber, ['errors'])"
+				v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
 				class="mt-2 text-sm text-red-600">
 				<pre>{{ formTrackingNumber.errors }}</pre>
 			</p>
