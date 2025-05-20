@@ -92,7 +92,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
-    {  
+    {
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
         return $this->handle($customerSalesChannel);

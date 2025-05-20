@@ -29,7 +29,7 @@ use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustome
 use App\Actions\Retina\Fulfilment\Order\UI\IndexRetinaFulfilmentOrders;
 use App\Actions\Retina\Fulfilment\PalletReturn\UI\ShowRetinaStoredItemReturn;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
-use App\Actions\Retina\Platform\ShowRetinaPlatformDashboard;
+use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/inventory', IndexRetinaStoredItems::class)->name('inventory');
@@ -56,7 +56,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
     Route::prefix('{customerSalesChannel}')->group(function () {
 
-        Route::get('/dashboard', ShowRetinaPlatformDashboard::class)->name('dashboard');
+        Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('dashboard');
 
         Route::prefix('basket')->as('basket.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentBaskets::class)->name('index');
