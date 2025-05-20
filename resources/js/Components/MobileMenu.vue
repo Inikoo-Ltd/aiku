@@ -59,7 +59,7 @@ const onLogout = inject('onLogout')
         </button>
         <Drawer v-model:visible="visible" :header="''">
             <template #closeicon>
-                <FontAwesomeIcon :icon="faTimesCircle" @click="visible = false" />
+                <FontAwesomeIcon :icon="faTimesCircle" @click="visible = false" :class="'text-xs'" />
             </template>
             <template #header>
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-32" />
@@ -131,7 +131,7 @@ const onLogout = inject('onLogout')
 }
 
 .login-section {
-    flex: 0 0 20%;
+    flex: 0 0 15%;
     display: flex;
     align-items: center;
     justify-content: start;
