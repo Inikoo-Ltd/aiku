@@ -18,6 +18,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Inventory\Warehouse;
+use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -262,6 +263,11 @@ class PalletReturn extends Model implements HasMedia
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function salesChannel(): BelongsTo
+    {
+        return $this->belongsTo(SalesChannel::class);
     }
 
     public function shopifyFulfilment(): MorphOne

@@ -59,6 +59,7 @@ use App\Actions\Retina\Fulfilment\PalletReturn\DeleteRetinaPalletReturnAddress;
 use App\Actions\Retina\Fulfilment\PalletReturn\DetachRetinaPalletFromReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\ImportRetinaPalletReturnItem;
 use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaPalletReturn;
+use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaPlatformPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaStoredItemsToReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\SubmitRetinaPalletReturn;
 use App\Actions\Retina\Fulfilment\PalletReturn\SwitchRetinaPalletReturnDeliveryAddress;
@@ -185,6 +186,7 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::patch('{customerClient:id}/update', UpdateRetinaCustomerClient::class)->name('update')->withoutScopedBindings();
     Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
     Route::post('{customerClient:id}/platform/{platform:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
+    Route::post('{customerClient:id}/fulfilment/order', StoreRetinaPlatformPalletReturn::class)->name('fulfilment_order.store')->withoutScopedBindings();
 });
 
 Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();

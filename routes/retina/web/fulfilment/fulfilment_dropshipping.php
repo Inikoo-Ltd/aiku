@@ -17,6 +17,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
+use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
@@ -65,6 +66,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('client')->as('client.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentPlatformCustomerClients::class)->name('index');
+            Route::get('{customerClient}', ShowRetinaFulfilmentCustomerClient::class)->name('show');
             Route::get('create', [CreateRetinaFulfilmentPlatformCustomerClient::class, 'inPlatform'])->name('create');
             Route::get('fetch', FetchRetinaFulfilmentCustomerClientFromShopify::class)->name('fetch');
             Route::get('wc-fetch', FetchRetinaFulfilmentCustomerClientFromWooCommerce::class)->name('wc-fetch');
