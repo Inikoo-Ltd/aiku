@@ -106,7 +106,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                                 'name'       => 'retina.models.customer_sales_channel.sync_all_stored_items',
                                 'parameters' => [
                                     'customerSalesChannel' => $this->customerSalesChannel->id
-                                ]
+                                ],
+                                'method' => 'post'
                             ]
                         ] : [],
                         !empty($portfolios) ? [
