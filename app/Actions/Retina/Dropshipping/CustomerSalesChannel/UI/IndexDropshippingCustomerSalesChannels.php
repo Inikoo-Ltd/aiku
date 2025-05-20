@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-05-2025-15h-34m
@@ -8,18 +9,12 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI;
 
-use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
-use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\CRM\PlatformsInCustomerResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -93,7 +88,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
                 ],
-                'data'        => PlatformsInCustomerResource::collection($platforms),
+                'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
