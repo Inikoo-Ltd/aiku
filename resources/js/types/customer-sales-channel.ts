@@ -4,7 +4,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-export interface Platform {
+export interface CustomerSalesChannel {
   id: number,
   slug: string
   code: string

@@ -80,7 +80,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
         ];
 
         return Inertia::render(
-            'Dropshipping/RetinaCustomerSalesChannels',
+            'Dropshipping/RetinaFulfilmentCustomerSalesChannels',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
