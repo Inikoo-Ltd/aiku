@@ -209,7 +209,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.platforms.client.index',
+                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),

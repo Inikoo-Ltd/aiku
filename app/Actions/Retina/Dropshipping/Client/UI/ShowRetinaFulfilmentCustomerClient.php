@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
 use App\Actions\Retina\Fulfilment\Client\UI\IndexRetinaFulfilmentPlatformCustomerClients;
+use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
@@ -106,7 +107,7 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
     {
         return
             array_merge(
-                IndexRetinaFulfilmentPlatformCustomerClients::make()->getBreadcrumbs($routeName, $routeParameters),
+                IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
