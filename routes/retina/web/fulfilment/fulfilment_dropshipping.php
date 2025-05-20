@@ -10,7 +10,6 @@ use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
-use App\Actions\Dropshipping\WooCommerce\Clients\FetchRetinaCustomerClientFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
@@ -18,13 +17,12 @@ use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
-use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
-use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
-use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
+use App\Actions\Retina\Fulfilment\Client\FetchRetinaFulfilmentCustomerClientFromShopify;
+use App\Actions\Retina\Fulfilment\Client\FetchRetinaFulfilmentCustomerClientFromWooCommerce;
 use App\Actions\Retina\Fulfilment\Client\UI\CreateRetinaFulfilmentPlatformCustomerClient;
 use App\Actions\Retina\Fulfilment\Client\UI\IndexRetinaFulfilmentPlatformCustomerClients;
 use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
@@ -49,11 +47,12 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
 
-    Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
-    Route::get('wc-user-callback', [AuthorizeRetinaWooCommerceUser::class, 'handleCallback'])->name('wc.callback');
-    Route::post('wc-user', StoreWooCommerceUser::class)->name('wc.store');
-    Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
-
+    Route::prefix('wc-user')->as('wc.')->group(function () {
+        Route::post('authorize', AuthorizeRetinaWooCommerceUser::class)->name('authorize');
+        Route::get('callback', [AuthorizeRetinaWooCommerceUser::class, 'handleCallback'])->name('callback');
+        Route::post('/', StoreWooCommerceUser::class)->name('store');
+        Route::delete('/', DeleteRetinaShopifyUser::class)->name('delete');
+    });
 
     Route::prefix('{customerSalesChannel}')->group(function () {
 
@@ -67,8 +66,8 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         Route::prefix('client')->as('client.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentPlatformCustomerClients::class)->name('index');
             Route::get('create', [CreateRetinaFulfilmentPlatformCustomerClient::class, 'inPlatform'])->name('create');
-            Route::get('fetch', [FetchRetinaCustomerClientFromShopify::class, 'inPlatform'])->name('fetch');
-            Route::get('wc-fetch', [FetchRetinaCustomerClientFromWooCommerce::class, 'inPlatform'])->name('wc-fetch');
+            Route::get('fetch', FetchRetinaFulfilmentCustomerClientFromShopify::class)->name('fetch');
+            Route::get('wc-fetch', FetchRetinaFulfilmentCustomerClientFromWooCommerce::class)->name('wc-fetch');
         });
 
         Route::prefix('portfolios')->as('portfolios.')->group(function () {
