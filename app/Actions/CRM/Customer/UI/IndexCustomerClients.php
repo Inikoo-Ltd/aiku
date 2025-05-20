@@ -9,10 +9,10 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
@@ -142,11 +142,11 @@ class IndexCustomerClients extends OrgAction
                                 'label'   => __('client'),
                                 'route'   => match (class_basename($parent)) {
                                     'Customer' => [
-                                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_clients.create',
+                                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
                                         'parameters' => request()->route()->originalParameters()
                                     ],
                                     'FulfilmentCustomer' => [
-                                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_clients.index',
+                                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_clients.create',
                                         'parameters' => request()->route()->originalParameters()
                                     ],
                                     default => null
@@ -311,7 +311,7 @@ class IndexCustomerClients extends OrgAction
             'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
             'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show' =>
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs(
+                ShowCustomerSalesChannelInFulfilment::make()->getBreadcrumbs(
                     $parent,
                     $routeParameters
                 ),

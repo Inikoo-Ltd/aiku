@@ -401,7 +401,7 @@ test('UI index customer client order', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Dropshipping/OrdersInCustomerHasPlatform')
+            ->component('Org/Dropshipping/OrdersIncustomerSalesChannel')
             ->has('title')
             ->has('breadcrumbs', 5)
             ->has('pageHead')
