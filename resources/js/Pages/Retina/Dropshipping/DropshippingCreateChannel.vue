@@ -48,6 +48,7 @@ const props = defineProps<{
             url: string
         }
         isAuthenticated: boolean
+        shopify_url: string
     }
     type_woocommerce: {
         connectRoute: routeType
@@ -82,10 +83,10 @@ const onCreateStoreShopify = () => {
                 })
             },
             onSuccess: () => {
+                window.open(props.type_shopify.connectRoute?.url + '?shop=' + websiteInput.value + props.type_shopify.shopify_url, '_blank')
+
                 isModalOpen.value = false
                 websiteInput.value = null
-
-                window.open(props.type_shopify.connectRoute?.url, '_blank')
             },
             onFinish: () => isLoading.value = false
         }
@@ -171,7 +172,7 @@ const onSubmitWoocommerce = async () => {
                                 <Button :loading="isLoading === 'unlink'" label="Unlink" type="negative"
                                     icon="fal fa-unlink" size="xs" />
                             </Link>
-                            
+
                             <a target="_blank" :href="type_shopify?.connectRoute?.url" class="w-full">
                                 <Button label="Open" key="secondary" full iconRight="fal fa-external-link-alt"
                                     size="xs" />

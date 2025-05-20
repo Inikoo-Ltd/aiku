@@ -18,7 +18,6 @@ use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\Client\FetchRetinaFulfilmentCustomerClientFromShopify;
