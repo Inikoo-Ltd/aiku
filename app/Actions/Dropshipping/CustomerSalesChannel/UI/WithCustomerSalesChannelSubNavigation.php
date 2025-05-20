@@ -48,35 +48,20 @@ trait WithCustomerSalesChannelSubNavigation
             ],
         ];
 
-        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $subNavigation[] = [
-                "number"   => $customerSalesChannel->number_customer_clients,
-                'label'    => __('Clients'),
-                'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index',
-                    'parameters' => $request->route()->originalParameters()
+        $subNavigation[] = [
+            "number"   => $customerSalesChannel->number_customer_clients,
+            'label'    => __('Clients'),
+            'route'    => [
+                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
+                'parameters' => $request->route()->originalParameters()
 
-                ],
-                'leftIcon' => [
-                    'icon'    => 'fal fa-users',
-                    'tooltip' => __('clients'),
-                ],
-            ];
-        } else {
-            $subNavigation[] = [
-                "number"   => $customerSalesChannel->number_customer_clients,
-                'label'    => __('Clients'),
-                'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.other_platform.index',
-                    'parameters' => $request->route()->originalParameters()
+            ],
+            'leftIcon' => [
+                'icon'    => 'fal fa-users',
+                'tooltip' => __('clients'),
+            ],
+        ];
 
-                ],
-                'leftIcon' => [
-                    'icon'    => 'fal fa-users',
-                    'tooltip' => __('clients'),
-                ],
-            ];
-        }
         $subNavigation[] = [
             "number"   => $customerSalesChannel->number_orders,
             'label'    => __('Orders'),

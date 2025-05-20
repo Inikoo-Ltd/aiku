@@ -21,67 +21,53 @@ trait WithFulfilmentCustomerPlatformSubNavigation
 
         $subNavigation[] = [
             'isAnchor' => true,
-            'route' => [
-                'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show',
+            'route'    => [
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show',
                 'parameters' => $request->route()->originalParameters()
 
             ],
 
-            'label'     => __('Channel'),
-            'leftIcon'  => [
+            'label'    => __('Channel'),
+            'leftIcon' => [
                 'icon'    => 'fal fa-parachute-box',
                 'tooltip' => __('channel'),
             ],
         ];
 
         $subNavigation[] = [
-            'label'     => __('Portfolios'),
-            'route' => [
-                'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.index',
+            'label'    => __('Portfolios'),
+            'route'    => [
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
                 'parameters' => $request->route()->originalParameters()
 
             ],
-            'leftIcon'  => [
+            'leftIcon' => [
                 'icon'    => 'fal fa-box',
                 'tooltip' => __('portfolio'),
             ],
         ];
 
-        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $subNavigation[] = [
-                'label'     => __('Clients'),
-                'route' => [
-                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.manual.index',
-                    'parameters' => $request->route()->originalParameters()
-
-                ],
-                'leftIcon'  => [
-                    'icon'    => 'fal fa-users',
-                    'tooltip' => __('clients'),
-                ],
-            ];
-        } else {
-            $subNavigation[] = [
-                'label'     => __('Clients'),
-                'route' => [
-                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
-                    'parameters' => $request->route()->originalParameters()
-
-                ],
-                'leftIcon'  => [
-                    'icon'    => 'fal fa-users',
-                    'tooltip' => __('clients'),
-                ],
-            ];
-        }
         $subNavigation[] = [
-            'label'     => __('Orders'),
-            'route' => [
-                'name'      => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
+            'label'    => __('Clients'),
+            'route'    => [
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
                 'parameters' => $request->route()->originalParameters()
 
             ],
-            'leftIcon'  => [
+            'leftIcon' => [
+                'icon'    => 'fal fa-users',
+                'tooltip' => __('clients'),
+            ],
+        ];
+
+        $subNavigation[] = [
+            'label'    => __('Orders'),
+            'route'    => [
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',
+                'parameters' => $request->route()->originalParameters()
+
+            ],
+            'leftIcon' => [
                 'icon'    => 'fal fa-shopping-cart',
                 'tooltip' => __('order'),
             ],

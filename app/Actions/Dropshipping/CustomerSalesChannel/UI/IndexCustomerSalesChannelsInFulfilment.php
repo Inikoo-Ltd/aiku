@@ -138,7 +138,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.index',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.index',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Channels'),

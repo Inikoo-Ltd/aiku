@@ -212,7 +212,7 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
     $customer            = $customerClient->customer;
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', [
         $customerClient->organisation->slug,
         $customerClient->shop->slug,
         $customerClient->customer->slug,
@@ -364,7 +364,7 @@ test('UI Index customer portfolios', function (CustomerClient $customerClient) {
 test('UI get section route client dropshipping', function (CustomerClient $customerClient) {
     $customer = $customerClient->customer;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', [
         'organisation' => $customer->organisation->slug,
         'shop'         => $customer->shop->slug,
         'customer'     => $customer->slug

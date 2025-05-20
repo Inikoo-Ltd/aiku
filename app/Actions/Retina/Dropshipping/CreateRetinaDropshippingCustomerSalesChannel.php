@@ -53,7 +53,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'method'     => 'delete'
                 ],
                 'fetchCustomerRoute' => [
-                    'name'       => 'retina.dropshipping.client.fetch',
+                    'name'       => 'retina.dropshipping.customer_clients.fetch',
                     'parameters' => []
                 ],
                 'connectRoute' => $customer->shopifyUser ? [

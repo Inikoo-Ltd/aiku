@@ -55,7 +55,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('', IndexPortfoliosInCustomerSalesChannels::class)->name('.index');
             });
             Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
-                Route::get('', IndexCustomerClients::class)->name('.manual.index');
+                Route::get('', IndexCustomerClients::class)->name('.index');
                 Route::get('create', CreateCustomerClient::class)->name('.create');
                 Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other_platform.index');
                 Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');

@@ -110,7 +110,7 @@ class ShowRetinaCustomerClient extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.client.show',
+                                'name'       => 'retina.dropshipping.customer_clients.show',
                                 'parameters' => [$customerClient->ulid]
                             ],
                             'label' => $customerClient->name,

@@ -128,11 +128,11 @@ class StoreCustomerClient extends OrgAction
     public function htmlResponse(CustomerClient $customerClient): RedirectResponse
     {
         if (request()->user() instanceof WebUser) {
-            return Redirect::route('retina.dropshipping.client.index');
+            return Redirect::route('retina.dropshipping.customer_clients.index');
         }
 
         return Redirect::route(
-            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index',
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
             [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->platform->slug]
         );
     }

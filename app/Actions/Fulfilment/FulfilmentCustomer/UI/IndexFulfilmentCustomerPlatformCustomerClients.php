@@ -114,7 +114,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                                 'tooltip' => __('new client'),
                                 'label'   => __('client'),
                                 'route'   => [
-                                    'name'       => 'retina.dropshipping.client.create',
+                                    'name'       => 'retina.dropshipping.customer_clients.create',
                                 ]
                             ]
                         ],
@@ -204,7 +204,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.other-platform.index',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),

@@ -242,14 +242,14 @@ class ShowStoredItem extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.index',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
                             'label' => __("Portfolios")
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.portfolios.show',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.portfolios.show',
                                 'parameters' => [
                                     'organisation' => request()->route()->originalParameters()['organisation'],
                                     'fulfilment' => request()->route()->originalParameters()['fulfilment'],

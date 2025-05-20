@@ -170,7 +170,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Orders'),

@@ -85,7 +85,7 @@ const onSubmitAddOrder = (close: Function) => {
                             <PureMultiselectInfiniteScroll
                                 v-model="selectedClient"
                                 :fetchRoute="{
-										name: 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index',
+										name: 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
 										parameters: {
 											organisation: (route().params as RouteParams).organisation,
 											shop: (route().params as RouteParams).shop,

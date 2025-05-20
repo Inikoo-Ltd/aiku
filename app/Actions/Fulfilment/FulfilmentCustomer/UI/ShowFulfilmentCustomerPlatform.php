@@ -111,11 +111,11 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                 [
 
                     'index' => [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.index',
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.index',
                         'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'platform'])
                     ],
                     'model' => [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show',
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show',
                         'parameters' => [
                             'organisation'       => $routeParameters['organisation'],
                             'fulfilment'         => $routeParameters['fulfilment'],

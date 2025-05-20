@@ -329,17 +329,17 @@ class ShowStoredItemReturn extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show' => array_merge(
+            'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.show' => array_merge(
                 ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
                     $palletReturn,
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',
                             'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.show',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],
