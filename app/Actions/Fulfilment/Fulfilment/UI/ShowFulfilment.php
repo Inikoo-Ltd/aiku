@@ -283,7 +283,7 @@ class ShowFulfilment extends OrgAction
             'scheduledActivities' => [
                 [
                     'icon'        => 'fal fa-pallet',
-                    'title'       => __('pallets  '),
+                    'title'       => __('pallets'),
                     'description' => (
                         $this->organisation->fulfilmentStats->number_pallets_state_in_process
                             + $this->organisation->fulfilmentStats->number_pallets_state_submitted
