@@ -9,7 +9,6 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 

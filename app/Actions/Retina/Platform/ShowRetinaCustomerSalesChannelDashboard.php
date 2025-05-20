@@ -18,7 +18,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
-
     public function authorize(ActionRequest $request): bool
     {
         $customerSalesChannel = $request->route('customerSalesChannel');
