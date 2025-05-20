@@ -9,7 +9,7 @@
 
 namespace App\Actions\Fulfilment\StoredItem\UI;
 
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -145,7 +145,7 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, array $routeParameters): array
     {
         return array_merge(
-            ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($customerSalesChannel, $routeParameters),
+            ShowCustomerSalesChannelInFulfilment::make()->getBreadcrumbs($customerSalesChannel, $routeParameters),
             [
                 [
                     'type'   => 'simple',

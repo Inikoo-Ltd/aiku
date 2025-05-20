@@ -13,7 +13,7 @@ function portfolioRoute(portfolio: {}) {
          case "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.portfolios.index":
             return route(
                "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.portfolios.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"],  route().params["customerHasPlatform"],  portfolio.slug])
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"],  route().params["customerSalesChannel"],  portfolio.slug])
     }
 }
 

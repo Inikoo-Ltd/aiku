@@ -13,7 +13,7 @@ function orderRoute(order: {}) {
          case "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index":
             return route(
                "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.show",
-                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["customerHasPlatform"],  order.slug])
+                [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], route().params["customerSalesChannel"],  order.slug])
     }
 }
 
