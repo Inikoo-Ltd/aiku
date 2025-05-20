@@ -92,7 +92,7 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                             ]
                         ],
                     'route'     => [
-                        'name'       => 'retina.models.customer_sales_channel.customer-client.store',
+                        'name'       => 'retina.models.customer_sales_channel.fulfilment.customer-client.store',
                         'parameters' => [
                             'customerSalesChannel' => $this->scope->id
                         ]
