@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateCustomerClients;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Dropshipping\CustomerSalesChannel;
 
@@ -30,7 +31,7 @@ class HydrateCustomerSalesChannels
     {
         CustomerSalesChannelsHydrateCustomerClients::run($customerSalesChannel);
         CustomerSalesChannelsHydrateOrders::run($customerSalesChannel);
-        CustomerSalesChannelsHydrateOrders::run($customerSalesChannel);
+        CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
     }
 
 
