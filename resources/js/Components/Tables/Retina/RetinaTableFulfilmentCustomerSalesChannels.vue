@@ -22,27 +22,27 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
     "retina.fulfilment.dropshipping.customer_sales_channels.dashboard",
     [
      
-      customerSalesChannel.customer_sales_channel_slug])
+      customerSalesChannel.slug])
 }
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
   return route(
     "retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index",
     [
-      customerSalesChannel.customer_sales_channel_slug])
+      customerSalesChannel.slug])
 }
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
   return route(
     "retina.fulfilment.dropshipping.customer_sales_channels.client.index",
     [
-      customerSalesChannel.customer_sales_channel_slug])
+      customerSalesChannel.slug])
 }
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
   return route(
     "retina.fulfilment.dropshipping.customer_sales_channels.orders.index",
     [
 
-      customerSalesChannel.customer_sales_channel_slug])
+      customerSalesChannel.slug])
 }
 
 </script>

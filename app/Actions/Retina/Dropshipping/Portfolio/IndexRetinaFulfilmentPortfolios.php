@@ -86,6 +86,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'method' => 'post'
             ];
         }
+        
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -100,22 +101,17 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'actions' => [
                         $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
-                            'style' => 'create',
+                            'style' => 'tertiary',
+                            'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
                                 'name'       => 'retina.models.customer_sales_channel.sync_all_stored_items',
                                 'parameters' => [
                                     'customerSalesChannel' => $this->customerSalesChannel->id
                                 ],
-                                'method' => 'post'
+                                'method'     => 'post'
                             ]
-                        ] : [],
-                        $portfolios->isNotEmpty() ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => 'Add Portfolio',
-                            'route' => []
-                        ] : []  
+                        ] : null,
                     ]
                 ],
                 'routes'    => [
@@ -160,8 +156,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, align: 'right', searchable: true);
+            $table->column(key: 'actions', label: __('actions'), canBeHidden: false);
         };
     }
 

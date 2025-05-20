@@ -141,7 +141,7 @@ onUnmounted(() => {
                                 <div
                                     v-for="(item, index) in portfoliosList"
                                     :key="index"
-                                    @click.self="() => selectProduct(item)"
+                                    @click="() => selectProduct(item)"
                                     class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
                                     :class="compSelectedProduct.includes(item.id)
                                         ? 'bg-indigo-100 border-indigo-300'
@@ -150,15 +150,16 @@ onUnmounted(() => {
                                     <Transition name="slide-to-right">
                                         <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
                                     </Transition>
-                                    <Image :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                                    <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                                     <div class="flex flex-col justify-between">
-                                        <div class="w-fit" @click="() => selectProduct(item)">
+                                        <div class="w-fit" xclick="() => selectProduct(item)">
                                             <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                            <div v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                            <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                            <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
                                             <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                                         </div>
 
-                                        <div @click="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                        <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                             {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
                                         </div>
 
