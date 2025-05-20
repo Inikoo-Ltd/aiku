@@ -17,15 +17,23 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowRetinaPlatformDashboard extends RetinaAction
+class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
-    public function asController(Platform $platform, ActionRequest $request): CustomerSalesChannel
-    {
-        $this->initialisationFromPlatform($platform, $request);
 
-        return $this->customer->customerSalesChannels()
-            ->where('platform_id', $platform->id)
-            ->first();
+    public function authorize(ActionRequest $request): bool
+    {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id !== $this->customer->id) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
+    {
+        $this->initialisation($request);
+        return $customerSalesChannel;
     }
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
@@ -44,6 +52,8 @@ class ShowRetinaPlatformDashboard extends RetinaAction
                 ],
 
             ],
+
+
 
             'amount_shortcuts' => [],
 

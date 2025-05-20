@@ -29,6 +29,9 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
+    content: {
+        portfolio_empty: string
+    }
 	products: {}
 	// is_manual: boolean
 	// order_route: routeType
@@ -38,16 +41,6 @@ const props = defineProps<{
 	}
 }>()
 
-// const currentTab = ref(props.tabs.current)
-// const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-// const productRoute = ref()
-// const selectedChildProducts = ref<any[]>([])
-// const RetinatablePortfoliosRef = ref(null)
-// const orderMode = ref(false)
-
-// const onCreateOrder = () => {
-// 	orderMode.value = true
-// }
 
 // const onCancelOrder = () => {
 // 	orderMode.value = false
@@ -102,11 +95,10 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 		</template>
 	</PageHeading>
 
-	<!-- <pre>{{ props.routes }}</pre> -->
 
 	<div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-			You have no portfolios
+            {{content.portfolio_empty}}
 		</h1>
         <p class="mt-4 text-xl">
 			To get started, add products to your portfolios. You can sync from your inventory or create a new one.

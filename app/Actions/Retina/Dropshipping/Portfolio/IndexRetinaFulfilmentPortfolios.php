@@ -127,6 +127,9 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     ]
                 ],
 
+                'content'=>[
+                    'portfolio_empty'=>__("You don't any items in your portfolio")
+                ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
