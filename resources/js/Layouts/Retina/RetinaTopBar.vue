@@ -65,7 +65,7 @@ console.log('environment', isStaging)
                 <!-- App Title: Image and Title -->
                 <div class="xml-3 w-12 h-11 flex flex-1 items-center justify-center md:justify-start transition-all duration-300 ease-in-out"
                     :class="[
-                        layout.leftSidebar.show ? 'md:w-44' : 'md:w-12'
+                        layout.leftSidebar.show ? 'md:w-64' : 'md:w-12'
                     ]" :style="{
                         // 'background-color': layout.app.theme[0],
                         'color': layout.app.theme[2],

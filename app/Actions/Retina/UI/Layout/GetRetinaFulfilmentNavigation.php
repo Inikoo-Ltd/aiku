@@ -126,6 +126,7 @@ class GetRetinaFulfilmentNavigation
                 $groupNavigation['platforms_navigation'] = [
                     'type'                   => 'horizontal',
                     'field_name'             => __('Dropshipping'),
+                    'field_icon'             => ['fal', 'fa-parachute-box'],
                     'before_horizontal'      => [
                         'subNavigation' => [
                             [

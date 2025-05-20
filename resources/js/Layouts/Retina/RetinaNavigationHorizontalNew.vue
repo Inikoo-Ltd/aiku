@@ -26,6 +26,7 @@ library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
 const props = defineProps<{
     nav: {
         field_name?: string
+        field_icon?: string
         before_horizontal: {
             subNavigation: Navigation[]
         }
@@ -95,6 +96,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
         <template v-if="nav.field_name" #legend>
             <div class="ml-2 px-2 rounded mb-0.5 text-sm" :style="{ 'background-color': `${layout.app.theme[0]}` }">
                 {{ nav.field_name }}
+                <FontAwesomeIcon :icon="nav.field_icon" class="opacity-70" fixed-width aria-hidden="true" />
             </div>
         </template>
 
