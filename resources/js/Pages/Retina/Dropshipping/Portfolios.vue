@@ -93,12 +93,11 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #otherBefore>
+		<template #other>
 			<Button
 				@click="isOpenModalPortfolios = true"
 				:label="trans('Add portfolio')"
 				:icon="'fas fa-plus'"
-				type="tertiary"
 			/>
 		</template>
 	</PageHeading>
@@ -122,7 +121,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 				size="xl"
 			/>
 			<div class="text-gray-500">or</div>
-			<Button label="Add portfolio" icon="fas fa-plus" size="xl" />
+			<Button @click="isOpenModalPortfolios = true" :label="trans('Add portfolio')" icon="fas fa-plus" size="xl" />
 		</div>
 	</div>
 

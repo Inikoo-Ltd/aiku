@@ -86,6 +86,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'method' => 'post'
             ];
         }
+        
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -100,7 +101,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'actions' => [
                         !empty($portfolios) ? [
                             'type'  => 'button',
-                            'style' => 'create',
+                            'style' => 'tertiary',
+                            'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
                                 'name'       => 'retina.models.customer_sales_channel.sync_all_stored_items',

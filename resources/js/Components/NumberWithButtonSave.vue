@@ -160,7 +160,7 @@ const onClickPlusButton = () => {
 			<!-- Button: Save -->
 			<button
 				v-if="!noUndoButton"
-				@click="() => (keyIconUndo++, form.reset('quantity'))"
+				@click.stop="() => (keyIconUndo++, form.reset('quantity'))"
 				v-tooltip="trans('Reset value')"
 				class="relative flex items-center justify-center px-1 py-1.5"
 				:class="
@@ -188,7 +188,7 @@ const onClickPlusButton = () => {
 				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
 				<!-- Button: Minus -->
 				<div
-					@click="() => onClickMinusButton()"
+					@click.stop="() => onClickMinusButton()"
 					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
 					<FontAwesomeIcon
 						icon="fas fa-minus"
@@ -224,7 +224,7 @@ const onClickPlusButton = () => {
 
 				<!-- Button: Plus -->
 				<div
-					@click="() => onClickPlusButton()"
+					@click.stop="() => onClickPlusButton()"
 					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
 					<FontAwesomeIcon icon="fas fa-plus" fixed-width aria-hidden="true" />
 				</div>
@@ -246,7 +246,7 @@ const onClickPlusButton = () => {
 					<template v-else>
 						<FontAwesomeIcon
 							v-if="form.isDirty"
-							@click="saveOnForm ? onSaveViaForm() : emits('onSave', form)"
+							@click.stop="saveOnForm ? onSaveViaForm() : emits('onSave', form)"
 							:style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
 							icon="fad fa-save"
 							fixed-width
