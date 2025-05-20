@@ -85,16 +85,28 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         ]
                     ]
                 ],
-                'aikuConnectRoute' => [
+                'type_shopify'  => [
+                    'connectRoute' => $customer->shopifyUser ? [
+                        'url'       => route('pupil.authenticate', [
+                            'shop' => $customer->shopifyUser?->name
+                        ])
+                    ] : null,
+                ],
+                'type_manual'   => [
+                    'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
                     'url'       => route('retina.models.customer_sales_channel.manual.store')
                 ],
-                'wooRoute' => [
+                'type_tiktok'   => [
+
+                ],
+                'type_woocommerce' => [
                     'connectRoute' => [
                         'name' => 'retina.dropshipping.platform.wc.authorize',
                         'parameters' => [],
                         'method' => 'post'
                     ],
-                ]
+                    'isConnected' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
+                ],
             ]
         );
     }
