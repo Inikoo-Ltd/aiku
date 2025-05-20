@@ -54,8 +54,8 @@ class ShowCustomerClient extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->parent        = $customerHasPlatform;
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->parent        = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
@@ -71,9 +71,9 @@ class ShowCustomerClient extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $this->parent = $customerHasPlatform;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(CustomerTabsEnum::values());
 
         return $this->handle($customerClient);
@@ -276,18 +276,18 @@ class ShowCustomerClient extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show'
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show'
             => array_merge(
-                (new ShowCustomerSalesChannel())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', $routeParameters),
+                (new ShowCustomerSalesChannel())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                             'parameters' => $routeParameters
 
 
@@ -334,7 +334,7 @@ class ShowCustomerClient extends OrgAction
 
                 ]
             ],
-            'grp.org.fulfilments.show.crm.customers.show.customer-clients.show', 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show' => [
+            'grp.org.fulfilments.show.crm.customers.show.customer-clients.show', 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show' => [
                 'label' => $customerClient->name,
                 'route' => [
                     'name'       => $routeName,

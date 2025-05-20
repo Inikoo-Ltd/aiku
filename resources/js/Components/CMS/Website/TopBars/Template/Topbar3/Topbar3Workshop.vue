@@ -139,7 +139,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <div id="top_bar" class="py-2 px-4 flex justify-between"
+    <div id="top_bar_3_workshop" class="py-2 px-4 flex justify-between"
         :style="getStyles(model?.container.properties)"
     >
         <div class="flex gap-x-2">

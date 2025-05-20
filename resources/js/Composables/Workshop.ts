@@ -50,13 +50,15 @@ export const sendMessageToParent = (key: string, value: any) => {
     window.parent.postMessage({ key, value: serializableValue }, '*');
 }
 
+// To show in workshop
 export const dummyIrisVariables = {
-    name: 'Aqordi Laksa',
+    name: 'Aqordeon',
     username: 'aqordeon',
     email: 'aqordeon@email.com',
     favourites_count: 95,
     cart_count: 13,
     cart_amount: '£455.98',
+    reference: '000001'
 }
 
 export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
@@ -68,7 +70,7 @@ export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
         return text
     }
 
-    return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || '-')
+    return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || piniaVariables?.username || '-')
     .replace(/\{\{\s*username\s*\}\}/g, piniaVariables?.username || '-')
     .replace(/\{\{\s*email\s*\}\}/g, piniaVariables?.email || '-')
     .replace(/\{\{\s*favourites_count\s*\}\}/g, piniaVariables?.favourites_count || '0')

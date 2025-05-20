@@ -17,41 +17,47 @@ export default {
 			},
 		},
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{
 					key: ["dimension"],
 					type: "dimension",
 					label : "Dimension",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
 					key: ["padding"],
 					type: "padding",
 					label : "Padding",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
 					key: ["margin"],
 					type: "margin",
 					label : "Margin",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
 					key: ["border"],
 					type: "border",
 					label : "Border",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {},
 				},
 				{
                     key: ["shadow"],
                     label : "Shadow",
+					useIn : ["desktop", "tablet", "mobile"],
                     type: "shadow",
                 },
                 {
                     key: ["shadowColor"],
                     label : "Shadow Color",
+					useIn : ["desktop", "tablet", "mobile"],
                     type: "color",
                 },
 			],

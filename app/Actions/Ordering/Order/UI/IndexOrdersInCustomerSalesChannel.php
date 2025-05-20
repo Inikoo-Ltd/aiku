@@ -20,7 +20,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -32,23 +31,22 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use UnexpectedValueException;
 
-class IndexOrdersInCustomerHasPlatform extends OrgAction
+class IndexOrdersInCustomerSalesChannel extends OrgAction
 {
     use WithCustomerSalesChannelSubNavigation;
     use WithCRMAuthorisation;
 
-    private CustomerSalesChannel $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($customerHasPlatform);
+        return $this->handle($customerSalesChannel);
     }
 
-    public function handle(CustomerSalesChannel $customerHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -61,14 +59,14 @@ class IndexOrdersInCustomerHasPlatform extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Order::class);
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
-            $queryBuilder->where('orders.customer_id', $customerHasPlatform->customer->id);
-        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $queryBuilder->where('orders.customer_id', $customerSalesChannel->customer->id);
+        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'orders.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'Order');
             });
-            $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $customerHasPlatform->customer->shopifyUser->id);
+            $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $customerSalesChannel->customer->shopifyUser->id);
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
@@ -122,21 +120,21 @@ class IndexOrdersInCustomerHasPlatform extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-user'];
-        $title         = $this->customerHasPlatform->customer->name.' ('.$this->customerHasPlatform->customer->reference.')';
+        $title         = $this->customerSalesChannel->customer->name.' ('.$this->customerSalesChannel->customer->reference.')';
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('orders').' @'.$this->customerHasPlatform->platform->name,
+            'title' => __('orders').' @'.$this->customerSalesChannel->platform->name,
         ];
         $subNavigation = $this->getCustomerPlatformSubNavigation(
-            $this->customerHasPlatform,
+            $this->customerSalesChannel,
             $request
         );
         $actions = [];
 
         $afterTitle = [
-            'label' => __('orders').' @'.$this->customerHasPlatform->platform->name,
+            'label' => __('orders').' @'.$this->customerSalesChannel->platform->name,
         ];
-        if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::MANUAL) {
+        if ($this->customerSalesChannel->platform->type ==  PlatformTypeEnum::MANUAL) {
 
             $actions[] = [
                     'type'        => 'button',
@@ -148,8 +146,8 @@ class IndexOrdersInCustomerHasPlatform extends OrgAction
                         'method'     => 'post',
                         'name'       => 'grp.models.customer.platform-order.store',
                         'parameters' => [
-                            'customer' => $this->customerHasPlatform->customer_id,
-                            'platform' => $this->customerHasPlatform->platform_id
+                            'customer' => $this->customerSalesChannel->customer_id,
+                            'platform' => $this->customerSalesChannel->platform_id
                         ]
                     ]
             ];
@@ -160,7 +158,7 @@ class IndexOrdersInCustomerHasPlatform extends OrgAction
             'Org/Dropshipping/OrdersInCustomerHasPlatform',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->customerHasPlatform->platform,
+                    $this->customerSalesChannel,
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
@@ -173,24 +171,24 @@ class IndexOrdersInCustomerHasPlatform extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'platform' => PlatformsResource::make($this->customerHasPlatform->platform),
+                'platform' => PlatformsResource::make($this->customerSalesChannel->platform),
                 'data'        => OrdersResource::collection($orders),
 
             ]
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(Platform $platform, $routeName, $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, $routeName, $routeParameters): array
     {
         return
             array_merge(
-                ShowCustomerSalesChannel::make()->getBreadcrumbs($platform, $routeName, $routeParameters),
+                ShowCustomerSalesChannel::make()->getBreadcrumbs($customerSalesChannel, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
+                                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Orders'),

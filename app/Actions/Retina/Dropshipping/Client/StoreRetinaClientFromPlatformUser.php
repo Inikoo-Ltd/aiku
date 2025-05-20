@@ -48,11 +48,11 @@ class StoreRetinaClientFromPlatformUser extends RetinaAction
         }
 
         if ($customerClient->customer_id && $customerClient->platform_id) {
-            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)
+            $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)
                 ->where('platform_id', $customerClient->platform_id)
                 ->first();
 
-            CustomerSalesChannelsHydrateCustomerClients::dispatch($customerHasPlatform);
+            CustomerSalesChannelsHydrateCustomerClients::dispatch($customerSalesChannel);
         }
 
         return $customerClient;

@@ -73,9 +73,9 @@ class ShowStoredItem extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, StoredItem $storedItem, ActionRequest $request): StoredItem
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, StoredItem $storedItem, ActionRequest $request): StoredItem
     {
-        $this->parent = $customerHasPlatform;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(StoredItemTabsEnum::values());
 
         return $this->handle($storedItem);

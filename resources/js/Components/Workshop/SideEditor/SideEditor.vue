@@ -98,7 +98,6 @@ onMounted(() => {
                 :uploadImageRoute="uploadImageRoute" 
                  v-model="modelValue"
                 :key="field.key"
-                :index="index" 
             />
         </Accordion>
     </div>

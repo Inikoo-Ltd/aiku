@@ -87,11 +87,13 @@ const onClickArrow = (horizontalKey: string) => {
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
         <!-- Section: Before horizontal -->
-        <div v-if="nav.before_horizontal?.subNavigation" class="py-1 border-b border-gray-600">
+        <div v-if="nav.before_horizontal?.subNavigation" class="py-1">
             <template v-for="nav, navIndex in nav.before_horizontal?.subNavigation" :key="navIndex + index">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>
         </div>
+
+        <div v-if="nav.before_horizontal?.subNavigation && !!currentActiveHorizontal" class="border-b border-gray-600"></div>
 
         <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
             :style="{ color: layout.app.theme[1] + '99' }">
@@ -145,7 +147,7 @@ const onClickArrow = (horizontalKey: string) => {
         </div>
         
         <!-- Section: Sub Navigaiton -->
-        <div class="flex flex-col gap-y-1 mb-1">
+        <div v-if="currentActiveHorizontal?.subNavigation" class="flex flex-col gap-y-1 mb-1">
             <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="navIndex + index">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>

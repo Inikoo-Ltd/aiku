@@ -48,7 +48,10 @@ const onMouseLeaveMenu = () => {
                     @mouseleave="() => onMouseLeaveMenu()"
                     class="group w-full hover:bg-gray-100 hover:text-orange-500 p-4 flex items-center justify-center cursor-pointer transition duration-200">
                     <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />
-                    <div v-if="navigation.type == 'multiple'" class="text-center">{{ navigation.label }}</div>
+                    <div v-if="navigation.type == 'multiple'" class="text-center">
+                       <span v-if="!navigation?.link?.href">{{ navigation.label }}</span> 
+                        <a v-else :href="navigation?.link?.href" :target="navigation?.link?.target" class="text-center">{{ navigation.label }}</a>
+                    </div>
                     
                     <a v-else :href="navigation?.link?.href" :target="navigation?.link?.target" class="text-center">{{ navigation.label }}</a>
                     

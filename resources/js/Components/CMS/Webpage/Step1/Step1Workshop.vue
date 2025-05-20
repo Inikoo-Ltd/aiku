@@ -4,7 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { library, icon } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone } from "@fal";
+import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faInfoCircle } from "@fal";
 import {
 	faBackpack,
 	faTruckLoading,
@@ -31,7 +31,7 @@ import { faLambda } from "@fad";
 
 library.add(
 	faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
-	faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory,
+	faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory,faInfoCircle,
 	faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock
 );
 

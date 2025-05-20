@@ -55,7 +55,7 @@ function onSave() {
 		<!-- Details Section -->
 		<div class="py-16 sm:py- lg:px-8">
 			<div class="pl-6 pr-6 md:ml-auto md:w-2/3 md:pl-16 lg:w-1/2 lg:pl-24 lg:pr-0 xl:pl-32">
-				<Editor v-model="modelValue.text" />	
+				<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')"/>	
 			</div>
 		</div>
 	</div>

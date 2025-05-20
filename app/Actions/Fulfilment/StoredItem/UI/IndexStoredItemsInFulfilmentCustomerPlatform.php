@@ -32,9 +32,9 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    private CustomerSalesChannel $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle(CustomerSalesChannel $customerHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,20 +48,20 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
 
         $query = QueryBuilder::for(StoredItem::class);
 
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
-            $query->where('stored_items.fulfilment_customer_id', $customerHasPlatform->customer->fulfilmentCustomer->id);
-        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $query->where('stored_items.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
+        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->leftJoin('shopify_user_has_products', function ($join) {
                 $join->on('shopify_user_has_products.product_id', '=', 'stored_items.id')
                     ->where('shopify_user_has_products.product_type', '=', 'StoredItem');
             });
-            $query->where('shopify_user_has_products.shopify_user_id', $customerHasPlatform->customer->shopifyUser->id);
-        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::TIKTOK) {
+            $query->where('shopify_user_has_products.shopify_user_id', $customerSalesChannel->customer->shopifyUser->id);
+        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::TIKTOK) {
             $query->leftJoin('shopify_user_has_products', function ($join) {
                 $join->on('tiktok_user_has_products.product_id', '=', 'stored_items.id')
                     ->where('tiktok_user_has_products.product_type', '=', 'StoredItem');
             });
-            $query->where('tiktok_user_has_products.shopify_user_id', $customerHasPlatform->customer->tiktokUser->id);
+            $query->where('tiktok_user_has_products.shopify_user_id', $customerSalesChannel->customer->tiktokUser->id);
         }
 
         return $query
@@ -82,9 +82,9 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
+        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerSalesChannel, $request);
         $icon          = ['fal', 'fa-user'];
-        $title         = $this->customerHasPlatform->customer->name;
+        $title         = $this->customerSalesChannel->customer->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('portfolios')
@@ -98,7 +98,7 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
             'Org/Fulfilment/FulfilmentCustomerPlatformPortfolios',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->customerHasPlatform,
+                    $this->customerSalesChannel,
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('Channels'),
@@ -134,18 +134,18 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle($customerHasPlatform);
+        return $this->handle($customerSalesChannel);
     }
 
-    public function getBreadcrumbs(CustomerSalesChannel $customerHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, array $routeParameters): array
     {
         return array_merge(
-            ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($customerHasPlatform, $routeParameters),
+            ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($customerSalesChannel, $routeParameters),
             [
                 [
                     'type'   => 'simple',

@@ -36,9 +36,9 @@ const modelModalBlocklist = defineModel()
 const props = defineProps<{
     webpage: RootWebpage
     webBlockTypes: Root
-    isLoadingblock: number | null
-    isAddBlockLoading: number | null
-    isLoadingDeleteBlock: number | null
+    isLoadingblock?: number | null | String
+    isAddBlockLoading?: number | null | String
+    isLoadingDeleteBlock?: number | null | String
 }>()
 
 
@@ -259,7 +259,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
 
 
     <Modal :isOpen="modelModalBlocklist" @onClose="openModalBlockList">
-        <BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="webpage" />
+        <BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="all" />
     </Modal>
 
     <ConfirmPopup>

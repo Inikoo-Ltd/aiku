@@ -1,31 +1,36 @@
 <script setup lang="ts">
-import Table from '@/Components/Table/Table.vue'
-import type { Table as TableTS } from "@/types/Table"
-import { Link } from "@inertiajs/vue3"
-import type { Links, Meta } from "@/types/Table"
-import Icon from '@/Components/Icon.vue'
-import Tag from '@/Components/Tag.vue'
+import Table from "@/Components/Table/Table.vue";
+import type { Table as TableTS } from "@/types/Table";
+import { Link } from "@inertiajs/vue3";
+import Icon from "@/Components/Icon.vue";
+import Tag from "@/Components/Tag.vue";
+import { RouteParams } from "@/types/route-params";
+import { Order } from "@/types/order";
 
 
 defineProps<{
     data: TableTS,
-}>()
+}>();
 
 function orderRoute(order: Order) {
-    console.log(route().current())
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.customers.show.platforms.show.orders.index":
-            return route(
-                "grp.org.shops.show.crm.customers.show.platforms.show.orders.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], route().params["platform"], order.slug])
-        default:
-            return ''
+
+    if (route().current() === "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index") {
+        return route(
+            "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).customer,
+                (route().params as RouteParams).customerSalesChannel,
+                order.slug]);
+    } else {
+        return "";
     }
 }
 
 </script>
 <template>
-     <Table :resource="data" >
+    <Table :resource="data">
         <!-- Column: State icon -->
         <template #cell(state)="{ item: order }">
             <Icon :data="order.state_icon" />

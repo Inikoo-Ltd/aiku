@@ -24,6 +24,7 @@ class WebBlockTypesResource extends JsonResource
 
         return [
             'id'          => $webBlockType->id,
+            'category'    => $webBlockType->category,
             'code'        => $webBlockType->code,
             'scope'       => $webBlockType->scope,
             'name'        => $webBlockType->name,

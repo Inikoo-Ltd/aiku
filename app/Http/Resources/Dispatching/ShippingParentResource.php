@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
@@ -51,15 +52,29 @@ class ShippingParentResource extends JsonResource
             $toEmail = '';// todo
 
         } else {
-            $toFirstName = Arr::get($parent->data, 'destination.first_name', 'Unknown');
-            $toLastName = Arr::get($parent->data, 'destination.last_name', 'Unknown');
-            if ($toFirstName != 'Unknown' && $toLastName != 'Unknown') {
-                $toContactName = $toFirstName.' '.$toLastName;
+            $isManual = $parent->platform?->type == PlatformTypeEnum::MANUAL;
+            if ($isManual) {
+                $customer = $parent->customerSaleChannel->customer;
+                $contactName = $customer->contact_name;
+                $toFirstName = explode(' ', $contactName)[0];
+                $toLastName  = (strpos($contactName, ' ') !== false)
+                    ? substr($contactName, strpos($contactName, ' ') + 1)
+                    : 'Unknown';
+                $toContactName = $contactName;
+                $toPhone = '';// todo
+                $toEmail = '';// todo
+
             } else {
-                $toContactName = Arr::get($parent->data, 'destination.contact_name', 'Unknown');
+                $toFirstName = Arr::get($parent->data, 'destination.first_name', 'Unknown');
+                $toLastName = Arr::get($parent->data, 'destination.last_name', 'Unknown');
+                if ($toFirstName != 'Unknown' && $toLastName != 'Unknown') {
+                    $toContactName = $toFirstName.' '.$toLastName;
+                } else {
+                    $toContactName = Arr::get($parent->data, 'destination.contact_name', 'Unknown');
+                }
+                $toEmail = Arr::get($parent->data, 'destination.email') ?? $shop->email;
+                $toPhone = Arr::get($parent->data, 'destination.phone') ?? $shop->phone;
             }
-            $toEmail = Arr::get($parent->data, 'destination.email') ?? $shop->email;
-            $toPhone = Arr::get($parent->data, 'destination.phone') ?? $shop->phone;
         }
 
         return [

@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use Inertia\Inertia;
@@ -19,6 +20,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaCustomerClient extends RetinaAction
 {
+    /**
+     * @var \App\Models\Dropshipping\CustomerSalesChannel|\Eloquent|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|object|null
+     */
+    private CustomerSalesChannel $scope;
+
     public function handle(ActionRequest $request): Response
     {
         return Inertia::render(
@@ -86,9 +92,9 @@ class CreateRetinaCustomerClient extends RetinaAction
                             ]
                         ],
                     'route'     => [
-                        'name'      => 'retina.models.customer-client.platform.store',
+                        'name'       => 'retina.models.customer_sales_channel.customer-client.store',
                         'parameters' => [
-                            'platform' => $this->platform->id
+                            'customerSalesChannel' => $this->scope->id
                         ]
                     ]
                 ]
@@ -113,7 +119,11 @@ class CreateRetinaCustomerClient extends RetinaAction
 
     public function inPlatform(Platform $platform, ActionRequest $request): Response
     {
+
+        $customer = $request->user()->customer;
         $this->initialisationFromPlatform($platform, $request);
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->scope = $customerSalesChannel;
 
         return $this->handle($request);
     }

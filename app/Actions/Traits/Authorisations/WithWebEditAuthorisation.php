@@ -48,8 +48,8 @@ trait WithWebEditAuthorisation
                 "web.{$this->shop->id}.edit",
             ];
             if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
-                $permissions[] = "supervisor-fulfilment-shop.{$this->fulfilment->id}";
-                $permissions[] = "fulfilment-shop.{$this->fulfilment->id}.edit";
+                $permissions[] = "supervisor-fulfilment-shop.{$this->shop->fulfilment->id}";
+                $permissions[] = "fulfilment-shop.{$this->shop->fulfilment->id}.edit";
             }
 
             return $request->user()->authTo($permissions);

@@ -146,23 +146,24 @@ class GetRetinaFulfilmentNavigation
                         'subNavigation' => GetRetinaFulfilmentPlatformNavigation::run($customerSalesChannel)
                     ];
                 }
+                
                 $groupNavigation['platforms_navigation'] = [
-                'type'  => 'horizontal',
-                'before_horizontal' => [
-                    'subNavigation' => [
-                        [
-                            'label'         => __('Channels'),
-                            'icon'          => 'fal fa-code-branch',
-                            'icon_rotation'   => 90,
-                            'root'  => 'retina.dropshipping.platform.',
-                            'route' => [
-                                'name' => 'retina.dropshipping.platform.dashboard'
+                    'type'  => 'horizontal',
+                    'before_horizontal' => [
+                        'subNavigation' => [
+                            [
+                                'label'         => __('Channels'),
+                                'icon'          => 'fal fa-code-branch',
+                                'icon_rotation'   => 90,
+                                'root'  => 'retina.dropshipping.platform.',
+                                'route' => [
+                                    'name' => 'retina.dropshipping.platform.dashboard'
+                                ]
                             ]
                         ]
-                    ]
-                ],
-                'horizontal_navigations'    => $platforms_navigation
-            ];
+                    ],
+                    'horizontal_navigations'    => $platforms_navigation
+                ];
             }
 
 

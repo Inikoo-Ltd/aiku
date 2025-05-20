@@ -8,6 +8,7 @@ export interface Daum {
   scope: string
   show:Boolean
   webBlockTypes: WebBlockType[]
+  category : string
 }
 
 export interface WebBlockType {
