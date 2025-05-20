@@ -14,13 +14,16 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Symfony\Component\HttpFoundation\Response;
 
 class CallbackRetinaWooCommerceUser extends OrgAction
 {
@@ -30,7 +33,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
 
     public $commandSignature = 'retina:ds:callback-woo {customer} {store_url} {consumer_key} {consumer_secret}';
 
-    public function handle(Customer $customer, $modelData): string
+    public function handle(Customer $customer, $modelData): CustomerSalesChannel
     {
         $name = Arr::get($modelData, 'name');
         $consumerKey = Arr::get($modelData, 'consumer_key');
@@ -58,7 +61,19 @@ class CallbackRetinaWooCommerceUser extends OrgAction
             'settings.webhooks' => $webhooks
         ]);
 
-        return redirect()->route('retina.dropshipping.platform.dashboard');
+        return $customerSalesChannel;
+    }
+
+    public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
+    {
+        $routeName = match ($customerSalesChannel->customer->is_fulfilment) {
+            true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
+            default => 'retina.dropshipping.customer_sales_channels.show'
+        };
+
+        return Inertia::location(route($routeName, [
+            'customerSalesChannel' => $customerSalesChannel->slug
+        ]));
     }
 
     public function authorize(ActionRequest $request): bool

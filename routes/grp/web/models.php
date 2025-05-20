@@ -61,7 +61,6 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
-use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
@@ -296,7 +295,6 @@ Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->g
 });
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();
-Route::post('customer/{customer:id}/product/{product:id}/portfolio', StorePortfolio::class)->name('portfolio.store')->withoutScopedBindings();
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
@@ -637,8 +635,6 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
-    Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomer'])->name('platform-order.store')->withoutScopedBindings();
-    Route::post('/customer-sales-channel/{platform:id}', StoreCustomerSalesChannel::class)->name('customer_sales_channel.store')->withoutScopedBindings();
 });
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
@@ -649,10 +645,9 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
 Route::patch('purge/{purge:id}/update', UpdatePurge::class)->name('purge.update');
 
-Route::name('customer-client.')->prefix('customer-client/{customerClient:id}')->group(function () {
+Route::name('customer_client.')->prefix('customer-client/{customerClient:id}')->group(function () {
     Route::patch('/', UpdateCustomerClient::class)->name('update');
     Route::post('order', [StoreOrder::class, 'inCustomerClient'])->name('order.store');
-    Route::post('order/{platform:id}', [StoreOrder::class, 'inPlatformCustomerClient'])->name('platform-order.store')->withoutScopedBindings();
 });
 
 Route::post('/supplier', StoreSupplier::class)->name('supplier.store');

@@ -14,11 +14,12 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowRetinaDropshipping extends RetinaAction
+class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
 {
     public function asController(ActionRequest $request): ActionRequest
     {
@@ -34,7 +35,7 @@ class ShowRetinaDropshipping extends RetinaAction
         $title = __('Create Channels');
 
         return Inertia::render(
-            'Dropshipping/DropshippingDashboard',
+            'Dropshipping/DropshippingCreateChannel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
@@ -46,18 +47,13 @@ class ShowRetinaDropshipping extends RetinaAction
                     'icon_rotation' => 90,
                 ],
                 'shopify_url' => '.' . config('shopify-app.my_shopify_domain'),
-                'createRoute' => [
-                    'name'       => 'retina.dropshipping.platform.shopify_user.store',
-                    'parameters' => [],
-                    'method'     => 'post'
-                ],
                 'unlinkRoute' => [
                     'name'       => 'retina.dropshipping.platform.shopify_user.delete',
                     'parameters' => [],
                     'method'     => 'delete'
                 ],
                 'fetchCustomerRoute' => [
-                    'name'       => 'retina.dropshipping.client.fetch',
+                    'name'       => 'retina.dropshipping.customer_clients.fetch',
                     'parameters' => []
                 ],
                 'connectRoute' => $customer->shopifyUser ? [
@@ -65,10 +61,11 @@ class ShowRetinaDropshipping extends RetinaAction
                         'shop' => $customer->shopifyUser?->name
                     ])
                 ] : null,
-                'total_channels' => [  // TODO: change to real number
-                    'shopify'   => 2,
-                    'tiktok'    => 1,
-                    'woocommerce' => 1,
+                'total_channels' => [
+                    'manual' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),
+                    'shopify'   => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
+                    'tiktok'    => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::TIKTOK->value)->count(),
+                    'woocommerce' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->count(),
                 ],
                 'tiktokAuth' => [
                     'url' => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
@@ -83,18 +80,35 @@ class ShowRetinaDropshipping extends RetinaAction
                         ]
                     ]
                 ],
-                'aikuConnectRoute' => [
-                    'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
-                    'url'       => route('retina.models.customer_sales_channel.manual.store')
+                'type_shopify'  => [
+                    'shopify_url' => '.' . config('shopify-app.my_shopify_domain'),
+                    'connectRoute' => $customer->shopifyUser ? [
+                        'url'       => route('pupil.authenticate')
+                    ] : null,
+                    'createRoute' => [
+                        'name'       => 'retina.dropshipping.platform.shopify_user.store',
+                        'parameters' => [],
+                        'method'     => 'post'
+                    ],
                 ],
-                'wooRoute' => [
+                'type_manual'   => [
+                    'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
+                    'createRoute'       => [
+                        'method' => 'post',
+                        'name' => 'retina.models.fulfilment.customer_sales_channel.manual.store'
+                    ]
+                ],
+                'type_tiktok'   => [
+
+                ],
+                'type_woocommerce' => [
                     'connectRoute' => [
                         'name' => 'retina.dropshipping.platform.wc.authorize',
                         'parameters' => [],
                         'method' => 'post'
                     ],
                     'isConnected' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
-                ]
+                ],
             ]
         );
     }

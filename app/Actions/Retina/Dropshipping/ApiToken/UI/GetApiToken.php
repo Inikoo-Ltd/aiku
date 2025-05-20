@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,36 +20,42 @@ class GetApiToken extends RetinaAction
     use AsAction;
 
 
-    public function handle(ActionRequest $request): array
+    public function handle(CustomerSalesChannel $customerSalesChannel): array
     {
-
-        $customer = $request->user()->customer;
-
-        $existingToken = $customer->tokens()->where('name', 'api-token')->first();
+        $existingToken = $customerSalesChannel->tokens()->where('name', 'api-token')->first();
 
         if ($existingToken) {
             $existingToken->delete();
 
-            $newToken = $customer->createToken('api-token', ['retina']);
+            $newToken = $customerSalesChannel->createToken('api-token', ['retina']);
 
             return [
                 'token' => $newToken->plainTextToken,
             ];
         }
 
-        $token = $customer->createToken('api-token', ['retina']);
+        $token = $customerSalesChannel->createToken('api-token', ['retina']);
 
         return [
             'token' => $token->plainTextToken,
         ];
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
 
-    public function asController(ActionRequest $request)
+        return false;
+    }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
 
-        return $this->handle($request);
+        return $this->handle($customerSalesChannel);
     }
 
     public function jsonResponse(array $data): array

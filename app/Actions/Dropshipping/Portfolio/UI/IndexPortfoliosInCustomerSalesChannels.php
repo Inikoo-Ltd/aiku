@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -102,8 +103,12 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                 ],
+
+
+                'is_show_add_products_modal'=> $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
                 'data'        => PortfoliosResource::collection($portfolios),
                 'customer'      => $this->customerSalesChannel->customer,
+                'customerSalesChannelId' => $this->customerSalesChannel->id,
             ]
         )->table($this->tableStructure());
     }

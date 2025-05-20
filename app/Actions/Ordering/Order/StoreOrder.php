@@ -312,7 +312,7 @@ class StoreOrder extends OrgAction
                 $order->customer->slug,
                 $order->slug
             ]),
-            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show', [
+            'grp.models.customer_client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
@@ -320,8 +320,7 @@ class StoreOrder extends OrgAction
                 $order->customerClient->ulid,
                 $order->slug
             ]),
-            'grp.models.customer.platform-order.store',
-            'grp.models.customer-client.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show', [
+            'grp.models.customer_client.order' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,

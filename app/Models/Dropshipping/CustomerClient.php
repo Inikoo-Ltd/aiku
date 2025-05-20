@@ -161,4 +161,9 @@ class CustomerClient extends Model implements Auditable
         return $this->belongsTo(Platform::class);
     }
 
+    public function salesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
+    }
+
 }

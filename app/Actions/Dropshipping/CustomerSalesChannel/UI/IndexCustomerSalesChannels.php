@@ -90,22 +90,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
         $actions = [];
 
-        if (!$manualCustomerSalesChannel && $manualPlatform) {
-            $actions[] = [
-                'type'        => 'button',
-                'style'       => 'create',
-                'label'       => __('add manual channel'),
-                'fullLoading' => true,
-                'route'       => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.customer.customer_sales_channel.store',
-                    'parameters' => [
-                        'customer' => $this->customer->id,
-                        'platform' => $manualPlatform->id
-                    ]
-                ]
-            ];
-        }
+
 
         return Inertia::render(
             'Org/Dropshipping/CustomerSalesChannels',

@@ -9,7 +9,7 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
@@ -164,13 +164,13 @@ class IndexPalletReturnsInPlatform extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
+                ShowCustomerSalesChannelInFulfilment::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.orders.index',
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Orders'),

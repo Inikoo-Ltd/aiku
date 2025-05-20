@@ -17,9 +17,9 @@ const layout = inject('layout', layoutStructure)
 
 function platformRoute(platform: {}) {
     switch (route().current()) {
-         case "grp.org.fulfilments.show.crm.customers.show.platforms.index":
+         case "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.index":
             return route(
-               "grp.org.fulfilments.show.crm.customers.show.platforms.show",
+               "grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show",
                 [route().params["organisation"], route().params["fulfilment"], route().params["fulfilmentCustomer"], platform.customer_has_platform_slug])
     }
 }
