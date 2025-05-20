@@ -779,7 +779,7 @@ provide("listError", listError.value)
 
 			<!-- TODO: show the list of the error from delivery address -->
 			<p
-				v-if="get(formTrackingNumber, ['errors'])"
+				v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
 				class="mt-2 text-sm text-red-600">
 				<pre>{{ formTrackingNumber.errors }}</pre>
 			</p>
