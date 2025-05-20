@@ -4,7 +4,7 @@ import { getStyles } from "@/Composables/styles";
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-
+import { inject } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import { faBaby, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
@@ -54,7 +54,7 @@ const props = defineProps<{
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-
+const isLoggedIn = inject('isPreviewLoggedIn', false)
 </script>
 
 <template>
@@ -71,8 +71,10 @@ const props = defineProps<{
 
 
             <div class="flex items-center cursor-pointer">
-                <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
-                    :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                <Link href="/app/profile" v-if="!isLoggedIn">
+                    <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
+                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                </Link>   
             </div>
         </div>
     </div>

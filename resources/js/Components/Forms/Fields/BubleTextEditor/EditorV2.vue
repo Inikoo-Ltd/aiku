@@ -140,7 +140,9 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
-        ImageResize,
+        ImageResize.configure({
+            inline: true,
+        }),
         History,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...", // Fallback to default placeholder
