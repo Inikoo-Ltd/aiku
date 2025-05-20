@@ -11,11 +11,13 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -43,11 +45,8 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(CustomerSalesChannel::class);
-        $query->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id);
-
-        return $query
-            ->defaultSort('customer_sales_channels.id')
+        $query = QueryBuilder::for(CustomerSalesChannel::class)
+            ->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id)
             ->select([
                 'customer_sales_channels.id',
                 'customer_sales_channels.slug',
@@ -55,12 +54,21 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                 'customer_sales_channels.number_customer_clients',
                 'customer_sales_channels.number_portfolios',
                 'customer_sales_channels.number_orders',
-                'customer_sales_channels.platform_id'
+                'customer_sales_channels.platform_id',
             ])
+            ->selectSub(function ($subquery) {
+                $subquery->from('pallet_returns')
+                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
+                    ->whereColumn('pallet_returns.customer_sales_channel_id', 'customer_sales_channels.id')
+                    ->whereNotIn('pallet_returns.state', [PalletReturnStateEnum::IN_PROCESS, PalletReturnStateEnum::SUBMITTED, PalletReturnStateEnum::CANCEL]);
+            }, 'total_amount')
+            ->defaultSort('customer_sales_channels.id')
             ->allowedSorts(['code', 'name', 'type'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        return $query;
     }
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response

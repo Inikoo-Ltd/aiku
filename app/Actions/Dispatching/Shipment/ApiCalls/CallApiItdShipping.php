@@ -149,13 +149,11 @@ class CallApiItdShipping extends OrgAction
             foreach ($consignmentErrors as $key => $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
-                    $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ')->lower();
+                    $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ');
                     if (Str::contains($key, 'Address')) {
-                        $errorData['address'][] = $msg;
-                    } elseif (Str::contains($key, 'customer')) {
-                        $errorData['customer'][] = $msg;
+                        $errorData['address'][] = $msg . ',';
                     } else {
-                        $errorData['others'][] = $msg;
+                        $errorData['others'][] = $msg . ',';
                     }
                 }
             }
@@ -164,9 +162,14 @@ class CallApiItdShipping extends OrgAction
             foreach ($packageErrors as $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
-                    $errorData['others'][] = Str::of($code)->replace('_', ' ')->lower();
+                    $errorData['others'][] = Str::of($code)->replace('_', ' ') . ',';
                 }
             }
+
+            foreach ($errorData as $key => $value) {
+                $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
+            }
+
         }
 
         return [

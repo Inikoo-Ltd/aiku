@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
@@ -46,12 +47,9 @@ class IndexCustomerSalesChannels extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(CustomerSalesChannel::class);
-        $query->where('customer_sales_channels.customer_id', $customer->id);
-
-        return $query
-            ->defaultSort('customer_sales_channels.reference')
-            ->select([
+        $query = QueryBuilder::for(CustomerSalesChannel::class)
+                ->where('customer_sales_channels.customer_id', $customer->id)
+                ->select([
                 'customer_sales_channels.id',
                 'customer_sales_channels.reference',
                 'customer_sales_channels.slug',
@@ -59,12 +57,20 @@ class IndexCustomerSalesChannels extends OrgAction
                 'customer_sales_channels.number_portfolios as number_portfolios',
                 'customer_sales_channels.number_orders as number_orders',
                 'customer_sales_channels.platform_id',
+                ])
+                ->selectSub(function ($subquery) {
+                $subquery->from('orders')
+                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
+                    ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
+                    ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
+                }, 'total_amount')
+                ->defaultSort('customer_sales_channels.reference')
+                ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
+                ->allowedFilters([$globalSearch])
+                ->withPaginator($prefix, tableName: request()->route()->getName())
+                ->withQueryString();
 
-            ])
-            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $query;
     }
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
