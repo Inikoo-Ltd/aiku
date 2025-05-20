@@ -245,7 +245,7 @@ const onSubmitWoocommerce = async () => {
 
             <!-- Section: Woocommerce -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <Link :href="route('retina.dropshipping.platforms.dashboard', ['tiktok'])"
+                <Link :href="route('retina.dropshipping.platforms.dashboard', ['woocommerce'])"
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png"
                         alt="" class="h-12">
