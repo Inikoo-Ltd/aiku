@@ -65,7 +65,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel,ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel=$customerSalesChannel;
-        $this->initialisation($request);
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
         return $this->handle($customerSalesChannel);
     }
 
@@ -74,8 +74,6 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
     {
-
-
         $title = __('Portfolio');
         $syncAllRoute = [];
 
@@ -99,33 +97,25 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
-
-
-
-//                    'actions' => [
-//                        $this->customer->is_fulfilment && ($this->platformUser instanceof ShopifyUser) ? [
-//                            'type'  => 'button',
-//                            'style' => 'create',
-//                            'label' => 'Sync Items',
-//                            'route' => [
-//                                'name'       => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
-//                                'parameters' => [
-//                                    'shopifyUser' => $this->platformUser->id
-//                                ]
-//                            ]
-//                        ] : [],
-//                        $this->customer->is_fulfilment && ($this->platformUser instanceof TiktokUser) ? [
-//                            'type'  => 'button',
-//                            'style' => 'create',
-//                            'label' => 'Sync Items',
-//                            'route' => [
-//                                'name'       => 'retina.models.dropshipping.tiktok.product.sync',
-//                                'parameters' => [
-//                                    'tiktokUser' => $this->platformUser->id
-//                                ]
-//                            ]
-//                        ] : [],
-//                    ]
+                'actions' => [
+                        !empty($portfolios) ? [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => 'Sync All Items',
+                            'route' => [
+                                'name'       => 'retina.models.customer_sales_channel.sync_all_stored_items',
+                                'parameters' => [
+                                    'customerSalesChannel' => $this->customerSalesChannel->id
+                                ]
+                            ]
+                        ] : [],
+                        !empty($portfolios) ? [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => 'Add Portfolio',
+                            'route' => []
+                        ] : []  
+                    ]
                 ],
                 'routes'    => [
                     'syncAllRoute' => $syncAllRoute,
@@ -167,8 +157,6 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'action', label: __('action'), canBeHidden: false);
         };
     }
