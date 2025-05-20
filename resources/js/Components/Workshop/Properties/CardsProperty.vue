@@ -317,7 +317,12 @@ watch(
 
 <template>
 	<div>
-		<SideEditor :blueprint="blueprint" v-model="value" :uploadImageRoute="uploadRoutes" />
+		<SideEditor 
+			:blueprint="blueprint" 
+			v-model="value" 
+			:uploadImageRoute="uploadRoutes" 
+			@update:modelValue="(e) => value = e"
+		/>
 	</div>
 </template>
 

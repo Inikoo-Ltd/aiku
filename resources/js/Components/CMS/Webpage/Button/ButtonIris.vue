@@ -19,15 +19,16 @@ const props = defineProps<{
     fieldValue: FieldValue
     webpageData?: any
     blockData?: Object
+    screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 
 </script>
 
 <template>
-    <div class="flex" :style="getStyles(fieldValue?.container?.properties)">
+    <div class="flex" :style="getStyles(fieldValue?.container?.properties,screenType)">
         <a typeof="button" :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
-            :style="getStyles(fieldValue?.button?.container?.properties)" class="flex items-center justify-center">
+            :style="getStyles(fieldValue?.button?.container?.properties,screenType)" class="flex items-center justify-center">
             {{ fieldValue?.button?.text }}
         </a>
     </div>

@@ -15,6 +15,7 @@ const props = defineProps<{
 	modelValue: any;
 	webpageData?: any;
 	blockData?: Object;
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -30,7 +31,7 @@ function onSave() {
 </script>
 
 <template>
-	<div :style="getStyles(modelValue?.container?.properties)">
+	<div :style="getStyles(modelValue?.container?.properties,screenType)">
 		<div class="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
 			<Editor v-model="modelValue.title" @update:modelValue="() => emits('autoSave')" />
 			<div class="mt-10 grid gap-4 sm:mt-16 lg:grid-cols-3 lg:grid-rows-2">
@@ -52,7 +53,7 @@ function onSave() {
 								<Image v-else :src="modelValue?.column1?.image?.source" :imageCover="true"
 									:alt="modelValue?.column1?.image?.alt"
 									:imgAttributes="modelValue?.column1?.image?.attributes"
-									:style="getStyles(modelValue?.column1?.image?.properties)" />
+									:style="getStyles(modelValue?.column1?.image?.properties,screenType)" />
 							</div>
 						</div>
 
@@ -83,7 +84,7 @@ function onSave() {
 								<Image v-else :src="modelValue?.column2?.image?.source" :imageCover="true"
 									:alt="modelValue?.column2?.image?.alt"
 									:imgAttributes="modelValue?.column2?.image?.attributes"
-									:style="getStyles(modelValue?.column2?.image?.properties)" />
+									:style="getStyles(modelValue?.column2?.image?.properties,screenType)" />
 							</div>
 						</div>
 					</div>
@@ -112,7 +113,7 @@ function onSave() {
 								<Image v-else :src="modelValue?.column3?.image?.source" :imageCover="true"
 									:alt="modelValue?.column3?.image?.alt"
 									:imgAttributes="modelValue?.column3?.image?.attributes"
-									:style="getStyles(modelValue?.column3?.image?.properties)" />
+									:style="getStyles(modelValue?.column3?.image?.properties,screenType)" />
 							</div>
 						</div>
 					</div>
@@ -140,7 +141,7 @@ function onSave() {
 								<Image v-else :src="modelValue?.column4?.image?.source" :imageCover="true"
 									:alt="modelValue?.column4?.image?.alt"
 									:imgAttributes="modelValue?.column4?.image?.attributes"
-									:style="getStyles(modelValue?.column4?.image?.properties)" />
+									:style="getStyles(modelValue?.column4?.image?.properties,screenType)" />
 							</div>
 						</div>
 					</div>

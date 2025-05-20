@@ -58,7 +58,7 @@ const props = defineProps<{
 				<div v-html="fieldValue.text" />
 			</div>
 
-			<a typeof="button" :style="getStyles(fieldValue.button.container.properties)"
+			<a typeof="button" :style="getStyles(fieldValue.button.container.properties,screenType)"
 				:href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
 				class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
 				{{ fieldValue.button.text }}

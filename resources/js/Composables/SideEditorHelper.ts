@@ -88,7 +88,7 @@ export const getFormValue = (data: {}, fieldKeys: string | string[]) => {
     return keys.reduce((acc, key) => acc && acc[key], data) ?? null;
 };
 
-export const setFormValue = (mValue: any, fieldKeys: string | string[], newVal: any) => {
+export const setFormValue = (mValue = {} , fieldKeys: string | string[], newVal: any) => {
     const keys = Array.isArray(fieldKeys) ? fieldKeys : [fieldKeys];
     return set(mValue, keys, newVal);
 };

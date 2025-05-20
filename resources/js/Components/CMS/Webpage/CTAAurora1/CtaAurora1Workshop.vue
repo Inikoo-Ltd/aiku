@@ -18,6 +18,7 @@ const props = defineProps<{
     modelValue: any
 	webpageData?: any
 	blockData?: Object
+    screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -27,7 +28,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <div :style="getStyles(modelValue.container.properties)">
+    <div :style="getStyles(modelValue.container.properties,screenType)">
         <div class="w-full">
             <div class="relative isolate px-6 py-16 md:py-24 text-center  sm:px-16">
                 <Editor  
@@ -55,7 +56,7 @@ const emits = defineEmits<{
                 />
 
                 <div class="flex justify-center">
-                    <div @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[1]?.key?.join('-'))" typeof="button" :style="getStyles(modelValue.button.container.properties)"
+                    <div @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[1]?.key?.join('-'))" typeof="button" :style="getStyles(modelValue.button.container.properties,screenType)"
                         class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
                         {{ modelValue.button.text }}
                      </div>
