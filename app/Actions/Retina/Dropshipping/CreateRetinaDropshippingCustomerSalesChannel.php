@@ -95,7 +95,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
                     'createRoute'       => [
                         'method' => 'post',
-                        'name' => 'retina.models.customer_sales_channel.manual.store'
+                        'name' => 'retina.models.fulfilment.customer_sales_channel.manual.store'
                     ]
                 ],
                 'type_tiktok'   => [
