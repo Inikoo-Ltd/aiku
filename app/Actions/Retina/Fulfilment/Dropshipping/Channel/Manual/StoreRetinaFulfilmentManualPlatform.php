@@ -8,14 +8,11 @@
 
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
-use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,21 +27,7 @@ class StoreRetinaFulfilmentManualPlatform extends RetinaAction
 
     public function handle(Customer $customer): CustomerSalesChannel
     {
-        $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
-
-
-        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
-            $this->customer,
-            $platform,
-            [
-                'reference' => (string)$customer->id,
-            ]
-        );
-
-
-        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
-
-        return $customerSalesChannel;
+        return StoreRetinaManualPlatform::run($customer);
     }
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
