@@ -14,6 +14,7 @@ use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Services\QueryBuilder;
 use Closure;
@@ -27,9 +28,9 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
 {
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+      $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('platforms.code', $value);
+                $query->whereStartWith('customer_sales_channels.reference', $value);
             });
         });
 
@@ -37,25 +38,23 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Platform::class);
-        $query->join('customer_sales_channels', 'customer_sales_channels.platform_id', 'platforms.id');
+        $query = QueryBuilder::for(CustomerSalesChannel::class);
+        $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
 
         return $query
-            ->defaultSort('customer_sales_channels.id')
+            ->defaultSort('customer_sales_channels.reference')
             ->select([
-                'customer_sales_channels.id as customer_sales_channel_id',
-                'customer_sales_channels.slug as customer_sales_channel_slug',
+                'customer_sales_channels.reference',
+                'customer_sales_channels.slug',
                 'customer_sales_channels.number_customer_clients as number_customer_clients',
                 'customer_sales_channels.number_portfolios as number_portfolios',
                 'customer_sales_channels.number_orders as number_orders',
-                'platforms.id',
-                'platforms.slug',
-                'platforms.code',
-                'platforms.name',
-                'platforms.type'
+                'customer_sales_channels.platform_id',
+
+
             ])
-            ->allowedSorts(['code', 'name', 'type'])
+            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
