@@ -24,8 +24,8 @@ Route::name("newsletters.")->prefix('newsletters')
     ->group(function () {
         Route::get('', [IndexNewsletterMailshots::class, 'inShop'])->name('index');
         Route::get('create', CreateDummy::class)->name('create');
-        Route::get('{mailshot}', ShowDummy::class)->name('show');
-        Route::get('{mailshot}/edit', EditDummy::class)->name('edit');
+        Route::get('{mailshot}', [ShowMailshot::class, 'inShop'])->name('show');
+        Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
     });
 Route::name("mailshots.")->prefix('mailshots')
     ->group(function () {

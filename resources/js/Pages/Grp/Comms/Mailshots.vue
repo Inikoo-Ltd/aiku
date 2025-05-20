@@ -9,11 +9,12 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableMailshots from "@/Components/Tables/TableMailshots.vue";
 import { capitalize } from "@/Composables/capitalize"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
-const props = defineProps<{
+defineProps<{
     data: object
     title: string
-    pageHead: object
+    pageHead: PageHeadingTypes
 }>()
 
 </script>

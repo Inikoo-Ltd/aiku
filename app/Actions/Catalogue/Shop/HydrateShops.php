@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAdjustments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
@@ -57,7 +58,6 @@ class HydrateShops
 
     public function handle(Shop $shop): void
     {
-
         ShopHydratePaymentAccounts::run($shop);
         ShopHydratePayments::run($shop);
         ShopHydrateCustomers::run($shop);
@@ -89,11 +89,9 @@ class HydrateShops
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateRegistrationIntervals::run($shop);
         ShopHydrateOrderIntervals::run($shop);
-
+        ShopHydrateMailshots::run($shop);
         ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);
         ShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($shop);
-
-
     }
 
 }
