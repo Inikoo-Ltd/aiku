@@ -83,7 +83,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
             $syncAllRoute = [
                 'name' => 'retina.models.customer_sales_channel.sync_all_stored_items',
                 'parameters' => [
-                    'customerSalesChannel' => $this->customerSalesChannel
+                    'customerSalesChannel' => $this->customerSalesChannel->id
                 ]
             ];
         }
