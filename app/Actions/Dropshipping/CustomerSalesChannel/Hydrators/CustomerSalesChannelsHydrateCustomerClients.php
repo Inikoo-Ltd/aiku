@@ -19,22 +19,21 @@ class CustomerSalesChannelsHydrateCustomerClients implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(CustomerSalesChannel $customerHasPlatform): string
+    public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
     {
-        return $customerHasPlatform->id;
+        return $customerSalesChannel->id;
     }
 
-    public function handle(CustomerSalesChannel $customerHasPlatform): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
         $stats = [];
 
-        if ($customerHasPlatform->customer_id && $customerHasPlatform->platform_id) {
-            $stats['number_customer_clients'] = CustomerClient::where('customer_id', $customerHasPlatform->customer_id)
-                ->where('platform_id', $customerHasPlatform->platform_id)
-                ->count();
+        if ($customerSalesChannel->customer_id && $customerSalesChannel->platform_id) {
+            $stats['number_customer_clients'] = CustomerClient::where('customer_sales_channel_id', $customerSalesChannel->id)->count();
+            $customerSalesChannel->update($stats);
         }
 
-        $customerHasPlatform->update($stats);
+
     }
 
 }

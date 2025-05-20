@@ -15,29 +15,30 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomerSalesChannelSubNavigation
 {
-    public function getCustomerPlatformSubNavigation(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): array
+    public function getCustomerPlatformSubNavigation(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
     {
         $subNavigation = [];
 
         $subNavigation[] = [
             'isAnchor' => true,
             'route'    => [
-                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show',
+                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
                 'parameters' => $request->route()->originalParameters()
             ],
 
-            'label'    => __('Channel').': '.$customerHasPlatform->platform->name,
+            'label'    => __('Channel').': '.$customerSalesChannel->reference,
             'leftIcon' => [
-                'icon'    => 'fal fa-store',
-                'tooltip' => __('channel'),
+                'icon'          => 'fal fa-code-branch',
+                'icon_rotation' => 90,
+                'tooltip'       => __('channel'),
             ],
         ];
 
         $subNavigation[] = [
-            "number"   => $customerHasPlatform->number_portfolios,
+            "number"   => $customerSalesChannel->number_portfolios,
             'label'    => __('Portfolios'),
             'route'    => [
-                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
+                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
                 'parameters' => $request->route()->originalParameters()
 
             ],
@@ -47,12 +48,12 @@ trait WithCustomerSalesChannelSubNavigation
             ],
         ];
 
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $subNavigation[] = [
-                "number"   => $customerHasPlatform->number_customer_clients,
+                "number"   => $customerSalesChannel->number_customer_clients,
                 'label'    => __('Clients'),
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],
@@ -63,10 +64,10 @@ trait WithCustomerSalesChannelSubNavigation
             ];
         } else {
             $subNavigation[] = [
-                "number"   => $customerHasPlatform->number_customer_clients,
+                "number"   => $customerSalesChannel->number_customer_clients,
                 'label'    => __('Clients'),
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.other_platform.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.other_platform.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],
@@ -77,10 +78,10 @@ trait WithCustomerSalesChannelSubNavigation
             ];
         }
         $subNavigation[] = [
-            "number"   => $customerHasPlatform->number_orders,
+            "number"   => $customerSalesChannel->number_orders,
             'label'    => __('Orders'),
             'route'    => [
-                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
+                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index',
                 'parameters' => $request->route()->originalParameters()
 
             ],

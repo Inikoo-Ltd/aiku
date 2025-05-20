@@ -129,6 +129,12 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 ],
                 'routes'    => [
                     'syncAllRoute' => $syncAllRoute,
+                    'addPortfolioRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ]
                 ],
 
                 'tabs'        => [

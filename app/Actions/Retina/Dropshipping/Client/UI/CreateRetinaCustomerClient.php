@@ -122,8 +122,8 @@ class CreateRetinaCustomerClient extends RetinaAction
 
         $customer = $request->user()->customer;
         $this->initialisationFromPlatform($platform, $request);
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->scope = $customerHasPlatform;
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->scope = $customerSalesChannel;
 
         return $this->handle($request);
     }
