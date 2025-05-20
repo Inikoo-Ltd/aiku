@@ -79,11 +79,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
             Route::get('/{palletReturn}', [ShowRetinaStoredItemReturn::class, 'inOrder'])->name('show');
         });
 
-        Route::prefix('api')->as('api.')->group(function () {
-            Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-            Route::get('/show', ShowApiTokenRetinaDropshipping::class)->name('show');
-            Route::get('/token', GetApiToken::class)->name('show.token');
-        });
+
     });
 
 });
