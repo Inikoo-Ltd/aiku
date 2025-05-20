@@ -137,7 +137,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
 
 
         return Inertia::render(
-            'Org/Dropshipping/OrdersInCustomerHasPlatform',
+            'Org/Dropshipping/OrdersIncustomerSalesChannel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->customerSalesChannel,

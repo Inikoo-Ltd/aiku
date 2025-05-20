@@ -9,6 +9,7 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -198,7 +199,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
+                ShowCustomerSalesChannelInFulfilment::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

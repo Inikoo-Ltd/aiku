@@ -9,9 +9,9 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\ShowFulfilmentCustomerPlatform;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
@@ -257,7 +257,7 @@ class ShowCustomerClient extends OrgAction
 
             'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show'
             => array_merge(
-                (new ShowFulfilmentCustomerPlatform())->getBreadcrumbs($this->parent, $routeParameters),
+                (new ShowCustomerSalesChannelInFulfilment())->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [

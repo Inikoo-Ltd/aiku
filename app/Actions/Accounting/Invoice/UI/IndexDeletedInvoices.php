@@ -208,7 +208,7 @@ class IndexDeletedInvoices extends OrgAction
 
         if ($this->parent instanceof CustomerClient) {
             /** @var CustomerSalesChannel $customerSalesChannel */
-            $customerSalesChannel = $request->route()->parameter('customerHasPlatform');
+            $customerSalesChannel = $request->route()->parameter('customerSalesChannel');
             $subNavigation       = $this->getCustomerClientSubNavigation($this->parent, $customerSalesChannel);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
