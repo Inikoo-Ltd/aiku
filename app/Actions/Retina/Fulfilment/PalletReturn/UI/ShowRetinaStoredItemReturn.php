@@ -90,7 +90,6 @@ class ShowRetinaStoredItemReturn extends RetinaAction
             [
                 'title'       => __('goods out'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->customerSalesChannel,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -256,7 +255,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
         return new PalletReturnsResource($palletReturn);
     }
 
-    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters, $suffix = ''): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix) {
             return [
@@ -299,7 +298,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                 )
             ),
             'retina.fulfilment.dropshipping.customer_sales_channels.basket.show' => array_merge(
-                IndexRetinaFulfilmentBaskets::make()->getBreadcrumbs($customerSalesChannel),
+                IndexRetinaFulfilmentBaskets::make()->getBreadcrumbs($this->customerSalesChannel),
                 [
                     [
                         'type'   => 'simple',
