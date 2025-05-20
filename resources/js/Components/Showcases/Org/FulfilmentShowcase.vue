@@ -97,7 +97,7 @@ function palletRoute(pallet: any) {
 
 <template>
 	<Dashboard class="p-4" :dashboard="data.dashboard_stats" />
-<pre>{{ data.flatTreeMaps }}</pre>
+
 	<div class="mt-2">
 		<FlatTreeMap
 			class="mx-4"
