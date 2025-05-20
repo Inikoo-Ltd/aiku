@@ -19,6 +19,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
 library.add(faSyncAlt)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
@@ -32,6 +34,7 @@ const props = defineProps<{
 	// order_route: routeType
 	routes: {
 		syncAllRoute: routeType
+		addPortfolioRoute: routeType
 	}
 }>()
 
@@ -58,25 +61,46 @@ const props = defineProps<{
 
 // 	return components[currentTab.value]
 // })
+
+const isOpenModalPortfolios = ref(false)
+const isLoadingSubmit = ref(false)
+const onSubmitAddItem = async (idProduct: number[]) => {
+    router.post(route(props.routes.addPortfolioRoute.name, props.routes.addPortfolioRoute.parameters), {
+        items: idProduct
+    }, {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: trans("Something went wrong."),
+                text: error.products || undefined,
+                type: "error"
+            })
+        },
+        onSuccess: () => {
+            router.reload({only: ['pageHead', 'products']})
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            })
+            isOpenModalPortfolios.value = false
+        },
+        onFinish: () => isLoadingSubmit.value = false
+    })
+}
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<!-- <template #other="{ action }">
+		<template #otherBefore>
 			<Button
-				v-if="!orderMode && is_manual"
-				@click="onCreateOrder"
-				:label="'Create Order'"
-				:style="'create'"
-				 />
-			<Button
-				v-if="orderMode && is_manual"
-				@click="onCancelOrder"
-				:label="'Cancel'"
-				:style="'cancel'"
-			 />
-		</template> -->
+				@click="isOpenModalPortfolios = true"
+				:label="trans('Add portfolio')"
+				:icon="'fas fa-plus'"
+				type="tertiary"
+			/>
+		</template>
 	</PageHeading>
 
 	<!-- <pre>{{ props.routes }}</pre> -->
@@ -102,7 +126,15 @@ const props = defineProps<{
 		</div>
 	</div>
 
-	<!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
-	<!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" />
+
+	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+        <ProductsSelector
+            :headLabel="trans('Add products to portfolios')"
+            :route-fetch="props.routes.itemRoute"
+            :isLoadingSubmit
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
+        >
+        </ProductsSelector>
+    </Modal>
 </template>
