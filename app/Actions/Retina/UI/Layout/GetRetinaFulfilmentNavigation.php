@@ -267,15 +267,17 @@ class GetRetinaFulfilmentNavigation
                 ];
             }
 
-            $groupNavigation['api'] = [
-                'label'   => __('API'),
-                'icon'    => ['fal', 'fa-key'],
-                'root'    => '',
-                'route'   => [
-                    'name' => ''
-                ],
-                'topMenu' => []
-            ];
+            if (!app()->environment('production')) {
+                $groupNavigation['api'] = [
+                    'label'   => __('API'),
+                    'icon'    => ['fal', 'fa-key'],
+                    'root'    => '',
+                    'route'   => [
+                        'name' => ''
+                    ],
+                    'topMenu' => []
+                ];
+            }
         }
 
         return $groupNavigation;
