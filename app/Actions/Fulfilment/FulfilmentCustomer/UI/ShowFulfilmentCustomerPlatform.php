@@ -28,20 +28,20 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
 
-    public function handle(CustomerSalesChannel $customerHasPlatform): CustomerSalesChannel
+    public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
-        return $customerHasPlatform;
+        return $customerSalesChannel;
     }
 
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): CustomerSalesChannel
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentCustomerTabsEnum::values());
 
-        return $this->handle($customerHasPlatform);
+        return $this->handle($customerSalesChannel);
     }
 
-    public function htmlResponse(CustomerSalesChannel $customerHasPlatform, ActionRequest $request): Response
+    public function htmlResponse(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $navigation = FulfilmentCustomerPlatformTabsEnum::navigation();
 
@@ -52,7 +52,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerHasPlatform,
+                    $customerSalesChannel,
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
@@ -61,10 +61,10 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                         'icon'  => 'fal fa-user',
                     ],
                     'model'         => __('Platform'),
-                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($customerHasPlatform, $request),
-                    'title'         => $customerHasPlatform->platform->name,
+                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($customerSalesChannel, $request),
+                    'title'         => $customerSalesChannel->platform->name,
                     'afterTitle'    => [
-                        'label' => '('.$customerHasPlatform->customer->name.')',
+                        'label' => '('.$customerSalesChannel->customer->name.')',
                     ],
                     'actions'       => $actions
                 ],
@@ -77,7 +77,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(CustomerSalesChannel $customerHasPlatform, array $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, array $routeParameters): array
     {
         $headCrumb = function (Platform $platform, array $routeParameters, string $suffix = '') {
             return [
@@ -107,7 +107,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                 $routeParameters
             ),
             $headCrumb(
-                $customerHasPlatform->platform,
+                $customerSalesChannel->platform,
                 [
 
                     'index' => [
@@ -120,7 +120,7 @@ class ShowFulfilmentCustomerPlatform extends OrgAction
                             'organisation'       => $routeParameters['organisation'],
                             'fulfilment'         => $routeParameters['fulfilment'],
                             'fulfilmentCustomer' => $routeParameters['fulfilmentCustomer'],
-                            'customerHasPlatform'           => $customerHasPlatform
+                            'customerHasPlatform'           => $customerSalesChannel
                         ]
                     ]
                 ]

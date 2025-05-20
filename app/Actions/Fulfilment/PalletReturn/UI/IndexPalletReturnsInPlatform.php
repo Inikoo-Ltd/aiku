@@ -33,17 +33,17 @@ use UnexpectedValueException;
 class IndexPalletReturnsInPlatform extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
-    private CustomerSalesChannel $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle($customerHasPlatform);
+        return $this->handle($customerSalesChannel);
     }
 
-    public function handle(CustomerSalesChannel $customerHasPlatform, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -58,9 +58,9 @@ class IndexPalletReturnsInPlatform extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PalletReturn::class);
         $queryBuilder->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
-        if ($customerHasPlatform->platform->type == PlatformTypeEnum::MANUAL) {
-            $queryBuilder->where('pallet_returns.fulfilment_customer_id', $customerHasPlatform->customer->fulfilmentCustomer->id);
-        } elseif ($customerHasPlatform->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $queryBuilder->where('pallet_returns.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
+        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
@@ -68,7 +68,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
         } else {
             throw new UnexpectedValueException('To be implemented');
         }
-        $queryBuilder->where('platform_id', $customerHasPlatform->platform_id);
+        $queryBuilder->where('platform_id', $customerSalesChannel->platform_id);
         $queryBuilder->leftJoin('pallet_return_stats', 'pallet_return_stats.pallet_return_id', '=', 'pallet_returns.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'pallet_returns.currency_id');
 
@@ -118,18 +118,18 @@ class IndexPalletReturnsInPlatform extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->customerHasPlatform->customer->name;
+        $title      = $this->customerSalesChannel->customer->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders')
         ];
-        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
+        $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerSalesChannel, $request);
 
-        if ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::TIKTOK) {
+        if ($this->customerSalesChannel->platform->type ==  PlatformTypeEnum::TIKTOK) {
             $afterTitle = [
                 'label' => __('Tiktok Orders')
             ];
-        } elseif ($this->customerHasPlatform->platform->type ==  PlatformTypeEnum::SHOPIFY) {
+        } elseif ($this->customerSalesChannel->platform->type ==  PlatformTypeEnum::SHOPIFY) {
             $afterTitle = [
                 'label' => __('Shopify Orders')
             ];
@@ -164,7 +164,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeParameters),
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

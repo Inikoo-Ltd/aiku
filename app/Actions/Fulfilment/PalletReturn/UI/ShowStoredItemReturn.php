@@ -68,9 +68,9 @@ class ShowStoredItemReturn extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function inPlatformInFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
-        $this->parent = $customerHasPlatform;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);

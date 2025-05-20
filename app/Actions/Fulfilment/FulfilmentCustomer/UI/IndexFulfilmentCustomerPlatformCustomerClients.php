@@ -35,15 +35,15 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
 {
     use WithFulfilmentCustomerPlatformSubNavigation;
     private ShopifyUser|TiktokUser $parent;
-    private CustomerSalesChannel $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerHasPlatform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        $this->parent = match ($customerHasPlatform->platform->type) {
+        $this->parent = match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::TIKTOK => $fulfilmentCustomer->customer->tiktokUser,
             PlatformTypeEnum::SHOPIFY => $fulfilmentCustomer->customer->shopifyUser,
             PlatformTypeEnum::WOOCOMMERCE => throw new UnexpectedValueException('To be implemented')
@@ -169,7 +169,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
-                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($this->customerHasPlatform, $request),
+                    'subNavigation' => $this->getFulfilmentCustomerPlatformSubNavigation($this->customerSalesChannel, $request),
                     'actions'       => [
                         match (class_basename($this->parent)) {
                             'ShopifyUser' => [
@@ -180,7 +180,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
                                 'route'   => [
                                     'name'       => 'pupil.dropshipping.platforms.client.fetch',
                                     'parameters' => [
-                                        'platform' => $this->customerHasPlatform->platform->slug
+                                        'platform' => $this->customerSalesChannel->platform->slug
                                     ]
                                 ]
                             ]
@@ -198,7 +198,7 @@ class IndexFulfilmentCustomerPlatformCustomerClients extends OrgAction
     {
         return
             array_merge(
-                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerHasPlatform, $routeParameters),
+                ShowFulfilmentCustomerPlatform::make()->getBreadcrumbs($this->customerSalesChannel, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

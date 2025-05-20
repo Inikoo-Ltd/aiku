@@ -213,10 +213,10 @@ class StoreOrder extends OrgAction
         }
 
         if ($order->platform_id) {
-            $customerHasPlatform = CustomerSalesChannel::where('customer_id', $order->customer_id)
+            $customerSalesChannel = CustomerSalesChannel::where('customer_id', $order->customer_id)
                 ->where('platform_id', $order->platform_id)->first();
-            if ($customerHasPlatform) {
-                CustomerSalesChannelsHydrateOrders::dispatch($customerHasPlatform);
+            if ($customerSalesChannel) {
+                CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
             }
         }
 
@@ -312,7 +312,7 @@ class StoreOrder extends OrgAction
                 $order->customer->slug,
                 $order->slug
             ]),
-            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.show', [
+            'grp.models.customer-client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
@@ -321,7 +321,7 @@ class StoreOrder extends OrgAction
                 $order->slug
             ]),
             'grp.models.customer.platform-order.store',
-            'grp.models.customer-client.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.orders.show', [
+            'grp.models.customer-client.platform-order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,

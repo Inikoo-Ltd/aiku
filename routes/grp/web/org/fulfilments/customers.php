@@ -181,7 +181,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
                 Route::get('/{storedItem}', [ShowStoredItem::class, 'inPlatformInFulfilmentCustomer'])->name('.show')->withoutScopedBindings();
             });
             Route::prefix('/customer-clients')->as('.customer-clients')->group(function () {
-                Route::get('', [IndexCustomerClients::class, 'inPlatformInFulfilmentCustomer'])->name('.manual.index');
+                Route::get('', [IndexCustomerClients::class, 'inCustomerSalesChannelInFulfilmentCustomer'])->name('.manual.index');
                 Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
                 Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
                 Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inFulfilmentPlatform'])->name('.edit');

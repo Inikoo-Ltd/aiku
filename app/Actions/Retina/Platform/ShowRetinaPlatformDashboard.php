@@ -28,7 +28,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
             ->first();
     }
 
-    public function htmlResponse(CustomerSalesChannel $customerHasPlatform): Response
+    public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
 
         $title = __('Channel Dashboard');
@@ -47,17 +47,17 @@ class ShowRetinaPlatformDashboard extends RetinaAction
 
             'amount_shortcuts' => [],
 
-            'platformData'  => $this->getPlatformData($customerHasPlatform),
+            'platformData'  => $this->getPlatformData($customerSalesChannel),
         ]);
     }
 
-    public function getPlatformData(CustomerSalesChannel $customerHasPlatform): array
+    public function getPlatformData(CustomerSalesChannel $customerSalesChannel): array
     {
         $stats = [];
 
         $stats['orders'] = [
             'label'         => __('Orders'),
-            'count'         => $customerHasPlatform->number_orders,
+            'count'         => $customerSalesChannel->number_orders,
             'description'   => __('total orders'),
             'route'         => [
                 'name' => 'retina.dropshipping.platforms.orders.index'
@@ -66,7 +66,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
 
         $stats['clients'] = [
             'label'         => __('Clients'),
-            'count'         => $customerHasPlatform->number_customer_clients,
+            'count'         => $customerSalesChannel->number_customer_clients,
             'description'   => __('total clients'),
             'route'         => [
                 'name' => 'retina.dropshipping.platforms.client.index'
@@ -75,7 +75,7 @@ class ShowRetinaPlatformDashboard extends RetinaAction
 
         $stats['portfolios'] = [
             'label'         => __('Portfolios'),
-            'count'         => $customerHasPlatform->number_portfolios,
+            'count'         => $customerSalesChannel->number_portfolios,
             'description'   => __('total portfolios'),
             'route'         => [
                 'name' => 'retina.dropshipping.platforms.portfolios.index'
