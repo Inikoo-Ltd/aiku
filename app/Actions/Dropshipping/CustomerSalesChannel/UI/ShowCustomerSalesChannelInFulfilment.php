@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -71,6 +72,20 @@ class ShowCustomerSalesChannelInFulfilment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+
+                'showcase' => [
+                    'stats' => [
+                        'name' => match ($customerSalesChannel->platform->type) {
+                            PlatformTypeEnum::SHOPIFY => $customerSalesChannel->customer->shopifyUser->name,
+                            PlatformTypeEnum::WOOCOMMERCE => $customerSalesChannel->customer->wooCommerceUser->name,
+                            PlatformTypeEnum::TIKTOK => $customerSalesChannel->customer->tiktokUser->name,
+                            default => $customerSalesChannel->customer->name,
+                        },
+                        'number_orders' => $customerSalesChannel->number_orders,
+                        'number_customer_clients' => $customerSalesChannel->number_customer_clients,
+                        'number_portfolios' => $customerSalesChannel->number_portfolios
+                    ]
+                ]
             ]
         );
     }
