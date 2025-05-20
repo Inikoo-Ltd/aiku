@@ -36,6 +36,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
+use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\StoreRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Fulfilment\Dropshipping\Portfolio\SyncAllRetinaStoredItemsToPortfolios;
 use App\Actions\Retina\Fulfilment\Dropshipping\Portfolio\SyncRetinaStoredItemsFromApiProductsShopify;
@@ -189,6 +190,7 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::post('{customerClient:id}/fulfilment/order', StoreRetinaPlatformPalletReturn::class)->name('fulfilment_order.store')->withoutScopedBindings();
 });
 
+Route::post('fulfilment-customer-sales-channel-manual', StoreRetinaFulfilmentManualPlatform::class)->name('fulfilment.customer_sales_channel.manual.store')->withoutScopedBindings();
 Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();
 
 
