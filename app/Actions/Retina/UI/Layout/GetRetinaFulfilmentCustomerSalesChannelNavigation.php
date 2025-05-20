@@ -26,8 +26,8 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
             'icon'        => ['fal', 'fa-shopping-basket'],
             'root'        => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.',
             'right_label' => [
-                'label' => __('29'),
-                'class' => 'bg-yellow-500 text-green-500'
+                'label' => $customerSalesChannel->number_orders_state_creating,
+                'class' => 'text-white'
             ],
             'route'       => [
                 'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.index',
@@ -47,9 +47,8 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
                 'parameters' => [$customerSalesChannel->slug]
             ],
             'right_label' => [
-                'label'        => __('14'),
-                'class'        => 'bg-red-500 text-white',
-                'is_important' => true
+                'label'        => $customerSalesChannel->number_portfolios,
+                'class'        => 'text-white',
             ],
 
         ];
@@ -62,6 +61,10 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
                 'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
                 'parameters' => [$customerSalesChannel->slug]
             ],
+            'right_label' => [
+                'label'        => $customerSalesChannel->number_customer_clients,
+                'class'        => 'text-white',
+            ],
         ];
 
         $platformNavigation['orders'] = [
@@ -71,6 +74,10 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
             'route' => [
                 'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index',
                 'parameters' => [$customerSalesChannel->slug]
+            ],
+            'right_label' => [
+                'label'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
+                'class'        => 'text-white',
             ],
         ];
 
