@@ -110,9 +110,9 @@ class GetRetinaFulfilmentNavigation
                         'img'           => $logo_img,
                         'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
                         'route'         => [
-                            'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.dashboard',
+                            'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
                             'parameters' => [
-                                'customerSalesChannel' => $customerSalesChannel->platform->slug
+                                'customerSalesChannel' => $customerSalesChannel->slug
                             ]
                         ],
                         'root'          => 'retina.fulfilment.dropshipping.customer_sales_channels.',

@@ -19,7 +19,7 @@ defineProps<{
 
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
   return route(
-    "retina.fulfilment.dropshipping.customer_sales_channels.dashboard",
+    "retina.fulfilment.dropshipping.customer_sales_channels.show",
     [
      
       customerSalesChannel.slug])

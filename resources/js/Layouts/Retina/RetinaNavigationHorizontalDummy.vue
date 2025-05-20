@@ -83,6 +83,8 @@ const onClickArrow = (horizontalKey: string) => {
     }))
     isLoadingNavigation.value = false
 }
+
+const isLoadingVisitActiveHorizontal = ref(false)
 </script>
 
 <template>
@@ -107,13 +109,23 @@ const onClickArrow = (horizontalKey: string) => {
             :style="{ color: layout.app.theme[1] + '99' }">
 
             <!-- Section: Horizontal label -->
-            <div class="relative flex gap-x-1.5 items-center pt-1 select-none cursor-default">
+            <component
+                :is="currentActiveHorizontal.route.name ? Link : 'div'" 
+                :href="route(currentActiveHorizontal.route.name, currentActiveHorizontal.route.parameters)"
+                @start="() => isLoadingVisitActiveHorizontal = true"
+                @finish="() => isLoadingVisitActiveHorizontal = false"
+                class="relative flex gap-x-1.5 items-center pt-1 select-none"
+                :class="currentActiveHorizontal.route.name ? 'cursor-pointer hover:text-gray-200' : 'cursor-default'"
+            >
                 <Transition name="spin-to-right">
                     <FontAwesomeIcon v-if="currentActiveHorizontal?.icon" :key="currentActiveHorizontal?.icon" :icon="currentActiveHorizontal?.icon" class='text-xs' fixed-width aria-hidden='true' v-tooltip="currentActiveHorizontal?.label" />
                 </Transition>
 
                 <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
-                    <img :key="currentActiveHorizontal?.img" :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-5" />
+                    <div :key="currentActiveHorizontal?.img" class="">
+                        <LoadingIcon v-if="isLoadingVisitActiveHorizontal" />
+                        <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-6" />
+                    </div>
                 </Transition>
 
                 <Transition name="slide-to-left">
@@ -125,7 +137,7 @@ const onClickArrow = (horizontalKey: string) => {
                         </Transition>
                     </div>
                 </Transition>
-            </div>
+            </component>
 
             <!-- Section: Horizontal arrow left-right -->
             <Transition v-if="previousHorizontal || nextHorizontal" name="slide-to-left">
