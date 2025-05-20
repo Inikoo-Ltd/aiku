@@ -92,6 +92,16 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => 'Add Sales Channel',
+                            'route' => [
+                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.create',
+                            ]
+                        ]
+                    ]
                 ],
                 'data'        => PlatformsInCustomerResource::collection($platforms),
             ]

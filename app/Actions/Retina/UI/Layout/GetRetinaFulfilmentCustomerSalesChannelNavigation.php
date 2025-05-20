@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -73,15 +74,18 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
             ],
         ];
 
-        $platformNavigation['api_token'] = [
-            'label' => __('Api'),
-            'icon'  => ['fal', 'fa-key'],
-            'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.api.',
-            'route' => [
-                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.api.dashboard',
-                'parameters' => [$customerSalesChannel->slug]
-            ],
-        ];
+        if($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL)
+        {
+            $platformNavigation['api_token'] = [
+                'label' => __('Api'),
+                'icon'  => ['fal', 'fa-key'],
+                'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.api.',
+                'route' => [
+                    'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.api.dashboard',
+                    'parameters' => [$customerSalesChannel->slug]
+                ],
+            ];
+        }
 
 
         return $platformNavigation;
