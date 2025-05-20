@@ -106,7 +106,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'actions' => [
                         $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
-                            'style' => 'tertiary',
+                            'xxstyle' => 'tertiary',
                             'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
@@ -133,7 +133,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 ],
 
                 'content'=>[
-                    'portfolio_empty'=>__("You don't any items in your portfolio")
+                    'portfolio_empty'=>__("You don't any items in your portfolio"),
+                    'portfolio_empty_description' => __("To get started, add products to your portfolios. You can sync from your inventory or create a new one.")
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
