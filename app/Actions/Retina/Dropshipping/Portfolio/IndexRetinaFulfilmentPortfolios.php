@@ -99,7 +99,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
                 'actions' => [
-                        !empty($portfolios) ? [
+                        $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
                             'style' => 'tertiary',
                             'icon'  => 'fas fa-sync-alt',

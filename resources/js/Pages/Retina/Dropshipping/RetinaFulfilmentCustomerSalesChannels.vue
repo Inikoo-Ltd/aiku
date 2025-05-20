@@ -4,7 +4,7 @@ import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Table } from '@/types/Table'
-import RetinaTableCustomerSalesChannels from "@/Components/Tables/Retina/RetinaTableCustomerSalesChannels.vue"
+import RetinaTableFulfilmentCustomerSalesChannels from "@/Components/Tables/Retina/RetinaTableFulfilmentCustomerSalesChannels.vue"
 
 
 defineProps<{
@@ -24,5 +24,5 @@ defineProps<{
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 	</PageHeading>
-	<RetinaTableCustomerSalesChannels :data="data" />
+	<RetinaTableFulfilmentCustomerSalesChannels :data="data" />
 </template>
