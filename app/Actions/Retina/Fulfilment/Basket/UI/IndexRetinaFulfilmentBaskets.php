@@ -110,7 +110,15 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                         'label' => ' @'.$this->platform->name
                     ],
                 ],
-
+                'routes' => [
+                    'clientWithOrderRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.fulfilment.customer-client-with-order.store',
+                        'parameters' => [
+                            $this->customerSalesChannel->id
+                        ],
+                        'method' => 'post'
+                    ]
+                ],
                 'data' => PalletReturnsResource::collection($palletReturns),
             ]
         )->table($this->tableStructure(prefix: 'pallet_returns'));
