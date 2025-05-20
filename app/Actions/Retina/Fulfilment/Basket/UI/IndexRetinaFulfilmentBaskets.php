@@ -111,7 +111,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                     ],
                 ],
                 'routes' => [
-                    'clientWithOrderRoute' => [
+                    'storeClientWithOrderRoute' => [
                         'name' => 'retina.models.customer_sales_channel.fulfilment.customer-client-with-order.store',
                         'parameters' => [
                             $this->customerSalesChannel->id
@@ -123,6 +123,13 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug
                         ]
+                    ],
+                    'storeBasketRoute' => [
+                        'name' => 'retina.models.customer-client.fulfilment_order.store',
+                        'parameters' => [
+                            // FE put client id here
+                        ],
+                        'method' => 'post'
                     ]
                 ],
                 'data' => PalletReturnsResource::collection($palletReturns),
