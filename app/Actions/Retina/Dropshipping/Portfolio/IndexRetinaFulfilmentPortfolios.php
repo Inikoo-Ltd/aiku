@@ -160,10 +160,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, align: 'right', searchable: true);
+            $table->column(key: 'actions', label: __('action'), canBeHidden: false);
         };
     }
 

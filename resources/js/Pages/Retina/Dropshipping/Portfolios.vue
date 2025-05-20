@@ -10,7 +10,7 @@ import type { Component } from "vue"
 
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
-import TablePortfolios from "@/Components/Tables/Grp/Org/Catalogue/TablePortfolios.vue"
+import RetinaTablePortfolios from "@/Components/Tables/Retina/RetinaTablePortfolios.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -28,42 +28,42 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
 	products: {}
-	is_manual: boolean
-	order_route: routeType
+	// is_manual: boolean
+	// order_route: routeType
 	routes: {
 		syncAllRoute: routeType
 	}
 }>()
 
-const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-const productRoute = ref()
-const selectedChildProducts = ref<any[]>([])
-const tablePortfoliosRef = ref(null)
-const orderMode = ref(false)
+// const currentTab = ref(props.tabs.current)
+// const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+// const productRoute = ref()
+// const selectedChildProducts = ref<any[]>([])
+// const RetinatablePortfoliosRef = ref(null)
+// const orderMode = ref(false)
 
-const onCreateOrder = () => {
-	orderMode.value = true
-}
+// const onCreateOrder = () => {
+// 	orderMode.value = true
+// }
 
-const onCancelOrder = () => {
-	orderMode.value = false
-}
+// const onCancelOrder = () => {
+// 	orderMode.value = false
+// }
 
-const component = computed(() => {
-	const components: Component = {
-		// showcase: FileShowcase
-		// products: TableProducts
-	}
+// const component = computed(() => {
+// 	const components: Component = {
+// 		// showcase: FileShowcase
+// 		// products: TableProducts
+// 	}
 
-	return components[currentTab.value]
-})
+// 	return components[currentTab.value]
+// })
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #other="{ action }">
+		<!-- <template #other="{ action }">
 			<Button
 				v-if="!orderMode && is_manual"
 				@click="onCreateOrder"
@@ -76,7 +76,7 @@ const component = computed(() => {
 				:label="'Cancel'"
 				:style="'cancel'"
 			 />
-		</template>
+		</template> -->
 	</PageHeading>
 
 	<!-- <pre>{{ props.routes }}</pre> -->
@@ -104,5 +104,5 @@ const component = computed(() => {
 
 	<!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 	<!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-	<TablePortfolios v-else :data="props.products" :tab="'products'" :is_manual :orderMode="orderMode" :order_route />
+	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" />
 </template>
