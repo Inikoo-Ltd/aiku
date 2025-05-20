@@ -238,7 +238,7 @@ class IndexCustomerClients extends OrgAction
                                     'organisation' => $scope->organisation->slug,
                                     'shop'         => $scope->shop->slug,
                                     'customer'     => $scope->slug,
-                                    'platform'     => $this->parent->platform->slug
+                                    'platform'     => $this->parent->platform->slug,
                                 ]
                             ]
                         ]
