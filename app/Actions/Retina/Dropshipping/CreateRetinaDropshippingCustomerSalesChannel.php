@@ -61,11 +61,11 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'name'       => 'retina.dropshipping.client.fetch',
                     'parameters' => []
                 ],
-/*                'connectRoute' => $customer->shopifyUser ? [
+                'connectRoute' => $customer->shopifyUser ? [
                     'url'       => route('pupil.authenticate', [
                         'shop' => $customer->shopifyUser?->name
                     ])
-                ] : null,*/
+                ] : null,
                 'total_channels' => [
                     'manual' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),
                     'shopify'   => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
