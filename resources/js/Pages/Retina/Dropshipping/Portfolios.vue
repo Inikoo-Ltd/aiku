@@ -30,7 +30,13 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
     content: {
-        portfolio_empty: string
+        portfolio_empty: {
+			title: string,
+			description: string,
+			separation: string,
+			sync_button: string,
+			add_button: string
+		}
     }
 	products: {}
 	// is_manual: boolean
@@ -98,22 +104,22 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
 	<div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-            {{content.portfolio_empty}}
+            {{content.portfolio_empty.title}}
 		</h1>
         <p class="mt-4 text-xl">
-			To get started, add products to your portfolios. You can sync from your inventory or create a new one.
+			{{content.portfolio_empty.description}}
 		</p>
 		<div class="mt-6 space-y-4">
 			<ButtonWithLink
 				:routeTarget="routes.syncAllRoute"
 				isWithError
-				label="Sync from Inventory"
+				:label="content.portfolio_empty.sync_button"
 				icon="fas fa-sync-alt"
 				type="tertiary"
 				size="xl"
 			/>
-			<div class="text-gray-500">or</div>
-			<Button @click="isOpenModalPortfolios = true" :label="trans('Add portfolio')" icon="fas fa-plus" size="xl" />
+			<div class="text-gray-500">{{content.portfolio_empty.separation}}</div>
+			<Button @click="isOpenModalPortfolios = true" :label="content.portfolio_empty.add_button" icon="fas fa-plus" size="xl" />
 		</div>
 	</div>
 

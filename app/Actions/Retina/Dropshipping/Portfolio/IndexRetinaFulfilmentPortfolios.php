@@ -133,7 +133,13 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 ],
 
                 'content'=>[
-                    'portfolio_empty'=>__("You don't any items in your portfolio")
+                    'portfolio_empty'=> [
+                        'title' => __("You don't any items in your portfolio"),
+                        'description' => __("To get started, add products to your portfolios. You can sync from your inventory or create a new one."),
+                        'separation' => __("or"),
+                        'sync_button' => __("Sync from Inventory"),
+                        'add_button' => __("Add Portfolio"),
+                    ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
