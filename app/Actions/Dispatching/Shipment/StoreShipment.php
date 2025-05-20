@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
-use App\Actions\Dispatching\Shipment\ApiCalls\ApcGbCallShipperApi;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\DpdGbCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\DpdSkCallShipperApi;
@@ -46,7 +46,7 @@ class StoreShipment extends OrgAction
 
         if ($shipper->api_shipper) {
             $shipmentData = match ($shipper->api_shipper) {
-                'apc-gb' => ApcGbCallShipperApi::run($parent, $shipper),
+                'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
                 'dpd-sk' => DpdSkCallShipperApi::run($parent, $shipper),
                 'pst-mn' => PostmenCallShipperApi::run($parent, $shipper),

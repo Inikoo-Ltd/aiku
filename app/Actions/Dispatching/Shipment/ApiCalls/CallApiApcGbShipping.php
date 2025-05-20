@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class CallApiApcShipping extends OrgAction
+class CallApiApcGbShipping extends OrgAction
 {
     use AsAction;
     use WithAttributes;
