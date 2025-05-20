@@ -133,7 +133,7 @@ class StoreCustomerClient extends OrgAction
 
         return Redirect::route(
             'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
-            [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->platform->slug]
+            [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->salesChannel->slug]
         );
     }
 

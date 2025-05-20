@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-05-2025-16h-24m
@@ -12,16 +13,11 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
-use App\Http\Resources\Helpers\CurrencyResource;
-use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -92,7 +88,7 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
-    {  
+    {
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
         return $this->handle($customerSalesChannel);

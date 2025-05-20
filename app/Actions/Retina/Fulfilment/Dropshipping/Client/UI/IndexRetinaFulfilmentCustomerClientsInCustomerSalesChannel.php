@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
-use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\Retina\Fulfilment\Dropshipping\WithInCustomerSalesChannelAuthorisation;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
@@ -28,7 +27,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaAction
 {
-
     use WithInCustomerSalesChannelAuthorisation;
 
     private CustomerSalesChannel $customerSalesChannel;
@@ -108,12 +106,12 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
 
         $title = __('Clients');
 
-        $fetchClientLabel=__('Fetch Client');
+        $fetchClientLabel = __('Fetch Client');
 
 
-        $actions=[];
+        $actions = [];
 
-        if($this->customerSalesChannel->platform_user_type=='ShopifyUser') {
+        if ($this->customerSalesChannel->platform_user_type == 'ShopifyUser') {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -128,7 +126,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
             ];
         }
 
-        if($this->customerSalesChannel->platform_user_type=='WooCommerceUser') {
+        if ($this->customerSalesChannel->platform_user_type == 'WooCommerceUser') {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -144,8 +142,8 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
         }
 
 
-        $spreadsheetRoute=null;
-        if($this->customerSalesChannel->platform->type==PlatformTypeEnum::MANUAL) {
+        $spreadsheetRoute = null;
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
