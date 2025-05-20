@@ -82,7 +82,7 @@ class GetRetinaFulfilmentNavigation
             ];
 
             if ($webUser->customer->fulfilmentCustomer->items_storage) {
-                // $groupNavigation['stored_items'] = 
+                // $groupNavigation['stored_items'] =
 
 
                 $customerSalesChannelsNavigation = [];
@@ -91,7 +91,7 @@ class GetRetinaFulfilmentNavigation
                 foreach (
                     $webUser->customer->customerSalesChannels as $customerSalesChannel
                 ) {
-                    
+
                     $logo_img = null;
                     if ($customerSalesChannel->platform->code === 'shopify') {
                         $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
@@ -114,7 +114,7 @@ class GetRetinaFulfilmentNavigation
                         'route'         => [
                             'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.dashboard',
                             'parameters' => [
-                                'customerSalesChannel' => $customerSalesChannel->platform->slug
+                                'customerSalesChannel' => $customerSalesChannel->slug
                             ]
                         ],
                         'root'          => 'retina.fulfilment.dropshipping.customer_sales_channels.',

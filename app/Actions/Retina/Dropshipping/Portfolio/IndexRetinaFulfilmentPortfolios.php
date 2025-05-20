@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 19 May 2025 16:09:20 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -14,14 +15,8 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
-use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -36,7 +31,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
      */
     private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle( CustomerSalesChannel $customerSalesChannel,$prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
@@ -55,16 +50,16 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $customerSalesChannel= $request->route('customerSalesChannel');
-        if($customerSalesChannel->customer_id == $this->customer->id) {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
         return false;
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel,ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerSalesChannel=$customerSalesChannel;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
         return $this->handle($customerSalesChannel);
     }
@@ -77,9 +72,14 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
         $title = __('Portfolio');
         $syncAllRoute = [];
 
+        $routeName = match ($this->customerSalesChannel->platform->type) {
+            PlatformTypeEnum::SHOPIFY => 'retina.models.customer_sales_channel.shopify_sync_all_stored_items',
+            default => 'retina.models.customer_sales_channel.sync_all_stored_items'
+        };
+
         if ($this->customer->is_fulfilment) {
             $syncAllRoute = [
-                'name' => 'retina.models.customer_sales_channel.sync_all_stored_items',
+                'name' => $routeName,
                 'parameters' => [
                     'customerSalesChannel' => $this->customerSalesChannel->id
                 ],
@@ -103,7 +103,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                             'style' => 'create',
                             'label' => 'Sync All Items',
                             'route' => [
-                                'name'       => 'retina.models.customer_sales_channel.sync_all_stored_items',
+                                'name'       => $routeName,
                                 'parameters' => [
                                     'customerSalesChannel' => $this->customerSalesChannel->id
                                 ],
@@ -115,7 +115,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                             'style' => 'create',
                             'label' => 'Add Portfolio',
                             'route' => []
-                        ] : []  
+                        ] : []
                     ]
                 ],
                 'routes'    => [

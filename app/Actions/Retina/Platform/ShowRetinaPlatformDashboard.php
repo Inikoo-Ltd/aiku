@@ -12,20 +12,17 @@ namespace App\Actions\Retina\Platform;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaPlatformDashboard extends RetinaAction
 {
-    public function asController(Platform $platform, ActionRequest $request): CustomerSalesChannel
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
-        $this->initialisationFromPlatform($platform, $request);
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
 
-        return $this->customer->customerSalesChannels()
-            ->where('platform_id', $platform->id)
-            ->first();
+        return $customerSalesChannel;
     }
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
