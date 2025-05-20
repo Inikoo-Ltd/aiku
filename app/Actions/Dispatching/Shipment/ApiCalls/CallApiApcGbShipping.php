@@ -115,7 +115,7 @@ class CallApiApcGbShipping extends OrgAction
             'ClosedAt'        => $closedAt->format('H:i'),
             'Reference'       => Str::limit($parent->reference, 30),
             'Delivery'        => [
-                'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
+                'CompanyName'  => '',
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
                 'AddressLine2' => Str::limit(Arr::get($parentResource, 'to_address.address_line_2'), 60),
                 'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
@@ -217,22 +217,27 @@ class CallApiApcGbShipping extends OrgAction
                 }
                 foreach ($errFields as $error) {
                     if ($error['FieldName'] == 'Delivery PostalCode') {
-                        $errorData['others'][] = 'Invalid postcode';
+                        $errorData['others'][] = 'Invalid postcode,';
                     } else {
                         $fieldParts = explode(' ', $error['FieldName']);
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
-                                $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'];
+                                $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'] . ',';
                                 continue;
                             }
-                            $errorData[strtolower($fieldParts[0])][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'];
+                            $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]).' '.$error['ErrorMessage'] . ',';
                             continue;
                         }
 
-                        $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'];
+                        $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'] . ',';
                     }
                 }
+
+                foreach ($errorData as $key => $value) {
+                    $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
+                }
+
             }
         }
 

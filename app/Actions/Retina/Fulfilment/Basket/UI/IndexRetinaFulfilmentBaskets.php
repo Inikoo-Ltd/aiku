@@ -72,6 +72,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
             'pallet_return_stats.number_physical_goods as number_physical_goods',
             'pallet_returns.date',
             'pallet_returns.total_amount',
+            'pallet_returns.created_at',
             'currencies.code as currency_code',
         );
         return $query->defaultSort('id')
@@ -110,7 +111,28 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                         'label' => ' @'.$this->platform->name
                     ],
                 ],
-
+                'routes' => [
+                    'storeClientWithOrderRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.fulfilment.customer-client-with-order.store',
+                        'parameters' => [
+                            $this->customerSalesChannel->id
+                        ],
+                        'method' => 'post'
+                    ],
+                    'fetchClientsRoute' => [
+                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    'storeBasketRoute' => [
+                        'name' => 'retina.models.customer-client.fulfilment_order.store',
+                        'parameters' => [
+                            // FE put client id here
+                        ],
+                        'method' => 'post'
+                    ]
+                ],
                 'data' => PalletReturnsResource::collection($palletReturns),
             ]
         )->table($this->tableStructure(prefix: 'pallet_returns'));

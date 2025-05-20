@@ -1,0 +1,285 @@
+{
+	"slug": "carousel-1",
+	"code": "carousel-1",
+	"name": "carousel-1",
+	"scope": "webpage",
+	"category": "element",
+	"icon": ["fal", "rectangle-wide"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 0
+							},
+							"topright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"padding": {
+						"top": {
+							"value": 10
+						},
+						"left": {
+							"value": 10
+						},
+						"unit": "px",
+						"right": {
+							"value": 10
+						},
+						"bottom": {
+							"value": 10
+						}
+					},
+					"dimension": {
+						"width": {
+							"unit": "%",
+							"value": null
+						},
+						"height": {
+							"unit": "%",
+							"value": 100
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#FFFFFF",
+						"image": {
+							"original": null
+						}
+					},
+					"justifyContent": "center"
+				}
+			},
+			"carousel_data": {
+				"cards": [
+					{
+						"link": {
+							"id": 9,
+							"href": null,
+							"type": "internal",
+							"workshop_route": null
+						},
+						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+						"image": {
+							"alt": "Image 1",
+							"source": null
+						}
+					},
+					{
+						"link": {
+							"id": 9,
+							"href": null,
+							"type": "internal",
+							"workshop_route": null
+						},
+						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+						"image": {
+							"alt": "Image 2",
+							"source": null
+						}
+					},
+					{
+						"link": {
+							"id": 9,
+							"href": null,
+							"type": "internal",
+							"workshop_route": null
+						},
+						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+						"image": {
+							"alt": "Image 3",
+							"source": null
+						}
+					},
+					{
+						"link": {
+							"id": 9,
+							"href": null,
+							"type": "internal",
+							"workshop_route": null
+						},
+						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+						"image": {
+							"alt": "Image 4",
+							"source": null
+						}
+					}
+				],
+				"card_container": {
+					"properties": {
+						"border": {
+							"top": {
+								"value": 0
+							},
+							"left": {
+								"value": 0
+							},
+							"unit": "px",
+							"color": "#000000",
+							"right": {
+								"value": 0
+							},
+							"bottom": {
+								"value": 0
+							},
+							"desktop": {
+								"top": {
+									"value": 1
+								},
+								"left": {
+									"value": 1
+								},
+								"unit": "px",
+								"color": "rgba(219, 219, 219, 1",
+								"right": {
+									"value": 1
+								},
+								"bottom": {
+									"value": 1
+								},
+								"rounded": {
+									"unit": "px",
+									"topleft": {
+										"value": 10
+									},
+									"topright": {
+										"value": 10
+									},
+									"bottomleft": {
+										"value": 10
+									},
+									"bottomright": {
+										"value": 10
+									}
+								}
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": 10
+								},
+								"topright": {
+									"value": 10
+								},
+								"bottomleft": {
+									"value": 10
+								},
+								"bottomright": {
+									"value": 10
+								}
+							}
+						},
+						"margin": {
+							"top": {
+								"value": 0
+							},
+							"left": {
+								"value": 0
+							},
+							"unit": "px",
+							"right": {
+								"value": 0
+							},
+							"bottom": {
+								"value": 0
+							}
+						},
+						"padding": {
+							"top": {
+								"value": 10
+							},
+							"left": {
+								"value": 0
+							},
+							"unit": "px",
+							"right": {
+								"value": 0
+							},
+							"bottom": {
+								"value": 30
+							}
+						},
+						"dimension": {
+							"width": {
+								"unit": "%",
+								"value": null
+							},
+							"height": {
+								"unit": "%",
+								"value": 100
+							},
+							"mobile": {
+								"width": {
+									"unit": "%",
+									"value": 100
+								},
+								"height": {
+									"unit": "px",
+									"value": null
+								}
+							}
+						},
+						"background": {
+							"type": "color",
+							"color": "#FFFFFF",
+							"image": {
+								"original": null
+							}
+						}
+					}
+				},
+				"carousel_setting": {
+					"spaceBetween": 16,
+					"loop" : true,
+					"autoplay" : true,
+					"slidesPerView": {
+						"mobile": 1,
+						"tablet": 2,
+						"desktop": 4
+					}
+				}
+			}
+		}
+	}
+}

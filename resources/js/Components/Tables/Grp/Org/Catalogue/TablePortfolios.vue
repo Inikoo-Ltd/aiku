@@ -92,7 +92,7 @@ function productRoute(product: Product) {
 		case "retina.dropshipping.products.index":
 			return route("retina.dropshipping.products.show", [product.slug])
 		case "retina.dropshipping.portfolios.index":
-		case "retina.dropshipping.platforms.portfolios.index":
+		case "retina.dropshipping.customer_sales_channels.portfolios.index":
 			if (product.type == "StoredItem") {
 				return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
 			}

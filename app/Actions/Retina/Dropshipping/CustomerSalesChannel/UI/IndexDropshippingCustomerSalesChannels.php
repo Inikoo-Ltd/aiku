@@ -129,7 +129,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.platforms.dashboard',
+                                'name' => 'retina.dropshipping.customer_sales_channels.dashboard',
                                 'parameters'  => ['manual']  // TODO: change to correct one
                             ],
                             'label' => __('Channel Dashboard'),

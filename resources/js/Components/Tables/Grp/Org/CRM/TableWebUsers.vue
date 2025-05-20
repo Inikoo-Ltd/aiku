@@ -45,14 +45,14 @@ function webUserRoute(webUser: WebUser) {
 function webUserEditRoute(webUser: WebUser) {
     console.log(route().current());
     switch (route().current()) {
-        case "grp.org.fulfilments.show.crm.customers.show.web-users.index":
-            return route(
-                "grp.org.fulfilments.show.crm.customers.show.web-users.edit",
-                [route().params.organisation, route().params.fulfilment, route().params.fulfilmentCustomer, webUser.slug]
-            );
+    case "grp.org.fulfilments.show.crm.customers.show.web-users.index":
+        return route(
+            "grp.org.fulfilments.show.crm.customers.show.web-users.edit",
+            [route().params.organisation, route().params.fulfilment, route().params.fulfilmentCustomer, webUser.slug]
+        );
       case "grp.org.shops.show.crm.customers.show.web-users.index":
         return route(
-          "grp.org.fulfilments.show.crm.customers.show.web-users.edit",
+          "grp.org.shops.show.crm.customers.show.web-users.edit",
           [route().params.organisation, route().params.shop, route().params.customer, webUser.slug]
         );
     }

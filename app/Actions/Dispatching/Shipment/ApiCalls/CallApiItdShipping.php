@@ -95,7 +95,7 @@ class CallApiItdShipping extends OrgAction
                     'fromAddressCountyState' => Arr::get($parentResource, 'from_address.administrative_area'),
                     'fromAddressZip'         => Arr::get($parentResource, 'from_address.postal_code'),
                     'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country.code'),
-                    'toAddressFirstName'     => Arr::get($parentResource, 'from_first_name'),
+                    'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'),
                     'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'),
                     'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'),
                     'toAddressPhone'         => Arr::get($parentResource, 'to_phone'),
@@ -149,13 +149,11 @@ class CallApiItdShipping extends OrgAction
             foreach ($consignmentErrors as $key => $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
-                    $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ')->lower();
+                    $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ');
                     if (Str::contains($key, 'Address')) {
-                        $errorData['address'][] = $msg;
-                    } elseif (Str::contains($key, 'customer')) {
-                        $errorData['customer'][] = $msg;
+                        $errorData['address'][] = $msg . ',';
                     } else {
-                        $errorData['others'][] = $msg;
+                        $errorData['others'][] = $msg . ',';
                     }
                 }
             }
@@ -164,9 +162,14 @@ class CallApiItdShipping extends OrgAction
             foreach ($packageErrors as $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
-                    $errorData['others'][] = Str::of($code)->replace('_', ' ')->lower();
+                    $errorData['others'][] = Str::of($code)->replace('_', ' ') . ',';
                 }
             }
+
+            foreach ($errorData as $key => $value) {
+                $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
+            }
+
         }
 
         return [

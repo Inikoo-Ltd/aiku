@@ -28,7 +28,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\CreateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\EditFulfilmentCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomerPlatformCustomerClients;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersApproved;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersPendingApproval;
 use App\Actions\Fulfilment\FulfilmentCustomer\UI\IndexFulfilmentCustomersRejected;
@@ -182,7 +181,6 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
             });
             Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inCustomerSalesChannelInFulfilmentCustomer'])->name('.index');
-                Route::get('other-platforms', IndexFulfilmentCustomerPlatformCustomerClients::class)->name('.other-platform.index');
                 Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
                 Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inFulfilmentPlatform'])->name('.edit');
 

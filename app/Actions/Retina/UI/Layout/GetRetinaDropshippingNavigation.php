@@ -15,6 +15,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetRetinaDropshippingNavigation
 {
     use AsAction;
+    use GetPlatformLogo;
 
     public function handle(WebUser $webUser): array
     {
@@ -35,15 +36,6 @@ class GetRetinaDropshippingNavigation
             ];
         }
 
-        // $groupNavigation['platform'] = [
-        //     'label'         => __('Channels'),
-        //     'icon'          => 'fal fa-code-branch',
-        //     'icon_rotation'   => 90,
-        //     'root'  => 'retina.dropshipping.platform.',
-        //     'route' => [
-        //         'name' => 'retina.dropshipping.platform.dashboard'
-        //     ]
-        // ];
 
         $platforms_navigation = [];
 
@@ -51,16 +43,7 @@ class GetRetinaDropshippingNavigation
         foreach (
             $customer->customerSalesChannels as $customerSalesChannels
         ) {
-            $logo_img = null;
-            if ($customerSalesChannels->platform->code === 'shopify') {
-                $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
-            } elseif ($customerSalesChannels->platform->code === 'tiktok') {
-                $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
-            } elseif ($customerSalesChannels->platform->code === 'woocommerce') {
-                $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
-            } elseif ($customerSalesChannels->platform->code === 'manual') {
-                $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
-            }
+
 
             $reference = $customerSalesChannels->reference ?? 'n/a';
 
@@ -68,107 +51,102 @@ class GetRetinaDropshippingNavigation
                 'id'            => $customerSalesChannels->id,
                 'type'          => $customerSalesChannels->platform->type,
                 'slug'          => $customerSalesChannels->slug,
-                'key'           => $customerSalesChannels->slug. '_channel',
-                'label'         => $customerSalesChannels->platform->name. ' (' . $reference . ')' ,
-                'img'           => $logo_img,
+                'key'           => $customerSalesChannels->slug.'_channel',
+                'label'         => $customerSalesChannels->platform->name.' ('.$reference.')',
+                'img'           => $this->getPlatformLogo($customerSalesChannels),
                 'route'         => [
-                    'name' => 'retina.dropshipping.platforms.dashboard',
+                    'name'       => 'retina.dropshipping.customer_sales_channels.dashboard',
                     'parameters' => [
-                        'platform' => $customerSalesChannels->platform->slug
+                        'customerSalesChannel' => $customerSalesChannels->slug
                     ]
                 ],
-                'root'          => 'retina.dropshipping.platforms.',
-                'subNavigation' => GetRetinaDropshippingPlatformNavigation::run($webUser, $customerSalesChannels->platform)
+                'root'          => 'retina.dropshipping.customer_sales_channels.',
+                'subNavigation' => GetRetinaDropshippingCustomerSalesChannelNavigation::run($customerSalesChannels)
             ];
         }
 
-        // if (!blank($platforms_navigation)) {
         $groupNavigation['platforms_navigation'] = [
-            'type'  => 'horizontal',
-            'before_horizontal' => [
+            'type'                   => 'horizontal',
+            'before_horizontal'      => [
                 'subNavigation' => [
                     [
                         'label'         => __('Channels'),
                         'icon'          => 'fal fa-code-branch',
-                        'icon_rotation'   => 90,
-                        'root'  => 'retina.dropshipping.platform.',
-                        'route' => [
+                        'icon_rotation' => 90,
+                        'root'          => 'retina.dropshipping.platform.',
+                        'route'         => [
                             'name' => 'retina.dropshipping.platform.dashboard'
                         ]
                     ]
                 ]
             ],
-            'horizontal_navigations'    => $platforms_navigation
+            'horizontal_navigations' => $platforms_navigation
         ];
-        // }
 
 
+        $groupNavigation['top_up'] = [
+            'label'   => __('Top Up'),
+            'icon'    => ['fal', 'fa-money-bill-wave'],
+            'root'    => 'retina.top_up.',
+            'route'   => [
+                'name' => 'retina.top_up.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('Top ups'),
+                        'icon'  => ['fal', 'fa-money-bill-wave'],
+                        'root'  => 'retina.top_up.',
+                        'route' => [
+                            'name' => 'retina.top_up.index',
 
-        if ($webUser->customer->is_dropshipping) {
-            $groupNavigation['top_up'] = [
-                'label'         => __('Top Up'),
-                'icon'          => ['fal', 'fa-money-bill-wave'],
-                'root'          => 'retina.top_up.',
-                'route'         => [
-                    'name'      => 'retina.top_up.dashboard'
-                ],
-                'topMenu'   => [
-                    'subSections' => [
-                        [
-                            'label' => __('Top ups'),
-                            'icon'  => ['fal', 'fa-money-bill-wave'],
-                            'root'  => 'retina.top_up.',
-                            'route' => [
-                                'name' => 'retina.top_up.index',
-
-                            ]
-                        ],
-                    ]
+                        ]
+                    ],
                 ]
-            ];
+            ]
+        ];
 
-            $groupNavigation['saved_credit_cards'] = [
-                'label' => __('Saved Cards'),
-                'icon'  => ['fal', 'fa-credit-card'],
-                'root'  => 'retina.dropshipping.mit_saved_cards.',
-                'route' => [
-                    'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
-                ],
-            ];
+        $groupNavigation['saved_credit_cards'] = [
+            'label' => __('Saved Cards'),
+            'icon'  => ['fal', 'fa-credit-card'],
+            'root'  => 'retina.dropshipping.mit_saved_cards.',
+            'route' => [
+                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
+            ],
+        ];
 
-            $groupNavigation['sysadmin'] = [
-                'label'   => __('manage account'),
-                'icon'    => ['fal', 'fa-users-cog'],
-                'root'    => 'retina.sysadmin.',
-                'route'   => [
-                    'name' => 'retina.sysadmin.dropshipping.dashboard'
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label' => __('users'),
-                            'icon'  => ['fal', 'fa-user-circle'],
-                            'root'  => 'retina.sysadmin.web-users.',
-                            'route' => [
-                                'name' => 'retina.sysadmin.web-users.index',
+        $groupNavigation['sysadmin'] = [
+            'label'   => __('manage account'),
+            'icon'    => ['fal', 'fa-users-cog'],
+            'root'    => 'retina.sysadmin.',
+            'route'   => [
+                'name' => 'retina.sysadmin.dropshipping.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('users'),
+                        'icon'  => ['fal', 'fa-user-circle'],
+                        'root'  => 'retina.sysadmin.web-users.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.web-users.index',
 
-                            ]
-                        ],
+                        ]
+                    ],
 
-                        [
-                            'label' => __('account settings'),
-                            'icon'  => ['fal', 'fa-cog'],
-                            'root'  => 'retina.sysadmin.settings.',
-                            'route' => [
-                                'name' => 'retina.sysadmin.settings.edit',
+                    [
+                        'label' => __('account settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.settings.edit',
 
-                            ]
-                        ],
-                    ]
+                        ]
+                    ],
                 ]
-            ];
+            ]
+        ];
 
-        }
 
         return $groupNavigation;
     }

@@ -39,16 +39,16 @@ function orderRoute(order) {
         {
           order: order.slug
         });
-    case "retina.dropshipping.platforms.orders.index":
+    case "retina.dropshipping.customer_sales_channels.orders.index":
       return route(
-        "retina.dropshipping.platforms.orders.show",
+        "retina.dropshipping.customer_sales_channels.orders.show",
         {
           platform: (route().params as RouteParams).platform,
           order: order.slug
         });
-    case "retina.dropshipping.platforms.basket.index":
+    case "retina.dropshipping.customer_sales_channels.basket.index":
       return route(
-        "retina.dropshipping.platforms.basket.show",
+        "retina.dropshipping.customer_sales_channels.basket.show",
         {
           platform: (route().params as RouteParams).platform,
           order: order.slug

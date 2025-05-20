@@ -26,14 +26,16 @@ trait WithFulfilmentCustomerPlatformSubNavigation
 
             ],
 
-            'label'    => __('Channel'),
+            'label'    => __('Channel').': '.$customerSalesChannel->reference,
             'leftIcon' => [
-                'icon'    => 'fal fa-parachute-box',
-                'tooltip' => __('channel'),
+                'icon'          => 'fal fa-code-branch',
+                'icon_rotation' => 90,
+                'tooltip'       => __('channel'),
             ],
         ];
 
         $subNavigation[] = [
+            "number"   => $customerSalesChannel->number_portfolios,
             'label'    => __('Portfolios'),
             'route'    => [
                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
@@ -47,6 +49,7 @@ trait WithFulfilmentCustomerPlatformSubNavigation
         ];
 
         $subNavigation[] = [
+            "number"   => $customerSalesChannel->number_customer_clients,
             'label'    => __('Clients'),
             'route'    => [
                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
@@ -60,6 +63,7 @@ trait WithFulfilmentCustomerPlatformSubNavigation
         ];
 
         $subNavigation[] = [
+            "number"   => $customerSalesChannel->number_orders,
             'label'    => __('Orders'),
             'route'    => [
                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',
