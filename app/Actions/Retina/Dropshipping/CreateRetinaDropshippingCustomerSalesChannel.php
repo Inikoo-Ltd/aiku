@@ -35,7 +35,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
         $title = __('Create Channels');
 
         return Inertia::render(
-            'Dropshipping/DropshippingDashboard',
+            'Dropshipping/DropshippingCreateChannel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
@@ -47,11 +47,6 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'icon_rotation' => 90,
                 ],
                 'shopify_url' => '.' . config('shopify-app.my_shopify_domain'),
-                'createRoute' => [
-                    'name'       => 'retina.dropshipping.platform.shopify_user.store',
-                    'parameters' => [],
-                    'method'     => 'post'
-                ],
                 'unlinkRoute' => [
                     'name'       => 'retina.dropshipping.platform.shopify_user.delete',
                     'parameters' => [],
@@ -61,11 +56,11 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'name'       => 'retina.dropshipping.client.fetch',
                     'parameters' => []
                 ],
-/*                'connectRoute' => $customer->shopifyUser ? [
+                'connectRoute' => $customer->shopifyUser ? [
                     'url'       => route('pupil.authenticate', [
                         'shop' => $customer->shopifyUser?->name
                     ])
-                ] : null,*/
+                ] : null,
                 'total_channels' => [
                     'manual' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),
                     'shopify'   => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
@@ -86,11 +81,15 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     ]
                 ],
                 'type_shopify'  => [
+                    'shopify_url' => '.' . config('shopify-app.my_shopify_domain'),
                     'connectRoute' => $customer->shopifyUser ? [
-                        'url'       => route('pupil.authenticate', [
-                            'shop' => $customer->shopifyUser?->name
-                        ])
+                        'url'       => route('pupil.authenticate')
                     ] : null,
+                    'createRoute' => [
+                        'name'       => 'retina.dropshipping.platform.shopify_user.store',
+                        'parameters' => [],
+                        'method'     => 'post'
+                    ],
                 ],
                 'type_manual'   => [
                     'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
