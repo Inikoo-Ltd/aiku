@@ -84,7 +84,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'name' => 'retina.models.customer_sales_channel.sync_all_stored_items',
                 'parameters' => [
                     'customerSalesChannel' => $this->customerSalesChannel->id
-                ]
+                ],
+                'method' => 'post'
             ];
         }
         return Inertia::render(
@@ -98,7 +99,6 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
-                'syncAllRoute' => $syncAllRoute,
 
 
 
@@ -126,6 +126,9 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 //                            ]
 //                        ] : [],
 //                    ]
+                ],
+                'routes'    => [
+                    'syncAllRoute' => $syncAllRoute,
                 ],
 
                 'tabs'        => [

@@ -11,6 +11,8 @@ import { Link } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import type { IconDefinition } from '@fal'
+import { notify } from '@kyvg/vue3-notification'
+import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
     style?: string | object
@@ -35,10 +37,19 @@ const props = defineProps<{
     method?: string
     body?: object
     fullLoading?: boolean
+    isWithError?: boolean
 }>()
 
 
 const isLoadingVisit = ref(false)
+
+const setError = () => {
+    notify({
+        title: trans("Something went wrong"),
+        text: trans("Please try again or contact support."),
+        type: "error",
+    })
+}
 </script>
 
 <template>
@@ -46,6 +57,7 @@ const isLoadingVisit = ref(false)
         :is="props.routeTarget || props.url ? Link : 'div'"
         :href="props.url || (props.routeTarget?.name ? route(props.routeTarget?.name, props.routeTarget?.parameters) : '#')"
         @start="() => isLoadingVisit = true"
+        @error="() => isWithError ? setError() : false"
         @finish="() => fullLoading ? '' : isLoadingVisit = false"
         :method="props.method || props.routeTarget?.method || undefined"
         :data="props.body ?? props.routeTarget?.body"
