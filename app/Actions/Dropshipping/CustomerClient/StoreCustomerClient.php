@@ -66,7 +66,6 @@ class StoreCustomerClient extends OrgAction
 
         CustomerClientRecordSearch::dispatch($customerClient)->delay($this->hydratorsDelay);
         CustomerHydrateClients::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
-
         CustomerSalesChannelsHydrateCustomerClients::dispatch($customerSalesChannel);
 
         return $customerClient;
@@ -132,7 +131,10 @@ class StoreCustomerClient extends OrgAction
             return Redirect::route('retina.dropshipping.client.index');
         }
 
-        return Redirect::route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->platform->slug]);
+        return Redirect::route(
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.manual.index',
+            [$customerClient->customer->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerClient->platform->slug]
+        );
     }
 
     /**
@@ -158,7 +160,7 @@ class StoreCustomerClient extends OrgAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerClient
     {
-        $this->customer       = $customerSalesChannel->customer;
+        $this->customer = $customerSalesChannel->customer;
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
         return $this->handle($customerSalesChannel, $this->validatedData);

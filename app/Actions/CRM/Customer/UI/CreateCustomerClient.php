@@ -48,7 +48,7 @@ class CreateCustomerClient extends OrgAction
                             'label' => __('cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
-                                    'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.create' => preg_replace('/create$/', 'manual.index', $request->route()->getName()),
+                                    'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create' => preg_replace('/create$/', 'manual.index', $request->route()->getName()),
                                     default => preg_replace('/create$/', 'index', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -125,8 +125,8 @@ class CreateCustomerClient extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->scope = $customerHasPlatform;
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->scope = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer, $request);

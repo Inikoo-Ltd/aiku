@@ -35,13 +35,13 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     use WithCustomerSalesChannelSubNavigation;
 
     private Platform $platform;
-    private CustomerSalesChannel $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
-        $customerHasPlatform = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
 
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->platform = $platform;
         $this->initialisationFromShop($shop, $request);
 
@@ -108,7 +108,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-user'];
-        $title      = $this->customerHasPlatform->customer->name;
+        $title      = $this->customerSalesChannel->customer->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => __('customer client')
@@ -128,7 +128,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
             ];
         }
 
-        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerHasPlatform, $request);
+        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerSalesChannel, $request);
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
@@ -161,7 +161,7 @@ class IndexCustomerPlatformCustomerClients extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.other_platform.index',
+                                'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.other_platform.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Clients'),
