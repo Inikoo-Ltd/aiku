@@ -117,6 +117,12 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                             $this->customerSalesChannel->id
                         ],
                         'method' => 'post'
+                    ],
+                    'fetchClientsRoute' => [
+                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
                     ]
                 ],
                 'data' => PalletReturnsResource::collection($palletReturns),
