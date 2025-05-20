@@ -30,25 +30,18 @@ class UpdateMailshot extends OrgAction
     {
         $mailshot = $this->update($mailshot, $modelData, ['data']);
 
+
         if ($mailshot->wasChanged('state')) {
             GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
             OrganisationHydrateMailshots::dispatch($mailshot->organisation)->delay($this->hydratorsDelay);
-            OutboxHydrateMailshots::dispatch($mailshot->outnox)->delay($this->hydratorsDelay);
+            OutboxHydrateMailshots::dispatch($mailshot->outbox)->delay($this->hydratorsDelay);
         }
 
         return $mailshot;
 
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        //todo
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
 
-    }
 
     public function rules(): array
     {
