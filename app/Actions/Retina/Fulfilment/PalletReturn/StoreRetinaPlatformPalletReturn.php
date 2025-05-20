@@ -64,7 +64,7 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
         return  Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.basket.show', [
-            'customerSalesChannel' => $palletReturn->salesChannel->slug,
+            'customerSalesChannel' => $palletReturn->customerSaleChannel->slug,
             'palletReturn' => $palletReturn->slug
         ]);
     }
