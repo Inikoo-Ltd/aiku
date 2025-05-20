@@ -86,10 +86,9 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     ]
                 ],
                 'type_shopify'  => [
+                    'shopify_url' => '.' . config('shopify-app.my_shopify_domain'),
                     'connectRoute' => $customer->shopifyUser ? [
-                        'url'       => route('pupil.authenticate', [
-                            'shop' => $customer->shopifyUser?->name
-                        ])
+                        'url'       => route('pupil.authenticate')
                     ] : null,
                 ],
                 'type_manual'   => [
