@@ -105,9 +105,10 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ],
 
 
-                'show_add_products_modal'=> $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
+                'is_show_add_products_modal'=> $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
                 'data'        => PortfoliosResource::collection($portfolios),
                 'customer'      => $this->customerSalesChannel->customer,
+                'customerSalesChannelId' => $this->customerSalesChannel->id,
             ]
         )->table($this->tableStructure());
     }
