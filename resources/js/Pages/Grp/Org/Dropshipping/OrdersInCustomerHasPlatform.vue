@@ -39,7 +39,7 @@ const selectedClient = ref(null);
 const listClient = ref<{}[]>([]);
 const onSubmitAddOrder = (close: Function) => {
     router.post(
-        route("grp.models.customer-client.platform-order.store", { customerClient: selectedClient.value, platform: props.platform?.data.id }),
+        route("grp.models.customer_client.order", { customerClient: selectedClient.value}),
         {},
         {
             onStart: () => {

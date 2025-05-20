@@ -138,10 +138,9 @@ class ShowCustomerClient extends OrgAction
                             'key'   => 'add_order',
                             'route'       => [
                                 'method'     => 'post',
-                                'name'       => 'grp.models.customer-client.platform-order.store',
+                                'name'       => 'grp.models.customer_client.order',
                                 'parameters' => [
                                     'customerClient' => $customerClient->id,
-                                    'platform' => $customerClient->platform_id
                                 ]
                             ]
                         ],
@@ -218,7 +217,7 @@ class ShowCustomerClient extends OrgAction
 
             'grp.org.fulfilments.show.crm.customers.show.customer_clients.show'
             => array_merge(
-                (new IndexCustomerClients())->getBreadcrumbs('grp.org.fulfilments.show.crm.customers.show.customer_clients.index', $routeParameters),
+                (new IndexCustomerClients())->getBreadcrumbs($parent, 'grp.org.fulfilments.show.crm.customers.show.customer_clients.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [

@@ -134,24 +134,6 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
         $afterTitle = [
             'label' => __('orders').' @'.$this->customerSalesChannel->platform->name,
         ];
-        if ($this->customerSalesChannel->platform->type ==  PlatformTypeEnum::MANUAL) {
-
-            $actions[] = [
-                    'type'        => 'button',
-                    'style'       => 'create',
-                    'label'       => 'Add order',
-                    'key'         => 'add_order',
-                    'fullLoading' => true,
-                    'route'       => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.customer.platform-order.store',
-                        'parameters' => [
-                            'customer' => $this->customerSalesChannel->customer_id,
-                            'platform' => $this->customerSalesChannel->platform_id
-                        ]
-                    ]
-            ];
-        }
 
 
         return Inertia::render(
