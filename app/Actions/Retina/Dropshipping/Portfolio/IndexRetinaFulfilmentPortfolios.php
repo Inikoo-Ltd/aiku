@@ -36,7 +36,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
      */
     private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle( CustomerSalesChannel $customerSalesChannel,$prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
@@ -55,16 +55,16 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $customerSalesChannel= $request->route('customerSalesChannel');
-        if($customerSalesChannel->customer_id == $this->customer->id) {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
         return false;
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel,ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerSalesChannel=$customerSalesChannel;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
         return $this->handle($customerSalesChannel);
     }
@@ -77,16 +77,21 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
         $title = __('Portfolio');
         $syncAllRoute = [];
 
+        $routeName = match ($this->customerSalesChannel->platform->type) {
+            PlatformTypeEnum::SHOPIFY => 'retina.models.customer_sales_channel.shopify_sync_all_stored_items',
+            default => 'retina.models.customer_sales_channel.sync_all_stored_items'
+        };
+
         if ($this->customer->is_fulfilment) {
             $syncAllRoute = [
-                'name' => 'retina.models.customer_sales_channel.sync_all_stored_items',
+                'name' => $routeName,
                 'parameters' => [
                     'customerSalesChannel' => $this->customerSalesChannel->id
                 ],
                 'method' => 'post'
             ];
         }
-        
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -105,7 +110,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                             'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
-                                'name'       => 'retina.models.customer_sales_channel.sync_all_stored_items',
+                                'name'       => $routeName,
                                 'parameters' => [
                                     'customerSalesChannel' => $this->customerSalesChannel->id
                                 ],

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-05-2025-16h-39m
@@ -8,17 +9,11 @@
 
 namespace App\Actions\Retina\Fulfilment\Portfolio;
 
-use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithImportModel;
-use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\PalletDelivery;
-use App\Models\Helpers\Upload;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Fulfilment\StoredItem;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,16 +22,17 @@ class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
 
-        $existingPortfolios = $customerSalesChannel->portfolios()->where('item_type', 'StoredItem')->pluck('item_id')->toArray();
+        $existingPortfolios = $customerSalesChannel->portfolios()->where('item_type', class_basename(StoredItem::class))->pluck('item_id')->toArray();
         $storedItemIds = $this->fulfilmentCustomer->storedItems()->where('state', StoredItemStateEnum::ACTIVE)->pluck('id')->toArray();
-        
+
         $itemsToSync = array_diff($storedItemIds, $existingPortfolios);
 
         if (empty($itemsToSync)) {
-        throw ValidationException::withMessages([
-            'messages' =>__('All stored items have already been added as portfolios.') 
-        ]);
-    }
+            throw ValidationException::withMessages([
+                'messages' => __('All stored items have already been added as portfolios.')
+            ]);
+        }
+
         if (!empty($itemsToSync)) {
             StoreRetinaProductManual::make()->action($customerSalesChannel, [
                 'items' => $storedItemIds

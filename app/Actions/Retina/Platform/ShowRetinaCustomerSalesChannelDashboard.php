@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Platform;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
