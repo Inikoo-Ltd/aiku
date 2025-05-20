@@ -11,6 +11,8 @@ namespace App\Models\Dropshipping;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\Customer;
+use App\Models\Fulfilment\PalletReturn;
+use App\Models\Ordering\Order;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -114,6 +116,16 @@ class CustomerSalesChannel extends Model
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function fulfilmentOrders(): HasMany
+    {
+        return $this->hasMany(PalletReturn::class);
     }
 
     public function clients(): HasMany
