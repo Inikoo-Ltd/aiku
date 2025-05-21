@@ -48,11 +48,11 @@ const getHref = (item: number) => {
             class="overflow-hidden flex flex-col">
             <component :is="getHref(card) ? 'a' : 'div'" :href="card.link.href" :target="card.link.target" 
                 class="flex-1 flex flex-col">
-                <div class="w-full h-36 sm:h-44 md:h-48 bg-gray-100 flex items-center justify-center overflow-auto">
-                    <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
-                        :imageCover="true" class="w-full h-full aspect-square object-cover" />
-                    <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
-                </div>
+                 <div :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)" :class="[!card.image?.source && 'bg-gray-100 w-full h-36 sm:h-44 md:h-48  flex items-center justify-center overflow-auto', 'overflow-hidden']">
+                <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
+                    :imageCover="true" :style="getStyles(card.image.properties, screenType)" :class="null"/>
+                <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
+            </div>
 
                 <div class="p-4 flex-1 flex flex-col justify-between">
                     <div v-html="card.text"></div>
