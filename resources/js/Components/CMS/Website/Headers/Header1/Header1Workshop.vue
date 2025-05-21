@@ -74,7 +74,8 @@ const toggle = (event) => {
                 <!-- Search Bar -->
                 <div class="relative justify-self-center w-full max-w-md">
                     <!-- <input type="text" placeholder="Search Products"
-                        class="border border-gray-300 py-2 px-4 rounded-md text-sm w-full shadow-inner focus:outline-none focus:border-gray-500">
+                        class="border border-gray-300 py-2 px-4 rounded-md text-sm w-full shadow-inner focus:outline-none focus:border-gray-500"> -->
+                    <!--
                     <FontAwesomeIcon icon="fas fa-search"
                         class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500" fixed-width /> -->
                 </div>
