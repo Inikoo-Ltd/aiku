@@ -98,6 +98,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
         Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
+        Route::get('my-portfolio/{product}', [ShowRetinaProduct::class, 'inPlatform'])->name('show');
         Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
         Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
     });
