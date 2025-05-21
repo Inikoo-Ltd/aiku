@@ -75,7 +75,7 @@ class GetRetinaDropshippingNavigation
                         'icon_rotation' => 90,
                         'root'          => 'retina.dropshipping.platform.',
                         'route'         => [
-                            'name' => 'retina.dropshipping.platform.dashboard'
+                            'name' => 'retina.dropshipping.platform.index'
                         ]
                     ]
                 ]

@@ -85,6 +85,16 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'icon'          => $icon,
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => 'Add Sales Channel',
+                            'route' => [
+                                'name'       => 'retina.dropshipping.platform.create',
+                            ]
+                        ]
+                    ]
                 ],
                 'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
@@ -103,11 +113,11 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Number Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Number Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Number Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('code');
+                ->defaultSort('reference');
         };
     }
 
