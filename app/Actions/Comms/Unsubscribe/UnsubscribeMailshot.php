@@ -13,7 +13,7 @@ use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\DispatchedEmailEvent\DispatchedEmailEventTypeEnum;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Comms\DispatchedEmail;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -65,7 +65,7 @@ class UnsubscribeMailshot
 
     public function jsonResponse(DispatchedEmail $dispatchedEmail): array
     {
-        return DispatchedEmailResource::make($dispatchedEmail)->getArray();
+        return DispatchedEmailsResource::make($dispatchedEmail)->getArray();
     }
 
 }

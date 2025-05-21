@@ -177,8 +177,8 @@ class ShowCustomer extends OrgAction
                 */
 
                 // $tabs::DISPATCHED_EMAILS->value => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
-                //     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))
-                //     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))),
+                //     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
+                //     : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
                 $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),

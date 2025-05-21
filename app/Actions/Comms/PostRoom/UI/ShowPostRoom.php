@@ -13,7 +13,7 @@ use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\OrgAction;
 use App\Enums\Comms\PostRoom\PostRoomsTabsEnum;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Http\Resources\Mail\MailshotResource;
 use App\Http\Resources\Mail\PostRoomResource;
 use App\Http\Resources\Mail\OutboxesResource;
@@ -119,8 +119,8 @@ class ShowPostRoom extends OrgAction
                     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($postRoom, PostRoomsTabsEnum::MAILSHOTS->value))),
 
                 PostRoomsTabsEnum::DISPATCHED_EMAILS->value => $this->tab == PostRoomsTabsEnum::DISPATCHED_EMAILS->value ?
-                    fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($postRoom, PostRoomsTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($postRoom, PostRoomsTabsEnum::DISPATCHED_EMAILS->value))),
+                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($postRoom, PostRoomsTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($postRoom, PostRoomsTabsEnum::DISPATCHED_EMAILS->value))),
 
                 'data'   => PostRoomResource::make($postRoom)
             ]

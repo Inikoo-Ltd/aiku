@@ -25,7 +25,7 @@ use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundsResource;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -196,8 +196,8 @@ class ShowFulfilmentInvoice extends OrgAction
                     : Inertia::lazy(fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::EMAIL->value => $this->tab == FulfilmentInvoiceTabsEnum::EMAIL->value ?
-                    fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))),
+                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))
+                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))),
 
 
                 FulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == FulfilmentInvoiceTabsEnum::PAYMENTS->value ?
