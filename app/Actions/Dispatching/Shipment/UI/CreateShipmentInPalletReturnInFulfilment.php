@@ -14,7 +14,6 @@ use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
-use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -25,6 +24,7 @@ class CreateShipmentInPalletReturnInFulfilment extends OrgAction
     public function handle(PalletReturn $palletReturn, array $modelData): Shipment
     {
         $shipper = Shipper::find($modelData['shipper_id']);
+
         return StoreShipment::run($palletReturn, $shipper, $modelData);
     }
 
@@ -32,30 +32,16 @@ class CreateShipmentInPalletReturnInFulfilment extends OrgAction
     public function rules(): array
     {
         return [
-            'tracking' => ['sometimes','nullable', 'max:1000', 'string'],
+            'tracking'   => ['sometimes', 'nullable', 'max:1000', 'string'],
             'shipper_id' => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request)
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): void
     {
-
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         $this->handle($palletReturn, $this->validatedData);
-
-    }
-
-    public function getCommandSignature(): string
-    {
-        return 'test:a';
-    }
-    public function asCommand(Command $command)
-    {
-        $palletReturn = PalletReturn::find(30);
-        $this->handle($palletReturn, [
-            'shipper_id' => 25
-        ]);
     }
 
 

@@ -11,8 +11,11 @@ namespace App\Actions\Dropshipping\WooCommerce\Clients;
 use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
-use App\Models\Dropshipping\Platform;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class FetchRetinaCustomerClientFromWooCommerce extends RetinaAction
@@ -22,9 +25,8 @@ class FetchRetinaCustomerClientFromWooCommerce extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function handle(): void
+    public function handle(WooCommerceUser $wooCommerceUser): void
     {
-        $wooCommerceUser = $this->customer->wooCommerceUser;
         $customers = $wooCommerceUser->getWooCommerceCustomers();
 
         foreach ($customers as $customer) {
@@ -42,32 +44,26 @@ class FetchRetinaCustomerClientFromWooCommerce extends RetinaAction
         }
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        return true;
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->platform->type !== PlatformTypeEnum::WOOCOMMERCE) {
+            $validator->errors()->add('platform', 'The platform type must be WooCommerce.');
+        }
+
     }
+
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisation($request);
-
-        $this->handle();
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $customerSalesChannel->user;
+        $this->handle($wooCommerceUser);
     }
 
-    public function inPlatform(Platform $platform, ActionRequest $request): void
-    {
-        $this->initialisation($request);
 
-        $this->handle();
-    }
-
-    public function inPupil(Platform $platform, ActionRequest $request): void
-    {
-        $this->initialisationFromPupil($request);
-
-        $this->handle();
-    }
 }

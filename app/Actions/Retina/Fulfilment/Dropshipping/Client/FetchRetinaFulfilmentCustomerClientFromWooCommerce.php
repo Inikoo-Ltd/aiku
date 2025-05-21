@@ -8,12 +8,13 @@
 
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client;
 
-use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
+use App\Actions\Dropshipping\WooCommerce\Clients\FetchRetinaCustomerClientFromWooCommerce;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Support\Arr;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
@@ -25,26 +26,17 @@ class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
-        $customers = $wooCommerceUser->getWooCommerceCustomers();
-
-        foreach ($customers as $customer) {
-            $customer = $customer->toArray();
-            $address = Arr::get($customer, 'default_address', []);
-            $existsClient = $this->customer->clients()->where('email', $customer['email'])->first();
-
-            $attributes = $this->getAttributes($customer, $address);
-
-            if (blank($address)) {
-                data_set($attributes, 'address', $wooCommerceUser->customer?->deliveryAddress?->toArray());
-            }
-
-            StoreRetinaClientFromPlatformUser::run($wooCommerceUser, $attributes, $customer, $existsClient);
-        }
+        FetchRetinaCustomerClientFromWooCommerce::run($wooCommerceUser);
     }
 
-    public function authorize(ActionRequest $request): bool
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        return true;
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->platform->type !== PlatformTypeEnum::WOOCOMMERCE) {
+            $validator->errors()->add('platform', 'The platform type must be WooCommerce.');
+        }
+
     }
 
 
@@ -53,10 +45,10 @@ class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+
+        $this->initialisation($request);
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
-        $this->initialisation($request);
-
         $this->handle($wooCommerceUser);
     }
 }
