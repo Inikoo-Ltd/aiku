@@ -15,7 +15,6 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -114,7 +113,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ] : [],
                     ]
                 ],
-                'routes'    => [ 
+                'routes'    => [
                     'itemRoute' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
                         'parameters' => [
@@ -123,7 +122,10 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     // 'syncAllRoute' => $syncAllRoute,
                     'addPortfolioRoute' => [
-                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'name' => match ($this->customerSalesChannel->platform->type) {
+                            PlatformTypeEnum::WOOCOMMERCE => 'retina.models.customer_sales_channel.woo.product.store',
+                            default => 'retina.models.customer_sales_channel.customer.product.store'
+                        },
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
