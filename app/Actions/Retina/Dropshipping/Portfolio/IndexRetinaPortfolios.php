@@ -136,6 +136,14 @@ class IndexRetinaPortfolios extends RetinaAction
                         'platform' => $this->platform->id
                     ]
                 ] : [],
+                'content' => [
+                    'portfolio_empty' => [
+                        'title' => __("You don't any items in your portfolio"),
+                        'description' => __("To get started, add products to your portfolios."),
+                        'separation' => __("or"),
+                        'add_button' => __("Add Portfolio"),
+                    ]
+                ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
