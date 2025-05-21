@@ -116,7 +116,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.dashboard',
+                                'name' => 'retina.dropshipping.customer_sales_channels.show',
                                 'parameters'  => ['manual']  // TODO: change to correct one
                             ],
                             'label' => __('Channel Dashboard'),

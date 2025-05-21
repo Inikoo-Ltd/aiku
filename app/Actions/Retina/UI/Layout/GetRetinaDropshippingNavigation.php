@@ -55,7 +55,7 @@ class GetRetinaDropshippingNavigation
                 'label'         => $customerSalesChannels->platform->name.' ('.$reference.')',
                 'img'           => $this->getPlatformLogo($customerSalesChannels),
                 'route'         => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.dashboard',
+                    'name'       => 'retina.dropshipping.customer_sales_channels.show',
                     'parameters' => [
                         'customerSalesChannel' => $customerSalesChannels->slug
                     ]
