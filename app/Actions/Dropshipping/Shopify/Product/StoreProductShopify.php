@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ class StoreProductShopify extends OrgAction
 
         DB::transaction(function () use ($shopifyUser, $modelData) {
             foreach (Arr::get($modelData, 'items') as $product) {
+                $product = Product::find($product);
                 $portfolio = StorePortfolio::run(
                     $shopifyUser->customerSalesChannel,
                     $product,
