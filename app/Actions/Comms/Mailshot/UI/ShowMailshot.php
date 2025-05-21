@@ -57,6 +57,7 @@ class ShowMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
+
         return Inertia::render(
             'Comms/Mailshot',
             [

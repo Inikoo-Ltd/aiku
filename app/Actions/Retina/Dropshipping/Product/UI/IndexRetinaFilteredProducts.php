@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 21-05-2025-13h-40m
@@ -6,22 +7,14 @@
  * copyright 2025
 */
 
-
 namespace App\Actions\Retina\Dropshipping\Product\UI;
 
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\FilteredProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -46,7 +39,7 @@ class IndexRetinaFilteredProducts extends RetinaAction
         $queryBuilder = QueryBuilder::for(Product::class);
 
         $queryBuilder->where('products.status', ProductStatusEnum::FOR_SALE);
-        
+
         $queryBuilder->where('products.shop_id', $this->shop->id)
         ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
             $subQuery->select('item_id')

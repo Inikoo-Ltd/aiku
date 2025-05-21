@@ -54,6 +54,12 @@ class UpdateMailshot extends OrgAction
         ];
 
         if (!$this->strict) {
+            $rules['date']             = ['nullable', 'date'];
+            $rules['ready_at']         = ['nullable', 'date'];
+            $rules['scheduled_at']     = ['nullable', 'date'];
+            $rules['start_sending_at'] = ['nullable', 'date'];
+            $rules['sent_at']          = ['nullable', 'date'];
+            $rules['stopped_at']       = ['nullable', 'date'];
             $rules = $this->noStrictUpdateRules($rules);
         }
 
