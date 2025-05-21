@@ -50,7 +50,6 @@ class ShowWebpageWorkshopPreview extends OrgAction
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        /** @var Website $website */
         $website = $webpage->website;
 
         return Inertia::render(
