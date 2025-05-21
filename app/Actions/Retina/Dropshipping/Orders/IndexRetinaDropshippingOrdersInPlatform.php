@@ -11,19 +11,12 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasFulfilment;
-use App\Models\Dropshipping\TiktokUser;
-use App\Models\Dropshipping\TiktokUserHasOrder;
-use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -31,7 +24,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use UnexpectedValueException;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {

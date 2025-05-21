@@ -20,23 +20,26 @@ class GetProductCategoryShowcase
 
     public function handle(ProductCategory $productCategory): array
     {
-        $data = [];
-        switch ($productCategory->type) {
-            case ProductCategoryTypeEnum::DEPARTMENT :
-                $data = [
-                    'url_master' => route('grp.masters.departments.show', [
-                        'masterDepartment' => $productCategory->masterProductCategory->slug,
-                    ]),
-                    'department' => DepartmentResource::make($productCategory),
-                    'families'   => FamilyResource::collection($productCategory->getFamilies()),
-                ];
-                break;
+        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $urlMaster = null;
+            if ($productCategory->master_product_category_id) {
+                $urlMaster = route('grp.masters.departments.show', [
+                    'masterDepartment' => $productCategory->masterProductCategory->slug,
+                ]);
+            }
 
-            default:
-                $data = [
-                    'family' => FamilyResource::make($productCategory),
-                ];
+
+            $data = [
+                'url_master' => $urlMaster,
+                'department' => DepartmentResource::make($productCategory),
+                'families'   => FamilyResource::collection($productCategory->getFamilies()),
+            ];
+        } else {
+            $data = [
+                'family' => FamilyResource::make($productCategory),
+            ];
         }
+
         return $data;
     }
 }
