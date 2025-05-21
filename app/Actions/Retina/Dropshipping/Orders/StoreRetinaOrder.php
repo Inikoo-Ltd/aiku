@@ -51,7 +51,7 @@ class StoreRetinaOrder extends RetinaAction
     public function htmlResponse(Order $order)
     {
         return Redirect::route('retina.dropshipping.customer_sales_channels.basket.show', [
-            $order->platform->slug,
+            $order->customerSalesChannel->slug,
             $order->slug
         ]);
     }

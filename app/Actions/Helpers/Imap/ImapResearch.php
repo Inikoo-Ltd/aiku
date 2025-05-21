@@ -12,6 +12,7 @@ namespace App\Actions\Helpers\Imap;
 
 use App\Actions\OrgAction;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Webklex\PHPIMAP\ClientManager;
 
 class ImapResearch extends OrgAction
 {
@@ -27,15 +28,19 @@ class ImapResearch extends OrgAction
     public function asCommand($command)
     {
 
-        $domain = 'dev@aw-advantage.com';
-        $mxRecords = dns_get_record($domain, DNS_MX);
-        dd($mxRecords);
+        $client = new ClientManager();
+        $client = $client->make([
+            'host' => 'imap.gmail.com',
+            'port' => 993,
+            'encryption' => 'ssl',
+            'validate_cert' => false, //Just for testing, otherwise true.
+            'username' => env('IMAP_USERNAME'),
+            'password' => env('IMAP_PASSWORD'),
+            'protocol' => 'imap'
+        ]);
 
-        if (!empty($mxRecords)) {
-            $mxHost = $mxRecords[0]['target'];
-            echo "Mail server: $mxHost";
-        }
 
+        $client->connect();
     }
 
 
