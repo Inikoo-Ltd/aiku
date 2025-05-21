@@ -9,7 +9,6 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI;
 
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
@@ -53,7 +52,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
 
 
             ])
-            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
+            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios', 'number_orders'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -61,13 +60,13 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-        $icon          = ['fal', 'fa-user'];
-        $title         = $this->customer->name;
-        $iconRight     = [
-            'icon'  => ['fal', 'fa-user-friends'],
+        $icon = ['fal', 'fa-user'];
+        $title = $this->customer->name;
+        $iconRight = [
+            'icon' => ['fal', 'fa-user-friends'],
             'title' => $title
         ];
-        $afterTitle    = [
+        $afterTitle = [
 
             'label' => __('Sales Channels')
         ];
@@ -79,24 +78,24 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Sales Channels'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'actions'       => [
+                'title' => __('Sales Channels'),
+                'pageHead' => [
+                    'title' => $title,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
+                    'icon' => $icon,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'label' => 'Add Sales Channel',
                             'route' => [
-                                'name'       => 'retina.dropshipping.platform.create',
+                                'name' => 'retina.dropshipping.customer_sales_channels.create',
                             ]
                         ]
                     ]
                 ],
-                'data'        => CustomerSalesChannelsResource::collection($platforms),
+                'data' => CustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -108,7 +107,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->withModelOperations($modelOperations)
@@ -132,21 +131,17 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
     {
 
         return
-            array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+            [
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.show',
-                                'parameters'  => ['manual']  // TODO: change to correct one
-                            ],
-                            'label' => __('Channel Dashboard'),
-                        ]
+                    'type' => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name' => 'retina.dropshipping.customer_sales_channels.index',
+                            'parameters' => []
+                        ],
+                        'label' => __('Channels'),
                     ]
                 ]
-            );
-
+            ];
     }
 }
