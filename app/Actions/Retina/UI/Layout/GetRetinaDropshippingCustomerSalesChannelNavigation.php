@@ -37,19 +37,19 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
         ];
 
 
-        if ($customerSalesChannel->platform->type !== PlatformTypeEnum::SHOPIFY) {
-            $tabs = [
-                [
-                    'label' => __('All Products'),
-                    'icon'  => ['fal', 'fa-cube'],
-                    'root'  => 'retina.dropshipping.customer_sales_channels.portfolios.products.index',
-                    'route' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.products.index',
-                        'parameters' => [$customerSalesChannel->slug]
-                    ],
-                ]
-            ];
-        }
+        // if ($customerSalesChannel->platform->type !== PlatformTypeEnum::SHOPIFY) {
+        //     $tabs = [
+        //         [
+        //             'label' => __('All Products'),
+        //             'icon'  => ['fal', 'fa-cube'],
+        //             'root'  => 'retina.dropshipping.customer_sales_channels.portfolios.products.index',
+        //             'route' => [
+        //                 'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.products.index',
+        //                 'parameters' => [$customerSalesChannel->slug]
+        //             ],
+        //         ]
+        //     ];
+        // }
 
         $platformNavigation['portfolios'] = [
             'label'       => __('Portfolio'),
@@ -63,20 +63,20 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
                 'label'        => $customerSalesChannel->number_portfolios,
                 'class'        => 'text-white',
             ],
-            'topMenu'     => [
-                'subSections' => [
-                    [
-                        'label' => __('My Portfolio'),
-                        'icon'  => ['fal', 'fa-cube'],
-                        'root'  => 'retina.dropshipping.customer_sales_channels.portfolios.index',
-                        'route' => [
-                            'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
-                            'parameters' => [$customerSalesChannel->slug]
-                        ],
-                    ],
-                    ...$tabs
-                ]
-            ]
+            // 'topMenu'     => [
+            //     'subSections' => [
+            //         [
+            //             'label' => __('My Portfolio'),
+            //             'icon'  => ['fal', 'fa-cube'],
+            //             'root'  => 'retina.dropshipping.customer_sales_channels.portfolios.index',
+            //             'route' => [
+            //                 'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
+            //                 'parameters' => [$customerSalesChannel->slug]
+            //             ],
+            //         ],
+            //         ...$tabs
+            //     ]
+            // ]
         ];
 
         $platformNavigation['client'] = [
