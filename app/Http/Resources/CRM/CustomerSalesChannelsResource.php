@@ -39,6 +39,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'type'              => $this->type,
             'amount'            => $this->total_amount,
             'platform_image'    => $platform?->imageSources(48, 48) ?? null,
+            'name'              => $this->name ?? $this->reference
         ];
     }
 }

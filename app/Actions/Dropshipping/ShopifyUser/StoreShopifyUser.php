@@ -56,7 +56,7 @@ class StoreShopifyUser extends RetinaAction
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => class_basename($shopifyUser),
             'platform_user_id' => $shopifyUser->id,
-            'reference' => Arr::get(explode('.myshopify.com', $shopifyUser->name), '0'),
+            'reference' => Arr::get(explode('.myshopify.com', $shopifyUser->name), '0')
         ]);
 
         $shopifyUser->update([
