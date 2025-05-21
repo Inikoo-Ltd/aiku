@@ -14,6 +14,7 @@ use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use Inertia\Inertia;
 
 Route::get('/login', function () {return Inertia::render('RetinaLogin');})->name('login');
+Route::get('/search', function () {return Inertia::render('Search');})->name('search');
 Route::post('login', RetinaLogin::class)->name('login.store');
 Route::post('logout', LogoutRetina::class)->name('logout');
 Route::get('/register', function () {return Inertia::render('Register');})->name('register');
