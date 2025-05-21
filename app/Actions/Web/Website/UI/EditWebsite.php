@@ -114,6 +114,15 @@ class EditWebsite extends OrgAction
                     'type'     => 'input',
                     'label'    => __('google tag id'),
                     'value'    => Arr::get($website->settings, "google_tag_id"),
+                    'placeholder' => 'G-XXXXXXXXXX',
+                    'required' => false,
+                ],
+                'luigi_tracker_id' => [  // TODO: check if this is the correct name
+                    'information' => __('For Luigi search in the header'),
+                    'type'     => 'input',
+                    'label'    => __('Luigi Search Tracker ID'),
+                    'value'    => Arr::get($website->settings, "luigi_tracker_id"),
+                    'placeholder' => '123456-123456',
                     'required' => false,
                 ],
                 "image"         => [
@@ -126,9 +135,10 @@ class EditWebsite extends OrgAction
                     ]
                 ],
                 "favicon"       => [
+                    "information"   => __("Will show on browsers tab icon in size 18x18 pixels."),
                     "type"    => "image_crop_square",
                     "label"   => __("favicon"),
-                    "value"   => $website->imageSources(320, 320),
+                    "value"   => $website->imageSources(160, 160),
                     'options' => [
                         'aspectRatio' => 1
                     ]
