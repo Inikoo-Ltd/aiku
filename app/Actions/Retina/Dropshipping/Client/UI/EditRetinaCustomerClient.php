@@ -13,6 +13,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +26,9 @@ class EditRetinaCustomerClient extends RetinaAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerClient
+                    $customerClient,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
                 ),
                 'title'       => __('edit client'),
                 'pageHead'    => [
@@ -104,6 +107,7 @@ class EditRetinaCustomerClient extends RetinaAction
     }
 
     public function asController(
+        CustomerSalesChannel $customerSalesChannel,
         CustomerClient $customerClient,
         ActionRequest $request
     ): Response {
@@ -112,11 +116,13 @@ class EditRetinaCustomerClient extends RetinaAction
         return $this->handle($customerClient, $request);
     }
 
-    public function getBreadcrumbs(CustomerClient $customerClient): array
+    public function getBreadcrumbs(CustomerClient $customerClient, $routeName, $routeParameters): array
     {
         return array_merge(
             ShowRetinaCustomerClient::make()->getBreadcrumbs(
-                customerClient: $customerClient
+                $customerClient,
+                $routeName,
+                $routeParameters
             ),
             [
                 [
