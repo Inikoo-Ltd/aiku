@@ -120,14 +120,14 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
 
         $actions = [];
-        if ($this->canEdit) {
+
             $actions = match ($deliveryNote->state) {
                 DeliveryNoteStateEnum::UNASSIGNED => [
                     [
                         'type'    => 'button',
                         'style'   => 'save',
                         'tooltip' => __('Unassigned'),
-                        'label'   => __('Unassigned'),
+                        'label'   => __('Put in Queue'),
                         'key'     => 'action',
                         'route'   => [
                             'method'     => 'patch',
@@ -207,7 +207,7 @@ class ShowDeliveryNote extends OrgAction
                 ],
                 default => []
             };
-        }
+
 
         return Inertia::render(
             'Org/Dispatching/DeliveryNote',
