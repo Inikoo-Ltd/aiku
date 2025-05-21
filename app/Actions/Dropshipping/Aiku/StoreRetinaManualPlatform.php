@@ -16,9 +16,11 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Symfony\Component\HttpFoundation\Response;
 
 class StoreRetinaManualPlatform extends RetinaAction
 {
@@ -45,9 +47,17 @@ class StoreRetinaManualPlatform extends RetinaAction
         return $customerSalesChannel;
     }
 
-    public function asController(ActionRequest $request): void
+    public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
+    {
+        return Inertia::location(route('retina.dropshipping.customer_sales_channels.show', [
+            'customerSalesChannel' => $customerSalesChannel->slug
+        ]));
+    }
+
+    public function asController(ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisation($request);
-        $this->handle($this->customer);
+
+        return $this->handle($this->customer);
     }
 }
