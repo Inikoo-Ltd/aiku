@@ -9,6 +9,8 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,11 +26,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class CustomerSalesChannelsResource extends JsonResource
 {
+    use GetPlatformLogo;
     public function toArray($request): array
     {
         /** @var Platform $platform */
         $platform = Platform::find($this->platform_id);
-
+        // dd($platform);
+        $customerSalesChannels = CustomerSalesChannel::find($this->id);
         return [
             'slug'              => $this->slug,
             'id'                => $this->id,
@@ -38,7 +42,9 @@ class CustomerSalesChannelsResource extends JsonResource
             'number_orders'     => $this->number_orders,
             'type'              => $this->type,
             'amount'            => $this->total_amount,
-            'platform_image'    => $platform?->imageSources(48, 48) ?? null,
+            'platform_code'     => $platform?->code,
+            'platform_name'     => $platform?->name,
+            'platform_image'    => $this->getPlatformLogo($customerSalesChannels)
         ];
     }
 }
