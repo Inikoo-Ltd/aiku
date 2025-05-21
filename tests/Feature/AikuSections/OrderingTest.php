@@ -442,14 +442,16 @@ test('create customer client', function () {
     $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
     $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
+        'reference' => 'test_manual_reference'
+    ]);
+
     StoreCustomerSalesChannel::make()->action($customer, $platform, []);
     $customerClient = StoreCustomerClient::make()->action(
-        $customer,
+        $customerSalesChannel,
         array_merge(
             CustomerClient::factory()->definition(),
-            [
-                'platform_id' => $platform->id,
-            ]
         )
     );
     $this->assertModelExists($customerClient);

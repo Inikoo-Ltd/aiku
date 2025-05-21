@@ -90,6 +90,7 @@
     "tuupola/base32": "^2.0",
     "vemcogroup/laravel-translation": "^3.0",
     "vlucas/phpdotenv": "^5.4",
+    "webklex/laravel-imap": "^6.2",
     "xendit/xendit-php": "^5.0"
   },
   "require-dev": {

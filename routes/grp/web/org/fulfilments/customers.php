@@ -182,7 +182,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
             Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
                 Route::get('', [IndexCustomerClients::class, 'inCustomerSalesChannelInFulfilmentCustomer'])->name('.index');
                 Route::get('/{customerClient}', [ShowCustomerClient::class, 'inPlatformInFulfilmentCustomer'])->name('.show');
-                Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inFulfilmentPlatform'])->name('.edit');
+                Route::get('/{customerClient}/edit', EditCustomerClient::class, 'inFulfilment')->name('.edit');
 
                 Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
                     Route::get('', [IndexOrders::class, 'inFulfilmentCustomerClient'])->name('.index');
