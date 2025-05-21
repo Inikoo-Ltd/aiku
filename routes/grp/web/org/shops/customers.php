@@ -58,7 +58,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('create', CreateCustomerClient::class)->name('.create');
                 Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other_platform.index');
                 Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');
-                Route::get('/{customerClient}/edit', [EditCustomerClient::class, 'inPlatform'])->name('.edit');
+                Route::get('/{customerClient}/edit', EditCustomerClient::class)->name('.edit');
 
                 Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
                     Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
