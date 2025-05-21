@@ -12,6 +12,7 @@ use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,10 +23,8 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function handle(): void
+    public function handle(ShopifyUser $shopifyUser): void
     {
-        $shopifyUser = $this->customer->shopifyUser;
-
         $response = $shopifyUser->api()->getRestClient()->request('GET', 'admin/api/2024-07/customers.json');
 
         if (!$response['errors']) {
@@ -55,15 +54,17 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
         $this->initialisation($request);
 
-        $this->handle();
+        $this->handle($shopifyUser);
     }
 
     public function inPupil(Platform $platform, ActionRequest $request): void
     {
         $this->initialisationFromPupil($request);
 
-        $this->handle();
+        $this->handle($request->user());
     }
 }
