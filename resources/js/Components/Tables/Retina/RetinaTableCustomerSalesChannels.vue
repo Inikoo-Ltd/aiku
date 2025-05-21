@@ -37,7 +37,7 @@ function ordersRoute(platform: Platform) {
     <Table :resource="data">
         <template #cell(platform_name)="{ item: platform }">
             <div class="flex items-center gap-2">
-                <Image :src="platform.platform_image" :alt="platform.platform_name" class="w-6 h-6" />
+                <img :src="platform.platform_image" :alt="platform.platform_name" class="w-6 h-6" />
                 {{ platform.platform_name }}
             </div>
         </template>
