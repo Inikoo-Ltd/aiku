@@ -114,6 +114,8 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string): void
     (e: 'onEditClick', value: any): void
+    (e: 'focus'): void
+    (e: 'blur'): void
 }>()
 
 const _bubbleMenu = ref(null)
@@ -131,6 +133,12 @@ const attrsCustomLink = ref<Object>(null)
 const editorInstance = useEditor({
     content: props.modelValue,
     editable: props.editable,
+    onFocus: () => {
+        emits('focus')
+    },
+    onBlur: () => {
+        emits('blur')
+    },
     editorProps: {
         attributes: {
             class: "editor-class",

@@ -41,7 +41,7 @@ import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
 import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
 import IconPickerBox from '@/Components/CMS/Fields/IconPickerBox.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-
+import ToggleSwitch from 'primevue/toggleswitch';
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -80,7 +80,8 @@ export const getComponent = (componentName: string) => {
         "timeline" : TimelineArray,
         "array-data" : ArrayEdit,
         "icon-picker" : IconPickerBox,
-        'number' : PureInputNumber
+        'number' : PureInputNumber,
+        'switch' : ToggleSwitch ,
     }
     
     return components[componentName] ?? NotFoundComponents

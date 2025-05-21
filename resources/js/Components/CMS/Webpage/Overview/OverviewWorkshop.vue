@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
 <template>
 	<div
 		ref="_parentComponent"
-		class="relative isolate transition-all hidden md:block"
+		class="relative  transition-all hidden md:block"
 		:style="getStyles(modelValue.container.properties)">
 		<!-- Render text elements -->
 		<div v-for="(text, index) in modelValue.texts.values" :key="index">

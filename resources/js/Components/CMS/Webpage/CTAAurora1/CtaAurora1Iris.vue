@@ -25,7 +25,7 @@ const props = defineProps<{
 <template>
 	<div :style="getStyles(fieldValue.container.properties,screenType)">
         <div class="w-full">
-            <div class="relative isolate px-6 py-16 md:py-24 text-center sm:px-16">
+            <div class="relative  px-6 py-16 md:py-24 text-center sm:px-16">
 				<section v-html="fieldValue.title"></section>
 				<section v-html="fieldValue.text"></section>
 

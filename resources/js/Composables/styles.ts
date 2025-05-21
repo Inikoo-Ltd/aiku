@@ -77,26 +77,7 @@ export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
     return color ? `${shadowString} ${color}` : shadowString;
 };
 
-/* export const resolveResponsiveValue = (
-    base: any,
-    screen: 'mobile' | 'tablet' | 'desktop',
-    path?: string[]
-  ) => {
-    if (!base || typeof base !== 'object') return base;
-  
-    const responsiveObj = base[screen];
-  
-    // Jika responsive object ada dan path bernilai, coba ambil dari situ
-    if (responsiveObj && typeof responsiveObj === 'object' && path) {
-      const resolvedFromResponsive = path.reduce((acc, key) => acc?.[key], responsiveObj);
-      if (resolvedFromResponsive !== undefined) return resolvedFromResponsive;
-    }
-  
-    // Fallback ke base biasa
-    return path ? path.reduce((acc, key) => acc?.[key], base) : base;
-  }; */
-
-  export const resolveResponsiveValue = (
+export const resolveResponsiveValue = (
   base: any,
   screen: 'mobile' | 'tablet' | 'desktop',
   path?: string[]
@@ -108,19 +89,29 @@ export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
     return path ? path.reduce((acc, key) => acc?.[key], obj) : obj;
   };
 
-  // 1. Coba ambil dari screen saat ini
+  // ✅ NEW: If path is undefined and base has direct responsive keys (e.g., { mobile: '...', desktop: '...' }), just return base[screen]
+  const isResponsiveObject =
+    !path &&
+    ['mobile', 'tablet', 'desktop'].some(k => Object.prototype.hasOwnProperty.call(base, k));
+
+  if (isResponsiveObject) {
+    return base?.[screen] ?? base?.desktop ?? null;
+  }
+
+  // 1. Try current screen
   const currentValue = getValue(base[screen]);
   if (currentValue !== undefined) return currentValue;
 
-  // 2. Fallback ke desktop jika screen bukan desktop
+  // 2. Fallback to desktop
   if (screen !== 'desktop') {
     const desktopValue = getValue(base.desktop);
     if (desktopValue !== undefined) return desktopValue;
   }
 
-  // 3. Terakhir, fallback ke base global (tanpa screen)
+  // 3. Fallback to global
   return getValue(base);
 };
+
 
   
   
@@ -240,7 +231,7 @@ export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
             ? `${getVal(properties.gap, ['value'])}${properties.gap.unit}`
             : null,
 
-        justifyContent: getVal(properties?.justifyContent),
+        justifyContent: getVal(properties.justifyContent),
         boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor)
     };
 
