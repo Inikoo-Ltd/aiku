@@ -38,6 +38,10 @@ export default {
 								label: "scale-down",
 								value: "scale-down",
 							},
+							{
+								label: "fill",
+								value: "fill",
+							},
 						],
 					},
 				},

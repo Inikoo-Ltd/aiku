@@ -27,6 +27,9 @@ const emits = defineEmits<{
 }>()
 
 const keySwiper = ref(ulid())
+
+const activeEditorIndex = ref<number | null>(null)
+
 // Swiper will be re-rendered if this key changes
 watch(
     () => props.modelValue.carousel_data.carousel_setting,
@@ -38,32 +41,39 @@ watch(
 </script>
 
 <template>
-    <Swiper :key="keySwiper" :slides-per-view="modelValue.carousel_data.carousel_setting.slidesPerView.desktop"  
-      :loop="true"
-      :autoplay="true"
-        :simulate-touch="true" :touch-ratio="1" :pagination="{ clickable: true }" :modules="[Pagination]" :spaceBetween="modelValue.carousel_data.carousel_setting.spaceBetween"
+    <Swiper :key="keySwiper" :slides-per-view="modelValue.carousel_data.carousel_setting.slidesPerView.desktop"
+        :loop="true" :autoplay="true" :simulate-touch="true" :touch-ratio="1" :pagination="{ clickable: true }"
+        :modules="[Pagination]" :spaceBetween="modelValue.carousel_data.carousel_setting.spaceBetween"
         class="touch-pan-x" :style="getStyles(modelValue.container?.properties, screenType)" :breakpoints="{
             0: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.mobile },
             640: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.mobile },
             768: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.tablet },
             1024: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.desktop }
         }">
-        <SwiperSlide v-for="(card, index) in modelValue.carousel_data.cards" :key="index"
-            :style="getStyles(modelValue.carousel_data.card_container.properties, screenType)"
-            class="overflow-hidden flex flex-col">
-            <div :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)" :class="[!card.image?.source && 'bg-gray-100 w-full h-36 sm:h-44 md:h-48  flex items-center justify-center overflow-auto', 'overflow-hidden']">
-                <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
-                    :imageCover="true" :style="getStyles(card.image.properties, screenType)" :class="null"/>
-                <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
+        <SwiperSlide v-for="(card, index) in modelValue.carousel_data.cards" :key="index" :style="{
+            ...getStyles(modelValue.carousel_data.card_container.properties, screenType),
+            zIndex: activeEditorIndex === index ? 50 : 10
+        }" class="flex flex-col overflow-visible relative overflow-hidden">
+            <!-- Image area -->
+            <div class="flex justify-center overflow-visible">
+                <div :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)"
+                    class="bg-gray-100 w-full flex items-center justify-center overflow-visible">
+                    <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
+                        :imageCover="true" :style="getStyles(card.image.properties,screenType)" />
+                    <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
+                </div>
             </div>
 
-            <div class="p-4 flex-1 flex flex-col justify-between">
-                <EditorV2 v-model="card.text" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
-                    name: webpageData.images_upload_route.name,
-                    parameters: { modelHasWebBlocks: blockData.id }
-                }" />
+            <!-- Editor -->
+            <div v-if="modelValue?.carousel_data?.carousel_setting?.use_text" class="p-4 flex-1 flex flex-col justify-between pb-12 overflow-visible relative">
+                <EditorV2 v-model="card.text" @onEditClick="activeEditorIndex = index" @blur="activeEditorIndex = null"
+                    @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+                        name: webpageData.images_upload_route.name,
+                        parameters: { modelHasWebBlocks: blockData.id }
+                    }" />
             </div>
         </SwiperSlide>
+
     </Swiper>
 </template>
 

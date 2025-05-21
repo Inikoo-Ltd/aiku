@@ -22,7 +22,7 @@ import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { debounce } from 'lodash';
-import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, } from "@fal"
+import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 /* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
@@ -58,12 +58,13 @@ const addBlockCancelToken = ref<Function | null>(null)
 const orderBlockCancelToken = ref<Function | null>(null)
 const deleteBlockCancelToken = ref<Function | null>(null)
 const addBlockParentIndex = ref(0)
+const currentView = ref('desktop')
 
 const openedBlockSideEditor = ref<number | null>(null)
 provide('openedBlockSideEditor', openedBlockSideEditor)
 const openedChildSideEditor = ref<number | null>(null)
 provide('openedChildSideEditor', openedChildSideEditor)
-
+provide('currentView',currentView )
 // Method: Add block
 const isAddBlockLoading = ref<string | null>(null)
 
@@ -470,6 +471,7 @@ watch(openedBlockSideEditor, (newValue) => {
 	sendToIframe({ key: 'activeBlock', value: newValue })
 })
 
+const fullScreeen = ref(false)
 
 </script>
 
@@ -494,7 +496,7 @@ watch(openedBlockSideEditor, (newValue) => {
 	<ConfirmDialog group="alert-publish"></ConfirmDialog>
 	<div class="flex gap-x-2">
 		<!-- Section: Side editor -->
-		<div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
+		<div v-if="!fullScreeen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
 			<WebpageSideEditor v-model="isModalBlockList" :isLoadingblock :isLoadingDeleteBlock :isAddBlockLoading
 				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"
 				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings"/>
@@ -505,9 +507,12 @@ watch(openedBlockSideEditor, (newValue) => {
 			<div class="flex justify-between">
 				<!-- Section: Screenview -->
 				<div class="flex">
-					<ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
+					<ScreenView @screenView="(e) => {iframeClass = setIframeView(e), currentView = e}" v-model="currentView" />
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'Preview'" @click="openFullScreenPreview">
 						<FontAwesomeIcon :icon="faLowVision" fixed-width aria-hidden="true" />
+					</div>
+					<div class="py-1 px-2 cursor-pointer" v-tooltip="'fullScreeen'" @click="fullScreeen = !fullScreeen">
+						<FontAwesomeIcon :icon="!fullScreeen  ? faExpandWide : faCompressWide" fixed-width aria-hidden="true" />
 					</div>
 					<!-- <div class="py-1 px-2 cursor-pointer" v-tooltip="'undo'" @click="undo">
 						<FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
